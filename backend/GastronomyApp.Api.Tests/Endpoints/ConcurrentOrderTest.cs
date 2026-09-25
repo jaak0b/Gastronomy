@@ -17,6 +17,7 @@ public sealed class ConcurrentOrderTest
     _context = await new OrderTestContextBuilder().StartAsync();
 
     using var scope = _context.Factory.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
     var database = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
 
     var secondStaffMemberId = Guid.NewGuid();

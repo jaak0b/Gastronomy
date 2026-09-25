@@ -4,6 +4,7 @@ using GastronomyApp.Api.Tests.TestSupport;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using Microsoft.Extensions.DependencyInjection;
+using GastronomyApp.Infrastructure.Persistence;
 
 namespace GastronomyApp.Api.Tests.Auth;
 
@@ -67,6 +68,7 @@ public sealed class DeviceAuthenticationTest
 
     using (var scope = _factory.Services.CreateScope())
     {
+      scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
       await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().RevokeAsync(issued.Device.Id, CancellationToken.None);
     }
 
@@ -100,6 +102,7 @@ public sealed class DeviceAuthenticationTest
   private async Task<IssuedDeviceToken> IssueTokenAsync()
   {
     using var scope = _factory.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
     var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindStaffMemberAsync(_world.StaffMemberId, CancellationToken.None);
 
     return await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(owner!, "de", "NUnit", CancellationToken.None);

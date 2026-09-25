@@ -11,8 +11,6 @@ namespace GastronomyApp.Core.Services;
 public sealed class OrderAcceptanceService
 {
   private readonly TimeProvider _timeProvider;
-  private readonly IAfterCommitActions _afterCommitActions;
-  private readonly IStationOrdersAnnouncer _announcer;
   private readonly OrderItemResolutionService _itemResolutionService;
   private readonly INumberAllocator _numberAllocator;
 
@@ -25,8 +23,6 @@ public sealed class OrderAcceptanceService
                                 INumberAllocator numberAllocator,
                                 OrderItemResolutionService itemResolutionService,
                                 OrderItemSettlementService settlementService,
-                                IStationOrdersAnnouncer announcer,
-                                IAfterCommitActions afterCommitActions,
                                 TimeProvider timeProvider)
   {
     _orderRepository = orderRepository;
@@ -34,8 +30,6 @@ public sealed class OrderAcceptanceService
     _numberAllocator = numberAllocator;
     _itemResolutionService = itemResolutionService;
     _settlementService = settlementService;
-    _announcer = announcer;
-    _afterCommitActions = afterCommitActions;
     _timeProvider = timeProvider;
   }
 
@@ -73,12 +67,7 @@ public sealed class OrderAcceptanceService
 
   private async Task<Order> AcceptedOrderAsync(Guid orderId, CancellationToken cancellationToken)
   {
-    var storedOrder = (await _orderRepository.FindWithStationOrdersAsync(orderId, cancellationToken))!;
-
-    foreach (var stationId in storedOrder.StationOrders.Select(stationOrder => stationOrder.StationId).Distinct())
-      await _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceStationOrdersChangedAsync(stationId, announcementCancellationToken), cancellationToken);
-
-    return storedOrder;
+    return (await _orderRepository.FindWithStationOrdersAsync(orderId, cancellationToken))!;
   }
 
   private ErrorOr<Order> SettleAtAcceptance(Guid staffMemberId, Order order, IReadOnlyList<OrderItemRequest> itemRequests, IReadOnlyList<OrderItem> routedItems)

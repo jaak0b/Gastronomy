@@ -1,4 +1,5 @@
 ﻿using FakeItEasy;
+using GastronomyApp.Core.Announcements;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
@@ -17,7 +18,7 @@ public sealed class DeviceOwnerRetirementTest
     _announcer = A.Fake<IDeviceRevocationAnnouncer>();
     _clock = new FakeTimeProvider(new(_now));
 
-    _retirement = new(_invitationStore, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(), _clock);
+    _retirement = new(_invitationStore, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(A.Fake<ICommittedChangeAnnouncer>()), _clock);
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);

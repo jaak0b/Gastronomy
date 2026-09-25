@@ -66,6 +66,7 @@ public sealed class AdminCatalogConcurrencyTest
   public async Task CreateCategory_AnotherWriterTookTheSameNameFirst_SaysTheNameIsTakenInsteadOfCrashing()
   {
     using var scope = _context.Factory.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
     var dbContext = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
     dbContext.CatalogCategories.Add(new()
     {

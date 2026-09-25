@@ -25,10 +25,9 @@ public sealed class OrderItemSettlementServiceTest
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
     A.CallTo(() => _repository.FindForSettlementAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
 
-    _announcer = A.Fake<ISettlementAnnouncer>();
     _logger = A.Fake<ILogger<OrderItemSettlementService>>();
 
-    _service = new(_repository, new(_festivalRepository, new(), _clock), _announcer, new ImmediateAfterCommitActions(), _clock, _logger);
+    _service = new(_repository, new(_festivalRepository, new(), _clock), _clock, _logger);
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -36,7 +35,6 @@ public sealed class OrderItemSettlementServiceTest
   private readonly Guid _collectingWaiter = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001");
   private readonly Guid _anotherWaiter = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000002");
 
-  private ISettlementAnnouncer _announcer = null!;
   private TimeProvider _clock = null!;
   private ILogger<OrderItemSettlementService> _logger = null!;
   private IFestivalRepository _festivalRepository = null!;
@@ -360,22 +358,10 @@ public sealed class OrderItemSettlementServiceTest
                     {
                       Assert.That(settlement.IsSuccess, Is.True);
                       Assert.That(settlement.Value.NewlySettled, Has.Count.EqualTo(1));
-                      Assert.That(settlement.Value.SettledTableNames, Is.EqualTo(new[] { "Tisch 12" }));
                       Assert.That(bratwurst.SettledAtUtc, Is.EqualTo(_now));
                     });
 
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
-  }
-
-  [Test]
-  public async Task SettleAsync_TheItemsTheScreenSent_TellsTheOtherPhonesWhichItemsAreSettled()
-  {
-    var bratwurst = OpenItem(350);
-    GivenTheTableHolds("Tisch 12", bratwurst);
-
-    await _service.SettleAsync([Line(bratwurst, 350)], _collectingWaiter, CancellationToken.None);
-
-    A.CallTo(() => _announcer.AnnounceOrderItemsSettledAsync(A<IReadOnlyList<Guid>>.That.IsSameSequenceAs(new[] { bratwurst.Id }), A<IReadOnlyList<string>>.That.IsSameSequenceAs(new[] { "Tisch 12" }), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]

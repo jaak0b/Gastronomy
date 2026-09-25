@@ -6,7 +6,6 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Core.Tests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 
@@ -20,7 +19,7 @@ public sealed class OrderItemSettlementServiceOverlapTest
   {
     var timeProvider = new FakeTimeProvider(new(_now));
 
-    _service = new(A.Fake<IOpenItemRepository>(), new(A.Fake<IFestivalRepository>(), new(), timeProvider), A.Fake<ISettlementAnnouncer>(), new ImmediateAfterCommitActions(), timeProvider, NullLogger<OrderItemSettlementService>.Instance);
+    _service = new(A.Fake<IOpenItemRepository>(), new(A.Fake<IFestivalRepository>(), new(), timeProvider), timeProvider, NullLogger<OrderItemSettlementService>.Instance);
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);

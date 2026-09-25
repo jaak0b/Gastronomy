@@ -9,9 +9,6 @@ public sealed class CatalogItemAdministrationService
 {
   private const double ShortestProductionMinutes = 0;
   private const double LongestProductionMinutes = 600;
-
-  private readonly IAfterCommitActions _afterCommitActions;
-  private readonly ICatalogChangeAnnouncer _announcer;
   private readonly ICatalogCategoryRepository _categoryRepository;
   private readonly IFestivalRepository _festivalRepository;
   private readonly ICatalogItemRepository _itemRepository;
@@ -20,14 +17,10 @@ public sealed class CatalogItemAdministrationService
   public CatalogItemAdministrationService(ICatalogItemRepository itemRepository,
                                           ICatalogCategoryRepository categoryRepository,
                                           IFestivalRepository festivalRepository,
-                                          ICatalogChangeAnnouncer announcer,
-                                          IAfterCommitActions afterCommitActions,
                                           RunningFestivalLookup runningFestival)
   {
     _itemRepository = itemRepository;
     _categoryRepository = categoryRepository;
-    _announcer = announcer;
-    _afterCommitActions = afterCommitActions;
     _festivalRepository = festivalRepository;
     _runningFestival = runningFestival;
   }
@@ -64,8 +57,6 @@ public sealed class CatalogItemAdministrationService
 
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
-
     return created;
   }
 
@@ -89,8 +80,6 @@ public sealed class CatalogItemAdministrationService
 
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
-
     return item;
   }
 
@@ -106,8 +95,6 @@ public sealed class CatalogItemAdministrationService
 
     item.IsActive = true;
     await _itemRepository.SaveChangesAsync(cancellationToken);
-
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return item;
   }
@@ -126,8 +113,6 @@ public sealed class CatalogItemAdministrationService
 
     item.IsActive = false;
     await _itemRepository.SaveChangesAsync(cancellationToken);
-
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return item;
   }

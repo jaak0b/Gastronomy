@@ -7,18 +7,14 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class FestivalMenuService
 {
-  private readonly IAfterCommitActions _afterCommitActions;
-  private readonly ICatalogChangeAnnouncer _announcer;
   private readonly IFestivalRepository _festivalRepository;
   private readonly ItemOrderability _orderability;
   private readonly IFestivalMenuRepository _repository;
   private readonly RunningFestivalLookup _runningFestival;
 
-  public FestivalMenuService(IFestivalMenuRepository repository, IFestivalRepository festivalRepository, ItemOrderability orderability, ICatalogChangeAnnouncer announcer, IAfterCommitActions afterCommitActions, RunningFestivalLookup runningFestival)
+  public FestivalMenuService(IFestivalMenuRepository repository, IFestivalRepository festivalRepository, ItemOrderability orderability, RunningFestivalLookup runningFestival)
   {
     _repository = repository;
-    _announcer = announcer;
-    _afterCommitActions = afterCommitActions;
     _festivalRepository = festivalRepository;
     _orderability = orderability;
     _runningFestival = runningFestival;
@@ -77,7 +73,6 @@ public sealed class FestivalMenuService
                                            cancellationToken);
 
     await _repository.SaveChangesAsync(cancellationToken);
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return menuRow;
   }
@@ -103,7 +98,6 @@ public sealed class FestivalMenuService
     _repository.RemoveMenuRow(menuRow);
 
     await _repository.SaveChangesAsync(cancellationToken);
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return menuRow;
   }
@@ -120,8 +114,6 @@ public sealed class FestivalMenuService
       menuRow.IsAvailable = isAvailable;
       await _repository.SaveChangesAsync(cancellationToken);
     }
-
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return menuRow;
   }

@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
 using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Core.Announcements;
 
 namespace GastronomyApp.Core.Entities;
 
+[Raises(HubEvent.OrdersChanged)]
 public sealed class StationOrder
 {
   public required Guid Id { get; set; }

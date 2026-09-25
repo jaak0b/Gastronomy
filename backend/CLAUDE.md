@@ -12,9 +12,8 @@ only executable. One process serves the REST API, the SignalR hub, and the built
 reverse proxy.
 
 - **SQLite via EF Core.** One file. A backup is a file copy, which is what a volunteer can actually do.
-- **SignalR** for every server-to-client push: an order accepted, the queue of a station changed, an
-  order's status changed, items settled, a device enrolled or revoked, the catalog changed, a
-  festival's start state changed. Clients never poll for state that the server already knows has
+- **SignalR** for every server-to-client push: the configuration changed, the orders changed, a
+  device enrolled or revoked. Clients never poll for state that the server already knows has
   changed.
 - **REST** for commands and queries.
 - **An OpenAPI document is written at build time.** `dotnet build` of `GastronomyApp.Api` writes
@@ -102,17 +101,13 @@ as 409. There is no transaction runner, and no service opens a transaction of it
 
 ## Announcements
 
-The service in `GastronomyApp.Core` that made a change is the one that announces it. It holds a Core
-port named after what is announced (`IStationOrdersAnnouncer`, `IOrderStatusAnnouncer`,
-`ICatalogChangeAnnouncer`, `IFestivalChangeAnnouncer`, `IStationsChangeAnnouncer`,
-`ISettlementAnnouncer`, `IEnrolmentCompletionAnnouncer`, `IDeviceRevocationAnnouncer`) and hands the
-announcement to `IAfterCommitActions.RunWhenCommittedAsync`, so it leaves the laptop after the
-commit, and runs straight away where no transaction is open. A handler announces nothing.
-
-`HubNotificationDispatcher` in the Api implements every one of those ports over SignalR. Each of its
-methods is one call to a private method that wraps the send in `IAnnouncementGuard`, so a hub that
-cannot be reached is logged and never fails the change that was already saved. The guard lives once,
-in `AnnouncementGuard`.
+No service announces a configuration or order change: the save raises those hub events from the
+`Raises` attribute on each entity, and the request's after-commit queue sends them once the
+transaction committed. Only the two device commands, `EnrolmentCompleted` and `DeviceRevoked`, are
+sent by the enrolment and revocation code, on the same queue. The
+`architecture` skill's announcements page holds the events, the groups, the mechanism, the bans that
+protect it and the tests it requires; read it before touching an entity, the interceptor, the
+dispatcher or the hub.
 
 Core logs the outcome of what it did through `Microsoft.Extensions.Logging.Abstractions`
 (`ILogger<T>` in the constructor): an enrolment invitation created, an invitation redeemed, a

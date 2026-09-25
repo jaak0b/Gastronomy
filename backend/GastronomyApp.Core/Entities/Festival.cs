@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
+using GastronomyApp.Core.Announcements;
 
 namespace GastronomyApp.Core.Entities;
 
+[Raises(HubEvent.ConfigurationChanged, HubEvent.OrdersChanged)]
 public sealed class Festival
 {
   public required Guid Id { get; set; }

@@ -1,5 +1,8 @@
+using GastronomyApp.Core.Announcements;
+
 namespace GastronomyApp.Core.Entities;
 
+[Raises(HubEvent.ConfigurationChanged, HubEvent.OrdersChanged)]
 public sealed class FestivalStation
 {
   public required Guid Id { get; set; }

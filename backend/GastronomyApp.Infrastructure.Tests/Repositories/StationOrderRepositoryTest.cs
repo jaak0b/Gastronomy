@@ -21,24 +21,6 @@ public sealed class StationOrderRepositoryTest
   }
 
   [Test]
-  public void FindOrderIdsOfStationOrdersAsync_NullIds_ThrowsArgumentNullException()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    StationOrderRepository repository = new(fixture.DbContext);
-
-    Assert.That(async () => await repository.FindOrderIdsOfStationOrdersAsync(null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
-  }
-
-  [Test]
-  public void FindOrdersWithItemsAsync_NullIds_ThrowsArgumentNullException()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    StationOrderRepository repository = new(fixture.DbContext);
-
-    Assert.That(async () => await repository.FindOrdersWithItemsAsync(null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
-  }
-
-  [Test]
   public async Task FindStationWithUnfinishedOrdersAsync_AStationOrderWithOpenItems_CarriesTheTableTheWaiterAndEveryLine()
   {
     using SqliteInMemoryFixture fixture = new();
@@ -275,58 +257,6 @@ public sealed class StationOrderRepositoryTest
     var stored = await readContext.StationOrders.FirstAsync(stationOrder => stationOrder.Id == stationOrderId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(stored.IsHiddenFromAsItComesQueue, Is.True);
-  }
-
-  [Test]
-  public async Task FindOrderIdsOfStationOrdersAsync_TwoStationOrdersOfOneOrder_NamesThatOrderOnce()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
-    var orderId = await OnlyOrderIdAsync(fixture);
-    await AddStationOrderAsync(fixture, seeded, orderId, seeded.BarStationId);
-
-    StationOrderRepository repository = new(fixture.DbContext);
-    List<Guid> stationOrderIds = await StationOrderIdsAsync(fixture);
-
-    IReadOnlyList<Guid> orderIds = await repository.FindOrderIdsOfStationOrdersAsync(stationOrderIds, TestContext.CurrentContext.CancellationToken);
-
-    Assert.That(orderIds, Is.EqualTo(new[] { orderId }));
-  }
-
-  [Test]
-  public async Task FindOrdersWithItemsAsync_AnOrderAcrossTwoStations_CarriesEveryItemOfThatOrder()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    IReadOnlyList<Guid> kitchenItems = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
-    var orderId = await OnlyOrderIdAsync(fixture);
-    await AddStationOrderAsync(fixture, seeded, orderId, seeded.BarStationId);
-    await FulfillAsync(fixture, [kitchenItems[0]]);
-
-    StationOrderRepository repository = new(fixture.DbContext);
-
-    IReadOnlyList<Order> orders = await repository.FindOrdersWithItemsAsync([orderId], TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(orders, Has.Count.EqualTo(1));
-                      Assert.That(orders[0].StationOrders.SelectMany(stationOrder => stationOrder.Items).Count(), Is.EqualTo(4));
-                      Assert.That(orders[0].StationOrders.SelectMany(stationOrder => stationOrder.Items).Count(item => item.FulfilledAtUtc != null), Is.EqualTo(1));
-                    });
-  }
-
-  [Test]
-  public async Task FindOrdersWithItemsAsync_AnOrderThatIsNoLongerThere_ReportsNothingForIt()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-
-    StationOrderRepository repository = new(fixture.DbContext);
-
-    IReadOnlyList<Order> orders = await repository.FindOrdersWithItemsAsync([Guid.NewGuid()], TestContext.CurrentContext.CancellationToken);
-
-    Assert.That(orders, Is.Empty);
   }
 
   private async Task FulfillAsync(SqliteInMemoryFixture fixture, IReadOnlyCollection<Guid> orderItemIds)

@@ -8,18 +8,13 @@ namespace GastronomyApp.Core.Services;
 public sealed class FestivalAdministrationService
 {
   private const int FirstNumber = 1;
-
-  private readonly IAfterCommitActions _afterCommitActions;
-  private readonly IFestivalChangeAnnouncer _announcer;
   private readonly IFestivalRepository _repository;
   private readonly RunningFestivalLookup _runningFestival;
   private readonly FestivalSchedule _schedule;
 
-  public FestivalAdministrationService(IFestivalRepository repository, FestivalSchedule schedule, IFestivalChangeAnnouncer announcer, IAfterCommitActions afterCommitActions, RunningFestivalLookup runningFestival)
+  public FestivalAdministrationService(IFestivalRepository repository, FestivalSchedule schedule, RunningFestivalLookup runningFestival)
   {
     _repository = repository;
-    _announcer = announcer;
-    _afterCommitActions = afterCommitActions;
     _schedule = schedule;
     _runningFestival = runningFestival;
   }
@@ -52,8 +47,6 @@ public sealed class FestivalAdministrationService
     await _repository.AddAsync(created, cancellationToken);
     await _repository.SaveChangesAsync(cancellationToken);
 
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, cancellationToken);
-
     return created;
   }
 
@@ -76,8 +69,6 @@ public sealed class FestivalAdministrationService
 
     await _repository.SaveChangesAsync(cancellationToken);
 
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, cancellationToken);
-
     return festival;
   }
 
@@ -98,8 +89,6 @@ public sealed class FestivalAdministrationService
     await _repository.CopyContentsAsync(festivalId, copy.Id, cancellationToken);
     await _repository.SaveChangesAsync(cancellationToken);
 
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, cancellationToken);
-
     return copy;
   }
 
@@ -119,8 +108,6 @@ public sealed class FestivalAdministrationService
       await _repository.SaveChangesAsync(cancellationToken);
     }
 
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, cancellationToken);
-
     return festival;
   }
 
@@ -136,8 +123,6 @@ public sealed class FestivalAdministrationService
       festival.IsHidden = false;
       await _repository.SaveChangesAsync(cancellationToken);
     }
-
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, cancellationToken);
 
     return festival;
   }

@@ -1800,9 +1800,6 @@
           }
         }
       },
-      "CatalogChangedEvent": {
-        "type": "object"
-      },
       "CatalogItemView": {
         "required": [
           "id",
@@ -2044,9 +2041,6 @@
             }
           }
         }
-      },
-      "FestivalChangedEvent": {
-        "type": "object"
       },
       "InvitationView": {
         "required": [
@@ -2299,28 +2293,6 @@
           }
         }
       },
-      "OrderItemsSettledEvent": {
-        "required": [
-          "orderItemIds",
-          "tableNames"
-        ],
-        "type": "object",
-        "properties": {
-          "orderItemIds": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          "tableNames": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
       "OrderSettlementLineRequest": {
         "required": [
           "paidPriceCents"
@@ -2350,26 +2322,6 @@
           "partiallyFulfilled",
           "fulfilled"
         ]
-      },
-      "OrderStatusChangedEvent": {
-        "required": [
-          "orderId",
-          "status"
-        ],
-        "type": "object",
-        "properties": {
-          "orderId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "status": {
-            "enum": [
-              "open",
-              "partiallyFulfilled",
-              "fulfilled"
-            ]
-          }
-        }
       },
       "PlacedOrderView": {
         "required": [
@@ -2950,18 +2902,6 @@
           }
         }
       },
-      "StationOrdersChangedEvent": {
-        "required": [
-          "stationId"
-        ],
-        "type": "object",
-        "properties": {
-          "stationId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
       "StationOrderView": {
         "required": [
           "stationOrderId",
@@ -3075,9 +3015,6 @@
             "format": "double"
           }
         }
-      },
-      "StationsChangedEvent": {
-        "type": "object"
       },
       "StationSummaryView": {
         "required": [

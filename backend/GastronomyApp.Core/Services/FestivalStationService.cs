@@ -7,8 +7,6 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class FestivalStationService
 {
-  private readonly IAfterCommitActions _afterCommitActions;
-  private readonly IStationsChangeAnnouncer _announcer;
   private readonly IFestivalRepository _festivalRepository;
   private readonly INumberAllocator _numberAllocator;
   private readonly ItemOrderability _orderability;
@@ -21,13 +19,9 @@ public sealed class FestivalStationService
                                 IStationRepository stationRepository,
                                 ItemOrderability orderability,
                                 INumberAllocator numberAllocator,
-                                IStationsChangeAnnouncer announcer,
-                                IAfterCommitActions afterCommitActions,
                                 RunningFestivalLookup runningFestival)
   {
     _repository = repository;
-    _announcer = announcer;
-    _afterCommitActions = afterCommitActions;
     _festivalRepository = festivalRepository;
     _stationRepository = stationRepository;
     _orderability = orderability;
@@ -45,7 +39,6 @@ public sealed class FestivalStationService
 
     if (await _repository.FindLinkAsync(festivalId, stationId, cancellationToken) is { } alreadyTakingPart)
     {
-      await _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceStationsChangedAsync(alreadyTakingPart.StationId, announcementCancellationToken), cancellationToken);
 
       return alreadyTakingPart;
     }
@@ -63,7 +56,6 @@ public sealed class FestivalStationService
     await _repository.AddLinkAsync(link, cancellationToken);
 
     await _repository.SaveChangesAsync(cancellationToken);
-    await _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceStationsChangedAsync(link.StationId, announcementCancellationToken), cancellationToken);
 
     return link;
   }
@@ -94,7 +86,6 @@ public sealed class FestivalStationService
     _repository.RemoveLink(link);
 
     await _repository.SaveChangesAsync(cancellationToken);
-    await _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceStationsChangedAsync(link.StationId, announcementCancellationToken), cancellationToken);
 
     return link;
   }

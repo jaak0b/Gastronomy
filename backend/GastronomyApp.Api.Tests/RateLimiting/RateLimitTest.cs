@@ -4,6 +4,7 @@ using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
 using GastronomyApp.Core.Ports;
 using Microsoft.Extensions.DependencyInjection;
+using GastronomyApp.Infrastructure.Persistence;
 
 namespace GastronomyApp.Api.Tests.RateLimiting;
 
@@ -22,6 +23,7 @@ public sealed class RateLimitTest
     }
 
     using var scope = _factory.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
     var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindStaffMemberAsync(world.StaffMemberId, CancellationToken.None);
     var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(owner!, "de", "NUnit", CancellationToken.None);
     _deviceToken = issued.PlaintextToken;

@@ -9,6 +9,4 @@ public sealed record SettlementResult
   public required IReadOnlyList<OrderItem> Reapplied { get; init; }
 
   public required IReadOnlyList<OrderItem> AlreadySettledByOthers { get; init; }
-
-  public required IReadOnlyList<string> SettledTableNames { get; init; }
 }

@@ -23,7 +23,7 @@ public sealed class HubEventSchemaTransformer : IOpenApiDocumentTransformer
 
   private IEnumerable<Type> HubEventTypes()
   {
-    var eventsNamespace = typeof(CatalogChangedEvent).Namespace;
-    return typeof(CatalogChangedEvent).Assembly.GetTypes().Where(type => type.IsClass && type.IsPublic && type.Namespace == eventsNamespace).OrderBy(type => type.Name, StringComparer.Ordinal);
+    var eventsNamespace = typeof(DeviceRevokedEvent).Namespace;
+    return typeof(DeviceRevokedEvent).Assembly.GetTypes().Where(type => type.IsClass && type.IsPublic && type.Namespace == eventsNamespace).OrderBy(type => type.Name, StringComparer.Ordinal);
   }
 }

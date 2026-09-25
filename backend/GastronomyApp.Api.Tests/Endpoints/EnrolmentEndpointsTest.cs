@@ -5,6 +5,7 @@ using GastronomyApp.Api.Tests.TestSupport;
 using GastronomyApp.Core.Ports;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using GastronomyApp.Infrastructure.Persistence;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
@@ -283,6 +284,7 @@ public sealed class EnrolmentEndpointsTest
   private async Task<string> CreateInvitationCodeAsync()
   {
     using var scope = _factory.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
     var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindStaffMemberAsync(_world.StaffMemberId, CancellationToken.None);
 
     return (await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>().CreateAsync(owner, CancellationToken.None)).QRCodeValue;
@@ -291,6 +293,7 @@ public sealed class EnrolmentEndpointsTest
   private async Task<string> CreateInvitationCodeForNobodyAsync()
   {
     using var scope = _factory.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
 
     return (await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>().CreateAsync(null, CancellationToken.None)).QRCodeValue;
   }

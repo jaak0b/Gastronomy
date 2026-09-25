@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
 using Microsoft.AspNetCore.SignalR.Client;
 
@@ -28,10 +27,10 @@ public sealed class HubConnectionSecurityTest
   [Test]
   public async Task Connect_LoopbackCallerWithoutDeviceToken_JoinsTheAdminGroupAndHearsOrderEvents()
   {
-    TaskCompletionSource<Guid> heard = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    TaskCompletionSource heard = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     await using var connection = Connect("hub");
-    connection.On<JsonElement>("StationOrdersChanged", payload => heard.TrySetResult(payload.GetProperty("stationId").GetGuid()));
+    connection.On("OrdersChanged", () => heard.TrySetResult());
 
     await connection.StartAsync();
 
@@ -43,8 +42,6 @@ public sealed class HubConnectionSecurityTest
                       Assert.That(received, Is.SameAs(heard.Task), "A loopback caller must join the admin group.");
                       Assert.That(connection.State, Is.EqualTo(HubConnectionState.Connected));
                     });
-
-    Assert.That(await heard.Task, Is.EqualTo(_context.World.KitchenStationId));
   }
 
   [Test]
@@ -53,7 +50,7 @@ public sealed class HubConnectionSecurityTest
     TaskCompletionSource heardBeforeRevocation = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     await using var connection = Connect($"hub?access_token={_context.DeviceToken}");
-    connection.On<JsonElement>("CatalogChanged", _ => heardBeforeRevocation.TrySetResult());
+    connection.On("ConfigurationChanged", () => heardBeforeRevocation.TrySetResult());
 
     await connection.StartAsync();
     await ChangeTheCatalogAsync();

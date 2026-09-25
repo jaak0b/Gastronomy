@@ -37,10 +37,7 @@ public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
       joinedGroups.Add(Names.HubGroups.BuildDeviceGroupName(caller.DeviceId));
 
       if (stationCaller is not null)
-      {
-        joinedGroups.Add(Names.HubGroups.BuildStationGroupName(stationCaller.StationId));
         joinedGroups.Add(Names.HubGroups.Stations);
-      }
       else
         joinedGroups.Add(Names.HubGroups.Devices);
     }

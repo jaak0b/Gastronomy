@@ -11,18 +11,14 @@ namespace GastronomyApp.Core.Services;
 public sealed class OrderItemSettlementService
 {
   private readonly TimeProvider _timeProvider;
-  private readonly IAfterCommitActions _afterCommitActions;
-  private readonly ISettlementAnnouncer _announcer;
   private readonly ILogger<OrderItemSettlementService> _logger;
   private readonly IOpenItemRepository _repository;
   private readonly RunningFestivalLookup _runningFestival;
 
-  public OrderItemSettlementService(IOpenItemRepository repository, RunningFestivalLookup runningFestival, ISettlementAnnouncer announcer, IAfterCommitActions afterCommitActions, TimeProvider timeProvider, ILogger<OrderItemSettlementService> logger)
+  public OrderItemSettlementService(IOpenItemRepository repository, RunningFestivalLookup runningFestival, TimeProvider timeProvider, ILogger<OrderItemSettlementService> logger)
   {
     _repository = repository;
     _runningFestival = runningFestival;
-    _announcer = announcer;
-    _afterCommitActions = afterCommitActions;
     _timeProvider = timeProvider;
     _logger = logger;
   }
@@ -43,12 +39,12 @@ public sealed class OrderItemSettlementService
     if (settled.IsError)
       return settled.Errors;
 
-    await AnnounceAsync(settled.Value, cancellationToken);
+    LogSettled(settled.Value);
 
     return settled.Value;
   }
 
-  private async Task AnnounceAsync(SettlementResult settlement, CancellationToken cancellationToken)
+  private void LogSettled(SettlementResult settlement)
   {
     List<Guid> settledIds = settlement.NewlySettled.Select(item => item.Id).ToList();
 
@@ -56,8 +52,6 @@ public sealed class OrderItemSettlementService
       return;
 
     _logger.LogInformation("{SettledItemCount} order items were settled and saved. Order item ids: {SettledOrderItemIds}.", settledIds.Count, settledIds);
-
-    await _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceOrderItemsSettledAsync(settledIds, settlement.SettledTableNames, announcementCancellationToken), cancellationToken);
   }
 
   public ErrorOr<SettlementResult> Settle(IReadOnlyList<SettleLineRequest> lines, Guid settledByStaffMemberId, IReadOnlyCollection<OrderItem> knownItems, DateTime settledAtUtc)
@@ -117,7 +111,6 @@ public sealed class OrderItemSettlementService
     List<OrderItem> newlySettled = [];
     List<OrderItem> reapplied = [];
     List<OrderItem> alreadySettledByOthers = [];
-    List<string> tableNamesOfTheNewlySettled = [];
 
     for (var index = 0; index < lines.Count; index++)
     {
@@ -129,7 +122,6 @@ public sealed class OrderItemSettlementService
       {
         MarkSettled(item, paidPriceCents, line.PaymentNotice, settledByStaffMemberId, settledAtUtc);
         newlySettled.Add(item);
-        tableNamesOfTheNewlySettled.Add(item.StationOrder.Order.TableName);
         continue;
       }
 
@@ -147,8 +139,7 @@ public sealed class OrderItemSettlementService
            {
              NewlySettled = newlySettled,
              Reapplied = reapplied,
-             AlreadySettledByOthers = alreadySettledByOthers,
-             SettledTableNames = tableNamesOfTheNewlySettled.Distinct(StringComparer.Ordinal).OrderBy(tableName => tableName, StringComparer.Ordinal).ToList()
+             AlreadySettledByOthers = alreadySettledByOthers
            };
   }
 

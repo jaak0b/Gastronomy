@@ -2,6 +2,7 @@ using FakeItEasy;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Mapping;
 using GastronomyApp.Contracts.Events;
+using GastronomyApp.Core.Announcements;
 using MapsterMapper;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
@@ -44,7 +45,6 @@ public sealed class HubNotificationDispatcherTest
   }
 
   private readonly Guid _deviceId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
-  private readonly Guid _stationId = Guid.Parse("dddddddd-0000-0000-0000-000000000001");
 
   private IClientProxy _clients = null!;
   private HubNotificationDispatcher _dispatcher = null!;
@@ -68,11 +68,12 @@ public sealed class HubNotificationDispatcherTest
   }
 
   [Test]
-  public async Task AnnounceStationOrdersChangedAsync_AStationThatJustGotAnOrder_TellsThatStation()
+  public async Task AnnounceAsync_OrdersChanged_TellsTheStationTabletsWithoutAPayload()
   {
-    await _dispatcher.AnnounceStationOrdersChangedAsync(_stationId, CancellationToken.None);
+    await _dispatcher.AnnounceAsync(HubEvent.OrdersChanged, CancellationToken.None);
 
-    A.CallTo(() => _clients.SendCoreAsync("StationOrdersChanged", A<object[]>._, A<CancellationToken>._)).MustHaveHappened();
+    A.CallTo(() => _hubClients.Group("stations")).MustHaveHappened();
+    A.CallTo(() => _clients.SendCoreAsync("OrdersChanged", A<object[]>.That.IsEmpty(), A<CancellationToken>._)).MustHaveHappened(3, Times.Exactly);
   }
 
   private bool NamesTheRevokedDevice(IReadOnlyList<object> arguments)

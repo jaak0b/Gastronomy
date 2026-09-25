@@ -1,5 +1,8 @@
+using GastronomyApp.Core.Announcements;
+
 namespace GastronomyApp.Core.Entities;
 
+[Raises]
 public sealed class EnrolmentInvitation
 {
   public required Guid Id { get; set; }

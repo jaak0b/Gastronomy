@@ -51,24 +51,6 @@ public sealed class StationOrderRepository : IStationOrderRepository
     return await _dbContext.StationOrders.FirstOrDefaultAsync(stationOrder => stationOrder.Id == stationOrderId && stationOrder.StationId == stationId && stationOrder.FestivalId == festivalId, cancellationToken);
   }
 
-  public async Task<IReadOnlyList<Guid>> FindOrderIdsOfStationOrdersAsync(IReadOnlyCollection<Guid> stationOrderIds, CancellationToken cancellationToken)
-  {
-    ArgumentNullException.ThrowIfNull(stationOrderIds);
-
-    List<Guid> ids = stationOrderIds.ToList();
-
-    return await _dbContext.StationOrders.AsNoTracking().Where(stationOrder => ids.Contains(stationOrder.Id)).Select(stationOrder => stationOrder.OrderId).Distinct().ToListAsync(cancellationToken);
-  }
-
-  public async Task<IReadOnlyList<Order>> FindOrdersWithItemsAsync(IReadOnlyCollection<Guid> orderIds, CancellationToken cancellationToken)
-  {
-    ArgumentNullException.ThrowIfNull(orderIds);
-
-    List<Guid> ids = orderIds.ToList();
-
-    return await _dbContext.Orders.AsNoTracking().Where(order => ids.Contains(order.Id)).Include(order => order.StationOrders).ThenInclude(stationOrder => stationOrder.Items).OrderBy(order => order.GlobalOrderNumber).ToListAsync(cancellationToken);
-  }
-
   public async Task SaveChangesAsync(CancellationToken cancellationToken)
   {
     await _dbContext.SaveChangesAsync(cancellationToken);

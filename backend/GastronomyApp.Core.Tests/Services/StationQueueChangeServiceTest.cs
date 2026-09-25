@@ -26,15 +26,10 @@ public sealed class StationQueueChangeServiceTest
     A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(Link()));
     A.CallTo(() => _stationOrderRepository.FindItemsAtStationAsync(A<IReadOnlyCollection<Guid>>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
     A.CallTo(() => _stationOrderRepository.FindStationWithUnfinishedOrdersAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(Kitchen()));
-    A.CallTo(() => _stationOrderRepository.FindOrderIdsOfStationOrdersAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_orderId]));
-    A.CallTo(() => _stationOrderRepository.FindOrdersWithItemsAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Order>>([TouchedOrder()]));
 
     StationAtFestivalLookup lookup = new(_stationRepository, _festivalStationRepository, new(_festivalRepository, new(), _clock));
 
-    _stationOrdersAnnouncer = A.Fake<IStationOrdersAnnouncer>();
-    _orderStatusAnnouncer = A.Fake<IOrderStatusAnnouncer>();
-
-    _service = new(lookup, new(_stationOrderRepository, new(), new(), _clock), new(lookup, _stationOrderRepository), _stationOrderRepository, _stationOrdersAnnouncer, _orderStatusAnnouncer, new ImmediateAfterCommitActions());
+    _service = new(lookup, new(_stationOrderRepository, new(), new(), _clock), new(lookup, _stationOrderRepository));
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -47,12 +42,10 @@ public sealed class StationQueueChangeServiceTest
   private IFestivalStationRepository _festivalStationRepository = null!;
   private IStationOrderRepository _stationOrderRepository = null!;
   private IStationRepository _stationRepository = null!;
-  private IOrderStatusAnnouncer _orderStatusAnnouncer = null!;
   private StationQueueChangeService _service = null!;
-  private IStationOrdersAnnouncer _stationOrdersAnnouncer = null!;
 
   [Test]
-  public async Task FulfillAsync_AnOpenItem_AnswersWithTheFreshQueueAndTheNewStatusOfItsOrder()
+  public async Task FulfillAsync_AnOpenItem_AnswersWithTheFreshQueue()
   {
     var bratwurst = OpenItem();
     GivenItemsAtThisStation(bratwurst);
@@ -64,23 +57,6 @@ public sealed class StationQueueChangeServiceTest
                       Assert.That(queue.IsSuccess, Is.True);
                       Assert.That(queue.Value.Id, Is.EqualTo(_stationId));
                     });
-
-    A.CallTo(() => _stationOrdersAnnouncer.AnnounceStationOrdersChangedAsync(_stationId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
-    A.CallTo(() => _orderStatusAnnouncer.AnnounceOrderStatusChangedAsync(A<Order>.That.Matches(order => order.Id == _orderId), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
-  }
-
-  [Test]
-  public async Task FulfillAsync_AnItemAnotherTapHadAlreadyFinished_StillReportsTheStatusOfThatOrder()
-  {
-    var bratwurst = OpenItem();
-    bratwurst.FulfilledAtUtc = _now.AddMinutes(-1);
-    GivenItemsAtThisStation(bratwurst);
-
-    ErrorOr<Station> queue = await _service.FulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
-
-    Assert.That(queue.IsSuccess, Is.True);
-
-    A.CallTo(() => _orderStatusAnnouncer.AnnounceOrderStatusChangedAsync(A<Order>.That.Matches(order => order.Id == _orderId), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
@@ -106,7 +82,7 @@ public sealed class StationQueueChangeServiceTest
   }
 
   [Test]
-  public async Task UnfulfillAsync_AnItemTheStationHandedOut_AnswersWithTheStatusOfItsOrder()
+  public async Task UnfulfillAsync_AnItemTheStationHandedOut_AnswersWithTheFreshQueue()
   {
     var bratwurst = OpenItem();
     bratwurst.FulfilledAtUtc = _now.AddMinutes(-1);
@@ -115,8 +91,6 @@ public sealed class StationQueueChangeServiceTest
     ErrorOr<Station> queue = await _service.UnfulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(queue.IsSuccess, Is.True);
-
-    A.CallTo(() => _orderStatusAnnouncer.AnnounceOrderStatusChangedAsync(A<Order>.That.Matches(order => order.Id == _orderId), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
@@ -126,7 +100,7 @@ public sealed class StationQueueChangeServiceTest
   }
 
   [Test]
-  public async Task HideFromAsItComesQueueAsync_AnAsItComesOrder_AnswersWithTheQueueAndNoStatusChange()
+  public async Task HideFromAsItComesQueueAsync_AnAsItComesOrder_AnswersWithTheQueueAndHidesTheOrder()
   {
     var stationOrder = AsItComesStationOrder();
     A.CallTo(() => _stationOrderRepository.FindAtStationAsync(stationOrder.Id, _stationId, _festivalId, A<CancellationToken>._)).Returns(Task.FromResult<StationOrder?>(stationOrder));
@@ -138,8 +112,6 @@ public sealed class StationQueueChangeServiceTest
                       Assert.That(queue.IsSuccess, Is.True);
                       Assert.That(stationOrder.IsHiddenFromAsItComesQueue, Is.True);
                     });
-
-    A.CallTo(() => _orderStatusAnnouncer.AnnounceOrderStatusChangedAsync(A<Order>._, A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   [Test]
@@ -161,20 +133,6 @@ public sealed class StationQueueChangeServiceTest
   private void GivenItemsAtThisStation(params OrderItem[] items)
   {
     A.CallTo(() => _stationOrderRepository.FindItemsAtStationAsync(A<IReadOnlyCollection<Guid>>._, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>(items.ToList()));
-  }
-
-  private Order TouchedOrder()
-  {
-    return new()
-           {
-             Id = _orderId,
-             ClientOrderId = Guid.NewGuid(),
-             FestivalId = _festivalId,
-             GlobalOrderNumber = 4,
-             StaffMemberId = Guid.NewGuid(),
-             TableName = "Tisch 12",
-             CreatedAtUtc = _now
-           };
   }
 
   private OrderItem OpenItem()

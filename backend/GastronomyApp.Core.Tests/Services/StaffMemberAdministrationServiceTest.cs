@@ -1,5 +1,6 @@
 ﻿using ErrorOr;
 using FakeItEasy;
+using GastronomyApp.Core.Announcements;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
@@ -22,7 +23,7 @@ public sealed class StaffMemberAdministrationServiceTest
 
     A.CallTo(() => _repository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(null));
 
-    _service = new(_repository, new(_invitationStore, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(), _clock));
+    _service = new(_repository, new(_invitationStore, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(A.Fake<ICommittedChangeAnnouncer>()), _clock));
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);

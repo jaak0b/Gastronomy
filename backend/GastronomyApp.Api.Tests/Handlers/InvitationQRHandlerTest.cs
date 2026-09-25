@@ -1,6 +1,7 @@
 using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.Tests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
+using GastronomyApp.Infrastructure.Persistence;
 
 namespace GastronomyApp.Api.Tests.Handlers;
 
@@ -12,6 +13,7 @@ public sealed class InvitationQRHandlerTest
   {
     _context = await new OrderTestContextBuilder().StartAsync();
     _scope = _context.Factory.Services.CreateScope();
+    _scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
   }
 
   [TearDown]

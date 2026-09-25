@@ -10,6 +10,7 @@ namespace GastronomyApp.Api.Tests.TestSupport;
 public sealed class ApiTestFactory : IAsyncDisposable
 {
   private readonly WebApplication _application;
+  private readonly List<IServiceScope> _contextScopes = [];
 
   internal ApiTestFactory(WebApplication application, string dataDirectory, Uri baseAddress, AppLanguage language)
   {
@@ -33,6 +34,10 @@ public sealed class ApiTestFactory : IAsyncDisposable
   public async ValueTask DisposeAsync()
   {
     Client.Dispose();
+
+    foreach (var contextScope in _contextScopes)
+      contextScope.Dispose();
+
     await _application.StopAsync();
     await _application.DisposeAsync();
     SqliteConnection.ClearAllPools();
@@ -53,6 +58,10 @@ public sealed class ApiTestFactory : IAsyncDisposable
 
   public GastronomyAppDbContext CreateContext()
   {
-    return Services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext();
+    var scope = Services.CreateScope();
+    _contextScopes.Add(scope);
+    scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
+
+    return scope.ServiceProvider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext();
   }
 }

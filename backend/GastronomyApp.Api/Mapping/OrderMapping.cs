@@ -1,4 +1,3 @@
-using GastronomyApp.Contracts.Events;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
@@ -29,7 +28,5 @@ public sealed class OrderMapping : IMappingRegistration
           .Map(view => view.Status, order => _orderService.StatusOf(order))
           .Map(view => view.TotalCents, order => _orderService.TotalCentsOf(order))
           .Map(view => view.StationOrders, order => order.StationOrders.OrderBy(stationOrder => stationOrder.Station.SortOrder).ThenBy(stationOrder => stationOrder.Station.Name).ThenBy(stationOrder => stationOrder.Id).ToList());
-
-    config.NewConfig<Order, OrderStatusChangedEvent>().Map(payload => payload.OrderId, order => order.Id).Map(payload => payload.Status, order => _orderService.StatusOf(order));
   }
 }

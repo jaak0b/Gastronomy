@@ -1,7 +1,7 @@
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using GastronomyApp.Api.Auth;
+using System.Text.Json;
 using GastronomyApp.Api.Auth.Filters;
+using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.DocumentTransformers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Handlers;
@@ -11,6 +11,7 @@ using GastronomyApp.Api.Mapping;
 using GastronomyApp.Api.RateLimiting;
 using GastronomyApp.Api.Responders;
 using GastronomyApp.Api.Values;
+using GastronomyApp.Core.Announcements;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.ErrorHandling;
@@ -59,8 +60,9 @@ public sealed class ApiServiceRegistration
     SqliteConnectionFactory connectionFactory = new();
     services.AddSingleton(connectionFactory);
 
-    services.AddDbContextFactory<GastronomyAppDbContext>(builder => builder.UseSqlite($"Data Source={databasePath}").AddInterceptors(new SqliteConnectionPolicyInterceptor(connectionFactory)));
+    services.AddDbContextFactory<GastronomyAppDbContext>((provider, builder) => builder.UseSqlite($"Data Source={databasePath}").AddInterceptors(new SqliteConnectionPolicyInterceptor(connectionFactory), provider.GetRequiredService<ChangeAnnouncementInterceptor>()), ServiceLifetime.Scoped);
 
+    services.AddScoped<ChangeAnnouncementInterceptor>();
     services.AddScoped(provider => provider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext());
 
     services.AddSingleton<Pbkdf2SecretHasher>();
@@ -168,12 +170,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<DeviceConnectionTerminator>();
     services.AddSingleton<IAnnouncementGuard, AnnouncementGuard>();
     services.AddScoped<HubNotificationDispatcher>();
-    services.AddScoped<IStationOrdersAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
-    services.AddScoped<IOrderStatusAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
-    services.AddScoped<ICatalogChangeAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
-    services.AddScoped<IFestivalChangeAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
-    services.AddScoped<IStationsChangeAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
-    services.AddScoped<ISettlementAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
+    services.AddScoped<ICommittedChangeAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
     services.AddScoped<IEnrolmentCompletionAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
     services.AddScoped<IDeviceRevocationAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
 

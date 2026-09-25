@@ -37,8 +37,8 @@ public sealed class GeneratedOpenApiDocumentTest
   {
     var schemas = _document.GetProperty("components").GetProperty("schemas");
 
-    Assert.That(schemas.TryGetProperty("StationOrdersChangedEvent", out var stationOrdersChanged), Is.True);
-    Assert.That(stationOrdersChanged.GetProperty("properties").TryGetProperty("stationId", out _), Is.True);
+    Assert.That(schemas.TryGetProperty("DeviceRevokedEvent", out var deviceRevoked), Is.True);
+    Assert.That(deviceRevoked.GetProperty("properties").TryGetProperty("deviceId", out _), Is.True);
   }
 
   [Test]

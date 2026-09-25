@@ -41,18 +41,13 @@ public sealed class OrderAcceptanceServiceTest
     GivenCatalogItem(_bratwurstId, "Bratwurst", [_kitchenId]);
     GivenCatalogItem(_beerId, "Bier", [_barIndoorId]);
 
-
     RunningFestivalLookup runningFestival = new(_festivalRepository, new(), _clock);
-
-    _stationOrdersAnnouncer = A.Fake<IStationOrdersAnnouncer>();
 
     _service = new(_orderRepository,
                    runningFestival,
                    _numberAllocator,
                    new(_catalogItemRepository, _stationRepository, new()),
-                   new(A.Fake<IOpenItemRepository>(), runningFestival, A.Fake<ISettlementAnnouncer>(), new ImmediateAfterCommitActions(), _clock, NullLogger<OrderItemSettlementService>.Instance),
-                   _stationOrdersAnnouncer,
-                   new ImmediateAfterCommitActions(),
+                   new(A.Fake<IOpenItemRepository>(), runningFestival, _clock, NullLogger<OrderItemSettlementService>.Instance),
                    _clock);
   }
 
@@ -77,7 +72,6 @@ public sealed class OrderAcceptanceServiceTest
   private INumberAllocator _numberAllocator = null!;
   private TimeProvider _clock = null!;
   private OrderAcceptanceService _service = null!;
-  private IStationOrdersAnnouncer _stationOrdersAnnouncer = null!;
 
   private Festival RunningFestival()
   {
@@ -258,20 +252,6 @@ public sealed class OrderAcceptanceServiceTest
                       Assert.That(kitchenTicket.StationOrderNumber, Is.EqualTo(42));
                       Assert.That(barTicket.StationOrderNumber, Is.EqualTo(7));
                     });
-  }
-
-  [Test]
-  public async Task AcceptAsync_AnOrderForTwoStations_TellsBothStationsOnce()
-  {
-    await _service.AcceptAsync(RequestWith([
-                                             ItemFor(_bratwurstId),
-                                             ItemFor(_beerId)
-                                           ]),
-                               _staffMemberId,
-                               CancellationToken.None);
-
-    A.CallTo(() => _stationOrdersAnnouncer.AnnounceStationOrdersChangedAsync(_kitchenId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
-    A.CallTo(() => _stationOrdersAnnouncer.AnnounceStationOrdersChangedAsync(_barIndoorId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]

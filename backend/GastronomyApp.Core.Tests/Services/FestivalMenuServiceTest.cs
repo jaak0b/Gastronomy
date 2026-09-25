@@ -27,7 +27,7 @@ public sealed class FestivalMenuServiceTest
     A.CallTo(() => _repository.FindMenuRowAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<FestivalCatalogItem?>(null));
     A.CallTo(() => _orderabilityRepository.FindActiveStationIdsAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_kitchenId]));
 
-    _service = new(_repository, _festivalRepository, new(_orderabilityRepository, _festivalRepository, _clock), A.Fake<ICatalogChangeAnnouncer>(), new ImmediateAfterCommitActions(), new(_festivalRepository, new(), _clock));
+    _service = new(_repository, _festivalRepository, new(_orderabilityRepository, _festivalRepository, _clock), new(_festivalRepository, new(), _clock));
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);

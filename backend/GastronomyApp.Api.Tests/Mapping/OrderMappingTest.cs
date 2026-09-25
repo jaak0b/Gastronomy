@@ -1,6 +1,5 @@
 using GastronomyApp.Api.Mapping;
 using GastronomyApp.Contracts.Enums;
-using GastronomyApp.Contracts.Events;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using MapsterMapper;
@@ -109,21 +108,6 @@ public sealed class OrderMappingTest
                              kasekrainerWithoutKetchup.Id,
                              schnitzel.Id
                            }));
-  }
-
-  [Test]
-  public void Map_AnOrderWhoseLastItemWasHandedOut_AnnouncesItAsFulfilled()
-  {
-    var order = OrderAtOneStation(350);
-    order.StationOrders[0].Items[0].FulfilledAtUtc = _placedAtUtc.AddMinutes(6);
-
-    var payload = _mapper.Map<OrderStatusChangedEvent>(order);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(payload.OrderId, Is.EqualTo(order.Id));
-                      Assert.That(payload.Status, Is.EqualTo(OrderStatus.Fulfilled));
-                    });
   }
 
   private Order OrderAtOneStation(params int[] unitPricesCents)

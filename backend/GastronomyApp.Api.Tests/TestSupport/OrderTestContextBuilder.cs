@@ -1,5 +1,6 @@
 ﻿using GastronomyApp.Core.Ports;
 using Microsoft.Extensions.DependencyInjection;
+using GastronomyApp.Infrastructure.Persistence;
 
 namespace GastronomyApp.Api.Tests.TestSupport;
 
@@ -16,6 +17,7 @@ public sealed class OrderTestContextBuilder
     }
 
     using var scope = factory.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
     var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindStaffMemberAsync(world.StaffMemberId, CancellationToken.None);
     var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(owner!, "de", "NUnit", CancellationToken.None);
 

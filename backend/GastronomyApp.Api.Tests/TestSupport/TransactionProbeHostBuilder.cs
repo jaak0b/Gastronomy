@@ -1,15 +1,17 @@
 ﻿using ErrorOr;
+using FakeItEasy;
 using GastronomyApp.Api.Answers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Filters;
 using GastronomyApp.Api.Hosting;
+using GastronomyApp.Core.Announcements;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Infrastructure.ErrorHandling;
 using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,6 +39,7 @@ public sealed class TransactionProbeHostBuilder
     builder.Services.AddSingleton<ResultEnvelope>();
     builder.Services.AddDbContextFactory<GastronomyAppDbContext>(contextOptions => contextOptions.UseSqlite($"Data Source={databasePath}").AddInterceptors(new SqliteConnectionPolicyInterceptor(connectionFactory)));
     builder.Services.AddScoped(provider => provider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext());
+    builder.Services.AddSingleton(A.Fake<ICommittedChangeAnnouncer>());
     builder.Services.AddScoped<AfterCommitActions>();
     builder.Services.AddScoped<IAfterCommitActions>(provider => provider.GetRequiredService<AfterCommitActions>());
 

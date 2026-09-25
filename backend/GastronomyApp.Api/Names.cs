@@ -16,17 +16,9 @@ public static class Names
 
   public static class HubEvents
   {
-    public const string OrderStatusChanged = "OrderStatusChanged";
+    public const string ConfigurationChanged = "ConfigurationChanged";
 
-    public const string OrderItemsSettled = "OrderItemsSettled";
-
-    public const string StationOrdersChanged = "StationOrdersChanged";
-
-    public const string StationsChanged = "StationsChanged";
-
-    public const string FestivalChanged = "FestivalChanged";
-
-    public const string CatalogChanged = "CatalogChanged";
+    public const string OrdersChanged = "OrdersChanged";
 
     public const string EnrolmentCompleted = "EnrolmentCompleted";
 
@@ -44,11 +36,6 @@ public static class Names
     public static string BuildDeviceGroupName(Guid deviceId)
     {
       return $"device:{deviceId}";
-    }
-
-    public static string BuildStationGroupName(Guid stationId)
-    {
-      return $"station:{stationId}";
     }
   }
 

@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
+using GastronomyApp.Core.Announcements;
 
 namespace GastronomyApp.Core.Entities;
 
+[Raises(HubEvent.ConfigurationChanged)]
 public sealed class Station : IDeviceOwner
 {
   public required Guid Id { get; set; }

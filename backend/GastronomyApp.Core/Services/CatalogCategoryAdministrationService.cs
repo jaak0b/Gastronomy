@@ -8,17 +8,13 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class CatalogCategoryAdministrationService
 {
-  private readonly IAfterCommitActions _afterCommitActions;
-  private readonly ICatalogChangeAnnouncer _announcer;
   private readonly CatalogCategoryOrdering _ordering;
   private readonly ICatalogCategoryRepository _repository;
 
-  public CatalogCategoryAdministrationService(ICatalogCategoryRepository repository, CatalogCategoryOrdering ordering, ICatalogChangeAnnouncer announcer, IAfterCommitActions afterCommitActions)
+  public CatalogCategoryAdministrationService(ICatalogCategoryRepository repository, CatalogCategoryOrdering ordering)
   {
     _repository = repository;
     _ordering = ordering;
-    _announcer = announcer;
-    _afterCommitActions = afterCommitActions;
   }
 
   public Task<IReadOnlyList<CatalogCategory>> ListAsync(CancellationToken cancellationToken)
@@ -44,7 +40,6 @@ public sealed class CatalogCategoryAdministrationService
 
     await _repository.AddAsync(created, cancellationToken);
     await _repository.SaveChangesAsync(cancellationToken);
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return created;
   }
@@ -63,7 +58,6 @@ public sealed class CatalogCategoryAdministrationService
     category.Name = name!.Trim();
     category.ColourHex = colourHex!;
     await _repository.SaveChangesAsync(cancellationToken);
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return category;
   }
@@ -83,8 +77,6 @@ public sealed class CatalogCategoryAdministrationService
       await _repository.SaveChangesAsync(cancellationToken);
     }
 
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
-
     return reordered.ToErrorOr();
   }
 
@@ -97,7 +89,6 @@ public sealed class CatalogCategoryAdministrationService
 
     category.IsActive = true;
     await _repository.SaveChangesAsync(cancellationToken);
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return category;
   }
@@ -114,7 +105,6 @@ public sealed class CatalogCategoryAdministrationService
 
     category.IsActive = false;
     await _repository.SaveChangesAsync(cancellationToken);
-    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return category;
   }

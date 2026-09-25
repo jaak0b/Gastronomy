@@ -7,8 +7,6 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class StationAdministrationService
 {
-  private readonly IAfterCommitActions _afterCommitActions;
-  private readonly IStationsChangeAnnouncer _announcer;
   private readonly IFestivalRepository _festivalRepository;
   private readonly IFestivalStationRepository _festivalStationRepository;
   private readonly ItemOrderability _orderability;
@@ -20,8 +18,6 @@ public sealed class StationAdministrationService
                                       IFestivalRepository festivalRepository,
                                       IFestivalStationRepository festivalStationRepository,
                                       DeviceOwnerRetirement retirement,
-                                      IStationsChangeAnnouncer announcer,
-                                      IAfterCommitActions afterCommitActions,
                                       ItemOrderability orderability,
                                       RunningFestivalLookup runningFestival)
   {
@@ -29,8 +25,6 @@ public sealed class StationAdministrationService
     _festivalRepository = festivalRepository;
     _festivalStationRepository = festivalStationRepository;
     _retirement = retirement;
-    _announcer = announcer;
-    _afterCommitActions = afterCommitActions;
     _orderability = orderability;
     _runningFestival = runningFestival;
   }
@@ -58,7 +52,6 @@ public sealed class StationAdministrationService
     await _repository.AddAsync(created, cancellationToken);
 
     await _repository.SaveChangesAsync(cancellationToken);
-    await _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceStationsChangedAsync(created.Id, announcementCancellationToken), cancellationToken);
 
     return created;
   }
@@ -73,7 +66,6 @@ public sealed class StationAdministrationService
     station.Name = name!;
     station.SortOrder = sortOrder;
     await _repository.SaveChangesAsync(cancellationToken);
-    await _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceStationsChangedAsync(station.Id, announcementCancellationToken), cancellationToken);
 
     return station;
   }
@@ -87,7 +79,6 @@ public sealed class StationAdministrationService
 
     station.IsActive = true;
     await _repository.SaveChangesAsync(cancellationToken);
-    await _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceStationsChangedAsync(station.Id, announcementCancellationToken), cancellationToken);
 
     return station;
   }
@@ -117,7 +108,6 @@ public sealed class StationAdministrationService
     await _repository.SaveChangesAsync(cancellationToken);
 
     await _retirement.RevokeDeviceAsync(deviceId, cancellationToken);
-    await _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceStationsChangedAsync(station.Id, announcementCancellationToken), cancellationToken);
 
     return station;
   }

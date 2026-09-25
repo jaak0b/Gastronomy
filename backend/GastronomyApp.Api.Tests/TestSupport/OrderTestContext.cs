@@ -78,6 +78,7 @@ public sealed class OrderTestContext : IAsyncDisposable
   public async Task<string> IssueStationTokenAsync(Guid stationId)
   {
     using var scope = Factory.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
     var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindStationAsync(stationId, CancellationToken.None);
     var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(owner!, "de", "NUnit tablet", CancellationToken.None);
 
@@ -87,6 +88,7 @@ public sealed class OrderTestContext : IAsyncDisposable
   public async Task<string> IssueSecondStaffTokenAsync(string name)
   {
     using var scope = Factory.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
     var database = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
     var staffMemberId = Guid.NewGuid();
 

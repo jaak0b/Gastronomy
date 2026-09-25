@@ -183,12 +183,11 @@ body is one expression returning `ErrorOr<TView>`, and the handler's return type
 answers with: an Api-owned answer type converts that outcome implicitly, writes the view or hands the
 refusal to `ResultEnvelope`, and describes its own response to the OpenAPI document. The device a
 request came from is a handler parameter that binds itself. A request is one transaction, opened and closed by an endpoint filter on every mutating route, so no service
-opens one; a write that keeps losing its rows to another writer answers one refusal. The service that
-changed something announces it itself, through
-a Core port named after what is announced and enqueued with `IAfterCommitActions` so it leaves after
-the commit; the Api's SignalR dispatcher implements those ports and holds the never-fail guard. Core
-writes its own log lines through the `ILogger<T>` abstractions and takes no other framework
-dependency.
+opens one; a write that keeps losing its rows to another writer answers one refusal. No service
+announces what it changed: the commit does, as the `architecture` skill describes, and that page
+also names the bulk write and raw SQL statements that are banned because the commit cannot see them.
+Core writes its own log lines through the
+`ILogger<T>` abstractions and takes no other framework dependency.
 
 ## How to use
 

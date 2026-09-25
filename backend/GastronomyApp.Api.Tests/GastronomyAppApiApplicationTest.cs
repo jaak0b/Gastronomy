@@ -39,6 +39,7 @@ public sealed class GastronomyAppApiApplicationTest
     await using var application = new GastronomyAppApiApplication().Build(options);
 
     using var scope = application.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
     var context = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
 
     Assert.That(context, Is.Not.Null);
