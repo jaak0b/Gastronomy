@@ -132,3 +132,47 @@ describe('a retry after the article left the menu', () => {
     ])
   })
 })
+
+describe('a send after the article left the menu while the send sheet was open', () => {
+  let submittedItems: SubmittedItem[][]
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    submittedItems = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_input: unknown, init?: RequestInit) => {
+        submittedItems.push((JSON.parse(String(init?.body)) as { items: SubmittedItem[] }).items)
+        return new Response(
+          JSON.stringify({
+            orderId: 'order-1',
+            globalOrderNumber: 7,
+            totalCents: 0,
+            createdAtUtc: '2026-09-05T18:00:00Z',
+            stationOrders: [],
+          }),
+          { status: 200 },
+        )
+      }),
+    )
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('sends nothing and keeps the order on screen with the lines that cannot be ordered', async () => {
+    draftForZeltVier()
+    const catalog = useCatalogStore()
+    catalog.catalog = menuWithBratwurst()
+    const order = useOrderStore()
+
+    catalog.catalog = menuAfterSpeisenWasSwitchedOff()
+    await order.send(null)
+
+    expect(submittedItems).toEqual([])
+    expect(order.hasLinesThatCannotBeOrdered).toBe(true)
+    expect(order.draft.lines).toHaveLength(5)
+  })
+})

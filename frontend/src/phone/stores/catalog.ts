@@ -60,13 +60,7 @@ export const useCatalogStore = defineStore('catalog', () => {
   function listen(): void {
     const connection = useConnectionStore()
     connection.registerRefetch(load)
-    connection.onEvent<unknown>('CatalogChanged', () => {
-      void load()
-    })
-    connection.onEvent<unknown>('StationsChanged', () => {
-      void load()
-    })
-    connection.onEvent<unknown>('FestivalChanged', () => {
+    connection.onEvent<unknown>('ConfigurationChanged', () => {
       void load()
     })
   }

@@ -233,6 +233,9 @@ export const useOrderStore = defineStore('order', () => {
       await sendAgain()
       return
     }
+    if (hasLinesThatCannotBeOrdered.value) {
+      return
+    }
     const submitRequest = buildSubmitRequest(
       draft.value,
       catalogStore.catalog,

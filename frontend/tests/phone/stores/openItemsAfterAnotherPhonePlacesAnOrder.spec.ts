@@ -95,7 +95,7 @@ describe('the open list on a phone while another phone places an order', () => {
     await useConnectionStore().connect({ deviceToken: 'token-here' })
     expect(openItems.tables[0].openAmountCents).toBe(350)
 
-    fireHubEvent('StationOrdersChanged', { stationId: STATION_ID })
+    fireHubEvent('OrdersChanged')
 
     await vi.waitFor(() => expect(openItems.tables[0].openAmountCents).toBe(950))
   })

@@ -223,7 +223,18 @@ describe('the running festival on the hub', () => {
     await useConnectionStore().connect({})
     calls.length = 0
 
-    fireHubEvent('FestivalChanged')
+    fireHubEvent('ConfigurationChanged')
+
+    await vi.waitFor(() => expect(calls.map((call) => call.url)).toEqual(['/api/admin/festivals']))
+  })
+  it('is read again when the laptop says an order changed, because it shows how many orders a festival has', async () => {
+    const calls = laptopLists([SUMMER])
+    const festivals = useAdminFestivalsStore()
+    festivals.listen()
+    await useConnectionStore().connect({})
+    calls.length = 0
+
+    fireHubEvent('OrdersChanged')
 
     await vi.waitFor(() => expect(calls.map((call) => call.url)).toEqual(['/api/admin/festivals']))
   })

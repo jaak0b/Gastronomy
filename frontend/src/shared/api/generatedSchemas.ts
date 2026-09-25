@@ -40,9 +40,6 @@ export const AdminStationListView = z.strictObject({ stations: z.array(AdminStat
 export type CatalogCategoryView = __TypedOpenapi.Schemas.CatalogCategoryView;
 export const CatalogCategoryView = z.strictObject({ categoryId: z.string(), name: z.string(), colourHex: z.string(), sortOrder: z.number().int() });
 
-export type CatalogChangedEvent = __TypedOpenapi.Schemas.CatalogChangedEvent;
-export const CatalogChangedEvent = z.record(z.string(), z.unknown());
-
 export type CatalogItemView = __TypedOpenapi.Schemas.CatalogItemView;
 export const CatalogItemView = z.strictObject({ id: z.string(), categoryId: z.string(), name: z.string(), priceCents: z.number().int(), sortOrder: z.number().int(), isAvailable: z.boolean(), productionMinutes: z.number().nullable(), isQueueIndependent: z.boolean(), stationIds: z.array(z.string()) });
 
@@ -81,9 +78,6 @@ export const StationQuoteView = z.strictObject({ stationId: z.string(), readyInM
 
 export type EstimateQuoteView = __TypedOpenapi.Schemas.EstimateQuoteView;
 export const EstimateQuoteView = z.strictObject({ stations: z.array(StationQuoteView) });
-
-export type FestivalChangedEvent = __TypedOpenapi.Schemas.FestivalChangedEvent;
-export const FestivalChangedEvent = z.record(z.string(), z.unknown());
 
 export type StaffMemberView = __TypedOpenapi.Schemas.StaffMemberView;
 export const StaffMemberView = z.strictObject({ id: z.string(), name: z.string() });
@@ -124,14 +118,8 @@ export const OrderSettlementLineRequest = z.strictObject({ paidPriceCents: z.num
 export type OrderItemRequest = __TypedOpenapi.Schemas.OrderItemRequest;
 export const OrderItemRequest = z.strictObject({ catalogItemId: z.string(), unitPriceCents: z.number().int(), note: z.string().nullable().optional(), stationId: z.string().nullable().optional(), settlement: OrderSettlementLineRequest.nullable().optional() });
 
-export type OrderItemsSettledEvent = __TypedOpenapi.Schemas.OrderItemsSettledEvent;
-export const OrderItemsSettledEvent = z.strictObject({ orderItemIds: z.array(z.string()), tableNames: z.array(z.string()) });
-
 export type OrderStatus = __TypedOpenapi.Schemas.OrderStatus;
 export const OrderStatus = z.enum(["open", "partiallyFulfilled", "fulfilled"]);
-
-export type OrderStatusChangedEvent = __TypedOpenapi.Schemas.OrderStatusChangedEvent;
-export const OrderStatusChangedEvent = z.strictObject({ orderId: z.string(), status: z.enum(["open", "partiallyFulfilled", "fulfilled"]) });
 
 export type StationOrderView = __TypedOpenapi.Schemas.StationOrderView;
 export const StationOrderView = z.strictObject({ stationOrderId: z.string(), stationId: z.string(), stationName: z.string(), stationOrderNumber: z.number().int(), deliveryMode: DeliveryMode, itemIds: z.array(z.string()) });
@@ -202,14 +190,8 @@ export const StationFulfilledView = z.strictObject({ stationOrders: z.array(Stat
 export type StationItemSelectionRequest = __TypedOpenapi.Schemas.StationItemSelectionRequest;
 export const StationItemSelectionRequest = z.strictObject({ orderItemIds: z.array(z.string()).nullable() });
 
-export type StationOrdersChangedEvent = __TypedOpenapi.Schemas.StationOrdersChangedEvent;
-export const StationOrdersChangedEvent = z.strictObject({ stationId: z.string() });
-
 export type StationQueueView = __TypedOpenapi.Schemas.StationQueueView;
 export const StationQueueView = z.strictObject({ station: StationSummaryView, orders: z.array(StationOrderQueueView), asItComes: z.array(StationOrderQueueView) });
-
-export type StationsChangedEvent = __TypedOpenapi.Schemas.StationsChangedEvent;
-export const StationsChangedEvent = z.record(z.string(), z.unknown());
 
 export type TableNamesView = __TypedOpenapi.Schemas.TableNamesView;
 export const TableNamesView = z.strictObject({ tableNames: z.array(z.string()) });

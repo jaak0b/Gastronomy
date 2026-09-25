@@ -49,6 +49,9 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
     const connection = useConnectionStore()
     const releases = [
       connection.registerRefetch(load),
+      connection.onEvent<unknown>('ConfigurationChanged', () => {
+        void load()
+      }),
       useAdminEnrolmentStore().listen(() => {
         void load()
       }),

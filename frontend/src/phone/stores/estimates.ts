@@ -135,7 +135,7 @@ export const useEstimatesStore = defineStore('estimates', () => {
     const connection = useConnectionStore()
     const releases = [
       connection.registerRefetch(refresh),
-      ...['StationOrdersChanged', 'OrderStatusChanged', 'CatalogChanged', 'StationsChanged', 'FestivalChanged'].map(
+      ...['ConfigurationChanged', 'OrdersChanged'].map(
         (eventName) =>
           connection.onEvent<unknown>(eventName, () => {
             void refresh()

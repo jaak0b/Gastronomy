@@ -422,6 +422,18 @@ describe('the station a line names on the summary', () => {
     expect(view[0].stationName).toBe('Theke aussen')
   })
 
+  it('holds the line back once its station has left the item list', () => {
+    const menu = withoutTheOutdoorBar()
+    const beerInStock = {
+      ...menu,
+      items: menu.items.map((item) => ({ ...item, isAvailable: true })),
+    }
+
+    const view = buildBasketView(beerAtTheOutdoorBar(), beerInStock)
+
+    expect(view[0].isNoLongerPreparedAtItsStation).toBe(true)
+  })
+
   it('names the one station that prepares an item the waiter was never asked about', () => {
     const draft = draftWith([
       {

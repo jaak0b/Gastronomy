@@ -746,6 +746,7 @@ describe('the items screen while an order is frozen on the laptop', () => {
   })
 
   async function anOrderThatCouldNotBeSent() {
+    useCatalogStore().catalog = CATALOG
     const order = useOrderStore()
     order.addItem({
       catalogItemId: 'item-wasser',

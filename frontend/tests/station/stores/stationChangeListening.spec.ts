@@ -58,7 +58,7 @@ describe('a production location the admin renamed or switched off', () => {
     await useConnectionStore().connect({ deviceToken: 'token-here' })
     urls.length = 0
 
-    fireHubEvent('StationsChanged')
+    fireHubEvent('ConfigurationChanged')
     await letTheReloadFinish()
 
     expect(urls).toEqual(['/api/catalog'])
@@ -70,7 +70,7 @@ describe('a production location the admin renamed or switched off', () => {
     await useConnectionStore().connect({ deviceToken: 'token-here' })
     urls.length = 0
 
-    fireHubEvent('StationsChanged')
+    fireHubEvent('ConfigurationChanged')
     await letTheReloadFinish()
 
     expect(urls).toEqual(['/api/station/orders'])
@@ -83,34 +83,10 @@ describe('a production location the admin renamed or switched off', () => {
     stopListening()
     urls.length = 0
 
-    fireHubEvent('StationsChanged')
+    fireHubEvent('ConfigurationChanged')
     await letTheReloadFinish()
 
     expect(urls).toEqual([])
-  })
-})
-
-describe('a festival whose start state changed', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    forgetHubEvents()
-    useSessionStore().deviceToken = 'token-here'
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('makes the tablet load its board again', async () => {
-    const urls = stubTheLaptop()
-    useStationStore().listen()
-    await useConnectionStore().connect({ deviceToken: 'token-here' })
-    urls.length = 0
-
-    fireHubEvent('FestivalChanged')
-    await letTheReloadFinish()
-
-    expect(urls).toEqual(['/api/station/orders'])
   })
 })
 
@@ -131,7 +107,7 @@ describe('a change to the orders at a station', () => {
     await useConnectionStore().connect({ deviceToken: 'token-here' })
     urls.length = 0
 
-    fireHubEvent('StationOrdersChanged', { stationId: KITCHEN.id })
+    fireHubEvent('OrdersChanged')
     await letTheReloadFinish()
 
     expect(urls).toEqual(['/api/station/orders'])
@@ -145,7 +121,7 @@ describe('a change to the orders at a station', () => {
     await station.openFulfilled()
     urls.length = 0
 
-    fireHubEvent('StationOrdersChanged', { stationId: KITCHEN.id })
+    fireHubEvent('OrdersChanged')
     await letTheReloadFinish()
 
     expect(urls).toEqual(['/api/station/orders', '/api/station/orders/fulfilled'])
@@ -157,7 +133,7 @@ describe('a change to the orders at a station', () => {
     await useConnectionStore().connect({ deviceToken: 'token-here' })
     urls.length = 0
 
-    fireHubEvent('StationOrdersChanged', { stationId: KITCHEN.id })
+    fireHubEvent('OrdersChanged')
     await letTheReloadFinish()
 
     expect(urls).toEqual(['/api/station/orders'])

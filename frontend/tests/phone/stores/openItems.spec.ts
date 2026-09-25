@@ -387,7 +387,7 @@ describe('the open list a phone follows', () => {
     await useConnectionStore().connect({ deviceToken: 'token-here' })
     urls.length = 0
 
-    fireHubEvent('FestivalChanged')
+    fireHubEvent('ConfigurationChanged')
 
     await vi.waitFor(() => expect(urls).toEqual(['/api/open-items']))
   })
@@ -411,7 +411,7 @@ describe('the open list a phone follows', () => {
     await useConnectionStore().connect({ deviceToken: 'token-here' })
     urls.length = 0
 
-    fireHubEvent('StationOrdersChanged')
+    fireHubEvent('OrdersChanged')
 
     await vi.waitFor(() =>
       expect(urls).toEqual([

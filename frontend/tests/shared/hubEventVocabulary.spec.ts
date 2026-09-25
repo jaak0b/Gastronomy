@@ -8,9 +8,8 @@ const SOURCE_ROOT = `${process.cwd()}/src`
 function eventsTheLaptopCanPush(): string[] {
   const source = readFileSync(BACKEND_HUB, 'utf8')
   const declaration = source.indexOf('public static class HubEvents')
-  const recordEnd = source.indexOf('\n}', declaration)
-  const body =
-    recordEnd < declaration ? source.substring(declaration) : source.substring(declaration, recordEnd)
+  const nextClass = source.indexOf('public static class', declaration + 1)
+  const body = nextClass < 0 ? source.substring(declaration) : source.substring(declaration, nextClass)
   return [...body.matchAll(/=\s*"(\w+)";/g)].map((match) => match[1]).sort()
 }
 
@@ -36,13 +35,10 @@ describe('every event the phone waits for', () => {
     expect(unknown).toEqual([])
   })
 
-  it('is found by this check, so it cannot pass by finding nothing', () => {
-    const waited = eventsThePhoneWaitsFor()
+  it('covers every event the laptop pushes, so a store that stops listening is caught', () => {
     const pushed = eventsTheLaptopCanPush()
 
-    expect(waited.has('CatalogChanged')).toBe(true)
-    expect(pushed).toContain('CatalogChanged')
-    expect(waited.size).toBeGreaterThan(5)
-    expect(pushed.length).toBeGreaterThan(5)
+    expect(pushed).toEqual(['ConfigurationChanged', 'DeviceRevoked', 'EnrolmentCompleted', 'OrdersChanged'])
+    expect(new Set(eventsThePhoneWaitsFor().keys())).toEqual(new Set(pushed))
   })
 })

@@ -64,10 +64,9 @@ export function buildBasketView(draft: DraftOrder, catalog: CatalogView): Basket
       candidateStationIds,
       isSoldOut: !item.isAvailable,
       isNoLongerOnTheMenu: false,
-      isNoLongerPreparedAtItsStation: !stationStillPreparesIt({
-        stationId: line.stationId,
-        candidateStationIds,
-      }),
+      isNoLongerPreparedAtItsStation:
+        !stationStillPreparesIt({ stationId: line.stationId, candidateStationIds }) ||
+        (line.stationId !== null && findCatalogStation(catalog, line.stationId) === null),
     }
   })
 }

@@ -71,22 +71,22 @@ describe('a handler that is no longer wanted', () => {
     const connection = useConnectionStore()
     await connection.connect({ deviceToken: 'a-token' })
 
-    const stopListening = connection.onEvent('StationOrdersChanged', () => undefined)
+    const stopListening = connection.onEvent('OrdersChanged', () => undefined)
     stopListening()
 
-    expect(registeredHandlers.filter((entry) => entry.eventName === 'StationOrdersChanged')).toEqual(
+    expect(registeredHandlers.filter((entry) => entry.eventName === 'OrdersChanged')).toEqual(
       [],
     )
   })
 
   it('is not registered a second time when the same screen is opened again', async () => {
     const connection = useConnectionStore()
-    const stopListening = connection.onEvent('StationOrdersChanged', () => undefined)
+    const stopListening = connection.onEvent('OrdersChanged', () => undefined)
     stopListening()
 
     await connection.connect({ deviceToken: 'a-token' })
 
-    expect(registeredHandlers.filter((entry) => entry.eventName === 'StationOrdersChanged')).toEqual(
+    expect(registeredHandlers.filter((entry) => entry.eventName === 'OrdersChanged')).toEqual(
       [],
     )
   })

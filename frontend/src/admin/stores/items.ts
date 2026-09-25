@@ -177,7 +177,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     const connection = useConnectionStore()
     const releases = [
       connection.registerRefetch(reload),
-      connection.onEvent<unknown>('CatalogChanged', () => {
+      connection.onEvent<unknown>('ConfigurationChanged', () => {
         void reload()
       }),
     ]

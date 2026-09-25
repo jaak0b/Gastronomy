@@ -90,7 +90,10 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     const connection = useConnectionStore()
     const releases = [
       connection.registerRefetch(load),
-      connection.onEvent<unknown>('FestivalChanged', () => {
+      connection.onEvent<unknown>('ConfigurationChanged', () => {
+        void load()
+      }),
+      connection.onEvent<unknown>('OrdersChanged', () => {
         void load()
       }),
     ]

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { useCatalogStore } from '../../../src/phone/stores/catalog'
+import { CatalogView } from '../../../src/shared/api/generatedSchemas'
 import { SEND_TIMEOUT_MS } from '../../../src/phone/core/sendTimeout'
 import { useOrderStore, ARRIVAL_NOTICE_MS } from '../../../src/phone/stores/order'
 import { TOKEN_STORAGE_KEY } from '../../../src/shared/stores/session'
@@ -14,6 +15,26 @@ import {
   saveDraft,
   saveSendProgress,
 } from '../../../src/phone/core/draftCart'
+
+function menuWithWaterAtTheBar(): CatalogView {
+  return {
+    categories: [],
+    items: [
+      {
+        id: 'item-wasser',
+        name: 'Wasser',
+        categoryId: 'category-getraenke',
+        priceCents: 800,
+        sortOrder: 1,
+        isAvailable: true,
+        stationIds: ['station-bar'],
+        productionMinutes: null,
+        isQueueIndependent: false,
+      },
+    ],
+    stations: [{ id: 'station-bar', name: 'Bar', sortOrder: 1 }],
+  }
+}
 
 function answerWith(totalCents: number) {
   vi.stubGlobal(
@@ -338,6 +359,7 @@ describe('the settlement an order goes out with', () => {
 describe('the table name an order goes out with', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    useCatalogStore().catalog = menuWithWaterAtTheBar()
     localStorage.clear()
   })
 
@@ -366,6 +388,7 @@ describe('the table name an order goes out with', () => {
 describe('an order the waiter has already pressed send on', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    useCatalogStore().catalog = menuWithWaterAtTheBar()
     localStorage.clear()
   })
 
@@ -788,6 +811,7 @@ describe('what an order costs while the item list changes underneath it', () => 
 describe('an order the laptop answered no to', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    useCatalogStore().catalog = menuWithWaterAtTheBar()
     localStorage.clear()
   })
 
@@ -817,10 +841,10 @@ describe('an order the laptop answered no to', () => {
     refusedBecauseAnItemIsGone()
     const order = useOrderStore()
     order.addItem({
-      catalogItemId: 'item-gone',
+      catalogItemId: 'item-wasser',
       note: null,
       stationId: 'station-bar',
-      name: 'Currywurst',
+      name: 'Wasser',
     })
     order.setTable('Tisch 6')
     await order.send(null)
@@ -890,6 +914,7 @@ describe('an order the laptop answered no to', () => {
 describe('an order the laptop refused because an item sold out', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    useCatalogStore().catalog = menuWithWaterAtTheBar()
     localStorage.clear()
   })
 
@@ -900,6 +925,7 @@ describe('an order the laptop refused because an item sold out', () => {
   it('asks the catalogue for a fresh line without holding up the refusal', async () => {
     localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
     setActivePinia(createPinia())
+    useCatalogStore().catalog = menuWithWaterAtTheBar()
     const askedPaths: string[] = []
     vi.stubGlobal(
       'fetch',
@@ -1007,6 +1033,7 @@ describe('an order the laptop could not save', () => {
 describe('an order the laptop answered only after it had already stayed silent once', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    useCatalogStore().catalog = menuWithWaterAtTheBar()
     localStorage.clear()
     vi.useFakeTimers()
   })
@@ -1097,6 +1124,7 @@ describe('an order the laptop answered only after it had already stayed silent o
 describe('an order the laptop refused with a reason after it had stayed silent once', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    useCatalogStore().catalog = menuWithWaterAtTheBar()
     localStorage.clear()
     vi.useFakeTimers()
   })

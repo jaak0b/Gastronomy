@@ -108,6 +108,14 @@ and `ConfirmedSettlement` in `src/phone/core/submission.ts`.
    visible text or its icon, and a test selects an element by its class, its data attribute or its
    text, never by an accessibility attribute. A review lists any aria attribute as a finding.
 
+10. **A store holding laptop data reloads on the hub event whose name says what it holds.** The
+    laptop sends `ConfigurationChanged` for everything an admin edits and `OrdersChanged` for
+    everything that happens to an order; a store subscribes to the one that names its data, registers
+    with the connection store's refetch, and reloads through the latest request gate where an action
+    shares the state. It never patches its own copy after an action instead of reloading, and a
+    screen never hides a stale value by filtering it against another list. Read the `architecture`
+    skill's announcements page before touching a store or the connection.
+
 ## Design constraints from the deployment
 
 - **Touch targets are large.** One thumb, in the dark, possibly with gloves.

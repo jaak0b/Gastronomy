@@ -28,7 +28,7 @@ function stubTheLaptop(): string[] {
 describe('the waiter list of the admin', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    hubEventsRegistered.length = 0
+    forgetHubEvents()
   })
 
   afterEach(() => {
@@ -42,6 +42,17 @@ describe('the waiter list of the admin', () => {
     await useConnectionStore().refetchAll()
 
     expect(urls).toEqual(['/api/admin/staff-members'])
+  })
+
+  it('is read again when the laptop says the configuration changed', async () => {
+    const urls = stubTheLaptop()
+    useAdminStaffStore().listen()
+    await useConnectionStore().connect({})
+    urls.length = 0
+
+    fireHubEvent('ConfigurationChanged')
+
+    await vi.waitFor(() => expect(urls).toEqual(['/api/admin/staff-members']))
   })
 
   it('is left alone once the admin has moved to another screen', async () => {
@@ -74,13 +85,13 @@ describe('the station list of the admin', () => {
     expect(urls).toEqual(['/api/admin/stations'])
   })
 
-  it('is read again when the laptop says a station changed', async () => {
+  it('is read again when the laptop says the configuration changed', async () => {
     const urls = stubTheLaptop()
     useAdminStationsStore().listen()
     await useConnectionStore().connect({})
     urls.length = 0
 
-    fireHubEvent('StationsChanged')
+    fireHubEvent('ConfigurationChanged')
 
     await vi.waitFor(() => expect(urls).toEqual(['/api/admin/stations']))
   })
@@ -99,7 +110,7 @@ describe('the station list of the admin', () => {
 describe('the category list of the admin', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    hubEventsRegistered.length = 0
+    forgetHubEvents()
   })
 
   afterEach(() => {
@@ -113,6 +124,17 @@ describe('the category list of the admin', () => {
     await useConnectionStore().refetchAll()
 
     expect(urls).toEqual(['/api/admin/categories'])
+  })
+
+  it('is read again when the laptop says the configuration changed', async () => {
+    const urls = stubTheLaptop()
+    useAdminCategoriesStore().listen()
+    await useConnectionStore().connect({})
+    urls.length = 0
+
+    fireHubEvent('ConfigurationChanged')
+
+    await vi.waitFor(() => expect(urls).toEqual(['/api/admin/categories']))
   })
 
   it('is left alone once the admin has moved to another screen', async () => {
@@ -157,13 +179,13 @@ describe('the item list of the admin', () => {
     expect(urls).toEqual(['/api/admin/items?festivalId=fest-1'])
   })
 
-  it('is read again when the laptop says the catalog changed', async () => {
+  it('is read again when the laptop says the configuration changed', async () => {
     const urls = stubTheLaptop()
     useAdminItemsStore().listen()
     await useConnectionStore().connect({})
     urls.length = 0
 
-    fireHubEvent('CatalogChanged')
+    fireHubEvent('ConfigurationChanged')
 
     await vi.waitFor(() => expect(urls).toEqual(['/api/admin/items']))
   })

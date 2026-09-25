@@ -101,7 +101,7 @@ describe('the catalog a phone follows while it is open', () => {
     await useConnectionStore().connect({ deviceToken: 'token-here' })
     urls.length = 0
 
-    fireHubEvent('FestivalChanged')
+    fireHubEvent('ConfigurationChanged')
 
     await vi.waitFor(() => expect(urls).toEqual(['/api/catalog']))
   })

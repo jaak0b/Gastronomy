@@ -186,13 +186,10 @@ export const useStationStore = defineStore('station', () => {
     const connection = useConnectionStore()
     const releases = [
       connection.registerRefetch(refresh),
-      connection.onEvent<{ stationId: string }>('StationOrdersChanged', () => {
+      connection.onEvent<unknown>('ConfigurationChanged', () => {
         void refresh()
       }),
-      connection.onEvent<unknown>('StationsChanged', () => {
-        void refresh()
-      }),
-      connection.onEvent<unknown>('FestivalChanged', () => {
+      connection.onEvent<unknown>('OrdersChanged', () => {
         void refresh()
       }),
     ]

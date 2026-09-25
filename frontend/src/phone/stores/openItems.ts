@@ -157,16 +157,10 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     const connection = useConnectionStore()
     const releases = [
       connection.registerRefetch(load),
-      connection.onEvent('OrderItemsSettled', () => {
+      connection.onEvent('ConfigurationChanged', () => {
         void load()
       }),
-      connection.onEvent('OrderStatusChanged', () => {
-        void load()
-      }),
-      connection.onEvent('StationOrdersChanged', () => {
-        void load()
-      }),
-      connection.onEvent('FestivalChanged', () => {
+      connection.onEvent('OrdersChanged', () => {
         void load()
       }),
     ]

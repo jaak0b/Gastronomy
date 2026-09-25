@@ -138,16 +138,7 @@ describe('the waiting times a phone follows while it takes orders', () => {
   it('loads again when a station worked off part of its queue', async () => {
     const urls = await listeningPhone()
 
-    fireHubEvent('StationOrdersChanged', { stationId: 'station-kueche' })
-    await letTheReloadFinish()
-
-    expect(urls).toEqual(['/api/estimates'])
-  })
-
-  it('loads again when an item moves on in production', async () => {
-    const urls = await listeningPhone()
-
-    fireHubEvent('OrderStatusChanged')
+    fireHubEvent('OrdersChanged')
     await letTheReloadFinish()
 
     expect(urls).toEqual(['/api/estimates'])
@@ -156,25 +147,7 @@ describe('the waiting times a phone follows while it takes orders', () => {
   it('loads again when the menu changes', async () => {
     const urls = await listeningPhone()
 
-    fireHubEvent('CatalogChanged')
-    await letTheReloadFinish()
-
-    expect(urls).toEqual(['/api/estimates'])
-  })
-
-  it('loads again when a station is renamed or switched off', async () => {
-    const urls = await listeningPhone()
-
-    fireHubEvent('StationsChanged')
-    await letTheReloadFinish()
-
-    expect(urls).toEqual(['/api/estimates'])
-  })
-
-  it('loads again when the festival starts or stops', async () => {
-    const urls = await listeningPhone()
-
-    fireHubEvent('FestivalChanged')
+    fireHubEvent('ConfigurationChanged')
     await letTheReloadFinish()
 
     expect(urls).toEqual(['/api/estimates'])
@@ -202,7 +175,7 @@ describe('the waiting times a phone follows while it takes orders', () => {
     stopListening()
     urls.length = 0
 
-    fireHubEvent('StationsChanged')
+    fireHubEvent('ConfigurationChanged')
     await letTheReloadFinish()
 
     expect(urls).toEqual([])
@@ -309,7 +282,7 @@ describe('the waiting time the laptop calculates for the order on the screen', (
     await estimates.quote(TWO_BRATWURST)
     urls.length = 0
 
-    fireHubEvent('StationOrdersChanged', { stationId: 'station-kueche' })
+    fireHubEvent('OrdersChanged')
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(urls).toEqual(['/api/estimates', '/api/estimates/quote'])
@@ -331,7 +304,7 @@ describe('the waiting time the laptop calculates for the order on the screen', (
     estimates.stopQuoting()
     urls.length = 0
 
-    fireHubEvent('StationOrdersChanged', { stationId: 'station-kueche' })
+    fireHubEvent('OrdersChanged')
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(urls).toEqual(['/api/estimates'])
@@ -412,7 +385,7 @@ describe('the waiting times the laptop calculates for each button of the station
     await useConnectionStore().connect({ deviceToken: 'token-here' })
     const first = estimates.quoteStationChoice('station-bar', KAFFEE_AT_THE_BAR)
 
-    fireHubEvent('StationOrdersChanged', { stationId: 'station-bar' })
+    fireHubEvent('OrdersChanged')
     await new Promise((resolve) => setTimeout(resolve, 0))
     answers[1].resolve(answerNaming(30))
     await new Promise((resolve) => setTimeout(resolve, 0))
