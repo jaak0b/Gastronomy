@@ -16,11 +16,13 @@ reverse proxy.
   device enrolled or revoked. Clients never poll for state that the server already knows has
   changed.
 - **REST** for commands and queries.
-- **An OpenAPI document is written at build time.** `dotnet build` of `GastronomyApp.Api` writes
-  `backend/GastronomyApp.Api/openapi/GastronomyApp.Api.json`, which is committed to the repository.
-  `Microsoft.Extensions.ApiDescription.Server` runs the entry point in
-  `DocumentGenerationEntryPoint.cs`, which exists only so the generator can build the web
-  application; the project sets `UseAppHost` to false, so no second executable file is produced. The
+- **An OpenAPI document is written at build time.** `dotnet build` of the solution writes
+  `backend/GastronomyApp.Api.OpenApiHost/openapi/GastronomyApp.Api.OpenApiHost.json`, which is
+  committed to the repository and lives in the host project because that project writes it.
+  `GastronomyApp.Api` stays a class library. The separate project `GastronomyApp.Api.OpenApiHost`
+  exists only to give `Microsoft.Extensions.ApiDescription.Server` an entry point
+  (`DocumentGenerationEntryPoint.cs`) that builds the web application; only the Api tests reference
+  it, for build order, so a test build regenerates the document, and it is never published. The
   hosted app maps no `/openapi` route: the document is a build artifact, not something the laptop
   serves. Every route carries its response type through `Produces`, and the two transformers in
   `DocumentTransformers/` add the SignalR event payloads under `Contracts/Events` as component

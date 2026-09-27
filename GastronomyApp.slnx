@@ -1,5 +1,6 @@
 <Solution>
     <Folder Name="/backend/">
+        <Project Path="backend/GastronomyApp.Api.OpenApiHost/GastronomyApp.Api.OpenApiHost.csproj"/>
         <Project Path="backend/GastronomyApp.Api.Tests/GastronomyApp.Api.Tests.csproj"/>
         <Project Path="backend/GastronomyApp.Api/GastronomyApp.Api.csproj"/>
         <Project Path="backend/GastronomyApp.Contracts/GastronomyApp.Contracts.csproj"/>

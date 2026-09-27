@@ -10,7 +10,7 @@ public sealed class GeneratedOpenApiDocumentTest
   [OneTimeSetUp]
   public void ReadTheGeneratedDocument()
   {
-    var documentPath = Path.Combine(AppContext.BaseDirectory, "openapi", "GastronomyApp.Api.json");
+    var documentPath = Path.Combine(AppContext.BaseDirectory, "openapi", "GastronomyApp.Api.OpenApiHost.json");
     Assert.That(File.Exists(documentPath), Is.True, $"The generated OpenAPI document was not found at {documentPath}.");
     _document = JsonDocument.Parse(File.ReadAllText(documentPath)).RootElement.Clone();
   }

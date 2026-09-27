@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "generate:api": "typed-openapi ../backend/GastronomyApp.Api/openapi/GastronomyApp.Api.json --runtime zod --validation loose --schemas-only --no-tree-shake-schemas --output src/shared/api/generatedSchemas.ts",
+    "generate:api": "typed-openapi ../backend/GastronomyApp.Api.OpenApiHost/openapi/GastronomyApp.Api.OpenApiHost.json --runtime zod --validation loose --schemas-only --no-tree-shake-schemas --output src/shared/api/generatedSchemas.ts",
     "build": "npm run generate:api && vue-tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest"
