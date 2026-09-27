@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Platform.Windows;
 using GastronomyApp.Desktop.Ports;
@@ -11,7 +11,11 @@ namespace GastronomyApp.Desktop.Hosting;
 
 public sealed class DesktopComposition : IDisposable
 {
+#if DEBUG
+  private const string ProductFolderName = "GastronomyApp.Debug";
+#else
   private const string ProductFolderName = "GastronomyApp";
+#endif
 
   private bool _disposed;
 
