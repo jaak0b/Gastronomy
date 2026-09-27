@@ -11,9 +11,9 @@ const { t } = useI18n()
 
 const summary = computed(() =>
   props.itemCount === 0
-    ? t('catalog.basketEmpty')
+    ? t('phone.catalog.messages.basketEmpty')
     : t(
-        'catalog.basketSummary',
+        'phone.catalog.labels.basketSummary',
         { count: props.itemCount, total: formatPrice(props.totalCents, props.language) },
         props.itemCount,
       ),
@@ -25,7 +25,7 @@ const summary = computed(() =>
     <span class="summary text-body-1">{{ summary }}</span>
     <v-spacer />
     <v-btn class="to-review" color="primary" :disabled="itemCount === 0" @click="$emit('review')">
-      {{ t('catalog.toReview') }}
+      {{ t('phone.catalog.actions.toReview') }}
     </v-btn>
   </div>
 </template>

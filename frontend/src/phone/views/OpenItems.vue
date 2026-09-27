@@ -160,14 +160,14 @@ function stateClassFor(order: TableOrderRecordView): string {
 }
 
 function takenByTextFor(order: TableOrderRecordView): string {
-  return t('station.takenBy', {
+  return t('common.labels.takenBy', {
     time: formatFestivalMoment(order.createdAtUtc, session.language),
     name: order.staffMemberName,
   })
 }
 
 function doneCounterTextFor(order: TableOrderRecordView): string {
-  return t('station.doneCounter', {
+  return t('common.labels.doneCounter', {
     fulfilled: producedCountIn(order),
     total: order.items.length,
   })
@@ -177,9 +177,9 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
 <template>
   <v-container class="open-items">
     <div class="head d-flex align-center ga-3 mb-2">
-      <h1 class="text-h5 flex-grow-1">{{ t('openItems.title') }}</h1>
+      <h1 class="text-h5 flex-grow-1">{{ t('phone.openItems.title') }}</h1>
       <v-btn class="reload" variant="outlined" size="large" @click="reloadTheActiveView">
-        {{ t('openItems.reload') }}
+        {{ t('phone.openItems.actions.reload') }}
       </v-btn>
     </div>
     <TableField
@@ -188,7 +188,7 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
       :known-table-names="openItems.knownTableNames"
     />
     <v-alert v-if="theActiveViewFailed" class="load-failed mb-2" type="warning" variant="tonal">
-      {{ t('openItems.loadFailed') }}
+      {{ t('phone.openItems.errors.loadFailed') }}
     </v-alert>
     <SettleNotice
       v-if="openItems.notice !== null && !amountPaidIsOpen"
@@ -206,14 +206,14 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
       >
         {{
           t(
-            'openItems.listIncomplete',
+            'phone.openItems.messages.listIncomplete',
             { count: openItems.itemsWithoutAnOrderCount },
             openItems.itemsWithoutAnOrderCount,
           )
         }}
       </v-alert>
       <v-alert v-if="everythingIsSettled" class="empty" type="info" variant="tonal">
-        {{ t('openItems.empty') }}
+        {{ t('phone.openItems.messages.empty') }}
       </v-alert>
       <v-expansion-panels v-model="openedTables" class="tables" multiple>
         <OpenTablePanel
@@ -234,7 +234,7 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
         class="whole-table"
         density="comfortable"
         hide-details
-        :label="t('openItems.wholeTable')"
+        :label="t('phone.openItems.actions.wholeTable')"
         :model-value="wholeTableIsSelected"
         @update:model-value="setTheLookupWholeTable"
       />
@@ -247,7 +247,7 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
         <v-card-text class="lookup-body">
           <div class="lookup-card-head d-flex flex-wrap align-baseline ga-2 mb-2">
             <span class="order-number text-h6">
-              {{ t('openItems.order', { order: order.globalOrderNumber }) }}
+              {{ t('phone.openItems.labels.order', { order: order.globalOrderNumber }) }}
             </span>
             <span class="taken-by text-body-2 text-medium-emphasis">
               {{ takenByTextFor(order) }}
@@ -272,12 +272,12 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
         </v-card-text>
       </v-card>
       <v-alert v-if="lookupFoundNothing" class="lookup-empty" type="info" variant="tonal">
-        {{ t('openItems.noOrdersForTable') }}
+        {{ t('phone.openItems.messages.noOrdersForTable') }}
       </v-alert>
     </template>
     <v-sheet v-if="somethingIsSelected" class="settle-footer pt-3 pb-4" color="background">
       <p class="selected-total text-h6 mb-2">
-        {{ t('openItems.selected', { amount: selectedTotal }) }}
+        {{ t('phone.openItems.labels.selected', { amount: selectedTotal }) }}
       </p>
       <v-btn
         class="settle"
@@ -287,7 +287,7 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
         :disabled="openItems.isSettling"
         @click="settle"
       >
-        {{ t('openItems.settle') }}
+        {{ t('phone.openItems.actions.settle') }}
       </v-btn>
       <v-btn
         class="settle-amount-paid mt-2"
@@ -298,7 +298,7 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
         :disabled="openItems.isSettling"
         @click="amountPaidIsOpen = true"
       >
-        {{ t('openItems.settleAmountPaid') }}
+        {{ t('phone.openItems.actions.settleAmountPaid') }}
       </v-btn>
     </v-sheet>
     <AmountPaidDialog

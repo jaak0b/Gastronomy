@@ -52,11 +52,11 @@ function stationOrder(overrides: Partial<StationOrderQueueView> = {}): StationOr
 
 describe('the words a station tablet uses for a delivery mode', () => {
   it('names the mode that goes out together', () => {
-    expect(deliveryModeKey('together')).toBe('delivery.together')
+    expect(deliveryModeKey('together')).toBe('common.delivery.together')
   })
 
   it('names the mode that goes out as it is ready', () => {
-    expect(deliveryModeKey('asItComes')).toBe('delivery.asItComes')
+    expect(deliveryModeKey('asItComes')).toBe('common.delivery.asItComes')
   })
 
   it('marks a card that hands the order out together', () => {
@@ -183,13 +183,13 @@ describe('the words on one grouped line', () => {
 
   it('names only the units when the article carries no note', () => {
     expect(itemLineText(line('Frankfurter', null, 2), words)).toBe(
-      '[station.itemUnits 2 Frankfurter]',
+      '[common.labels.countTimesItem 2 Frankfurter]',
     )
   })
 
   it('keeps the note beside the units when the article carries one', () => {
     expect(itemLineText(line('Frankfurter', 'Mit Ketchup', 2), words)).toBe(
-      '[station.itemUnits 2 Frankfurter][station.unitSeparator][station.note Mit Ketchup]',
+      '[common.labels.countTimesItem 2 Frankfurter][station.board.labels.unitSeparator][common.labels.note Mit Ketchup]',
     )
   })
 })
@@ -248,7 +248,7 @@ describe('a selection after a reload', () => {
 
 describe('stationFailureKey, what the tablet says when a change did not go through', () => {
   it('asks to tap again when the laptop could not be reached', () => {
-    expect(stationFailureKey({ kind: 'unreachable' })).toBe('station.actionNotReached')
+    expect(stationFailureKey({ kind: 'unreachable' })).toBe('station.board.errors.actionNotReached')
   })
 
   it('shows the reason the laptop gave when it named one', () => {
@@ -258,18 +258,18 @@ describe('stationFailureKey, what the tablet says when a change did not go throu
         status: 409,
         body: {
           code: 'ItemNotFulfilled',
-          messageKey: 'station.changeNotSaved',
+          messageKey: 'errors.station.changeNotSaved',
           parameters: {},
           details: null,
         },
         raw: null,
       }),
-    ).toBe('station.changeNotSaved')
+    ).toBe('errors.station.changeNotSaved')
   })
 
   it('falls back to a plain failure when the laptop named nothing', () => {
     expect(stationFailureKey({ kind: 'error', status: 500, body: null, raw: null })).toBe(
-      'station.actionFailed',
+      'station.board.errors.actionFailed',
     )
   })
 })

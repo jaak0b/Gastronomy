@@ -27,7 +27,7 @@ const { t } = useI18n()
         <v-card-actions>
           <v-spacer />
           <v-btn class="form-cancel" variant="text" :disabled="busy" @click="emit('cancel')">
-            {{ t('admin.cancel') }}
+            {{ t('common.actions.cancel') }}
           </v-btn>
           <v-btn
             class="form-save"
@@ -35,7 +35,7 @@ const { t } = useI18n()
             color="primary"
             :disabled="saveDisabled || busy"
           >
-            {{ saveLabel ?? t('admin.save') }}
+            {{ saveLabel ?? t('admin.common.actions.save') }}
           </v-btn>
         </v-card-actions>
       </v-form>

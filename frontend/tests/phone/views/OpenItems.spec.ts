@@ -585,7 +585,7 @@ describe('settling what the table actually handed over', () => {
         new Response(
           JSON.stringify({
             code: 'ValidationFailed',
-            messageKey: 'openItems.settleFailed',
+            messageKey: 'phone.openItems.errors.settleFailed',
             parameters: {},
             details: null,
           }),

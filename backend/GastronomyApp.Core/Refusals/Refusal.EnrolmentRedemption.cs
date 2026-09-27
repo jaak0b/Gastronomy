@@ -8,7 +8,7 @@ public static partial class Refusal
   {
     public static Error NoInvitationOutstanding()
     {
-      return Gone("enrolment.codeNoLongerValid",
+      return Gone("errors.enrolment.codeNoLongerValid",
                   "No invitation is outstanding, so the last one was already used or was replaced by a newer one.",
                   new Dictionary<string, object>
                   {
@@ -18,7 +18,7 @@ public static partial class Refusal
 
     public static Error CodeInvalid(Guid invitationId)
     {
-      return NotFound("enrolment.codeUnknown",
+      return NotFound("errors.enrolment.codeUnknown",
                       $"The code the device sent does not match the outstanding invitation {invitationId}.",
                       new Dictionary<string, object>
                       {
@@ -28,7 +28,7 @@ public static partial class Refusal
 
     public static Error CodeExpired(Guid invitationId)
     {
-      return Gone("enrolment.codeNoLongerValid",
+      return Gone("errors.enrolment.codeNoLongerValid",
                   $"The outstanding invitation {invitationId} had already expired when the device scanned it.",
                   new Dictionary<string, object>
                   {
@@ -38,7 +38,7 @@ public static partial class Refusal
 
     public static Error StaffMemberIsOffTheList(Guid invitationId)
     {
-      return Gone("enrolment.staffMemberIsOffTheList",
+      return Gone("errors.enrolment.staffMemberIsOffTheList",
                   $"The waiter the invitation {invitationId} names is off the list.",
                   new Dictionary<string, object>
                   {
@@ -48,7 +48,7 @@ public static partial class Refusal
 
     public static Error StationIsOffTheList(Guid invitationId)
     {
-      return Gone("enrolment.stationIsOffTheList",
+      return Gone("errors.enrolment.stationIsOffTheList",
                   $"The station the invitation {invitationId} names is switched off.",
                   new Dictionary<string, object>
                   {
@@ -58,7 +58,7 @@ public static partial class Refusal
 
     public static Error NameRequired(Guid invitationId)
     {
-      return BadRequest("enrolment.nameMissing",
+      return BadRequest("errors.enrolment.nameMissing",
                         $"The invitation {invitationId} names nobody and the phone sent no name.",
                         new Dictionary<string, object>
                         {

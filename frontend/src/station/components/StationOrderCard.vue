@@ -35,7 +35,7 @@ const selectedHere = computed(() =>
 )
 const groupedLines = computed(() => itemLines(openItems.value))
 const viewToggleLabel = computed(() =>
-  t(isGrouped.value ? 'station.listView' : 'station.groupedView'),
+  t(isGrouped.value ? 'station.board.actions.listView' : 'station.board.actions.groupedView'),
 )
 const viewToggleIcon = computed(() =>
   isGrouped.value ? 'mdi-format-list-bulleted' : 'mdi-format-list-group',
@@ -50,7 +50,7 @@ function isSelected(orderItemId: string): boolean {
   <BaseStationCard class="station-order mb-4 bg-surface" :delivery-mode-colour="deliveryModeColour">
     <div class="station-order-head d-flex flex-wrap align-baseline ga-2">
       <span class="table-name text-h5">
-        {{ t('station.tableIs', { name: stationOrder.tableName }) }}
+        {{ t('common.labels.table', { name: stationOrder.tableName }) }}
       </span>
       <span class="station-order-heading text-body-2 text-medium-emphasis">
         {{ orderReference }}
@@ -92,7 +92,7 @@ function isSelected(orderItemId: string): boolean {
           <span class="item-name">{{ item.itemName }}</span>
           <span v-if="item.note !== null" class="item-note text-body-2">
             <v-icon class="item-note-icon" icon="mdi-note-text-outline" size="small" />
-            {{ t('station.note', { note: item.note }) }}
+            {{ t('common.labels.note', { note: item.note }) }}
           </span>
         </span>
         <v-icon v-if="isSelected(item.orderItemId)" class="selected-tick ms-auto" icon="mdi-check" />
@@ -112,7 +112,7 @@ function isSelected(orderItemId: string): boolean {
         :disabled="selectedHere.length === 0 || isWorking"
         @click="emit('fulfill', stationOrder, selectedHere)"
       >
-        {{ t('station.prepare') }}
+        {{ t('station.board.actions.prepare') }}
       </v-btn>
       <v-btn
         v-if="showHide"
@@ -122,7 +122,7 @@ function isSelected(orderItemId: string): boolean {
         :disabled="isWorking"
         @click="emit('hide', stationOrder.stationOrderId)"
       >
-        {{ t('station.hideHere') }}
+        {{ t('station.board.actions.hideHere') }}
       </v-btn>
     </div>
   </BaseStationCard>

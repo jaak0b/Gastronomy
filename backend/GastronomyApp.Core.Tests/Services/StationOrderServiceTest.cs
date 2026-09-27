@@ -21,7 +21,7 @@ public sealed class StationOrderServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(outcome.IsSuccess, Is.False);
-                      Assert.That(outcome.RefusalMessageKey(), Is.EqualTo("station.changeNotSaved"));
+                      Assert.That(outcome.RefusalMessageKey(), Is.EqualTo("errors.station.changeNotSaved"));
                       Assert.That(stationOrder.IsHiddenFromAsItComesQueue, Is.False);
                     });
   }

@@ -553,7 +553,7 @@ describe('an attempt the laptop never answers', () => {
     await vi.advanceTimersByTimeAsync(10_000)
     await attempt
 
-    expect(order.failure?.key).toBe('review.sendFailed')
+    expect(order.failure?.key).toBe('phone.review.errors.sendFailed')
   })
 })
 
@@ -628,7 +628,7 @@ describe('an order the page was still sending when it was loaded again', () => {
 
     const order = useOrderStore()
 
-    expect(order.failure).toEqual({ key: 'review.sendInterrupted' })
+    expect(order.failure).toEqual({ key: 'phone.review.errors.sendInterrupted' })
   })
 
   it('comes back with the identity of the attempt, so a retry cannot create a second order', () => {
@@ -827,7 +827,7 @@ describe('an order the laptop answered no to', () => {
           new Response(
             JSON.stringify({
               code: 'UnknownItem',
-              messageKey: 'order.unknownItem',
+              messageKey: 'errors.order.unknownItem',
               parameters: {},
               details: null,
             }),
@@ -860,7 +860,7 @@ describe('an order the laptop answered no to', () => {
   it('keeps the reason the laptop gave, so the waiter can put it right', async () => {
     const order = await aRefusedOrder()
 
-    expect(order.failure?.key).toBe('order.unknownItem')
+    expect(order.failure?.key).toBe('errors.order.unknownItem')
   })
 
   it('keeps the order on the screen, because it was never taken', async () => {
@@ -907,7 +907,7 @@ describe('an order the laptop answered no to', () => {
     const afterTheReload = useOrderStore()
 
     expect(afterTheReload.changesAreRefused).toBe(false)
-    expect(afterTheReload.failure?.key).toBe('order.unknownItem')
+    expect(afterTheReload.failure?.key).toBe('errors.order.unknownItem')
   })
 })
 
@@ -938,7 +938,7 @@ describe('an order the laptop refused because an item sold out', () => {
           new Response(
             JSON.stringify({
               code: 'UnprocessableEntity',
-              messageKey: 'catalog.itemSoldOut',
+              messageKey: 'errors.order.itemSoldOut',
               parameters: { name: 'Wasser', catalogItemId: 'item-wasser' },
               details: null,
             }),
@@ -958,7 +958,7 @@ describe('an order the laptop refused because an item sold out', () => {
 
     await order.send(null)
 
-    expect(order.failure?.key).toBe('catalog.itemSoldOut')
+    expect(order.failure?.key).toBe('errors.order.itemSoldOut')
     expect(order.failure?.parameters).toEqual({ name: 'Wasser', catalogItemId: 'item-wasser' })
     expect(askedPaths).toContain('/api/catalog')
   })
@@ -996,7 +996,7 @@ describe('an order the laptop could not save', () => {
 
     await order.send(null)
 
-    expect(order.failure?.key).toBe('review.sendFailedDatabase')
+    expect(order.failure?.key).toBe('errors.storage.databaseUnavailable')
   })
 
   it('counts no unanswered attempt, because the laptop answered', async () => {
@@ -1193,7 +1193,7 @@ describe('an order the laptop refused with a reason after it had stayed silent o
 
   it('takes changes again, because the reason proves the laptop never took the order', async () => {
     const order = await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
-      aReasonedRefusal(422, 'catalog.itemSoldOut'),
+      aReasonedRefusal(422, 'errors.order.itemSoldOut'),
     )
 
     expect(order.changesAreRefused).toBe(false)
@@ -1201,7 +1201,7 @@ describe('an order the laptop refused with a reason after it had stayed silent o
 
   it('takes changes again for a 400 reason too', async () => {
     const order = await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
-      aReasonedRefusal(400, 'order.unknownItem'),
+      aReasonedRefusal(400, 'errors.order.unknownItem'),
     )
 
     expect(order.changesAreRefused).toBe(false)
@@ -1209,15 +1209,15 @@ describe('an order the laptop refused with a reason after it had stayed silent o
 
   it('keeps the reason the laptop gave, so the waiter can put it right', async () => {
     const order = await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
-      aReasonedRefusal(422, 'catalog.itemSoldOut'),
+      aReasonedRefusal(422, 'errors.order.itemSoldOut'),
     )
 
-    expect(order.failure?.key).toBe('catalog.itemSoldOut')
+    expect(order.failure?.key).toBe('errors.order.itemSoldOut')
   })
 
   it('keeps the paper route away, because the waiter has something to fix', async () => {
     const order = await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
-      aReasonedRefusal(422, 'catalog.itemSoldOut'),
+      aReasonedRefusal(422, 'errors.order.itemSoldOut'),
     )
 
     expect(order.onlyWritingItDownIsLeft).toBe(false)
@@ -1225,7 +1225,7 @@ describe('an order the laptop refused with a reason after it had stayed silent o
 
   it('stays open for changes after a reload, because the reason was written down', async () => {
     await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
-      aReasonedRefusal(422, 'catalog.itemSoldOut'),
+      aReasonedRefusal(422, 'errors.order.itemSoldOut'),
     )
 
     setActivePinia(createPinia())
@@ -1236,7 +1236,7 @@ describe('an order the laptop refused with a reason after it had stayed silent o
 
   it('keeps the words the refusal fills in after a reload, so its notice still names the item', async () => {
     await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
-      aReasonedRefusal(422, 'catalog.itemSoldOut', {
+      aReasonedRefusal(422, 'errors.order.itemSoldOut', {
         name: 'Wasser',
         catalogItemId: 'item-wasser',
       }),
@@ -1246,7 +1246,7 @@ describe('an order the laptop refused with a reason after it had stayed silent o
     const afterTheReload = useOrderStore()
 
     expect(afterTheReload.failure).toEqual({
-      key: 'catalog.itemSoldOut',
+      key: 'errors.order.itemSoldOut',
       parameters: { name: 'Wasser', catalogItemId: 'item-wasser' },
     })
   })
@@ -1317,7 +1317,7 @@ describe('an order sent from a phone the laptop no longer knows', () => {
 
     await order.sendAgain()
 
-    expect(order.failure?.key).toBe('review.sendInterrupted')
+    expect(order.failure?.key).toBe('phone.review.errors.sendInterrupted')
   })
 
   it('leaves that sentence in storage, so it is still there once the phone is set up again', async () => {
@@ -1325,7 +1325,7 @@ describe('an order sent from a phone the laptop no longer knows', () => {
 
     await order.sendAgain()
 
-    expect(restoreSendProgress().failure?.key).toBe('review.sendInterrupted')
+    expect(restoreSendProgress().failure?.key).toBe('phone.review.errors.sendInterrupted')
   })
 
   it('keeps the order frozen, because the silence before it is still unexplained', async () => {

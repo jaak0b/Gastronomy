@@ -130,7 +130,7 @@ function labelFor(category: CatalogCategoryView): string {
   if (portions < 1) {
     return category.name
   }
-  return t('catalog.categoryWithCount', { count: portions, name: category.name })
+  return t('phone.catalog.labels.categoryWithCount', { count: portions, name: category.name })
 }
 
 function paintedIn(colourHex: string): Record<string, string> {
@@ -306,7 +306,7 @@ function chooseStation(stationId: string, note: string | null): void {
             variant="outlined"
             @click="closeOpenStep()"
           >
-            {{ t('catalog.backToCategories') }}
+            {{ t('phone.catalog.actions.backToCategories') }}
           </v-btn>
         </div>
       </DockedStrip>

@@ -32,7 +32,7 @@ public sealed class DeviceLanguageServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(changed.IsSuccess, Is.False);
-                      Assert.That(changed.RefusalMessageKey(), Is.EqualTo("session.unsupportedLanguage"));
+                      Assert.That(changed.RefusalMessageKey(), Is.EqualTo("errors.session.unsupportedLanguage"));
                     });
 
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
@@ -46,7 +46,7 @@ public sealed class DeviceLanguageServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(changed.IsSuccess, Is.False);
-                      Assert.That(changed.RefusalMessageKey(), Is.EqualTo("session.unsupportedLanguage"));
+                      Assert.That(changed.RefusalMessageKey(), Is.EqualTo("errors.session.unsupportedLanguage"));
                     });
   }
 

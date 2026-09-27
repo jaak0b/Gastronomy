@@ -173,7 +173,7 @@ describe('what the waiter is told after settling', () => {
     )
 
     expect(notice).toEqual({
-      key: 'openItems.someWereAlreadySettled',
+      key: 'phone.openItems.messages.someWereAlreadySettled',
       parameters: { count: 1, amount: '3,50 €' },
       count: 1,
     })
@@ -236,7 +236,7 @@ describe('what the waiter is told after settling', () => {
       'de',
     )
 
-    expect(notice?.key).toBe('openItems.someWereAlreadySettled')
+    expect(notice?.key).toBe('phone.openItems.messages.someWereAlreadySettled')
   })
 
   it('says nothing when the whole selection was settled', () => {

@@ -103,7 +103,7 @@ public sealed class AdminCategoryEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.categoryNameMissing"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.categories.nameMissing"));
                     });
   }
 
@@ -122,7 +122,7 @@ public sealed class AdminCategoryEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.categoryNameTaken"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.categories.nameTaken"));
                     });
   }
 
@@ -168,7 +168,7 @@ public sealed class AdminCategoryEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.categoryNameTaken"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.categories.nameTaken"));
                     });
   }
 
@@ -195,7 +195,7 @@ public sealed class AdminCategoryEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.categoryNameTaken"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.categories.nameTaken"));
                     });
   }
 
@@ -238,7 +238,7 @@ public sealed class AdminCategoryEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.categoryColourInvalid"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.categories.colourInvalid"));
                     });
   }
 
@@ -282,7 +282,7 @@ public sealed class AdminCategoryEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.categoryNameTaken"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.categories.nameTaken"));
                     });
   }
 
@@ -386,7 +386,7 @@ public sealed class AdminCategoryEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.categoryHasActiveItems"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.categories.hasActiveItems"));
                     });
   }
 

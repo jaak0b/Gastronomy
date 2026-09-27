@@ -24,9 +24,9 @@ const orderedLines = computed(() => linesByCount(props.lines))
 <template>
   <section class="station-open-board">
     <div class="board-head d-flex align-center ga-3 mb-4">
-      <h2 class="board-heading text-h5 flex-grow-1">{{ t('station.openArticlesHeading') }}</h2>
+      <h2 class="board-heading text-h5 flex-grow-1">{{ t('station.board.labels.openArticlesHeading') }}</h2>
       <v-btn class="back-to-orders" variant="outlined" size="large" @click="emit('close')">
-        {{ t('station.backToOrders') }}
+        {{ t('station.board.actions.backToOrders') }}
       </v-btn>
     </div>
     <v-alert v-if="failureText !== null" class="board-failed mb-4" type="warning" variant="tonal">
@@ -39,7 +39,7 @@ const orderedLines = computed(() => linesByCount(props.lines))
         variant="flat"
         size="large"
       >
-        {{ t('station.statsTogetherChip', { count: togetherCount }) }}
+        {{ t('station.board.labels.statsTogetherChip', { count: togetherCount }) }}
       </v-chip>
       <v-chip
         class="stat-as-it-comes"
@@ -47,7 +47,7 @@ const orderedLines = computed(() => linesByCount(props.lines))
         variant="flat"
         size="large"
       >
-        {{ t('station.statsAsItComesChip', { count: asItComesCount }) }}
+        {{ t('station.board.labels.statsAsItComesChip', { count: asItComesCount }) }}
       </v-chip>
     </div>
     <ul class="units">

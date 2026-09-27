@@ -9,7 +9,7 @@ function mountPanel(failure: { key: string }) {
 
 describe('SendFailurePanel', () => {
   it('tells the server the order did not go out and points at the retry', () => {
-    const panel = mountPanel({ key: 'review.sendFailed' })
+    const panel = mountPanel({ key: 'phone.review.errors.sendFailed' })
 
     expect(panel.get('.failure-message').text()).toBe(
       'Die Bestellung konnte nicht gesendet werden. Tippen Sie auf "Erneut senden".',
@@ -17,7 +17,7 @@ describe('SendFailurePanel', () => {
   })
 
   it('names the saving problem without pointing at a button that is not on the screen', () => {
-    const panel = mountPanel({ key: 'review.sendFailedDatabase' })
+    const panel = mountPanel({ key: 'errors.storage.databaseUnavailable' })
 
     expect(panel.get('.failure-message').text()).toBe(
       'Der Rechner konnte die Bestellung nicht speichern. Senden Sie sie noch einmal.',

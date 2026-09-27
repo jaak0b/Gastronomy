@@ -26,7 +26,7 @@ public static partial class Refusal
 
     public static Error StationsDoNotBelongToTheFestival(Guid festivalId, Guid catalogItemId, IReadOnlyList<Guid> stationIdsOutsideTheFestival)
     {
-      return BadRequest("admin.actionFailed",
+      return BadRequest("errors.admin.actionFailed",
                         $"The article {catalogItemId} was not put on the menu of the festival {festivalId} because the stations {string.Join(", ", stationIdsOutsideTheFestival)} do not belong to that festival. The article screen offers only that festival's stations, so this call did not come from that screen.",
                         new Dictionary<string, object>
                         {
@@ -36,7 +36,7 @@ public static partial class Refusal
 
     public static Error NoStationPreparesTheItem(Guid catalogItemId)
     {
-      return UnprocessableEntity("admin.itemNeedsAStation",
+      return UnprocessableEntity("errors.admin.festivals.itemNeedsAStation",
                                  $"No station at this festival would prepare the article {catalogItemId}.",
                                  new Dictionary<string, object>
                                  {
@@ -46,7 +46,7 @@ public static partial class Refusal
 
     public static Error FestivalIsRunning(Guid festivalId)
     {
-      return Conflict("admin.itemStaysOnTheMenuWhileTheFestivalRuns",
+      return Conflict("errors.admin.festivals.itemStaysOnTheMenuWhileTheFestivalRuns",
                       $"The festival {festivalId} is running right now, so an article cannot leave its menu.",
                       new Dictionary<string, object>
                       {

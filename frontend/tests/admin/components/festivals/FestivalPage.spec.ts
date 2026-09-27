@@ -477,7 +477,7 @@ describe('the stations of this festival', () => {
         status: 409,
         body: {
           code: 'Conflict',
-          messageKey: 'admin.stationHasOrdersAtTheFestival',
+          messageKey: 'errors.admin.festivals.stationHasOrdersAtTheFestival',
           parameters: { count: '3' },
           details: null,
         },
@@ -1003,7 +1003,7 @@ describe('an item change the laptop refuses', () => {
     status: 400,
     body: {
       code: 'Conflict',
-      messageKey: 'admin.actionFailed',
+      messageKey: 'errors.admin.actionFailed',
       parameters: {},
       details: null,
     },
@@ -1055,7 +1055,7 @@ describe('an item change the laptop refuses', () => {
         status: 400,
         body: {
           code: 'Conflict',
-          messageKey: 'admin.actionFailed',
+          messageKey: 'errors.admin.actionFailed',
           parameters: {},
           details: null,
         },

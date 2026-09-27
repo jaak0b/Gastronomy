@@ -590,7 +590,7 @@ describe('an order the laptop refused with a reason', () => {
           new Response(
             JSON.stringify({
               code: 'UnknownItem',
-              messageKey: 'order.unknownItem',
+              messageKey: 'errors.order.unknownItem',
               parameters: {},
               details: null,
             }),
@@ -632,7 +632,7 @@ describe('an order the laptop refused with a reason', () => {
           new Response(
             JSON.stringify({
               code: 'UnprocessableEntity',
-              messageKey: 'catalog.itemSoldOut',
+              messageKey: 'errors.order.itemSoldOut',
               parameters: { name: 'Wasser', catalogItemId: 'item-wasser' },
               details: null,
             }),
@@ -802,7 +802,7 @@ describe('an order the laptop refused after an attempt it never answered', () =>
     saveSendProgress({
       state: 'failed',
       attempts: 1,
-      failure: { key: 'review.sendFailed' },
+      failure: { key: 'phone.review.errors.sendFailed' },
       unresolvedAttempt: {
         clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
         tableName: 'Tisch 3',
@@ -870,7 +870,7 @@ describe('an order the laptop refused after an attempt it never answered', () =>
           new Response(
             JSON.stringify({
               code: 'UnprocessableEntity',
-              messageKey: 'catalog.itemSoldOut',
+              messageKey: 'errors.order.itemSoldOut',
               parameters: { name: 'Wasser', catalogItemId: 'item-wasser' },
               details: null,
             }),

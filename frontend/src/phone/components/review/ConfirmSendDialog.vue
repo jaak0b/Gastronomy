@@ -53,7 +53,7 @@ const settlementFields = ref<InstanceType<typeof AmountPaidFields> | null>(null)
 
 const isSettling = computed(() => choice.value === 'settleNow')
 const confirmLabel = computed(() =>
-  isSettling.value ? t('review.sendAndSettle') : t('review.send'),
+  isSettling.value ? t('phone.review.actions.sendAndSettle') : t('phone.review.actions.send'),
 )
 const canConfirm = computed(
   () =>
@@ -77,19 +77,19 @@ function confirm(): void {
 <template>
   <v-dialog class="confirm-send-dialog" model-value persistent fullscreen>
     <v-card class="card d-flex flex-column" :style="{ paddingBottom: `${keyboardInset}px` }">
-      <v-card-title class="title">{{ t('review.confirmSendTitle') }}</v-card-title>
+      <v-card-title class="title">{{ t('phone.review.labels.confirmSendTitle') }}</v-card-title>
       <v-card-text class="body flex-grow-1 d-flex flex-column">
         <div class="row row-table">
-          <span class="label">{{ t('review.confirmSendTable') }}</span>
+          <span class="label">{{ t('phone.review.labels.confirmSendTable') }}</span>
           <span class="value">{{ tableName }}</span>
         </div>
         <div class="row row-amount">
-          <span class="label">{{ t('review.confirmSendAmount') }}</span>
+          <span class="label">{{ t('phone.review.labels.confirmSendAmount') }}</span>
           <span class="value">{{ amount }}</span>
         </div>
         <div v-for="station in stations" :key="station.stationId" class="row row-station">
           <span class="label">
-            {{ t('review.confirmSendStation', { name: station.stationName }) }}
+            {{ t('phone.review.labels.confirmSendStation', { name: station.stationName }) }}
           </span>
           <span class="value">{{ deliveryTextFor(station) }}</span>
         </div>
@@ -103,10 +103,10 @@ function confirm(): void {
             @update:model-value="(chosen: SettlementChoice) => (choice = chosen)"
           >
             <v-btn class="settle-later" value="settleLater" size="large">
-              {{ t('review.settleLater') }}
+              {{ t('phone.review.actions.settleLater') }}
             </v-btn>
             <v-btn class="settle-now" value="settleNow" size="large">
-              {{ t('review.settleNow') }}
+              {{ t('phone.review.actions.settleNow') }}
             </v-btn>
           </v-btn-toggle>
           <AmountPaidFields
@@ -130,7 +130,7 @@ function confirm(): void {
           {{ confirmLabel }}
         </v-btn>
         <v-btn class="cancel" variant="outlined" size="large" @click="emit('cancelled')">
-          {{ t('review.confirmSendCancel') }}
+          {{ t('common.actions.cancel') }}
         </v-btn>
       </v-card-actions>
     </v-card>

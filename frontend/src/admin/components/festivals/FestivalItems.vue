@@ -206,13 +206,13 @@ async function remove(): Promise<void> {
           type="error"
           variant="tonal"
         >
-          {{ t('admin.loadFailed') }}
+          {{ t('admin.common.errors.loadFailed') }}
         </v-alert>
 
         <div v-if="festivalStations.length === 0" class="festival-item-placeholder">
           <div class="item-line d-flex align-center flex-wrap ga-3 py-2 px-3">
             <span class="needs-a-station text-body-1">
-              {{ t('admin.festival.needsAStationFirst') }}
+              {{ t('admin.festivals.messages.needsAStationFirst') }}
             </span>
           </div>
         </div>
@@ -238,7 +238,7 @@ async function remove(): Promise<void> {
                 variant="text"
                 @click="startEditingCategory(group.category)"
               >
-                {{ t('admin.edit') }}
+                {{ t('admin.common.actions.edit') }}
               </v-btn>
             </div>
             <div
@@ -250,7 +250,7 @@ async function remove(): Promise<void> {
               <div class="item-line d-flex align-center flex-wrap ga-3 py-2 px-3">
                 <span class="name text-body-1">{{ item.name }}</span>
                 <v-chip v-if="!item.isActive" class="deactivated" size="small" color="grey">
-                  {{ t('admin.deactivated') }}
+                  {{ t('admin.common.labels.deactivated') }}
                 </v-chip>
                 <v-text-field
                   class="price-field"
@@ -258,10 +258,10 @@ async function remove(): Promise<void> {
                   inputmode="decimal"
                   hide-details="auto"
                   :model-value="rowShownFor(item.itemId).price.edited"
-                  :label="t('admin.items.price')"
+                  :label="t('admin.items.labels.price')"
                   :error="priceIsUnreadable(item.itemId)"
                   :error-messages="
-                    priceIsUnreadable(item.itemId) ? [t('admin.items.priceInvalid')] : []
+                    priceIsUnreadable(item.itemId) ? [t('admin.items.errors.priceInvalid')] : []
                   "
                   @update:model-value="(typed: string) => typePrice(item.itemId, typed)"
                   @blur="save(item.itemId)"
@@ -281,11 +281,11 @@ async function remove(): Promise<void> {
                   color="primary"
                   hide-details
                   :model-value="!item.atTheFestival.isAvailable"
-                  :label="t('admin.items.soldOut')"
+                  :label="t('common.labels.soldOut')"
                   @update:model-value="(value: boolean | null) => setSoldOut(item, value === true)"
                 />
                 <v-btn class="edit-item" variant="text" @click="startEditingItem(item)">
-                  {{ t('admin.edit') }}
+                  {{ t('admin.common.actions.edit') }}
                 </v-btn>
                 <span class="remove-item-wrapper">
                   <v-btn
@@ -297,7 +297,7 @@ async function remove(): Promise<void> {
                     @click="removedItem = item"
                   />
                   <v-tooltip activator="parent" location="top" :disabled="!isRunning">
-                    {{ t('admin.itemStaysOnTheMenuWhileTheFestivalRuns') }}
+                    {{ t('errors.admin.festivals.itemStaysOnTheMenuWhileTheFestivalRuns') }}
                   </v-tooltip>
                 </span>
               </div>
@@ -321,8 +321,8 @@ async function remove(): Promise<void> {
               item-value="itemId"
               density="compact"
               hide-details
-              :label="t('admin.festival.itemName')"
-              :no-data-text="t('admin.festival.noItemsToAdd')"
+              :label="t('admin.festivals.labels.itemName')"
+              :no-data-text="t('admin.festivals.messages.noItemsToAdd')"
             />
             <v-btn
               class="add-item"
@@ -331,10 +331,10 @@ async function remove(): Promise<void> {
               :disabled="chosenItemId === null"
               @click="add"
             >
-              {{ t('admin.festival.addItem') }}
+              {{ t('admin.festivals.actions.addItem') }}
             </v-btn>
             <v-btn class="new-item" variant="text" @click="startCreating">
-              {{ t('admin.items.new') }}
+              {{ t('admin.items.actions.new') }}
             </v-btn>
           </div>
           <v-alert
@@ -384,9 +384,9 @@ async function remove(): Promise<void> {
 
     <BaseConfirmDialog
       v-if="removedItem !== null"
-      :title="t('admin.festival.removeItemTitle')"
-      :body="t('admin.festival.removeItemBody')"
-      :confirm-label="t('admin.festival.remove')"
+      :title="t('admin.festivals.labels.removeItemTitle')"
+      :body="t('admin.festivals.messages.removeItemBody')"
+      :confirm-label="t('admin.festivals.actions.remove')"
       @confirm="remove"
       @cancel="removedItem = null"
     />

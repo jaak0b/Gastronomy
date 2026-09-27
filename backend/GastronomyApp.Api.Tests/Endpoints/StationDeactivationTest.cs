@@ -56,7 +56,7 @@ public sealed class StationDeactivationTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.stationHasUnfinishedItems"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.stations.hasUnfinishedItems"));
                     });
   }
 
@@ -100,7 +100,7 @@ public sealed class StationDeactivationTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemsWouldHaveNoStation"), "A station losing its items is a different refusal from one still owing food.");
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.stations.itemsWouldHaveNoStation"), "A station losing its items is a different refusal from one still owing food.");
                     });
   }
 

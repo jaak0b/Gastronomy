@@ -9,13 +9,13 @@ export function screenTitle(
   t: (key: string) => string,
 ): string {
   if (isPhoneScreen(screen)) {
-    return t('app.title.waiter')
+    return t('common.appTitle.waiter')
   }
   switch (screen) {
     case 'station':
       return stationName === null || stationName === '' ? APP_NAME : stationName
     case 'admin':
-      return t('app.title.admin')
+      return t('common.appTitle.admin')
     case 'doorGate':
     case 'enrolQr':
     case 'welcome':

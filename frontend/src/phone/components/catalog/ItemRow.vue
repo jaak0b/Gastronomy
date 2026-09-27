@@ -57,7 +57,7 @@ const estimate = computed(() =>
 const view = computed(() => buildItemPositionsView(props.positions, props.item.priceCents))
 
 const countTimesPrice = computed(() =>
-  t('catalog.countTimesPrice', { count: view.value.totalCount, price: price.value }),
+  t('phone.catalog.labels.countTimesPrice', { count: view.value.totalCount, price: price.value }),
 )
 
 const unitPriceText = computed(() =>
@@ -129,7 +129,7 @@ function stationNameForRow(group: PositionGroup): string | null {
             </span>
             <span class="facts text-body-2 text-medium-emphasis">
               <span v-if="estimate !== null" class="estimate">{{ estimate }}</span>
-              <span v-if="isSoldOut" class="sold-out">{{ t('catalog.soldOut') }}</span>
+              <span v-if="isSoldOut" class="sold-out">{{ t('common.labels.soldOut') }}</span>
             </span>
           </v-btn>
           <span v-if="view.totalCount > 0" class="article-total text-body-1">{{ articleTotal }}</span>
@@ -139,7 +139,7 @@ function stationNameForRow(group: PositionGroup): string | null {
             :disabled="isSoldOut"
             @click="askForANote"
           >
-            {{ t('catalog.addNote') }}
+            {{ t('phone.catalog.actions.addNote') }}
           </v-btn>
         </div>
       </div>
@@ -190,26 +190,26 @@ function stationNameForRow(group: PositionGroup): string | null {
 
     <v-dialog v-model="isAsking" max-width="480" :style="{ height: `calc(100% - ${keyboardInset}px)`, bottom: 'auto' }">
       <v-card class="note-dialog">
-        <v-card-title class="title">{{ t('catalog.noteTitle', { name: item.name }) }}</v-card-title>
+        <v-card-title class="title">{{ t('phone.catalog.labels.noteTitle', { name: item.name }) }}</v-card-title>
         <v-card-text>
           <v-text-field
             v-model="typedNote"
             class="note-input"
             maxlength="200"
             autofocus
-            :label="t('catalog.itemNote')"
-            :placeholder="t('catalog.lineNotePlaceholder')"
+            :label="t('phone.catalog.labels.itemNote')"
+            :placeholder="t('phone.catalog.labels.lineNotePlaceholder')"
             persistent-placeholder
             @keyup.enter="canConfirm && confirm()"
           />
         </v-card-text>
         <v-card-actions>
           <v-btn class="note-cancel" variant="text" @click="isAsking = false">
-            {{ t('catalog.noteCancel') }}
+            {{ t('common.actions.cancel') }}
           </v-btn>
           <v-spacer />
           <v-btn class="note-confirm" color="primary" variant="tonal" :disabled="!canConfirm" @click="confirm">
-            {{ groupBeingCorrected === null ? t('catalog.noteAdd') : t('catalog.noteSave') }}
+            {{ groupBeingCorrected === null ? t('phone.catalog.actions.noteAdd') : t('phone.catalog.actions.noteSave') }}
           </v-btn>
         </v-card-actions>
       </v-card>

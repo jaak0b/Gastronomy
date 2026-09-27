@@ -75,7 +75,7 @@ public sealed class FestivalAdministrationServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(created.IsSuccess, Is.False);
-                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("admin.festivalPeriodInvalid"));
+                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.periodInvalid"));
                     });
   }
 
@@ -89,7 +89,7 @@ public sealed class FestivalAdministrationServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(created.IsSuccess, Is.False);
-                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("admin.festivalOverlaps"));
+                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.overlaps"));
                       Assert.That(created.RefusalMetadata("name"), Is.EqualTo("Sommerfest"));
                     });
   }
@@ -142,7 +142,7 @@ public sealed class FestivalAdministrationServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(hidden.IsSuccess, Is.False);
-                      Assert.That(hidden.RefusalMessageKey(), Is.EqualTo("admin.actionFailed"));
+                      Assert.That(hidden.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
                       Assert.That(hidden.RefusalDescription(), Does.Contain(_festivalId.ToString()));
                     });
   }

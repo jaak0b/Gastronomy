@@ -9,7 +9,7 @@ public static partial class Refusal
   {
     public static Error UnknownCatalogItemId(Guid catalogItemId)
     {
-      return UnprocessableEntity("order.unknownItem",
+      return UnprocessableEntity("errors.order.unknownItem",
                                  $"The order names the catalog item {catalogItemId}, which no longer exists.",
                                  new()
                                  {
@@ -20,7 +20,7 @@ public static partial class Refusal
 
     public static Error ItemNotAvailable(Guid catalogItemId, string itemName)
     {
-      return UnprocessableEntity("catalog.itemSoldOut",
+      return UnprocessableEntity("errors.order.itemSoldOut",
                                  $"The item {itemName} ({catalogItemId}) is switched off or sold out at the running festival.",
                                  new()
                                  {
@@ -32,7 +32,7 @@ public static partial class Refusal
 
     public static Error StationNotAssignedToItem(Guid catalogItemId, string itemName)
     {
-      return UnprocessableEntity("catalog.itemSoldOut",
+      return UnprocessableEntity("errors.order.itemSoldOut",
                                  $"The station the order chose for the item {itemName} ({catalogItemId}) does not prepare it at the running festival.",
                                  new()
                                  {
@@ -44,7 +44,7 @@ public static partial class Refusal
 
     public static Error ChosenStationNoLongerPreparesTheItem(Guid catalogItemId, string itemName)
     {
-      return UnprocessableEntity("catalog.itemSoldOut",
+      return UnprocessableEntity("errors.order.itemSoldOut",
                                  $"The station the order chose for the item {itemName} ({catalogItemId}) is switched off, so it no longer prepares it.",
                                  new()
                                  {

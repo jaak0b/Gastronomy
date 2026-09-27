@@ -25,7 +25,7 @@ function save(): void {
 
 <template>
   <BaseFormDialog
-    :title="station === null ? t('admin.stations.new') : t('admin.stations.edit')"
+    :title="station === null ? t('admin.stations.actions.new') : t('admin.stations.actions.edit')"
     :error-text="errorText"
     :save-disabled="name.trim().length === 0"
     @save="save"

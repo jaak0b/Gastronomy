@@ -223,7 +223,7 @@ describe('the list of festivals', () => {
           return new Response(
             JSON.stringify({
               code: 'ValidationFailed',
-              messageKey: 'admin.actionFailed',
+              messageKey: 'errors.admin.actionFailed',
               parameters: {},
               details: null,
             }),

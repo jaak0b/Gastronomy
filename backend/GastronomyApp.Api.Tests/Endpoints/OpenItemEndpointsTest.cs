@@ -290,7 +290,7 @@ public sealed class OpenItemEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
                       Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(), Is.EqualTo(700));
                     });
   }
@@ -307,7 +307,7 @@ public sealed class OpenItemEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
                       Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(), Is.EqualTo(700));
                     });
   }
@@ -329,7 +329,7 @@ public sealed class OpenItemEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
                       Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(), Is.EqualTo(700));
                     });
   }
@@ -343,7 +343,7 @@ public sealed class OpenItemEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementNoItemsSelected"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.settlement.noItemsSelected"));
                     });
   }
 
@@ -397,7 +397,7 @@ public sealed class OpenItemEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
                       Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(), Is.EqualTo(700));
                     });
   }
@@ -467,7 +467,7 @@ public sealed class OpenItemEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementUnknownItem"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.settlement.unknownItem"));
                       Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(), Is.EqualTo(700));
                     });
   }
@@ -493,7 +493,7 @@ public sealed class OpenItemEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
                       Assert.That(tables.GetArrayLength(), Is.EqualTo(2));
                       Assert.That(tables[0].GetProperty("openAmountCents").GetInt32(), Is.EqualTo(700));
                       Assert.That(tables[1].GetProperty("openAmountCents").GetInt32(), Is.EqualTo(700));

@@ -50,7 +50,7 @@ public sealed class AdminEnrolmentEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("enrolment.atMostOneOwner"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.enrolment.atMostOneOwner"));
                     });
   }
 
@@ -106,7 +106,7 @@ public sealed class AdminEnrolmentEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("enrolment.stationIsOffTheList"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.enrolment.stationIsOffTheList"));
                     });
   }
 

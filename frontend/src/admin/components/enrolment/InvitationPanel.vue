@@ -17,16 +17,16 @@ const station = computed(() => props.invitation.station ?? null)
 const staffMember = computed(() => props.invitation.staffMember ?? null)
 
 const title = computed(() =>
-  station.value === null ? t('admin.enrol.title') : t('admin.enrol.titleStation'),
+  station.value === null ? t('admin.enrolment.labels.phoneTitle') : t('admin.enrolment.labels.stationTitle'),
 )
 
 const instruction = computed(() => {
   if (station.value !== null) {
-    return t('admin.enrol.forStation', { name: station.value.name })
+    return t('admin.enrolment.messages.forStation', { name: station.value.name })
   }
   return staffMember.value === null
-    ? t('admin.enrol.forSomebodyNew')
-    : t('admin.enrol.forSomebodyKnown')
+    ? t('admin.enrolment.messages.forSomebodyNew')
+    : t('admin.enrolment.messages.forSomebodyKnown')
 })
 
 watch(
@@ -64,10 +64,10 @@ async function copyUrl(): Promise<void> {
           v-if="view.imageUrl !== null"
           class="qr-image mt-3"
           :src="view.imageUrl"
-          :alt="t('admin.enrol.qrAlt')"
+          :alt="t('admin.enrolment.labels.qrAlt')"
           width="220"
         />
-        <p class="validity text-medium-emphasis mt-2">{{ t('admin.enrol.validity') }}</p>
+        <p class="validity text-medium-emphasis mt-2">{{ t('admin.enrolment.messages.validity') }}</p>
         <div class="d-flex align-center ga-2 mt-4">
           <code class="qr-url flex-grow-1 pa-2 rounded">{{ invitation.qrUrl }}</code>
           <v-btn
@@ -79,7 +79,7 @@ async function copyUrl(): Promise<void> {
           />
         </div>
         <p v-if="copyingIsUnavailable" class="copy-unavailable text-medium-emphasis mt-2">
-          {{ t('admin.enrol.copyUnavailable') }}
+          {{ t('admin.enrolment.messages.copyUnavailable') }}
         </p>
       </template>
       <v-alert v-else class="qr-gone" type="warning" variant="tonal">
@@ -94,9 +94,9 @@ async function copyUrl(): Promise<void> {
         variant="text"
         @click="$emit('renew')"
       >
-        {{ t('admin.enrol.newQrCode') }}
+        {{ t('admin.enrolment.actions.newQrCode') }}
       </v-btn>
-      <v-btn variant="text" @click="$emit('close')">{{ t('admin.cancel') }}</v-btn>
+      <v-btn variant="text" @click="$emit('close')">{{ t('common.actions.cancel') }}</v-btn>
     </v-card-actions>
   </v-card>
 </template>

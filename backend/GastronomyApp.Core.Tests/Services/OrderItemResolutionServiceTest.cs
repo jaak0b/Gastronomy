@@ -93,7 +93,7 @@ public sealed class OrderItemResolutionServiceTest
                                                unknownId.ToString(),
                                                secondUnknownId.ToString()
                                              }));
-                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("order.unknownItem"));
+                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("errors.order.unknownItem"));
                     });
   }
 
@@ -105,7 +105,7 @@ public sealed class OrderItemResolutionServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("order.cannotBeProcessed"));
+                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("errors.order.cannotBeProcessed"));
                     });
   }
 
@@ -117,7 +117,7 @@ public sealed class OrderItemResolutionServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("catalog.itemSoldOut"));
+                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("errors.order.itemSoldOut"));
                     });
   }
 
@@ -139,7 +139,7 @@ public sealed class OrderItemResolutionServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("catalog.itemSoldOut"));
+                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("errors.order.itemSoldOut"));
                       Assert.That(result.RefusalMetadata("catalogItemId"), Is.EqualTo(_bratwurstId.ToString()));
                       Assert.That(result.RefusalMetadata("name"), Is.EqualTo("Bratwurst"));
                     });
@@ -153,7 +153,7 @@ public sealed class OrderItemResolutionServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("catalog.itemSoldOut"));
+                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("errors.order.itemSoldOut"));
                       Assert.That(result.RefusalMetadata("catalogItemId"), Is.EqualTo(_bratwurstId.ToString()));
                       Assert.That(result.RefusalMetadata("name"), Is.EqualTo("Bratwurst"));
                     });

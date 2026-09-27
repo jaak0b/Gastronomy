@@ -5,13 +5,13 @@ describe('adminErrorMessage, the key the laptop actually sent', () => {
   it('renders a refusal about unfinished orders as that message', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
-      messageKey: 'admin.stationHasUnfinishedItems',
+      messageKey: 'errors.admin.stations.hasUnfinishedItems',
       parameters: { count: 3 },
       details: null,
     })
 
     expect(message).toEqual({
-      key: 'admin.stationHasUnfinishedItems',
+      key: 'errors.admin.stations.hasUnfinishedItems',
       parameters: { count: 3 },
       count: 3,
     })
@@ -20,18 +20,18 @@ describe('adminErrorMessage, the key the laptop actually sent', () => {
   it('renders an orphaned-items refusal as its own message, never as unfinished orders', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
-      messageKey: 'admin.itemsWouldHaveNoStation',
+      messageKey: 'errors.admin.stations.itemsWouldHaveNoStation',
       parameters: { count: 2 },
       details: null,
     })
 
-    expect(message.key).toBe('admin.itemsWouldHaveNoStation')
+    expect(message.key).toBe('errors.admin.stations.itemsWouldHaveNoStation')
   })
 
   it('carries the count so the sentence can take its singular form', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
-      messageKey: 'admin.itemsWouldHaveNoStation',
+      messageKey: 'errors.admin.stations.itemsWouldHaveNoStation',
       parameters: { count: 1 },
       details: null,
     })
@@ -42,7 +42,7 @@ describe('adminErrorMessage, the key the laptop actually sent', () => {
   it('carries no count for a message that has no number in it', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
-      messageKey: 'admin.stationHasUnfinishedItems',
+      messageKey: 'errors.admin.stations.hasUnfinishedItems',
       parameters: {},
       details: null,
     })
@@ -55,7 +55,7 @@ describe('adminErrorMessage, a count the laptop wrote as text', () => {
   it('reads it as a number, because the laptop sends every parameter as text', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
-      messageKey: 'admin.itemsWouldHaveNoStation',
+      messageKey: 'errors.admin.stations.itemsWouldHaveNoStation',
       parameters: { count: '2' },
       details: null,
     })
@@ -66,7 +66,7 @@ describe('adminErrorMessage, a count the laptop wrote as text', () => {
   it('carries no count when the text is not a number at all', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
-      messageKey: 'admin.itemsWouldHaveNoStation',
+      messageKey: 'errors.admin.stations.itemsWouldHaveNoStation',
       parameters: { count: 'einige' },
       details: null,
     })
@@ -77,7 +77,7 @@ describe('adminErrorMessage, a count the laptop wrote as text', () => {
   it('carries no count for a fraction, because half an item cannot be counted', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
-      messageKey: 'admin.itemsWouldHaveNoStation',
+      messageKey: 'errors.admin.stations.itemsWouldHaveNoStation',
       parameters: { count: '2.5' },
       details: null,
     })
@@ -88,7 +88,7 @@ describe('adminErrorMessage, a count the laptop wrote as text', () => {
   it('carries no count when the text is empty', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
-      messageKey: 'admin.itemsWouldHaveNoStation',
+      messageKey: 'errors.admin.stations.itemsWouldHaveNoStation',
       parameters: { count: '' },
       details: null,
     })
@@ -101,23 +101,23 @@ describe('adminErrorMessage, a refusal the laptop worded itself', () => {
   it('renders a station that still has unfinished orders', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
-      messageKey: 'admin.stationHasUnfinishedItems',
+      messageKey: 'errors.admin.stations.hasUnfinishedItems',
       parameters: {},
       details: null,
     })
 
-    expect(message.key).toBe('admin.stationHasUnfinishedItems')
+    expect(message.key).toBe('errors.admin.stations.hasUnfinishedItems')
   })
 
   it('renders a refused enrolment invitation', () => {
     const message = adminErrorMessage({
       code: 'ValidationFailed',
-      messageKey: 'enrolment.atMostOneOwner',
+      messageKey: 'errors.enrolment.atMostOneOwner',
       parameters: {},
       details: null,
     })
 
-    expect(message.key).toBe('enrolment.atMostOneOwner')
+    expect(message.key).toBe('errors.enrolment.atMostOneOwner')
   })
 })
 
@@ -130,7 +130,7 @@ describe('adminErrorMessage, a key this app does not know', () => {
       details: null,
     })
 
-    expect(message.key).toBe('admin.actionFailed')
+    expect(message.key).toBe('errors.admin.actionFailed')
   })
 
   it('falls back rather than mislabelling the refusal', () => {
@@ -158,7 +158,7 @@ describe('adminErrorMessage, a key this app does not know', () => {
   it('falls back when the laptop sent no error body at all', () => {
     const message = adminErrorMessage(null)
 
-    expect(message).toEqual({ key: 'admin.actionFailed', parameters: {}, count: null })
+    expect(message).toEqual({ key: 'errors.admin.actionFailed', parameters: {}, count: null })
   })
 })
 

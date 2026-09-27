@@ -1,346 +1,456 @@
 {
-  "app": {
-    "title": {
-      "waiter": "Ordering",
-      "admin": "Administration"
-    }
-  },
-  "enrol": {
-    "title": "Set up this phone",
-    "nameLabel": "Your name",
-    "continue": "Continue",
-    "error": {
-      "codeUsed": "Ask at the computer for a new QR code. This code is no longer valid.",
-      "noConnection": "Check that you are on the festival WiFi. This phone cannot reach the computer."
+  "common": {
+    "actions": {
+      "back": "Back",
+      "cancel": "Cancel",
+      "continue": "Continue"
     },
-    "carryOn": "Carry on with this phone"
-  },
-  "enrolCode": {
-    "error": {
-      "wrong": "Read the six digits from the computer again. This code is not correct.",
-      "retired": "Ask at the computer for a new QR code. This code was entered wrongly too often and is not accepted any more."
-    }
-  },
-  "header": {
-    "reconnecting": "No connection to the computer.",
-    "backOnline": "The connection is back.",
-    "settings": "Settings",
-    "openItems": "Open items"
-  },
-  "settings": {
-    "title": "Settings",
-    "person": "You are serving as {name}.",
-    "language": "Language"
-  },
-  "catalog": {
-    "addNote": "Note",
-    "countTimesPrice": "{count} × {price}",
-    "noteTitle": "Note for {name}",
-    "noteAdd": "Add",
-    "noteSave": "Save",
-    "noteCancel": "Cancel",
-    "title": "Take an order",
-    "categoryWithCount": "{count} x {name}",
-    "backToCategories": "Back to the categories",
-    "soldOut": "Sold out",
-    "tableName": "Table",
-    "tablePlaceholder": "For example: 12",
-    "itemNote": "Note for this item",
-    "lineNotePlaceholder": "For example: no onions",
-    "basketEmpty": "Nothing chosen yet",
-    "basketSummary": "{count} item, {total} | {count} items, {total}",
-    "toReview": "Go to the summary",
-    "itemSoldOut": "{name} is sold out.",
-    "productionMinutesOutOfRange": "Enter minutes from 0 to 600."
-  },
-  "estimates": {
-    "inMinutes": "~{count} min",
-    "inMinuteRange": "~{min} - {max} min",
-    "withEstimate": "{line} ({estimate})"
-  },
-  "line": {
-    "whereTitle": "Station for {item}",
-    "currentStation": "Current",
-    "cancel": "Cancel"
-  },
-  "delivery": {
-    "together": "Combined",
-    "asItComes": "Individual"
-  },
-  "review": {
-    "line": "{count} x {item}",
-    "tableIs": "Table: {name}",
-    "goesTo": "Goes to {name}",
-    "unknownPrice": "-",
-    "continue": "Continue",
-    "send": "Send the order",
-    "sendAndSettle": "Send the order and settle it",
-    "settleNow": "Settle now",
-    "settleLater": "Settle later",
-    "sending": "Sending",
-    "sent": "Order {number} has arrived.",
-    "back": "Back",
-    "removeLinesThatCannotBeOrdered": "Remove the items that cannot be ordered",
-    "sendFailed": "The order could not be sent. Tap \"Send again\".",
-    "sendFailedDatabase": "The computer could not save the order. Send it again.",
-    "sendInterrupted": "It is not clear whether the order arrived. Tap \"Send again\".",
-    "retry": "Send again",
-    "confirmSendTitle": "Send the order?",
-    "confirmSendTable": "Table:",
-    "confirmSendAmount": "Amount:",
-    "confirmSendStation": "{name}:",
-    "confirmSendCancel": "Cancel",
-    "sendStillUnknown": "The order could not be confirmed yet. It may have arrived anyway.",
-    "writeItDown": "Write the order on a slip of paper and check the tablet at the station.",
-    "writtenDown": "The order is written down",
-    "conflictingChange": "Somebody else changed something at the same moment. Try again."
-  },
-  "order": {
-    "cannotBeProcessed": "The order could not be processed. Take it to the station yourself.",
-    "draftLost": "The order you had started could not be read. Enter it again.",
-    "unknownItem": "One item is no longer on the menu. Take it off the order.",
-    "settlementNoItemsSelected": "Choose the items you want to settle first.",
-    "settlementCannotBeProcessed": "The settlement could not be processed. Write on a slip of paper what the table paid.",
-    "settlementUnknownItem": "Reload the list. The computer no longer knows one of the selected items, so nothing was settled."
-  },
-  "openItems": {
-    "title": "Open items",
-    "empty": "Nothing is open. Every table is settled.",
-    "reload": "Reload the list",
-    "loadFailed": "Tap \"Reload the list\". The computer could not be reached, so this list may be out of date.",
-    "tableOpen": "Open: {amount}",
-    "tableIs": "Table {name}",
-    "wholeTable": "Select the whole table",
-    "fromOrder": "Order {number}",
-    "order": "Order {order}",
-    "paid": "Paid",
-    "noOrdersForTable": "There are no orders for this table.",
-    "itemNote": "Note: {note}",
-    "selected": "Selected: {amount}",
-    "settle": "Settle",
-    "settleAmountPaid": "Settle a different amount",
-    "amountPaidTitle": "How much did the table pay?",
-    "amountPaidField": "Amount paid",
-    "amountPaidReason": "Reason",
-    "reasonPlaceholder": "For example: food for the band",
-    "amountPaidConfirm": "Settle",
-    "amountPaidCancel": "Cancel",
-    "listIncomplete": "Ask at the table what is still open. This list is missing {count} item, because the computer can no longer find the order it belongs to. | Ask at the table what is still open. This list is missing {count} items, because the computer can no longer find the orders they belong to.",
-    "someWereAlreadySettled": "Somebody else had already settled {count} item in your selection. Give the guest {amount} back. | Somebody else had already settled {count} items in your selection. Give the guest {amount} back.",
-    "settleFailed": "Try again. Settling failed.",
-    "settleAnswerNeverCame": "It is not clear whether the settlement arrived. Reload the list and check whether the items are still open."
-  },
-  "admin": {
-    "notOnLaptop": "The admin pages are only available on the computer.",
-    "overview": {
-      "title": "Overview",
-      "ready": "Everything is set up. You can now set up the phones and the tablets.",
-      "missingStation": "Add a station to this festival, for example Kitchen and Bar.",
-      "missingCategory": "Create a category, for example Food and Drinks.",
-      "missingItems": "Add items to this festival and fill in their prices.",
-      "itemsWithoutStation": "Give {count} item a station. Without one it cannot be ordered. | Give {count} items a station. Without one they cannot be ordered.",
-      "stationWithoutTablet": "Set the tablet up for {name}. Without a tablet this station cannot see its orders.",
-      "missingFestival": "Create a festival first.",
-      "noFestivalIsRunning": "No festival is active right now. Look under \"Festivals\"."
+    "appTitle": {
+      "admin": "Administration",
+      "waiter": "Ordering"
     },
-    "stations": {
-      "title": "Stations",
-      "new": "New station",
-      "edit": "Edit the station",
-      "noTablet": "No tablet set up",
-      "setUpDevice": "Set up the tablet",
-      "deactivate": "Switch this station off",
-      "activate": "Switch this station on",
-      "deactivateTitle": "Switch this station off?",
-      "deactivateConfirm": "Switch the station off"
+    "delivery": {
+      "asItComes": "Individual",
+      "together": "Combined"
     },
-    "items": {
-      "title": "Items",
+    "estimates": {
+      "inMinuteRange": "~{min} - {max} min",
+      "inMinutes": "~{count} min",
+      "withEstimate": "{line} ({estimate})"
+    },
+    "labels": {
+      "countTimesItem": "{count} x {item}",
+      "doneCounter": "{fulfilled} / {total} prepared",
+      "note": "Note: {note}",
       "soldOut": "Sold out",
-      "new": "New item",
-      "edit": "Edit the item",
-      "category": "Category",
-      "price": "Price in euros",
-      "priceInvalid": "Enter the price in euros, for example 3.50.",
-      "productionMinutes": "Preparation time in minutes",
-      "prepareIndependently": "Is prepared independently of other articles",
-      "activate": "Activate the item",
-      "deactivateTitle": "Deactivate this item?",
-      "deactivateConfirm": "Deactivate the item"
+      "table": "Table {name}",
+      "takenBy": "{time} · {name}"
     },
-    "staff": {
-      "title": "Waiters",
-      "new": "New waiter",
-      "name": "Name",
-      "nameMissing": "Give the waiter a name before you save.",
-      "noPhone": "No phone set up",
-      "newCode": "Set the phone up again",
-      "rename": "Change the name",
-      "activate": "Put the waiter back on the list",
-      "deactivateTitle": "Take this waiter off the list?",
-      "deactivateBody": "The waiter's phone is signed out.",
-      "deactivateConfirm": "Take the waiter off"
+    "language": {
+      "english": "English",
+      "german": "Deutsch"
+    }
+  },
+  "shared": {
+    "enrolment": {
+      "title": "Set up this phone",
+      "labels": {
+        "name": "Your name"
+      },
+      "actions": {
+        "carryOn": "Carry on with this phone"
+      },
+      "errors": {
+        "codeRetired": "Ask at the computer for a new QR code. This code was entered wrongly too often and is not accepted any more.",
+        "codeUsed": "Ask at the computer for a new QR code. This code is no longer valid.",
+        "codeWrong": "Read the six digits from the computer again. This code is not correct.",
+        "noConnection": "Check that you are on the festival WiFi. This phone cannot reach the computer."
+      }
     },
-    "enrol": {
-      "title": "Set up a phone",
-      "titleStation": "Set up a tablet",
-      "validity": "The QR code is valid for five minutes and for one device.",
-      "done": "{name} has set up their phone.",
-      "doneStation": "The tablet at {name} is set up.",
-      "expired": "Create a new QR code. This one was not scanned for five minutes.",
-      "copyUnavailable": "Type the address above by hand. Copying is not available on this page.",
-      "forSomebodyNew": "Scan this QR code with the phone camera. Then enter the name on the phone.",
-      "forSomebodyKnown": "Scan this QR code with the phone camera.",
-      "forStation": "Scan this QR code with the camera of the tablet at {name}.",
-      "qrAlt": "QR code for setting the device up",
-      "qrAlreadyUsed": "Create a new QR code. This one has already been used by a device.",
-      "qrReplaced": "Create a new QR code. This one is no longer valid.",
-      "qrUnavailable": "Create a new QR code. This one cannot be shown any more.",
-      "qrUnreachable": "The QR code could not be loaded. Reload the page.",
-      "newQrCode": "Create a new QR code"
+    "startup": {
+      "actions": {
+        "open": "Open",
+        "tryAgain": "Try again"
+      },
+      "messages": {
+        "deviceNotSetUp": "This device is not set up yet.",
+        "tapOpen": "Tap Open to continue."
+      },
+      "errors": {
+        "couldNotStart": "The computer did not answer properly. Try again.",
+        "laptopNotReached": "The computer is not answering. Try again."
+      }
+    }
+  },
+  "phone": {
+    "catalog": {
+      "title": "Take an order",
+      "labels": {
+        "basketSummary": "{count} item, {total} | {count} items, {total}",
+        "categoryWithCount": "{count} x {name}",
+        "countTimesPrice": "{count} × {price}",
+        "currentStation": "Current",
+        "itemNote": "Note for this item",
+        "lineNotePlaceholder": "For example: no onions",
+        "noteTitle": "Note for {name}",
+        "stationForItem": "Station for {item}"
+      },
+      "actions": {
+        "addNote": "Note",
+        "backToCategories": "Back to the categories",
+        "noteAdd": "Add",
+        "noteSave": "Save",
+        "toReview": "Go to the summary"
+      },
+      "messages": {
+        "basketEmpty": "Nothing chosen yet"
+      }
     },
-    "save": "Save",
-    "cancel": "Cancel",
-    "edit": "Edit",
-    "loadFailed": "Reload the page. The data could not be loaded.",
-    "itemsWouldHaveNoStation": "{count} item would be left without a station. Assign it to another station first or remove it from the festival. | {count} items would be left without a station. Assign them to another station first or remove them from the festival.",
-    "categories": {
-      "new": "New category",
-      "name": "Category name",
-      "colour": "Colour",
-      "edit": "Edit the category",
-      "activate": "Switch the category on",
-      "deactivateTitle": "Switch this category off?",
-      "deactivateConfirm": "Switch the category off",
-      "noneYet": "Click \"New category\". There is no category to choose yet."
+    "header": {
+      "actions": {
+        "openItems": "Open items",
+        "settings": "Settings"
+      },
+      "messages": {
+        "backOnline": "The connection is back.",
+        "reconnecting": "No connection to the computer."
+      },
+      "errors": {
+        "draftLost": "The order you had started could not be read. Enter it again."
+      }
     },
-    "itemNameMissing": "Give the item a name before you save it.",
-    "itemNameTaken": "There is already an item with this name. Choose a different one.",
-    "categoryNameMissing": "Give the category a name before you save.",
-    "categoryNameTaken": "There is already a category with this name. Choose a different one.",
-    "categoryColourInvalid": "Choose a colour before you save.",
-    "categoryHasActiveItems": "This category still has items switched on. Switch the items off first, then the category.",
-    "itemCategoryUnknown": "Choose a category before you save.",
-    "itemNeedsAStation": "Choose at least one station for the item.",
-    "itemCategoryIsOff": "This category is switched off. Switch the category on first.",
-    "stationHasUnfinishedItems": "While a festival is active, a station with open orders cannot be switched off.",
-    "stationNameMissing": "Give the station a name before you save it.",
-    "actionFailed": "The action failed. Try again, otherwise reload the page.",
-    "deactivated": "Deactivated",
-    "showDeactivated": "Show deactivated entries",
-    "festivalNameMissing": "Give the festival a name.",
-    "festivalPeriodInvalid": "The end has to come after the start. Set the end to a later time.",
-    "festivalOverlaps": "The festival {name} overlaps this period. Move the start or the end.",
-    "itemPriceOutOfRange": "Enter a price between 0.00 and 999.99 euros.",
-    "stationHasOrdersAtTheFestival": "While the festival is active, a station with open orders cannot be removed.",
-    "itemStaysOnTheMenuWhileTheFestivalRuns": "An item cannot be removed from an active festival.",
-    "itemIsOnTheRunningFestivalsMenu": "An item on an active festival's menu cannot be switched off.",
-    "festivals": {
-      "title": "Festivals",
-      "new": "New festival",
-      "name": "Festival name",
-      "start": "Start",
-      "end": "End",
-      "running": "Active",
-      "hidden": "Hidden",
-      "showHidden": "Show hidden festivals",
-      "copy": "Copy",
-      "copyTitle": "Copy the festival",
-      "copyConfirm": "Create the festival",
-      "hide": "Hide",
-      "show": "Show",
-      "hideTitle": "Hide the festival",
-      "hideConfirm": "Hide",
-      "noneYet": "No festival has been set up yet. Click \"New festival\".",
-      "stationCount": "{count} station | {count} stations",
-      "menuItemCount": "{count} item | {count} items",
-      "orderCount": "{count} order | {count} orders",
-      "edit": "Edit the festival",
-      "back": "Back"
+    "openItems": {
+      "title": "Open items",
+      "labels": {
+        "amountPaidField": "Amount paid",
+        "amountPaidReason": "Reason",
+        "amountPaidTitle": "How much did the table pay?",
+        "fromOrder": "Order {number}",
+        "order": "Order {order}",
+        "paid": "Paid",
+        "reasonPlaceholder": "For example: food for the band",
+        "selected": "Selected: {amount}",
+        "tableOpen": "Open: {amount}"
+      },
+      "actions": {
+        "amountPaidConfirm": "Settle",
+        "reload": "Reload the list",
+        "settle": "Settle",
+        "settleAmountPaid": "Settle a different amount",
+        "wholeTable": "Select the whole table"
+      },
+      "messages": {
+        "empty": "Nothing is open. Every table is settled.",
+        "listIncomplete": "Ask at the table what is still open. This list is missing {count} item, because the computer can no longer find the order it belongs to. | Ask at the table what is still open. This list is missing {count} items, because the computer can no longer find the orders they belong to.",
+        "noOrdersForTable": "There are no orders for this table.",
+        "someWereAlreadySettled": "Somebody else had already settled {count} item in your selection. Give the guest {amount} back. | Somebody else had already settled {count} items in your selection. Give the guest {amount} back."
+      },
+      "errors": {
+        "loadFailed": "Tap \"Reload the list\". The computer could not be reached, so this list may be out of date.",
+        "settleAnswerNeverCame": "It is not clear whether the settlement arrived. Reload the list and check whether the items are still open.",
+        "settleFailed": "Try again. Settling failed."
+      }
     },
-    "festival": {
-      "addStation": "Add the station",
-      "stationName": "Station name",
-      "noStationsToAdd": "Every station that is switched on already belongs to this festival. Click \"New station\".",
-      "remove": "Remove",
-      "removeStationTitle": "Remove the station",
-      "removeStationBody": "This removes the station from this festival only.",
-      "addItem": "Add the item",
-      "itemName": "Item name",
-      "noItemsToAdd": "Every item that is switched on already belongs to this festival. Click \"New item\".",
-      "removeItemTitle": "Remove the item",
-      "removeItemBody": "This removes the item from this festival only.",
-      "needsAStationFirst": "This festival has no station yet. Add one first.",
-      "chooseStation": "Choose a station",
-      "itemNeedsAStation": "{item} needs at least one station."
+    "review": {
+      "labels": {
+        "confirmSendAmount": "Amount:",
+        "confirmSendStation": "{name}:",
+        "confirmSendTable": "Table:",
+        "confirmSendTitle": "Send the order?",
+        "goesTo": "Goes to {name}",
+        "table": "Table: {name}",
+        "tableName": "Table",
+        "tablePlaceholder": "For example: 12",
+        "unknownPrice": "-"
+      },
+      "actions": {
+        "removeLinesThatCannotBeOrdered": "Remove the items that cannot be ordered",
+        "retry": "Send again",
+        "send": "Send the order",
+        "sendAndSettle": "Send the order and settle it",
+        "sending": "Sending",
+        "settleLater": "Settle later",
+        "settleNow": "Settle now",
+        "writtenDown": "The order is written down"
+      },
+      "messages": {
+        "sendStillUnknown": "The order could not be confirmed yet. It may have arrived anyway.",
+        "sent": "Order {number} has arrived.",
+        "writeItDown": "Write the order on a slip of paper and check the tablet at the station."
+      },
+      "errors": {
+        "sendFailed": "The order could not be sent. Tap \"Send again\".",
+        "sendInterrupted": "It is not clear whether the order arrived. Tap \"Send again\"."
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "labels": {
+        "language": "Language"
+      },
+      "messages": {
+        "servingAs": "You are serving as {name}."
+      }
     }
   },
   "station": {
-    "ordersHeading": "All orders",
-    "asItComesHeading": "Individual deliveries",
-    "statsTogetherChip": "Together {count}",
-    "statsAsItComesChip": "Individual {count}",
-    "overview": "Overview",
-    "openArticlesHeading": "Open items",
-    "itemUnits": "{count} x {item}",
-    "unitSeparator": " · ",
-    "loadFailed": "Reload the page. The computer could not be reached, so this list may be out of date.",
-    "actionFailed": "Try again. The change was not saved.",
-    "actionNotReached": "Tap again. The computer could not be reached, so nothing was changed.",
-    "changeNotSaved": "The order could not be updated. Reload the page and try again.",
-    "orderNotAtThisStation": "This order is not at this station. Reload the page and try again.",
-    "itemNotAtThisStation": "Reload the page. This item does not belong to this station.",
-    "noItemsSelected": "Tap an item.",
-    "order": "Order {order} · No. {sequence} ·",
-    "takenBy": "{time} · {name}",
-    "note": "Note: {note}",
-    "doneCounter": "{fulfilled} / {total} prepared",
-    "prepare": "Prepare",
-    "prepared": "Prepared",
-    "groupedView": "Grouped",
-    "listView": "List",
-    "putBack": "Put back",
-    "hideHere": "Hide here",
-    "showDone": "Show prepared orders",
-    "backToOrders": "Back to the orders",
-    "doneHeading": "Prepared orders",
-    "nothingDone": "No order is prepared yet.",
-    "confirmDoneTitle": "Prepare these items?",
-    "tableIs": "Table {name}",
-    "cancel": "Cancel",
-    "noFestivalIsRunning": "No festival is active.",
-    "notPartOfTheFestival": "This station is not part of the festival that is running."
+    "board": {
+      "labels": {
+        "asItComesHeading": "Individual deliveries",
+        "confirmDoneTitle": "Prepare these items?",
+        "openArticlesHeading": "Open items",
+        "orderHeader": "Order {order} · No. {sequence} ·",
+        "ordersHeading": "All orders",
+        "statsAsItComesChip": "Individual {count}",
+        "statsTogetherChip": "Together {count}",
+        "unitSeparator": " · "
+      },
+      "actions": {
+        "backToOrders": "Back to the orders",
+        "groupedView": "Grouped",
+        "hideHere": "Hide here",
+        "listView": "List",
+        "overview": "Overview",
+        "prepare": "Prepare",
+        "prepared": "Prepared",
+        "showDone": "Show prepared orders"
+      },
+      "errors": {
+        "actionFailed": "Try again. The change was not saved.",
+        "actionNotReached": "Tap again. The computer could not be reached, so nothing was changed.",
+        "loadFailed": "Reload the page. The computer could not be reached, so this list may be out of date."
+      }
+    },
+    "done": {
+      "title": "Prepared orders",
+      "actions": {
+        "putBack": "Put back"
+      },
+      "messages": {
+        "nothingDone": "No order is prepared yet."
+      }
+    }
   },
-  "startingUp": {
-    "laptopNotReached": "The computer is not answering. Try again.",
-    "couldNotStart": "The computer did not answer properly. Try again.",
-    "tryAgain": "Try again"
+  "admin": {
+    "categories": {
+      "labels": {
+        "colour": "Colour",
+        "deactivateTitle": "Switch this category off?",
+        "name": "Category name"
+      },
+      "actions": {
+        "activate": "Switch the category on",
+        "deactivateConfirm": "Switch the category off",
+        "edit": "Edit the category",
+        "new": "New category"
+      },
+      "messages": {
+        "noneYet": "Click \"New category\". There is no category to choose yet."
+      }
+    },
+    "common": {
+      "labels": {
+        "deactivated": "Deactivated"
+      },
+      "actions": {
+        "edit": "Edit",
+        "save": "Save",
+        "showDeactivated": "Show deactivated entries"
+      },
+      "messages": {
+        "notOnLaptop": "The admin pages are only available on the computer."
+      },
+      "errors": {
+        "loadFailed": "Reload the page. The data could not be loaded."
+      }
+    },
+    "enrolment": {
+      "labels": {
+        "phoneTitle": "Set up a phone",
+        "qrAlt": "QR code for setting the device up",
+        "stationTitle": "Set up a tablet"
+      },
+      "actions": {
+        "newQrCode": "Create a new QR code"
+      },
+      "messages": {
+        "copyUnavailable": "Type the address above by hand. Copying is not available on this page.",
+        "done": "{name} has set up their phone.",
+        "doneStation": "The tablet at {name} is set up.",
+        "forSomebodyKnown": "Scan this QR code with the phone camera.",
+        "forSomebodyNew": "Scan this QR code with the phone camera. Then enter the name on the phone.",
+        "forStation": "Scan this QR code with the camera of the tablet at {name}.",
+        "validity": "The QR code is valid for five minutes and for one device."
+      },
+      "errors": {
+        "qrUnreachable": "The QR code could not be loaded. Reload the page."
+      }
+    },
+    "festivals": {
+      "title": "Festivals",
+      "labels": {
+        "chooseStation": "Choose a station",
+        "copyTitle": "Copy the festival",
+        "end": "End",
+        "hidden": "Hidden",
+        "hideTitle": "Hide the festival",
+        "itemName": "Item name",
+        "menuItemCount": "{count} item | {count} items",
+        "name": "Festival name",
+        "orderCount": "{count} order | {count} orders",
+        "removeItemTitle": "Remove the item",
+        "removeStationTitle": "Remove the station",
+        "running": "Active",
+        "start": "Start",
+        "stationCount": "{count} station | {count} stations",
+        "stationName": "Station name"
+      },
+      "actions": {
+        "addItem": "Add the item",
+        "addStation": "Add the station",
+        "copy": "Copy",
+        "copyConfirm": "Create the festival",
+        "edit": "Edit the festival",
+        "hide": "Hide",
+        "hideConfirm": "Hide",
+        "new": "New festival",
+        "remove": "Remove",
+        "show": "Show",
+        "showHidden": "Show hidden festivals"
+      },
+      "messages": {
+        "needsAStationFirst": "This festival has no station yet. Add one first.",
+        "noItemsToAdd": "Every item that is switched on already belongs to this festival. Click \"New item\".",
+        "noneYet": "No festival has been set up yet. Click \"New festival\".",
+        "noStationsToAdd": "Every station that is switched on already belongs to this festival. Click \"New station\".",
+        "removeItemBody": "This removes the item from this festival only.",
+        "removeStationBody": "This removes the station from this festival only."
+      },
+      "errors": {
+        "namedItemNeedsAStation": "{item} needs at least one station."
+      }
+    },
+    "items": {
+      "title": "Items",
+      "labels": {
+        "category": "Category",
+        "deactivateTitle": "Deactivate this item?",
+        "prepareIndependently": "Is prepared independently of other articles",
+        "price": "Price in euros",
+        "productionMinutes": "Preparation time in minutes"
+      },
+      "actions": {
+        "activate": "Activate the item",
+        "deactivateConfirm": "Deactivate the item",
+        "edit": "Edit the item",
+        "new": "New item"
+      },
+      "errors": {
+        "priceInvalid": "Enter the price in euros, for example 3.50."
+      }
+    },
+    "overview": {
+      "title": "Overview",
+      "messages": {
+        "itemsWithoutStation": "Give {count} item a station. Without one it cannot be ordered. | Give {count} items a station. Without one they cannot be ordered.",
+        "missingCategory": "Create a category, for example Food and Drinks.",
+        "missingFestival": "Create a festival first.",
+        "missingItems": "Add items to this festival and fill in their prices.",
+        "missingStation": "Add a station to this festival, for example Kitchen and Bar.",
+        "noFestivalIsRunning": "No festival is active right now. Look under \"Festivals\".",
+        "ready": "Everything is set up. You can now set up the phones and the tablets.",
+        "stationWithoutTablet": "Set the tablet up for {name}. Without a tablet this station cannot see its orders."
+      }
+    },
+    "staff": {
+      "title": "Waiters",
+      "labels": {
+        "deactivateTitle": "Take this waiter off the list?",
+        "name": "Name",
+        "noPhone": "No phone set up"
+      },
+      "actions": {
+        "activate": "Put the waiter back on the list",
+        "deactivateConfirm": "Take the waiter off",
+        "new": "New waiter",
+        "newCode": "Set the phone up again",
+        "rename": "Change the name"
+      },
+      "messages": {
+        "deactivateBody": "The waiter's phone is signed out."
+      }
+    },
+    "stations": {
+      "title": "Stations",
+      "labels": {
+        "deactivateTitle": "Switch this station off?",
+        "noTablet": "No tablet set up"
+      },
+      "actions": {
+        "activate": "Switch this station on",
+        "deactivateConfirm": "Switch the station off",
+        "edit": "Edit the station",
+        "new": "New station",
+        "setUpDevice": "Set up the tablet"
+      }
+    }
   },
-  "doorGate": {
-    "hint": "Tap Open to continue.",
-    "open": "Open"
-  },
-  "welcome": {
-    "title": "This device is not set up yet."
-  },
-  "language": {
-    "german": "Deutsch",
-    "english": "English"
-  },
-  "enrolment": {
-    "nameMissing": "Enter your name so the kitchen knows who took the order.",
-    "codeUnknown": "The computer does not know this code. Ask for a new code at the computer.",
-    "codeNoLongerValid": "This code is no longer valid. Ask for a new code at the computer.",
-    "codeMissing": "Scan the QR code on the computer again. This page was opened without a code.",
-    "staffMemberIsOffTheList": "Ask for a new QR code at the computer. This waiter is no longer on the list.",
-    "stationIsOffTheList": "Ask for a new QR code at the computer. This station is switched off.",
-    "atMostOneOwner": "The QR code could not be created. Try again."
-  },
-  "auth": {
-    "wrongDeviceKind": "This device is not set up for this screen. Have it set up again at the computer."
-  },
-  "session": {
-    "unsupportedLanguage": "The program does not have that language. Choose German or English.",
-    "tooManyRequests": "Wait a moment and try again. The computer is getting too many requests at once."
+  "errors": {
+    "admin": {
+      "actionFailed": "The action failed. Try again, otherwise reload the page.",
+      "categories": {
+        "colourInvalid": "Choose a colour before you save.",
+        "hasActiveItems": "This category still has items switched on. Switch the items off first, then the category.",
+        "nameMissing": "Give the category a name before you save.",
+        "nameTaken": "There is already a category with this name. Choose a different one."
+      },
+      "festivals": {
+        "itemNeedsAStation": "Choose at least one station for the item.",
+        "itemPriceOutOfRange": "Enter a price between 0.00 and 999.99 euros.",
+        "itemStaysOnTheMenuWhileTheFestivalRuns": "An item cannot be removed from an active festival.",
+        "nameMissing": "Give the festival a name.",
+        "overlaps": "The festival {name} overlaps this period. Move the start or the end.",
+        "periodInvalid": "The end has to come after the start. Set the end to a later time.",
+        "stationHasOrdersAtTheFestival": "While the festival is active, a station with open orders cannot be removed."
+      },
+      "items": {
+        "categoryIsOff": "This category is switched off. Switch the category on first.",
+        "categoryUnknown": "Choose a category before you save.",
+        "isOnTheRunningFestivalsMenu": "An item on an active festival's menu cannot be switched off.",
+        "nameMissing": "Give the item a name before you save it.",
+        "nameTaken": "There is already an item with this name. Choose a different one.",
+        "productionMinutesOutOfRange": "Enter minutes from 0 to 600."
+      },
+      "staff": {
+        "nameMissing": "Give the waiter a name before you save."
+      },
+      "stations": {
+        "hasUnfinishedItems": "While a festival is active, a station with open orders cannot be switched off.",
+        "itemsWouldHaveNoStation": "{count} item would be left without a station. Assign it to another station first or remove it from the festival. | {count} items would be left without a station. Assign them to another station first or remove them from the festival.",
+        "nameMissing": "Give the station a name before you save it."
+      }
+    },
+    "auth": {
+      "wrongDeviceKind": "This device is not set up for this screen. Have it set up again at the computer."
+    },
+    "enrolment": {
+      "atMostOneOwner": "The QR code could not be created. Try again.",
+      "codeMissing": "Scan the QR code on the computer again. This page was opened without a code.",
+      "codeNoLongerValid": "This code is no longer valid. Ask for a new code at the computer.",
+      "codeUnknown": "The computer does not know this code. Ask for a new code at the computer.",
+      "nameMissing": "Enter your name so the kitchen knows who took the order.",
+      "qrAlreadyUsed": "Create a new QR code. This one has already been used by a device.",
+      "qrExpired": "Create a new QR code. This one was not scanned for five minutes.",
+      "qrReplaced": "Create a new QR code. This one is no longer valid.",
+      "qrUnavailable": "Create a new QR code. This one cannot be shown any more.",
+      "staffMemberIsOffTheList": "Ask for a new QR code at the computer. This waiter is no longer on the list.",
+      "stationIsOffTheList": "Ask for a new QR code at the computer. This station is switched off."
+    },
+    "order": {
+      "cannotBeProcessed": "The order could not be processed. Take it to the station yourself.",
+      "itemSoldOut": "{name} is sold out.",
+      "unknownItem": "One item is no longer on the menu. Take it off the order."
+    },
+    "session": {
+      "tooManyRequests": "Wait a moment and try again. The computer is getting too many requests at once.",
+      "unsupportedLanguage": "The program does not have that language. Choose German or English."
+    },
+    "settlement": {
+      "cannotBeProcessed": "The settlement could not be processed. Write on a slip of paper what the table paid.",
+      "noItemsSelected": "Choose the items you want to settle first.",
+      "unknownItem": "Reload the list. The computer no longer knows one of the selected items, so nothing was settled."
+    },
+    "station": {
+      "changeNotSaved": "The order could not be updated. Reload the page and try again.",
+      "itemNotAtThisStation": "Reload the page. This item does not belong to this station.",
+      "noFestivalIsRunning": "No festival is active.",
+      "noItemsSelected": "Tap an item.",
+      "notPartOfTheFestival": "This station is not part of the festival that is running.",
+      "orderNotAtThisStation": "This order is not at this station. Reload the page and try again."
+    },
+    "storage": {
+      "conflictingChange": "Somebody else changed something at the same moment. Try again.",
+      "databaseUnavailable": "The computer could not save the order. Send it again."
+    }
   }
 }

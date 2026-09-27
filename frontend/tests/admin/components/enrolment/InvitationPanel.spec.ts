@@ -156,7 +156,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
   it('says in plain German that a device has already used it', () => {
     const panel = mountPanel({
       kind: 'gone',
-      message: { key: 'admin.enrol.qrAlreadyUsed', parameters: {}, count: null },
+      message: { key: 'errors.enrolment.qrAlreadyUsed', parameters: {}, count: null },
     })
 
     expect(panel.get('.qr-gone').text()).toBe(
@@ -170,7 +170,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
         invitation: INVITATION,
         qr: {
           kind: 'gone',
-          message: { key: 'admin.enrol.qrAlreadyUsed', parameters: {}, count: null },
+          message: { key: 'errors.enrolment.qrAlreadyUsed', parameters: {}, count: null },
         },
       },
       global: { plugins: testPlugins('en') },
@@ -184,7 +184,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
   it('says that it ran out of time when that is the reason', () => {
     const panel = mountPanel({
       kind: 'gone',
-      message: { key: 'admin.enrol.expired', parameters: {}, count: null },
+      message: { key: 'errors.enrolment.qrExpired', parameters: {}, count: null },
     })
 
     expect(panel.get('.qr-gone').text()).toBe(
@@ -195,7 +195,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
   it('says so rather than showing a picture or an address nobody can use', () => {
     const panel = mountPanel({
       kind: 'gone',
-      message: { key: 'admin.enrol.qrUnavailable', parameters: {}, count: null },
+      message: { key: 'errors.enrolment.qrUnavailable', parameters: {}, count: null },
     })
 
     expect(panel.find('img.qr-image').exists()).toBe(false)
@@ -205,7 +205,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
   it('offers the button that creates a new one', () => {
     const panel = mountPanel({
       kind: 'gone',
-      message: { key: 'admin.enrol.qrUnavailable', parameters: {}, count: null },
+      message: { key: 'errors.enrolment.qrUnavailable', parameters: {}, count: null },
     })
 
     expect(panel.get('.renew-code').text()).toBe('Neuen QR-Code erstellen')
@@ -214,7 +214,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
   it('asks for a new one when that button is pressed', async () => {
     const panel = mountPanel({
       kind: 'gone',
-      message: { key: 'admin.enrol.qrUnavailable', parameters: {}, count: null },
+      message: { key: 'errors.enrolment.qrUnavailable', parameters: {}, count: null },
     })
 
     await panel.get('.renew-code').trigger('click')

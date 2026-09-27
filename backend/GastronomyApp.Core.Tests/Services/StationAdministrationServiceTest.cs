@@ -122,7 +122,7 @@ public sealed class StationAdministrationServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(switchedOff.IsSuccess, Is.False);
-                      Assert.That(switchedOff.RefusalMessageKey(), Is.EqualTo("admin.stationHasUnfinishedItems"));
+                      Assert.That(switchedOff.RefusalMessageKey(), Is.EqualTo("errors.admin.stations.hasUnfinishedItems"));
                       Assert.That(station.IsActive, Is.True);
                     });
   }

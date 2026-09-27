@@ -8,7 +8,7 @@ describe('unwrapping an admin action result', () => {
   })
 
   it('carries the message the laptop refused with', () => {
-    const message = adminErrorMessageForKey('admin.actionFailed')
+    const message = adminErrorMessageForKey('errors.admin.actionFailed')
 
     expect(refusalFrom(adminFailed(message))).toBe(message)
   })

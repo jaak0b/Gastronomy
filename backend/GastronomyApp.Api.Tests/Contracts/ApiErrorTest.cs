@@ -12,13 +12,13 @@ public sealed class ApiErrorTest
     ApiError error = new()
                      {
                        Code = "StationHasUnfinishedItems",
-                       MessageKey = "admin.stationHasUnfinishedItems",
+                       MessageKey = "errors.admin.stations.hasUnfinishedItems",
                        Parameters = new Dictionary<string, string> { ["station"] = "Küche" },
                        Details = null
                      };
 
     var json = JsonSerializer.Serialize(error, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
-    Assert.That(json, Is.EqualTo("{\"code\":\"StationHasUnfinishedItems\",\"messageKey\":\"admin.stationHasUnfinishedItems\",\"parameters\":{\"station\":\"K\\u00FCche\"},\"details\":null}"));
+    Assert.That(json, Is.EqualTo("{\"code\":\"StationHasUnfinishedItems\",\"messageKey\":\"errors.admin.stations.hasUnfinishedItems\",\"parameters\":{\"station\":\"K\\u00FCche\"},\"details\":null}"));
   }
 }

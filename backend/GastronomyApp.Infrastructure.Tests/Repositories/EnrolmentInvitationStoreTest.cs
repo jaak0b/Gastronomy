@@ -62,7 +62,7 @@ public sealed class EnrolmentInvitationStoreTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("enrolment.nameMissing"));
+                      Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("errors.enrolment.nameMissing"));
                     });
   }
 
@@ -107,7 +107,7 @@ public sealed class EnrolmentInvitationStoreTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("enrolment.stationIsOffTheList"));
+                      Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("errors.enrolment.stationIsOffTheList"));
                     });
   }
 
@@ -125,7 +125,7 @@ public sealed class EnrolmentInvitationStoreTest
 
     var redemption = await store.RedeemAsync(created.QRCodeValue, null, "Phone", "de", TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("enrolment.staffMemberIsOffTheList"));
+    Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("errors.enrolment.staffMemberIsOffTheList"));
   }
 
   [Test]
@@ -182,7 +182,7 @@ public sealed class EnrolmentInvitationStoreTest
 
     var redemption = await store.RedeemAsync(created.QRCodeValue, null, "Test agent", "de", TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("enrolment.codeNoLongerValid"));
+    Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("errors.enrolment.codeNoLongerValid"));
   }
 
   [Test]
@@ -252,7 +252,7 @@ public sealed class EnrolmentInvitationStoreTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("enrolment.codeUnknown"));
+                      Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("errors.enrolment.codeUnknown"));
                     });
   }
 
@@ -271,7 +271,7 @@ public sealed class EnrolmentInvitationStoreTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("enrolment.codeNoLongerValid"));
+                      Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("errors.enrolment.codeNoLongerValid"));
                     });
   }
 

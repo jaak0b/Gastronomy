@@ -43,7 +43,7 @@ public sealed class CatalogProductionMinutesTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("catalog.productionMinutesOutOfRange"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.items.productionMinutesOutOfRange"));
                     });
   }
 
@@ -94,7 +94,7 @@ public sealed class CatalogProductionMinutesTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("catalog.productionMinutesOutOfRange"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.items.productionMinutesOutOfRange"));
                     });
   }
 

@@ -341,7 +341,7 @@ describe('a rename the laptop refuses', () => {
           return new Response(
             JSON.stringify({
               code: 'ValidationFailed',
-              messageKey: 'admin.stationNameMissing',
+              messageKey: 'errors.admin.stations.nameMissing',
               parameters: {},
               details: null,
             }),
@@ -402,7 +402,7 @@ describe('two refusals one after the other', () => {
           return new Response(
             JSON.stringify({
               code: 'ValidationFailed',
-              messageKey: 'enrolment.atMostOneOwner',
+              messageKey: 'errors.enrolment.atMostOneOwner',
               parameters: {},
               details: null,
             }),
@@ -413,7 +413,7 @@ describe('two refusals one after the other', () => {
           return new Response(
             JSON.stringify({
               code: 'Conflict',
-              messageKey: 'admin.stationHasUnfinishedItems',
+              messageKey: 'errors.admin.stations.hasUnfinishedItems',
               parameters: { count: 3 },
               details: null,
             }),
@@ -472,7 +472,7 @@ describe('a station the laptop refuses to switch off', () => {
   })
 
   it('says items would be left with no station when that is the reason', async () => {
-    refuseDeactivationWith('admin.itemsWouldHaveNoStation', { count: 2 })
+    refuseDeactivationWith('errors.admin.stations.itemsWouldHaveNoStation', { count: 2 })
 
     const list = mountList()
     await deactivateFirstStation(list)
@@ -483,7 +483,7 @@ describe('a station the laptop refuses to switch off', () => {
   })
 
   it('never blames unfinished orders for an orphaned-items refusal', async () => {
-    refuseDeactivationWith('admin.itemsWouldHaveNoStation', { count: 2 })
+    refuseDeactivationWith('errors.admin.stations.itemsWouldHaveNoStation', { count: 2 })
 
     const list = mountList()
     await deactivateFirstStation(list)
@@ -492,7 +492,7 @@ describe('a station the laptop refuses to switch off', () => {
   })
 
   it('takes the singular form when a single item would be left behind', async () => {
-    refuseDeactivationWith('admin.itemsWouldHaveNoStation', { count: 1 })
+    refuseDeactivationWith('errors.admin.stations.itemsWouldHaveNoStation', { count: 1 })
 
     const list = mountList()
     await deactivateFirstStation(list)
@@ -503,7 +503,7 @@ describe('a station the laptop refuses to switch off', () => {
   })
 
   it('takes the plural form when the laptop wrote the number as text', async () => {
-    refuseDeactivationWith('admin.itemsWouldHaveNoStation', { count: '2' })
+    refuseDeactivationWith('errors.admin.stations.itemsWouldHaveNoStation', { count: '2' })
 
     const list = mountList()
     await deactivateFirstStation(list)
@@ -532,7 +532,7 @@ describe('a refusal the admin has moved on from', () => {
   })
 
   it('is dropped once the admin opens a station to edit it', async () => {
-    refuseDeactivationWith('admin.stationHasUnfinishedItems', { count: 1 })
+    refuseDeactivationWith('errors.admin.stations.hasUnfinishedItems', { count: 1 })
 
     const list = mountList()
     await deactivateFirstStation(list)
@@ -543,7 +543,7 @@ describe('a refusal the admin has moved on from', () => {
   })
 
   it('is dropped once the admin starts a new station', async () => {
-    refuseDeactivationWith('admin.stationHasUnfinishedItems', { count: 1 })
+    refuseDeactivationWith('errors.admin.stations.hasUnfinishedItems', { count: 1 })
 
     const list = mountList()
     await deactivateFirstStation(list)
@@ -616,7 +616,7 @@ describe('a refusal the admin has walked away from', () => {
           return new Response(
             JSON.stringify({
               code: 'Conflict',
-              messageKey: 'admin.stationHasOrdersAtTheFestival',
+              messageKey: 'errors.admin.festivals.stationHasOrdersAtTheFestival',
               parameters: { count: '3' },
               details: null,
             }),
@@ -689,7 +689,7 @@ describe('a refusal the admin has walked away from', () => {
           return new Response(
             JSON.stringify({
               code: 'Conflict',
-              messageKey: 'enrolment.atMostOneOwner',
+              messageKey: 'errors.enrolment.atMostOneOwner',
               parameters: {},
               details: null,
             }),

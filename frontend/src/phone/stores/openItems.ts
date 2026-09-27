@@ -203,7 +203,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
         return 'accepted'
       case 'error':
         notice.value = {
-          key: result.body?.messageKey ?? 'openItems.settleFailed',
+          key: result.body?.messageKey ?? 'phone.openItems.errors.settleFailed',
           parameters: {},
           count: null,
         }
@@ -211,7 +211,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
         return 'refused'
       case 'unreachable':
       case 'unreadableAnswer':
-        notice.value = { key: 'openItems.settleAnswerNeverCame', parameters: {}, count: null }
+        notice.value = { key: 'phone.openItems.errors.settleAnswerNeverCame', parameters: {}, count: null }
         return 'answerNeverCame'
       default:
         return assertNever(result)

@@ -74,7 +74,7 @@ public sealed class StationQueueServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(queue.IsSuccess, Is.False);
-                      Assert.That(queue.RefusalMessageKey(), Is.EqualTo("station.noFestivalIsRunning"));
+                      Assert.That(queue.RefusalMessageKey(), Is.EqualTo("errors.station.noFestivalIsRunning"));
                     });
   }
 
@@ -130,7 +130,7 @@ public sealed class StationQueueServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(fulfilled.IsSuccess, Is.False);
-                      Assert.That(fulfilled.RefusalMessageKey(), Is.EqualTo("station.notPartOfTheFestival"));
+                      Assert.That(fulfilled.RefusalMessageKey(), Is.EqualTo("errors.station.notPartOfTheFestival"));
                     });
   }
 

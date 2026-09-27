@@ -146,7 +146,7 @@ public sealed class ItemOrderabilityEndpointsTest
       Assert.Multiple(() =>
                       {
                         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                        Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemNeedsAStation"));
+                        Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.itemNeedsAStation"));
                       });
     }
 
@@ -167,7 +167,7 @@ public sealed class ItemOrderabilityEndpointsTest
       Assert.Multiple(() =>
                       {
                         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                        Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemsWouldHaveNoStation"));
+                        Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.stations.itemsWouldHaveNoStation"));
                         Assert.That(body.RootElement.GetProperty("parameters").GetProperty("count").GetString(), Is.EqualTo("1"));
                       });
     }

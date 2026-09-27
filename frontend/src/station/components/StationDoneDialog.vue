@@ -11,10 +11,10 @@ const { t } = useI18n()
 <template>
   <v-dialog class="station-done-dialog" model-value persistent fullscreen>
     <v-card class="card d-flex flex-column">
-      <v-card-title class="title">{{ t('station.confirmDoneTitle') }}</v-card-title>
+      <v-card-title class="title">{{ t('station.board.labels.confirmDoneTitle') }}</v-card-title>
       <v-card-text class="body flex-grow-1">
         <div class="row row-table">
-          <span class="label">{{ t('station.tableIs', { name: tableName }) }}</span>
+          <span class="label">{{ t('common.labels.table', { name: tableName }) }}</span>
         </div>
         <ul class="units">
           <li v-for="line in lines" :key="line.key" class="unit">
@@ -24,7 +24,7 @@ const { t } = useI18n()
       </v-card-text>
       <v-card-actions class="actions justify-end">
         <v-btn class="cancel" variant="outlined" size="large" @click="emit('cancelled')">
-          {{ t('station.cancel') }}
+          {{ t('common.actions.cancel') }}
         </v-btn>
         <v-btn
           class="confirm"
@@ -33,7 +33,7 @@ const { t } = useI18n()
           size="large"
           @click="emit('confirmed')"
         >
-          {{ t('station.prepared') }}
+          {{ t('station.board.actions.prepared') }}
         </v-btn>
       </v-card-actions>
     </v-card>

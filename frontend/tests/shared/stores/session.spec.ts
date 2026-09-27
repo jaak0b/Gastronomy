@@ -209,7 +209,7 @@ describe('a phone that is signed out while a reason stands on the order screen',
     saveSendProgress({
       state: 'failed',
       attempts: 1,
-      failure: { key: 'review.sendFailed' },
+      failure: { key: 'phone.review.errors.sendFailed' },
       unresolvedAttempt: {
         clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
         tableName: 'Tisch 12',

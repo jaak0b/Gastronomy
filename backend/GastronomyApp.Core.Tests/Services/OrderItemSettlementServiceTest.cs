@@ -179,7 +179,7 @@ public sealed class OrderItemSettlementServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
                       Assert.That(settlement.RefusalDescription(), Does.Contain(bratwurst.Id.ToString()));
                       Assert.That(bratwurst.SettledAtUtc, Is.Null);
                     });
@@ -203,7 +203,7 @@ public sealed class OrderItemSettlementServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
                       Assert.That(settlement.RefusalDescription(), Does.Contain("Tisch 12, Tisch 3"));
                       Assert.That(bratwurst.SettledAtUtc, Is.Null);
                       Assert.That(beer.SettledAtUtc, Is.Null);
@@ -229,7 +229,7 @@ public sealed class OrderItemSettlementServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
                       Assert.That(bratwurst.SettledAtUtc, Is.Null);
                     });
   }
@@ -250,7 +250,7 @@ public sealed class OrderItemSettlementServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
                       Assert.That(settlement.RefusalDescription(), Does.Contain(bratwurst.Id.ToString()));
                       Assert.That(bratwurst.SettledAtUtc, Is.Null);
                       Assert.That(bratwurst.ChargedPriceCents, Is.Null);
@@ -274,7 +274,7 @@ public sealed class OrderItemSettlementServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("order.settlementUnknownItem"));
+                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("errors.settlement.unknownItem"));
                       Assert.That(settlement.RefusalMetadata("orderItemId"), Is.EqualTo(unknownId.ToString()));
                       Assert.That(bratwurst.SettledAtUtc, Is.Null);
                     });
@@ -340,7 +340,7 @@ public sealed class OrderItemSettlementServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
                     });
 
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
@@ -396,7 +396,7 @@ public sealed class OrderItemSettlementServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("order.settlementUnknownItem"));
+                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("errors.settlement.unknownItem"));
                     });
 
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
@@ -413,7 +413,7 @@ public sealed class OrderItemSettlementServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("order.settlementUnknownItem"));
+                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("errors.settlement.unknownItem"));
                       Assert.That(bratwurst.SettledAtUtc, Is.Null);
                     });
   }

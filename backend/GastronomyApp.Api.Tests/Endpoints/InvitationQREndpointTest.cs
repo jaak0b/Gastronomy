@@ -42,7 +42,7 @@ public sealed class InvitationQREndpointTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.enrol.qrUnavailable"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.enrolment.qrUnavailable"));
                     });
   }
 
@@ -102,7 +102,7 @@ public sealed class InvitationQREndpointTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.enrol.qrReplaced"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.enrolment.qrReplaced"));
                     });
   }
 
@@ -137,7 +137,7 @@ public sealed class InvitationQREndpointTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.enrol.qrAlreadyUsed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.enrolment.qrAlreadyUsed"));
                     });
   }
 
@@ -159,7 +159,7 @@ public sealed class InvitationQREndpointTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.enrol.expired"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.enrolment.qrExpired"));
                     });
   }
 

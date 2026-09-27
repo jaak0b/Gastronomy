@@ -6,11 +6,11 @@ const asked = (key: string, values: { count: number; item: string }): string =>
 
 describe('countedName', () => {
   it('asks for the wording that carries the count in front of the name', () => {
-    expect(countedName(2, 'Semmel', asked)).toBe('review.line count=2 item=Semmel')
+    expect(countedName(2, 'Semmel', asked)).toBe('common.labels.countTimesItem count=2 item=Semmel')
   })
 
   it('asks for the same wording for a single portion', () => {
-    expect(countedName(1, 'Semmel', asked)).toBe('review.line count=1 item=Semmel')
+    expect(countedName(1, 'Semmel', asked)).toBe('common.labels.countTimesItem count=1 item=Semmel')
   })
 
   it('writes the name on its own when nothing is on the order', () => {

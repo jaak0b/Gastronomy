@@ -192,7 +192,7 @@ public sealed class StationQueueEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("ItemNotFulfilled"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.changeNotSaved"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.station.changeNotSaved"));
                     });
   }
 
@@ -212,7 +212,7 @@ public sealed class StationQueueEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.itemNotAtThisStation"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.station.itemNotAtThisStation"));
                       Assert.That(stored.Select(item => item.FulfilledAtUtc), Is.All.Null);
                     });
   }
@@ -228,7 +228,7 @@ public sealed class StationQueueEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.noItemsSelected"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.station.noItemsSelected"));
                     });
   }
 
@@ -275,7 +275,7 @@ public sealed class StationQueueEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("CannotHideTogetherOrder"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.changeNotSaved"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.station.changeNotSaved"));
                       Assert.That(stored.IsHiddenFromAsItComesQueue, Is.False);
                     });
   }
@@ -296,7 +296,7 @@ public sealed class StationQueueEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("UnprocessableEntity"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.orderNotAtThisStation"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.station.orderNotAtThisStation"));
                       Assert.That(stored.IsHiddenFromAsItComesQueue, Is.False);
                     });
   }

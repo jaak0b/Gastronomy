@@ -17,10 +17,10 @@ const connectionKey = computed<string | null>(() => {
   const state = connection.state
   switch (state) {
     case 'connected':
-      return connection.recovered ? 'header.backOnline' : null
+      return connection.recovered ? 'phone.header.messages.backOnline' : null
     case 'reconnecting':
     case 'offline':
-      return 'header.reconnecting'
+      return 'phone.header.messages.reconnecting'
     default:
       return assertNever(state)
   }
@@ -37,7 +37,7 @@ const connectionKey = computed<string | null>(() => {
     density="compact"
     @click="order.dismissConfirmation"
   >
-    {{ t('review.sent', { number: order.acceptedOrderNumber }) }}
+    {{ t('phone.review.messages.sent', { number: order.acceptedOrderNumber }) }}
   </v-alert>
   <v-alert
     v-if="order.draftWasLost"
@@ -49,7 +49,7 @@ const connectionKey = computed<string | null>(() => {
     closable
     @click:close="order.dismissDraftLoss"
   >
-    {{ t('order.draftLost') }}
+    {{ t('phone.header.errors.draftLost') }}
   </v-alert>
   <v-alert
     v-if="connectionKey !== null"

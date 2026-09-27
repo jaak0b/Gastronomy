@@ -39,7 +39,7 @@ const currentDestination = computed<Destination>(() => {
         @click="navigate('/')"
       >
         <v-icon icon="mdi-clipboard-text-outline" />
-        <span class="label">{{ t('catalog.title') }}</span>
+        <span class="label">{{ t('phone.catalog.title') }}</span>
       </v-btn>
       <v-btn
         class="open-items-link flex-grow-1"
@@ -49,7 +49,7 @@ const currentDestination = computed<Destination>(() => {
         @click="navigate('/open-items')"
       >
         <v-icon icon="mdi-cash-register" />
-        <span class="label">{{ t('header.openItems') }}</span>
+        <span class="label">{{ t('phone.header.actions.openItems') }}</span>
       </v-btn>
     </div>
     <v-btn
@@ -59,7 +59,7 @@ const currentDestination = computed<Destination>(() => {
       @click="settingsAreOpen = true"
     >
       <v-icon icon="mdi-cog" />
-      <v-tooltip activator="parent" location="bottom">{{ t('header.settings') }}</v-tooltip>
+      <v-tooltip activator="parent" location="bottom">{{ t('phone.header.actions.settings') }}</v-tooltip>
     </v-btn>
   </v-app-bar>
   <SettingsSheet v-if="settingsAreOpen" @close="settingsAreOpen = false" />

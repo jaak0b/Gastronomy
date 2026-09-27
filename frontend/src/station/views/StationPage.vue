@@ -24,7 +24,7 @@ const stationName = computed(() => station.identity?.name ?? session.station?.na
 
 const failureText = computed<string | null>(() => {
   if (station.loadFailed) {
-    return t(station.loadFailureKey ?? 'station.loadFailed')
+    return t(station.loadFailureKey ?? 'station.board.errors.loadFailed')
   }
   return station.failureKey === null ? null : t(station.failureKey)
 })
@@ -56,10 +56,10 @@ function closeOverview(): void {
       <LanguageSwitch :language="session.language" @select="session.setLanguage" />
       <template v-if="!isShowingOverview && !station.isShowingFulfilled">
         <v-btn class="show-overview" variant="outlined" size="large" @click="openOverview">
-          {{ t('station.overview') }}
+          {{ t('station.board.actions.overview') }}
         </v-btn>
         <v-btn class="show-done" variant="outlined" size="large" @click="station.openFulfilled">
-          {{ t('station.showDone') }}
+          {{ t('station.board.actions.showDone') }}
         </v-btn>
       </template>
     </header>
@@ -70,7 +70,7 @@ function closeOverview(): void {
       type="warning"
       variant="tonal"
     >
-      {{ t(station.loadFailureKey ?? 'station.loadFailed') }}
+      {{ t(station.loadFailureKey ?? 'station.board.errors.loadFailed') }}
     </v-alert>
     <v-alert
       v-if="!isShowingOverview && station.failureKey !== null"
@@ -92,14 +92,14 @@ function closeOverview(): void {
 
     <template v-else-if="station.isShowingFulfilled">
       <div class="done-head d-flex align-center ga-3 mb-4">
-        <h2 class="done-heading text-h5 flex-grow-1">{{ t('station.doneHeading') }}</h2>
+        <h2 class="done-heading text-h5 flex-grow-1">{{ t('station.done.title') }}</h2>
         <v-btn
           class="back-to-orders"
           variant="outlined"
           size="large"
           @click="station.closeFulfilled"
         >
-          {{ t('station.backToOrders') }}
+          {{ t('station.board.actions.backToOrders') }}
         </v-btn>
       </div>
       <v-alert
@@ -108,10 +108,10 @@ function closeOverview(): void {
         type="warning"
         variant="tonal"
       >
-        {{ t('station.loadFailed') }}
+        {{ t('station.board.errors.loadFailed') }}
       </v-alert>
       <v-alert v-if="station.hasNothingDone" class="nothing-done mb-4" type="info" variant="tonal">
-        {{ t('station.nothingDone') }}
+        {{ t('station.done.messages.nothingDone') }}
       </v-alert>
       <StationFulfilledCard
         v-for="stationOrder in station.fulfilled"
@@ -125,7 +125,7 @@ function closeOverview(): void {
     <template v-else>
       <v-row>
         <v-col cols="12" md="6" class="orders-column">
-          <h2 class="orders-heading text-h6 mb-2">{{ t('station.ordersHeading') }}</h2>
+          <h2 class="orders-heading text-h6 mb-2">{{ t('station.board.labels.ordersHeading') }}</h2>
           <StationOrderCard
             v-for="stationOrder in station.orders"
             :key="stationOrder.stationOrderId"
@@ -140,7 +140,7 @@ function closeOverview(): void {
         </v-col>
         <v-col cols="12" md="6" class="as-it-comes-column">
           <h2 class="as-it-comes-heading text-h6 mb-2">
-            {{ t('station.asItComesHeading') }}
+            {{ t('station.board.labels.asItComesHeading') }}
           </h2>
           <StationOrderCard
             v-for="stationOrder in station.asItComes"

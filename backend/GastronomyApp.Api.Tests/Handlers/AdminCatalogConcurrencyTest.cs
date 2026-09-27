@@ -57,7 +57,7 @@ public sealed class AdminCatalogConcurrencyTest
                     {
                       Assert.That(statuses, Has.None.EqualTo(HttpStatusCode.InternalServerError), "A name collision must never reach the operator as a crash.");
                       Assert.That(statuses, Has.One.EqualTo(HttpStatusCode.Created));
-                      Assert.That(messageKeys.Where(key => key is not null), Is.All.EqualTo("admin.categoryNameTaken"), "Every refused attempt must say that the name is taken.");
+                      Assert.That(messageKeys.Where(key => key is not null), Is.All.EqualTo("errors.admin.categories.nameTaken"), "Every refused attempt must say that the name is taken.");
                       Assert.That(stored, Is.EqualTo(1));
                     });
   }
@@ -89,7 +89,7 @@ public sealed class AdminCatalogConcurrencyTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(messageKey, Is.EqualTo("admin.categoryNameTaken"));
+                      Assert.That(messageKey, Is.EqualTo("errors.admin.categories.nameTaken"));
                     });
   }
 

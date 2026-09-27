@@ -16,7 +16,7 @@ public static partial class Refusal
 
     public static Error UnknownOrderItemId(Guid orderItemId)
     {
-      return UnprocessableEntity("order.settlementUnknownItem",
+      return UnprocessableEntity("errors.settlement.unknownItem",
                                  $"The settlement names the order item {orderItemId}, which the running festival does not hold.",
                                  new()
                                  {

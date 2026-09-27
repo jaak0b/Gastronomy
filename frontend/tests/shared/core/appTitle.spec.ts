@@ -18,14 +18,14 @@ describe('the browser title of a screen', () => {
     const waiterScreens: ScreenName[] = ['catalog', 'review', 'openItems']
 
     expect(waiterScreens.map((screen) => screenTitle(screen, null, words))).toEqual([
-      'app.title.waiter',
-      'app.title.waiter',
-      'app.title.waiter',
+      'common.appTitle.waiter',
+      'common.appTitle.waiter',
+      'common.appTitle.waiter',
     ])
   })
 
   it('names the admin screen through the admin key', () => {
-    expect(screenTitle('admin', null, words)).toBe('app.title.admin')
+    expect(screenTitle('admin', null, words)).toBe('common.appTitle.admin')
   })
 
   it('keeps the app name on every screen that has no name of its own', () => {

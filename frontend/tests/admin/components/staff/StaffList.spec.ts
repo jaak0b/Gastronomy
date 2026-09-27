@@ -289,7 +289,7 @@ describe('two refusals one after the other', () => {
           return new Response(
             JSON.stringify({
               code: 'ValidationFailed',
-              messageKey: 'enrolment.atMostOneOwner',
+              messageKey: 'errors.enrolment.atMostOneOwner',
               parameters: {},
               details: null,
             }),
@@ -300,7 +300,7 @@ describe('two refusals one after the other', () => {
           return new Response(
             JSON.stringify({
               code: 'ValidationFailed',
-              messageKey: 'admin.staff.nameMissing',
+              messageKey: 'errors.admin.staff.nameMissing',
               parameters: {},
               details: null,
             }),

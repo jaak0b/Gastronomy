@@ -8,9 +8,9 @@ export function startingUpMessageKey(failure: StartingUpFailure | null): string 
   }
   switch (failure) {
     case 'theLaptopWasNotReached':
-      return 'startingUp.laptopNotReached'
+      return 'shared.startup.errors.laptopNotReached'
     case 'theLaptopCouldNotAnswer':
-      return 'startingUp.couldNotStart'
+      return 'shared.startup.errors.couldNotStart'
     default:
       return assertNever(failure)
   }

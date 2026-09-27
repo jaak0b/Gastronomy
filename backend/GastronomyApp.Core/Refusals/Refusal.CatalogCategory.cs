@@ -14,7 +14,7 @@ public static partial class Refusal
 
     public static Error NameTaken(string name)
     {
-      return Conflict("admin.categoryNameTaken",
+      return Conflict("errors.admin.categories.nameTaken",
                       $"Another catalog category already carries the name {name}.",
                       new Dictionary<string, object>
                       {
@@ -24,7 +24,7 @@ public static partial class Refusal
 
     public static Error CategoryHoldsActiveItems(Guid categoryId)
     {
-      return Conflict("admin.categoryHasActiveItems",
+      return Conflict("errors.admin.categories.hasActiveItems",
                       $"The catalog category {categoryId} still holds articles that are switched on.",
                       new Dictionary<string, object>
                       {

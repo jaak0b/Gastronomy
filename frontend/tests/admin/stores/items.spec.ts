@@ -87,14 +87,14 @@ describe('an item the laptop would not save', () => {
 
     expect(result).toEqual({
       kind: 'failed',
-      message: { key: 'admin.actionFailed', parameters: {}, count: null },
+      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
     })
   })
 
   it('keeps the reason the laptop named', async () => {
     refuseWith(400, {
       code: 'ValidationFailed',
-      messageKey: 'admin.itemNameMissing',
+      messageKey: 'errors.admin.items.nameMissing',
       parameters: {},
       details: null,
     })
@@ -104,7 +104,7 @@ describe('an item the laptop would not save', () => {
 
     expect(result).toEqual({
       kind: 'failed',
-      message: { key: 'admin.itemNameMissing', parameters: {}, count: null },
+      message: { key: 'errors.admin.items.nameMissing', parameters: {}, count: null },
     })
   })
 
@@ -116,7 +116,7 @@ describe('an item the laptop would not save', () => {
 
     expect(result).toEqual({
       kind: 'failed',
-      message: { key: 'admin.actionFailed', parameters: {}, count: null },
+      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
     })
   })
 })
@@ -138,7 +138,7 @@ describe('an item the laptop would not switch on or off', () => {
 
     expect(result).toEqual({
       kind: 'failed',
-      message: { key: 'admin.actionFailed', parameters: {}, count: null },
+      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
     })
   })
 
@@ -150,14 +150,14 @@ describe('an item the laptop would not switch on or off', () => {
 
     expect(result).toEqual({
       kind: 'failed',
-      message: { key: 'admin.actionFailed', parameters: {}, count: null },
+      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
     })
   })
 
   it('keeps the reason the laptop named', async () => {
     refuseWith(422, {
       code: 'UnprocessableEntity',
-      messageKey: 'admin.itemCategoryIsOff',
+      messageKey: 'errors.admin.items.categoryIsOff',
       parameters: {},
       details: null,
     })
@@ -167,7 +167,7 @@ describe('an item the laptop would not switch on or off', () => {
 
     expect(result).toEqual({
       kind: 'failed',
-      message: { key: 'admin.itemCategoryIsOff', parameters: {}, count: null },
+      message: { key: 'errors.admin.items.categoryIsOff', parameters: {}, count: null },
     })
   })
 })
@@ -290,7 +290,7 @@ describe('a new item the laptop creates', () => {
     answerWith(
       () => ({
         code: 'Conflict',
-        messageKey: 'admin.itemNameTaken',
+        messageKey: 'errors.admin.items.nameTaken',
         parameters: {},
         details: null,
       }),
@@ -302,7 +302,7 @@ describe('a new item the laptop creates', () => {
 
     expect(created).toEqual({
       kind: 'failed',
-      message: { key: 'admin.itemNameTaken', parameters: {}, count: null },
+      message: { key: 'errors.admin.items.nameTaken', parameters: {}, count: null },
     })
     expect(items.items).toEqual([])
   })

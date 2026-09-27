@@ -10,6 +10,6 @@ const session = useSessionStore()
 <template>
   <v-container class="welcome">
     <LanguageSwitch :language="session.language" @select="session.setLanguage" />
-    <h1 class="text-h4 mt-4">{{ t('welcome.title') }}</h1>
+    <h1 class="text-h4 mt-4">{{ t('shared.startup.messages.deviceNotSetUp') }}</h1>
   </v-container>
 </template>

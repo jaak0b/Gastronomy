@@ -50,7 +50,7 @@ public sealed class FestivalMenuServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(putOn.IsSuccess, Is.False);
-                      Assert.That(putOn.RefusalMessageKey(), Is.EqualTo("admin.actionFailed"));
+                      Assert.That(putOn.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
                       Assert.That(putOn.RefusalDescription(), Does.Contain(_strangerStationId.ToString()));
                     });
   }
@@ -63,7 +63,7 @@ public sealed class FestivalMenuServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(putOn.IsSuccess, Is.False);
-                      Assert.That(putOn.RefusalMessageKey(), Is.EqualTo("admin.itemNeedsAStation"));
+                      Assert.That(putOn.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.itemNeedsAStation"));
                     });
   }
 
@@ -120,7 +120,7 @@ public sealed class FestivalMenuServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(takenOff.IsSuccess, Is.False);
-                      Assert.That(takenOff.RefusalMessageKey(), Is.EqualTo("admin.itemStaysOnTheMenuWhileTheFestivalRuns"));
+                      Assert.That(takenOff.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.itemStaysOnTheMenuWhileTheFestivalRuns"));
                     });
   }
 

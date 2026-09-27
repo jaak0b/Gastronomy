@@ -67,7 +67,7 @@ public sealed class EnrolmentServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(issued.IsSuccess, Is.False);
-                      Assert.That(issued.RefusalMessageKey(), Is.EqualTo("enrolment.atMostOneOwner"));
+                      Assert.That(issued.RefusalMessageKey(), Is.EqualTo("errors.enrolment.atMostOneOwner"));
                     });
 
     A.CallTo(() => _store.CreateAsync(A<IDeviceOwner?>._, A<CancellationToken>._)).MustNotHaveHappened();
@@ -132,7 +132,7 @@ public sealed class EnrolmentServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(qrUrl.IsSuccess, Is.False);
-                      Assert.That(qrUrl.RefusalMessageKey(), Is.EqualTo("admin.enrol.qrUnavailable"));
+                      Assert.That(qrUrl.RefusalMessageKey(), Is.EqualTo("errors.enrolment.qrUnavailable"));
                     });
   }
 
@@ -143,7 +143,7 @@ public sealed class EnrolmentServiceTest
 
     ErrorOr<string> qrUrl = await _service.ReadOpenQRUrlAsync(_invitationId, CancellationToken.None);
 
-    Assert.That(qrUrl.RefusalMessageKey(), Is.EqualTo("admin.enrol.qrAlreadyUsed"));
+    Assert.That(qrUrl.RefusalMessageKey(), Is.EqualTo("errors.enrolment.qrAlreadyUsed"));
   }
 
   [Test]
@@ -153,7 +153,7 @@ public sealed class EnrolmentServiceTest
 
     ErrorOr<string> qrUrl = await _service.ReadOpenQRUrlAsync(_invitationId, CancellationToken.None);
 
-    Assert.That(qrUrl.RefusalMessageKey(), Is.EqualTo("admin.enrol.qrReplaced"));
+    Assert.That(qrUrl.RefusalMessageKey(), Is.EqualTo("errors.enrolment.qrReplaced"));
   }
 
   [Test]
@@ -163,7 +163,7 @@ public sealed class EnrolmentServiceTest
 
     ErrorOr<string> qrUrl = await _service.ReadOpenQRUrlAsync(_invitationId, CancellationToken.None);
 
-    Assert.That(qrUrl.RefusalMessageKey(), Is.EqualTo("admin.enrol.expired"));
+    Assert.That(qrUrl.RefusalMessageKey(), Is.EqualTo("errors.enrolment.qrExpired"));
   }
 
   [Test]
@@ -174,7 +174,7 @@ public sealed class EnrolmentServiceTest
 
     ErrorOr<string> qrUrl = await _service.ReadOpenQRUrlAsync(_invitationId, CancellationToken.None);
 
-    Assert.That(qrUrl.RefusalMessageKey(), Is.EqualTo("admin.enrol.qrUnavailable"));
+    Assert.That(qrUrl.RefusalMessageKey(), Is.EqualTo("errors.enrolment.qrUnavailable"));
   }
 
   [Test]

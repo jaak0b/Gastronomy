@@ -7,14 +7,14 @@ import en from '../../src/shared/i18n/en.json'
 type LocaleTree = { [key: string]: string | LocaleTree }
 
 const PLURAL_KEYS = [
-  'catalog.basketSummary',
-  'admin.overview.itemsWithoutStation',
-  'admin.itemsWouldHaveNoStation',
-  'admin.festivals.stationCount',
-  'admin.festivals.menuItemCount',
-  'admin.festivals.orderCount',
-  'openItems.listIncomplete',
-  'openItems.someWereAlreadySettled',
+  'phone.catalog.labels.basketSummary',
+  'admin.overview.messages.itemsWithoutStation',
+  'errors.admin.stations.itemsWouldHaveNoStation',
+  'admin.festivals.labels.stationCount',
+  'admin.festivals.labels.menuItemCount',
+  'admin.festivals.labels.orderCount',
+  'phone.openItems.messages.listIncomplete',
+  'phone.openItems.messages.someWereAlreadySettled',
 ]
 
 function flatten(tree: LocaleTree, prefix = ''): Map<string, string> {
@@ -74,11 +74,11 @@ describe('the two locale files', () => {
 
 describe('the example the table field offers a waiter', () => {
   it('names a bare number in German, because the open items screen writes the word itself', () => {
-    expect(german.get('catalog.tablePlaceholder')).toBe('Zum Beispiel: 12')
+    expect(german.get('phone.review.labels.tablePlaceholder')).toBe('Zum Beispiel: 12')
   })
 
   it('names a bare number in English for the same reason', () => {
-    expect(english.get('catalog.tablePlaceholder')).toBe('For example: 12')
+    expect(english.get('phone.review.labels.tablePlaceholder')).toBe('For example: 12')
   })
 })
 
@@ -148,7 +148,7 @@ describe('every key a screen asks for', () => {
   it('finds the keys the screens actually use, so the check cannot pass by finding nothing', () => {
     const used = keysUsedInSource()
 
-    expect(used.has('review.send')).toBe(true)
+    expect(used.has('phone.review.actions.send')).toBe(true)
     expect(used.size).toBeGreaterThan(100)
   })
 })
@@ -175,9 +175,7 @@ function keysTheLaptopCanSend(): Map<string, string> {
   const sent = new Map<string, string>()
   for (const file of backendSourceFiles(BACKEND_ROOT)) {
     const source = readFileSync(file, 'utf8')
-    for (const match of source.matchAll(
-      /"((?:order|admin|auth|catalog|enrolment|station|session|review)\.[a-zA-Z][\w.]*)"/g,
-    )) {
+    for (const match of source.matchAll(/"(errors\.[a-zA-Z][\w.]*)"/g)) {
       sent.set(match[1], file.substring(BACKEND_ROOT.length + 1))
     }
   }
@@ -204,7 +202,7 @@ describe('every message the laptop can send back', () => {
   it('is actually found by this check, so it cannot pass by finding nothing', () => {
     const sent = keysTheLaptopCanSend()
 
-    expect(sent.has('enrolment.codeUnknown')).toBe(true)
+    expect(sent.has('errors.enrolment.codeUnknown')).toBe(true)
     expect(sent.size).toBeGreaterThan(30)
   })
 })

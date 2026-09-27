@@ -14,7 +14,7 @@ public static partial class Refusal
 
     public static Error PeriodInvalid(DateTime startsAtUtc, DateTime endsAtUtc)
     {
-      return BadRequest("admin.festivalPeriodInvalid",
+      return BadRequest("errors.admin.festivals.periodInvalid",
                         $"The festival is to end at {endsAtUtc:O}, which is not after its start at {startsAtUtc:O}.",
                         new Dictionary<string, object>
                         {
@@ -24,7 +24,7 @@ public static partial class Refusal
 
     public static Error PeriodOverlapsAnotherFestival(string overlappingFestivalName)
     {
-      return Conflict("admin.festivalOverlaps",
+      return Conflict("errors.admin.festivals.overlaps",
                       $"The period overlaps the festival {overlappingFestivalName}.",
                       new Dictionary<string, object>
                       {
@@ -35,7 +35,7 @@ public static partial class Refusal
 
     public static Error FestivalIsRunning(Guid festivalId)
     {
-      return BadRequest("admin.actionFailed",
+      return BadRequest("errors.admin.actionFailed",
                         $"The festival {festivalId} was not hidden because it is running right now, and hiding it would empty every phone and every station tablet in the middle of service. The festivals page draws no hide control on a running festival, so this call did not come from that screen.",
                         new Dictionary<string, object>
                         {

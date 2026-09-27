@@ -34,7 +34,7 @@ public sealed class DeviceKindTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("auth.wrongDeviceKind"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.auth.wrongDeviceKind"));
                     });
   }
 
@@ -47,7 +47,7 @@ public sealed class DeviceKindTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("auth.wrongDeviceKind"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.auth.wrongDeviceKind"));
                     });
   }
 

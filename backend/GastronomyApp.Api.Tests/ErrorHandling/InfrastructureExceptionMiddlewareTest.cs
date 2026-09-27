@@ -29,7 +29,7 @@ public sealed class InfrastructureExceptionMiddlewareTest
                     {
                       Assert.That(context.Response.StatusCode, Is.EqualTo(503));
                       Assert.That(error!.Code, Is.EqualTo("DatabaseUnavailable"));
-                      Assert.That(error.MessageKey, Is.EqualTo("review.sendFailedDatabase"));
+                      Assert.That(error.MessageKey, Is.EqualTo("errors.storage.databaseUnavailable"));
                     });
   }
 
@@ -50,7 +50,7 @@ public sealed class InfrastructureExceptionMiddlewareTest
                     {
                       Assert.That(context.Response.StatusCode, Is.EqualTo(409));
                       Assert.That(error!.Code, Is.EqualTo("ConflictingChange"));
-                      Assert.That(error.MessageKey, Is.EqualTo("review.conflictingChange"));
+                      Assert.That(error.MessageKey, Is.EqualTo("errors.storage.conflictingChange"));
                     });
   }
 

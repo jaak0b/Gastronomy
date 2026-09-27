@@ -280,7 +280,7 @@ public sealed class AdminEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("ItemIsOnTheRunningFestivalsMenu"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemIsOnTheRunningFestivalsMenu"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.items.isOnTheRunningFestivalsMenu"));
                       Assert.That(item.IsActive, Is.True);
                     });
   }

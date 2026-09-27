@@ -92,7 +92,7 @@ public sealed class CatalogItemAdministrationServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("admin.itemNameTaken"));
+                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.items.nameTaken"));
                     });
   }
 
@@ -101,7 +101,7 @@ public sealed class CatalogItemAdministrationServiceTest
   {
     ErrorOr<CatalogItem> created = await CreatedAsync("Currywurst", Guid.NewGuid());
 
-    Assert.That(created.RefusalMessageKey(), Is.EqualTo("admin.itemCategoryUnknown"));
+    Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.items.categoryUnknown"));
   }
 
   [Test]
@@ -109,7 +109,7 @@ public sealed class CatalogItemAdministrationServiceTest
   {
     ErrorOr<CatalogItem> created = await CreatedAsync("Currywurst", _switchedOffCategoryId);
 
-    Assert.That(created.RefusalMessageKey(), Is.EqualTo("admin.itemCategoryIsOff"));
+    Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.items.categoryIsOff"));
   }
 
   [TestCase(-1d)]
@@ -121,7 +121,7 @@ public sealed class CatalogItemAdministrationServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("catalog.productionMinutesOutOfRange"));
+                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.items.productionMinutesOutOfRange"));
                       Assert.That(created.RefusalDescription(), Does.Contain(minutes.ToString()));
                     });
   }
@@ -173,7 +173,7 @@ public sealed class CatalogItemAdministrationServiceTest
 
     ErrorOr<CatalogItem> switchedOn = await _service.ActivateAsync(itemId, CancellationToken.None);
 
-    Assert.That(switchedOn.RefusalMessageKey(), Is.EqualTo("admin.itemCategoryIsOff"));
+    Assert.That(switchedOn.RefusalMessageKey(), Is.EqualTo("errors.admin.items.categoryIsOff"));
   }
 
   [Test]
@@ -194,7 +194,7 @@ public sealed class CatalogItemAdministrationServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(switchedOff.RefusalMessageKey(), Is.EqualTo("admin.itemIsOnTheRunningFestivalsMenu"));
+                      Assert.That(switchedOff.RefusalMessageKey(), Is.EqualTo("errors.admin.items.isOnTheRunningFestivalsMenu"));
                     });
   }
 

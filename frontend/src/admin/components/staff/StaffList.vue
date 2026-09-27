@@ -107,7 +107,7 @@ onUnmounted(() => {
         class="show-deactivated"
         density="compact"
         hide-details
-        :label="t('admin.showDeactivated')"
+        :label="t('admin.common.actions.showDeactivated')"
       />
     </div>
 
@@ -117,7 +117,7 @@ onUnmounted(() => {
       type="success"
       variant="tonal"
     >
-      {{ t('admin.enrol.done', { name: enrolment.enrolledStaffMemberName }) }}
+      {{ t('admin.enrolment.messages.done', { name: enrolment.enrolledStaffMemberName }) }}
     </v-alert>
     <v-alert
       v-if="refusalText !== null && renamingStaffMember === null"
@@ -128,27 +128,27 @@ onUnmounted(() => {
       {{ refusalText }}
     </v-alert>
     <v-alert v-if="staff.loadFailed" class="error" type="error" variant="tonal">
-      {{ t('admin.loadFailed') }}
+      {{ t('admin.common.errors.loadFailed') }}
     </v-alert>
 
     <v-card v-for="staffMember in shown" :key="staffMember.staffMemberId" class="staff-row mb-3">
       <v-card-actions class="staff-row-line">
         <span class="name text-h6 ms-2 me-2">{{ staffMember.name }}</span>
         <v-chip v-if="!staffMember.isActive" class="deactivated me-2" size="small" color="grey">
-          {{ t('admin.deactivated') }}
+          {{ t('admin.common.labels.deactivated') }}
         </v-chip>
         <v-chip v-if="!staffMember.hasDevice" class="no-phone me-2" size="small" color="warning">
-          {{ t('admin.staff.noPhone') }}
+          {{ t('admin.staff.labels.noPhone') }}
         </v-chip>
         <v-btn class="new-code" variant="text" @click="inviteStaffMember(staffMember.staffMemberId)">
-          {{ t('admin.staff.newCode') }}
+          {{ t('admin.staff.actions.newCode') }}
         </v-btn>
         <v-btn
           class="rename"
           variant="text"
           @click="startRenaming(staffMember)"
         >
-          {{ t('admin.staff.rename') }}
+          {{ t('admin.staff.actions.rename') }}
         </v-btn>
         <v-spacer />
         <v-btn
@@ -165,7 +165,7 @@ onUnmounted(() => {
           variant="text"
           @click="reactivate(staffMember.staffMemberId)"
         >
-          {{ t('admin.staff.activate') }}
+          {{ t('admin.staff.actions.activate') }}
         </v-btn>
       </v-card-actions>
       <v-expand-transition>
@@ -180,7 +180,7 @@ onUnmounted(() => {
     </v-card>
 
     <v-btn class="new-staff-member mt-6" color="primary" @click="inviteSomebodyNew">
-      {{ t('admin.staff.new') }}
+      {{ t('admin.staff.actions.new') }}
     </v-btn>
 
     <StaffRenameDialog
@@ -193,9 +193,9 @@ onUnmounted(() => {
 
     <BaseConfirmDialog
       v-if="askingAboutId !== null"
-      :title="t('admin.staff.deactivateTitle')"
-      :body="t('admin.staff.deactivateBody')"
-      :confirm-label="t('admin.staff.deactivateConfirm')"
+      :title="t('admin.staff.labels.deactivateTitle')"
+      :body="t('admin.staff.messages.deactivateBody')"
+      :confirm-label="t('admin.staff.actions.deactivateConfirm')"
       @confirm="deactivate"
       @cancel="askingAboutId = null"
     />

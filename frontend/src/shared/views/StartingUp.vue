@@ -35,7 +35,7 @@ async function askTheLaptopAgain(): Promise<void> {
       size="x-large"
       @click="askTheLaptopAgain"
     >
-      {{ t('startingUp.tryAgain') }}
+      {{ t('shared.startup.actions.tryAgain') }}
     </v-btn>
   </v-container>
 </template>

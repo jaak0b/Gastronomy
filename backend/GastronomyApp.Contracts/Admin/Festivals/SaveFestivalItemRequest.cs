@@ -5,7 +5,7 @@ namespace GastronomyApp.Contracts.Admin.Festivals;
 
 public sealed record SaveFestivalItemRequest
 {
-  [Range(0, 99999, ErrorMessage = RefusalMessageKeys.AdminItemPriceOutOfRange)]
+  [Range(0, 99999, ErrorMessage = RefusalMessageKeys.FestivalItemPriceOutOfRange)]
   public required int PriceCents { get; init; }
 
   public required IReadOnlyList<Guid>? StationIds { get; init; }

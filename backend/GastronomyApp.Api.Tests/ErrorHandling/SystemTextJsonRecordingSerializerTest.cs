@@ -19,11 +19,11 @@ public sealed class SystemTextJsonRecordingSerializerTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(recording, Does.Contain("catalog.itemSoldOut"));
+                      Assert.That(recording, Does.Contain("errors.order.itemSoldOut"));
                       Assert.That(recording, Does.Contain("sold out at the running festival"));
                       Assert.That(recording, Does.Contain(catalogItemId.ToString()));
                       Assert.That(recording, Does.Contain("Bratwurst"));
-                      Assert.That(recording, Does.Contain("order.cannotBeProcessed"));
+                      Assert.That(recording, Does.Contain("errors.order.cannotBeProcessed"));
                     });
   }
 

@@ -50,7 +50,7 @@ public sealed class OrderRefusalLoggingTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(messageKey, Is.EqualTo("order.cannotBeProcessed"));
+                      Assert.That(messageKey, Is.EqualTo("errors.order.cannotBeProcessed"));
                     });
   }
 
@@ -75,7 +75,7 @@ public sealed class OrderRefusalLoggingTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                      Assert.That(messageKey, Is.EqualTo("order.unknownItem"));
+                      Assert.That(messageKey, Is.EqualTo("errors.order.unknownItem"));
                     });
   }
 }

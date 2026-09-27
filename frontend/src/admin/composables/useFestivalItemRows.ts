@@ -168,11 +168,11 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
   function priceTheLaptopCanTake(itemId: string, row: FestivalItemRow): number | null {
     const priceCents = parseEuroInput(row.price.edited)
     if (priceCents === null) {
-      refuse(itemId, 'admin.itemPriceOutOfRange')
+      refuse(itemId, 'errors.admin.festivals.itemPriceOutOfRange')
       return null
     }
     if (row.stations.edited.length === 0) {
-      refuse(itemId, 'admin.festival.itemNeedsAStation', { item: itemNameFor(itemId) })
+      refuse(itemId, 'admin.festivals.errors.namedItemNeedsAStation', { item: itemNameFor(itemId) })
       return null
     }
     return priceCents
@@ -241,11 +241,11 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
       return
     }
     if (priceIsUnreadable(itemId)) {
-      refuse(itemId, 'admin.itemPriceOutOfRange')
+      refuse(itemId, 'errors.admin.festivals.itemPriceOutOfRange')
       return
     }
     if (stationIds.length === 0) {
-      refuse(itemId, 'admin.festival.itemNeedsAStation', { item: itemNameFor(itemId) })
+      refuse(itemId, 'admin.festivals.errors.namedItemNeedsAStation', { item: itemNameFor(itemId) })
       return
     }
     row.stations.edited = [...stationIds]

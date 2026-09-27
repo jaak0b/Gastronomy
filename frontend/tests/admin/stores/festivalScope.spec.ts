@@ -157,7 +157,7 @@ describe('a station at a festival', () => {
           ? new Response(
               JSON.stringify({
                 code: 'StationHasOrdersAtTheFestival',
-                messageKey: 'admin.stationHasOrdersAtTheFestival',
+                messageKey: 'errors.admin.festivals.stationHasOrdersAtTheFestival',
                 parameters: { count: '3' },
                 details: null,
               }),
@@ -173,7 +173,7 @@ describe('a station at a festival', () => {
     expect(result).toEqual({
       kind: 'failed',
       message: {
-        key: 'admin.stationHasOrdersAtTheFestival',
+        key: 'errors.admin.festivals.stationHasOrdersAtTheFestival',
         parameters: { count: '3' },
         count: 3,
       },

@@ -22,7 +22,7 @@ function save(): void {
 
 <template>
   <BaseFormDialog
-    :title="t('admin.staff.rename')"
+    :title="t('admin.staff.actions.rename')"
     :error-text="errorText"
     :save-disabled="nameIsMissing"
     @save="save"
@@ -32,7 +32,7 @@ function save(): void {
       v-model="name"
       class="staff-name-field"
       maxlength="40"
-      :label="t('admin.staff.name')"
+      :label="t('admin.staff.labels.name')"
     />
   </BaseFormDialog>
 </template>

@@ -39,15 +39,15 @@ function choose(stationId: string): void {
 <template>
   <v-dialog :model-value="true" max-width="480" persistent scrollable :style="{ height: `calc(100% - ${keyboardInset}px)`, bottom: 'auto' }">
     <v-card class="line-station-sheet">
-      <v-card-title class="station-where-title">{{ t('line.whereTitle', { item: item.name }) }}</v-card-title>
+      <v-card-title class="station-where-title">{{ t('phone.catalog.labels.stationForItem', { item: item.name }) }}</v-card-title>
       <v-card-text v-if="withNote">
         <v-text-field
           ref="noteInput"
           v-model="typedNote"
           class="station-note-input"
           maxlength="200"
-          :label="t('catalog.itemNote')"
-          :placeholder="t('catalog.lineNotePlaceholder')"
+          :label="t('phone.catalog.labels.itemNote')"
+          :placeholder="t('phone.catalog.labels.lineNotePlaceholder')"
           persistent-placeholder
         />
       </v-card-text>
@@ -62,11 +62,11 @@ function choose(stationId: string): void {
         >
           {{ withEstimate(stationNameFor(stationId), estimateFor(stationId), t, language) }}
           <span v-if="stationId === currentStationId" class="station-current text-medium-emphasis">
-            {{ t('line.currentStation') }}
+            {{ t('phone.catalog.labels.currentStation') }}
           </span>
         </v-btn>
         <v-btn class="cancel-station-choice" variant="text" block @click="emit('cancel')">
-          {{ t('line.cancel') }}
+          {{ t('common.actions.cancel') }}
         </v-btn>
       </v-card-actions>
     </v-card>

@@ -32,7 +32,7 @@ const refusal = ref<AdminErrorMessage | null>(null)
 const refusalText = useRefusalText(refusal)
 
 const stationErrorText = computed(() =>
-  stationRefused.value ? t('admin.festival.itemNeedsAStation', { item: props.item.name }) : null,
+  stationRefused.value ? t('admin.festivals.errors.namedItemNeedsAStation', { item: props.item.name }) : null,
 )
 
 function typePrice(typed: string): void {
@@ -74,9 +74,9 @@ async function place(): Promise<void> {
 
 <template>
   <BaseFormDialog
-    :title="`${t('admin.festival.addItem')}: ${item.name}`"
+    :title="`${t('admin.festivals.actions.addItem')}: ${item.name}`"
     :error-text="refusalText"
-    :save-label="t('admin.festival.addItem')"
+    :save-label="t('admin.festivals.actions.addItem')"
     :busy="isSending"
     @save="place"
     @cancel="emit('cancel')"
@@ -87,9 +87,9 @@ async function place(): Promise<void> {
       inputmode="decimal"
       hide-details="auto"
       :model-value="priceText"
-      :label="t('admin.items.price')"
+      :label="t('admin.items.labels.price')"
       :error="priceRefused"
-      :error-messages="priceRefused ? [t('admin.items.priceInvalid')] : []"
+      :error-messages="priceRefused ? [t('admin.items.errors.priceInvalid')] : []"
       @update:model-value="(typed: string) => typePrice(typed)"
     />
     <StationSelect

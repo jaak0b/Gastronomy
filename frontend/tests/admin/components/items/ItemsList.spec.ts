@@ -361,7 +361,7 @@ describe('the controls beside a category name', () => {
         status: 409,
         body: {
           code: 'Conflict',
-          messageKey: 'admin.categoryHasActiveItems',
+          messageKey: 'errors.admin.categories.hasActiveItems',
           parameters: {},
           details: null,
         },
@@ -483,7 +483,7 @@ describe('adding a category from the item list', () => {
         status: 409,
         body: {
           code: 'Conflict',
-          messageKey: 'admin.categoryNameTaken',
+          messageKey: 'errors.admin.categories.nameTaken',
           parameters: {},
           details: null,
         },
@@ -708,7 +708,7 @@ describe('adding an item', () => {
         status: 409,
         body: {
           code: 'Conflict',
-          messageKey: 'admin.categoryHasActiveItems',
+          messageKey: 'errors.admin.categories.hasActiveItems',
           parameters: {},
           details: null,
         },
@@ -747,7 +747,7 @@ describe('a refusal beside an open item form', () => {
         status: 409,
         body: {
           code: 'Conflict',
-          messageKey: 'admin.categoryHasActiveItems',
+          messageKey: 'errors.admin.categories.hasActiveItems',
           parameters: {},
           details: null,
         },
@@ -774,7 +774,7 @@ describe('a refusal beside an open item form', () => {
         status: 409,
         body: {
           code: 'Conflict',
-          messageKey: 'admin.actionFailed',
+          messageKey: 'errors.admin.actionFailed',
           parameters: {},
           details: null,
         },
@@ -797,7 +797,7 @@ describe('a refusal beside an open item form', () => {
         status: 409,
         body: {
           code: 'Conflict',
-          messageKey: 'admin.actionFailed',
+          messageKey: 'errors.admin.actionFailed',
           parameters: {},
           details: null,
         },
@@ -844,7 +844,7 @@ describe('a refusal the admin has walked away from', () => {
           return new Response(
             JSON.stringify({
               code: 'Conflict',
-              messageKey: 'admin.actionFailed',
+              messageKey: 'errors.admin.actionFailed',
               parameters: {},
               details: null,
             }),

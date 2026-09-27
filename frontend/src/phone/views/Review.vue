@@ -86,8 +86,8 @@ function backToItems(): void {
       type="warning"
       variant="tonal"
     >
-      <p class="may-have-arrived">{{ t('review.sendStillUnknown') }}</p>
-      <p class="instruction mb-0">{{ t('review.writeItDown') }}</p>
+      <p class="may-have-arrived">{{ t('phone.review.messages.sendStillUnknown') }}</p>
+      <p class="instruction mb-0">{{ t('phone.review.messages.writeItDown') }}</p>
     </v-alert>
     <SendFailurePanel
       v-else-if="order.sendHasFailed && order.failure !== null"
@@ -95,7 +95,7 @@ function backToItems(): void {
     />
     <div class="review-heading d-flex align-center mb-2">
       <h1 class="table-name text-subtitle-1 text-medium-emphasis">
-        {{ t('review.tableIs', { name: order.draft.tableName }) }}
+        {{ t('phone.review.labels.table', { name: order.draft.tableName }) }}
       </h1>
       <span class="order-total text-h5">{{ total }}</span>
     </div>
@@ -118,7 +118,7 @@ function backToItems(): void {
             size="x-large"
             @click="startTheNextOrder"
           >
-            {{ t('review.writtenDown') }}
+            {{ t('phone.review.actions.writtenDown') }}
           </v-btn>
           <v-btn
             class="send-again mt-2"
@@ -129,7 +129,7 @@ function backToItems(): void {
             :disabled="order.isSending"
             @click="sendAgain"
           >
-            {{ order.isSending ? t('review.sending') : t('review.retry') }}
+            {{ order.isSending ? t('phone.review.actions.sending') : t('phone.review.actions.retry') }}
           </v-btn>
         </template>
         <v-btn
@@ -141,7 +141,7 @@ function backToItems(): void {
           size="x-large"
           @click="order.dropLinesThatCannotBeOrdered"
         >
-          {{ t('review.removeLinesThatCannotBeOrdered') }}
+          {{ t('phone.review.actions.removeLinesThatCannotBeOrdered') }}
         </v-btn>
         <template v-else>
           <v-btn
@@ -152,7 +152,7 @@ function backToItems(): void {
             :disabled="!canSend"
             @click="openTheSendSheet"
           >
-            {{ t('review.continue') }}
+            {{ t('common.actions.continue') }}
           </v-btn>
         </template>
         <v-btn
@@ -162,7 +162,7 @@ function backToItems(): void {
           block
           @click="backToItems"
         >
-          {{ t('review.back') }}
+          {{ t('common.actions.back') }}
         </v-btn>
       </div>
     </DockedStrip>

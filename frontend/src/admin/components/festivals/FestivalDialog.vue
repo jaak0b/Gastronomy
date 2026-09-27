@@ -51,19 +51,19 @@ function save(): void {
       v-model="name"
       class="festival-name-field mb-4"
       maxlength="80"
-      :label="t('admin.festivals.name')"
+      :label="t('admin.festivals.labels.name')"
     />
     <v-text-field
       v-model="startsAt"
       class="festival-start-field mb-4"
       type="datetime-local"
-      :label="t('admin.festivals.start')"
+      :label="t('admin.festivals.labels.start')"
     />
     <v-text-field
       v-model="endsAt"
       class="festival-end-field"
       type="datetime-local"
-      :label="t('admin.festivals.end')"
+      :label="t('admin.festivals.labels.end')"
     />
   </BaseFormDialog>
 </template>

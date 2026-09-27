@@ -8,7 +8,7 @@ public static partial class Refusal
   {
     public static Error UnsupportedLanguage(string? language)
     {
-      return BadRequest("session.unsupportedLanguage",
+      return BadRequest("errors.session.unsupportedLanguage",
                         $"The device asked for the language {language}, and this application speaks German and English only.",
                         new Dictionary<string, object>
                         {

@@ -138,7 +138,7 @@ public sealed class FestivalScopeEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("UnprocessableEntity"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.cannotBeProcessed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.order.cannotBeProcessed"));
                     });
   }
 
@@ -191,7 +191,7 @@ public sealed class FestivalScopeEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("ValidationFailed"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
                     });
   }
 
@@ -208,7 +208,7 @@ public sealed class FestivalScopeEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("NoRunningFestival"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.noFestivalIsRunning"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.station.noFestivalIsRunning"));
                     });
   }
 
@@ -225,7 +225,7 @@ public sealed class FestivalScopeEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("StationNotAtTheFestival"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.notPartOfTheFestival"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.station.notPartOfTheFestival"));
                     });
   }
 
@@ -258,7 +258,7 @@ public sealed class FestivalScopeEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.noFestivalIsRunning"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.station.noFestivalIsRunning"));
                       Assert.That(stillOpen, Is.EqualTo(orderItemIds.Count));
                     });
   }

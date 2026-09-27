@@ -22,7 +22,7 @@ public sealed class ResultEnvelopeTest
                     {
                       Assert.That(written.StatusCode, Is.EqualTo(422));
                       Assert.That(written.Error!.Code, Is.EqualTo("UnprocessableEntity"));
-                      Assert.That(written.Error.MessageKey, Is.EqualTo("catalog.itemSoldOut"));
+                      Assert.That(written.Error.MessageKey, Is.EqualTo("errors.order.itemSoldOut"));
                       Assert.That(written.Error.Parameters["catalogItemId"], Is.EqualTo(_catalogItemId.ToString()));
                       Assert.That(written.Error.Parameters["name"], Is.EqualTo("Bratwurst"));
                     });
@@ -48,7 +48,7 @@ public sealed class ResultEnvelopeTest
     Assert.Multiple(() =>
                     {
                       Assert.That(written.StatusCode, Is.EqualTo(422));
-                      Assert.That(written.Error!.MessageKey, Is.EqualTo("order.unknownItem"));
+                      Assert.That(written.Error!.MessageKey, Is.EqualTo("errors.order.unknownItem"));
                     });
   }
 

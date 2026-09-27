@@ -135,7 +135,7 @@ public sealed class OrderEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
                       Assert.That(error.RootElement.GetProperty("code").GetString(), Is.EqualTo("UnprocessableEntity"));
-                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("catalog.itemSoldOut"));
+                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.order.itemSoldOut"));
                       Assert.That(error.RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Bratwurst mit Brot"));
                       Assert.That(error.RootElement.GetProperty("parameters").GetProperty("catalogItemId").GetGuid(), Is.EqualTo(_context.World.BratwurstItemId));
                       Assert.That(storedOrders, Is.Zero);
@@ -162,7 +162,7 @@ public sealed class OrderEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("catalog.itemSoldOut"));
+                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.order.itemSoldOut"));
                       Assert.That(error.RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Bratwurst mit Brot"));
                       Assert.That(error.RootElement.GetProperty("parameters").GetProperty("catalogItemId").GetGuid(), Is.EqualTo(_context.World.BratwurstItemId));
                       Assert.That(storedOrders, Is.Zero);
@@ -198,7 +198,7 @@ public sealed class OrderEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("catalog.itemSoldOut"));
+                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.order.itemSoldOut"));
                       Assert.That(error.RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Bratwurst mit Brot"));
                       Assert.That(error.RootElement.GetProperty("parameters").GetProperty("catalogItemId").GetGuid(), Is.EqualTo(_context.World.BratwurstItemId));
                       Assert.That(storedOrders, Is.Zero);
@@ -246,7 +246,7 @@ public sealed class OrderEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
                       Assert.That(error.RootElement.GetProperty("code").GetString(), Is.EqualTo("ValidationFailed"));
-                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
                       Assert.That(orderCount, Is.Zero);
                       Assert.That(itemCount, Is.Zero);
                     });

@@ -144,7 +144,7 @@ public sealed class AdminFestivalEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.festivalNameMissing"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.nameMissing"));
                     });
   }
 
@@ -157,7 +157,7 @@ public sealed class AdminFestivalEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.festivalPeriodInvalid"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.periodInvalid"));
                     });
   }
 
@@ -171,7 +171,7 @@ public sealed class AdminFestivalEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("FestivalOverlaps"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.festivalOverlaps"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.overlaps"));
                       Assert.That(body.RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Sommerfest"));
                     });
   }
@@ -208,7 +208,7 @@ public sealed class AdminFestivalEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.actionFailed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
                     });
   }
 
@@ -228,7 +228,7 @@ public sealed class AdminFestivalEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.festivalOverlaps"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.overlaps"));
                       Assert.That(body.RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Herbstfest"));
                     });
   }
@@ -407,7 +407,7 @@ public sealed class AdminFestivalEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemNeedsAStation"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.itemNeedsAStation"));
                     });
   }
 
@@ -426,7 +426,7 @@ public sealed class AdminFestivalEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemPriceOutOfRange"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.itemPriceOutOfRange"));
                     });
   }
 
@@ -459,7 +459,7 @@ public sealed class AdminFestivalEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.actionFailed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
                     });
   }
 
@@ -498,7 +498,7 @@ public sealed class AdminFestivalEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("ItemStaysOnTheMenuWhileTheFestivalRuns"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemStaysOnTheMenuWhileTheFestivalRuns"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.itemStaysOnTheMenuWhileTheFestivalRuns"));
                       Assert.That(menuRows, Is.EqualTo(1));
                       Assert.That(assignments, Is.EqualTo(1));
                     });
@@ -583,7 +583,7 @@ public sealed class AdminFestivalEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("StationHasOrdersAtTheFestival"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.stationHasOrdersAtTheFestival"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.stationHasOrdersAtTheFestival"));
                     });
   }
 
@@ -674,7 +674,7 @@ public sealed class AdminFestivalEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemsWouldHaveNoStation"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.stations.itemsWouldHaveNoStation"));
                     });
   }
 

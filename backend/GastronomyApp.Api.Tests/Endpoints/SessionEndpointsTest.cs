@@ -63,7 +63,7 @@ public sealed class SessionEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("session.unsupportedLanguage"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.session.unsupportedLanguage"));
                       Assert.That(device.Language, Is.EqualTo("de"));
                     });
   }

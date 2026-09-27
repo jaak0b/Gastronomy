@@ -137,7 +137,7 @@ onUnmounted(() => {
         class="show-hidden"
         density="compact"
         hide-details
-        :label="t('admin.festivals.showHidden')"
+        :label="t('admin.festivals.actions.showHidden')"
       />
     </div>
 
@@ -150,11 +150,11 @@ onUnmounted(() => {
       {{ refusalText }}
     </v-alert>
     <v-alert v-if="festivals.loadFailed" class="error mb-4" type="error" variant="tonal">
-      {{ t('admin.loadFailed') }}
+      {{ t('admin.common.errors.loadFailed') }}
     </v-alert>
 
     <p v-if="shown.length === 0" class="none-yet text-medium-emphasis mb-4">
-      {{ t('admin.festivals.noneYet') }}
+      {{ t('admin.festivals.messages.noneYet') }}
     </p>
 
     <v-card
@@ -165,18 +165,18 @@ onUnmounted(() => {
       <div class="d-flex align-center flex-wrap ga-2 px-4 py-2">
         <span class="name text-h6">{{ festival.name }}</span>
         <v-chip v-if="festival.isRunning" class="running" size="small" color="success">
-          {{ t('admin.festivals.running') }}
+          {{ t('admin.festivals.labels.running') }}
         </v-chip>
         <v-chip v-if="festival.isHidden" class="hidden" size="small" color="grey">
-          {{ t('admin.festivals.hidden') }}
+          {{ t('admin.festivals.labels.hidden') }}
         </v-chip>
         <v-spacer />
         <div class="actions d-flex align-center ga-2">
           <v-btn class="open" color="primary" variant="tonal" @click="open(festival)">
-            {{ t('admin.festivals.edit') }}
+            {{ t('admin.festivals.actions.edit') }}
           </v-btn>
           <v-btn class="copy" variant="text" @click="startCopying(festival)">
-            {{ t('admin.festivals.copy') }}
+            {{ t('admin.festivals.actions.copy') }}
           </v-btn>
           <span class="conditional-action">
             <v-btn
@@ -185,7 +185,7 @@ onUnmounted(() => {
               variant="text"
               @click="hiddenFestival = festival"
             >
-              {{ t('admin.festivals.hide') }}
+              {{ t('admin.festivals.actions.hide') }}
             </v-btn>
             <v-btn
               v-if="festival.isHidden"
@@ -193,12 +193,12 @@ onUnmounted(() => {
               variant="text"
               @click="show(festival.festivalId)"
             >
-              {{ t('admin.festivals.show') }}
+              {{ t('admin.festivals.actions.show') }}
             </v-btn>
             <v-btn class="action-measure" variant="text" tabindex="-1" aria-hidden="true">
               <span class="measure-labels">
-                <span>{{ t('admin.festivals.hide') }}</span>
-                <span>{{ t('admin.festivals.show') }}</span>
+                <span>{{ t('admin.festivals.actions.hide') }}</span>
+                <span>{{ t('admin.festivals.actions.show') }}</span>
               </span>
             </v-btn>
           </span>
@@ -206,32 +206,32 @@ onUnmounted(() => {
       </div>
       <div class="festival-facts d-flex flex-wrap ga-4 px-4 pb-3 text-medium-emphasis">
         <span class="period-start">
-          {{ t('admin.festivals.start') }}: {{ moment(festival.startsAtUtc) }}
+          {{ t('admin.festivals.labels.start') }}: {{ moment(festival.startsAtUtc) }}
         </span>
         <span class="period-end">
-          {{ t('admin.festivals.end') }}: {{ moment(festival.endsAtUtc) }}
+          {{ t('admin.festivals.labels.end') }}: {{ moment(festival.endsAtUtc) }}
         </span>
         <span class="station-count">
-          {{ t('admin.festivals.stationCount', { count: festival.stationCount }, festival.stationCount) }}
+          {{ t('admin.festivals.labels.stationCount', { count: festival.stationCount }, festival.stationCount) }}
         </span>
         <span class="menu-item-count">
-          {{ t('admin.festivals.menuItemCount', { count: festival.menuItemCount }, festival.menuItemCount) }}
+          {{ t('admin.festivals.labels.menuItemCount', { count: festival.menuItemCount }, festival.menuItemCount) }}
         </span>
         <span class="order-count">
-          {{ t('admin.festivals.orderCount', { count: festival.orderCount }, festival.orderCount) }}
+          {{ t('admin.festivals.labels.orderCount', { count: festival.orderCount }, festival.orderCount) }}
         </span>
       </div>
     </v-card>
 
     <v-btn class="new-festival mt-6" color="primary" @click="startCreating">
-      {{ t('admin.festivals.new') }}
+      {{ t('admin.festivals.actions.new') }}
     </v-btn>
 
     <FestivalDialog
       v-if="isCreating"
       :festival="null"
-      :title="t('admin.festivals.new')"
-      :confirm-label="t('admin.save')"
+      :title="t('admin.festivals.actions.new')"
+      :confirm-label="t('admin.common.actions.save')"
       :error-text="refusalText"
       @save="create"
       @cancel="closeTheForms"
@@ -240,16 +240,16 @@ onUnmounted(() => {
       v-if="copiedFestival !== null"
       :key="copiedFestival.festivalId"
       :festival="null"
-      :title="t('admin.festivals.copyTitle')"
-      :confirm-label="t('admin.festivals.copyConfirm')"
+      :title="t('admin.festivals.labels.copyTitle')"
+      :confirm-label="t('admin.festivals.actions.copyConfirm')"
       :error-text="refusalText"
       @save="copy"
       @cancel="closeTheForms"
     />
     <BaseConfirmDialog
       v-if="hiddenFestival !== null"
-      :title="t('admin.festivals.hideTitle')"
-      :confirm-label="t('admin.festivals.hideConfirm')"
+      :title="t('admin.festivals.labels.hideTitle')"
+      :confirm-label="t('admin.festivals.actions.hideConfirm')"
       @confirm="hide"
       @cancel="hiddenFestival = null"
     />

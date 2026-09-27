@@ -14,7 +14,7 @@ const { t } = useI18n()
 
 const summary = computed(() => {
   if (props.selectedStationIds.length === 0) {
-    return t('admin.festival.chooseStation')
+    return t('admin.festivals.labels.chooseStation')
   }
   return props.stations
     .filter((station) => props.selectedStationIds.includes(station.stationId))

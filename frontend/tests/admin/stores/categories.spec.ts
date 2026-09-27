@@ -150,7 +150,7 @@ describe('a new category', () => {
     answerWith(
       () => ({
         code: 'Conflict',
-        messageKey: 'admin.categoryNameTaken',
+        messageKey: 'errors.admin.categories.nameTaken',
         parameters: {},
         details: null,
       }),
@@ -162,7 +162,7 @@ describe('a new category', () => {
 
     expect(created).toEqual({
       kind: 'failed',
-      message: { key: 'admin.categoryNameTaken', parameters: {}, count: null },
+      message: { key: 'errors.admin.categories.nameTaken', parameters: {}, count: null },
     })
   })
 
@@ -174,7 +174,7 @@ describe('a new category', () => {
 
     expect(created).toEqual({
       kind: 'failed',
-      message: { key: 'admin.actionFailed', parameters: {}, count: null },
+      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
     })
   })
 
@@ -262,7 +262,7 @@ describe('renaming and recolouring a category', () => {
     answerWith(
       () => ({
         code: 'Conflict',
-        messageKey: 'admin.categoryNameTaken',
+        messageKey: 'errors.admin.categories.nameTaken',
         parameters: {},
         details: null,
       }),
@@ -278,7 +278,7 @@ describe('renaming and recolouring a category', () => {
 
     expect(saved).toEqual({
       kind: 'failed',
-      message: { key: 'admin.categoryNameTaken', parameters: {}, count: null },
+      message: { key: 'errors.admin.categories.nameTaken', parameters: {}, count: null },
     })
   })
 })
@@ -372,7 +372,7 @@ describe('moving a category', () => {
 
     expect(result).toEqual({
       kind: 'failed',
-      message: { key: 'admin.actionFailed', parameters: {}, count: null },
+      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
     })
   })
 
@@ -449,7 +449,7 @@ describe('switching a category off', () => {
     answerWith(
       () => ({
         code: 'Conflict',
-        messageKey: 'admin.categoryHasActiveItems',
+        messageKey: 'errors.admin.categories.hasActiveItems',
         parameters: {},
         details: null,
       }),
@@ -461,7 +461,7 @@ describe('switching a category off', () => {
 
     expect(result).toEqual({
       kind: 'failed',
-      message: { key: 'admin.categoryHasActiveItems', parameters: {}, count: null },
+      message: { key: 'errors.admin.categories.hasActiveItems', parameters: {}, count: null },
     })
   })
 })

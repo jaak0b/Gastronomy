@@ -70,7 +70,7 @@ public sealed class RequestShapeRefusalWriterTest
                                                             }
                                                   });
 
-    await AssertRefusedWithAsync(response, "order.cannotBeProcessed");
+    await AssertRefusedWithAsync(response, "errors.order.cannotBeProcessed");
   }
 
   [Test]
@@ -78,7 +78,7 @@ public sealed class RequestShapeRefusalWriterTest
   {
     using var response = await _context.SendAsync(HttpMethod.Post, "/api/orders", BuildOrderWith(Array.Empty<object>()));
 
-    await AssertRefusedWithAsync(response, "order.cannotBeProcessed");
+    await AssertRefusedWithAsync(response, "errors.order.cannotBeProcessed");
   }
 
   [Test]
@@ -95,7 +95,7 @@ public sealed class RequestShapeRefusalWriterTest
                                                                    }
                                                                  }));
 
-    await AssertRefusedWithAsync(response, "order.cannotBeProcessed");
+    await AssertRefusedWithAsync(response, "errors.order.cannotBeProcessed");
   }
 
   [Test]
@@ -113,7 +113,7 @@ public sealed class RequestShapeRefusalWriterTest
                                                                    }
                                                                  }));
 
-    await AssertRefusedWithAsync(response, "order.settlementCannotBeProcessed");
+    await AssertRefusedWithAsync(response, "errors.settlement.cannotBeProcessed");
   }
 
   [Test]
@@ -131,7 +131,7 @@ public sealed class RequestShapeRefusalWriterTest
                                                                    }
                                                                  }));
 
-    await AssertRefusedWithAsync(response, "order.settlementCannotBeProcessed");
+    await AssertRefusedWithAsync(response, "errors.settlement.cannotBeProcessed");
   }
 
   [Test]
@@ -139,7 +139,7 @@ public sealed class RequestShapeRefusalWriterTest
   {
     using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", new { lines = Array.Empty<object>() });
 
-    await AssertRefusedWithAsync(response, "order.settlementNoItemsSelected");
+    await AssertRefusedWithAsync(response, "errors.settlement.noItemsSelected");
   }
 
   [Test]
@@ -159,7 +159,7 @@ public sealed class RequestShapeRefusalWriterTest
                                                             }
                                                   });
 
-    await AssertRefusedWithAsync(response, "order.settlementCannotBeProcessed");
+    await AssertRefusedWithAsync(response, "errors.settlement.cannotBeProcessed");
   }
 
   [Test]
@@ -169,7 +169,7 @@ public sealed class RequestShapeRefusalWriterTest
 
     using var response = await _context.SendAsAsync(stationToken, HttpMethod.Post, "/api/station/items/fulfill", new { orderItemIds = Array.Empty<Guid>() });
 
-    await AssertRefusedWithAsync(response, "station.noItemsSelected");
+    await AssertRefusedWithAsync(response, "errors.station.noItemsSelected");
   }
 
   [Test]
@@ -177,7 +177,7 @@ public sealed class RequestShapeRefusalWriterTest
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem", new { code = "   " });
 
-    await AssertRefusedWithAsync(response, "enrolment.codeMissing");
+    await AssertRefusedWithAsync(response, "errors.enrolment.codeMissing");
   }
 
   [Test]
@@ -190,7 +190,7 @@ public sealed class RequestShapeRefusalWriterTest
                                                                  colourHex = "#6D4C41"
                                                                });
 
-    await AssertRefusedWithAsync(response, "admin.categoryNameMissing");
+    await AssertRefusedWithAsync(response, "errors.admin.categories.nameMissing");
   }
 
   [Test]
@@ -203,7 +203,7 @@ public sealed class RequestShapeRefusalWriterTest
                                                                  colourHex = "braun"
                                                                });
 
-    await AssertRefusedWithAsync(response, "admin.categoryColourInvalid");
+    await AssertRefusedWithAsync(response, "errors.admin.categories.colourInvalid");
   }
 
   [Test]
@@ -217,7 +217,7 @@ public sealed class RequestShapeRefusalWriterTest
                                                                  sortOrder = 1
                                                                });
 
-    await AssertRefusedWithAsync(response, "admin.itemNameMissing");
+    await AssertRefusedWithAsync(response, "errors.admin.items.nameMissing");
   }
 
   [Test]
@@ -230,7 +230,7 @@ public sealed class RequestShapeRefusalWriterTest
                                                                  sortOrder = 3
                                                                });
 
-    await AssertRefusedWithAsync(response, "admin.stationNameMissing");
+    await AssertRefusedWithAsync(response, "errors.admin.stations.nameMissing");
   }
 
   [Test]
@@ -238,7 +238,7 @@ public sealed class RequestShapeRefusalWriterTest
   {
     using var response = await _context.Client.PutAsJsonAsync($"/api/admin/staff-members/{_context.World.StaffMemberId}", new { name = "   " });
 
-    await AssertRefusedWithAsync(response, "admin.staff.nameMissing");
+    await AssertRefusedWithAsync(response, "errors.admin.staff.nameMissing");
   }
 
   [Test]
@@ -252,7 +252,7 @@ public sealed class RequestShapeRefusalWriterTest
                                                                  endsAtUtc = DateTime.UtcNow.AddDays(31)
                                                                });
 
-    await AssertRefusedWithAsync(response, "admin.festivalNameMissing");
+    await AssertRefusedWithAsync(response, "errors.admin.festivals.nameMissing");
   }
 
   [Test]
@@ -265,7 +265,7 @@ public sealed class RequestShapeRefusalWriterTest
                                                                 stationIds = new[] { _context.World.KitchenStationId }
                                                               });
 
-    await AssertRefusedWithAsync(response, "admin.itemPriceOutOfRange");
+    await AssertRefusedWithAsync(response, "errors.admin.festivals.itemPriceOutOfRange");
   }
 
   [Test]
@@ -275,8 +275,8 @@ public sealed class RequestShapeRefusalWriterTest
 
     var written = await WriteRefusedShapeAsync(new HttpValidationProblemDetails(new Dictionary<string, string[]>
     {
-      ["ColourHex"] = ["admin.categoryColourInvalid"],
-      ["Name"] = ["admin.categoryNameMissing"]
+      ["ColourHex"] = ["errors.admin.categories.colourInvalid"],
+      ["Name"] = ["errors.admin.categories.nameMissing"]
     }),
                                                typeof(SaveCategoryRequest),
                                                recordedRefusals);
@@ -285,7 +285,7 @@ public sealed class RequestShapeRefusalWriterTest
                     {
                       Assert.That(written.StatusCode, Is.EqualTo(StatusCodes.Status400BadRequest));
                       Assert.That(written.Error!.Code, Is.EqualTo("ValidationFailed"));
-                      Assert.That(written.Error.MessageKey, Is.EqualTo("admin.categoryNameMissing"));
+                      Assert.That(written.Error.MessageKey, Is.EqualTo("errors.admin.categories.nameMissing"));
                     });
   }
 
@@ -302,16 +302,16 @@ public sealed class RequestShapeRefusalWriterTest
 
     await WriteRefusedShapeAsync(new HttpValidationProblemDetails(new Dictionary<string, string[]>
     {
-      ["ColourHex"] = ["admin.categoryColourInvalid"],
-      ["Name"] = ["admin.categoryNameMissing"]
+      ["ColourHex"] = ["errors.admin.categories.colourInvalid"],
+      ["Name"] = ["errors.admin.categories.nameMissing"]
     }),
                                  typeof(SaveCategoryRequest),
                                  recordedRefusals);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(recordedRefusals.Lines, Has.Some.Contains("admin.categoryNameMissing"));
-                      Assert.That(recordedRefusals.Lines, Has.Some.Contains("admin.categoryColourInvalid"));
+                      Assert.That(recordedRefusals.Lines, Has.Some.Contains("errors.admin.categories.nameMissing"));
+                      Assert.That(recordedRefusals.Lines, Has.Some.Contains("errors.admin.categories.colourInvalid"));
                       Assert.That(recordedRefusals.Lines, Has.Some.Contains("ColourHex"));
                       Assert.That(recordedRefusals.Lines, Has.Some.Contains("Name"));
                     });

@@ -14,12 +14,12 @@ export interface SendFailureMessage {
 function keyForStatus(status: number): string {
   switch (status) {
     case 429:
-      return 'session.tooManyRequests'
+      return 'errors.session.tooManyRequests'
     case 500:
     case 503:
-      return 'review.sendFailedDatabase'
+      return 'errors.storage.databaseUnavailable'
     default:
-      return 'review.sendFailed'
+      return 'phone.review.errors.sendFailed'
   }
 }
 
@@ -29,14 +29,14 @@ function keyForRejection(status: number, body: ApiErrorBody | null): string {
 }
 
 export function messageForAnInterruptedSend(): SendFailureMessage {
-  return { key: 'review.sendInterrupted' }
+  return { key: 'phone.review.errors.sendInterrupted' }
 }
 
 export function messageForSendFailure(failure: SendFailure): SendFailureMessage {
   switch (failure.kind) {
     case 'unreachable':
     case 'unreadableAnswer':
-      return { key: 'review.sendFailed' }
+      return { key: 'phone.review.errors.sendFailed' }
     case 'error': {
       const statedReason = keyForRejection(failure.status, failure.body)
       return failure.body === null

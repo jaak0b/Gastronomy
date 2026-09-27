@@ -401,7 +401,7 @@ public sealed class OrderAcceptanceServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
                       Assert.That(result.RefusalDescription(), Does.Contain("without a typed reason"));
                     });
     A.CallTo(() => _orderRepository.AddAsync(A<Order>._, A<CancellationToken>._)).MustNotHaveHappened();
@@ -629,14 +629,14 @@ public sealed class OrderAcceptanceServiceTest
     return _bratwurstId;
   }
 
-  [TestCase("UnknownCatalogItemId", "order.unknownItem")]
-  [TestCase("StationRequired", "order.cannotBeProcessed")]
-  [TestCase("StationNotAssignedToItem", "catalog.itemSoldOut")]
-  [TestCase("ItemHasNoStation", "order.cannotBeProcessed")]
-  [TestCase("ItemNotAvailable", "catalog.itemSoldOut")]
-  [TestCase("ChosenStationNoLongerPreparesTheItem", "catalog.itemSoldOut")]
-  [TestCase("NoRunningFestival", "order.cannotBeProcessed")]
-  [TestCase("SettlementCannotBeProcessed", "order.settlementCannotBeProcessed")]
+  [TestCase("UnknownCatalogItemId", "errors.order.unknownItem")]
+  [TestCase("StationRequired", "errors.order.cannotBeProcessed")]
+  [TestCase("StationNotAssignedToItem", "errors.order.itemSoldOut")]
+  [TestCase("ItemHasNoStation", "errors.order.cannotBeProcessed")]
+  [TestCase("ItemNotAvailable", "errors.order.itemSoldOut")]
+  [TestCase("ChosenStationNoLongerPreparesTheItem", "errors.order.itemSoldOut")]
+  [TestCase("NoRunningFestival", "errors.order.cannotBeProcessed")]
+  [TestCase("SettlementCannotBeProcessed", "errors.settlement.cannotBeProcessed")]
   public async Task AcceptAsync_ARequestThisServiceRefuses_CarriesTheMessageKeyThatScenarioAlwaysAnswered(string scenario, string expectedMessageKey)
   {
     ErrorOr<Order> refused = await RefusalProducedByAsync(scenario);

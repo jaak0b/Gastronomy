@@ -54,10 +54,10 @@ function setWholeTable(): void {
     :disabled="isHeldBackByAnotherTable"
   >
     <v-expansion-panel-title>
-      <span class="table-name text-h6">{{ t('openItems.tableIs', { name: table.tableName }) }}</span>
+      <span class="table-name text-h6">{{ t('common.labels.table', { name: table.tableName }) }}</span>
       <v-spacer />
       <span class="open-amount text-body-1">
-        {{ t('openItems.tableOpen', { amount: priceTextFor(table.openAmountCents) }) }}
+        {{ t('phone.openItems.labels.tableOpen', { amount: priceTextFor(table.openAmountCents) }) }}
       </span>
     </v-expansion-panel-title>
     <v-expansion-panel-text>
@@ -67,7 +67,7 @@ function setWholeTable(): void {
           density="comfortable"
           hide-details
           :disabled="isHeldBackByAnotherTable"
-          :label="t('openItems.wholeTable')"
+          :label="t('phone.openItems.actions.wholeTable')"
           :model-value="wholeTableIsSelected"
           @update:model-value="setWholeTable"
         />
@@ -77,7 +77,7 @@ function setWholeTable(): void {
             :key="item.orderItemId"
             :item-name="item.itemName"
             :note="item.note"
-            :order-label="t('openItems.fromOrder', { number: item.globalOrderNumber })"
+            :order-label="t('phone.openItems.labels.fromOrder', { number: item.globalOrderNumber })"
             :price-text="priceTextFor(item.unitPriceCents)"
             :is-selected="isSelected(item.orderItemId)"
             :is-disabled="isHeldBackByAnotherTable"

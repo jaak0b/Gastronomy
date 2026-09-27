@@ -33,7 +33,7 @@ onMounted(async () => {
     return
   }
 
-  if (session.redeemErrorKey === 'enrolment.nameMissing') {
+  if (session.redeemErrorKey === 'errors.enrolment.nameMissing') {
     session.redeemErrorKey = null
     asksForAName.value = true
   }
@@ -43,10 +43,10 @@ onMounted(async () => {
 <template>
   <v-container v-if="asksForAName" class="enrolment">
     <LanguageSwitch :language="session.language" @select="session.setLanguage" />
-    <h1 class="text-h4 mt-4">{{ t('enrol.title') }}</h1>
+    <h1 class="text-h4 mt-4">{{ t('shared.enrolment.title') }}</h1>
     <NameField v-model="name" class="mt-4" />
     <v-btn class="continue mt-4" color="primary" block :disabled="!canContinue" @click="submit">
-      {{ t('enrol.continue') }}
+      {{ t('common.actions.continue') }}
     </v-btn>
     <v-alert v-if="session.redeemErrorKey !== null" class="error mt-4" type="error" variant="tonal">
       {{ t(session.redeemErrorKey) }}
@@ -63,7 +63,7 @@ onMounted(async () => {
       block
       @click="navigate('/')"
     >
-      {{ t('enrol.carryOn') }}
+      {{ t('shared.enrolment.actions.carryOn') }}
     </v-btn>
   </v-container>
   <v-container v-else class="enrolment-working" />

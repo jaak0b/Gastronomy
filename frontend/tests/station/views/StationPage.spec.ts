@@ -389,7 +389,7 @@ describe('the overview board on the station screen', () => {
 
   it('shows a refused action inside the board', async () => {
     stubTheLaptop({
-      hide: () => refused('UnprocessableEntity', 'station.orderNotAtThisStation'),
+      hide: () => refused('UnprocessableEntity', 'errors.station.orderNotAtThisStation'),
     })
     const page = await mountPage()
 
@@ -520,7 +520,7 @@ describe('marking selected items as done from a card', () => {
 
   it('states the reason when the laptop did not save the change', async () => {
     stubTheLaptop({
-      fulfill: () => refused('ItemNotFulfilled', 'station.changeNotSaved'),
+      fulfill: () => refused('ItemNotFulfilled', 'errors.station.changeNotSaved'),
     })
     const page = await mountPage()
     const card = page.findAll('.orders-column .station-order')[0]
@@ -573,7 +573,7 @@ describe('hiding an order from the second column', () => {
 
   it('states the reason when the order belongs to another station', async () => {
     stubTheLaptop({
-      hide: () => refused('UnprocessableEntity', 'station.orderNotAtThisStation'),
+      hide: () => refused('UnprocessableEntity', 'errors.station.orderNotAtThisStation'),
     })
     const page = await mountPage()
 
@@ -673,7 +673,7 @@ describe('the done view', () => {
   it('states the reason when the laptop did not put an item back', async () => {
     stubTheLaptop({
       fulfilled: () => ok({ stationOrders: [DONE_STATION_ORDER] }),
-      unfulfill: () => refused('ItemNotFulfilled', 'station.changeNotSaved'),
+      unfulfill: () => refused('ItemNotFulfilled', 'errors.station.changeNotSaved'),
     })
     const page = await mountPage()
     await page.get('.show-done').trigger('click')
@@ -749,7 +749,7 @@ describe('a station tablet the laptop turned away', () => {
 
   it('says that no festival is running instead of blaming the connection', async () => {
     stubTheLaptop({
-      orders: () => refused('NoRunningFestival', 'station.noFestivalIsRunning'),
+      orders: () => refused('NoRunningFestival', 'errors.station.noFestivalIsRunning'),
     })
 
     const page = await mountPage()
@@ -759,7 +759,7 @@ describe('a station tablet the laptop turned away', () => {
 
   it('says the station does not belong to this festival', async () => {
     stubTheLaptop({
-      orders: () => refused('StationNotAtTheFestival', 'station.notPartOfTheFestival'),
+      orders: () => refused('StationNotAtTheFestival', 'errors.station.notPartOfTheFestival'),
     })
 
     const page = await mountPage()

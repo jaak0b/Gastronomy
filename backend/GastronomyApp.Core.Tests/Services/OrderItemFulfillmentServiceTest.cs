@@ -123,7 +123,7 @@ public sealed class OrderItemFulfillmentServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(outcome.IsSuccess, Is.False);
-                      Assert.That(outcome.RefusalMessageKey(), Is.EqualTo("station.itemNotAtThisStation"));
+                      Assert.That(outcome.RefusalMessageKey(), Is.EqualTo("errors.station.itemNotAtThisStation"));
                       Assert.That(outcome.RefusalDescription(), Does.Contain(strangerId.ToString()));
                       Assert.That(bratwurst.FulfilledAtUtc, Is.Null);
                     });
@@ -183,7 +183,7 @@ public sealed class OrderItemFulfillmentServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(outcome.IsSuccess, Is.False);
-                      Assert.That(outcome.RefusalMessageKey(), Is.EqualTo("station.changeNotSaved"));
+                      Assert.That(outcome.RefusalMessageKey(), Is.EqualTo("errors.station.changeNotSaved"));
                       Assert.That(outcome.RefusalDescription(), Does.Contain(beer.Id.ToString()));
                       Assert.That(bratwurst.FulfilledAtUtc, Is.EqualTo(_earlier));
                     });
@@ -205,7 +205,7 @@ public sealed class OrderItemFulfillmentServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(outcome.IsSuccess, Is.False);
-                      Assert.That(outcome.RefusalMessageKey(), Is.EqualTo("station.itemNotAtThisStation"));
+                      Assert.That(outcome.RefusalMessageKey(), Is.EqualTo("errors.station.itemNotAtThisStation"));
                       Assert.That(outcome.RefusalDescription(), Does.Contain(strangerId.ToString()));
                       Assert.That(bratwurst.FulfilledAtUtc, Is.EqualTo(_earlier));
                     });

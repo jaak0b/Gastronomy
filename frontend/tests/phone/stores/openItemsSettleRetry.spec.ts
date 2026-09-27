@@ -153,7 +153,7 @@ describe('settling the same items again after the answer never came', () => {
     await openItems.settle(1200, null)
 
     expect(openItems.notice).toEqual({
-      key: 'openItems.someWereAlreadySettled',
+      key: 'phone.openItems.messages.someWereAlreadySettled',
       parameters: { count: 1, amount: '9,00 €' },
       count: 1,
     })

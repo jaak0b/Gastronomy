@@ -2,31 +2,31 @@
 
 public static class RefusalMessageKeys
 {
-  public const string AdminCategoryColourInvalid = "admin.categoryColourInvalid";
+  public const string AdminCategoryColourInvalid = "errors.admin.categories.colourInvalid";
 
-  public const string AdminCategoryNameMissing = "admin.categoryNameMissing";
+  public const string AdminCategoryNameMissing = "errors.admin.categories.nameMissing";
 
-  public const string AdminFestivalNameMissing = "admin.festivalNameMissing";
+  public const string AdminFestivalNameMissing = "errors.admin.festivals.nameMissing";
 
-  public const string AdminItemNameMissing = "admin.itemNameMissing";
+  public const string AdminItemNameMissing = "errors.admin.items.nameMissing";
 
-  public const string AdminItemPriceOutOfRange = "admin.itemPriceOutOfRange";
+  public const string AdminStaffMemberNameMissing = "errors.admin.staff.nameMissing";
 
-  public const string AdminStaffMemberNameMissing = "admin.staff.nameMissing";
+  public const string AdminStationNameMissing = "errors.admin.stations.nameMissing";
 
-  public const string AdminStationNameMissing = "admin.stationNameMissing";
+  public const string EnrolmentCodeMissing = "errors.enrolment.codeMissing";
 
-  public const string EnrolmentCodeMissing = "enrolment.codeMissing";
+  public const string FestivalItemPriceOutOfRange = "errors.admin.festivals.itemPriceOutOfRange";
 
-  public const string OrderCannotBeProcessed = "order.cannotBeProcessed";
+  public const string OrderCannotBeProcessed = "errors.order.cannotBeProcessed";
 
-  public const string ReviewConflictingChange = "review.conflictingChange";
+  public const string SettlementCannotBeProcessed = "errors.settlement.cannotBeProcessed";
 
-  public const string ReviewSendFailedDatabase = "review.sendFailedDatabase";
+  public const string SettlementNoItemsSelected = "errors.settlement.noItemsSelected";
 
-  public const string SettlementCannotBeProcessed = "order.settlementCannotBeProcessed";
+  public const string StationNoItemsSelected = "errors.station.noItemsSelected";
 
-  public const string SettlementNoItemsSelected = "order.settlementNoItemsSelected";
+  public const string StorageConflictingChange = "errors.storage.conflictingChange";
 
-  public const string StationNoItemsSelected = "station.noItemsSelected";
+  public const string StorageDatabaseUnavailable = "errors.storage.databaseUnavailable";
 }

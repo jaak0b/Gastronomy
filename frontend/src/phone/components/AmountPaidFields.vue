@@ -57,7 +57,7 @@ defineExpose({ settlement })
     <v-text-field
       class="amount-field"
       inputmode="decimal"
-      :label="t('openItems.amountPaidField')"
+      :label="t('phone.openItems.labels.amountPaidField')"
       :model-value="shownAmount"
       @update:model-value="keepWhatCanStillBecomeAnAmount"
       @input="undoARefusedKeystroke"
@@ -67,8 +67,8 @@ defineExpose({ settlement })
       v-model="reason"
       class="reason-field"
       maxlength="200"
-      :label="t('openItems.amountPaidReason')"
-      :placeholder="t('openItems.reasonPlaceholder')"
+      :label="t('phone.openItems.labels.amountPaidReason')"
+      :placeholder="t('phone.openItems.labels.reasonPlaceholder')"
       persistent-placeholder
     />
   </div>

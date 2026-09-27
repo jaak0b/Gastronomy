@@ -24,8 +24,8 @@ defineExpose({ focus })
     <v-combobox
       class="table-input"
       maxlength="40"
-      :label="t('catalog.tableName')"
-      :placeholder="t('catalog.tablePlaceholder')"
+      :label="t('phone.review.labels.tableName')"
+      :placeholder="t('phone.review.labels.tablePlaceholder')"
       persistent-placeholder
       :error="isMissing"
       :items="knownTableNames"

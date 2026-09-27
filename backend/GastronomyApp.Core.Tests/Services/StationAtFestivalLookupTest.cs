@@ -73,7 +73,7 @@ public sealed class StationAtFestivalLookupTest
     Assert.Multiple(() =>
                     {
                       Assert.That(stationAtFestival.IsSuccess, Is.False);
-                      Assert.That(stationAtFestival.RefusalMessageKey(), Is.EqualTo("station.noFestivalIsRunning"));
+                      Assert.That(stationAtFestival.RefusalMessageKey(), Is.EqualTo("errors.station.noFestivalIsRunning"));
                     });
   }
 
@@ -87,7 +87,7 @@ public sealed class StationAtFestivalLookupTest
     Assert.Multiple(() =>
                     {
                       Assert.That(stationAtFestival.IsSuccess, Is.False);
-                      Assert.That(stationAtFestival.RefusalMessageKey(), Is.EqualTo("station.notPartOfTheFestival"));
+                      Assert.That(stationAtFestival.RefusalMessageKey(), Is.EqualTo("errors.station.notPartOfTheFestival"));
                     });
   }
 

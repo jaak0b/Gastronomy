@@ -796,7 +796,7 @@ describe('the items screen after the laptop refused an order', () => {
           new Response(
             JSON.stringify({
               code: 'ValidationFailed',
-              messageKey: 'order.cannotBeProcessed',
+              messageKey: 'errors.order.cannotBeProcessed',
               parameters: {},
               details: null,
             }),

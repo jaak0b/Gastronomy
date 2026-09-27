@@ -13,32 +13,32 @@ public static partial class Refusal
 
     public static Error NoRunningFestival()
     {
-      return Conflict("station.noFestivalIsRunning", "No festival is running, so this station has no queue to show.", new() { [MetadataKeys.ProblemCode] = "NoRunningFestival" });
+      return Conflict("errors.station.noFestivalIsRunning", "No festival is running, so this station has no queue to show.", new() { [MetadataKeys.ProblemCode] = "NoRunningFestival" });
     }
 
     public static Error StationNotAtTheFestival()
     {
-      return Conflict("station.notPartOfTheFestival", "This station does not take part in the running festival, so it has no queue there.", new() { [MetadataKeys.ProblemCode] = "StationNotAtTheFestival" });
+      return Conflict("errors.station.notPartOfTheFestival", "This station does not take part in the running festival, so it has no queue there.", new() { [MetadataKeys.ProblemCode] = "StationNotAtTheFestival" });
     }
 
     public static Error UnknownOrderItemId(Guid orderItemId)
     {
-      return UnprocessableEntity("station.itemNotAtThisStation", $"The order item {orderItemId} is not one of the items this station holds.", new() { [MetadataKeys.ProblemCode] = ProblemCodes.UnprocessableEntity });
+      return UnprocessableEntity("errors.station.itemNotAtThisStation", $"The order item {orderItemId} is not one of the items this station holds.", new() { [MetadataKeys.ProblemCode] = ProblemCodes.UnprocessableEntity });
     }
 
     public static Error ItemNotFulfilled(Guid orderItemId)
     {
-      return Conflict("station.changeNotSaved", $"The order item {orderItemId} was to be put back although it was never handed out.", new() { [MetadataKeys.ProblemCode] = "ItemNotFulfilled" });
+      return Conflict("errors.station.changeNotSaved", $"The order item {orderItemId} was to be put back although it was never handed out.", new() { [MetadataKeys.ProblemCode] = "ItemNotFulfilled" });
     }
 
     public static Error OrderNotAtThisStation(Guid stationOrderId)
     {
-      return UnprocessableEntity("station.orderNotAtThisStation", $"The station order {stationOrderId} does not belong to this station at the running festival.", new() { [MetadataKeys.ProblemCode] = ProblemCodes.UnprocessableEntity });
+      return UnprocessableEntity("errors.station.orderNotAtThisStation", $"The station order {stationOrderId} does not belong to this station at the running festival.", new() { [MetadataKeys.ProblemCode] = ProblemCodes.UnprocessableEntity });
     }
 
     public static Error NotAnAsItComesOrder(Guid stationOrderId)
     {
-      return Conflict("station.changeNotSaved", $"The station order {stationOrderId} is handed over together, so it never stands in the column an employee can hide it from.", new() { [MetadataKeys.ProblemCode] = "CannotHideTogetherOrder" });
+      return Conflict("errors.station.changeNotSaved", $"The station order {stationOrderId} is handed over together, so it never stands in the column an employee can hide it from.", new() { [MetadataKeys.ProblemCode] = "CannotHideTogetherOrder" });
     }
   }
 }

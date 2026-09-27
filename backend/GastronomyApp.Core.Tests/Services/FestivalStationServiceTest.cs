@@ -114,7 +114,7 @@ public sealed class FestivalStationServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(removed.IsSuccess, Is.False);
-                      Assert.That(removed.RefusalMessageKey(), Is.EqualTo("admin.stationHasOrdersAtTheFestival"));
+                      Assert.That(removed.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.stationHasOrdersAtTheFestival"));
                     });
   }
 
@@ -145,7 +145,7 @@ public sealed class FestivalStationServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(removed.IsSuccess, Is.False);
-                      Assert.That(removed.RefusalMessageKey(), Is.EqualTo("admin.itemsWouldHaveNoStation"));
+                      Assert.That(removed.RefusalMessageKey(), Is.EqualTo("errors.admin.stations.itemsWouldHaveNoStation"));
                       Assert.That(removed.RefusalMetadata("count"), Is.EqualTo("1"));
                     });
   }

@@ -62,7 +62,7 @@ public sealed class RateLimitTest
                     {
                       Assert.That(allowed, Is.EqualTo(DeviceRequestsPerMinute), "The window grants exactly its permit count.");
                       Assert.That(refused, Is.EqualTo(1));
-                      Assert.That(JsonDocument.Parse(refusalBody).RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("session.tooManyRequests"));
+                      Assert.That(JsonDocument.Parse(refusalBody).RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.session.tooManyRequests"));
                     });
   }
 
@@ -94,7 +94,7 @@ public sealed class RateLimitTest
     Assert.Multiple(() =>
                     {
                       Assert.That(refused.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("session.tooManyRequests"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.session.tooManyRequests"));
                     });
   }
 

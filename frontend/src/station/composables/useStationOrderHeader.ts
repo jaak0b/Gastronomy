@@ -24,21 +24,21 @@ export function useStationOrderHeader(
   )
 
   const orderReference = computed(() =>
-    t('station.order', {
+    t('station.board.labels.orderHeader', {
       order: toValue(stationOrder).globalOrderNumber,
       sequence: toValue(stationOrder).stationOrderNumber,
     }),
   )
 
   const takenByText = computed(() =>
-    t('station.takenBy', {
+    t('common.labels.takenBy', {
       time: formatFestivalMoment(toValue(stationOrder).createdAtUtc, locale.value),
       name: toValue(stationOrder).staffMemberName,
     }),
   )
 
   const doneCounter = computed(() =>
-    t('station.doneCounter', {
+    t('common.labels.doneCounter', {
       fulfilled: toValue(stationOrder).fulfilledItemCount,
       total: toValue(stationOrder).itemCount,
     }),

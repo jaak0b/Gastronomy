@@ -21,7 +21,7 @@ function save(): void {
 
 <template>
   <BaseFormDialog
-    :title="category === null ? t('admin.categories.new') : t('admin.categories.edit')"
+    :title="category === null ? t('admin.categories.actions.new') : t('admin.categories.actions.edit')"
     :error-text="errorText"
     :save-disabled="name.trim().length === 0"
     @save="save"
@@ -31,10 +31,10 @@ function save(): void {
       v-model="name"
       class="category-name-field mb-4"
       maxlength="200"
-      :label="t('admin.categories.name')"
+      :label="t('admin.categories.labels.name')"
     />
     <label class="category-colour-label d-flex align-center ga-3">
-      <span>{{ t('admin.categories.colour') }}</span>
+      <span>{{ t('admin.categories.labels.colour') }}</span>
       <input v-model="colourHex" class="category-colour-field" type="color" />
     </label>
   </BaseFormDialog>

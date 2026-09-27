@@ -47,7 +47,7 @@ describe('an answer the phone cannot read', () => {
     await order.send(null)
 
     expect(order.sendState).toBe('failed')
-    expect(order.failure?.key).toBe('review.sendFailed')
+    expect(order.failure?.key).toBe('phone.review.errors.sendFailed')
     expect(order.changesAreRefused).toBe(true)
     expect(order.acceptedOrderNumber).toBeNull()
   })
@@ -83,6 +83,6 @@ describe('an answer the phone cannot read', () => {
     const outcome = await openItems.settle(200, null)
 
     expect(outcome).toBe('answerNeverCame')
-    expect(openItems.notice?.key).toBe('openItems.settleAnswerNeverCame')
+    expect(openItems.notice?.key).toBe('phone.openItems.errors.settleAnswerNeverCame')
   })
 })

@@ -11,7 +11,7 @@ defineEmits<{ 'update:modelValue': [value: string] }>()
   <v-text-field
     class="name-field"
     maxlength="40"
-    :label="t('enrol.nameLabel')"
+    :label="t('shared.enrolment.labels.name')"
     autocomplete="name"
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"

@@ -56,7 +56,7 @@ public sealed class StationQueueWriterTest
     Assert.Multiple(() =>
                     {
                       Assert.That(written.IsSuccess, Is.False);
-                      Assert.That(written.RefusalMessageKey(), Is.EqualTo("station.itemNotAtThisStation"));
+                      Assert.That(written.RefusalMessageKey(), Is.EqualTo("errors.station.itemNotAtThisStation"));
                     });
 
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
@@ -95,7 +95,7 @@ public sealed class StationQueueWriterTest
     Assert.Multiple(() =>
                     {
                       Assert.That(written.IsSuccess, Is.False);
-                      Assert.That(written.RefusalMessageKey(), Is.EqualTo("station.changeNotSaved"));
+                      Assert.That(written.RefusalMessageKey(), Is.EqualTo("errors.station.changeNotSaved"));
                     });
   }
 
@@ -133,7 +133,7 @@ public sealed class StationQueueWriterTest
     Assert.Multiple(() =>
                     {
                       Assert.That(hidden.IsSuccess, Is.False);
-                      Assert.That(hidden.RefusalMessageKey(), Is.EqualTo("station.changeNotSaved"));
+                      Assert.That(hidden.RefusalMessageKey(), Is.EqualTo("errors.station.changeNotSaved"));
                       Assert.That(stationOrder.IsHiddenFromAsItComesQueue, Is.False);
                     });
 
@@ -150,7 +150,7 @@ public sealed class StationQueueWriterTest
     Assert.Multiple(() =>
                     {
                       Assert.That(hidden.IsSuccess, Is.False);
-                      Assert.That(hidden.RefusalMessageKey(), Is.EqualTo("station.orderNotAtThisStation"));
+                      Assert.That(hidden.RefusalMessageKey(), Is.EqualTo("errors.station.orderNotAtThisStation"));
                     });
   }
 

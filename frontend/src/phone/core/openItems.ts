@@ -177,7 +177,7 @@ export function noticeAfterSettling(
       .filter((line) => takenBySomebodyElse.includes(line.orderItemId))
       .reduce((total, line) => total + line.paidPriceCents, 0)
     return {
-      key: 'openItems.someWereAlreadySettled',
+      key: 'phone.openItems.messages.someWereAlreadySettled',
       parameters: {
         count: takenBySomebodyElse.length,
         amount: formatPrice(toHandBack, language),

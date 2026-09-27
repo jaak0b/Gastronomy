@@ -264,7 +264,7 @@ describe('marking selected items as done', () => {
   it('shows the reason the laptop gave and leaves the list and the selection as they were', async () => {
     stubTheLaptop({
       '/api/station/orders': () => aQueue([stationOrder()]),
-      '/api/station/items/fulfill': () => refused('ItemNotFulfilled', 'station.changeNotSaved'),
+      '/api/station/items/fulfill': () => refused('ItemNotFulfilled', 'errors.station.changeNotSaved'),
     })
     enrolledStationTablet()
     const station = useStationStore()
@@ -273,7 +273,7 @@ describe('marking selected items as done', () => {
 
     await station.fulfill(['a'])
 
-    expect(station.failureKey).toBe('station.changeNotSaved')
+    expect(station.failureKey).toBe('errors.station.changeNotSaved')
     expect(station.selectedItemIds).toEqual(['a'])
     expect(station.orders[0].fulfilledItemCount).toBe(0)
   })
@@ -291,7 +291,7 @@ describe('marking selected items as done', () => {
 
     await station.fulfill(['a'])
 
-    expect(station.failureKey).toBe('station.actionNotReached')
+    expect(station.failureKey).toBe('station.board.errors.actionNotReached')
   })
 })
 
@@ -476,14 +476,14 @@ describe('why a station tablet could not load its orders', () => {
 
   it('is the reason the laptop named, so the tablet can say no festival is running', async () => {
     stubTheLaptop({
-      '/api/station/orders': () => refused('NoRunningFestival', 'station.noFestivalIsRunning'),
+      '/api/station/orders': () => refused('NoRunningFestival', 'errors.station.noFestivalIsRunning'),
     })
     const station = useStationStore()
 
     await station.load()
 
     expect(station.loadFailed).toBe(true)
-    expect(station.loadFailureKey).toBe('station.noFestivalIsRunning')
+    expect(station.loadFailureKey).toBe('errors.station.noFestivalIsRunning')
   })
 
   it('is unnamed when the laptop could not be reached at all', async () => {
@@ -505,7 +505,7 @@ describe('why a station tablet could not load its orders', () => {
     stubTheLaptop({
       '/api/station/orders': () =>
         refusal
-          ? refused('StationNotAtTheFestival', 'station.notPartOfTheFestival')
+          ? refused('StationNotAtTheFestival', 'errors.station.notPartOfTheFestival')
           : aQueue([stationOrder()]),
     })
     const station = useStationStore()

@@ -65,11 +65,11 @@ const stateIcon = computed(() => {
       {{ orderLabel }}
     </v-list-item-subtitle>
     <v-list-item-subtitle v-if="note !== null" class="line-note">
-      {{ t('openItems.itemNote', { note }) }}
+      {{ t('common.labels.note', { note }) }}
     </v-list-item-subtitle>
     <template #append>
       <v-icon v-if="stateIcon !== null" class="line-state" :icon="stateIcon" size="small" />
-      <span v-if="isSettled" class="line-paid text-body-1">{{ t('openItems.paid') }}</span>
+      <span v-if="isSettled" class="line-paid text-body-1">{{ t('phone.openItems.labels.paid') }}</span>
       <span class="line-price text-body-1">{{ priceText }}</span>
     </template>
   </v-list-item>

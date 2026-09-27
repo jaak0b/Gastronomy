@@ -43,7 +43,7 @@ public sealed class CatalogCategoryAdministrationServiceTest
   {
     ErrorOr<CatalogCategory> created = await _service.CreateAsync("speisen", "#C62828", CancellationToken.None);
 
-    Assert.That(created.RefusalMessageKey(), Is.EqualTo("admin.categoryNameTaken"));
+    Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.categories.nameTaken"));
   }
 
   [Test]
@@ -114,7 +114,7 @@ public sealed class CatalogCategoryAdministrationServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(switchedOff.RefusalMessageKey(), Is.EqualTo("admin.categoryHasActiveItems"));
+                      Assert.That(switchedOff.RefusalMessageKey(), Is.EqualTo("errors.admin.categories.hasActiveItems"));
                       Assert.That(_food.IsActive, Is.True);
                     });
   }

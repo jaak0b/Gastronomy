@@ -103,7 +103,7 @@ function commitThePreparationTime(event: KeyboardEvent): void {
 
 <template>
   <BaseFormDialog
-    :title="item === null ? t('admin.items.new') : t('admin.items.edit')"
+    :title="item === null ? t('admin.items.actions.new') : t('admin.items.actions.edit')"
     :error-text="errorText"
     :save-disabled="nameIsMissing"
     @save="save"
@@ -119,22 +119,22 @@ function commitThePreparationTime(event: KeyboardEvent): void {
       <v-select
         v-model="categoryId"
         class="category-field flex-grow-1"
-        :label="t('admin.items.category')"
+        :label="t('admin.items.labels.category')"
         :items="offeredCategories"
         item-title="name"
         item-value="categoryId"
-        :no-data-text="t('admin.categories.noneYet')"
+        :no-data-text="t('admin.categories.messages.noneYet')"
         :error="categoryIsMissing"
-        :error-messages="categoryIsMissing ? [t('admin.itemCategoryUnknown')] : []"
+        :error-messages="categoryIsMissing ? [t('errors.admin.items.categoryUnknown')] : []"
       />
       <v-btn class="new-category" variant="text" @click="startCreatingCategory">
-        {{ t('admin.categories.new') }}
+        {{ t('admin.categories.actions.new') }}
       </v-btn>
     </div>
     <v-number-input
       v-model="productionMinutes"
       class="production-minutes-field mb-2"
-      :label="t('admin.items.productionMinutes')"
+      :label="t('admin.items.labels.productionMinutes')"
       :min="0"
       :max="LONGEST_PRODUCTION_MINUTES"
       :precision="1"
@@ -146,7 +146,7 @@ function commitThePreparationTime(event: KeyboardEvent): void {
     <v-checkbox
       v-model="isQueueIndependent"
       class="queue-independent-checkbox"
-      :label="t('admin.items.prepareIndependently')"
+      :label="t('admin.items.labels.prepareIndependently')"
     />
   </BaseFormDialog>
   <CategoryDialog

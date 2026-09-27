@@ -151,7 +151,7 @@ describe('a new station', () => {
           ? { stations: [BACKEND_STATION] }
           : {
               code: 'ValidationFailed',
-              messageKey: 'admin.stationNameMissing',
+              messageKey: 'errors.admin.stations.nameMissing',
               parameters: {},
               details: null,
             },
@@ -164,7 +164,7 @@ describe('a new station', () => {
 
     expect(created).toEqual({
       kind: 'failed',
-      message: { key: 'admin.stationNameMissing', parameters: {}, count: null },
+      message: { key: 'errors.admin.stations.nameMissing', parameters: {}, count: null },
     })
     expect(stations.stations).toEqual([BACKEND_STATION])
   })
@@ -187,7 +187,7 @@ describe('a station the laptop would not save', () => {
           return new Response(
             JSON.stringify({
               code: 'ValidationFailed',
-              messageKey: 'admin.stationNameMissing',
+              messageKey: 'errors.admin.stations.nameMissing',
               parameters: {},
               details: null,
             }),
@@ -224,7 +224,7 @@ describe('a station the laptop would not save', () => {
 
     expect(wasSaved).toEqual({
       kind: 'failed',
-      message: { key: 'admin.stationNameMissing', parameters: {}, count: null },
+      message: { key: 'errors.admin.stations.nameMissing', parameters: {}, count: null },
     })
   })
 })

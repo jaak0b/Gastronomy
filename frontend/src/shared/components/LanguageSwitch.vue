@@ -9,8 +9,8 @@ const emit = defineEmits<{ select: [language: AppLanguage] }>()
 const { t } = useI18n()
 
 const options = computed(() => [
-  { value: 'de', title: t('language.german'), props: { class: 'option option-de' } },
-  { value: 'en', title: t('language.english'), props: { class: 'option option-en' } },
+  { value: 'de', title: t('common.language.german'), props: { class: 'option option-de' } },
+  { value: 'en', title: t('common.language.english'), props: { class: 'option option-en' } },
 ])
 
 function choose(language: AppLanguage): void {

@@ -27,7 +27,7 @@ public static partial class Refusal
 
     public static Error StationHasUnfulfilledItems(Guid festivalId, Guid stationId)
     {
-      return Conflict("admin.stationHasOrdersAtTheFestival",
+      return Conflict("errors.admin.festivals.stationHasOrdersAtTheFestival",
                       $"The station {stationId} still holds items nobody has handed out at the running festival {festivalId}.",
                       new Dictionary<string, object>
                       {
@@ -37,7 +37,7 @@ public static partial class Refusal
 
     public static Error ItemsWouldHaveNoStation(int strandedItemCount)
     {
-      return Conflict("admin.itemsWouldHaveNoStation",
+      return Conflict("errors.admin.stations.itemsWouldHaveNoStation",
                       $"Removing the station would leave {strandedItemCount} articles with nowhere to be prepared.",
                       new Dictionary<string, object>
                       {

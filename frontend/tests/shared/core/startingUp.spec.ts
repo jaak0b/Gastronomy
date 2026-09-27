@@ -7,10 +7,10 @@ describe('what the starting screen says', () => {
   })
 
   it('says the laptop was not reached when the device could not get to it', () => {
-    expect(startingUpMessageKey('theLaptopWasNotReached')).toBe('startingUp.laptopNotReached')
+    expect(startingUpMessageKey('theLaptopWasNotReached')).toBe('shared.startup.errors.laptopNotReached')
   })
 
   it('says the device could not start when the laptop answered with nothing usable', () => {
-    expect(startingUpMessageKey('theLaptopCouldNotAnswer')).toBe('startingUp.couldNotStart')
+    expect(startingUpMessageKey('theLaptopCouldNotAnswer')).toBe('shared.startup.errors.couldNotStart')
   })
 })

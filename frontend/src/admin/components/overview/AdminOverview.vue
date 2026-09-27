@@ -27,21 +27,21 @@ const rows = computed<ReadinessRow[]>(() => {
     return readiness
   }
   if (stations.stations.every((station) => !station.isAtAnyFestival)) {
-    readiness.push({ key: 'admin.overview.missingStation', parameters: {}, count: null })
+    readiness.push({ key: 'admin.overview.messages.missingStation', parameters: {}, count: null })
   }
   if (categories.categories.length === 0) {
-    readiness.push({ key: 'admin.overview.missingCategory', parameters: {}, count: null })
+    readiness.push({ key: 'admin.overview.messages.missingCategory', parameters: {}, count: null })
   }
   const atTheFestival = items.items.filter((item) => item.atTheFestival !== null)
   if (atTheFestival.length === 0) {
-    readiness.push({ key: 'admin.overview.missingItems', parameters: {}, count: null })
+    readiness.push({ key: 'admin.overview.messages.missingItems', parameters: {}, count: null })
   }
   const withoutStation = atTheFestival.filter(
     (item) => (item.atTheFestival?.stationIds.length ?? 0) === 0,
   ).length
   if (withoutStation > 0) {
     readiness.push({
-      key: 'admin.overview.itemsWithoutStation',
+      key: 'admin.overview.messages.itemsWithoutStation',
       parameters: { count: withoutStation },
       count: withoutStation,
     })
@@ -49,7 +49,7 @@ const rows = computed<ReadinessRow[]>(() => {
   for (const station of stations.stations) {
     if (station.isAtAnyFestival && station.isActive && !station.hasDevice) {
       readiness.push({
-        key: 'admin.overview.stationWithoutTablet',
+        key: 'admin.overview.messages.stationWithoutTablet',
         parameters: { name: station.name },
         count: null,
       })
@@ -74,7 +74,7 @@ onMounted(async () => {
   <v-container class="admin-overview">
     <h1 class="text-h5 mb-4">{{ t('admin.overview.title') }}</h1>
     <v-alert v-if="noFestivalExists" class="missing-festival mb-4" type="warning" variant="tonal">
-      {{ t('admin.overview.missingFestival') }}
+      {{ t('admin.overview.messages.missingFestival') }}
     </v-alert>
     <v-alert
       v-else-if="runningFestival === null"
@@ -82,12 +82,12 @@ onMounted(async () => {
       type="info"
       variant="tonal"
     >
-      {{ t('admin.overview.noFestivalIsRunning') }}
+      {{ t('admin.overview.messages.noFestivalIsRunning') }}
     </v-alert>
     <template v-else>
       <h2 class="running-festival text-h6 mb-2">{{ runningFestival.name }}</h2>
       <v-alert v-if="rows.length === 0" class="ready mb-4" type="success" variant="tonal">
-        {{ t('admin.overview.ready') }}
+        {{ t('admin.overview.messages.ready') }}
       </v-alert>
       <v-alert
         v-for="(row, index) in rows"

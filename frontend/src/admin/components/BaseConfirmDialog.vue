@@ -15,7 +15,7 @@ const { t } = useI18n()
       <v-card-actions>
         <v-spacer />
         <v-btn class="cancel" variant="text" @click="emit('cancel')">
-          {{ t('admin.cancel') }}
+          {{ t('common.actions.cancel') }}
         </v-btn>
         <v-btn class="confirm" color="error" @click="emit('confirm')">
           {{ confirmLabel }}

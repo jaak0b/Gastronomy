@@ -24,6 +24,6 @@ public sealed class DeviceKindGate
     if (owner is TOwner)
       return null;
 
-    return _resultEnvelope.Problem(StatusCodes.Status403Forbidden, "WrongDeviceKind", "auth.wrongDeviceKind");
+    return _resultEnvelope.Problem(StatusCodes.Status403Forbidden, "WrongDeviceKind", "errors.auth.wrongDeviceKind");
   }
 }

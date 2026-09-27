@@ -228,7 +228,7 @@ onUnmounted(() => {
         class="show-deactivated"
         density="compact"
         hide-details
-        :label="t('admin.showDeactivated')"
+        :label="t('admin.common.actions.showDeactivated')"
       />
     </div>
 
@@ -254,7 +254,7 @@ onUnmounted(() => {
       type="error"
       variant="tonal"
     >
-      {{ t('admin.loadFailed') }}
+      {{ t('admin.common.errors.loadFailed') }}
     </v-alert>
 
     <section v-for="group in groups" :key="group.category.categoryId" class="category-section">
@@ -269,7 +269,7 @@ onUnmounted(() => {
           {{ group.category.name }}
         </h2>
         <v-chip v-if="!group.category.isActive" class="deactivated" size="small" color="grey">
-          {{ t('admin.deactivated') }}
+          {{ t('admin.common.labels.deactivated') }}
         </v-chip>
         <v-spacer />
         <v-btn
@@ -304,18 +304,18 @@ onUnmounted(() => {
           variant="text"
           @click="activateCategory(group.category.categoryId)"
         >
-          {{ t('admin.categories.activate') }}
+          {{ t('admin.categories.actions.activate') }}
         </v-btn>
       </div>
       <v-card v-for="item in group.items" :key="item.itemId" class="item-row mb-2">
         <div class="item-line d-flex align-center flex-wrap ga-2 px-4 py-2">
           <span class="name text-body-1">{{ item.name }}</span>
           <v-chip v-if="!item.isActive" class="deactivated" size="small" color="grey">
-            {{ t('admin.deactivated') }}
+            {{ t('admin.common.labels.deactivated') }}
           </v-chip>
           <v-spacer />
           <v-btn class="edit" variant="text" @click="startEditing(item)">
-            {{ t('admin.edit') }}
+            {{ t('admin.common.actions.edit') }}
           </v-btn>
           <span v-if="item.isActive" class="deactivate-wrapper">
             <v-btn
@@ -331,7 +331,7 @@ onUnmounted(() => {
               location="top"
               :disabled="!isOnTheRunningFestivalsMenu(item)"
             >
-              {{ t('admin.itemIsOnTheRunningFestivalsMenu') }}
+              {{ t('errors.admin.items.isOnTheRunningFestivalsMenu') }}
             </v-tooltip>
           </span>
           <v-btn
@@ -340,7 +340,7 @@ onUnmounted(() => {
             variant="text"
             @click="reactivate(item.itemId)"
           >
-            {{ t('admin.items.activate') }}
+            {{ t('admin.items.actions.activate') }}
           </v-btn>
         </div>
       </v-card>
@@ -348,10 +348,10 @@ onUnmounted(() => {
 
     <div class="d-flex ga-2 mt-6">
       <v-btn class="new-item" color="primary" @click="startCreating">
-        {{ t('admin.items.new') }}
+        {{ t('admin.items.actions.new') }}
       </v-btn>
       <v-btn class="new-category" color="primary" variant="tonal" @click="startCreatingCategory">
-        {{ t('admin.categories.new') }}
+        {{ t('admin.categories.actions.new') }}
       </v-btn>
     </div>
 
@@ -379,15 +379,15 @@ onUnmounted(() => {
     />
     <BaseConfirmDialog
       v-if="askingAboutId !== null"
-      :title="t('admin.items.deactivateTitle')"
-      :confirm-label="t('admin.items.deactivateConfirm')"
+      :title="t('admin.items.labels.deactivateTitle')"
+      :confirm-label="t('admin.items.actions.deactivateConfirm')"
       @confirm="deactivate"
       @cancel="askingAboutId = null"
     />
     <BaseConfirmDialog
       v-if="askingAboutCategoryId !== null"
-      :title="t('admin.categories.deactivateTitle')"
-      :confirm-label="t('admin.categories.deactivateConfirm')"
+      :title="t('admin.categories.labels.deactivateTitle')"
+      :confirm-label="t('admin.categories.actions.deactivateConfirm')"
       @confirm="deactivateCategory"
       @cancel="askingAboutCategoryId = null"
     />

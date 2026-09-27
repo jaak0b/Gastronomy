@@ -25,11 +25,11 @@ export interface StationStats {
 export function stationFailureKey(failure: StationFailure): string {
   switch (failure.kind) {
     case 'unreachable':
-      return 'station.actionNotReached'
+      return 'station.board.errors.actionNotReached'
     case 'error':
-      return failure.body === null ? 'station.actionFailed' : failure.body.messageKey
+      return failure.body === null ? 'station.board.errors.actionFailed' : failure.body.messageKey
     case 'unreadableAnswer':
-      return 'station.actionFailed'
+      return 'station.board.errors.actionFailed'
     default:
       return assertNever(failure)
   }
@@ -38,9 +38,9 @@ export function stationFailureKey(failure: StationFailure): string {
 export function deliveryModeKey(deliveryMode: DeliveryMode): string {
   switch (deliveryMode) {
     case 'together':
-      return 'delivery.together'
+      return 'common.delivery.together'
     case 'asItComes':
-      return 'delivery.asItComes'
+      return 'common.delivery.asItComes'
     default:
       return assertNever(deliveryMode)
   }
@@ -99,11 +99,11 @@ export function linesByCount(lines: readonly ItemLine[]): ItemLine[] {
 }
 
 export function itemLineText(line: ItemLine, t: Translate): string {
-  const counted = t('station.itemUnits', { count: line.units, item: line.itemName })
+  const counted = t('common.labels.countTimesItem', { count: line.units, item: line.itemName })
   if (line.note === null) {
     return counted
   }
-  return counted + t('station.unitSeparator') + t('station.note', { note: line.note })
+  return counted + t('station.board.labels.unitSeparator') + t('common.labels.note', { note: line.note })
 }
 
 export function selectedUnits(

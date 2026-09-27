@@ -94,11 +94,11 @@ export const useSessionStore = defineStore('session', () => {
     }
     switch (status) {
       case 404:
-        return 'enrolCode.error.wrong'
+        return 'shared.enrolment.errors.codeWrong'
       case 429:
-        return 'enrolCode.error.retired'
+        return 'shared.enrolment.errors.codeRetired'
       default:
-        return 'enrol.error.codeUsed'
+        return 'shared.enrolment.errors.codeUsed'
     }
   }
 
@@ -124,7 +124,7 @@ export const useSessionStore = defineStore('session', () => {
         return true
       case 'unreachable':
       case 'unreadableAnswer':
-        redeemErrorKey.value = 'enrol.error.noConnection'
+        redeemErrorKey.value = 'shared.enrolment.errors.noConnection'
         return false
       case 'error':
         redeemErrorKey.value = enrolmentRefusalKeyFor(result.status, result.body?.messageKey ?? null)

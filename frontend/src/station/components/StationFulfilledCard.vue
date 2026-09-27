@@ -16,7 +16,7 @@ const { deliveryText, deliveryModeColour, orderReference, takenByText, doneCount
 const unitSummary = computed(() =>
   itemLines(props.stationOrder.items)
     .map((line) => itemLineText(line, t))
-    .join(t('station.unitSeparator')),
+    .join(t('station.board.labels.unitSeparator')),
 )
 </script>
 
@@ -24,7 +24,7 @@ const unitSummary = computed(() =>
   <BaseStationCard class="station-fulfilled mb-4 bg-surface" :delivery-mode-colour="deliveryModeColour">
     <div class="station-order-head d-flex flex-wrap align-baseline ga-2">
       <span class="table-name text-h5">
-        {{ t('station.tableIs', { name: stationOrder.tableName }) }}
+        {{ t('common.labels.table', { name: stationOrder.tableName }) }}
       </span>
       <span class="station-order-heading text-body-2 text-medium-emphasis">
         {{ orderReference }}
@@ -51,7 +51,7 @@ const unitSummary = computed(() =>
       <div class="item-text flex-grow-1">
         <div class="item-name text-body-1">{{ item.itemName }}</div>
         <div v-if="item.note !== null" class="item-note text-body-2">
-          {{ t('station.note', { note: item.note }) }}
+          {{ t('common.labels.note', { note: item.note }) }}
         </div>
       </div>
       <v-btn
@@ -62,7 +62,7 @@ const unitSummary = computed(() =>
         :disabled="isWorking"
         @click="emit('putBack', item.orderItemId)"
       >
-        {{ t('station.putBack') }}
+        {{ t('station.done.actions.putBack') }}
       </v-btn>
     </div>
   </BaseStationCard>

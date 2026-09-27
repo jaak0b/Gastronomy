@@ -165,7 +165,7 @@ describe('setting a festival up', () => {
   it('keeps the name of the festival that is in the way', async () => {
     laptopRefuses(409, {
       code: 'FestivalOverlaps',
-      messageKey: 'admin.festivalOverlaps',
+      messageKey: 'errors.admin.festivals.overlaps',
       parameters: { name: 'Sommerfest' },
       details: null,
     })
@@ -180,7 +180,7 @@ describe('setting a festival up', () => {
     expect(wasCreated).toEqual({
       kind: 'failed',
       message: {
-        key: 'admin.festivalOverlaps',
+        key: 'errors.admin.festivals.overlaps',
         parameters: { name: 'Sommerfest' },
         count: null,
       },
@@ -199,7 +199,7 @@ describe('setting a festival up', () => {
 
     expect(wasSaved).toEqual({
       kind: 'failed',
-      message: { key: 'admin.actionFailed', parameters: {}, count: null },
+      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
     })
   })
 })

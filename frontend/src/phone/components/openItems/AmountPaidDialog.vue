@@ -40,10 +40,10 @@ function confirm(): void {
 <template>
   <v-dialog class="amount-paid-dialog" model-value persistent fullscreen>
     <v-card class="card d-flex flex-column" :style="{ paddingBottom: `${keyboardInset}px` }">
-      <v-card-title class="title">{{ t('openItems.amountPaidTitle') }}</v-card-title>
+      <v-card-title class="title">{{ t('phone.openItems.labels.amountPaidTitle') }}</v-card-title>
       <v-card-text class="body flex-grow-1">
         <p class="selected-total mb-4">
-          {{ t('openItems.selected', { amount: selectedTotal }) }}
+          {{ t('phone.openItems.labels.selected', { amount: selectedTotal }) }}
         </p>
         <AmountPaidFields
           ref="amountFields"
@@ -61,7 +61,7 @@ function confirm(): void {
           :disabled="isSettling || !canConfirm"
           @click="confirm"
         >
-          {{ t('openItems.amountPaidConfirm') }}
+          {{ t('phone.openItems.actions.amountPaidConfirm') }}
         </v-btn>
         <v-btn
           class="cancel"
@@ -70,7 +70,7 @@ function confirm(): void {
           :disabled="isSettling"
           @click="emit('cancel')"
         >
-          {{ t('openItems.amountPaidCancel') }}
+          {{ t('common.actions.cancel') }}
         </v-btn>
       </v-card-actions>
     </v-card>

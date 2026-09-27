@@ -132,7 +132,7 @@ public sealed class EstimateEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("ValidationFailed"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.cannotBeProcessed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.order.cannotBeProcessed"));
                     });
   }
 

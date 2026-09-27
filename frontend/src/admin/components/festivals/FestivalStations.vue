@@ -140,11 +140,11 @@ async function remove(): Promise<void> {
             <div class="row-line d-flex align-center flex-wrap ga-3 py-2 px-3">
               <span class="name text-body-1">{{ station.name }}</span>
               <v-chip v-if="!station.isActive" class="deactivated" size="small" color="grey">
-                {{ t('admin.deactivated') }}
+                {{ t('admin.common.labels.deactivated') }}
               </v-chip>
               <v-spacer />
               <v-btn class="edit-station" variant="text" @click="startEditing(station)">
-                {{ t('admin.edit') }}
+                {{ t('admin.common.actions.edit') }}
               </v-btn>
               <v-btn
                 class="remove-station"
@@ -180,8 +180,8 @@ async function remove(): Promise<void> {
             item-value="stationId"
             density="compact"
             hide-details
-            :label="t('admin.festival.stationName')"
-            :no-data-text="t('admin.festival.noStationsToAdd')"
+            :label="t('admin.festivals.labels.stationName')"
+            :no-data-text="t('admin.festivals.messages.noStationsToAdd')"
           />
           <v-btn
             class="add-station"
@@ -190,10 +190,10 @@ async function remove(): Promise<void> {
             :disabled="chosenStationId === null"
             @click="add"
           >
-            {{ t('admin.festival.addStation') }}
+            {{ t('admin.festivals.actions.addStation') }}
           </v-btn>
           <v-btn class="new-station" variant="text" @click="startCreating">
-            {{ t('admin.stations.new') }}
+            {{ t('admin.stations.actions.new') }}
           </v-btn>
         </div>
         <v-alert
@@ -225,9 +225,9 @@ async function remove(): Promise<void> {
 
     <BaseConfirmDialog
       v-if="removedStation !== null"
-      :title="t('admin.festival.removeStationTitle')"
-      :body="t('admin.festival.removeStationBody')"
-      :confirm-label="t('admin.festival.remove')"
+      :title="t('admin.festivals.labels.removeStationTitle')"
+      :body="t('admin.festivals.messages.removeStationBody')"
+      :confirm-label="t('admin.festivals.actions.remove')"
       @confirm="remove"
       @cancel="removedStation = null"
     />

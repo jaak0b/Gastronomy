@@ -193,7 +193,7 @@ describe('an answer body the phone has to read', () => {
   it('reads our refusal envelope out of the body of a failed answer', async () => {
     const refusal = {
       code: 'TooManyRequests',
-      messageKey: 'session.tooManyRequests',
+      messageKey: 'errors.session.tooManyRequests',
       parameters: { retryAfter: '60' },
       details: null,
     }

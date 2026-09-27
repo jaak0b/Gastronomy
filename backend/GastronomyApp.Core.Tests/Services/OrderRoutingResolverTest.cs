@@ -96,7 +96,7 @@ public sealed class OrderRoutingResolverTest
     Assert.Multiple(() =>
                     {
                       Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("order.cannotBeProcessed"));
+                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("errors.order.cannotBeProcessed"));
                     });
   }
 
@@ -118,7 +118,7 @@ public sealed class OrderRoutingResolverTest
     Assert.Multiple(() =>
                     {
                       Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("catalog.itemSoldOut"));
+                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("errors.order.itemSoldOut"));
                     });
   }
 
@@ -161,7 +161,7 @@ public sealed class OrderRoutingResolverTest
     Assert.Multiple(() =>
                     {
                       Assert.That(result.IsSuccess, Is.False, "a station the waiter chose and that is switched off must never be replaced by another one");
-                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("catalog.itemSoldOut"));
+                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("errors.order.itemSoldOut"));
                     });
   }
 
@@ -185,7 +185,7 @@ public sealed class OrderRoutingResolverTest
     Assert.Multiple(() =>
                     {
                       Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("order.cannotBeProcessed"));
+                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("errors.order.cannotBeProcessed"));
                     });
   }
 }

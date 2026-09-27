@@ -6,10 +6,10 @@ import {
 } from '../../../src/phone/core/estimateWording'
 
 function wording(key: string, values: Record<string, string | number>): string {
-  if (key === 'estimates.inMinutes') {
+  if (key === 'common.estimates.inMinutes') {
     return `~${values.count} Min.`
   }
-  if (key === 'estimates.inMinuteRange') {
+  if (key === 'common.estimates.inMinuteRange') {
     return `~${values.min} - ${values.max} Min.`
   }
   return `${values.line} (${values.estimate})`

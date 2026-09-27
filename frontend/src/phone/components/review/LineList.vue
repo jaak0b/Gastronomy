@@ -56,7 +56,7 @@ function deliveryTextFor(deliveryMode: DeliveryMode): string {
 
 function priceTextFor(entry: CollapsedLine<BasketLineView>): string {
   const cents = collapsedTotalCents(entry)
-  return cents === null ? t('review.unknownPrice') : formatPrice(cents, props.language)
+  return cents === null ? t('phone.review.labels.unknownPrice') : formatPrice(cents, props.language)
 }
 
 function choose(part: StationPart, deliveryMode: DeliveryMode): void {
@@ -76,7 +76,7 @@ function choose(part: StationPart, deliveryMode: DeliveryMode): void {
       variant="outlined"
     >
       <v-card-title v-if="part.stationId !== null" class="station-name text-subtitle-1">
-        {{ withEstimate(t('review.goesTo', { name: part.stationName }), part.stationMinutes, t, language) }}
+        {{ withEstimate(t('phone.review.labels.goesTo', { name: part.stationName }), part.stationMinutes, t, language) }}
       </v-card-title>
       <v-divider v-if="part.stationId !== null" />
       <div
@@ -87,7 +87,7 @@ function choose(part: StationPart, deliveryMode: DeliveryMode): void {
       >
         <fieldset class="line-body">
           <legend v-if="lineCannotBeOrdered(entry.line)" class="reason sold-out text-body-2">
-            {{ t('catalog.itemSoldOut', { name: entry.line.name }) }}
+            {{ t('errors.order.itemSoldOut', { name: entry.line.name }) }}
           </legend>
           <div class="d-flex align-start">
             <span class="line-name text-body-1 flex-grow-1">

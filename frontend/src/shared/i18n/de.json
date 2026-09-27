@@ -1,346 +1,456 @@
 {
-  "app": {
-    "title": {
-      "waiter": "Bestellen",
-      "admin": "Verwaltung"
-    }
-  },
-  "enrol": {
-    "title": "Dieses Telefon einrichten",
-    "nameLabel": "Ihr Name",
-    "continue": "Weiter",
-    "error": {
-      "codeUsed": "Lassen Sie sich am Rechner einen neuen QR-Code geben. Dieser Code gilt nicht mehr.",
-      "noConnection": "Prüfen Sie, ob Sie im WLAN des Festes sind. Dieses Telefon erreicht den Rechner nicht."
+  "common": {
+    "actions": {
+      "back": "Zurück",
+      "cancel": "Abbrechen",
+      "continue": "Weiter"
     },
-    "carryOn": "Mit diesem Telefon weiterarbeiten"
-  },
-  "enrolCode": {
-    "error": {
-      "wrong": "Lesen Sie die sechs Ziffern noch einmal vom Rechner ab. Dieser Code stimmt nicht.",
-      "retired": "Lassen Sie sich am Rechner einen neuen QR-Code geben. Dieser Code wurde zu oft falsch eingegeben und wird nicht mehr angenommen."
-    }
-  },
-  "header": {
-    "reconnecting": "Keine Verbindung zum Rechner.",
-    "backOnline": "Die Verbindung ist wieder da.",
-    "settings": "Einstellungen",
-    "openItems": "Offene Posten"
-  },
-  "settings": {
-    "title": "Einstellungen",
-    "person": "Sie bedienen als {name}.",
-    "language": "Sprache"
-  },
-  "catalog": {
-    "addNote": "Hinweis",
-    "countTimesPrice": "{count} × {price}",
-    "noteTitle": "Hinweis für {name}",
-    "noteAdd": "Hinzufügen",
-    "noteSave": "Übernehmen",
-    "noteCancel": "Abbrechen",
-    "title": "Bestellung aufnehmen",
-    "categoryWithCount": "{count} x {name}",
-    "backToCategories": "Zurück zu den Kategorien",
-    "soldOut": "Ausverkauft",
-    "tableName": "Tisch",
-    "tablePlaceholder": "Zum Beispiel: 12",
-    "itemNote": "Hinweis für diese Position",
-    "lineNotePlaceholder": "Zum Beispiel: ohne Zwiebeln",
-    "basketEmpty": "Noch nichts ausgewählt",
-    "basketSummary": "{count} Artikel, {total} | {count} Artikel, {total}",
-    "toReview": "Weiter zur Übersicht",
-    "itemSoldOut": "{name} ist gerade ausverkauft.",
-    "productionMinutesOutOfRange": "Tragen Sie Minuten von 0 bis 600 ein."
-  },
-  "estimates": {
-    "inMinutes": "~{count} Min.",
-    "inMinuteRange": "~{min} - {max} Min.",
-    "withEstimate": "{line} ({estimate})"
-  },
-  "line": {
-    "whereTitle": "Ausgabestelle für {item}",
-    "currentStation": "Aktuell",
-    "cancel": "Abbrechen"
-  },
-  "delivery": {
-    "together": "Gemeinsam",
-    "asItComes": "Einzeln"
-  },
-  "review": {
-    "line": "{count} x {item}",
-    "tableIs": "Tisch: {name}",
-    "goesTo": "Geht an {name}",
-    "unknownPrice": "-",
-    "continue": "Weiter",
-    "send": "Bestellung senden",
-    "sendAndSettle": "Bestellung senden und abrechnen",
-    "settleNow": "Jetzt abrechnen",
-    "settleLater": "Später abrechnen",
-    "sending": "Wird gesendet",
-    "sent": "Bestellung {number} ist angekommen.",
-    "back": "Zurück",
-    "removeLinesThatCannotBeOrdered": "Nicht bestellbare Artikel entfernen",
-    "sendFailed": "Die Bestellung konnte nicht gesendet werden. Tippen Sie auf \"Erneut senden\".",
-    "sendFailedDatabase": "Der Rechner konnte die Bestellung nicht speichern. Senden Sie sie noch einmal.",
-    "sendInterrupted": "Es ist nicht klar, ob die Bestellung angekommen ist. Tippen Sie auf \"Erneut senden\".",
-    "retry": "Erneut senden",
-    "confirmSendTitle": "Bestellung senden?",
-    "confirmSendTable": "Tisch:",
-    "confirmSendAmount": "Betrag:",
-    "confirmSendStation": "{name}:",
-    "confirmSendCancel": "Abbrechen",
-    "sendStillUnknown": "Die Bestellung konnte noch nicht bestätigt werden. Sie ist vielleicht trotzdem angekommen.",
-    "writeItDown": "Schreiben Sie die Bestellung auf einen Zettel und schauen Sie an der Ausgabestelle auf das Tablet.",
-    "writtenDown": "Bestellung ist aufgeschrieben",
-    "conflictingChange": "Jemand anderes hat im selben Moment etwas geändert. Versuchen Sie es noch einmal."
-  },
-  "order": {
-    "cannotBeProcessed": "Die Bestellung konnte nicht verarbeitet werden. Geben Sie sie an der Ausgabestelle persönlich auf.",
-    "draftLost": "Die angefangene Bestellung konnte nicht gelesen werden. Geben Sie sie noch einmal ein.",
-    "unknownItem": "Ein Artikel steht nicht mehr auf der Karte. Nehmen Sie ihn von der Bestellung.",
-    "settlementNoItemsSelected": "Wählen Sie zuerst die Positionen aus, die Sie abrechnen wollen.",
-    "settlementCannotBeProcessed": "Die Abrechnung konnte nicht verarbeitet werden. Schreiben Sie auf einen Zettel, was der Tisch bezahlt hat.",
-    "settlementUnknownItem": "Laden Sie die Liste neu. Eine der ausgewählten Positionen kennt der Rechner nicht mehr, deshalb wurde nichts abgerechnet."
-  },
-  "openItems": {
-    "title": "Offene Posten",
-    "empty": "Es ist nichts offen. Alle Tische sind abgerechnet.",
-    "reload": "Liste neu laden",
-    "loadFailed": "Tippen Sie auf \"Liste neu laden\". Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein.",
-    "tableOpen": "Offen: {amount}",
-    "tableIs": "Tisch {name}",
-    "wholeTable": "Ganzen Tisch auswählen",
-    "fromOrder": "Bestellung {number}",
-    "order": "Bestellung {order}",
-    "paid": "Bezahlt",
-    "noOrdersForTable": "Für diesen Tisch gibt es keine Bestellungen.",
-    "itemNote": "Hinweis: {note}",
-    "selected": "Ausgewählt: {amount}",
-    "settle": "Abrechnen",
-    "settleAmountPaid": "Anderen Betrag abrechnen",
-    "amountPaidTitle": "Wie viel hat der Tisch bezahlt?",
-    "amountPaidField": "Bezahlter Betrag",
-    "amountPaidReason": "Grund",
-    "reasonPlaceholder": "Zum Beispiel: Essen für die Kapelle",
-    "amountPaidConfirm": "Abrechnen",
-    "amountPaidCancel": "Abbrechen",
-    "listIncomplete": "Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Position nicht, weil der Rechner die Bestellung dazu nicht mehr findet. | Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Positionen nicht, weil der Rechner die Bestellungen dazu nicht mehr findet.",
-    "someWereAlreadySettled": "Jemand anderes hatte {count} Position aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast {amount} zurück. | Jemand anderes hatte {count} Positionen aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast {amount} zurück.",
-    "settleFailed": "Versuchen Sie es noch einmal. Das Abrechnen ist fehlgeschlagen.",
-    "settleAnswerNeverCame": "Es ist nicht klar, ob die Abrechnung angekommen ist. Laden Sie die Liste neu und schauen Sie nach, ob die Positionen noch offen sind."
-  },
-  "admin": {
-    "notOnLaptop": "Die Verwaltung lässt sich nur am Rechner öffnen.",
-    "overview": {
-      "title": "Übersicht",
-      "ready": "Alles ist eingerichtet. Sie können jetzt die Telefone und die Tablets einrichten.",
-      "missingStation": "Fügen Sie diesem Fest eine Ausgabestelle hinzu, zum Beispiel Küche und Theke.",
-      "missingCategory": "Legen Sie eine Kategorie an, zum Beispiel Speisen und Getränke.",
-      "missingItems": "Fügen Sie diesem Fest Artikel hinzu und tragen Sie die Preise ein.",
-      "itemsWithoutStation": "Ordnen Sie {count} Artikel einer Ausgabestelle zu. Ohne Ausgabestelle kann er nicht bestellt werden. | Ordnen Sie {count} Artikeln eine Ausgabestelle zu. Ohne Ausgabestelle können sie nicht bestellt werden.",
-      "stationWithoutTablet": "Richten Sie das Tablet für {name} ein. Ohne Tablet sieht diese Ausgabestelle ihre Bestellungen nicht.",
-      "missingFestival": "Legen Sie zuerst ein Fest an.",
-      "noFestivalIsRunning": "Zurzeit ist kein Fest aktiv. Sehen Sie unter \"Feste\" nach."
+    "appTitle": {
+      "admin": "Verwaltung",
+      "waiter": "Bestellen"
     },
-    "stations": {
-      "title": "Ausgabestellen",
-      "new": "Neue Ausgabestelle",
-      "edit": "Ausgabestelle bearbeiten",
-      "noTablet": "Kein Tablet eingerichtet",
-      "setUpDevice": "Tablet einrichten",
-      "deactivate": "Ausgabestelle abschalten",
-      "activate": "Ausgabestelle einschalten",
-      "deactivateTitle": "Ausgabestelle abschalten?",
-      "deactivateConfirm": "Ausgabestelle abschalten"
+    "delivery": {
+      "asItComes": "Einzeln",
+      "together": "Gemeinsam"
     },
-    "items": {
-      "title": "Artikel",
+    "estimates": {
+      "inMinuteRange": "~{min} - {max} Min.",
+      "inMinutes": "~{count} Min.",
+      "withEstimate": "{line} ({estimate})"
+    },
+    "labels": {
+      "countTimesItem": "{count} x {item}",
+      "doneCounter": "{fulfilled} / {total} zubereitet",
+      "note": "Hinweis: {note}",
       "soldOut": "Ausverkauft",
-      "new": "Neuer Artikel",
-      "edit": "Artikel bearbeiten",
-      "category": "Kategorie",
-      "price": "Preis in Euro",
-      "priceInvalid": "Tragen Sie den Preis in Euro ein, zum Beispiel 3,50.",
-      "productionMinutes": "Zubereitungszeit in Minuten",
-      "prepareIndependently": "Wird unabhängig von anderen Artikeln zubereitet",
-      "activate": "Artikel aktivieren",
-      "deactivateTitle": "Artikel deaktivieren?",
-      "deactivateConfirm": "Artikel deaktivieren"
+      "table": "Tisch {name}",
+      "takenBy": "{time} · {name}"
     },
-    "staff": {
-      "title": "Kellner",
-      "new": "Neuer Kellner",
-      "name": "Name",
-      "nameMissing": "Geben Sie dem Kellner einen Namen, bevor Sie speichern.",
-      "noPhone": "Kein Telefon eingerichtet",
-      "newCode": "Telefon neu einrichten",
-      "rename": "Namen ändern",
-      "activate": "Kellner wieder aufnehmen",
-      "deactivateTitle": "Kellner aus der Liste nehmen?",
-      "deactivateBody": "Das Telefon des Kellners wird abgemeldet.",
-      "deactivateConfirm": "Kellner herausnehmen"
+    "language": {
+      "english": "English",
+      "german": "Deutsch"
+    }
+  },
+  "shared": {
+    "enrolment": {
+      "title": "Dieses Telefon einrichten",
+      "labels": {
+        "name": "Ihr Name"
+      },
+      "actions": {
+        "carryOn": "Mit diesem Telefon weiterarbeiten"
+      },
+      "errors": {
+        "codeRetired": "Lassen Sie sich am Rechner einen neuen QR-Code geben. Dieser Code wurde zu oft falsch eingegeben und wird nicht mehr angenommen.",
+        "codeUsed": "Lassen Sie sich am Rechner einen neuen QR-Code geben. Dieser Code gilt nicht mehr.",
+        "codeWrong": "Lesen Sie die sechs Ziffern noch einmal vom Rechner ab. Dieser Code stimmt nicht.",
+        "noConnection": "Prüfen Sie, ob Sie im WLAN des Festes sind. Dieses Telefon erreicht den Rechner nicht."
+      }
     },
-    "enrol": {
-      "title": "Telefon einrichten",
-      "titleStation": "Tablet einrichten",
-      "validity": "Der QR-Code gilt fünf Minuten und für ein Gerät.",
-      "done": "{name} hat das Telefon eingerichtet.",
-      "doneStation": "Das Tablet an der Ausgabestelle {name} ist eingerichtet.",
-      "expired": "Erstellen Sie einen neuen QR-Code. Dieser wurde fünf Minuten lang nicht gescannt.",
-      "copyUnavailable": "Tippen Sie die Adresse oben von Hand ab. Das Kopieren ist auf dieser Seite nicht möglich.",
-      "forSomebodyNew": "Scannen Sie diesen QR-Code mit der Kamera des Telefons. Geben Sie danach am Telefon den Namen ein.",
-      "forSomebodyKnown": "Scannen Sie diesen QR-Code mit der Kamera des Telefons.",
-      "forStation": "Scannen Sie diesen QR-Code mit der Kamera des Tablets an der Ausgabestelle {name}.",
-      "qrAlt": "QR-Code zum Einrichten des Geräts",
-      "qrAlreadyUsed": "Erstellen Sie einen neuen QR-Code. Dieser wurde schon von einem Gerät benutzt.",
-      "qrReplaced": "Erstellen Sie einen neuen QR-Code. Dieser hier gilt nicht mehr.",
-      "qrUnavailable": "Erstellen Sie einen neuen QR-Code. Dieser lässt sich nicht mehr anzeigen.",
-      "qrUnreachable": "Der QR-Code konnte nicht geladen werden. Laden Sie die Seite neu.",
-      "newQrCode": "Neuen QR-Code erstellen"
+    "startup": {
+      "actions": {
+        "open": "Öffnen",
+        "tryAgain": "Noch einmal versuchen"
+      },
+      "messages": {
+        "deviceNotSetUp": "Dieses Gerät ist noch nicht eingerichtet.",
+        "tapOpen": "Tippen Sie auf Öffnen, um fortzufahren."
+      },
+      "errors": {
+        "couldNotStart": "Der Rechner hat nicht richtig geantwortet. Versuchen Sie es noch einmal.",
+        "laptopNotReached": "Der Rechner antwortet nicht. Versuchen Sie es noch einmal."
+      }
+    }
+  },
+  "phone": {
+    "catalog": {
+      "title": "Bestellung aufnehmen",
+      "labels": {
+        "basketSummary": "{count} Artikel, {total} | {count} Artikel, {total}",
+        "categoryWithCount": "{count} x {name}",
+        "countTimesPrice": "{count} × {price}",
+        "currentStation": "Aktuell",
+        "itemNote": "Hinweis für diese Position",
+        "lineNotePlaceholder": "Zum Beispiel: ohne Zwiebeln",
+        "noteTitle": "Hinweis für {name}",
+        "stationForItem": "Ausgabestelle für {item}"
+      },
+      "actions": {
+        "addNote": "Hinweis",
+        "backToCategories": "Zurück zu den Kategorien",
+        "noteAdd": "Hinzufügen",
+        "noteSave": "Übernehmen",
+        "toReview": "Weiter zur Übersicht"
+      },
+      "messages": {
+        "basketEmpty": "Noch nichts ausgewählt"
+      }
     },
-    "save": "Speichern",
-    "cancel": "Abbrechen",
-    "edit": "Bearbeiten",
-    "loadFailed": "Laden Sie die Seite neu. Die Daten konnten nicht geladen werden.",
-    "itemsWouldHaveNoStation": "{count} Artikel hätte dann keine Ausgabestelle mehr. Ordnen Sie ihn zuerst einer anderen Ausgabestelle zu oder entfernen Sie ihn vom Fest. | {count} Artikel hätten dann keine Ausgabestelle mehr. Ordnen Sie sie zuerst einer anderen Ausgabestelle zu oder entfernen Sie sie vom Fest.",
-    "categories": {
-      "new": "Neue Kategorie",
-      "name": "Name der Kategorie",
-      "colour": "Farbe",
-      "edit": "Kategorie bearbeiten",
-      "activate": "Kategorie einschalten",
-      "deactivateTitle": "Kategorie abschalten?",
-      "deactivateConfirm": "Kategorie abschalten",
-      "noneYet": "Klicken Sie auf \"Neue Kategorie\". Es gibt noch keine Kategorie, die Sie auswählen können."
+    "header": {
+      "actions": {
+        "openItems": "Offene Posten",
+        "settings": "Einstellungen"
+      },
+      "messages": {
+        "backOnline": "Die Verbindung ist wieder da.",
+        "reconnecting": "Keine Verbindung zum Rechner."
+      },
+      "errors": {
+        "draftLost": "Die angefangene Bestellung konnte nicht gelesen werden. Geben Sie sie noch einmal ein."
+      }
     },
-    "itemNameMissing": "Geben Sie dem Artikel einen Namen, bevor Sie ihn speichern.",
-    "itemNameTaken": "Dieser Name ist schon vergeben. Wählen Sie einen anderen Namen.",
-    "categoryNameMissing": "Geben Sie der Kategorie einen Namen, bevor Sie speichern.",
-    "categoryNameTaken": "Es gibt schon eine Kategorie mit diesem Namen. Wählen Sie einen anderen.",
-    "categoryColourInvalid": "Wählen Sie eine Farbe aus, bevor Sie speichern.",
-    "categoryHasActiveItems": "Diese Kategorie hat noch eingeschaltete Artikel. Schalten Sie die Artikel ab und danach die Kategorie.",
-    "itemCategoryUnknown": "Wählen Sie eine Kategorie aus, bevor Sie speichern.",
-    "itemNeedsAStation": "Wählen Sie mindestens eine Ausgabestelle für den Artikel.",
-    "itemCategoryIsOff": "Diese Kategorie ist abgeschaltet. Schalten Sie zuerst die Kategorie ein.",
-    "stationHasUnfinishedItems": "Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden.",
-    "stationNameMissing": "Geben Sie der Ausgabestelle einen Namen, bevor Sie sie speichern.",
-    "actionFailed": "Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.",
-    "deactivated": "Deaktiviert",
-    "showDeactivated": "Deaktivierte anzeigen",
-    "festivalNameMissing": "Geben Sie dem Fest einen Namen.",
-    "festivalPeriodInvalid": "Das Ende muss nach dem Beginn liegen. Tragen Sie beim Ende einen späteren Zeitpunkt ein.",
-    "festivalOverlaps": "Das Fest {name} überschneidet sich mit diesem Zeitraum. Verschieben Sie den Beginn oder das Ende.",
-    "itemPriceOutOfRange": "Tragen Sie einen Preis zwischen 0,00 und 999,99 Euro ein.",
-    "stationHasOrdersAtTheFestival": "Solange das Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht entfernt werden.",
-    "itemStaysOnTheMenuWhileTheFestivalRuns": "Ein Artikel kann von einem aktiven Fest nicht entfernt werden.",
-    "itemIsOnTheRunningFestivalsMenu": "Ein Artikel auf der Karte eines aktiven Festes kann nicht abgeschaltet werden.",
-    "festivals": {
-      "title": "Feste",
-      "new": "Neues Fest",
-      "name": "Name des Festes",
-      "start": "Beginn",
-      "end": "Ende",
-      "running": "Aktiv",
-      "hidden": "Ausgeblendet",
-      "showHidden": "Ausgeblendete Feste anzeigen",
-      "copy": "Kopieren",
-      "copyTitle": "Fest kopieren",
-      "copyConfirm": "Fest anlegen",
-      "hide": "Ausblenden",
-      "show": "Einblenden",
-      "hideTitle": "Fest ausblenden",
-      "hideConfirm": "Ausblenden",
-      "noneYet": "Es ist noch kein Fest angelegt. Klicken Sie auf \"Neues Fest\".",
-      "stationCount": "{count} Ausgabestelle | {count} Ausgabestellen",
-      "menuItemCount": "{count} Artikel | {count} Artikel",
-      "orderCount": "{count} Bestellung | {count} Bestellungen",
-      "edit": "Fest bearbeiten",
-      "back": "Zurück"
+    "openItems": {
+      "title": "Offene Posten",
+      "labels": {
+        "amountPaidField": "Bezahlter Betrag",
+        "amountPaidReason": "Grund",
+        "amountPaidTitle": "Wie viel hat der Tisch bezahlt?",
+        "fromOrder": "Bestellung {number}",
+        "order": "Bestellung {order}",
+        "paid": "Bezahlt",
+        "reasonPlaceholder": "Zum Beispiel: Essen für die Kapelle",
+        "selected": "Ausgewählt: {amount}",
+        "tableOpen": "Offen: {amount}"
+      },
+      "actions": {
+        "amountPaidConfirm": "Abrechnen",
+        "reload": "Liste neu laden",
+        "settle": "Abrechnen",
+        "settleAmountPaid": "Anderen Betrag abrechnen",
+        "wholeTable": "Ganzen Tisch auswählen"
+      },
+      "messages": {
+        "empty": "Es ist nichts offen. Alle Tische sind abgerechnet.",
+        "listIncomplete": "Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Position nicht, weil der Rechner die Bestellung dazu nicht mehr findet. | Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Positionen nicht, weil der Rechner die Bestellungen dazu nicht mehr findet.",
+        "noOrdersForTable": "Für diesen Tisch gibt es keine Bestellungen.",
+        "someWereAlreadySettled": "Jemand anderes hatte {count} Position aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast {amount} zurück. | Jemand anderes hatte {count} Positionen aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast {amount} zurück."
+      },
+      "errors": {
+        "loadFailed": "Tippen Sie auf \"Liste neu laden\". Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein.",
+        "settleAnswerNeverCame": "Es ist nicht klar, ob die Abrechnung angekommen ist. Laden Sie die Liste neu und schauen Sie nach, ob die Positionen noch offen sind.",
+        "settleFailed": "Versuchen Sie es noch einmal. Das Abrechnen ist fehlgeschlagen."
+      }
     },
-    "festival": {
-      "addStation": "Ausgabestelle hinzufügen",
-      "stationName": "Name der Ausgabestelle",
-      "noStationsToAdd": "Alle eingeschalteten Ausgabestellen gehören schon zu diesem Fest. Klicken Sie auf \"Neue Ausgabestelle\".",
-      "remove": "Entfernen",
-      "removeStationTitle": "Ausgabestelle entfernen",
-      "removeStationBody": "Die Ausgabestelle wird nur von diesem Fest entfernt.",
-      "addItem": "Artikel hinzufügen",
-      "itemName": "Name des Artikels",
-      "noItemsToAdd": "Alle eingeschalteten Artikel gehören schon zu diesem Fest. Klicken Sie auf \"Neuer Artikel\".",
-      "removeItemTitle": "Artikel entfernen",
-      "removeItemBody": "Der Artikel wird nur von diesem Fest entfernt.",
-      "needsAStationFirst": "Dieses Fest hat noch keine Ausgabestelle. Fügen Sie zuerst eine hinzu.",
-      "chooseStation": "Ausgabestelle wählen",
-      "itemNeedsAStation": "{item} braucht mindestens eine Ausgabestelle."
+    "review": {
+      "labels": {
+        "confirmSendAmount": "Betrag:",
+        "confirmSendStation": "{name}:",
+        "confirmSendTable": "Tisch:",
+        "confirmSendTitle": "Bestellung senden?",
+        "goesTo": "Geht an {name}",
+        "table": "Tisch: {name}",
+        "tableName": "Tisch",
+        "tablePlaceholder": "Zum Beispiel: 12",
+        "unknownPrice": "-"
+      },
+      "actions": {
+        "removeLinesThatCannotBeOrdered": "Nicht bestellbare Artikel entfernen",
+        "retry": "Erneut senden",
+        "send": "Bestellung senden",
+        "sendAndSettle": "Bestellung senden und abrechnen",
+        "sending": "Wird gesendet",
+        "settleLater": "Später abrechnen",
+        "settleNow": "Jetzt abrechnen",
+        "writtenDown": "Bestellung ist aufgeschrieben"
+      },
+      "messages": {
+        "sendStillUnknown": "Die Bestellung konnte noch nicht bestätigt werden. Sie ist vielleicht trotzdem angekommen.",
+        "sent": "Bestellung {number} ist angekommen.",
+        "writeItDown": "Schreiben Sie die Bestellung auf einen Zettel und schauen Sie an der Ausgabestelle auf das Tablet."
+      },
+      "errors": {
+        "sendFailed": "Die Bestellung konnte nicht gesendet werden. Tippen Sie auf \"Erneut senden\".",
+        "sendInterrupted": "Es ist nicht klar, ob die Bestellung angekommen ist. Tippen Sie auf \"Erneut senden\"."
+      }
+    },
+    "settings": {
+      "title": "Einstellungen",
+      "labels": {
+        "language": "Sprache"
+      },
+      "messages": {
+        "servingAs": "Sie bedienen als {name}."
+      }
     }
   },
   "station": {
-    "ordersHeading": "Alle Bestellungen",
-    "asItComesHeading": "Einzellieferungen",
-    "statsTogetherChip": "Gemeinsam {count}",
-    "statsAsItComesChip": "Einzeln {count}",
-    "overview": "Übersicht",
-    "openArticlesHeading": "Offene Artikel",
-    "itemUnits": "{count} x {item}",
-    "unitSeparator": " · ",
-    "loadFailed": "Laden Sie die Seite neu. Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein.",
-    "actionFailed": "Versuchen Sie es noch einmal. Die Änderung wurde nicht gespeichert.",
-    "actionNotReached": "Tippen Sie noch einmal. Der Rechner war nicht erreichbar, deshalb wurde nichts geändert.",
-    "changeNotSaved": "Die Bestellung konnte nicht aktualisiert werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
-    "orderNotAtThisStation": "Diese Bestellung gehört nicht zu dieser Ausgabestelle. Laden Sie die Seite neu und versuchen Sie es erneut.",
-    "itemNotAtThisStation": "Laden Sie die Seite neu. Diese Position gehört nicht zu dieser Ausgabestelle.",
-    "noItemsSelected": "Tippen Sie eine Position an.",
-    "order": "Bestellung {order} · Nr. {sequence} ·",
-    "takenBy": "{time} · {name}",
-    "note": "Hinweis: {note}",
-    "doneCounter": "{fulfilled} / {total} zubereitet",
-    "prepare": "Zubereiten",
-    "prepared": "Zubereitet",
-    "groupedView": "Gruppiert",
-    "listView": "Liste",
-    "putBack": "Zurücklegen",
-    "hideHere": "Hier ausblenden",
-    "showDone": "Zubereitete anzeigen",
-    "backToOrders": "Zurück zu den Bestellungen",
-    "doneHeading": "Zubereitete Bestellungen",
-    "nothingDone": "Es ist noch keine Bestellung zubereitet.",
-    "confirmDoneTitle": "Diese Positionen zubereiten?",
-    "tableIs": "Tisch {name}",
-    "cancel": "Abbrechen",
-    "noFestivalIsRunning": "Es ist kein Fest aktiv.",
-    "notPartOfTheFestival": "Diese Ausgabestelle gehört nicht zum laufenden Fest."
+    "board": {
+      "labels": {
+        "asItComesHeading": "Einzellieferungen",
+        "confirmDoneTitle": "Diese Positionen zubereiten?",
+        "openArticlesHeading": "Offene Artikel",
+        "orderHeader": "Bestellung {order} · Nr. {sequence} ·",
+        "ordersHeading": "Alle Bestellungen",
+        "statsAsItComesChip": "Einzeln {count}",
+        "statsTogetherChip": "Gemeinsam {count}",
+        "unitSeparator": " · "
+      },
+      "actions": {
+        "backToOrders": "Zurück zu den Bestellungen",
+        "groupedView": "Gruppiert",
+        "hideHere": "Hier ausblenden",
+        "listView": "Liste",
+        "overview": "Übersicht",
+        "prepare": "Zubereiten",
+        "prepared": "Zubereitet",
+        "showDone": "Zubereitete anzeigen"
+      },
+      "errors": {
+        "actionFailed": "Versuchen Sie es noch einmal. Die Änderung wurde nicht gespeichert.",
+        "actionNotReached": "Tippen Sie noch einmal. Der Rechner war nicht erreichbar, deshalb wurde nichts geändert.",
+        "loadFailed": "Laden Sie die Seite neu. Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein."
+      }
+    },
+    "done": {
+      "title": "Zubereitete Bestellungen",
+      "actions": {
+        "putBack": "Zurücklegen"
+      },
+      "messages": {
+        "nothingDone": "Es ist noch keine Bestellung zubereitet."
+      }
+    }
   },
-  "startingUp": {
-    "laptopNotReached": "Der Rechner antwortet nicht. Versuchen Sie es noch einmal.",
-    "couldNotStart": "Der Rechner hat nicht richtig geantwortet. Versuchen Sie es noch einmal.",
-    "tryAgain": "Noch einmal versuchen"
+  "admin": {
+    "categories": {
+      "labels": {
+        "colour": "Farbe",
+        "deactivateTitle": "Kategorie abschalten?",
+        "name": "Name der Kategorie"
+      },
+      "actions": {
+        "activate": "Kategorie einschalten",
+        "deactivateConfirm": "Kategorie abschalten",
+        "edit": "Kategorie bearbeiten",
+        "new": "Neue Kategorie"
+      },
+      "messages": {
+        "noneYet": "Klicken Sie auf \"Neue Kategorie\". Es gibt noch keine Kategorie, die Sie auswählen können."
+      }
+    },
+    "common": {
+      "labels": {
+        "deactivated": "Deaktiviert"
+      },
+      "actions": {
+        "edit": "Bearbeiten",
+        "save": "Speichern",
+        "showDeactivated": "Deaktivierte anzeigen"
+      },
+      "messages": {
+        "notOnLaptop": "Die Verwaltung lässt sich nur am Rechner öffnen."
+      },
+      "errors": {
+        "loadFailed": "Laden Sie die Seite neu. Die Daten konnten nicht geladen werden."
+      }
+    },
+    "enrolment": {
+      "labels": {
+        "phoneTitle": "Telefon einrichten",
+        "qrAlt": "QR-Code zum Einrichten des Geräts",
+        "stationTitle": "Tablet einrichten"
+      },
+      "actions": {
+        "newQrCode": "Neuen QR-Code erstellen"
+      },
+      "messages": {
+        "copyUnavailable": "Tippen Sie die Adresse oben von Hand ab. Das Kopieren ist auf dieser Seite nicht möglich.",
+        "done": "{name} hat das Telefon eingerichtet.",
+        "doneStation": "Das Tablet an der Ausgabestelle {name} ist eingerichtet.",
+        "forSomebodyKnown": "Scannen Sie diesen QR-Code mit der Kamera des Telefons.",
+        "forSomebodyNew": "Scannen Sie diesen QR-Code mit der Kamera des Telefons. Geben Sie danach am Telefon den Namen ein.",
+        "forStation": "Scannen Sie diesen QR-Code mit der Kamera des Tablets an der Ausgabestelle {name}.",
+        "validity": "Der QR-Code gilt fünf Minuten und für ein Gerät."
+      },
+      "errors": {
+        "qrUnreachable": "Der QR-Code konnte nicht geladen werden. Laden Sie die Seite neu."
+      }
+    },
+    "festivals": {
+      "title": "Feste",
+      "labels": {
+        "chooseStation": "Ausgabestelle wählen",
+        "copyTitle": "Fest kopieren",
+        "end": "Ende",
+        "hidden": "Ausgeblendet",
+        "hideTitle": "Fest ausblenden",
+        "itemName": "Name des Artikels",
+        "menuItemCount": "{count} Artikel | {count} Artikel",
+        "name": "Name des Festes",
+        "orderCount": "{count} Bestellung | {count} Bestellungen",
+        "removeItemTitle": "Artikel entfernen",
+        "removeStationTitle": "Ausgabestelle entfernen",
+        "running": "Aktiv",
+        "start": "Beginn",
+        "stationCount": "{count} Ausgabestelle | {count} Ausgabestellen",
+        "stationName": "Name der Ausgabestelle"
+      },
+      "actions": {
+        "addItem": "Artikel hinzufügen",
+        "addStation": "Ausgabestelle hinzufügen",
+        "copy": "Kopieren",
+        "copyConfirm": "Fest anlegen",
+        "edit": "Fest bearbeiten",
+        "hide": "Ausblenden",
+        "hideConfirm": "Ausblenden",
+        "new": "Neues Fest",
+        "remove": "Entfernen",
+        "show": "Einblenden",
+        "showHidden": "Ausgeblendete Feste anzeigen"
+      },
+      "messages": {
+        "needsAStationFirst": "Dieses Fest hat noch keine Ausgabestelle. Fügen Sie zuerst eine hinzu.",
+        "noItemsToAdd": "Alle eingeschalteten Artikel gehören schon zu diesem Fest. Klicken Sie auf \"Neuer Artikel\".",
+        "noneYet": "Es ist noch kein Fest angelegt. Klicken Sie auf \"Neues Fest\".",
+        "noStationsToAdd": "Alle eingeschalteten Ausgabestellen gehören schon zu diesem Fest. Klicken Sie auf \"Neue Ausgabestelle\".",
+        "removeItemBody": "Der Artikel wird nur von diesem Fest entfernt.",
+        "removeStationBody": "Die Ausgabestelle wird nur von diesem Fest entfernt."
+      },
+      "errors": {
+        "namedItemNeedsAStation": "{item} braucht mindestens eine Ausgabestelle."
+      }
+    },
+    "items": {
+      "title": "Artikel",
+      "labels": {
+        "category": "Kategorie",
+        "deactivateTitle": "Artikel deaktivieren?",
+        "prepareIndependently": "Wird unabhängig von anderen Artikeln zubereitet",
+        "price": "Preis in Euro",
+        "productionMinutes": "Zubereitungszeit in Minuten"
+      },
+      "actions": {
+        "activate": "Artikel aktivieren",
+        "deactivateConfirm": "Artikel deaktivieren",
+        "edit": "Artikel bearbeiten",
+        "new": "Neuer Artikel"
+      },
+      "errors": {
+        "priceInvalid": "Tragen Sie den Preis in Euro ein, zum Beispiel 3,50."
+      }
+    },
+    "overview": {
+      "title": "Übersicht",
+      "messages": {
+        "itemsWithoutStation": "Ordnen Sie {count} Artikel einer Ausgabestelle zu. Ohne Ausgabestelle kann er nicht bestellt werden. | Ordnen Sie {count} Artikeln eine Ausgabestelle zu. Ohne Ausgabestelle können sie nicht bestellt werden.",
+        "missingCategory": "Legen Sie eine Kategorie an, zum Beispiel Speisen und Getränke.",
+        "missingFestival": "Legen Sie zuerst ein Fest an.",
+        "missingItems": "Fügen Sie diesem Fest Artikel hinzu und tragen Sie die Preise ein.",
+        "missingStation": "Fügen Sie diesem Fest eine Ausgabestelle hinzu, zum Beispiel Küche und Theke.",
+        "noFestivalIsRunning": "Zurzeit ist kein Fest aktiv. Sehen Sie unter \"Feste\" nach.",
+        "ready": "Alles ist eingerichtet. Sie können jetzt die Telefone und die Tablets einrichten.",
+        "stationWithoutTablet": "Richten Sie das Tablet für {name} ein. Ohne Tablet sieht diese Ausgabestelle ihre Bestellungen nicht."
+      }
+    },
+    "staff": {
+      "title": "Kellner",
+      "labels": {
+        "deactivateTitle": "Kellner aus der Liste nehmen?",
+        "name": "Name",
+        "noPhone": "Kein Telefon eingerichtet"
+      },
+      "actions": {
+        "activate": "Kellner wieder aufnehmen",
+        "deactivateConfirm": "Kellner herausnehmen",
+        "new": "Neuer Kellner",
+        "newCode": "Telefon neu einrichten",
+        "rename": "Namen ändern"
+      },
+      "messages": {
+        "deactivateBody": "Das Telefon des Kellners wird abgemeldet."
+      }
+    },
+    "stations": {
+      "title": "Ausgabestellen",
+      "labels": {
+        "deactivateTitle": "Ausgabestelle abschalten?",
+        "noTablet": "Kein Tablet eingerichtet"
+      },
+      "actions": {
+        "activate": "Ausgabestelle einschalten",
+        "deactivateConfirm": "Ausgabestelle abschalten",
+        "edit": "Ausgabestelle bearbeiten",
+        "new": "Neue Ausgabestelle",
+        "setUpDevice": "Tablet einrichten"
+      }
+    }
   },
-  "doorGate": {
-    "hint": "Tippen Sie auf Öffnen, um fortzufahren.",
-    "open": "Öffnen"
-  },
-  "welcome": {
-    "title": "Dieses Gerät ist noch nicht eingerichtet."
-  },
-  "language": {
-    "german": "Deutsch",
-    "english": "English"
-  },
-  "enrolment": {
-    "nameMissing": "Tragen Sie Ihren Namen ein, damit die Küche weiß, wer die Bestellung aufgenommen hat.",
-    "codeUnknown": "Diesen Code kennt der Rechner nicht. Lassen Sie sich am Rechner einen neuen Code zeigen.",
-    "codeNoLongerValid": "Dieser Code gilt nicht mehr. Lassen Sie sich am Rechner einen neuen Code zeigen.",
-    "codeMissing": "Scannen Sie den QR-Code am Rechner noch einmal. Diese Seite wurde ohne Code geöffnet.",
-    "staffMemberIsOffTheList": "Lassen Sie sich am Rechner einen neuen QR-Code zeigen. Dieser Kellner steht nicht mehr in der Liste.",
-    "stationIsOffTheList": "Lassen Sie sich am Rechner einen neuen QR-Code zeigen. Diese Ausgabestelle ist abgeschaltet.",
-    "atMostOneOwner": "Der QR-Code konnte nicht erstellt werden. Versuchen Sie es noch einmal."
-  },
-  "auth": {
-    "wrongDeviceKind": "Dieses Gerät ist für diesen Bildschirm nicht eingerichtet. Lassen Sie es am Rechner neu einrichten."
-  },
-  "session": {
-    "unsupportedLanguage": "Diese Sprache gibt es im Programm nicht. Wählen Sie Deutsch oder Englisch.",
-    "tooManyRequests": "Warten Sie einen Moment und versuchen Sie es dann noch einmal. Der Rechner bekommt gerade zu viele Anfragen auf einmal."
+  "errors": {
+    "admin": {
+      "actionFailed": "Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.",
+      "categories": {
+        "colourInvalid": "Wählen Sie eine Farbe aus, bevor Sie speichern.",
+        "hasActiveItems": "Diese Kategorie hat noch eingeschaltete Artikel. Schalten Sie die Artikel ab und danach die Kategorie.",
+        "nameMissing": "Geben Sie der Kategorie einen Namen, bevor Sie speichern.",
+        "nameTaken": "Es gibt schon eine Kategorie mit diesem Namen. Wählen Sie einen anderen."
+      },
+      "festivals": {
+        "itemNeedsAStation": "Wählen Sie mindestens eine Ausgabestelle für den Artikel.",
+        "itemPriceOutOfRange": "Tragen Sie einen Preis zwischen 0,00 und 999,99 Euro ein.",
+        "itemStaysOnTheMenuWhileTheFestivalRuns": "Ein Artikel kann von einem aktiven Fest nicht entfernt werden.",
+        "nameMissing": "Geben Sie dem Fest einen Namen.",
+        "overlaps": "Das Fest {name} überschneidet sich mit diesem Zeitraum. Verschieben Sie den Beginn oder das Ende.",
+        "periodInvalid": "Das Ende muss nach dem Beginn liegen. Tragen Sie beim Ende einen späteren Zeitpunkt ein.",
+        "stationHasOrdersAtTheFestival": "Solange das Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht entfernt werden."
+      },
+      "items": {
+        "categoryIsOff": "Diese Kategorie ist abgeschaltet. Schalten Sie zuerst die Kategorie ein.",
+        "categoryUnknown": "Wählen Sie eine Kategorie aus, bevor Sie speichern.",
+        "isOnTheRunningFestivalsMenu": "Ein Artikel auf der Karte eines aktiven Festes kann nicht abgeschaltet werden.",
+        "nameMissing": "Geben Sie dem Artikel einen Namen, bevor Sie ihn speichern.",
+        "nameTaken": "Dieser Name ist schon vergeben. Wählen Sie einen anderen Namen.",
+        "productionMinutesOutOfRange": "Tragen Sie Minuten von 0 bis 600 ein."
+      },
+      "staff": {
+        "nameMissing": "Geben Sie dem Kellner einen Namen, bevor Sie speichern."
+      },
+      "stations": {
+        "hasUnfinishedItems": "Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden.",
+        "itemsWouldHaveNoStation": "{count} Artikel hätte dann keine Ausgabestelle mehr. Ordnen Sie ihn zuerst einer anderen Ausgabestelle zu oder entfernen Sie ihn vom Fest. | {count} Artikel hätten dann keine Ausgabestelle mehr. Ordnen Sie sie zuerst einer anderen Ausgabestelle zu oder entfernen Sie sie vom Fest.",
+        "nameMissing": "Geben Sie der Ausgabestelle einen Namen, bevor Sie sie speichern."
+      }
+    },
+    "auth": {
+      "wrongDeviceKind": "Dieses Gerät ist für diesen Bildschirm nicht eingerichtet. Lassen Sie es am Rechner neu einrichten."
+    },
+    "enrolment": {
+      "atMostOneOwner": "Der QR-Code konnte nicht erstellt werden. Versuchen Sie es noch einmal.",
+      "codeMissing": "Scannen Sie den QR-Code am Rechner noch einmal. Diese Seite wurde ohne Code geöffnet.",
+      "codeNoLongerValid": "Dieser Code gilt nicht mehr. Lassen Sie sich am Rechner einen neuen Code zeigen.",
+      "codeUnknown": "Diesen Code kennt der Rechner nicht. Lassen Sie sich am Rechner einen neuen Code zeigen.",
+      "nameMissing": "Tragen Sie Ihren Namen ein, damit die Küche weiß, wer die Bestellung aufgenommen hat.",
+      "qrAlreadyUsed": "Erstellen Sie einen neuen QR-Code. Dieser wurde schon von einem Gerät benutzt.",
+      "qrExpired": "Erstellen Sie einen neuen QR-Code. Dieser wurde fünf Minuten lang nicht gescannt.",
+      "qrReplaced": "Erstellen Sie einen neuen QR-Code. Dieser hier gilt nicht mehr.",
+      "qrUnavailable": "Erstellen Sie einen neuen QR-Code. Dieser lässt sich nicht mehr anzeigen.",
+      "staffMemberIsOffTheList": "Lassen Sie sich am Rechner einen neuen QR-Code zeigen. Dieser Kellner steht nicht mehr in der Liste.",
+      "stationIsOffTheList": "Lassen Sie sich am Rechner einen neuen QR-Code zeigen. Diese Ausgabestelle ist abgeschaltet."
+    },
+    "order": {
+      "cannotBeProcessed": "Die Bestellung konnte nicht verarbeitet werden. Geben Sie sie an der Ausgabestelle persönlich auf.",
+      "itemSoldOut": "{name} ist gerade ausverkauft.",
+      "unknownItem": "Ein Artikel steht nicht mehr auf der Karte. Nehmen Sie ihn von der Bestellung."
+    },
+    "session": {
+      "tooManyRequests": "Warten Sie einen Moment und versuchen Sie es dann noch einmal. Der Rechner bekommt gerade zu viele Anfragen auf einmal.",
+      "unsupportedLanguage": "Diese Sprache gibt es im Programm nicht. Wählen Sie Deutsch oder Englisch."
+    },
+    "settlement": {
+      "cannotBeProcessed": "Die Abrechnung konnte nicht verarbeitet werden. Schreiben Sie auf einen Zettel, was der Tisch bezahlt hat.",
+      "noItemsSelected": "Wählen Sie zuerst die Positionen aus, die Sie abrechnen wollen.",
+      "unknownItem": "Laden Sie die Liste neu. Eine der ausgewählten Positionen kennt der Rechner nicht mehr, deshalb wurde nichts abgerechnet."
+    },
+    "station": {
+      "changeNotSaved": "Die Bestellung konnte nicht aktualisiert werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
+      "itemNotAtThisStation": "Laden Sie die Seite neu. Diese Position gehört nicht zu dieser Ausgabestelle.",
+      "noFestivalIsRunning": "Es ist kein Fest aktiv.",
+      "noItemsSelected": "Tippen Sie eine Position an.",
+      "notPartOfTheFestival": "Diese Ausgabestelle gehört nicht zum laufenden Fest.",
+      "orderNotAtThisStation": "Diese Bestellung gehört nicht zu dieser Ausgabestelle. Laden Sie die Seite neu und versuchen Sie es erneut."
+    },
+    "storage": {
+      "conflictingChange": "Jemand anderes hat im selben Moment etwas geändert. Versuchen Sie es noch einmal.",
+      "databaseUnavailable": "Der Rechner konnte die Bestellung nicht speichern. Senden Sie sie noch einmal."
+    }
   }
 }

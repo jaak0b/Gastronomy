@@ -11,7 +11,7 @@ export function estimateText(
   if (minutes === null) {
     return null
   }
-  return t('estimates.inMinutes', { count: formatMinutes(minutes, language) })
+  return t('common.estimates.inMinutes', { count: formatMinutes(minutes, language) })
 }
 
 export function estimateRangeText(
@@ -23,9 +23,9 @@ export function estimateRangeText(
     return null
   }
   if (wholeMinutes(range.min) === wholeMinutes(range.max)) {
-    return t('estimates.inMinutes', { count: formatMinutes(range.min, language) })
+    return t('common.estimates.inMinutes', { count: formatMinutes(range.min, language) })
   }
-  return t('estimates.inMinuteRange', {
+  return t('common.estimates.inMinuteRange', {
     min: formatMinutes(range.min, language),
     max: formatMinutes(range.max, language),
   })
@@ -38,5 +38,5 @@ export function withEstimate(
   language: AppLanguage,
 ): string {
   const estimate = estimateText(minutes, t, language)
-  return estimate === null ? line : t('estimates.withEstimate', { line, estimate })
+  return estimate === null ? line : t('common.estimates.withEstimate', { line, estimate })
 }

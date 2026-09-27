@@ -374,7 +374,7 @@ describe('the record of what became of a send', () => {
     const stored = {
       state: 'failed',
       attempts: 2,
-      failure: { key: 'review.sendFailedDatabase' },
+      failure: { key: 'errors.storage.databaseUnavailable' },
       unresolvedAttempt: anAttempt(),
     } as const
 
@@ -388,7 +388,7 @@ describe('the record of what became of a send', () => {
       state: 'rejected',
       attempts: 2,
       failure: {
-        key: 'catalog.itemSoldOut',
+        key: 'errors.order.itemSoldOut',
         parameters: { name: 'Wasser', catalogItemId: 'item-wasser' },
       },
       unresolvedAttempt: null,
@@ -728,7 +728,7 @@ describe('a stored send record this build cannot read', () => {
         state: 'rejected',
         attempts: 1,
         failure: {
-          key: 'catalog.itemSoldOut',
+          key: 'errors.order.itemSoldOut',
           parameters: { name: { text: 'Wasser' }, catalogItemId: 'item-wasser' },
         },
         unresolvedAttempt: null,
@@ -758,7 +758,7 @@ describe('a stored send record this build cannot read', () => {
       JSON.stringify({
         state: 'rejected',
         attempts: 1,
-        failure: { key: 'catalog.itemSoldOut', parameters: ['Wasser', 'item-wasser'] },
+        failure: { key: 'errors.order.itemSoldOut', parameters: ['Wasser', 'item-wasser'] },
         unresolvedAttempt: null,
       }),
     )
@@ -791,7 +791,7 @@ describe('a stored send record this build cannot read', () => {
       JSON.stringify({
         state: 'rejected',
         attempts: 1,
-        failure: { key: 'order.unknownItem' },
+        failure: { key: 'errors.order.unknownItem' },
         unresolvedAttempt: null,
         answeredAtUtc: '2026-01-01T00:00:00Z',
       }),

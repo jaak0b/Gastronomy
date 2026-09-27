@@ -69,7 +69,7 @@ public sealed class StationQueueChangeServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(queue.IsSuccess, Is.False);
-                      Assert.That(queue.RefusalMessageKey(), Is.EqualTo("station.noFestivalIsRunning"));
+                      Assert.That(queue.RefusalMessageKey(), Is.EqualTo("errors.station.noFestivalIsRunning"));
                     });
 
     A.CallTo(() => _stationOrderRepository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
@@ -124,7 +124,7 @@ public sealed class StationQueueChangeServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(queue.IsSuccess, Is.False);
-                      Assert.That(queue.RefusalMessageKey(), Is.EqualTo("station.notPartOfTheFestival"));
+                      Assert.That(queue.RefusalMessageKey(), Is.EqualTo("errors.station.notPartOfTheFestival"));
                     });
 
     A.CallTo(() => _stationOrderRepository.FindAtStationAsync(A<Guid>._, A<Guid>._, A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();

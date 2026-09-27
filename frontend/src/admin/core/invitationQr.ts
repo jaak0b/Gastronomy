@@ -12,7 +12,7 @@ export interface InvitationQrView {
   messageKey: string | null
 }
 
-export const QR_UNREACHABLE_KEY = 'admin.enrol.qrUnreachable'
+export const QR_UNREACHABLE_KEY = 'admin.enrolment.errors.qrUnreachable'
 
 export function invitationQrView(qr: InvitationQr): InvitationQrView {
   switch (qr.kind) {

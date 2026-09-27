@@ -8,7 +8,7 @@ const ACCEPTED: ApiResult<null> = { kind: 'ok', status: 200, data: null }
 const REFUSED: ApiResult<null> = {
   kind: 'error',
   status: 422,
-  body: { code: 'stationHasOpenOrders', messageKey: 'admin.actionFailed', parameters: {}, details: null },
+  body: { code: 'stationHasOpenOrders', messageKey: 'errors.admin.actionFailed', parameters: {}, details: null },
   raw: null,
 }
 
@@ -35,7 +35,7 @@ describe('turning the laptop answer to a change into something the screen can sh
 
     expect(reported).toEqual({
       kind: 'failed',
-      message: { key: 'admin.actionFailed', parameters: {}, count: null },
+      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
     })
     expect(reloads).toBe(0)
   })

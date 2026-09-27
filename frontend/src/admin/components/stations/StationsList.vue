@@ -113,7 +113,7 @@ onUnmounted(() => {
         class="show-deactivated"
         density="compact"
         hide-details
-        :label="t('admin.showDeactivated')"
+        :label="t('admin.common.actions.showDeactivated')"
       />
     </div>
 
@@ -123,7 +123,7 @@ onUnmounted(() => {
       type="success"
       variant="tonal"
     >
-      {{ t('admin.enrol.doneStation', { name: enrolment.enrolledStationName }) }}
+      {{ t('admin.enrolment.messages.doneStation', { name: enrolment.enrolledStationName }) }}
     </v-alert>
     <v-alert
       v-if="refusalText !== null && !isStationDialogOpen"
@@ -134,24 +134,24 @@ onUnmounted(() => {
       {{ refusalText }}
     </v-alert>
     <v-alert v-if="stations.loadFailed" class="error" type="error" variant="tonal">
-      {{ t('admin.loadFailed') }}
+      {{ t('admin.common.errors.loadFailed') }}
     </v-alert>
 
     <v-card v-for="station in shown" :key="station.stationId" class="station-row mb-2">
       <div class="d-flex align-center flex-wrap ga-2 px-4 py-2">
         <span class="name text-h6">{{ station.name }}</span>
         <v-chip v-if="!station.isActive" class="deactivated" size="small" color="grey">
-          {{ t('admin.deactivated') }}
+          {{ t('admin.common.labels.deactivated') }}
         </v-chip>
         <v-chip v-if="!station.hasDevice" class="no-tablet" size="small" color="warning">
-          {{ t('admin.stations.noTablet') }}
+          {{ t('admin.stations.labels.noTablet') }}
         </v-chip>
         <v-spacer />
         <v-btn class="set-up-device" variant="text" @click="inviteStation(station.stationId)">
-          {{ t('admin.stations.setUpDevice') }}
+          {{ t('admin.stations.actions.setUpDevice') }}
         </v-btn>
         <v-btn class="edit" variant="text" @click="startEditing(station)">
-          {{ t('admin.edit') }}
+          {{ t('admin.common.actions.edit') }}
         </v-btn>
         <v-btn
           v-if="station.isActive"
@@ -167,7 +167,7 @@ onUnmounted(() => {
           variant="text"
           @click="reactivate(station.stationId)"
         >
-          {{ t('admin.stations.activate') }}
+          {{ t('admin.stations.actions.activate') }}
         </v-btn>
       </div>
       <v-expand-transition>
@@ -182,7 +182,7 @@ onUnmounted(() => {
     </v-card>
 
     <v-btn class="new-station mt-6" color="primary" @click="startCreating">
-      {{ t('admin.stations.new') }}
+      {{ t('admin.stations.actions.new') }}
     </v-btn>
 
     <StationDialog
@@ -202,8 +202,8 @@ onUnmounted(() => {
 
     <BaseConfirmDialog
       v-if="askingAboutId !== null"
-      :title="t('admin.stations.deactivateTitle')"
-      :confirm-label="t('admin.stations.deactivateConfirm')"
+      :title="t('admin.stations.labels.deactivateTitle')"
+      :confirm-label="t('admin.stations.actions.deactivateConfirm')"
       @confirm="deactivate"
       @cancel="askingAboutId = null"
     />

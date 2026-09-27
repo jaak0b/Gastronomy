@@ -72,7 +72,7 @@ describe('fetching an invitation QR code', () => {
         new Response(
           JSON.stringify({
             code: 'EnrolmentCodeAlreadyUsed',
-            messageKey: 'admin.enrol.qrAlreadyUsed',
+            messageKey: 'errors.enrolment.qrAlreadyUsed',
             parameters: {},
             details: null,
           }),
@@ -84,7 +84,7 @@ describe('fetching an invitation QR code', () => {
 
     expect(qr).toEqual({
       kind: 'gone',
-      message: { key: 'admin.enrol.qrAlreadyUsed', parameters: {}, count: null },
+      message: { key: 'errors.enrolment.qrAlreadyUsed', parameters: {}, count: null },
     })
   })
 
@@ -155,7 +155,7 @@ describe('creating an invitation from the admin screen', () => {
         new Response(
           JSON.stringify({
             code: 'EnrolmentCodeExpired',
-            messageKey: 'admin.enrol.expired',
+            messageKey: 'errors.enrolment.qrExpired',
             parameters: {},
             details: null,
           }),
@@ -168,7 +168,7 @@ describe('creating an invitation from the admin screen', () => {
 
     expect(enrolment.invitationQr).toEqual({
       kind: 'gone',
-      message: { key: 'admin.enrol.expired', parameters: {}, count: null },
+      message: { key: 'errors.enrolment.qrExpired', parameters: {}, count: null },
     })
   })
 
@@ -184,7 +184,7 @@ describe('creating an invitation from the admin screen', () => {
           return new Response(
             JSON.stringify({
               code: 'Conflict',
-              messageKey: 'admin.actionFailed',
+              messageKey: 'errors.admin.actionFailed',
               parameters: {},
               details: null,
             }),
@@ -221,7 +221,7 @@ describe('creating an invitation from the admin screen', () => {
           new Response(
             JSON.stringify({
               code: 'ValidationFailed',
-              messageKey: 'enrolment.atMostOneOwner',
+              messageKey: 'errors.enrolment.atMostOneOwner',
               parameters: {},
               details: null,
             }),
@@ -238,7 +238,7 @@ describe('creating an invitation from the admin screen', () => {
 
     expect(result).toEqual({
       kind: 'failed',
-      message: { key: 'enrolment.atMostOneOwner', parameters: {}, count: null },
+      message: { key: 'errors.enrolment.atMostOneOwner', parameters: {}, count: null },
     })
   })
 

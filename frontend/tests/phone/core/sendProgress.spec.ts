@@ -166,7 +166,7 @@ describe('the send progress a freshly loaded page can honestly report', () => {
       unresolvedAttempt: anUnresolvedAttempt(),
     })
 
-    expect(loaded.failure).toEqual({ key: 'review.sendInterrupted' })
+    expect(loaded.failure).toEqual({ key: 'phone.review.errors.sendInterrupted' })
   })
 
   it('counts the cut off attempt as one the laptop never answered, so the order stays closed', () => {
@@ -206,7 +206,7 @@ describe('the send progress a freshly loaded page can honestly report', () => {
     const failed = {
       state: 'failed',
       attempts: 1,
-      failure: { key: 'review.sendFailedDatabase' },
+      failure: { key: 'errors.storage.databaseUnavailable' },
       unresolvedAttempt: anUnresolvedAttempt(),
     } as const
 
@@ -217,7 +217,7 @@ describe('the send progress a freshly loaded page can honestly report', () => {
     const refused = {
       state: 'rejected',
       attempts: 0,
-      failure: { key: 'order.unknownItem' },
+      failure: { key: 'errors.order.unknownItem' },
       unresolvedAttempt: null,
     } as const
 
