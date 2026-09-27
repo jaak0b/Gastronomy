@@ -154,15 +154,12 @@
     <value>{version}</value>
   </data>
     <data name="desktop.update.confirmTitle" xml:space="preserve">
-    <value>Neue Version installieren?</value>
+    <value>Neue Version {version} installieren?</value>
   </data>
-    <data name="desktop.update.confirmBody" xml:space="preserve">
-    <value>Version {version} wird beim nächsten Neustart oder beim Beenden installiert.</value>
+    <data name="desktop.update.confirmUpdateNow" xml:space="preserve">
+    <value>Jetzt aktualisieren</value>
   </data>
-    <data name="desktop.update.confirmRestart" xml:space="preserve">
-    <value>Jetzt neu starten</value>
-  </data>
-    <data name="desktop.update.confirmLater" xml:space="preserve">
-    <value>Später</value>
+    <data name="desktop.update.confirmNotNow" xml:space="preserve">
+    <value>Nicht jetzt</value>
   </data>
 </root>

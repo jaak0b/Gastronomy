@@ -8,17 +8,10 @@ public sealed class UpdateOnQuit
   private readonly IUpdateInstallGate _gate;
   private readonly IUpdateInstaller _installer;
 
-  private bool _installDespiteFestival;
-
   public UpdateOnQuit(IUpdateInstaller installer, IUpdateInstallGate gate)
   {
     _installer = installer;
     _gate = gate;
-  }
-
-  public void RequestInstallDespiteFestival()
-  {
-    _installDespiteFestival = true;
   }
 
   public async Task PrepareAsync(CancellationToken cancellationToken)
@@ -28,7 +21,7 @@ public sealed class UpdateOnQuit
 
     try
     {
-      if (_installDespiteFestival || await _gate.CanInstallNowAsync(cancellationToken))
+      if (await _gate.CanInstallNowAsync(cancellationToken))
         _installer.InstallOnQuit(false);
     }
     catch (Exception failure)

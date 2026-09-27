@@ -1,7 +1,5 @@
-﻿using Avalonia;
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.VisualTree;
 
 namespace GastronomyApp.Desktop.Views;
 
@@ -22,24 +20,7 @@ public partial class MainWindow : Window
 
   private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
   {
-    if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
-      return;
-
-    if (ClickLandsOnAButtonOrDropdown(e.Source))
-      return;
-
-    BeginMoveDrag(e);
-  }
-
-  private bool ClickLandsOnAButtonOrDropdown(object? source)
-  {
-    for (var visual = source as Visual; visual is not null; visual = visual.GetVisualParent())
-    {
-      if (visual is Button or ComboBox)
-        return true;
-    }
-
-    return false;
+    WindowDrag.BeginIfTitleBarPressed(this, e);
   }
 
   private void OnClosingMinimisesInstead(object? sender, WindowClosingEventArgs e)

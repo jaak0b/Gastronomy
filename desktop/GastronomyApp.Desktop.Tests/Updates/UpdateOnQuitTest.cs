@@ -1,4 +1,4 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Desktop.Updates;
 using GastronomyApp.Desktop.Ports;
 
@@ -56,20 +56,7 @@ public sealed class UpdateOnQuitTest
   }
 
   [Test]
-  public async Task PrepareAsync_AfterAnInstallWasRequested_BypassesAGateThatRefuses()
-  {
-    A.CallTo(() => _installer.HasDownloadedUpdate).Returns(true);
-    A.CallTo(() => _gate.CanInstallNowAsync(A<CancellationToken>._)).Returns(false);
-    var updateOnQuit = CreateUpdateOnQuit();
-    updateOnQuit.RequestInstallDespiteFestival();
-
-    await updateOnQuit.PrepareAsync(CancellationToken.None);
-
-    A.CallTo(() => _installer.InstallOnQuit(false)).MustHaveHappenedOnceExactly();
-  }
-
-  [Test]
-  public async Task PrepareAsync_WithoutARequestAndWithTheGateRefusing_AsksTheGateAndInstallsNothing()
+  public async Task PrepareAsync_WhenTheGateRefuses_AsksTheGateOnceAndDoesNotInstallOnQuit()
   {
     A.CallTo(() => _installer.HasDownloadedUpdate).Returns(true);
     A.CallTo(() => _gate.CanInstallNowAsync(A<CancellationToken>._)).Returns(false);

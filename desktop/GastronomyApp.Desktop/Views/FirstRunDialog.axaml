@@ -1,8 +1,13 @@
 ﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:GastronomyApp.Desktop.ViewModels"
+        xmlns:local="using:GastronomyApp.Desktop.Views"
         x:Class="GastronomyApp.Desktop.Views.FirstRunDialog"
         x:DataType="vm:FirstRunViewModel"
+        Icon="/Assets/app.ico"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="40"
+        WindowDecorations="BorderOnly"
         TextOptions.TextRenderingMode="Antialias"
         Width="470"
         SizeToContent="Height"
@@ -10,15 +15,17 @@
         CanResize="False"
         Title="{Binding Title}">
 
-    <StackPanel Margin="24" Spacing="18">
-        <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="Bold" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding Body}" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding DeclinedText, FallbackValue=''}"
-                   IsVisible="{Binding DeclinedText, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
-                   TextWrapping="Wrap" />
-        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
-            <Button Name="ContinueButton" Content="{Binding ContinueLabel}" Command="{Binding ContinueCommand}" Classes="accent" IsDefault="True" />
+    <DockPanel>
+        <local:DialogTitleBar DockPanel.Dock="Top" Text="{Binding Title}" />
+        <StackPanel Margin="24" Spacing="18">
+            <TextBlock Text="{Binding Body}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding DeclinedText, FallbackValue=''}"
+                       IsVisible="{Binding DeclinedText, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+                       TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                <Button Name="ContinueButton" Content="{Binding ContinueLabel}" Command="{Binding ContinueCommand}" Classes="accent" IsDefault="True" IsCancel="True" />
+            </StackPanel>
         </StackPanel>
-    </StackPanel>
+    </DockPanel>
 
 </Window>

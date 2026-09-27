@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="GastronomyApp.Desktop.Views.DialogTitleBar"
+             x:Name="Root">
+    <Border MinHeight="40"
+            Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="0,0,0,1"
+            Padding="20,0"
+            PointerPressed="OnPointerPressed">
+        <TextBlock Text="{Binding #Root.Text}"
+                   VerticalAlignment="Center" />
+    </Border>
+</UserControl>

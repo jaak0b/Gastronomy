@@ -230,11 +230,7 @@ public class App : Application
     var accepted = await dialog.ShowDialog<bool>(_mainWindow);
 
     if (!accepted)
-    {
-      _composition.UpdateOnQuit.RequestInstallDespiteFestival();
-
       return;
-    }
 
     try
     {

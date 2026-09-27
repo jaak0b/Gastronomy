@@ -1,4 +1,6 @@
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Headless.NUnit;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -43,6 +45,21 @@ public sealed class FirstRunDialogSmokeTest
     Dispatcher.UIThread.RunJobs();
 
     _clicks.Click(dialog, dialog.FindControl<Button>("ContinueButton")!);
+
+    Assert.That(await result, Is.True);
+  }
+
+  [AvaloniaTest]
+  public async Task FirstRunDialog_WhenEscapeIsPressed_ClosesWithTrue()
+  {
+    Window owner = new();
+    owner.Show();
+    FirstRunDialog dialog = new() { DataContext = CreateFirstRunViewModel() };
+
+    Task<bool> result = dialog.ShowDialog<bool>(owner);
+    Dispatcher.UIThread.RunJobs();
+    dialog.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+    Dispatcher.UIThread.RunJobs();
 
     Assert.That(await result, Is.True);
   }

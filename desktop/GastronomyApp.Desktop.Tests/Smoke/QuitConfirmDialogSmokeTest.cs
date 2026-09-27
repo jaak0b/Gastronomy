@@ -1,4 +1,6 @@
 using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Headless.NUnit;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -67,5 +69,20 @@ public sealed class QuitConfirmDialogSmokeTest
     Dispatcher.UIThread.RunJobs();
     _clicks.Click(confirmDialog, confirmDialog.FindControl<Button>("ConfirmButton")!);
     Assert.That(await confirmResult, Is.True);
+  }
+
+  [AvaloniaTest]
+  public async Task QuitConfirmDialog_WhenEscapeIsPressed_ClosesWithFalse()
+  {
+    Window owner = new();
+    owner.Show();
+    QuitConfirmDialog dialog = new() { DataContext = CreateQuitConfirmViewModel() };
+
+    Task<bool> result = dialog.ShowDialog<bool>(owner);
+    Dispatcher.UIThread.RunJobs();
+    dialog.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+    Dispatcher.UIThread.RunJobs();
+
+    Assert.That(await result, Is.False);
   }
 }

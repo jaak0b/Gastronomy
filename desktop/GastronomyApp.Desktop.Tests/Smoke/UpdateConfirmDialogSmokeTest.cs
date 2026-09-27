@@ -1,4 +1,6 @@
 using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Headless.NUnit;
 using Avalonia.Threading;
 using GastronomyApp.Desktop.Localization;
@@ -32,10 +34,10 @@ public sealed class UpdateConfirmDialogSmokeTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(cancelDialog.Title, Is.EqualTo(_text.Get("desktop.update.confirmTitle")));
-                      Assert.That(viewModel.Title, Is.EqualTo(_text.Get("desktop.update.confirmTitle")));
-                      Assert.That(viewModel.Body, Is.EqualTo(_text.Format("desktop.update.confirmBody", new TextPlaceholder("version", Version))));
-                      Assert.That(viewModel.Body, Does.Contain(Version));
+                      Assert.That(cancelDialog.Title, Is.EqualTo(_text.Format("desktop.update.confirmTitle", new TextPlaceholder("version", Version))));
+                      Assert.That(viewModel.Title, Does.Contain(Version));
+                      Assert.That(viewModel.ConfirmLabel, Is.EqualTo(_text.Get("desktop.update.confirmUpdateNow")));
+                      Assert.That(viewModel.CancelLabel, Is.EqualTo(_text.Get("desktop.update.confirmNotNow")));
                     });
 
     _clicks.Click(cancelDialog, cancelDialog.FindControl<Button>("CancelButton")!);
@@ -46,5 +48,20 @@ public sealed class UpdateConfirmDialogSmokeTest
     Dispatcher.UIThread.RunJobs();
     _clicks.Click(confirmDialog, confirmDialog.FindControl<Button>("ConfirmButton")!);
     Assert.That(await confirmResult, Is.True);
+  }
+
+  [AvaloniaTest]
+  public async Task UpdateConfirmDialog_WhenEscapeIsPressed_ClosesWithFalse()
+  {
+    Window owner = new();
+    owner.Show();
+    UpdateConfirmDialog dialog = new() { DataContext = new UpdateConfirmViewModel(Version, _text) };
+
+    Task<bool> result = dialog.ShowDialog<bool>(owner);
+    Dispatcher.UIThread.RunJobs();
+    dialog.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+    Dispatcher.UIThread.RunJobs();
+
+    Assert.That(await result, Is.False);
   }
 }

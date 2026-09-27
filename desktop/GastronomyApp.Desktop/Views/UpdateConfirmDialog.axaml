@@ -1,8 +1,13 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:GastronomyApp.Desktop.ViewModels"
+        xmlns:local="using:GastronomyApp.Desktop.Views"
         x:Class="GastronomyApp.Desktop.Views.UpdateConfirmDialog"
         x:DataType="vm:UpdateConfirmViewModel"
+        Icon="/Assets/app.ico"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="40"
+        WindowDecorations="BorderOnly"
         TextOptions.TextRenderingMode="Antialias"
         Width="470"
         SizeToContent="Height"
@@ -10,13 +15,15 @@
         CanResize="False"
         Title="{Binding Title}">
 
-    <StackPanel Margin="24" Spacing="18">
-        <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="Bold" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding Body}" TextWrapping="Wrap" />
-        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
-            <Button Name="CancelButton" Content="{Binding CancelLabel}" Command="{Binding CancelCommand}" IsDefault="True" />
-            <Button Name="ConfirmButton" Content="{Binding ConfirmLabel}" Command="{Binding ConfirmCommand}" />
+    <DockPanel>
+        <local:DialogTitleBar DockPanel.Dock="Top" />
+        <StackPanel Margin="24" Spacing="18">
+            <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="Bold" TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                <Button Name="CancelButton" Content="{Binding CancelLabel}" Command="{Binding CancelCommand}" IsDefault="True" IsCancel="True" />
+                <Button Name="ConfirmButton" Content="{Binding ConfirmLabel}" Command="{Binding ConfirmCommand}" />
+            </StackPanel>
         </StackPanel>
-    </StackPanel>
+    </DockPanel>
 
 </Window>

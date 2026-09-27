@@ -47,8 +47,9 @@ server is not running postpones as well.
 
 The window always shows the version of the running program in its header, and a small download icon
 only in an installed copy. That icon checks and downloads on demand, ignoring the hourly limit and
-the festival window, and asks before installing: a restart applies it now, and Later never installs
-it immediately and instead applies it at the next quit. It never restarts the program on its own.
+the festival window, and asks before installing. Update now installs it at once and restarts the
+program. Not now closes the question and changes nothing, and a downloaded update still installs on
+quit when the gate allows it. It never restarts the program on its own.
 
 ## Hard rules
 
