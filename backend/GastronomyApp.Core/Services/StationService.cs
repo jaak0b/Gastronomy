@@ -5,13 +5,6 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class StationService
 {
-  public bool HasOutstandingInvitation(Station station)
-  {
-    ArgumentNullException.ThrowIfNull(station);
-
-    return station.EnrolmentInvitation is not null;
-  }
-
   public bool IsAtAnyFestival(Station station)
   {
     ArgumentNullException.ThrowIfNull(station);

@@ -14,8 +14,6 @@ const ONE_STAFF_MEMBER = {
       name: 'Anna',
       isActive: true,
       hasDevice: true,
-      lastSeenAtUtc: '2026-08-27T19:00:00Z',
-      hasOutstandingInvitation: false,
     },
   ],
 }
@@ -173,7 +171,6 @@ describe('the QR code for setting up a phone', () => {
           ? {
               invitationId: 'invitation-1',
               qrUrl: 'http://192.168.0.22:5000/j/CODE',
-              availableAddresses: [],
               expiresAtUtc: '2026-08-27T20:00:00Z',
               staffMember,
               station: null,
@@ -245,7 +242,6 @@ describe('adding somebody new to the waiter list', () => {
             JSON.stringify({
               invitationId: 'invitation-1',
               qrUrl: 'http://192.168.0.22:5000/j/CODE',
-              availableAddresses: [],
               expiresAtUtc: '2026-08-27T20:00:00Z',
               staffMember: null,
               station: null,

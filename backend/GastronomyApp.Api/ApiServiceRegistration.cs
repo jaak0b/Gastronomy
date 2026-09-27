@@ -90,9 +90,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<OrderService>();
     services.AddSingleton<StationOrderService>();
     services.AddSingleton<StationService>();
-    services.AddSingleton<StaffMemberService>();
     services.AddSingleton<FestivalService>();
-    services.AddSingleton<EnrolmentInvitationService>();
     services.AddSingleton<FestivalSchedule>();
     services.AddSingleton<OrderItemFulfillmentService>();
 

@@ -22,11 +22,6 @@ public sealed class EnrolmentUrlBuilder
     return $"{Origin()}/j/{qrCodeValue}";
   }
 
-  public IReadOnlyList<string> ReachableAddresses()
-  {
-    return _hostResolver.ReachableAddresses();
-  }
-
   public string Origin()
   {
     return $"http://{_hostResolver.ResolveHost()}:{ResolvePort()}";

@@ -37,8 +37,7 @@ public sealed class AdminEnrolmentHandler
 
     return _mapper.Map<InvitationView>(issuedInvitation) with
            {
-             QRUrl = qrUrl,
-             AvailableAddresses = _urlBuilder.ReachableAddresses()
+             QRUrl = qrUrl
            };
   }
 }

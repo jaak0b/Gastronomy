@@ -1,19 +1,11 @@
 using GastronomyApp.Contracts.Admin.Staff;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Services;
 using Mapster;
 
 namespace GastronomyApp.Api.Mapping;
 
 public sealed class AdminStaffMembersMapping : IMappingRegistration
 {
-  private readonly StaffMemberService _staffMemberService;
-
-  public AdminStaffMembersMapping(StaffMemberService staffMemberService)
-  {
-    _staffMemberService = staffMemberService;
-  }
-
   public void Register(TypeAdapterConfig config)
   {
     ArgumentNullException.ThrowIfNull(config);
@@ -22,8 +14,6 @@ public sealed class AdminStaffMembersMapping : IMappingRegistration
 
     config.NewConfig<StaffMember, AdminStaffMemberView>()
           .Map(view => view.StaffMemberId, staffMember => staffMember.Id)
-          .Map(view => view.HasDevice, staffMember => staffMember.DeviceId != null)
-          .Map(view => view.LastSeenAtUtc, staffMember => staffMember.Device == null ? null : (DateTime?)staffMember.Device.LastSeenAtUtc)
-          .Map(view => view.HasOutstandingInvitation, staffMember => _staffMemberService.HasOutstandingInvitation(staffMember));
+          .Map(view => view.HasDevice, staffMember => staffMember.DeviceId != null);
   }
 }

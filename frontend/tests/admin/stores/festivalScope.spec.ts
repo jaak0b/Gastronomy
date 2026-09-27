@@ -192,8 +192,6 @@ describe('a station at a festival', () => {
                 sortOrder: 1,
                 isActive: true,
                 hasDevice: false,
-                lastSeenAtUtc: null,
-                hasOutstandingInvitation: false,
                 isAtAnyFestival: false,
               }),
               { status: 201 },
@@ -212,8 +210,6 @@ describe('a station at a festival', () => {
         sortOrder: 1,
         isActive: true,
         hasDevice: false,
-        lastSeenAtUtc: null,
-        hasOutstandingInvitation: false,
         isAtAnyFestival: false,
       },
     })

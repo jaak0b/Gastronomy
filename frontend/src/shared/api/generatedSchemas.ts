@@ -26,13 +26,13 @@ export type AdminItemListView = __TypedOpenapi.Schemas.AdminItemListView;
 export const AdminItemListView = z.strictObject({ items: z.array(AdminItemView) });
 
 export type AdminStaffMemberView = __TypedOpenapi.Schemas.AdminStaffMemberView;
-export const AdminStaffMemberView = z.strictObject({ staffMemberId: z.string(), name: z.string(), isActive: z.boolean(), hasDevice: z.boolean(), lastSeenAtUtc: z.string().nullable(), hasOutstandingInvitation: z.boolean() });
+export const AdminStaffMemberView = z.strictObject({ staffMemberId: z.string(), name: z.string(), isActive: z.boolean(), hasDevice: z.boolean() });
 
 export type AdminStaffMemberListView = __TypedOpenapi.Schemas.AdminStaffMemberListView;
 export const AdminStaffMemberListView = z.strictObject({ staffMembers: z.array(AdminStaffMemberView) });
 
 export type AdminStationView = __TypedOpenapi.Schemas.AdminStationView;
-export const AdminStationView = z.strictObject({ stationId: z.string(), name: z.string(), sortOrder: z.number().int(), isActive: z.boolean(), hasDevice: z.boolean(), lastSeenAtUtc: z.string().nullable(), hasOutstandingInvitation: z.boolean(), isAtAnyFestival: z.boolean() });
+export const AdminStationView = z.strictObject({ stationId: z.string(), name: z.string(), sortOrder: z.number().int(), isActive: z.boolean(), hasDevice: z.boolean(), isAtAnyFestival: z.boolean() });
 
 export type AdminStationListView = __TypedOpenapi.Schemas.AdminStationListView;
 export const AdminStationListView = z.strictObject({ stations: z.array(AdminStationView) });
@@ -86,7 +86,7 @@ export type StationSummaryView = __TypedOpenapi.Schemas.StationSummaryView;
 export const StationSummaryView = z.strictObject({ id: z.string(), name: z.string() });
 
 export type InvitationView = __TypedOpenapi.Schemas.InvitationView;
-export const InvitationView = z.strictObject({ invitationId: z.string(), qrUrl: z.string(), expiresAtUtc: z.string(), staffMember: StaffMemberView.nullable(), station: StationSummaryView.nullable(), availableAddresses: z.array(z.string()) });
+export const InvitationView = z.strictObject({ invitationId: z.string(), qrUrl: z.string(), expiresAtUtc: z.string(), staffMember: StaffMemberView.nullable(), station: StationSummaryView.nullable() });
 
 export type ItemEstimateView = __TypedOpenapi.Schemas.ItemEstimateView;
 export const ItemEstimateView = z.strictObject({ catalogItemId: z.string(), stationId: z.string(), readyInMinutes: z.number() });

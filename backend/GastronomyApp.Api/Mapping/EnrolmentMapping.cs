@@ -15,7 +15,6 @@ public sealed class EnrolmentMapping : IMappingRegistration
 
     config.NewConfig<IssuedEnrolmentInvitation, InvitationView>()
           .Ignore(view => view.QRUrl)
-          .Ignore(view => view.AvailableAddresses)
           .Map(view => view.InvitationId, issued => issued.Invitation.Id)
           .Map(view => view.ExpiresAtUtc, issued => issued.Invitation.ExpiresAtUtc)
           .Map(view => view.StaffMember, issued => issued.Owner as StaffMember)

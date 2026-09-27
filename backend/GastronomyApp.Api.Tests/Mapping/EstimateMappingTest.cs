@@ -18,7 +18,7 @@ public sealed class EstimateMappingTest
       new AdminCategoryMapping(),
       new AdminFestivalMapping(new()),
       new AdminItemMapping(),
-      new AdminStaffMembersMapping(new()),
+      new AdminStaffMembersMapping(),
       new AdminStationMapping(new()),
       new CatalogMapping(),
       new EnrolmentMapping(),

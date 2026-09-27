@@ -17,7 +17,7 @@ public sealed class StationQueueMappingTest
       new AdminCategoryMapping(),
       new AdminFestivalMapping(new()),
       new AdminItemMapping(),
-      new AdminStaffMembersMapping(new()),
+      new AdminStaffMembersMapping(),
       new AdminStationMapping(new()),
       new CatalogMapping(),
       new EnrolmentMapping(),

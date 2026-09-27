@@ -27,16 +27,6 @@ public sealed class ReachableHostResolver
     if (!BindsEveryAddress())
       return _hostOptions.BindAddress;
 
-    IReadOnlyList<string> addresses = ReachableAddresses();
-
-    if (addresses.Count == 0)
-      return LoopbackHost;
-
-    return addresses[0];
-  }
-
-  public IReadOnlyList<string> ReachableAddresses()
-  {
-    return _addressProvider.FindReachableAddresses().Select(address => address.IPAddress).ToList();
+    return _addressProvider.FindReachableAddresses().Select(address => address.IPAddress).FirstOrDefault() ?? LoopbackHost;
   }
 }

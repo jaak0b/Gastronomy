@@ -1,6 +1,5 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,15 +7,11 @@ namespace GastronomyApp.Infrastructure.Repositories;
 
 public sealed class StationRepository : IStationRepository
 {
-  private readonly TimeProvider _timeProvider;
   private readonly GastronomyAppDbContext _dbContext;
-  private readonly EnrolmentInvitationService _enrolmentInvitationService;
 
-  public StationRepository(GastronomyAppDbContext dbContext, TimeProvider timeProvider, EnrolmentInvitationService enrolmentInvitationService)
+  public StationRepository(GastronomyAppDbContext dbContext)
   {
     _dbContext = dbContext;
-    _timeProvider = timeProvider;
-    _enrolmentInvitationService = enrolmentInvitationService;
   }
 
   public async Task<IReadOnlyCollection<Station>> FindAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken)
@@ -48,19 +43,10 @@ public sealed class StationRepository : IStationRepository
 
   public async Task<IReadOnlyList<Station>> FindAllAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
-    List<Station> stations = await _dbContext.Stations.AsNoTracking()
-                                             .OrderBy(station => station.SortOrder)
-                                             .Include(station => station.Device)
-                                             .Include(station => station.EnrolmentInvitation)
-                                             .Include(station => station.FestivalStations.Where(link => festivalId != null && link.FestivalId == festivalId.Value))
-                                             .ToListAsync(cancellationToken);
-
-    var nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
-
-    foreach (var station in stations.Where(station => station.EnrolmentInvitation != null && !_enrolmentInvitationService.IsOutstandingAt(station.EnrolmentInvitation, nowUtc)))
-      station.EnrolmentInvitation = null;
-
-    return stations;
+    return await _dbContext.Stations.AsNoTracking()
+                           .OrderBy(station => station.SortOrder)
+                           .Include(station => station.FestivalStations.Where(link => festivalId != null && link.FestivalId == festivalId.Value))
+                           .ToListAsync(cancellationToken);
   }
 
   public async Task<Station?> FindByIdAsync(Guid stationId, CancellationToken cancellationToken)

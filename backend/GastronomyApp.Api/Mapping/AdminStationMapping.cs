@@ -21,8 +21,6 @@ public sealed class AdminStationMapping : IMappingRegistration
     config.NewConfig<Station, AdminStationView>()
           .Map(view => view.StationId, station => station.Id)
           .Map(view => view.HasDevice, station => station.DeviceId != null)
-          .Map(view => view.LastSeenAtUtc, station => station.Device == null ? null : (DateTime?)station.Device.LastSeenAtUtc)
-          .Map(view => view.HasOutstandingInvitation, station => _stationService.HasOutstandingInvitation(station))
           .Map(view => view.IsAtAnyFestival, station => _stationService.IsAtAnyFestival(station));
   }
 }

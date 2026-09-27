@@ -34,8 +34,6 @@ const KITCHEN = {
   sortOrder: 1,
   isActive: true,
   hasDevice: true,
-  lastSeenAtUtc: null,
-  hasOutstandingInvitation: false,
   isAtAnyFestival: true,
 }
 
@@ -45,8 +43,6 @@ const BAR = {
   sortOrder: 2,
   isActive: true,
   hasDevice: false,
-  lastSeenAtUtc: null,
-  hasOutstandingInvitation: false,
   isAtAnyFestival: false,
 }
 
@@ -387,8 +383,6 @@ describe('the stations of this festival', () => {
       sortOrder: 3,
       isActive: true,
       hasDevice: false,
-      lastSeenAtUtc: null,
-      hasOutstandingInvitation: false,
       isAtAnyFestival: false,
     }
     const calls = stubLaptop({ created: NEW_STATION })

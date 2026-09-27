@@ -1685,9 +1685,7 @@
           "staffMemberId",
           "name",
           "isActive",
-          "hasDevice",
-          "lastSeenAtUtc",
-          "hasOutstandingInvitation"
+          "hasDevice"
         ],
         "type": "object",
         "properties": {
@@ -1702,16 +1700,6 @@
             "type": "boolean"
           },
           "hasDevice": {
-            "type": "boolean"
-          },
-          "lastSeenAtUtc": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "hasOutstandingInvitation": {
             "type": "boolean"
           }
         }
@@ -1737,8 +1725,6 @@
           "sortOrder",
           "isActive",
           "hasDevice",
-          "lastSeenAtUtc",
-          "hasOutstandingInvitation",
           "isAtAnyFestival"
         ],
         "type": "object",
@@ -1758,16 +1744,6 @@
             "type": "boolean"
           },
           "hasDevice": {
-            "type": "boolean"
-          },
-          "lastSeenAtUtc": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "hasOutstandingInvitation": {
             "type": "boolean"
           },
           "isAtAnyFestival": {
@@ -2048,8 +2024,7 @@
           "qrUrl",
           "expiresAtUtc",
           "staffMember",
-          "station",
-          "availableAddresses"
+          "station"
         ],
         "type": "object",
         "properties": {
@@ -2083,12 +2058,6 @@
                 "$ref": "#/components/schemas/StationSummaryView"
               }
             ]
-          },
-          "availableAddresses": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           }
         }
       },

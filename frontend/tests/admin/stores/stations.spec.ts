@@ -8,8 +8,6 @@ const BACKEND_STATION = {
   sortOrder: 1,
   isActive: true,
   hasDevice: false,
-  lastSeenAtUtc: null,
-  hasOutstandingInvitation: false,
   isAtAnyFestival: true,
 }
 
@@ -19,8 +17,6 @@ const ZELT = {
   sortOrder: 2,
   isActive: true,
   hasDevice: false,
-  lastSeenAtUtc: null,
-  hasOutstandingInvitation: false,
   isAtAnyFestival: false,
 }
 
@@ -235,8 +231,6 @@ const CREATED_STATION = {
   sortOrder: 2,
   isActive: true,
   hasDevice: false,
-  lastSeenAtUtc: null,
-  hasOutstandingInvitation: false,
   isAtAnyFestival: false,
 }
 

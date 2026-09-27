@@ -14,6 +14,4 @@ public sealed record InvitationView
   public required StaffMemberView? StaffMember { get; init; }
 
   public required StationSummaryView? Station { get; init; }
-
-  public required IReadOnlyList<string> AvailableAddresses { get; init; }
 }

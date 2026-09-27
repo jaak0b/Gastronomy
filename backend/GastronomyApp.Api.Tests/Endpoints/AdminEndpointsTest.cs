@@ -41,7 +41,6 @@ public sealed class AdminEndpointsTest
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(stations.GetArrayLength(), Is.EqualTo(2));
                       Assert.That(stations[0].GetProperty("hasDevice").GetBoolean(), Is.False);
-                      Assert.That(stations[0].GetProperty("hasOutstandingInvitation").GetBoolean(), Is.False);
                     });
   }
 
@@ -88,8 +87,6 @@ public sealed class AdminEndpointsTest
                       Assert.That(body.RootElement.GetProperty("sortOrder").GetInt32(), Is.EqualTo(3));
                       Assert.That(body.RootElement.GetProperty("isActive").GetBoolean(), Is.True);
                       Assert.That(body.RootElement.GetProperty("hasDevice").GetBoolean(), Is.False);
-                      Assert.That(body.RootElement.GetProperty("lastSeenAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
-                      Assert.That(body.RootElement.GetProperty("hasOutstandingInvitation").GetBoolean(), Is.False);
                       Assert.That(body.RootElement.GetProperty("isAtAnyFestival").GetBoolean(), Is.False);
                     });
   }
@@ -241,7 +238,6 @@ public sealed class AdminEndpointsTest
                       Assert.That(qrUrl, Does.Not.Contain("0.0.0.0"), "A bind wildcard is not an address a phone can open.");
                       Assert.That(qrUrl, Does.Not.Contain(":0/"), "Port zero is not an address a phone can open.");
                       Assert.That(Uri.TryCreate(qrUrl, UriKind.Absolute, out _), Is.True);
-                      Assert.That(body.RootElement.TryGetProperty("availableAddresses", out _), Is.True);
                     });
   }
 
