@@ -87,6 +87,18 @@
                            Text="{Binding WindowTitle, FallbackValue=''}"
                            VerticalAlignment="Center" />
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                    <Border Name="DebugBuildBadge"
+                            IsVisible="{Binding IsDebugBuild, FallbackValue=False}"
+                            Background="{DynamicResource DangerBrush}"
+                            CornerRadius="3"
+                            Padding="6,1"
+                            VerticalAlignment="Center">
+                        <TextBlock Name="DebugBuildText"
+                                   Text="DEBUG"
+                                   Foreground="{DynamicResource DangerForegroundBrush}"
+                                   FontSize="11"
+                                   VerticalAlignment="Center" />
+                    </Border>
                     <TextBlock Name="VersionText"
                                Text="{Binding VersionText, FallbackValue=''}"
                                Foreground="{DynamicResource TextSecondaryBrush}"

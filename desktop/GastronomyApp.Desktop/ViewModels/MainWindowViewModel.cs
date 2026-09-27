@@ -76,6 +76,12 @@ public sealed class MainWindowViewModel : ViewModelBase
 
   public string WindowTitle => _text.Get("desktop.windowTitle");
 
+#if DEBUG
+  public bool IsDebugBuild => true;
+#else
+  public bool IsDebugBuild => false;
+#endif
+
   public string VersionText => _text.Format("desktop.version", new TextPlaceholder("version", _currentVersion));
 
   public bool CanCheckForUpdates => _updateInstaller.IsInstalled;
