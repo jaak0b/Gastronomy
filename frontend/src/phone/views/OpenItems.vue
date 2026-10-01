@@ -59,6 +59,7 @@ const wholeTableIsSelected = computed(() =>
 )
 
 onMounted(async () => {
+  typedTableName.value = openItems.lookupName ?? ''
   stopListening = openItems.listen()
   await openItems.load()
   await openItems.loadTableNames()

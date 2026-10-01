@@ -34,9 +34,7 @@ reverse proxy.
 A request's **shape** is validated by DataAnnotations attributes on the contract records in
 `GastronomyApp.Contracts`, checked by the built-in minimal API validation (`AddValidation` in
 `ApiServiceRegistration`). A required field, a string length, a numeric range, a non-empty list and a
-well-formed colour live there and nowhere else. The one cross-field shape rule, that a settlement
-sent with an order needs a reason when the amount paid is below the price the phone displayed, is
-`IValidatableObject` on `OrderItemRequest`.
+well-formed colour live there and nowhere else.
 
 Every attribute carries the frontend's message key as its `ErrorMessage`, and the keys are constants
 in `Contracts/Validation/RefusalMessageKeys.cs`. A refused shape answers 400 with the same `ApiError`

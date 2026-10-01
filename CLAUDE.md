@@ -14,10 +14,12 @@ staff still work that list off, and a server with a free hand still delivers the
 Flow:
 
 1. A server opens a web page on their own phone, picks items and quantities, enters a table name, sees
-   the running total (a calculation aid only, cash is handled by hand), and places the order. They
-   either send it settled, when the guest pays on the spot, or send it open, when the table runs a tab.
-   Before sending, they choose per production location whether that station order is to be produced
-   together or handed out item by item as each is ready. That choice is fixed once sent.
+   the running total (a calculation aid only, cash is handled by hand), and places the order. An
+   order is always sent open. One button sends it and returns to the items, for a table that runs a
+   tab; the other sends it and opens the table on the open items screen with the new items ticked,
+   for a guest who pays on the spot. Before sending, they choose per production location whether
+   that station order is to be produced together or handed out item by item as each is ready. That
+   choice is fixed once sent.
 2. The backend splits the order by production location (kitchen, bar indoor, bar outdoor). Each
    location has one tablet, enrolled like a phone. Its station page shows two columns: every order
    that still has open items, and the orders that go out as they are ready. A fully done order leaves

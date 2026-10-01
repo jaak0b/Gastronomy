@@ -148,7 +148,7 @@ describe('every key a screen asks for', () => {
   it('finds the keys the screens actually use, so the check cannot pass by finding nothing', () => {
     const used = keysUsedInSource()
 
-    expect(used.has('phone.review.actions.send')).toBe(true)
+    expect(used.has('phone.review.actions.sendAndSettle')).toBe(true)
     expect(used.size).toBeGreaterThan(100)
   })
 })

@@ -119,7 +119,7 @@ describe('a retry after the article left the menu', () => {
     catalog.catalog = menuWithBratwurst()
     const order = useOrderStore()
 
-    await order.send(null)
+    await order.send('leaveOpen')
     expect(order.sendHasFailed).toBe(true)
 
     catalog.catalog = menuAfterSpeisenWasSwitchedOff()
@@ -169,7 +169,7 @@ describe('a send after the article left the menu while the send sheet was open',
     const order = useOrderStore()
 
     catalog.catalog = menuAfterSpeisenWasSwitchedOff()
-    await order.send(null)
+    await order.send('leaveOpen')
 
     expect(submittedItems).toEqual([])
     expect(order.hasLinesThatCannotBeOrdered).toBe(true)

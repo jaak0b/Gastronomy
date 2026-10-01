@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import Review from '../../../src/phone/views/Review.vue'
 import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useOrderStore } from '../../../src/phone/stores/order'
+import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { useSessionStore } from '../../../src/shared/stores/session'
 import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { saveDraft, saveSendProgress } from '../../../src/phone/core/draftCart'
@@ -19,6 +20,50 @@ const WASSER = {
   stationIds: ['station-bar'],
   productionMinutes: 0,
   isQueueIndependent: false,
+}
+
+const PLACED_ORDER_TO_SETTLE = {
+  orderId: 'order-1',
+  globalOrderNumber: 1,
+  status: 'open',
+  totalCents: 200,
+  createdAtUtc: '2026-09-05T18:00:00Z',
+  stationOrders: [
+    {
+      stationOrderId: 'station-order-1',
+      stationId: 'station-bar',
+      stationName: 'Bar',
+      stationOrderNumber: 1,
+      deliveryMode: 'together',
+      itemIds: ['new-wasser'],
+    },
+  ],
+}
+
+const TABLE_THREE_WITH_THE_SENT_ITEM = {
+  tableName: 'Tisch 3',
+  openAmountCents: 200,
+  orders: [
+    {
+      orderId: 'order-1',
+      globalOrderNumber: 1,
+      createdAtUtc: '2026-09-05T18:00:00Z',
+      staffMemberName: 'Anna',
+      items: [
+        {
+          orderItemId: 'new-wasser',
+          orderId: 'order-1',
+          globalOrderNumber: 1,
+          itemName: 'Wasser',
+          note: null,
+          unitPriceCents: 200,
+          orderedAtUtc: '2026-09-05T18:00:00Z',
+          fulfilledAtUtc: null,
+          settledAtUtc: null,
+        },
+      ],
+    },
+  ],
 }
 
 function prepareOrder() {
@@ -41,35 +86,14 @@ function prepareOrder() {
   return order
 }
 
-async function openTheSendSheet(review: VueWrapper): Promise<void> {
-  await review.get('.continue').trigger('click')
-  await vi.waitFor(() =>
-    expect(document.querySelector('.confirm-send-dialog .confirm')).not.toBeNull(),
-  )
-}
-
-async function chooseToSettleNow(): Promise<void> {
-  await vi.waitFor(() =>
-    expect(document.querySelector('.confirm-send-dialog .settle-now')).not.toBeNull(),
-  )
-  ;(document.querySelector('.confirm-send-dialog .settle-now') as HTMLElement).click()
-  await flushPromises()
-}
-
-async function confirmTheSend(review: VueWrapper): Promise<void> {
-  await vi.waitFor(() =>
-    expect(document.querySelector('.confirm-send-dialog .confirm')).not.toBeNull(),
-  )
-  ;(document.querySelector('.confirm-send-dialog .confirm') as HTMLElement).click()
+async function sendAndSettleLater(review: VueWrapper): Promise<void> {
+  await review.get('.send-and-settle-later').trigger('click')
   await review.vm.$nextTick()
 }
 
-async function sendFromTheStrip(review: VueWrapper, settleNow = false): Promise<void> {
-  await openTheSendSheet(review)
-  if (settleNow) {
-    await chooseToSettleNow()
-  }
-  await confirmTheSend(review)
+async function sendAndSettle(review: VueWrapper): Promise<void> {
+  await review.get('.send-and-settle').trigger('click')
+  await review.vm.$nextTick()
 }
 
 describe('an order holding an item the laptop no longer has', () => {
@@ -156,7 +180,7 @@ describe('sending the order from the review screen', () => {
     const order = prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await sendFromTheStrip(review)
+    await sendAndSettleLater(review)
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     expect(currentRoute.value).toEqual({ name: 'home' })
@@ -165,7 +189,7 @@ describe('sending the order from the review screen', () => {
   it('lets the next order be sent while the arrival notice of the last one is still up', async () => {
     const order = prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
-    await sendFromTheStrip(review)
+    await sendAndSettleLater(review)
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     prepareOrder()
@@ -174,7 +198,7 @@ describe('sending the order from the review screen', () => {
       attachTo: document.body,
     })
 
-    expect(nextReview.get('.continue').attributes('disabled')).toBeUndefined()
+    expect(nextReview.get('.send-and-settle-later').attributes('disabled')).toBeUndefined()
   })
 
   it('keeps a refused order on the summary, with everything the server typed still there', async () => {
@@ -187,7 +211,7 @@ describe('sending the order from the review screen', () => {
     )
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await sendFromTheStrip(review)
+    await sendAndSettleLater(review)
     await vi.waitFor(() => expect(order.sendState).toBe('failed'))
 
     expect(currentRoute.value).toEqual({ name: 'review' })
@@ -206,10 +230,10 @@ describe('sending the order from the review screen', () => {
     )
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await sendFromTheStrip(review)
+    await sendAndSettleLater(review)
     await vi.waitFor(() => expect(order.sendState).toBe('failed'))
 
-    expect(review.find('.continue').exists()).toBe(false)
+    expect(review.find('.send-and-settle-later').exists()).toBe(false)
     expect(review.find('.send-failure').exists()).toBe(true)
   })
 
@@ -233,45 +257,105 @@ describe('sending the order from the review screen', () => {
     expect(currentRoute.value).toEqual({ name: 'home' })
   })
 
-  it('leaves the items open when the table wants to pay later', async () => {
-    const order = prepareOrder()
+  it('sends the order on the first tap of either button, without asking anything first', async () => {
+    const later = prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await sendFromTheStrip(review)
-    await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
+    await sendAndSettleLater(review)
+    await vi.waitFor(() => expect(later.sendState).toBe('accepted'))
+    prepareOrder()
+    await review.vm.$nextTick()
+    await sendAndSettle(review)
+    await vi.waitFor(() => expect(vi.mocked(fetch).mock.calls).toHaveLength(2))
 
-    const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.items[0].settlement).toBeNull()
+    expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual(['/api/orders', '/api/orders'])
   })
 
-  it('settles every item at once when the guest pays on the spot', async () => {
-    const order = prepareOrder()
-    const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
-
-    await sendFromTheStrip(review, true)
-    await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
-
-    const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.items[0].settlement).toEqual({ paidPriceCents: 200, paymentNotice: null })
-  })
-
-  it('retries with the same settlement the server confirmed, so a retry cannot change who paid', async () => {
-    const order = prepareOrder()
+  function theLaptopPlacesTheOrderToSettleAfter(failedAttempts: number): void {
+    useSessionStore().deviceToken = 'token-here'
+    let orderAttempts = 0
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => {
-        throw new TypeError('the laptop cannot be reached')
+      vi.fn(async (url: string) => {
+        if (url.startsWith('/api/open-items/table?')) {
+          return new Response(JSON.stringify(TABLE_THREE_WITH_THE_SENT_ITEM), { status: 200 })
+        }
+        if (url !== '/api/orders') {
+          return new Response(JSON.stringify({ stations: [] }), { status: 200 })
+        }
+        orderAttempts += 1
+        if (orderAttempts <= failedAttempts) {
+          throw new TypeError('the laptop cannot be reached')
+        }
+        return new Response(JSON.stringify(PLACED_ORDER_TO_SETTLE), { status: 200 })
       }),
     )
+  }
+
+  async function whatOpenItemsShows() {
+    const openItems = useOpenItemsStore()
+    await openItems.loadTableReport('Tisch 3')
+    return { route: currentRoute.value, table: openItems.lookupName, ticked: openItems.selectedItemIds }
+  }
+
+  it('opens the open items of the table with the items just sent ticked when the guest pays on the spot', async () => {
+    theLaptopPlacesTheOrderToSettleAfter(0)
+    const order = prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
-    await sendFromTheStrip(review, true)
+
+    await sendAndSettle(review)
+    await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
+
+    expect(await whatOpenItemsShows()).toEqual({
+      route: { name: 'openItems' },
+      table: 'Tisch 3',
+      ticked: ['new-wasser'],
+    })
+  })
+
+  it('still opens the open items with the ticks when the order to settle only got through on the retry', async () => {
+    theLaptopPlacesTheOrderToSettleAfter(1)
+    const order = prepareOrder()
+    const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+    await sendAndSettle(review)
     await vi.waitFor(() => expect(order.sendState).toBe('failed'))
 
     await review.get('.send-again').trigger('click')
-    await vi.waitFor(() => expect(vi.mocked(fetch).mock.calls).toHaveLength(2))
+    await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
-    const retried = JSON.parse((vi.mocked(fetch).mock.calls[1][1] as RequestInit).body as string)
-    expect(retried.items[0].settlement).toEqual({ paidPriceCents: 200, paymentNotice: null })
+    expect(await whatOpenItemsShows()).toEqual({
+      route: { name: 'openItems' },
+      table: 'Tisch 3',
+      ticked: ['new-wasser'],
+    })
+  })
+
+  it('neither navigates nor opens a table when the answer arrives after the waiter left the review', async () => {
+    theLaptopPlacesTheOrderToSettleAfter(0)
+    const order = prepareOrder()
+    const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+    const sending = review.get('.send-and-settle').trigger('click')
+    navigate('/')
+    review.unmount()
+
+    await sending
+    await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
+
+    expect({ route: currentRoute.value, table: useOpenItemsStore().lookupName }).toEqual({
+      route: { name: 'home' },
+      table: null,
+    })
+  })
+
+  it('offers neither way to send while the order has no table name', () => {
+    const order = prepareOrder()
+    order.setTable('')
+    const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+
+    expect({
+      settle: review.get('.send-and-settle').attributes('disabled'),
+      later: review.get('.send-and-settle-later').attributes('disabled'),
+    }).toEqual({ settle: '', later: '' })
   })
 
   it('keeps the total and the send button within reach while the lines scroll', () => {
@@ -281,7 +365,7 @@ describe('sending the order from the review screen', () => {
     const footer = review.get('.review-footer')
 
     expect(footer.classes()).toContain('docked-strip')
-    expect(footer.find('.continue').exists()).toBe(true)
+    expect(footer.find('.send-and-settle-later').exists()).toBe(true)
   })
 })
 
@@ -320,7 +404,7 @@ describe('an order holding something that cannot be ordered', () => {
     soldOutOrder()
     const review = mountReview()
 
-    expect(review.find('.continue').exists()).toBe(false)
+    expect(review.find('.send-and-settle-later').exists()).toBe(false)
     expect(review.get('.drop-lines-that-cannot-be-ordered').exists()).toBe(true)
   })
 
@@ -328,7 +412,7 @@ describe('an order holding something that cannot be ordered', () => {
     orderWithAVanishedItem()
     const review = mountReview()
 
-    expect(review.find('.continue').exists()).toBe(false)
+    expect(review.find('.send-and-settle-later').exists()).toBe(false)
     expect(review.get('.drop-lines-that-cannot-be-ordered').exists()).toBe(true)
   })
 
@@ -336,7 +420,7 @@ describe('an order holding something that cannot be ordered', () => {
     prepareOrder()
     const review = mountReview()
 
-    expect(review.get('.continue').attributes('disabled')).toBeUndefined()
+    expect(review.get('.send-and-settle-later').attributes('disabled')).toBeUndefined()
   })
 
   it('offers one button that takes the sold-out item off as well', async () => {
@@ -363,7 +447,7 @@ describe('an order holding something that cannot be ordered', () => {
 
     await review.get('.drop-lines-that-cannot-be-ordered').trigger('click')
 
-    expect(review.get('.continue').attributes('disabled')).toBeUndefined()
+    expect(review.get('.send-and-settle-later').attributes('disabled')).toBeUndefined()
   })
 })
 
@@ -387,7 +471,7 @@ describe('an order the laptop did not confirm', () => {
 
   async function reviewAfterAFailedSend(order: ReturnType<typeof useOrderStore>) {
     const review = mountReview()
-    await sendFromTheStrip(review)
+    await sendAndSettleLater(review)
     await vi.waitFor(() => expect(order.sendState).toBe('failed'))
     return review
   }
@@ -553,7 +637,7 @@ describe('an order that is still on its way to the laptop', () => {
   async function reviewOfAnOrderOnItsWay() {
     prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
-    await sendFromTheStrip(review)
+    await sendAndSettleLater(review)
     return review
   }
 
@@ -573,7 +657,7 @@ describe('an order that is still on its way to the laptop', () => {
     const review = await reviewOfAnOrderOnItsWay()
 
     expect(review.get('.send-again').text()).toBe('Wird gesendet')
-    expect(review.find('.continue').exists()).toBe(false)
+    expect(review.find('.send-and-settle-later').exists()).toBe(false)
   })
 })
 
@@ -612,7 +696,7 @@ describe('an order the laptop refused with a reason', () => {
   }
 
   async function reviewAfterARefusal(order: ReturnType<typeof useOrderStore>) {
-    await order.send(null)
+    await order.send('leaveOpen')
     return mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
   }
 
@@ -671,7 +755,7 @@ describe('an order the laptop refused with a reason', () => {
   it('leaves the way to send in the strip, because this is not a retry into the dark', async () => {
     const review = await reviewAfterARefusal(prepareOrder())
 
-    expect(review.get('.review-footer .continue').exists()).toBe(true)
+    expect(review.get('.review-footer .send-and-settle-later').exists()).toBe(true)
     expect(review.find('.send-again').exists()).toBe(false)
   })
 
@@ -691,7 +775,7 @@ describe('an order the laptop answered but could not save', () => {
 
   async function reviewAfterTheAnswer() {
     const order = prepareOrder()
-    await order.send(null)
+    await order.send('leaveOpen')
     return mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
   }
 
@@ -706,7 +790,7 @@ describe('an order the laptop answered but could not save', () => {
   it('leaves the way to send in the strip, because the answer said no order was created', async () => {
     const review = await reviewAfterTheAnswer()
 
-    expect(review.get('.review-footer .continue').exists()).toBe(true)
+    expect(review.get('.review-footer .send-and-settle-later').exists()).toBe(true)
     expect(review.find('.send-again').exists()).toBe(false)
   })
 
@@ -749,7 +833,7 @@ describe('an order holding a line the admin moved to another station', () => {
     orderWhoseStationWasTakenOff()
     const review = mountReview()
 
-    expect(review.find('.continue').exists()).toBe(false)
+    expect(review.find('.send-and-settle-later').exists()).toBe(false)
     expect(review.get('.drop-lines-that-cannot-be-ordered').exists()).toBe(true)
   })
 
@@ -812,7 +896,6 @@ describe('an order the laptop refused after an attempt it never answered', () =>
             unitPriceCents: WASSER.priceCents,
             note: null,
             stationId: 'station-bar',
-            settlement: null,
           },
         ],
         deliveryModes: [],
@@ -892,117 +975,6 @@ describe('an order the laptop refused after an attempt it never answered', () =>
   })
 })
 
-describe('the question the waiter answers before an order goes out', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-    document.body.innerHTML = ''
-    navigate('/review')
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(
-            JSON.stringify({
-              orderId: 'order-1',
-              globalOrderNumber: 1,
-              status: 'open',
-              totalCents: 200,
-              createdAtUtc: '2026-09-05T18:00:00Z',
-              stationOrders: [],
-            }),
-            { status: 200 },
-          ),
-      ),
-    )
-  })
-
-  function mountReview() {
-    return mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
-  }
-
-  it('sends nothing on the tap itself, so a pocket cannot place an order', async () => {
-    const order = prepareOrder()
-    const review = mountReview()
-
-    await review.get('.continue').trigger('click')
-
-    expect(vi.mocked(fetch).mock.calls).toHaveLength(0)
-    expect(order.sendState).toBe('idle')
-    expect(document.querySelector('.confirm-send-dialog')).not.toBeNull()
-  })
-
-  it('settles the table with the amount the waiter confirmed', async () => {
-    const order = prepareOrder()
-    const review = mountReview()
-
-    await sendFromTheStrip(review, true)
-    await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
-
-    const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.items[0].settlement).toEqual({ paidPriceCents: 200, paymentNotice: null })
-  })
-
-  it('leaves the table open only once the waiter has confirmed it', async () => {
-    const order = prepareOrder()
-    const review = mountReview()
-
-    await sendFromTheStrip(review)
-    await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
-
-    const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.items[0].settlement).toBeNull()
-  })
-
-  it('names the table, the amount and what the station will do in the question', async () => {
-    prepareOrder()
-    const review = mountReview()
-
-    await review.get('.continue').trigger('click')
-    await vi.waitFor(() =>
-      expect(document.querySelector('.confirm-send-dialog .row-table')).not.toBeNull(),
-    )
-
-    const rowText = (selector: string) =>
-      document.querySelector(`.confirm-send-dialog ${selector}`)?.textContent?.trim() ?? ''
-    expect(rowText('.row-table .value')).toBe('Tisch 3')
-    expect(rowText('.row-amount .value')).toContain('2.00')
-    expect(rowText('.row-station .label')).toBe('Bar:')
-    expect(rowText('.row-station .value')).toBe('Gemeinsam')
-  })
-
-  it('hands the order back untouched when the waiter backs out', async () => {
-    const order = prepareOrder()
-    const review = mountReview()
-    await review.get('.continue').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.confirm-send-dialog')).not.toBeNull())
-
-    ;(document.querySelector('.confirm-send-dialog .cancel') as HTMLElement).click()
-    await review.vm.$nextTick()
-
-    expect(vi.mocked(fetch).mock.calls).toHaveLength(0)
-    expect(order.sendState).toBe('idle')
-    expect(order.basketLines).toHaveLength(1)
-    expect(review.get('.continue').attributes('disabled')).toBeUndefined()
-  })
-
-  it('asks again after a cancelled send, with the choice made afresh', async () => {
-    const order = prepareOrder()
-    const review = mountReview()
-    await review.get('.continue').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.confirm-send-dialog')).not.toBeNull())
-    await chooseToSettleNow()
-    ;(document.querySelector('.confirm-send-dialog .cancel') as HTMLElement).click()
-    await review.vm.$nextTick()
-
-    await sendFromTheStrip(review)
-    await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
-
-    const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.items[0].settlement).toBeNull()
-  })
-})
-
 describe('the waiting time on the review screen', () => {
   const quoteBodies: unknown[] = []
 
@@ -1036,6 +1008,32 @@ describe('the waiting time on the review screen', () => {
     await flushPromises()
 
     expect(review.get('.station-name').text()).toBe('Geht an Bar (~14 Min.)')
+  })
+
+  it('says above the buttons how each station hands its part out and when, in German', async () => {
+    answerTheQuoteWith(14)
+    prepareOrder()
+
+    const review = mount(Review, { global: { plugins: testPlugins() } })
+    await flushPromises()
+
+    expect({
+      station: review.get('.review-footer .station-delivery-name').text(),
+      delivery: review.get('.review-footer .station-delivery-mode').text(),
+    }).toEqual({ station: 'Bar:', delivery: 'Gemeinsam (~14 Min.)' })
+  })
+
+  it('says above the buttons how each station hands its part out and when, in English', async () => {
+    answerTheQuoteWith(14)
+    prepareOrder()
+
+    const review = mount(Review, { global: { plugins: testPlugins('en') } })
+    await flushPromises()
+
+    expect({
+      station: review.get('.review-footer .station-delivery-name').text(),
+      delivery: review.get('.review-footer .station-delivery-mode').text(),
+    }).toEqual({ station: 'Bar:', delivery: 'Combined (~14 min)' })
   })
 
   it('shows no time for a station the laptop could not calculate', async () => {

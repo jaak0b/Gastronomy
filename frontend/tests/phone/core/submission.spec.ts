@@ -124,7 +124,7 @@ describe('buildSubmitRequest', () => {
   it('sends the table and every item with its note and the price the phone showed', () => {
     const ready = draftWithABratwurst('ohne Zwiebeln')
 
-    const request = buildSubmitRequest(ready, catalog(), null, [
+    const request = buildSubmitRequest(ready, catalog(), [
       { stationId: 'station-2', deliveryMode: 'together' },
     ])
 
@@ -137,7 +137,6 @@ describe('buildSubmitRequest', () => {
           unitPriceCents: 350,
           note: 'ohne Zwiebeln',
           stationId: 'station-2',
-          settlement: null,
         },
       ],
       deliveryModes: [{ stationId: 'station-2', deliveryMode: 'together' }],
@@ -147,7 +146,7 @@ describe('buildSubmitRequest', () => {
   it('sends the table name with the spaces around it cut off', () => {
     const ready = setTableName(draftWithABratwurst(), ' Tisch 12 ')
 
-    const request = buildSubmitRequest(ready, catalog(), null, [])
+    const request = buildSubmitRequest(ready, catalog(), [])
 
     expect(request.tableName).toBe('Tisch 12')
   })
@@ -155,7 +154,7 @@ describe('buildSubmitRequest', () => {
   it('takes the price from the item list the laptop pushed out, not from the line', () => {
     const ready = draftWithABratwurst()
 
-    const request = buildSubmitRequest(ready, catalog(420), null, [])
+    const request = buildSubmitRequest(ready, catalog(420), [])
 
     expect(request.items[0].unitPriceCents).toBe(420)
   })
@@ -163,7 +162,7 @@ describe('buildSubmitRequest', () => {
   it('sends the delivery choice the server made for each station', () => {
     const ready = draftWithABratwurst()
 
-    const request = buildSubmitRequest(ready, catalog(), null, [
+    const request = buildSubmitRequest(ready, catalog(), [
       { stationId: 'station-2', deliveryMode: 'asItComes' },
     ])
 
@@ -175,75 +174,17 @@ describe('buildSubmitRequest', () => {
   it('sends no item name, because the laptop keeps the name from its own catalog', () => {
     const ready = draftWithABratwurst(null, null)
 
-    const request = buildSubmitRequest(ready, catalog(), null, [])
+    const request = buildSubmitRequest(ready, catalog(), [])
 
     expect(Object.keys(request.items[0]).sort()).toEqual([
       'catalogItemId',
       'note',
-      'settlement',
       'stationId',
       'unitPriceCents',
     ])
   })
 
-  it('tells the laptop what the table paid and why it paid less, one paid price per line', () => {
-    const ready = draftWithABratwurst(null, null)
-
-    const request = buildSubmitRequest(
-      ready,
-      catalog(),
-      { amountPaidCents: 300, paymentNotice: 'Stammgast' },
-      [],
-    )
-
-    expect(request.items[0].settlement).toEqual({
-      paidPriceCents: 300,
-      paymentNotice: 'Stammgast',
-    })
-  })
-
-  it('gives every item its own share of what the table paid', () => {
-    const twoItems: CatalogView = {
-      ...catalog(),
-      items: [
-        ...catalog().items,
-        {
-          id: 'item-2',
-          name: 'Bier',
-          categoryId: 'category-essen',
-          priceCents: 150,
-          sortOrder: 2,
-          isAvailable: true,
-          stationIds: ['station-2'],
-          productionMinutes: null,
-          isQueueIndependent: false,
-        },
-      ],
-    }
-    const withTwoLines = withClientOrderIdIfMissing(
-      addLine(draftWithABratwurst(), {
-        catalogItemId: 'item-2',
-        note: null,
-        stationId: 'station-2',
-        name: 'Bier',
-      }),
-    )
-
-    const request = buildSubmitRequest(
-      withTwoLines,
-      twoItems,
-      { amountPaidCents: 300, paymentNotice: null },
-      [],
-    )
-
-    expect(request.items.map((item) => item.unitPriceCents)).toEqual([350, 150])
-    expect(request.items.map((item) => item.settlement)).toEqual([
-      { paidPriceCents: 210, paymentNotice: null },
-      { paidPriceCents: 90, paymentNotice: null },
-    ])
-  })
-
   it('refuses to build a request for a draft that never got a submission id', () => {
-    expect(() => buildSubmitRequest(emptyDraft(), catalog(), null, [])).toThrow()
+    expect(() => buildSubmitRequest(emptyDraft(), catalog(), [])).toThrow()
   })
 })

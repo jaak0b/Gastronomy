@@ -161,7 +161,7 @@ describe('the order on the phone and the festival that is running', () => {
     addABratwurst(order)
     order.setTable('Tisch 4')
     laptopCannotBeReached()
-    await order.send(null)
+    await order.send('leaveOpen')
     expect(order.changesAreRefused).toBe(true)
 
     laptopAnswers(catalogOf('fest-2'))

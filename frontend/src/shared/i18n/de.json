@@ -133,11 +133,8 @@
     },
     "review": {
       "labels": {
-        "confirmSendAmount": "Betrag:",
-        "confirmSendStation": "{name}:",
-        "confirmSendTable": "Tisch:",
-        "confirmSendTitle": "Bestellung senden?",
         "goesTo": "Geht an {name}",
+        "stationDelivery": "{name}:",
         "table": "Tisch: {name}",
         "tableName": "Tisch",
         "tablePlaceholder": "Zum Beispiel: 12",
@@ -146,11 +143,9 @@
       "actions": {
         "removeLinesThatCannotBeOrdered": "Nicht bestellbare Artikel entfernen",
         "retry": "Erneut senden",
-        "send": "Bestellung senden",
-        "sendAndSettle": "Bestellung senden und abrechnen",
+        "sendAndSettle": "Senden und abrechnen",
+        "sendAndSettleLater": "Senden und später abrechnen",
         "sending": "Wird gesendet",
-        "settleLater": "Später abrechnen",
-        "settleNow": "Jetzt abrechnen",
         "writtenDown": "Bestellung ist aufgeschrieben"
       },
       "messages": {

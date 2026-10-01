@@ -22,6 +22,11 @@ import { splitSettlement } from '../core/settlementSplit'
 import { useConnectionStore } from '../../shared/stores/connection'
 import { useSessionStore } from '../../shared/stores/session'
 
+interface TablePreselection {
+  tableName: string
+  itemIds: string[]
+}
+
 export const useOpenItemsStore = defineStore('openItems', () => {
   const tables = ref<OpenTableView[]>([])
   const knownTableNames = ref<string[]>([])
@@ -34,6 +39,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   const lookupName = ref<string | null>(null)
   const lookupReport = ref<TableOrderReportView | null>(null)
   const lookupFailed = ref(false)
+  const preselection = ref<TablePreselection | null>(null)
 
   const tablesGate = createLatestRequestGate()
   const tableNamesGate = createLatestRequestGate()
@@ -108,6 +114,16 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     lookupReport.value = null
     lookupFailed.value = false
     selectedItemIds.value = []
+    preselection.value = null
+  }
+
+  function openTableAndSelectItemsOnceLoaded(tableName: string, itemIds: readonly string[]): void {
+    lookupGate.startRequest()
+    lookupName.value = tableName
+    lookupReport.value = null
+    lookupFailed.value = false
+    selectedItemIds.value = []
+    preselection.value = { tableName, itemIds: [...itemIds] }
   }
 
   function closeLookup(): void {
@@ -115,6 +131,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     lookupReport.value = null
     lookupFailed.value = false
     selectedItemIds.value = []
+    preselection.value = null
     lookupGate.startRequest()
   }
 
@@ -142,7 +159,9 @@ export const useOpenItemsStore = defineStore('openItems', () => {
       return
     }
     lookupReport.value = result.data
-    selectedItemIds.value = withoutItemsThatAreGone(selectedItemIds.value, activeTables.value)
+    const wanted = preselection.value?.tableName === tableName ? preselection.value.itemIds : selectedItemIds.value
+    preselection.value = null
+    selectedItemIds.value = withoutItemsThatAreGone(wanted, activeTables.value)
   }
 
   async function refreshLookup(): Promise<void> {
@@ -265,6 +284,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     setWholeTable,
     settle,
     openLookup,
+    openTableAndSelectItemsOnceLoaded,
     closeLookup,
     loadTableReport,
     refreshLookup,

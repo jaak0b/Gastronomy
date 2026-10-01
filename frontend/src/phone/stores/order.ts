@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { answerIsABusinessRefusal, answerSaysTheDeviceIsNoLongerSetUp, request } from '../../shared/api/client'
 import type { DraftLine, DraftOrder } from '../core/draftCart'
-import type { ConfirmedSettlement } from '../core/submission'
 import { DeliveryMode, PlaceOrderRequest, PlacedOrderView } from '../../shared/api/generatedSchemas'
 import {
 
@@ -48,6 +47,13 @@ import { useSessionStore } from '../../shared/stores/session'
 
 export const ARRIVAL_NOTICE_MS = 8000
 
+export type SettlingIntent = 'leaveOpen' | 'settleRightAway'
+
+export interface OrderAcceptedForSettling {
+  readonly tableName: string
+  readonly itemIds: readonly string[]
+}
+
 export const useOrderStore = defineStore('order', () => {
   const draftWasLost = ref(false)
 
@@ -90,6 +96,8 @@ export const useOrderStore = defineStore('order', () => {
     progressWhenTheAppLoaded.unresolvedAttempt,
   )
   const acceptedOrderNumber = ref<number | null>(null)
+  const settlingIntent = ref<SettlingIntent>('leaveOpen')
+  let orderAcceptedForSettling: OrderAcceptedForSettling | null = null
   let arrivalNoticeTimer: ReturnType<typeof setTimeout> | null = null
 
   const catalogStore = useCatalogStore()
@@ -213,6 +221,8 @@ export const useOrderStore = defineStore('order', () => {
     attemptsMade.value = 0
     unresolvedAttempt.value = null
     sendState.value = 'idle'
+    settlingIntent.value = 'leaveOpen'
+    orderAcceptedForSettling = null
     startNextOrder()
   }
 
@@ -228,7 +238,9 @@ export const useOrderStore = defineStore('order', () => {
     rememberWhatBecameOfTheSend()
   }
 
-  async function send(settlement: ConfirmedSettlement | null): Promise<void> {
+  async function send(intent: SettlingIntent): Promise<void> {
+    settlingIntent.value = intent
+    orderAcceptedForSettling = null
     if (unresolvedAttempt.value !== null) {
       await sendAgain()
       return
@@ -239,7 +251,6 @@ export const useOrderStore = defineStore('order', () => {
     const submitRequest = buildSubmitRequest(
       draft.value,
       catalogStore.catalog,
-      settlement,
       buildStationDeliveryModes(stationOrders.value, draft.value.deliveryModes),
     )
     const sendBeforeThisAttempt = whatTheSendHasComeTo()
@@ -271,6 +282,7 @@ export const useOrderStore = defineStore('order', () => {
         unresolvedAttempt.value = null
         sendState.value = 'accepted'
         arrivalNoticeTimer = setTimeout(dismissConfirmation, ARRIVAL_NOTICE_MS)
+        rememberTheOrderIfItIsSettledRightAway(attempt.tableName, result.data)
         startNextOrder()
         return
       case 'unreachable':
@@ -300,6 +312,33 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
+  function rememberTheOrderIfItIsSettledRightAway(
+    tableName: string | null,
+    placedOrder: PlacedOrderView,
+  ): void {
+    if (tableName === null) {
+      return
+    }
+    switch (settlingIntent.value) {
+      case 'leaveOpen':
+        return
+      case 'settleRightAway':
+        orderAcceptedForSettling = {
+          tableName,
+          itemIds: placedOrder.stationOrders.flatMap((stationOrder) => stationOrder.itemIds),
+        }
+        return
+      default:
+        return assertNever(settlingIntent.value)
+    }
+  }
+
+  function takeTheOrderAcceptedForSettling(): OrderAcceptedForSettling | null {
+    const taken = orderAcceptedForSettling
+    orderAcceptedForSettling = null
+    return taken
+  }
+
   async function sendAgain(): Promise<void> {
     const attempt = unresolvedAttempt.value
     if (attempt === null) {
@@ -315,6 +354,7 @@ export const useOrderStore = defineStore('order', () => {
     failure,
     attemptsMade,
     acceptedOrderNumber,
+    settlingIntent,
     basketLines,
     stationOrders,
     itemCount,
@@ -338,5 +378,6 @@ export const useOrderStore = defineStore('order', () => {
     startNextOrderAfterWritingItDown,
     send,
     sendAgain,
+    takeTheOrderAcceptedForSettling,
   }
 })

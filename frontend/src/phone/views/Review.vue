@@ -1,23 +1,33 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { ConfirmedSettlement } from '../core/submission'
 import { isTableNameValid } from '../core/tableName'
 import { formatPrice } from '../core/totals'
 import { quoteLinesFor } from '../core/estimates'
+import { withEstimate } from '../core/estimateWording'
+import {
+
+  deliveriesWithAStation,
+  stationDeliveries,
+  type StationDeliveryWithStation,
+} from '../core/stationDeliveries'
+import { deliveryModeKey } from '../../shared/core/stationBoard'
+import { assertNever } from '../../shared/core/assertNever'
 import { useEstimatesStore } from '../stores/estimates'
-import { useOrderStore } from '../stores/order'
+import { useOpenItemsStore } from '../stores/openItems'
+import { useOrderStore, type SettlingIntent } from '../stores/order'
 import { useSessionStore } from '../../shared/stores/session'
 import { navigate } from '../../shared/router/router'
 import DockedStrip from '../components/DockedStrip.vue'
 import LineList from '../components/review/LineList.vue'
 import SendFailurePanel from '../components/review/SendFailurePanel.vue'
-import ConfirmSendDialog from '../components/review/ConfirmSendDialog.vue'
 
 const { t } = useI18n()
 const estimates = useEstimatesStore()
 const order = useOrderStore()
 const session = useSessionStore()
+const openItems = useOpenItemsStore()
+let reviewIsShown = true
 
 const quoteLines = computed(() => quoteLinesFor(order.basketLines))
 
@@ -30,6 +40,7 @@ watch(
 )
 
 onUnmounted(() => {
+  reviewIsShown = false
   estimates.stopQuoting()
 })
 
@@ -42,29 +53,46 @@ const canSend = computed(
     !order.isSending,
 )
 
-const sendSheetIsOpen = ref(false)
+const stationLines = computed(() =>
+  deliveriesWithAStation(
+    stationDeliveries(order.basketLines, estimates.quotedStations, order.deliveryModeAt),
+  ),
+)
 
-function openTheSendSheet(): void {
-  sendSheetIsOpen.value = true
+function deliveryTextFor(station: StationDeliveryWithStation): string {
+  return withEstimate(t(deliveryModeKey(station.deliveryMode)), station.minutes, t, session.language)
 }
 
-function keepTheOrderOnTheScreen(): void {
-  sendSheetIsOpen.value = false
-}
-
-async function sendAsConfirmed(settlement: ConfirmedSettlement | null): Promise<void> {
-  sendSheetIsOpen.value = false
-  await order.send(settlement)
-  if (order.sendState === 'accepted') {
-    navigate('/')
+function pageAfterSending(intent: SettlingIntent): string {
+  switch (intent) {
+    case 'leaveOpen':
+      return '/'
+    case 'settleRightAway':
+      return '/open-items'
+    default:
+      return assertNever(intent)
   }
+}
+
+function leaveIfTheLaptopAccepted(): void {
+  if (!reviewIsShown || order.sendState !== 'accepted') {
+    return
+  }
+  const acceptedForSettling = order.takeTheOrderAcceptedForSettling()
+  if (acceptedForSettling !== null) {
+    openItems.openTableAndSelectItemsOnceLoaded(acceptedForSettling.tableName, acceptedForSettling.itemIds)
+  }
+  navigate(pageAfterSending(order.settlingIntent))
+}
+
+async function send(intent: SettlingIntent): Promise<void> {
+  await order.send(intent)
+  leaveIfTheLaptopAccepted()
 }
 
 async function sendAgain(): Promise<void> {
   await order.sendAgain()
-  if (order.sendState === 'accepted') {
-    navigate('/')
-  }
+  leaveIfTheLaptopAccepted()
 }
 
 function startTheNextOrder(): void {
@@ -144,15 +172,37 @@ function backToItems(): void {
           {{ t('phone.review.actions.removeLinesThatCannotBeOrdered') }}
         </v-btn>
         <template v-else>
+          <div
+            v-for="station in stationLines"
+            :key="station.stationId"
+            class="station-delivery"
+          >
+            <span class="station-delivery-name">
+              {{ t('phone.review.labels.stationDelivery', { name: station.stationName }) }}
+            </span>
+            <span class="station-delivery-mode">{{ deliveryTextFor(station) }}</span>
+          </div>
           <v-btn
-            class="continue mt-2"
+            class="send-and-settle send-button mt-3"
             color="primary"
+            variant="flat"
             block
             size="x-large"
             :disabled="!canSend"
-            @click="openTheSendSheet"
+            @click="send('settleRightAway')"
           >
-            {{ t('common.actions.continue') }}
+            {{ t('phone.review.actions.sendAndSettle') }}
+          </v-btn>
+          <v-btn
+            class="send-and-settle-later send-button mt-2"
+            color="primary"
+            variant="outlined"
+            block
+            size="x-large"
+            :disabled="!canSend"
+            @click="send('leaveOpen')"
+          >
+            {{ t('phone.review.actions.sendAndSettleLater') }}
           </v-btn>
         </template>
         <v-btn
@@ -166,17 +216,6 @@ function backToItems(): void {
         </v-btn>
       </div>
     </DockedStrip>
-    <ConfirmSendDialog
-      v-if="sendSheetIsOpen"
-      :table-name="order.draft.tableName"
-      :total-cents="order.totalCents"
-      :language="session.language"
-      :lines="order.basketLines"
-      :quoted-stations="estimates.quotedStations"
-      :delivery-mode-for="order.deliveryModeAt"
-      @confirmed="sendAsConfirmed"
-      @cancelled="keepTheOrderOnTheScreen"
-    />
   </v-container>
 </template>
 
@@ -206,6 +245,39 @@ function backToItems(): void {
   min-width: 0;
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.station-delivery {
+  display: flex;
+  align-items: baseline;
+  padding-block: 0.25rem;
+  font-size: 1.05rem;
+}
+
+.station-delivery-name {
+  flex: 0 1 auto;
+  padding-inline-end: 0.75rem;
+  overflow-wrap: anywhere;
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+}
+
+.station-delivery-mode {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.send-button {
+  height: auto;
+  min-height: 3.5rem;
+  padding-block: 0.75rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.send-button :deep(.v-btn__content) {
+  white-space: normal;
 }
 
 .order-total {

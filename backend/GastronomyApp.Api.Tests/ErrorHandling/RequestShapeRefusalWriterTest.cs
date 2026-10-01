@@ -99,42 +99,6 @@ public sealed class RequestShapeRefusalWriterTest
   }
 
   [Test]
-  public async Task PostOrder_SettlementWithoutAnAmount_IsRefusedWithTheSettlementMessage()
-  {
-    using var response = await _context.SendAsync(HttpMethod.Post,
-                                                  "/api/orders",
-                                                  BuildOrderWith(new[]
-                                                                 {
-                                                                   new
-                                                                   {
-                                                                     catalogItemId = _context.World.BratwurstItemId,
-                                                                     unitPriceCents = 350,
-                                                                     settlement = new { paidPriceCents = (int?)null }
-                                                                   }
-                                                                 }));
-
-    await AssertRefusedWithAsync(response, "errors.settlement.cannotBeProcessed");
-  }
-
-  [Test]
-  public async Task PostOrder_LessThanThePriceWithoutAReason_IsRefusedWithTheSettlementMessage()
-  {
-    using var response = await _context.SendAsync(HttpMethod.Post,
-                                                  "/api/orders",
-                                                  BuildOrderWith(new[]
-                                                                 {
-                                                                   new
-                                                                   {
-                                                                     catalogItemId = _context.World.BratwurstItemId,
-                                                                     unitPriceCents = 350,
-                                                                     settlement = new { paidPriceCents = (int?)100 }
-                                                                   }
-                                                                 }));
-
-    await AssertRefusedWithAsync(response, "errors.settlement.cannotBeProcessed");
-  }
-
-  [Test]
   public async Task PostSettlement_NoLines_IsRefusedWithTheEmptySelectionMessage()
   {
     using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", new { lines = Array.Empty<object>() });

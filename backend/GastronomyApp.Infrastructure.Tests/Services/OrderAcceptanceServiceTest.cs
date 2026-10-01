@@ -1,5 +1,4 @@
 ﻿using ErrorOr;
-using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -70,64 +69,16 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   [Test]
-  public async Task AcceptAsync_ASentAndSettledOrder_StoresTheChargesWithTheOrder()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
-
-    ErrorOr<Order> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid(), new() { PaidPriceCents = 350 }, new() { PaidPriceCents = 350 }), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
-
-    List<OrderItem> storedItems = await fixture.DbContext.OrderItems.ToListAsync(TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.True);
-                      Assert.That(storedItems, Has.Count.EqualTo(2));
-                      Assert.That(storedItems.Select(item => item.ChargedPriceCents), Is.All.EqualTo(350));
-                      Assert.That(storedItems.Select(item => item.SettledAtUtc), Is.All.EqualTo(result.Value.CreatedAtUtc));
-                      Assert.That(storedItems.Select(item => item.SettledByStaffMemberId), Is.All.EqualTo(seeded.StaffMemberId));
-                    });
-  }
-
-  [Test]
-  public async Task AcceptAsync_OneLineSettledAndOneOpen_SettlesOnlyTheLineThatCarriesASettlement()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
-
-    ErrorOr<Order> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid(), new() { PaidPriceCents = 350 }), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
-
-    List<OrderItem> storedItems = await fixture.DbContext.OrderItems.ToListAsync(TestContext.CurrentContext.CancellationToken);
-    var settledLine = storedItems.Single(item => item.CatalogItemId == seeded.SausageItemId);
-    var openLine = storedItems.Single(item => item.CatalogItemId == seeded.LemonadeItemId);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.True);
-                      Assert.That(settledLine.ChargedPriceCents, Is.EqualTo(350));
-                      Assert.That(settledLine.SettledAtUtc, Is.EqualTo(result.Value.CreatedAtUtc));
-                      Assert.That(settledLine.SettledByStaffMemberId, Is.EqualTo(seeded.StaffMemberId));
-                      Assert.That(openLine.ChargedPriceCents, Is.Null);
-                      Assert.That(openLine.SettledAtUtc, Is.Null);
-                      Assert.That(openLine.SettledByStaffMemberId, Is.Null);
-                    });
-  }
-
-  [Test]
-  public async Task AcceptAsync_ReplayingASettledClientOrderId_ReturnsTheStoredOrderWithoutWritingOrNumberingAnythingAgain()
+  public async Task AcceptAsync_ReplayingAClientOrderIdFromAFreshContext_ReturnsTheStoredOrderWithoutWritingOrNumberingAnythingAgain()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
     var clientOrderId = Guid.NewGuid();
-    OrderSettlementLineRequest sausageSettlement = new() { PaidPriceCents = 350 };
-    OrderSettlementLineRequest lemonadeSettlement = new() { PaidPriceCents = 350 };
 
-    ErrorOr<Order> first = await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId, sausageSettlement, lemonadeSettlement), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Order> first = await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
     fixture.DbContext.ChangeTracker.Clear();
-    ErrorOr<Order> second = await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId, sausageSettlement, lemonadeSettlement), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Order> second = await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
 
     using var verificationContext = fixture.CreateContext();
     List<OrderItem> storedItems = await verificationContext.OrderItems.ToListAsync(TestContext.CurrentContext.CancellationToken);
@@ -140,13 +91,11 @@ public sealed class OrderAcceptanceServiceTest
                       Assert.That(second.Value.Id, Is.EqualTo(first.Value.Id));
                       Assert.That(orderCount, Is.EqualTo(1));
                       Assert.That(storedItems, Has.Count.EqualTo(2));
-                      Assert.That(storedItems.Select(item => item.ChargedPriceCents), Is.All.EqualTo(350));
-                      Assert.That(storedItems.Select(item => item.SettledAtUtc), Is.All.Not.Null);
                       Assert.That(nextOrderNumber, Is.EqualTo(2));
                     });
   }
 
-  private PlaceOrderRequest BuildRequest(SeededDomain seeded, Guid clientOrderId, OrderSettlementLineRequest? sausageSettlement = null, OrderSettlementLineRequest? lemonadeSettlement = null)
+  private PlaceOrderRequest BuildRequest(SeededDomain seeded, Guid clientOrderId)
   {
     return new()
     {
@@ -158,15 +107,13 @@ public sealed class OrderAcceptanceServiceTest
                {
                  CatalogItemId = seeded.SausageItemId,
                  Note = null,
-                 UnitPriceCents = 350,
-                 Settlement = sausageSettlement
+                 UnitPriceCents = 350
                },
                new()
                {
                  CatalogItemId = seeded.LemonadeItemId,
                  Note = null,
-                 UnitPriceCents = 350,
-                 Settlement = lemonadeSettlement
+                 UnitPriceCents = 350
                }
              ]
     };

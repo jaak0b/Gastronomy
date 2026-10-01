@@ -5,6 +5,8 @@ import OpenItems from '../../../src/phone/views/OpenItems.vue'
 import { TABLE_LOOKUP_DEBOUNCE_MS } from '../../../src/phone/core/openItems'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
+import { useCatalogStore } from '../../../src/phone/stores/catalog'
+import { useOrderStore } from '../../../src/phone/stores/order'
 import { testPlugins } from '../../support/plugins'
 
 const OPEN_LIST = {
@@ -646,6 +648,56 @@ describe('looking up one table from the screen that shows what is open', () => {
     await screen.vm.$nextTick()
   }
 
+  async function arriveFromAnOrderSentToBeSettled(itemIds: string[]) {
+    stubTheLaptopWithALookup(TABLE_REPORT)
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
+    const session = useSessionStore()
+    session.deviceToken = 'token-here'
+    session.language = 'de'
+    useOpenItemsStore().openTableAndSelectItemsOnceLoaded('Tisch 12', itemIds)
+    const screen = mount(OpenItems, {
+      global: { plugins: testPlugins() },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    return screen
+  }
+
+  function tickOf(screen: Awaited<ReturnType<typeof mountTheScreenWithALookup>>['screen'], orderPosition: number) {
+    return screen
+      .findAll('.lookup-card')
+      [orderPosition].findAll('.line-tick input')
+      .map((tick) => (tick.element as HTMLInputElement).checked)
+  }
+
+  it('shows the table of the order just sent in the search field', async () => {
+    const screen = await arriveFromAnOrderSentToBeSettled(['item-half', 'item-waiting', 'item-settled'])
+
+    expect((screen.get('.table-field input').element as HTMLInputElement).value).toBe('Tisch 12')
+  })
+
+  it('ticks the open items of the order just sent and leaves the older order of the table unticked', async () => {
+    const screen = await arriveFromAnOrderSentToBeSettled(['item-half', 'item-waiting', 'item-settled'])
+
+    expect({ older: tickOf(screen, 0), justSent: tickOf(screen, 1) }).toEqual({
+      older: [false],
+      justSent: [true, true],
+    })
+  })
+
+  it('starts with an empty search when the screen is opened again later', async () => {
+    const first = await arriveFromAnOrderSentToBeSettled(['item-waiting'])
+    first.unmount()
+
+    const again = mount(OpenItems, { global: { plugins: testPlugins() }, attachTo: document.body })
+    await flushPromises()
+
+    expect({
+      typed: (again.get('.table-field input').element as HTMLInputElement).value,
+      ticked: useOpenItemsStore().selectedItemIds,
+    }).toEqual({ typed: '', ticked: [] })
+  })
+
   it('hides the list and its notices while the lookup shows the orders of a table', async () => {
     const { screen } = await mountTheScreenWithALookup({
       ...OPEN_LIST,
@@ -788,5 +840,116 @@ describe('looking up one table from the screen that shows what is open', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(lookups).toBe(2)
+  })
+})
+
+describe('an order sent to be settled whose answer arrives while the waiter already looks up another table', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    document.body.innerHTML = ''
+  })
+
+  function stubTheLaptopAnsweringTheOrderLate(): { answerTheOrder: () => void } {
+    let answerTheOrder: () => void = () => {}
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url === '/api/orders') {
+          return new Promise<Response>((resolve) => {
+            answerTheOrder = () =>
+              resolve(
+                new Response(
+                  JSON.stringify({
+                    orderId: 'order-12',
+                    globalOrderNumber: 150,
+                    status: 'open',
+                    totalCents: 200,
+                    createdAtUtc: '2026-09-05T18:50:00Z',
+                    stationOrders: [
+                      {
+                        stationOrderId: 'station-order-12',
+                        stationId: 'station-bar',
+                        stationName: 'Bar',
+                        stationOrderNumber: 9,
+                        deliveryMode: 'together',
+                        itemIds: ['new-wasser'],
+                      },
+                    ],
+                  }),
+                  { status: 200 },
+                ),
+              )
+          })
+        }
+        if (url.startsWith('/api/open-items/table?')) {
+          return new Response(JSON.stringify(TABLE_REPORT), { status: 200 })
+        }
+        if (url === '/api/open-items/table-names') {
+          return new Response(JSON.stringify({ tableNames: ['Tisch 3'] }), { status: 200 })
+        }
+        return new Response(JSON.stringify(OPEN_LIST), { status: 200 })
+      }),
+    )
+    return { answerTheOrder: () => answerTheOrder() }
+  }
+
+  function anOrderForTableTwelve() {
+    useCatalogStore().catalog = {
+      categories: [
+        { categoryId: 'category-getraenke', name: 'Getränke', colourHex: '#C62828', sortOrder: 1 },
+      ],
+      items: [
+        {
+          id: 'item-wasser',
+          name: 'Wasser',
+          categoryId: 'category-getraenke',
+          priceCents: 200,
+          sortOrder: 1,
+          isAvailable: true,
+          stationIds: ['station-bar'],
+          productionMinutes: 0,
+          isQueueIndependent: false,
+        },
+      ],
+      stations: [{ id: 'station-bar', name: 'Bar', sortOrder: 1 }],
+    }
+    const order = useOrderStore()
+    order.addItem({ catalogItemId: 'item-wasser', note: null, stationId: 'station-bar', name: 'Wasser' })
+    order.setTable('Tisch 12')
+    return order
+  }
+
+  it('keeps the table the waiter typed and the item the waiter ticked', async () => {
+    const { answerTheOrder } = stubTheLaptopAnsweringTheOrderLate()
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
+    const session = useSessionStore()
+    session.deviceToken = 'token-here'
+    session.language = 'de'
+    const order = anOrderForTableTwelve()
+    const sending = order.send('settleRightAway')
+    const screen = mount(OpenItems, { global: { plugins: testPlugins() }, attachTo: document.body })
+    await flushPromises()
+    await screen.get('.table-field input').setValue('Tisch 3')
+    await new Promise((resolve) => setTimeout(resolve, TABLE_LOOKUP_DEBOUNCE_MS))
+    await flushPromises()
+    await screen.findAll('.lookup-card')[0].get('.open-line').trigger('click')
+
+    answerTheOrder()
+    await sending
+    await flushPromises()
+
+    const openItems = useOpenItemsStore()
+    expect({
+      lookup: openItems.lookupName,
+      field: (screen.get('.table-field input').element as HTMLInputElement).value,
+      ticked: openItems.selectedItemIds,
+    }).toEqual({ lookup: 'Tisch 3', field: 'Tisch 3', ticked: ['item-plain'] })
   })
 })

@@ -4,6 +4,11 @@ import { formatPrice } from './totals'
 
 export type SettleOutcome = 'accepted' | 'refused' | 'answerNeverCame'
 
+export interface AmountPaidWithReason {
+  amountPaidCents: number
+  paymentNotice: string | null
+}
+
 export type ProductionState = 'none' | 'some' | 'all'
 
 export type PositionState = 'produced' | 'notProduced' | 'unknown'

@@ -44,7 +44,7 @@ describe('an answer the phone cannot read', () => {
     aLaptopThatAnswersWith({ orderId: 'order-1' })
     const order = useOrderStore()
 
-    await order.send(null)
+    await order.send('leaveOpen')
 
     expect(order.sendState).toBe('failed')
     expect(order.failure?.key).toBe('phone.review.errors.sendFailed')

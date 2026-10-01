@@ -755,7 +755,7 @@ describe('the items screen while an order is frozen on the laptop', () => {
       name: 'Wasser',
     })
     order.setTable('Tisch 5')
-    await order.send(null)
+    await order.send('leaveOpen')
     return order
   }
 
@@ -815,7 +815,7 @@ describe('the items screen after the laptop refused an order', () => {
       name: 'Wasser',
     })
     order.setTable('Tisch 5')
-    await order.send(null)
+    await order.send('leaveOpen')
 
     mountCatalog()
 

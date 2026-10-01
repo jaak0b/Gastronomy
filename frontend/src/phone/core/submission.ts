@@ -2,12 +2,6 @@ import type { DraftLine, DraftOrder } from './draftCart'
 import { CatalogView, OrderDeliveryModeRequest, PlaceOrderRequest } from '../../shared/api/generatedSchemas'
 import { findCatalogItem } from './basket'
 import { saveDraft } from './draftCart'
-import { splitSettlement } from './settlementSplit'
-
-export interface ConfirmedSettlement {
-  amountPaidCents: number
-  paymentNotice: string | null
-}
 
 const VERSION_FOUR_MASK = 0x0f
 const VERSION_FOUR_BITS = 0x40
@@ -45,7 +39,6 @@ function priceOnTheMenu(catalog: CatalogView, line: DraftLine): number {
 export function buildSubmitRequest(
   draft: DraftOrder,
   catalog: CatalogView,
-  settlement: ConfirmedSettlement | null,
   deliveryModes: readonly OrderDeliveryModeRequest[],
 ): PlaceOrderRequest {
   const clientOrderId = draft.clientOrderId
@@ -56,19 +49,14 @@ export function buildSubmitRequest(
     line,
     unitPriceCents: priceOnTheMenu(catalog, line),
   }))
-  const settlementLines =
-    settlement === null
-      ? []
-      : splitSettlement(settlement.amountPaidCents, pricedLines, settlement.paymentNotice ?? '')
   return {
     clientOrderId,
     tableName: draft.tableName.trim(),
-    items: pricedLines.map(({ line, unitPriceCents }, index) => ({
+    items: pricedLines.map(({ line, unitPriceCents }) => ({
       catalogItemId: line.catalogItemId,
       unitPriceCents,
       note: line.note,
       stationId: line.stationId,
-      settlement: settlementLines[index] ?? null,
     })),
     deliveryModes: [...deliveryModes],
   }

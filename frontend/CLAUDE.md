@@ -27,8 +27,7 @@ the TypeScript type beside it, under the backend's own contract names. Nothing e
 `npm run generate:api` regenerates them, and `npm run build` runs it before `vue-tsc`.
 
 `src/shared/api/apiTypes.ts` and `src/shared/api/apiSchemas.ts` no longer exist. `AppLanguage` lives
-in `src/shared/core/deviceLanguage.ts`, `DraftLine` and `DraftOrder` in `src/phone/core/draftCart.ts`,
-and `ConfirmedSettlement` in `src/phone/core/submission.ts`.
+in `src/shared/core/deviceLanguage.ts`, `DraftLine` and `DraftOrder` in `src/phone/core/draftCart.ts`.
 
 ## Hard rules
 

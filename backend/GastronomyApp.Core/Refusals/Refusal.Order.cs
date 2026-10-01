@@ -70,10 +70,5 @@ public static partial class Refusal
     {
       return UnprocessableEntity(RefusalMessageKeys.OrderCannotBeProcessed, "No festival is running, so the order belongs to nothing and was not stored.", new() { [MetadataKeys.ProblemCode] = ProblemCodes.UnprocessableEntity });
     }
-
-    public static Error SettlementCannotBeProcessed(Error settlementRefusal)
-    {
-      return BadRequest(RefusalMessageKeys.SettlementCannotBeProcessed, $"The settlement sent with the order was refused: {settlementRefusal.Description}", new() { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
-    }
   }
 }

@@ -133,11 +133,8 @@
     },
     "review": {
       "labels": {
-        "confirmSendAmount": "Amount:",
-        "confirmSendStation": "{name}:",
-        "confirmSendTable": "Table:",
-        "confirmSendTitle": "Send the order?",
         "goesTo": "Goes to {name}",
+        "stationDelivery": "{name}:",
         "table": "Table: {name}",
         "tableName": "Table",
         "tablePlaceholder": "For example: 12",
@@ -146,11 +143,9 @@
       "actions": {
         "removeLinesThatCannotBeOrdered": "Remove the items that cannot be ordered",
         "retry": "Send again",
-        "send": "Send the order",
-        "sendAndSettle": "Send the order and settle it",
+        "sendAndSettle": "Send and settle",
+        "sendAndSettleLater": "Send and settle later",
         "sending": "Sending",
-        "settleLater": "Settle later",
-        "settleNow": "Settle now",
         "writtenDown": "The order is written down"
       },
       "messages": {

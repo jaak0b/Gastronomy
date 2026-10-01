@@ -2249,39 +2249,6 @@
               "string"
             ],
             "format": "uuid"
-          },
-          "settlement": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/OrderSettlementLineRequest"
-              }
-            ]
-          }
-        }
-      },
-      "OrderSettlementLineRequest": {
-        "required": [
-          "paidPriceCents"
-        ],
-        "type": "object",
-        "properties": {
-          "paidPriceCents": {
-            "maximum": 2147483647,
-            "minimum": 0,
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "paymentNotice": {
-            "type": [
-              "null",
-              "string"
-            ]
           }
         }
       },

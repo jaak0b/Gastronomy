@@ -23,7 +23,6 @@ function anUnresolvedAttempt(): PlaceOrderRequest {
         unitPriceCents: 200,
         note: null,
         stationId: 'station-bar',
-        settlement: null,
       },
     ],
     deliveryModes: [{ stationId: 'station-bar', deliveryMode: 'together' }],

@@ -1,6 +1,5 @@
 ﻿using ErrorOr;
 using GastronomyApp.Contracts.Enums;
-using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
@@ -16,20 +15,17 @@ public sealed class OrderAcceptanceService
 
   private readonly IOrderRepository _orderRepository;
   private readonly RunningFestivalLookup _runningFestival;
-  private readonly OrderItemSettlementService _settlementService;
 
   public OrderAcceptanceService(IOrderRepository orderRepository,
                                 RunningFestivalLookup runningFestival,
                                 INumberAllocator numberAllocator,
                                 OrderItemResolutionService itemResolutionService,
-                                OrderItemSettlementService settlementService,
                                 TimeProvider timeProvider)
   {
     _orderRepository = orderRepository;
     _runningFestival = runningFestival;
     _numberAllocator = numberAllocator;
     _itemResolutionService = itemResolutionService;
-    _settlementService = settlementService;
     _timeProvider = timeProvider;
   }
 
@@ -56,10 +52,6 @@ public sealed class OrderAcceptanceService
 
     var order = await BuildOrderAsync(request, staffMemberId, festival.Id, routedItems, cancellationToken);
 
-    ErrorOr<Order> settled = SettleAtAcceptance(staffMemberId, order, itemRequests, routedItems);
-    if (settled.IsError)
-      return settled.Errors;
-
     await _orderRepository.AddAsync(order, cancellationToken);
 
     return await AcceptedOrderAsync(order.Id, cancellationToken);
@@ -68,31 +60,6 @@ public sealed class OrderAcceptanceService
   private async Task<Order> AcceptedOrderAsync(Guid orderId, CancellationToken cancellationToken)
   {
     return (await _orderRepository.FindWithStationOrdersAsync(orderId, cancellationToken))!;
-  }
-
-  private ErrorOr<Order> SettleAtAcceptance(Guid staffMemberId, Order order, IReadOnlyList<OrderItemRequest> itemRequests, IReadOnlyList<OrderItem> routedItems)
-  {
-    List<SettleLineRequest> lines = [];
-
-    for (var index = 0; index < routedItems.Count; index++)
-    {
-      var settlement = itemRequests[index].Settlement;
-
-      if (settlement is null)
-        continue;
-
-      lines.Add(new()
-      {
-        OrderItemId = routedItems[index].Id,
-        PaidPriceCents = settlement.PaidPriceCents,
-        PaymentNotice = settlement.PaymentNotice
-      });
-    }
-
-    if (lines.Count == 0)
-      return order;
-
-    return _settlementService.Settle(lines, staffMemberId, routedItems, order.CreatedAtUtc).Match<ErrorOr<Order>>(settlement => order, settlementErrors => settlementErrors.ConvertAll(Refusal.Order.SettlementCannotBeProcessed));
   }
 
   private async Task<Order> BuildOrderAsync(PlaceOrderRequest request, Guid staffMemberId, Guid festivalId, IReadOnlyCollection<OrderItem> routedItems, CancellationToken cancellationToken)

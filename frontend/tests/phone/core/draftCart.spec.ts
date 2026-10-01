@@ -41,7 +41,6 @@ function anAttempt(): PlaceOrderRequest {
         unitPriceCents: 350,
         note: null,
         stationId: null,
-        settlement: null,
       },
     ],
     deliveryModes: [],
@@ -664,34 +663,6 @@ describe('a stored send record this build cannot read', () => {
               unitPriceCents: '350',
               note: null,
               stationId: null,
-              settlement: null,
-            },
-          ],
-          deliveryModes: [],
-        },
-      }),
-    )
-
-    expect(restoreSendProgress().state).toBe('idle')
-  })
-
-  it('is thrown away when an item of the carried request settles a line in an unknown shape', () => {
-    localStorage.setItem(
-      SEND_PROGRESS_STORAGE_KEY,
-      JSON.stringify({
-        state: 'failed',
-        attempts: 1,
-        failure: null,
-        unresolvedAttempt: {
-          clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
-          tableName: 'Tisch 5',
-          items: [
-            {
-              catalogItemId: 'item-wasser',
-              unitPriceCents: 200,
-              note: null,
-              stationId: null,
-              settlement: { paidPriceCents: 200 },
             },
           ],
           deliveryModes: [],

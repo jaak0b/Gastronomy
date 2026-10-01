@@ -41,9 +41,10 @@ public sealed class OpenItemEndpointsTest
   }
 
   [Test]
-  public async Task GetOpenItems_AnOrderSentAndSettled_LeavesTheTableOut()
+  public async Task GetOpenItems_ATableSettledInFull_LeavesTheTableOut()
   {
-    await PlaceOrderAsync("Tisch 12", true);
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
+    using var settlement = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 350));
 
     var body = await ReadOpenItemsAsync();
 
@@ -51,9 +52,10 @@ public sealed class OpenItemEndpointsTest
   }
 
   [Test]
-  public async Task GetTableNames_AnOrderSentAndSettled_StillOffersTheNameForTheNextOrder()
+  public async Task GetTableNames_ATableSettledInFull_StillOffersTheNameForTheNextOrder()
   {
-    await PlaceOrderAsync("Tisch 12", true);
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
+    using var settlement = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 350));
 
     using var response = await _context.SendAsync(HttpMethod.Get, "/api/open-items/table-names");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -132,34 +134,6 @@ public sealed class OpenItemEndpointsTest
     var body = await ReadOpenItemsAsync();
 
     Assert.That(body.RootElement.GetProperty("itemsWithoutAnOrderCount").GetInt32(), Is.Zero);
-  }
-
-  [Test]
-  public async Task PostOrder_SentAndSettled_ChargesTheDisplayedPriceOnEveryItem()
-  {
-    await PlaceOrderAsync("Tisch 12", true);
-
-    await using var database = _context.Factory.CreateContext();
-    List<OrderItem> stored = await database.OrderItems.ToListAsync();
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(stored.Select(item => item.ChargedPriceCents), Is.All.EqualTo(350));
-                      Assert.That(stored.Select(item => item.UnitPriceCents), Is.All.EqualTo(350));
-                      Assert.That(stored.Select(item => item.SettledAtUtc), Is.All.Not.Null);
-                      Assert.That(stored.Select(item => item.PaymentNotice), Is.All.Null);
-                    });
-  }
-
-  [Test]
-  public async Task PostOrder_SentAndSettled_RecordsTheSendingWaiterAsTheOneWhoCollectedTheMoney()
-  {
-    await PlaceOrderAsync("Tisch 12", true);
-
-    await using var database = _context.Factory.CreateContext();
-    List<OrderItem> stored = await database.OrderItems.ToListAsync();
-
-    Assert.That(stored.Select(item => item.SettledByStaffMemberId), Is.All.EqualTo(_context.World.StaffMemberId));
   }
 
   [Test]
@@ -584,18 +558,13 @@ public sealed class OpenItemEndpointsTest
     return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
   }
 
-  private async Task<IReadOnlyList<Guid>> PlaceOrderAsync(string tableName, bool settled = false)
+  private async Task<IReadOnlyList<Guid>> PlaceOrderAsync(string tableName)
   {
-    OrderItemSettlementBody? settlement = null;
-
-    if (settled)
-      settlement = new(350);
-
     OrderBody order = new(Guid.NewGuid(),
                           tableName,
                           [
-                            new(_context.World.BratwurstItemId, 350, null, null, settlement),
-                            new(_context.World.BratwurstItemId, 350, null, null, settlement)
+                            new(_context.World.BratwurstItemId, 350, null, null),
+                            new(_context.World.BratwurstItemId, 350, null, null)
                           ]);
 
     using var response = await _context.PostOrderAsync(order);

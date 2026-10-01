@@ -1,13 +1,11 @@
 ﻿using ErrorOr;
 using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
-using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
@@ -47,7 +45,6 @@ public sealed class OrderAcceptanceServiceTest
                    runningFestival,
                    _numberAllocator,
                    new(_catalogItemRepository, _stationRepository, new()),
-                   new(A.Fake<IOpenItemRepository>(), runningFestival, _clock, NullLogger<OrderItemSettlementService>.Instance),
                    _clock);
   }
 
@@ -137,15 +134,14 @@ public sealed class OrderAcceptanceServiceTest
     };
   }
 
-  private OrderItemRequest ItemFor(Guid catalogItemId, Guid? stationId = null, int unitPriceCents = 350, OrderSettlementLineRequest? settlement = null)
+  private OrderItemRequest ItemFor(Guid catalogItemId, Guid? stationId = null, int unitPriceCents = 350)
   {
     return new()
     {
       CatalogItemId = catalogItemId,
       UnitPriceCents = unitPriceCents,
       Note = null,
-      StationId = stationId,
-      Settlement = settlement
+      StationId = stationId
     };
   }
 
@@ -336,124 +332,7 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   [Test]
-  public async Task AcceptAsync_SettlementCoveringTheWholeOrder_ChargesEveryItemItsOwnPriceAndNamesTheCallerAsTheCollector()
-  {
-    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                     ItemFor(_bratwurstId, unitPriceCents: 350, settlement: new() { PaidPriceCents = 350 }),
-                                                                     ItemFor(_beerId, unitPriceCents: 400, settlement: new() { PaidPriceCents = 400 })
-                                                                   ]),
-                                                       _staffMemberId,
-                                                       CancellationToken.None);
-
-    List<OrderItem> items = ReadOrderItems(result.Value);
-    var bratwurstLine = items.Single(item => item.CatalogItemId == _bratwurstId);
-    var beerLine = items.Single(item => item.CatalogItemId == _beerId);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.True);
-                      Assert.That(bratwurstLine.ChargedPriceCents, Is.EqualTo(350));
-                      Assert.That(beerLine.ChargedPriceCents, Is.EqualTo(400));
-                      Assert.That(items.Select(item => item.SettledAtUtc), Is.All.EqualTo(_now));
-                      Assert.That(items.Select(item => item.SettledByStaffMemberId), Is.All.EqualTo(_staffMemberId));
-                      Assert.That(items.Select(item => item.PaymentNotice), Is.All.Null);
-                      Assert.That(items.Select(item => item.FulfilledAtUtc), Is.All.Null);
-                    });
-  }
-
-  [Test]
-  public async Task AcceptAsync_OneLineSettledAndOneOpen_SettlesOnlyTheLineThatCarriesASettlement()
-  {
-    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                     ItemFor(_bratwurstId, unitPriceCents: 350, settlement: new() { PaidPriceCents = 350 }),
-                                                                     ItemFor(_beerId, unitPriceCents: 400)
-                                                                   ]),
-                                                       _staffMemberId,
-                                                       CancellationToken.None);
-
-    List<OrderItem> items = ReadOrderItems(result.Value);
-    var settledLine = items.Single(item => item.CatalogItemId == _bratwurstId);
-    var openLine = items.Single(item => item.CatalogItemId == _beerId);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.True);
-                      Assert.That(settledLine.ChargedPriceCents, Is.EqualTo(350));
-                      Assert.That(settledLine.SettledAtUtc, Is.EqualTo(_now));
-                      Assert.That(settledLine.SettledByStaffMemberId, Is.EqualTo(_staffMemberId));
-                      Assert.That(openLine.ChargedPriceCents, Is.Null);
-                      Assert.That(openLine.SettledAtUtc, Is.Null);
-                      Assert.That(openLine.SettledByStaffMemberId, Is.Null);
-                      Assert.That(openLine.PaymentNotice, Is.Null);
-                    });
-  }
-
-  [Test]
-  public async Task AcceptAsync_SettlementBelowTheTotalWithoutANotice_IsRefusedAndStoresNothing()
-  {
-    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                     ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 250 }),
-                                                                     ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 250 })
-                                                                   ]),
-                                                       _staffMemberId,
-                                                       CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
-                      Assert.That(result.RefusalDescription(), Does.Contain("without a typed reason"));
-                    });
-    A.CallTo(() => _orderRepository.AddAsync(A<Order>._, A<CancellationToken>._)).MustNotHaveHappened();
-  }
-
-  [Test]
-  public async Task AcceptAsync_SettlementSendingOnePricePerLine_StoresExactlyThePricesThePhoneSent()
-  {
-    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                     ItemFor(_bratwurstId,
-                                                                             unitPriceCents: 333,
-                                                                             settlement: new()
-                                                                                         {
-                                                                                           PaidPriceCents = 167,
-                                                                                           PaymentNotice = "Der Tisch zahlt den Rest spaeter"
-                                                                                         }),
-                                                                     ItemFor(_bratwurstId,
-                                                                             unitPriceCents: 333,
-                                                                             settlement: new()
-                                                                                         {
-                                                                                           PaidPriceCents = 167,
-                                                                                           PaymentNotice = "Der Tisch zahlt den Rest spaeter"
-                                                                                         }),
-                                                                     ItemFor(_bratwurstId,
-                                                                             unitPriceCents: 333,
-                                                                             settlement: new()
-                                                                                         {
-                                                                                           PaidPriceCents = 166,
-                                                                                           PaymentNotice = "Der Tisch zahlt den Rest spaeter"
-                                                                                         })
-                                                                   ]),
-                                                       _staffMemberId,
-                                                       CancellationToken.None);
-
-    List<OrderItem> items = ReadOrderItems(result.Value);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.True);
-                      Assert.That(items.Select(item => item.ChargedPriceCents),
-                                  Is.EqualTo(new[]
-                                             {
-                                               167,
-                                               167,
-                                               166
-                                             }));
-                      Assert.That(items.Select(item => item.PaymentNotice), Is.All.EqualTo("Der Tisch zahlt den Rest spaeter"));
-                    });
-  }
-
-  [Test]
-  public async Task AcceptAsync_NoSettlement_LeavesEveryItemUnsettled()
+  public async Task AcceptAsync_AnAcceptedOrder_LeavesEveryItemUnsettled()
   {
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
                                                                      ItemFor(_bratwurstId),
@@ -552,7 +431,6 @@ public sealed class OrderAcceptanceServiceTest
       "ItemNotAvailable" => RequestWith([ItemFor(SoldOutItemId())]),
       "ChosenStationNoLongerPreparesTheItem" => RequestWith([ItemFor(ItemWithAStaleStationChoiceId(), _barOutdoorId)]),
       "NoRunningFestival" => RequestWhileNoFestivalRuns(),
-      "SettlementCannotBeProcessed" => RequestWith([ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 1 })]),
       _ => throw new InvalidOperationException($"No scenario covers {scenario}")
     };
 
@@ -636,7 +514,6 @@ public sealed class OrderAcceptanceServiceTest
   [TestCase("ItemNotAvailable", "errors.order.itemSoldOut")]
   [TestCase("ChosenStationNoLongerPreparesTheItem", "errors.order.itemSoldOut")]
   [TestCase("NoRunningFestival", "errors.order.cannotBeProcessed")]
-  [TestCase("SettlementCannotBeProcessed", "errors.settlement.cannotBeProcessed")]
   public async Task AcceptAsync_ARequestThisServiceRefuses_CarriesTheMessageKeyThatScenarioAlwaysAnswered(string scenario, string expectedMessageKey)
   {
     ErrorOr<Order> refused = await RefusalProducedByAsync(scenario);

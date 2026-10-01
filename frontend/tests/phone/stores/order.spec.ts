@@ -5,7 +5,8 @@ import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { CatalogView } from '../../../src/shared/api/generatedSchemas'
 import { SEND_TIMEOUT_MS } from '../../../src/phone/core/sendTimeout'
 import { useOrderStore, ARRIVAL_NOTICE_MS } from '../../../src/phone/stores/order'
-import { TOKEN_STORAGE_KEY } from '../../../src/shared/stores/session'
+import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
+import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import {
 
   DRAFT_STORAGE_KEY,
@@ -72,7 +73,7 @@ describe('the notice that an order has arrived', () => {
     answerWith(0)
     const order = useOrderStore()
 
-    await order.send(null)
+    await order.send('leaveOpen')
     expect(order.sendState).toBe('accepted')
 
     vi.advanceTimersByTime(ARRIVAL_NOTICE_MS)
@@ -158,7 +159,7 @@ describe('an order in progress that could not be read back', () => {
     answerWith(0)
     const order = useOrderStore()
 
-    await order.send(null)
+    await order.send('leaveOpen')
 
     expect(order.draftWasLost).toBe(false)
   })
@@ -187,7 +188,7 @@ describe('an order whose send failed', () => {
     unreachableLaptop()
     const order = useOrderStore()
 
-    await order.send(null)
+    await order.send('leaveOpen')
 
     expect(order.changesAreRefused).toBe(true)
   })
@@ -195,7 +196,7 @@ describe('an order whose send failed', () => {
   it('stays closed for changes while the retry is on its way', async () => {
     unreachableLaptop()
     const order = useOrderStore()
-    await order.send(null)
+    await order.send('leaveOpen')
 
     const retry = order.sendAgain()
     const refusedWhileSending = order.changesAreRefused
@@ -213,7 +214,7 @@ describe('an order whose send failed', () => {
   it('opens the next order for changes once the waiter has written this one down', async () => {
     unreachableLaptop()
     const order = useOrderStore()
-    await order.send(null)
+    await order.send('leaveOpen')
 
     order.startNextOrderAfterWritingItDown()
 
@@ -229,7 +230,7 @@ describe('an order whose send failed', () => {
       stationId: 'station-bar',
       name: 'Wasser',
     })
-    await order.send(null)
+    await order.send('leaveOpen')
 
     order.startNextOrderAfterWritingItDown()
 
@@ -240,7 +241,7 @@ describe('an order whose send failed', () => {
     unreachableLaptop()
     const order = useOrderStore()
 
-    await order.send(null)
+    await order.send('leaveOpen')
 
     expect(order.onlyWritingItDownIsLeft).toBe(false)
   })
@@ -248,7 +249,7 @@ describe('an order whose send failed', () => {
   it('says paper is the way out once the second attempt has failed too', async () => {
     unreachableLaptop()
     const order = useOrderStore()
-    await order.send(null)
+    await order.send('leaveOpen')
 
     await order.sendAgain()
 
@@ -285,7 +286,7 @@ describe('the identity an order carries', () => {
     const order = useOrderStore()
     const sentOrder = order.draft.clientOrderId
 
-    await order.send(null)
+    await order.send('leaveOpen')
 
     expect(order.draft.clientOrderId).not.toBe(sentOrder)
   })
@@ -299,60 +300,11 @@ describe('the identity an order carries', () => {
     )
     const order = useOrderStore()
     const writtenDownOrder = order.draft.clientOrderId
-    await order.send(null)
+    await order.send('leaveOpen')
 
     order.startNextOrderAfterWritingItDown()
 
     expect(order.draft.clientOrderId).not.toBe(writtenDownOrder)
-  })
-})
-
-describe('the settlement an order goes out with', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('carries the amount and the reason the waiter confirmed, not only the fact that it settled', async () => {
-    answerWith(500)
-    const catalog = useCatalogStore()
-    catalog.catalog = {
-      categories: [],
-      items: [
-        {
-          id: 'item-wasser',
-          name: 'Wasser',
-          categoryId: 'category-getraenke',
-          priceCents: 800,
-          sortOrder: 1,
-          isAvailable: true,
-          stationIds: ['station-bar'],
-          productionMinutes: null,
-          isQueueIndependent: false,
-        },
-      ],
-      stations: [{ id: 'station-bar', name: 'Bar', sortOrder: 1 }],
-    }
-    const order = useOrderStore()
-    order.addItem({
-      catalogItemId: 'item-wasser',
-      note: null,
-      stationId: 'station-bar',
-      name: 'Wasser',
-    })
-    order.setTable('Tisch 3')
-
-    await order.send({ amountPaidCents: 500, paymentNotice: 'Stammgast' })
-
-    const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.items[0].settlement).toEqual({
-      paidPriceCents: 500,
-      paymentNotice: 'Stammgast',
-    })
   })
 })
 
@@ -378,7 +330,7 @@ describe('the table name an order goes out with', () => {
     })
     order.setTable(' Tisch 3 ')
 
-    await order.send(null)
+    await order.send('leaveOpen')
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
     expect(sent.tableName).toBe('Tisch 3')
@@ -413,7 +365,7 @@ describe('an order the waiter has already pressed send on', () => {
     const order = useOrderStore()
     order.addItem(waterLine())
     order.setTable('Tisch 7')
-    void order.send(null)
+    void order.send('leaveOpen')
     return order
   }
 
@@ -530,7 +482,7 @@ describe('an attempt the laptop never answers', () => {
   it('is still shown as on its way nine seconds in', async () => {
     const order = useOrderStore()
 
-    void order.send(null)
+    void order.send('leaveOpen')
     await vi.advanceTimersByTimeAsync(9_000)
 
     expect(order.sendState).toBe('sending')
@@ -539,7 +491,7 @@ describe('an attempt the laptop never answers', () => {
   it('gives up after ten seconds rather than leaving the waiter watching the sending line', async () => {
     const order = useOrderStore()
 
-    const attempt = order.send(null)
+    const attempt = order.send('leaveOpen')
     await vi.advanceTimersByTimeAsync(10_000)
     await attempt
 
@@ -549,7 +501,7 @@ describe('an attempt the laptop never answers', () => {
   it('says the laptop could not be reached, which is what giving up means here', async () => {
     const order = useOrderStore()
 
-    const attempt = order.send(null)
+    const attempt = order.send('leaveOpen')
     await vi.advanceTimersByTimeAsync(10_000)
     await attempt
 
@@ -599,7 +551,6 @@ describe('an order the page was still sending when it was loaded again', () => {
             unitPriceCents: 200,
             note: null,
             stationId: 'station-bar',
-            settlement: { paidPriceCents: 200, paymentNotice: null },
           },
         ],
         deliveryModes: [],
@@ -638,20 +589,6 @@ describe('an order the page was still sending when it was loaded again', () => {
 
     expect(order.draft.clientOrderId).toBe('c0ffee00-1111-4111-8111-111111111111')
   })
-
-  it('retries with the settlement the waiter had already confirmed', async () => {
-    anOrderLeftOnItsWay()
-    answerWith(200)
-    const order = useOrderStore()
-
-    await order.sendAgain()
-
-    const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.items[0].settlement).toEqual({
-      paidPriceCents: 200,
-      paymentNotice: null,
-    })
-  })
 })
 
 describe('an order whose send failed, after the page is loaded again', () => {
@@ -673,7 +610,7 @@ describe('an order whose send failed, after the page is loaded again', () => {
     )
     const order = useOrderStore()
     order.setTable('Tisch 2')
-    await order.send(null)
+    await order.send('leaveOpen')
   }
 
   it('is still refused every change, because the freeze has to survive a reload', async () => {
@@ -710,7 +647,7 @@ describe('an order the laptop accepted', () => {
     answerWith(0)
     const order = useOrderStore()
 
-    await order.send(null)
+    await order.send('leaveOpen')
 
     expect(order.changesAreRefused).toBe(false)
   })
@@ -719,7 +656,7 @@ describe('an order the laptop accepted', () => {
     answerWith(0)
     const order = useOrderStore()
 
-    await order.send(null)
+    await order.send('leaveOpen')
 
     expect(localStorage.getItem(SEND_PROGRESS_STORAGE_KEY)).toBeNull()
   })
@@ -727,7 +664,7 @@ describe('an order the laptop accepted', () => {
   it('lets the next table be typed in straight away', async () => {
     answerWith(0)
     const order = useOrderStore()
-    await order.send(null)
+    await order.send('leaveOpen')
 
     order.setTable('Tisch 8')
 
@@ -787,7 +724,7 @@ describe('what an order costs while the item list changes underneath it', () => 
       items: [{ ...catalog.catalog.items[0], priceCents: 250 }],
     }
     await nextTick()
-    await order.send(null)
+    await order.send('leaveOpen')
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
     expect(sent.items[0].unitPriceCents).toBe(250)
@@ -847,7 +784,7 @@ describe('an order the laptop answered no to', () => {
       name: 'Wasser',
     })
     order.setTable('Tisch 6')
-    await order.send(null)
+    await order.send('leaveOpen')
     return order
   }
 
@@ -956,7 +893,7 @@ describe('an order the laptop refused because an item sold out', () => {
     })
     order.setTable('Tisch 6')
 
-    await order.send(null)
+    await order.send('leaveOpen')
 
     expect(order.failure?.key).toBe('errors.order.itemSoldOut')
     expect(order.failure?.parameters).toEqual({ name: 'Wasser', catalogItemId: 'item-wasser' })
@@ -985,7 +922,7 @@ describe('an order the laptop could not save', () => {
     aLaptopThatCannotSave()
     const order = useOrderStore()
 
-    await order.send(null)
+    await order.send('leaveOpen')
 
     expect(order.changesAreRefused).toBe(false)
   })
@@ -994,7 +931,7 @@ describe('an order the laptop could not save', () => {
     aLaptopThatCannotSave()
     const order = useOrderStore()
 
-    await order.send(null)
+    await order.send('leaveOpen')
 
     expect(order.failure?.key).toBe('errors.storage.databaseUnavailable')
   })
@@ -1003,7 +940,7 @@ describe('an order the laptop could not save', () => {
     aLaptopThatCannotSave()
     const order = useOrderStore()
 
-    await order.send(null)
+    await order.send('leaveOpen')
 
     expect(order.attemptsMade).toBe(0)
   })
@@ -1011,7 +948,7 @@ describe('an order the laptop could not save', () => {
   it('never sends the waiter to paper, however often the laptop answers that way', async () => {
     aLaptopThatCannotSave()
     const order = useOrderStore()
-    await order.send(null)
+    await order.send('leaveOpen')
 
     await order.sendAgain()
 
@@ -1021,7 +958,7 @@ describe('an order the laptop could not save', () => {
   it('stays open for changes after a reload, because no order was created', async () => {
     aLaptopThatCannotSave()
     const order = useOrderStore()
-    await order.send(null)
+    await order.send('leaveOpen')
 
     setActivePinia(createPinia())
     const afterTheReload = useOrderStore()
@@ -1075,7 +1012,7 @@ describe('an order the laptop answered only after it had already stayed silent o
     const order = useOrderStore()
     order.addItem(waterLine())
     order.setTable('Tisch 3')
-    const firstAttempt = order.send(null)
+    const firstAttempt = order.send('leaveOpen')
     await vi.advanceTimersByTimeAsync(SEND_TIMEOUT_MS)
     await firstAttempt
 
@@ -1183,7 +1120,7 @@ describe('an order the laptop refused with a reason after it had stayed silent o
     const order = useOrderStore()
     order.addItem(waterLine())
     order.setTable('Tisch 3')
-    const firstAttempt = order.send(null)
+    const firstAttempt = order.send('leaveOpen')
     await vi.advanceTimersByTimeAsync(SEND_TIMEOUT_MS)
     await firstAttempt
 
@@ -1302,7 +1239,6 @@ describe('an order sent from a phone the laptop no longer knows', () => {
             unitPriceCents: 200,
             note: null,
             stationId: 'station-bar',
-            settlement: null,
           },
         ],
         deliveryModes: [],
@@ -1357,7 +1293,7 @@ describe('an order sent from a phone the laptop no longer knows', () => {
     aLaptopThatNoLongerKnowsThisPhone()
     const order = useOrderStore()
 
-    await order.send(null)
+    await order.send('leaveOpen')
 
     expect(order.changesAreRefused).toBe(false)
   })
@@ -1367,7 +1303,7 @@ describe('an order sent from a phone the laptop no longer knows', () => {
     aLaptopThatNoLongerKnowsThisPhone()
     const order = useOrderStore()
 
-    await order.send(null)
+    await order.send('leaveOpen')
 
     expect(order.failure).toBeNull()
     expect(order.sendState).toBe('idle')
@@ -1378,7 +1314,7 @@ describe('an order sent from a phone the laptop no longer knows', () => {
     aLaptopThatNoLongerKnowsThisPhone()
     const order = useOrderStore()
 
-    await order.send(null)
+    await order.send('leaveOpen')
 
     expect(order.attemptsMade).toBe(0)
     expect(restoreSendProgress().attempts).toBe(0)
@@ -1454,5 +1390,154 @@ describe('the station name a line is given when it is added', () => {
     order.chooseStation(0, 'station-theke-aussen')
 
     expect(restoreDraft().draft.lines[0].stationName).toBe('Theke aussen')
+  })
+})
+
+const PLACED_ORDER_WITH_TWO_STATIONS = {
+  orderId: 'order-9',
+  globalOrderNumber: 141,
+  status: 'open',
+  totalCents: 1600,
+  createdAtUtc: '2026-09-05T18:20:00Z',
+  stationOrders: [
+    {
+      stationOrderId: 'station-order-1',
+      stationId: 'station-bar',
+      stationName: 'Bar',
+      stationOrderNumber: 7,
+      deliveryMode: 'together',
+      itemIds: ['new-1'],
+    },
+    {
+      stationOrderId: 'station-order-2',
+      stationId: 'station-kitchen',
+      stationName: 'Küche',
+      stationOrderNumber: 3,
+      deliveryMode: 'together',
+      itemIds: ['new-2'],
+    },
+  ],
+}
+
+function openItemOf(orderItemId: string) {
+  return {
+    orderItemId,
+    orderId: 'order-9',
+    globalOrderNumber: 141,
+    itemName: 'Wasser',
+    note: null,
+    unitPriceCents: 800,
+    orderedAtUtc: '2026-09-05T18:20:00Z',
+    fulfilledAtUtc: null,
+    settledAtUtc: null,
+  }
+}
+
+const TABLE_THREE_REPORT = {
+  tableName: 'Tisch 3',
+  openAmountCents: 1600,
+  orders: [
+    {
+      orderId: 'order-9',
+      globalOrderNumber: 141,
+      createdAtUtc: '2026-09-05T18:20:00Z',
+      staffMemberName: 'Anna',
+      items: [openItemOf('new-1'), openItemOf('new-2')],
+    },
+  ],
+}
+
+function theLaptopPlacesTheOrderAfter(failedAttempts: number) {
+  let orderAttempts = 0
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => {
+      if (url.startsWith('/api/open-items/table?')) {
+        return new Response(JSON.stringify(TABLE_THREE_REPORT), { status: 200 })
+      }
+      orderAttempts += 1
+      if (orderAttempts <= failedAttempts) {
+        throw new TypeError('the laptop cannot be reached')
+      }
+      return new Response(JSON.stringify(PLACED_ORDER_WITH_TWO_STATIONS), { status: 200 })
+    }),
+  )
+}
+
+describe('an accepted order the waiter settles right away', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    useCatalogStore().catalog = menuWithWaterAtTheBar()
+    useSessionStore().deviceToken = 'token-here'
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function anOrderForTableThree() {
+    const order = useOrderStore()
+    order.addItem({ catalogItemId: 'item-wasser', note: null, stationId: 'station-bar', name: 'Wasser' })
+    order.setTable(' Tisch 3 ')
+    return order
+  }
+
+  it('leaves the open items untouched, because only the screen that navigates may hand the order over', async () => {
+    theLaptopPlacesTheOrderAfter(0)
+    const order = anOrderForTableThree()
+
+    await order.send('settleRightAway')
+
+    const openItems = useOpenItemsStore()
+    expect({ table: openItems.lookupName, ticked: openItems.selectedItemIds }).toEqual({
+      table: null,
+      ticked: [],
+    })
+  })
+
+  it('offers the table as sent with every item of every station, exactly once', async () => {
+    theLaptopPlacesTheOrderAfter(0)
+    const order = anOrderForTableThree()
+
+    await order.send('settleRightAway')
+
+    expect([order.takeTheOrderAcceptedForSettling(), order.takeTheOrderAcceptedForSettling()]).toEqual([
+      { tableName: 'Tisch 3', itemIds: ['new-1', 'new-2'] },
+      null,
+    ])
+  })
+
+  it('offers nothing to settle when the waiter settles later', async () => {
+    theLaptopPlacesTheOrderAfter(0)
+    const order = anOrderForTableThree()
+
+    await order.send('leaveOpen')
+
+    expect(order.takeTheOrderAcceptedForSettling()).toBeNull()
+  })
+
+  it('still offers the order to settle when only the retry got through', async () => {
+    theLaptopPlacesTheOrderAfter(1)
+    const order = anOrderForTableThree()
+    await order.send('settleRightAway')
+
+    await order.sendAgain()
+
+    expect(order.takeTheOrderAcceptedForSettling()).toEqual({
+      tableName: 'Tisch 3',
+      itemIds: ['new-1', 'new-2'],
+    })
+  })
+
+  it('discards an order nobody took to settle when the next order is sent', async () => {
+    theLaptopPlacesTheOrderAfter(0)
+    const order = anOrderForTableThree()
+    await order.send('settleRightAway')
+    anOrderForTableThree()
+
+    await order.send('leaveOpen')
+
+    expect(order.takeTheOrderAcceptedForSettling()).toBeNull()
   })
 })

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { DeliveryMode, OrderDeliveryModeRequest, OrderItemRequest, OrderSettlementLineRequest, PlaceOrderRequest } from '../../shared/api/generatedSchemas'
+import { DeliveryMode, OrderDeliveryModeRequest, OrderItemRequest, PlaceOrderRequest } from '../../shared/api/generatedSchemas'
 import type { SendFailureMessage } from './sendFailure'
 import { noSendProgress, SEND_STATES, type SendProgress } from './sendProgress'
 
@@ -43,17 +43,11 @@ const sendFailureSchema: z.ZodType<SendFailureMessage> = z.strictObject({
   parameters: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
 })
 
-const settlementLineSchema: z.ZodType<OrderSettlementLineRequest> = z.strictObject({
-  paidPriceCents: z.number().int().nonnegative(),
-  paymentNotice: z.string().nullable(),
-})
-
 const submitItemSchema: z.ZodType<OrderItemRequest> = z.strictObject({
   catalogItemId: z.string(),
   unitPriceCents: z.number().int().nonnegative(),
   note: z.string().nullable(),
   stationId: z.string().nullable(),
-  settlement: settlementLineSchema.nullable(),
 })
 
 const stationDeliveryModeSchema: z.ZodType<OrderDeliveryModeRequest> = z.strictObject({

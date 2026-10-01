@@ -112,11 +112,8 @@ export const OpenItemsView = z.strictObject({ tables: z.array(OpenTableView), it
 export type OrderDeliveryModeRequest = __TypedOpenapi.Schemas.OrderDeliveryModeRequest;
 export const OrderDeliveryModeRequest = z.strictObject({ stationId: z.string(), deliveryMode: DeliveryMode });
 
-export type OrderSettlementLineRequest = __TypedOpenapi.Schemas.OrderSettlementLineRequest;
-export const OrderSettlementLineRequest = z.strictObject({ paidPriceCents: z.number().int().nullable(), paymentNotice: z.string().nullable().optional() });
-
 export type OrderItemRequest = __TypedOpenapi.Schemas.OrderItemRequest;
-export const OrderItemRequest = z.strictObject({ catalogItemId: z.string(), unitPriceCents: z.number().int(), note: z.string().nullable().optional(), stationId: z.string().nullable().optional(), settlement: OrderSettlementLineRequest.nullable().optional() });
+export const OrderItemRequest = z.strictObject({ catalogItemId: z.string(), unitPriceCents: z.number().int(), note: z.string().nullable().optional(), stationId: z.string().nullable().optional() });
 
 export type OrderStatus = __TypedOpenapi.Schemas.OrderStatus;
 export const OrderStatus = z.enum(["open", "partiallyFulfilled", "fulfilled"]);
