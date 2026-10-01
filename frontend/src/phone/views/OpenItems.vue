@@ -7,11 +7,14 @@ import { formatFestivalMoment } from '../../shared/core/festivalTimes'
 import {
   isAPaymentMethodNeeded,
   isHeldBackByAnotherTable,
-  isTheWholeTableSelected,
+  itemIdsAtTable,
   positionStateOf,
   producedCountIn,
   productionStateOf,
+  unsettledItemIdsInOrder,
+  selectionStateOf,
   TABLE_LOOKUP_DEBOUNCE_MS,
+  type ShareState,
   type SettleOutcome,
   type SettlementPaymentMethod,
 } from '../core/openItems'
@@ -53,10 +56,10 @@ const lookupFoundNothing = computed(
   () => openItems.lookupReport !== null && ordersInTheLookup.value.length === 0,
 )
 
-const wholeTableIsSelected = computed(() =>
+const lookupWholeTableSelection = computed<ShareState>(() =>
   openItems.lookupTable === null
-    ? false
-    : isTheWholeTableSelected(openItems.lookupTable, openItems.selectedItemIds),
+    ? 'none'
+    : selectionStateOf(itemIdsAtTable(openItems.lookupTable), openItems.selectedItemIds),
 )
 
 onMounted(async () => {
@@ -133,11 +136,23 @@ function setWholeTable(table: OpenTableView, isWanted: boolean): void {
   openItems.setWholeTable(table, isWanted)
 }
 
-function setTheLookupWholeTable(isWanted: boolean | null): void {
+function setTheLookupWholeTable(): void {
   const table = openItems.lookupTable
   if (table !== null) {
-    openItems.setWholeTable(table, isWanted === true)
+    openItems.setWholeTable(table, lookupWholeTableSelection.value !== 'all')
   }
+}
+
+function orderSelectionOf(order: TableOrderRecordView): ShareState {
+  return selectionStateOf(unsettledItemIdsInOrder(order), openItems.selectedItemIds)
+}
+
+function setWholeOrder(order: TableOrderRecordView): void {
+  const report = openItems.lookupReport
+  if (report === null) {
+    return
+  }
+  openItems.setWholeOrder(report.tableName, order, orderSelectionOf(order) !== 'all')
 }
 
 function isHeldBack(table: OpenTableView): boolean {
@@ -238,7 +253,8 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
         density="comfortable"
         hide-details
         :label="t('phone.openItems.actions.wholeTable')"
-        :model-value="wholeTableIsSelected"
+        :model-value="lookupWholeTableSelection === 'all'"
+        :indeterminate="lookupWholeTableSelection === 'some'"
         @update:model-value="setTheLookupWholeTable"
       />
       <v-card
@@ -248,13 +264,22 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
         :class="stateClassFor(order)"
       >
         <v-card-text class="lookup-body">
-          <div class="lookup-card-head d-flex flex-wrap align-baseline ga-2 mb-2">
+          <div class="lookup-card-head d-flex flex-wrap align-baseline ga-2">
             <span class="order-number text-h6">
               {{ t('phone.openItems.labels.order', { order: order.globalOrderNumber }) }}
             </span>
             <span class="taken-by text-body-2 text-medium-emphasis">
               {{ takenByTextFor(order) }}
             </span>
+          </div>
+          <div class="lookup-card-tally d-flex align-center ga-2">
+            <v-checkbox-btn
+              v-if="unsettledItemIdsInOrder(order).length > 0"
+              class="whole-order flex-grow-0"
+                    :model-value="orderSelectionOf(order) === 'all'"
+              :indeterminate="orderSelectionOf(order) === 'some'"
+              @update:model-value="setWholeOrder(order)"
+            />
             <span class="done-counter text-body-2 ms-auto">{{ doneCounterTextFor(order) }}</span>
           </div>
           <v-list class="lookup-lines" lines="three">
@@ -375,7 +400,12 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
 }
 
 .lookup-card-head {
-  padding: 0.75rem 1rem 0.5rem;
+  padding: 0.75rem 1rem 0;
+}
+
+.lookup-card-tally {
+  min-height: 3rem;
+  padding: 0 1rem;
 }
 
 .lookup-lines {

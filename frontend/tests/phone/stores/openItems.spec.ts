@@ -765,3 +765,96 @@ describe('a table opened with the items of an order just sent ticked', () => {
     expect(openItems.selectedItemIds).toEqual(['new-open'])
   })
 })
+
+function positionOf(orderItemId: string, settledAtUtc: string | null) {
+  return {
+    orderItemId,
+    orderId: 'order-x',
+    globalOrderNumber: 150,
+    itemName: 'Bier',
+    note: null,
+    unitPriceCents: 400,
+    orderedAtUtc: '2026-09-05T18:20:00Z',
+    fulfilledAtUtc: null,
+    settledAtUtc,
+  }
+}
+
+const REPORT_WITH_TWO_ORDERS = {
+  tableName: 'Tisch 12',
+  openAmountCents: 1600,
+  orders: [
+    {
+      orderId: 'order-a',
+      globalOrderNumber: 150,
+      createdAtUtc: '2026-09-05T18:20:00Z',
+      staffMemberName: 'Anna',
+      items: [
+        positionOf('a-open-1', null),
+        positionOf('a-open-2', null),
+        positionOf('a-settled', '2026-09-05T18:40:00Z'),
+      ],
+    },
+    {
+      orderId: 'order-b',
+      globalOrderNumber: 151,
+      createdAtUtc: '2026-09-05T18:30:00Z',
+      staffMemberName: 'Anna',
+      items: [positionOf('b-open', null)],
+    },
+  ],
+}
+
+describe('taking a whole order from the table a waiter looks up', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('ticks exactly the unsettled items of the order and keeps the other ticks of the table', async () => {
+    const { openItems } = await storeWithTheOpenList([])
+    openItems.openLookup('Tisch 12')
+    openItems.lookupReport = REPORT_WITH_TWO_ORDERS
+    openItems.toggleItem('b-open')
+
+    openItems.setWholeOrder('Tisch 12', REPORT_WITH_TWO_ORDERS.orders[0], true)
+
+    expect(openItems.selectedItemIds).toEqual(['b-open', 'a-open-1', 'a-open-2'])
+  })
+
+  it('unticks exactly the unsettled items of the order when it is not wanted any more', async () => {
+    const { openItems } = await storeWithTheOpenList([])
+    openItems.openLookup('Tisch 12')
+    openItems.lookupReport = REPORT_WITH_TWO_ORDERS
+    openItems.toggleItem('b-open')
+    openItems.setWholeOrder('Tisch 12', REPORT_WITH_TWO_ORDERS.orders[0], true)
+
+    openItems.setWholeOrder('Tisch 12', REPORT_WITH_TWO_ORDERS.orders[0], false)
+
+    expect(openItems.selectedItemIds).toEqual(['b-open'])
+  })
+})
+
+describe('taking a whole order while the plain list of tables is shown', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('ignores the order of another table while a different table holds the selection', async () => {
+    const { openItems } = await storeWithTheOpenList([])
+    openItems.toggleItem('item-1')
+
+    openItems.setWholeOrder('Tisch 99', REPORT_WITH_TWO_ORDERS.orders[0], true)
+
+    expect(openItems.selectedItemIds).toEqual(['item-1'])
+  })
+})

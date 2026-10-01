@@ -794,6 +794,74 @@ describe('looking up one table from the screen that shows what is open', () => {
     expect(screen.get('.selected-total').text()).toBe('Ausgewählt: 12,00 €')
   })
 
+  it('shows the whole table as half taken while only some of its items are ticked', async () => {
+    const { screen } = await mountTheScreenWithALookup()
+
+    await typeTheTableName(screen, 'Tisch 12')
+    await screen.findAll('.lookup-card')[0].get('.open-line').trigger('click')
+    await screen.vm.$nextTick()
+
+    expect(screen.find('.whole-table .mdi-minus-box').exists()).toBe(true)
+  })
+
+  it('ticks every open item of one order from its header and leaves the other orders alone', async () => {
+    const { screen } = await mountTheScreenWithALookup()
+
+    await typeTheTableName(screen, 'Tisch 12')
+    await screen.findAll('.lookup-card')[1].get('.whole-order input').trigger('click')
+    await screen.vm.$nextTick()
+
+    expect({ first: tickOf(screen, 0), second: tickOf(screen, 1), third: tickOf(screen, 2) }).toEqual({
+      first: [false],
+      second: [true, true],
+      third: [false],
+    })
+  })
+
+  it('shows an order as half taken after one of its items is unticked again', async () => {
+    const { screen } = await mountTheScreenWithALookup()
+    await typeTheTableName(screen, 'Tisch 12')
+    const card = screen.findAll('.lookup-card')[1]
+    await card.get('.whole-order input').trigger('click')
+    await screen.vm.$nextTick()
+
+    await card.findAll('.open-line')[0].trigger('click')
+    await screen.vm.$nextTick()
+
+    expect(card.find('.whole-order .mdi-minus-box').exists()).toBe(true)
+  })
+
+  it('ticks the rest of a half taken order when its header is tapped', async () => {
+    const { screen } = await mountTheScreenWithALookup()
+    await typeTheTableName(screen, 'Tisch 12')
+    await screen.findAll('.lookup-card')[1].findAll('.open-line')[0].trigger('click')
+    await screen.vm.$nextTick()
+
+    await screen.findAll('.lookup-card')[1].get('.whole-order input').trigger('click')
+    await screen.vm.$nextTick()
+
+    expect(tickOf(screen, 1)).toEqual([true, true])
+  })
+
+  it('offers no header tick on an order whose items are all settled', async () => {
+    const paidOrder = {
+      ...TABLE_REPORT.orders[1],
+      items: [TABLE_REPORT.orders[1].items[2]],
+    }
+    const { screen } = await mountTheScreenWithALookup(OPEN_LIST, {
+      ...TABLE_REPORT,
+      orders: [TABLE_REPORT.orders[0], paidOrder],
+    })
+
+    await typeTheTableName(screen, 'Tisch 12')
+
+    const cards = screen.findAll('.lookup-card')
+    expect({
+      open: cards[0].find('.whole-order').exists(),
+      paid: cards[1].find('.whole-order').exists(),
+    }).toEqual({ open: true, paid: false })
+  })
+
   it('says that the table has no orders at all when the lookup finds none', async () => {
     const { screen } = await mountTheScreenWithALookup(OPEN_LIST, {
       tableName: 'Tisch 99',

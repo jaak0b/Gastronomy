@@ -11,7 +11,7 @@ export interface AmountPaidWithReason {
   paymentNotice: string | null
 }
 
-export type ProductionState = 'none' | 'some' | 'all'
+export type ShareState = 'none' | 'some' | 'all'
 
 export type PositionState = 'produced' | 'notProduced' | 'unknown'
 
@@ -37,12 +37,15 @@ export function producedCountIn(order: TableOrderRecordView): number {
   return order.items.filter((item) => item.fulfilledAtUtc !== null).length
 }
 
-export function productionStateOf(order: TableOrderRecordView): ProductionState {
-  const produced = producedCountIn(order)
-  if (produced === 0) {
+export function shareStateOf(count: number, total: number): ShareState {
+  if (count === 0) {
     return 'none'
   }
-  return produced === order.items.length ? 'all' : 'some'
+  return count === total ? 'all' : 'some'
+}
+
+export function productionStateOf(order: TableOrderRecordView): ShareState {
+  return shareStateOf(producedCountIn(order), order.items.length)
 }
 
 export function positionStateOf(item: TableOrderRecordItemView): PositionState {
@@ -77,14 +80,20 @@ export function selectedAmountCents(
   )
 }
 
-export function isTheWholeTableSelected(
-  table: OpenTableView,
+export function selectionStateOf(
+  itemIds: readonly string[],
   selectedItemIds: readonly string[],
-): boolean {
-  return (
-    table.items.length > 0
-    && table.items.every((item) => selectedItemIds.includes(item.orderItemId))
+): ShareState {
+  return shareStateOf(
+    itemIds.filter((id) => selectedItemIds.includes(id)).length,
+    itemIds.length,
   )
+}
+
+export function unsettledItemIdsInOrder(order: TableOrderRecordView): string[] {
+  return order.items
+    .filter((item) => item.settledAtUtc === null)
+    .map((item) => item.orderItemId)
 }
 
 export function tableHoldingTheSelection(
@@ -137,6 +146,21 @@ export function withWholeTable(
   const tableItemIds = itemIdsAtTable(table)
   const untouched = selectedItemIds.filter((id) => !tableItemIds.includes(id))
   return isWanted ? [...untouched, ...tableItemIds] : untouched
+}
+
+export function withWholeOrder(
+  selectedItemIds: readonly string[],
+  tables: readonly OpenTableView[],
+  tableName: string,
+  order: TableOrderRecordView,
+  isWanted: boolean,
+): string[] {
+  if (isHeldBackByAnotherTable(tables, selectedItemIds, tableName)) {
+    return [...selectedItemIds]
+  }
+  const orderItemIds = unsettledItemIdsInOrder(order)
+  const untouched = selectedItemIds.filter((id) => !orderItemIds.includes(id))
+  return isWanted ? [...untouched, ...orderItemIds] : untouched
 }
 
 export function withoutItemsThatAreGone(

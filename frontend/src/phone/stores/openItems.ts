@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request, type ApiResult } from '../../shared/api/client'
-import { OpenItemsView, OpenTableView, SettlementView, TableNamesView, TableOrderReportView } from '../../shared/api/generatedSchemas'
+import { OpenItemsView, OpenTableView, SettlementView, TableNamesView, TableOrderRecordView, TableOrderReportView } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import {
@@ -11,6 +11,7 @@ import {
   selectedAmountCents,
   selectedItems,
   withItemToggled,
+  withWholeOrder,
   withWholeTable,
   withoutItemsThatAreGone,
   type SettleNotice,
@@ -209,6 +210,17 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     )
   }
 
+  function setWholeOrder(tableName: string, order: TableOrderRecordView, isWanted: boolean): void {
+    dismissNotice()
+    selectedItemIds.value = withWholeOrder(
+      selectedItemIds.value,
+      activeTables.value,
+      tableName,
+      order,
+      isWanted,
+    )
+  }
+
   async function accept(
     result: ApiResult<SettlementView>,
     sentLines: readonly SentSettleLine[],
@@ -283,6 +295,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     dismissNotice,
     toggleItem,
     setWholeTable,
+    setWholeOrder,
     settle,
     openLookup,
     openTableAndSelectItemsOnceLoaded,

@@ -6,17 +6,20 @@ import {
   isHeldBackByAnotherTable,
   isPaymentNoticeNeeded,
   isPaymentNoticeWritten,
-  isTheWholeTableSelected,
   itemIdsAtTable,
   noticeAfterSettling,
   openTableInReport,
   positionStateOf,
   producedCountIn,
   productionStateOf,
+  unsettledItemIdsInOrder,
   selectedAmountCents,
+  selectionStateOf,
+  shareStateOf,
   tableHoldingTheSelection,
   tableForItem,
   withItemToggled,
+  withWholeOrder,
   withWholeTable,
   withoutItemsThatAreGone,
 } from '../../../src/phone/core/openItems'
@@ -142,16 +145,74 @@ describe('taking a whole table at once', () => {
     expect(withWholeTable(['12-0', '12-1'], tables, twelve, false)).toEqual([])
   })
 
-  it('reports the table as fully ticked once every item is ticked', () => {
-    const table = tableWith('Tisch 12', [350, 400])
+})
 
-    expect(isTheWholeTableSelected(table, itemIdsAtTable(table))).toBe(true)
+describe('how much of a group of items is ticked', () => {
+  it('reports none when no item of the group is ticked', () => {
+    expect(selectionStateOf(['a', 'b'], ['c'])).toBe('none')
   })
 
-  it('reports the table as not fully ticked while one item is left', () => {
-    const table = tableWith('Tisch 12', [350, 400])
+  it('reports some while one item of the group is left', () => {
+    expect(selectionStateOf(['a', 'b'], ['a', 'c'])).toBe('some')
+  })
 
-    expect(isTheWholeTableSelected(table, ['Tisch 12-0'])).toBe(false)
+  it('reports all once every item of the group is ticked', () => {
+    expect(selectionStateOf(['a', 'b'], ['b', 'a'])).toBe('all')
+  })
+})
+
+describe('how much of a whole is covered by a count', () => {
+  it('reports none for a count of zero', () => {
+    expect(shareStateOf(0, 3)).toBe('none')
+  })
+
+  it('reports some for a count below the total', () => {
+    expect(shareStateOf(2, 3)).toBe('some')
+  })
+
+  it('reports all when the count reaches the total', () => {
+    expect(shareStateOf(3, 3)).toBe('all')
+  })
+})
+
+describe('taking a whole order at once', () => {
+  const twelve = tableWith('12', [350, 400, 500])
+  const hundredAndTwentyThree = tableWith('123', [500])
+  const tables = [twelve, hundredAndTwentyThree]
+  const order = recordWith([
+    itemWith('12-0', null, null, 350),
+    itemWith('12-1', null, null, 400),
+    itemWith('12-paid', null, '2026-09-05T18:40:00Z', 200),
+  ])
+
+  it('offers only the items of the order that are not settled', () => {
+    expect(unsettledItemIdsInOrder(order)).toEqual(['12-0', '12-1'])
+  })
+
+  it('offers nothing from an order whose items are all settled', () => {
+    const paid = recordWith([itemWith('12-paid', null, '2026-09-05T18:40:00Z', 200)])
+
+    expect(unsettledItemIdsInOrder(paid)).toEqual([])
+  })
+
+  it('ticks the open items of the order and keeps the other ticks of the table', () => {
+    expect(withWholeOrder(['12-2'], tables, '12', order, true)).toEqual(['12-2', '12-0', '12-1'])
+  })
+
+  it('ticks the rest of an order that was partly ticked', () => {
+    expect(withWholeOrder(['12-0', '12-2'], tables, '12', order, true)).toEqual([
+      '12-2',
+      '12-0',
+      '12-1',
+    ])
+  })
+
+  it('unticks exactly the items of the order', () => {
+    expect(withWholeOrder(['12-0', '12-1', '12-2'], tables, '12', order, false)).toEqual(['12-2'])
+  })
+
+  it('ignores the order while another table holds the selection', () => {
+    expect(withWholeOrder(['123-0'], tables, '12', order, true)).toEqual(['123-0'])
   })
 })
 

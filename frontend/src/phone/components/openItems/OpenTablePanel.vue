@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { OpenTableView } from '../../../shared/api/generatedSchemas'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
-import { isTheWholeTableSelected } from '../../core/openItems'
+import { itemIdsAtTable, selectionStateOf } from '../../core/openItems'
 import { formatPrice } from '../../core/totals'
 import OpenPositionRow from './OpenPositionRow.vue'
 
@@ -20,8 +20,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const wholeTableIsSelected = computed(() =>
-  isTheWholeTableSelected(props.table, props.selectedItemIds),
+const wholeTableSelection = computed(() =>
+  selectionStateOf(itemIdsAtTable(props.table), props.selectedItemIds),
 )
 
 function priceTextFor(cents: number): string {
@@ -43,7 +43,7 @@ function setWholeTable(): void {
   if (props.isHeldBackByAnotherTable) {
     return
   }
-  emit('set-whole-table', !wholeTableIsSelected.value)
+  emit('set-whole-table', wholeTableSelection.value !== 'all')
 }
 </script>
 
@@ -68,7 +68,8 @@ function setWholeTable(): void {
           hide-details
           :disabled="isHeldBackByAnotherTable"
           :label="t('phone.openItems.actions.wholeTable')"
-          :model-value="wholeTableIsSelected"
+          :model-value="wholeTableSelection === 'all'"
+          :indeterminate="wholeTableSelection === 'some'"
           @update:model-value="setWholeTable"
         />
         <v-list class="open-lines" lines="three">
