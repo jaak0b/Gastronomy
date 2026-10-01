@@ -18,7 +18,7 @@ function amountField(): HTMLInputElement {
 }
 
 function confirmButton(): HTMLButtonElement {
-  return document.querySelector('.amount-paid-dialog .confirm') as HTMLButtonElement
+  return document.querySelector('.amount-paid-dialog .confirm-in-cash') as HTMLButtonElement
 }
 
 describe('the amount dialog when another phone settles part of the selection', () => {
@@ -45,7 +45,7 @@ describe('the amount dialog when another phone settles part of the selection', (
     confirmButton().click()
     await flushPromises()
 
-    expect(dialog.emitted('confirm')).toEqual([[700, null]])
+    expect(dialog.emitted('confirm')).toEqual([[700, null, 'cash']])
   })
 
   it('keeps what the waiter typed when the selection moves under it', async () => {
@@ -65,7 +65,7 @@ describe('the amount dialog when another phone settles part of the selection', (
     confirmButton().click()
     await flushPromises()
 
-    expect(dialog.emitted('confirm')).toEqual([[1200, null]])
+    expect(dialog.emitted('confirm')).toEqual([[1200, null, 'cash']])
   })
 
   it('keeps the field the waiter emptied empty when the selection moves', async () => {

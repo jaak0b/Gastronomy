@@ -80,7 +80,7 @@ describe('an answer the phone cannot read', () => {
     openItems.tables = [A_TABLE]
     openItems.toggleItem('item-of-the-order')
 
-    const outcome = await openItems.settle(200, null)
+    const outcome = await openItems.settle(200, null, 'cash')
 
     expect(outcome).toBe('answerNeverCame')
     expect(openItems.notice?.key).toBe('phone.openItems.errors.settleAnswerNeverCame')

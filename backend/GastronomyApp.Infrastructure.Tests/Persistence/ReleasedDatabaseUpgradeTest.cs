@@ -18,6 +18,7 @@ public sealed class ReleasedDatabaseUpgradeTest
     var invitationId = Guid.NewGuid();
     var staffMemberId = Guid.NewGuid();
     var orderId = Guid.NewGuid();
+    var orderItemId = Guid.NewGuid();
     byte[] qrCodeHash =
     [
       1,
@@ -40,6 +41,7 @@ public sealed class ReleasedDatabaseUpgradeTest
     await InsertFestivalAsync(connection, festivalId);
     await InsertStaffMemberAsync(connection, staffMemberId);
     await InsertOrderAsync(connection, orderId, festivalId, staffMemberId);
+    await InsertSettledOrderItemAsync(connection, orderItemId, orderId, festivalId, categoryId, staffMemberId);
 
     var context = fixture.CreateContext();
     await context.Database.MigrateAsync();
@@ -47,6 +49,7 @@ public sealed class ReleasedDatabaseUpgradeTest
     var category = await context.Set<CatalogCategory>().SingleAsync(persisted => persisted.Id == categoryId);
     var invitation = await context.Set<EnrolmentInvitation>().SingleAsync(persisted => persisted.Id == invitationId);
     var order = await context.Set<Order>().SingleAsync(persisted => persisted.Id == orderId);
+    var orderItem = await context.Set<OrderItem>().SingleAsync(persisted => persisted.Id == orderItemId);
     List<string> appliedMigrations = (await context.Database.GetAppliedMigrationsAsync()).ToList();
 
     Assert.Multiple(() =>
@@ -60,11 +63,16 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(order.GlobalOrderNumber, Is.EqualTo(4));
                       Assert.That(order.CreatedAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 17, 30, 0)));
                       Assert.That(order.StaffMemberId, Is.EqualTo(staffMemberId));
-                      Assert.That(appliedMigrations, Has.Count.EqualTo(4));
+                      Assert.That(orderItem.ChargedPriceCents, Is.EqualTo(350));
+                      Assert.That(orderItem.SettledAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 18, 0, 0)));
+                      Assert.That(orderItem.SettledByStaffMemberId, Is.EqualTo(staffMemberId));
+                      Assert.That(orderItem.PaymentMethod, Is.Null);
+                      Assert.That(appliedMigrations, Has.Count.EqualTo(5));
                       Assert.That(appliedMigrations[0], Is.EqualTo(_releasedSchema.MigrationId));
                       Assert.That(appliedMigrations[1], Does.EndWith("_CollateCategoryNamesAndCapitalizeQRColumns"));
                       Assert.That(appliedMigrations[2], Does.EndWith("_DropOrderNote"));
                       Assert.That(appliedMigrations[3], Does.EndWith("_AddEntityNavigations"));
+                      Assert.That(appliedMigrations[4], Does.EndWith("_AddOrderItemPaymentMethod"));
                     });
   }
 
@@ -250,6 +258,33 @@ public sealed class ReleasedDatabaseUpgradeTest
     command.Parameters.AddWithValue("$tableName", "Tisch 7");
     command.Parameters.AddWithValue("$note", "An old note that nobody reads any more");
     command.Parameters.AddWithValue("$createdAtUtc", "2026-09-20 17:30:00");
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertSettledOrderItemAsync(SqliteConnection connection, Guid orderItemId, Guid orderId, Guid festivalId, Guid categoryId, Guid staffMemberId)
+  {
+    var stationId = Guid.NewGuid();
+    var catalogItemId = Guid.NewGuid();
+    var stationOrderId = Guid.NewGuid();
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "Stations" ("Id", "Name", "SortOrder", "IsActive", "DeviceId", "EnrolmentInvitationId")
+                          VALUES ($stationId, 'Kueche', 1, 1, NULL, NULL);
+                          INSERT INTO "CatalogItems" ("Id", "Name", "CategoryId", "SortOrder", "IsActive", "ProductionMinutes", "IsQueueIndependent")
+                          VALUES ($catalogItemId, 'Bratwurst', $categoryId, 1, 1, NULL, 0);
+                          INSERT INTO "StationOrders" ("Id", "OrderId", "FestivalId", "StationId", "StationOrderNumber", "DeliveryMode", "IsHiddenFromAsItComesQueue")
+                          VALUES ($stationOrderId, $orderId, $festivalId, $stationId, 1, 0, 0);
+                          INSERT INTO "OrderItems" ("Id", "StationOrderId", "CatalogItemId", "ItemName", "UnitPriceCents", "Note", "FulfilledAtUtc", "SettledAtUtc", "ChargedPriceCents", "SettledByStaffMemberId", "PaymentNotice")
+                          VALUES ($orderItemId, $stationOrderId, $catalogItemId, 'Bratwurst', 350, NULL, NULL, '2026-09-20 18:00:00', 350, $staffMemberId, NULL);
+                          """;
+    command.Parameters.AddWithValue("$stationId", ToStoredText(stationId));
+    command.Parameters.AddWithValue("$catalogItemId", ToStoredText(catalogItemId));
+    command.Parameters.AddWithValue("$categoryId", ToStoredText(categoryId));
+    command.Parameters.AddWithValue("$stationOrderId", ToStoredText(stationOrderId));
+    command.Parameters.AddWithValue("$orderId", ToStoredText(orderId));
+    command.Parameters.AddWithValue("$festivalId", ToStoredText(festivalId));
+    command.Parameters.AddWithValue("$orderItemId", ToStoredText(orderItemId));
+    command.Parameters.AddWithValue("$staffMemberId", ToStoredText(staffMemberId));
     await command.ExecuteNonQueryAsync();
   }
 }

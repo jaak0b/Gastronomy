@@ -26,7 +26,13 @@ async function typeIn(selector: string, typed: string): Promise<void> {
 }
 
 function confirmButton(): HTMLButtonElement {
-  return document.querySelector('.amount-paid-dialog .confirm') as HTMLButtonElement
+  return document.querySelector('.amount-paid-dialog .confirm-in-cash') as HTMLButtonElement
+}
+
+function buttonTexts(): string[] {
+  return Array.from(document.querySelectorAll('.amount-paid-dialog .actions button')).map(
+    (button) => button.textContent?.trim() ?? '',
+  )
 }
 
 describe('the dialog that asks what the table handed over', () => {
@@ -66,7 +72,68 @@ describe('the dialog that asks what the table handed over', () => {
     confirmButton().click()
     await flushPromises()
 
-    expect(dialog.emitted('confirm')).toEqual([[250, 'Stammgast']])
+    expect(dialog.emitted('confirm')).toEqual([[250, 'Stammgast', 'cash']])
+  })
+
+  it('hands back card when the waiter settles by card', async () => {
+    const dialog = mountDialog('de')
+    await flushPromises()
+
+    ;(document.querySelector('.amount-paid-dialog .confirm-by-card') as HTMLElement).click()
+    await flushPromises()
+
+    expect(dialog.emitted('confirm')).toEqual([[700, null, 'card']])
+  })
+
+  it('offers cash and card while the typed amount is above zero', async () => {
+    mountDialog('de')
+    await flushPromises()
+
+    expect(buttonTexts()).toEqual(['Bar abrechnen', 'Mit Karte abrechnen', 'Abbrechen'])
+  })
+
+  it('offers cash and card in English too', async () => {
+    mountDialog('en')
+    await flushPromises()
+
+    expect(buttonTexts()).toEqual(['Settle in cash', 'Settle by card', 'Cancel'])
+  })
+
+  it('offers one settle button that says nothing was paid once the amount is zero', async () => {
+    const dialog = mountDialog('de')
+    await flushPromises()
+
+    await typeIn('.amount-field', '0')
+    await typeIn('.reason-field', 'Essen für die Kapelle')
+    expect(buttonTexts()).toEqual(['Abrechnen', 'Abbrechen'])
+    ;(document.querySelector('.amount-paid-dialog .confirm-nothing-paid') as HTMLElement).click()
+    await flushPromises()
+
+    expect(dialog.emitted('confirm')).toEqual([[0, 'Essen für die Kapelle', 'none']])
+  })
+
+  it('offers cash and card again when the waiter types an amount back in', async () => {
+    mountDialog('de')
+    await flushPromises()
+
+    await typeIn('.amount-field', '0')
+    await typeIn('.amount-field', '0,50')
+
+    expect(buttonTexts()).toEqual(['Bar abrechnen', 'Mit Karte abrechnen', 'Abbrechen'])
+  })
+
+  it('keeps every button shut while a settlement is on its way', async () => {
+    mount(AmountPaidDialog, {
+      props: { isSettling: true, notice: null, selectedTotalCents: 700, language: 'de' },
+      global: { plugins: testPlugins('de') },
+      attachTo: document.body,
+    })
+    await flushPromises()
+
+    const shut = Array.from(document.querySelectorAll('.amount-paid-dialog .actions button')).map(
+      (button) => button.hasAttribute('disabled'),
+    )
+    expect(shut).toEqual([true, true, true])
   })
 
   it('hands back no reason when the table paid the full price', async () => {
@@ -76,7 +143,7 @@ describe('the dialog that asks what the table handed over', () => {
     confirmButton().click()
     await flushPromises()
 
-    expect(dialog.emitted('confirm')).toEqual([[700, null]])
+    expect(dialog.emitted('confirm')).toEqual([[700, null, 'cash']])
   })
 
   it('hands back no reason when the guest rounded up', async () => {
@@ -87,7 +154,7 @@ describe('the dialog that asks what the table handed over', () => {
     confirmButton().click()
     await flushPromises()
 
-    expect(dialog.emitted('confirm')).toEqual([[1000, null]])
+    expect(dialog.emitted('confirm')).toEqual([[1000, null, 'cash']])
   })
 
   it('keeps the confirming button shut while the field stands empty', async () => {

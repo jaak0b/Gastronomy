@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { OpenTableView, TableOrderRecordItemView, TableOrderRecordView, TableOrderReportView } from '../../../src/shared/api/generatedSchemas'
 import {
-
   canTheAmountBeSettled,
+  isAPaymentMethodNeeded,
   isHeldBackByAnotherTable,
   isPaymentNoticeNeeded,
   isPaymentNoticeWritten,
@@ -431,5 +431,15 @@ describe('how far the positions of one order are produced', () => {
 
   it('reads a position still at the station as not produced', () => {
     expect(positionStateOf(itemWith('item-1', null, null, 350))).toBe('notProduced')
+  })
+})
+
+describe('whether settling asks how the table paid', () => {
+  it('asks for cash or card when the table pays something', () => {
+    expect(isAPaymentMethodNeeded(1)).toBe(true)
+  })
+
+  it('asks nothing when the table pays nothing', () => {
+    expect(isAPaymentMethodNeeded(0)).toBe(false)
   })
 })

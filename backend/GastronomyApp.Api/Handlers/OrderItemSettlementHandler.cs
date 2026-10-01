@@ -22,6 +22,6 @@ public sealed class OrderItemSettlementHandler
   {
     ArgumentNullException.ThrowIfNull(caller);
 
-    return await _settlementService.SettleAsync(request.Lines ?? [], caller.StaffMemberId, cancellationToken).Then(_mapper.Map<SettlementView>);
+    return await _settlementService.SettleAsync(request.Lines ?? [], request.PaymentMethod!.Value, caller.StaffMemberId, cancellationToken).Then(_mapper.Map<SettlementView>);
   }
 }

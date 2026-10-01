@@ -22,6 +22,7 @@ public sealed class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
     builder.Property(item => item.ChargedPriceCents).IsRequired(false);
     builder.Property(item => item.SettledByStaffMemberId).IsRequired(false);
     builder.Property(item => item.PaymentNotice).IsRequired(false);
+    builder.Property(item => item.PaymentMethod).IsRequired(false);
     builder.HasIndex(item => item.SettledAtUtc);
     builder.HasIndex(item => item.FulfilledAtUtc);
     builder.HasOne(item => item.CatalogItem).WithMany().HasForeignKey(item => item.CatalogItemId).OnDelete(DeleteBehavior.Restrict);

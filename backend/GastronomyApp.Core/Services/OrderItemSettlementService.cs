@@ -1,4 +1,5 @@
 ﻿using ErrorOr;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
@@ -23,7 +24,7 @@ public sealed class OrderItemSettlementService
     _logger = logger;
   }
 
-  public async Task<ErrorOr<SettlementResult>> SettleAsync(IReadOnlyList<SettleLineRequest> lines, Guid settledByStaffMemberId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<SettlementResult>> SettleAsync(IReadOnlyList<SettleLineRequest> lines, PaymentMethod paymentMethod, Guid settledByStaffMemberId, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(lines);
 
@@ -34,7 +35,7 @@ public sealed class OrderItemSettlementService
 
     IReadOnlyList<OrderItem> selected = await _repository.FindForSettlementAsync(lines.Select(line => line.OrderItemId).Distinct().ToList(), cancellationToken);
 
-    ErrorOr<SettlementResult> settled = await Settle(lines, settledByStaffMemberId, selected.Where(item => item.StationOrder?.Order is not null).ToList(), _timeProvider.GetUtcNow().UtcDateTime).ThenDoAsync(settlement => _repository.SaveChangesAsync(cancellationToken));
+    ErrorOr<SettlementResult> settled = await Settle(lines, paymentMethod, settledByStaffMemberId, selected.Where(item => item.StationOrder?.Order is not null).ToList(), _timeProvider.GetUtcNow().UtcDateTime).ThenDoAsync(settlement => _repository.SaveChangesAsync(cancellationToken));
 
     if (settled.IsError)
       return settled.Errors;
@@ -54,7 +55,7 @@ public sealed class OrderItemSettlementService
     _logger.LogInformation("{SettledItemCount} order items were settled and saved. Order item ids: {SettledOrderItemIds}.", settledIds.Count, settledIds);
   }
 
-  public ErrorOr<SettlementResult> Settle(IReadOnlyList<SettleLineRequest> lines, Guid settledByStaffMemberId, IReadOnlyCollection<OrderItem> knownItems, DateTime settledAtUtc)
+  public ErrorOr<SettlementResult> Settle(IReadOnlyList<SettleLineRequest> lines, PaymentMethod paymentMethod, Guid settledByStaffMemberId, IReadOnlyCollection<OrderItem> knownItems, DateTime settledAtUtc)
   {
     ArgumentNullException.ThrowIfNull(lines);
     ArgumentNullException.ThrowIfNull(knownItems);
@@ -64,6 +65,13 @@ public sealed class OrderItemSettlementService
     List<Error> duplicates = FindDuplicateLines(lines);
     if (duplicates.Count > 0)
       return duplicates;
+
+    var moneyWasPaid = lines.Any(line => line.PaidPriceCents!.Value > 0);
+    if (moneyWasPaid && paymentMethod is not (PaymentMethod.Cash or PaymentMethod.Card))
+      return Refusal.Settlement.PaymentMethodMissingForMoneyPaid(paymentMethod);
+
+    if (!moneyWasPaid && paymentMethod != PaymentMethod.None)
+      return Refusal.Settlement.PaymentMethodNamedForNothingPaid(paymentMethod);
 
     Dictionary<Guid, OrderItem> knownItemsById = knownItems.ToDictionary(item => item.Id);
     List<OrderItem> selected = [];
@@ -86,7 +94,7 @@ public sealed class OrderItemSettlementService
     if (tableNames.Count > 1)
       return Refusal.Settlement.SelectionSpansSeveralTables(tableNames);
 
-    return Apply(lines, selected, settledByStaffMemberId, settledAtUtc);
+    return Apply(lines, paymentMethod, selected, settledByStaffMemberId, settledAtUtc);
   }
 
   public int SumOpenAmountCents(IEnumerable<OrderItem> items)
@@ -96,17 +104,17 @@ public sealed class OrderItemSettlementService
     return items.Where(item => item.SettledAtUtc is null).Sum(item => item.UnitPriceCents);
   }
 
-  public void MarkSettled(OrderItem item, int chargedPriceCents, string? paymentNotice, Guid settledByStaffMemberId, DateTime settledAtUtc)
+  public void MarkSettled(OrderItem item, int chargedPriceCents, string? paymentNotice, PaymentMethod paymentMethod, Guid settledByStaffMemberId, DateTime settledAtUtc)
   {
     ArgumentNullException.ThrowIfNull(item);
     EnsureSettlerNamed(settledByStaffMemberId);
 
     item.SettledAtUtc = settledAtUtc;
     item.SettledByStaffMemberId = settledByStaffMemberId;
-    OverwriteChargedPrice(item, chargedPriceCents, paymentNotice);
+    OverwriteChargedPrice(item, chargedPriceCents, paymentNotice, paymentMethod);
   }
 
-  private SettlementResult Apply(IReadOnlyList<SettleLineRequest> lines, IReadOnlyList<OrderItem> selected, Guid settledByStaffMemberId, DateTime settledAtUtc)
+  private SettlementResult Apply(IReadOnlyList<SettleLineRequest> lines, PaymentMethod paymentMethod, IReadOnlyList<OrderItem> selected, Guid settledByStaffMemberId, DateTime settledAtUtc)
   {
     List<OrderItem> newlySettled = [];
     List<OrderItem> reapplied = [];
@@ -120,14 +128,14 @@ public sealed class OrderItemSettlementService
 
       if (item.SettledAtUtc is null)
       {
-        MarkSettled(item, paidPriceCents, line.PaymentNotice, settledByStaffMemberId, settledAtUtc);
+        MarkSettled(item, paidPriceCents, line.PaymentNotice, paymentMethod, settledByStaffMemberId, settledAtUtc);
         newlySettled.Add(item);
         continue;
       }
 
       if (item.SettledByStaffMemberId == settledByStaffMemberId)
       {
-        OverwriteChargedPrice(item, paidPriceCents, line.PaymentNotice);
+        OverwriteChargedPrice(item, paidPriceCents, line.PaymentNotice, paymentMethod);
         reapplied.Add(item);
         continue;
       }
@@ -149,11 +157,12 @@ public sealed class OrderItemSettlementService
       throw new ArgumentException("A settled item has to name the staff member who collected the money.", nameof(settledByStaffMemberId));
   }
 
-  private void OverwriteChargedPrice(OrderItem item, int chargedPriceCents, string? paymentNotice)
+  private void OverwriteChargedPrice(OrderItem item, int chargedPriceCents, string? paymentNotice, PaymentMethod paymentMethod)
   {
     var written = (paymentNotice ?? string.Empty).Trim();
 
     item.ChargedPriceCents = chargedPriceCents;
+    item.PaymentMethod = chargedPriceCents > 0 ? paymentMethod : PaymentMethod.None;
     item.PaymentNotice = written;
 
     if (written.Length == 0)

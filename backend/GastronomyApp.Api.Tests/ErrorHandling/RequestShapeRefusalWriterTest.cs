@@ -101,7 +101,7 @@ public sealed class RequestShapeRefusalWriterTest
   [Test]
   public async Task PostSettlement_NoLines_IsRefusedWithTheEmptySelectionMessage()
   {
-    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", new { lines = Array.Empty<object>() });
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", new { lines = Array.Empty<object>(), paymentMethod = "none" });
 
     await AssertRefusedWithAsync(response, "errors.settlement.noItemsSelected");
   }
@@ -120,7 +120,8 @@ public sealed class RequestShapeRefusalWriterTest
                                                                 orderItemId = Guid.NewGuid(),
                                                                 paidPriceCents = -1
                                                               }
-                                                            }
+                                                            },
+                                                    paymentMethod = "cash"
                                                   });
 
     await AssertRefusedWithAsync(response, "errors.settlement.cannotBeProcessed");

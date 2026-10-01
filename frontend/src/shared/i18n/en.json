@@ -113,10 +113,11 @@
         "tableOpen": "Open: {amount}"
       },
       "actions": {
-        "amountPaidConfirm": "Settle",
         "reload": "Reload the list",
         "settle": "Settle",
         "settleAmountPaid": "Settle a different amount",
+        "settleByCard": "Settle by card",
+        "settleInCash": "Settle in cash",
         "wholeTable": "Select the whole table"
       },
       "messages": {

@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -214,7 +215,7 @@ public sealed class OpenItemEndpointsTest
                                                   new SettleItemsBody([
                                                                         new(itemIds[0], 100, "Der Tisch zahlt den Rest spaeter"),
                                                                         new(itemIds[1], 200, "Der Tisch zahlt den Rest spaeter")
-                                                                      ]));
+                                                                      ], "cash"));
     var open = await ReadOpenItemsAsync();
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
@@ -239,7 +240,7 @@ public sealed class OpenItemEndpointsTest
                                                   new SettleItemsBody([
                                                                         new(itemIds[0], 500),
                                                                         new(itemIds[1], 350)
-                                                                      ]));
+                                                                      ], "cash"));
 
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
@@ -296,7 +297,7 @@ public sealed class OpenItemEndpointsTest
                                                   new SettleItemsBody([
                                                                         new(itemIds[0], 350),
                                                                         new(itemIds[0], 350)
-                                                                      ]));
+                                                                      ], "cash"));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var open = await ReadOpenItemsAsync();
 
@@ -311,7 +312,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostSettle_NothingSelected_IsRefusedWithWordingThePhoneCanShow()
   {
-    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", new SettleItemsBody([]));
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", new SettleItemsBody([], "none"));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -402,7 +403,7 @@ public sealed class OpenItemEndpointsTest
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
     var colleagueToken = await _context.IssueSecondStaffTokenAsync("Bernd");
 
-    using var colleagueSettlement = await _context.SendAsAsync(colleagueToken, HttpMethod.Post, "/api/open-items/settle", new SettleItemsBody([new(itemIds[0], 0, "Kapelle")]));
+    using var colleagueSettlement = await _context.SendAsAsync(colleagueToken, HttpMethod.Post, "/api/open-items/settle", new SettleItemsBody([new(itemIds[0], 0, "Kapelle")], "none"));
     using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 350));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     await using var database = _context.Factory.CreateContext();
@@ -434,7 +435,7 @@ public sealed class OpenItemEndpointsTest
                                                                         new(itemIds[0], 350),
                                                                         new(itemIds[1], 350),
                                                                         new(Guid.NewGuid(), 350)
-                                                                      ]));
+                                                                      ], "cash"));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var open = await ReadOpenItemsAsync();
 
@@ -459,7 +460,7 @@ public sealed class OpenItemEndpointsTest
                                                                         new(twelve[1], 350),
                                                                         new(three[0], 350),
                                                                         new(three[1], 350)
-                                                                      ]));
+                                                                      ], "cash"));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var open = await ReadOpenItemsAsync();
     var tables = open.RootElement.GetProperty("tables");
@@ -514,9 +515,106 @@ public sealed class OpenItemEndpointsTest
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
   }
 
+  [Test]
+  public async Task PostSettle_PaidInCash_StoresCashOnEveryPaidItem()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
+
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 350));
+
+    await using var database = _context.Factory.CreateContext();
+    List<OrderItem> stored = await database.OrderItems.ToListAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(stored.Select(item => item.PaymentMethod), Is.All.EqualTo(PaymentMethod.Cash));
+                    });
+  }
+
+  [Test]
+  public async Task PostSettle_PaidByCardWithOneArticleGivenAway_StoresCardOnThePaidItemAndNoneOnTheFreeOne()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
+
+    using var response = await _context.SendAsync(HttpMethod.Post,
+                                                  "/api/open-items/settle",
+                                                  new SettleItemsBody([
+                                                                        new(itemIds[0], 350),
+                                                                        new(itemIds[1], 0, "Kapelle")
+                                                                      ], "card"));
+
+    await using var database = _context.Factory.CreateContext();
+    List<OrderItem> stored = await database.OrderItems.ToListAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(stored.Single(item => item.Id == itemIds[0]).PaymentMethod, Is.EqualTo(PaymentMethod.Card));
+                      Assert.That(stored.Single(item => item.Id == itemIds[1]).PaymentMethod, Is.EqualTo(PaymentMethod.None));
+                    });
+  }
+
+  [Test]
+  public async Task PostSettle_WithoutAPaymentMethod_SettlesNothingAndAnswersTheSettlementWording()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
+
+    using var response = await _context.SendAsync(HttpMethod.Post,
+                                                  "/api/open-items/settle",
+                                                  new
+                                                  {
+                                                    lines = itemIds.Select(itemId => new SettleLineBody(itemId, 350)).ToList()
+                                                  });
+
+    await AssertSettlementRefusedAndNothingStoredAsync(response);
+  }
+
+  [TestCase("7")]
+  [TestCase("null")]
+  public async Task PostSettle_APaymentMethodThePhoneCannotSend_SettlesNothingAndAnswersTheSettlementWording(string paymentMethodJson)
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
+    var lines = string.Join(",", itemIds.Select(itemId => $$"""{"orderItemId":"{{itemId}}","paidPriceCents":350}"""));
+
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", JsonDocument.Parse($$"""{"lines":[{{lines}}],"paymentMethod":{{paymentMethodJson}}}""").RootElement);
+
+    await AssertSettlementRefusedAndNothingStoredAsync(response);
+  }
+
+  [TestCase(350, "none")]
+  [TestCase(0, "cash")]
+  [TestCase(0, "card")]
+  public async Task PostSettle_APaymentMethodThatDoesNotMatchTheAmount_SettlesNothingAndAnswersTheSettlementWording(int paidPriceCents, string paymentMethod)
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
+
+    using var response = await _context.SendAsync(HttpMethod.Post,
+                                                  "/api/open-items/settle",
+                                                  new SettleItemsBody(itemIds.Select(itemId => new SettleLineBody(itemId, paidPriceCents, "Kapelle")).ToList(), paymentMethod));
+
+    await AssertSettlementRefusedAndNothingStoredAsync(response);
+  }
+
+  private async Task AssertSettlementRefusedAndNothingStoredAsync(HttpResponseMessage response)
+  {
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    await using var database = _context.Factory.CreateContext();
+    List<OrderItem> stored = await database.OrderItems.ToListAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("ValidationFailed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
+                      Assert.That(stored.Select(item => item.SettledAtUtc), Is.All.Null);
+                      Assert.That(stored.Select(item => item.PaymentMethod), Is.All.Null);
+                    });
+  }
+
   private SettleItemsBody SettleBodyFor(IReadOnlyList<Guid> orderItemIds, int? paidPriceCents, string? paymentNotice = null)
   {
-    return new(orderItemIds.Select(orderItemId => new SettleLineBody(orderItemId, paidPriceCents, paymentNotice)).ToList());
+    return new(orderItemIds.Select(orderItemId => new SettleLineBody(orderItemId, paidPriceCents, paymentNotice)).ToList(), paidPriceCents > 0 ? "cash" : "none");
   }
 
   private async Task AddAnItemWithoutAnOrderAsync()

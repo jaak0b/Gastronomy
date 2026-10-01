@@ -2259,6 +2259,14 @@
           "fulfilled"
         ]
       },
+      "PaymentMethod": {
+        "enum": [
+          "none",
+          "cash",
+          "card",
+          null
+        ]
+      },
       "PlacedOrderView": {
         "required": [
           "orderId",
@@ -2654,7 +2662,8 @@
       },
       "SettleItemsRequest": {
         "required": [
-          "lines"
+          "lines",
+          "paymentMethod"
         ],
         "type": "object",
         "properties": {
@@ -2667,6 +2676,16 @@
             "items": {
               "$ref": "#/components/schemas/SettleLineRequest"
             }
+          },
+          "paymentMethod": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PaymentMethod"
+              }
+            ]
           }
         }
       },

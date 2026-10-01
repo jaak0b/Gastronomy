@@ -106,7 +106,7 @@ describe('settling the same items again after the answer never came', () => {
     vi.unstubAllGlobals()
   })
 
-  it('sends the same lines again, so the laptop can take it as this phone settling twice', async () => {
+  it('sends the same lines and the same way of paying again, so the laptop can take it as this phone settling twice', async () => {
     const calls = answerWith([
       jsonOf(OPEN_LIST),
       theWifiDrops(),
@@ -115,8 +115,8 @@ describe('settling the same items again after the answer never came', () => {
     ])
     const openItems = await theTableWithTwoItems()
 
-    await openItems.settle(1200, null)
-    await openItems.settle(1200, null)
+    await openItems.settle(1200, null, 'card')
+    await openItems.settle(1200, null, 'card')
 
     expect(calls[1].body).toEqual(calls[2].body)
     expect(calls[2].body).toEqual({
@@ -124,6 +124,7 @@ describe('settling the same items again after the answer never came', () => {
         { orderItemId: 'item-1', paidPriceCents: 900, paymentNotice: null },
         { orderItemId: 'item-2', paidPriceCents: 300, paymentNotice: null },
       ],
+      paymentMethod: 'card',
     })
   })
 
@@ -136,8 +137,8 @@ describe('settling the same items again after the answer never came', () => {
     ])
     const openItems = await theTableWithTwoItems()
 
-    await openItems.settle(1200, null)
-    await openItems.settle(1200, null)
+    await openItems.settle(1200, null, 'card')
+    await openItems.settle(1200, null, 'card')
 
     expect(openItems.notice).toBeNull()
   })
@@ -150,7 +151,7 @@ describe('settling the same items again after the answer never came', () => {
     ])
     const openItems = await theTableWithTwoItems()
 
-    await openItems.settle(1200, null)
+    await openItems.settle(1200, null, 'card')
 
     expect(openItems.notice).toEqual({
       key: 'phone.openItems.messages.someWereAlreadySettled',

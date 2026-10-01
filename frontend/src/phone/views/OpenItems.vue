@@ -5,7 +5,7 @@ import { OpenTableView, TableOrderRecordView } from '../../shared/api/generatedS
 import { assertNever } from '../../shared/core/assertNever'
 import { formatFestivalMoment } from '../../shared/core/festivalTimes'
 import {
-
+  isAPaymentMethodNeeded,
   isHeldBackByAnotherTable,
   isTheWholeTableSelected,
   positionStateOf,
@@ -13,6 +13,7 @@ import {
   productionStateOf,
   TABLE_LOOKUP_DEBOUNCE_MS,
   type SettleOutcome,
+  type SettlementPaymentMethod,
 } from '../core/openItems'
 import { formatPrice } from '../core/totals'
 import { useOpenItemsStore } from '../stores/openItems'
@@ -101,16 +102,17 @@ function reloadTheActiveView(): void {
   void openItems.load()
 }
 
-async function settle(): Promise<void> {
-  await openItems.settle(openItems.selectedTotalCents, null)
+async function settleAtFullPrice(paymentMethod: SettlementPaymentMethod): Promise<void> {
+  await openItems.settle(openItems.selectedTotalCents, null, paymentMethod)
 }
 
 async function settleTheAmountPaid(
   amountPaidCents: number,
   paymentNotice: string | null,
+  paymentMethod: SettlementPaymentMethod,
 ): Promise<void> {
   closeTheAmountAskedForUnlessTheLaptopRefused(
-    await openItems.settle(amountPaidCents, paymentNotice),
+    await openItems.settle(amountPaidCents, paymentNotice, paymentMethod),
   )
 }
 
@@ -280,13 +282,36 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
       <p class="selected-total text-h6 mb-2">
         {{ t('phone.openItems.labels.selected', { amount: selectedTotal }) }}
       </p>
+      <template v-if="isAPaymentMethodNeeded(openItems.selectedTotalCents)">
+        <v-btn
+          class="settle-in-cash"
+          color="primary"
+          block
+          size="x-large"
+          :disabled="openItems.isSettling"
+          @click="settleAtFullPrice('cash')"
+        >
+          {{ t('phone.openItems.actions.settleInCash') }}
+        </v-btn>
+        <v-btn
+          class="settle-by-card mt-2"
+          color="primary"
+          block
+          size="x-large"
+          :disabled="openItems.isSettling"
+          @click="settleAtFullPrice('card')"
+        >
+          {{ t('phone.openItems.actions.settleByCard') }}
+        </v-btn>
+      </template>
       <v-btn
-        class="settle"
+        v-else
+        class="settle-nothing-paid"
         color="primary"
         block
         size="x-large"
         :disabled="openItems.isSettling"
-        @click="settle"
+        @click="settleAtFullPrice('none')"
       >
         {{ t('phone.openItems.actions.settle') }}
       </v-btn>

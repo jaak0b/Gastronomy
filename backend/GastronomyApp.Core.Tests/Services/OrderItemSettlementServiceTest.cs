@@ -51,6 +51,7 @@ public sealed class OrderItemSettlementServiceTest
                                                              Line(bratwurst, 200, "Stammgast"),
                                                              Line(beer, 150, "Stammgast")
                                                            ],
+                                                           PaymentMethod.Cash,
                                                            _collectingWaiter,
                                                            AtOneTable(bratwurst, beer),
                                                            _now);
@@ -75,7 +76,7 @@ public sealed class OrderItemSettlementServiceTest
   {
     var bratwurst = OpenItem(350);
 
-    ErrorOr<SettlementResult> settlement = _service.Settle([Line(bratwurst, 500)], _collectingWaiter, AtOneTable(bratwurst), _now);
+    ErrorOr<SettlementResult> settlement = _service.Settle([Line(bratwurst, 500)], PaymentMethod.Cash, _collectingWaiter, AtOneTable(bratwurst), _now);
 
     Assert.Multiple(() =>
                     {
@@ -90,7 +91,7 @@ public sealed class OrderItemSettlementServiceTest
   {
     var bratwurst = OpenItem(350);
 
-    ErrorOr<SettlementResult> settlement = _service.Settle([Line(bratwurst, 150, "  Der Tisch zahlt den Rest spaeter  ")], _collectingWaiter, AtOneTable(bratwurst), _now);
+    ErrorOr<SettlementResult> settlement = _service.Settle([Line(bratwurst, 150, "  Der Tisch zahlt den Rest spaeter  ")], PaymentMethod.Cash, _collectingWaiter, AtOneTable(bratwurst), _now);
 
     Assert.Multiple(() =>
                     {
@@ -104,9 +105,9 @@ public sealed class OrderItemSettlementServiceTest
   public void Settle_ALineTheCallerAlreadySettled_OverwritesThePriceAndTheReasonAndKeepsTimeAndCollector()
   {
     var beer = OpenItem(400);
-    _service.MarkSettled(beer, 0, "Kapelle", _collectingWaiter, _earlier);
+    _service.MarkSettled(beer, 0, "Kapelle", PaymentMethod.None, _collectingWaiter, _earlier);
 
-    ErrorOr<SettlementResult> settlement = _service.Settle([Line(beer, 400)], _collectingWaiter, AtOneTable(beer), _now);
+    ErrorOr<SettlementResult> settlement = _service.Settle([Line(beer, 400)], PaymentMethod.Cash, _collectingWaiter, AtOneTable(beer), _now);
 
     Assert.Multiple(() =>
                     {
@@ -125,9 +126,9 @@ public sealed class OrderItemSettlementServiceTest
   public void Settle_ALineSomebodyElseAlreadySettled_IsNeverChangedAndIsReportedBack()
   {
     var beer = OpenItem(400);
-    _service.MarkSettled(beer, 0, "Kapelle", _anotherWaiter, _earlier);
+    _service.MarkSettled(beer, 0, "Kapelle", PaymentMethod.None, _anotherWaiter, _earlier);
 
-    ErrorOr<SettlementResult> settlement = _service.Settle([Line(beer, 400)], _collectingWaiter, AtOneTable(beer), _now);
+    ErrorOr<SettlementResult> settlement = _service.Settle([Line(beer, 400)], PaymentMethod.Cash, _collectingWaiter, AtOneTable(beer), _now);
 
     Assert.Multiple(() =>
                     {
@@ -146,13 +147,14 @@ public sealed class OrderItemSettlementServiceTest
   public void Settle_AnOpenLineBesideALineSomebodyElseAlreadySettled_SettlesOnlyTheOpenLine()
   {
     var beer = OpenItem(400);
-    _service.MarkSettled(beer, 400, null, _anotherWaiter, _earlier);
+    _service.MarkSettled(beer, 400, null, PaymentMethod.Cash, _anotherWaiter, _earlier);
     var bratwurst = OpenItem(350);
 
     ErrorOr<SettlementResult> settlement = _service.Settle([
                                                              Line(beer, 400),
                                                              Line(bratwurst, 350)
                                                            ],
+                                                           PaymentMethod.Cash,
                                                            _collectingWaiter,
                                                            AtOneTable(beer, bratwurst),
                                                            _now);
@@ -174,7 +176,7 @@ public sealed class OrderItemSettlementServiceTest
   {
     var bratwurst = OpenItem(350);
 
-    ErrorOr<SettlementResult> settlement = _service.Settle([Line(bratwurst, 300, "   ")], _collectingWaiter, AtOneTable(bratwurst), _now);
+    ErrorOr<SettlementResult> settlement = _service.Settle([Line(bratwurst, 300, "   ")], PaymentMethod.Cash, _collectingWaiter, AtOneTable(bratwurst), _now);
 
     Assert.Multiple(() =>
                     {
@@ -196,6 +198,7 @@ public sealed class OrderItemSettlementServiceTest
                                                              Line(bratwurst, 350),
                                                              Line(beer, 400)
                                                            ],
+                                                           PaymentMethod.Cash,
                                                            _collectingWaiter,
                                                            twoTables,
                                                            _now);
@@ -215,13 +218,14 @@ public sealed class OrderItemSettlementServiceTest
   {
     var bratwurst = OpenItem(350);
     var beer = OpenItem(400);
-    _service.MarkSettled(beer, 400, null, _anotherWaiter, _earlier);
+    _service.MarkSettled(beer, 400, null, PaymentMethod.Cash, _anotherWaiter, _earlier);
     IReadOnlyCollection<OrderItem> twoTables = At("Tisch 12", bratwurst).Concat(At("Tisch 3", beer)).ToList();
 
     ErrorOr<SettlementResult> settlement = _service.Settle([
                                                              Line(bratwurst, 350),
                                                              Line(beer, 400)
                                                            ],
+                                                           PaymentMethod.Cash,
                                                            _collectingWaiter,
                                                            twoTables,
                                                            _now);
@@ -243,6 +247,7 @@ public sealed class OrderItemSettlementServiceTest
                                                              Line(bratwurst, 350),
                                                              Line(bratwurst, 350)
                                                            ],
+                                                           PaymentMethod.Cash,
                                                            _collectingWaiter,
                                                            AtOneTable(bratwurst),
                                                            _now);
@@ -267,6 +272,7 @@ public sealed class OrderItemSettlementServiceTest
                                                              Line(bratwurst, 350),
                                                              Line(unknownId, 350)
                                                            ],
+                                                           PaymentMethod.Cash,
                                                            _collectingWaiter,
                                                            AtOneTable(bratwurst),
                                                            _now);
@@ -287,7 +293,7 @@ public sealed class OrderItemSettlementServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(() => _service.Settle([Line(bratwurst, 350)], Guid.Empty, AtOneTable(bratwurst), _now), Throws.ArgumentException);
+                      Assert.That(() => _service.Settle([Line(bratwurst, 350)], PaymentMethod.Cash, Guid.Empty, AtOneTable(bratwurst), _now), Throws.ArgumentException);
                       Assert.That(bratwurst.SettledAtUtc, Is.Null);
                       Assert.That(bratwurst.ChargedPriceCents, Is.Null);
                       Assert.That(bratwurst.SettledByStaffMemberId, Is.Null);
@@ -300,7 +306,7 @@ public sealed class OrderItemSettlementServiceTest
     var bratwurst = OpenItem(350);
     var beer = OpenItem(400);
 
-    _service.Settle([Line(bratwurst, 350)], _collectingWaiter, AtOneTable(bratwurst, beer), _now);
+    _service.Settle([Line(bratwurst, 350)], PaymentMethod.Cash, _collectingWaiter, AtOneTable(bratwurst, beer), _now);
 
     Assert.Multiple(() =>
                     {
@@ -315,7 +321,7 @@ public sealed class OrderItemSettlementServiceTest
   {
     var bratwurst = OpenItem(350);
     var beer = OpenItem(400);
-    _service.MarkSettled(beer, 400, null, _anotherWaiter, _earlier);
+    _service.MarkSettled(beer, 400, null, PaymentMethod.Cash, _anotherWaiter, _earlier);
 
     Assert.That(_service.SumOpenAmountCents([
                                               bratwurst,
@@ -327,7 +333,7 @@ public sealed class OrderItemSettlementServiceTest
   [Test]
   public void SettleAsync_NullRequest_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _service.SettleAsync(null!, _collectingWaiter, CancellationToken.None), Throws.ArgumentNullException);
+    Assert.That(async () => await _service.SettleAsync(null!, PaymentMethod.Cash, _collectingWaiter, CancellationToken.None), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -335,7 +341,7 @@ public sealed class OrderItemSettlementServiceTest
   {
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
-    ErrorOr<SettlementResult> settlement = await _service.SettleAsync([Line(Guid.NewGuid(), 350)], _collectingWaiter, CancellationToken.None);
+    ErrorOr<SettlementResult> settlement = await _service.SettleAsync([Line(Guid.NewGuid(), 350)], PaymentMethod.Cash, _collectingWaiter, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -352,7 +358,7 @@ public sealed class OrderItemSettlementServiceTest
     var bratwurst = OpenItem(350);
     GivenTheTableHolds("Tisch 12", bratwurst);
 
-    ErrorOr<SettlementResult> settlement = await _service.SettleAsync([Line(bratwurst, 350)], _collectingWaiter, CancellationToken.None);
+    ErrorOr<SettlementResult> settlement = await _service.SettleAsync([Line(bratwurst, 350)], PaymentMethod.Cash, _collectingWaiter, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -370,9 +376,158 @@ public sealed class OrderItemSettlementServiceTest
     var bratwurst = OpenItem(350);
     GivenTheTableHolds("Tisch 12", bratwurst);
 
-    await _service.SettleAsync([Line(bratwurst, 350)], _collectingWaiter, CancellationToken.None);
+    await _service.SettleAsync([Line(bratwurst, 350)], PaymentMethod.Cash, _collectingWaiter, CancellationToken.None);
 
     A.CallTo(_logger).Where(call => call.Method.Name == nameof(ILogger.Log) && call.GetArgument<LogLevel>(0) == LogLevel.Information && Equals(ValueNamed(call.GetArgument<object>(2), "SettledItemCount"), 1) && SettledIdsIn(call.GetArgument<object>(2)).Contains(bratwurst.Id)).MustHaveHappened();
+  }
+
+  [Test]
+  public void Settle_AFreeArticleInsideACashSettlement_StoresCashOnThePaidItemsAndNoneOnTheFreeOne()
+  {
+    var bratwurst = OpenItem(350);
+    var beer = OpenItem(400);
+    var coffee = OpenItem(200);
+
+    ErrorOr<SettlementResult> settlement = _service.Settle([
+                                                             Line(bratwurst, 350),
+                                                             Line(beer, 400),
+                                                             Line(coffee, 0, "Kapelle")
+                                                           ],
+                                                           PaymentMethod.Cash,
+                                                           _collectingWaiter,
+                                                           AtOneTable(bratwurst, beer, coffee),
+                                                           _now);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.IsSuccess, Is.True);
+                      Assert.That(bratwurst.PaymentMethod, Is.EqualTo(PaymentMethod.Cash));
+                      Assert.That(beer.PaymentMethod, Is.EqualTo(PaymentMethod.Cash));
+                      Assert.That(coffee.PaymentMethod, Is.EqualTo(PaymentMethod.None));
+                    });
+  }
+
+  [Test]
+  public void Settle_AFreeArticleInsideACardSettlement_StoresCardOnThePaidItemAndNoneOnTheFreeOne()
+  {
+    var bratwurst = OpenItem(350);
+    var coffee = OpenItem(200);
+
+    ErrorOr<SettlementResult> settlement = _service.Settle([
+                                                             Line(bratwurst, 350),
+                                                             Line(coffee, 0, "Kapelle")
+                                                           ],
+                                                           PaymentMethod.Card,
+                                                           _collectingWaiter,
+                                                           AtOneTable(bratwurst, coffee),
+                                                           _now);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.IsSuccess, Is.True);
+                      Assert.That(bratwurst.PaymentMethod, Is.EqualTo(PaymentMethod.Card));
+                      Assert.That(coffee.PaymentMethod, Is.EqualTo(PaymentMethod.None));
+                    });
+  }
+
+  [Test]
+  public void Settle_NothingPaidWithNone_StoresNoneOnEveryItem()
+  {
+    var bratwurst = OpenItem(350);
+    var beer = OpenItem(400);
+
+    ErrorOr<SettlementResult> settlement = _service.Settle([
+                                                             Line(bratwurst, 0, "Kapelle"),
+                                                             Line(beer, 0, "Kapelle")
+                                                           ],
+                                                           PaymentMethod.None,
+                                                           _collectingWaiter,
+                                                           AtOneTable(bratwurst, beer),
+                                                           _now);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.IsSuccess, Is.True);
+                      Assert.That(bratwurst.PaymentMethod, Is.EqualTo(PaymentMethod.None));
+                      Assert.That(beer.PaymentMethod, Is.EqualTo(PaymentMethod.None));
+                      Assert.That(bratwurst.SettledAtUtc, Is.EqualTo(_now));
+                    });
+  }
+
+  [Test]
+  public void Settle_MoneyPaidWithNone_IsRefusedAndNothingIsSettled()
+  {
+    var bratwurst = OpenItem(350);
+    var coffee = OpenItem(200);
+
+    ErrorOr<SettlementResult> settlement = _service.Settle([
+                                                             Line(bratwurst, 350),
+                                                             Line(coffee, 0, "Kapelle")
+                                                           ],
+                                                           PaymentMethod.None,
+                                                           _collectingWaiter,
+                                                           AtOneTable(bratwurst, coffee),
+                                                           _now);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.IsSuccess, Is.False);
+                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
+                      Assert.That(settlement.RefusalDescription(), Does.Contain("None"));
+                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
+                      Assert.That(bratwurst.PaymentMethod, Is.Null);
+                      Assert.That(coffee.SettledAtUtc, Is.Null);
+                    });
+  }
+
+  [Test]
+  public void Settle_NothingPaidWithCash_IsRefusedAndNothingIsSettled()
+  {
+    var bratwurst = OpenItem(350);
+
+    ErrorOr<SettlementResult> settlement = _service.Settle([Line(bratwurst, 0, "Kapelle")], PaymentMethod.Cash, _collectingWaiter, AtOneTable(bratwurst), _now);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.IsSuccess, Is.False);
+                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
+                      Assert.That(settlement.RefusalDescription(), Does.Contain("Cash"));
+                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
+                      Assert.That(bratwurst.PaymentMethod, Is.Null);
+                    });
+  }
+
+  [Test]
+  public void Settle_ALineTheCallerGaveAwayAndNowChargesByCard_WritesCardWithTheNewPrice()
+  {
+    var beer = OpenItem(400);
+    _service.MarkSettled(beer, 0, "Kapelle", PaymentMethod.None, _collectingWaiter, _earlier);
+
+    ErrorOr<SettlementResult> settlement = _service.Settle([Line(beer, 400)], PaymentMethod.Card, _collectingWaiter, AtOneTable(beer), _now);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.Value.Reapplied, Has.Count.EqualTo(1));
+                      Assert.That(beer.ChargedPriceCents, Is.EqualTo(400));
+                      Assert.That(beer.PaymentMethod, Is.EqualTo(PaymentMethod.Card));
+                    });
+  }
+
+  [Test]
+  public async Task SettleAsync_MoneyPaidWithNone_RefusesTheSettlementAndSavesNothing()
+  {
+    var bratwurst = OpenItem(350);
+    GivenTheTableHolds("Tisch 12", bratwurst);
+
+    ErrorOr<SettlementResult> settlement = await _service.SettleAsync([Line(bratwurst, 350)], PaymentMethod.None, _collectingWaiter, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
+                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
+                    });
+
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   private object? ValueNamed(object? state, string name)
@@ -391,7 +546,7 @@ public sealed class OrderItemSettlementServiceTest
   [Test]
   public async Task SettleAsync_AnItemThatIsNoLongerThere_RefusesTheSettlementAndRollsTheTransactionBack()
   {
-    ErrorOr<SettlementResult> settlement = await _service.SettleAsync([Line(Guid.NewGuid(), 350)], _collectingWaiter, CancellationToken.None);
+    ErrorOr<SettlementResult> settlement = await _service.SettleAsync([Line(Guid.NewGuid(), 350)], PaymentMethod.Cash, _collectingWaiter, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -408,7 +563,7 @@ public sealed class OrderItemSettlementServiceTest
     var bratwurst = OpenItem(350);
     A.CallTo(() => _repository.FindForSettlementAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([bratwurst]));
 
-    ErrorOr<SettlementResult> settlement = await _service.SettleAsync([Line(bratwurst, 350)], _collectingWaiter, CancellationToken.None);
+    ErrorOr<SettlementResult> settlement = await _service.SettleAsync([Line(bratwurst, 350)], PaymentMethod.Cash, _collectingWaiter, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {

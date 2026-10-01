@@ -1,4 +1,5 @@
 ﻿using ErrorOr;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Validation;
 
 namespace GastronomyApp.Core.Refusals;
@@ -11,6 +12,20 @@ public static partial class Refusal
     {
       return BadRequest(RefusalMessageKeys.SettlementCannotBeProcessed,
                         $"The order item {orderItemId} was settled below its displayed price without a typed reason. The open items screen asks for that reason, so this call did not come from that screen.",
+                        new() { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
+    }
+
+    public static Error PaymentMethodMissingForMoneyPaid(PaymentMethod paymentMethod)
+    {
+      return BadRequest(RefusalMessageKeys.SettlementCannotBeProcessed,
+                        $"The settlement collects money but names the payment method {paymentMethod}. The open items screen sends cash or card whenever money is collected, so this call did not come from that screen.",
+                        new() { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
+    }
+
+    public static Error PaymentMethodNamedForNothingPaid(PaymentMethod paymentMethod)
+    {
+      return BadRequest(RefusalMessageKeys.SettlementCannotBeProcessed,
+                        $"The settlement collects no money but names the payment method {paymentMethod}. The open items screen sends none when nothing is collected, so this call did not come from that screen.",
                         new() { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
     }
 

@@ -119,7 +119,7 @@ public sealed class OrdersChangedAnnouncementTest
     List<Guid> itemIds = await KitchenItemIdsAsync();
     await ListenAsync(_context.DeviceToken, null, _kitchenToken);
 
-    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", new SettleItemsBody(itemIds.Select(itemId => new SettleLineBody(itemId, 350)).ToList()));
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", new SettleItemsBody(itemIds.Select(itemId => new SettleLineBody(itemId, 350)).ToList(), "cash"));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     await AssertEveryListenerHeardOnceAsync();

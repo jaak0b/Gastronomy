@@ -1,8 +1,10 @@
-import { OpenOrderItemView, OpenTableView, SettleLineRequest, SettlementView, TableOrderRecordItemView, TableOrderRecordView, TableOrderReportView } from '../../shared/api/generatedSchemas'
+import { OpenOrderItemView, OpenTableView, type PaymentMethod, SettleLineRequest, SettlementView, TableOrderRecordItemView, TableOrderRecordView, TableOrderReportView } from '../../shared/api/generatedSchemas'
 import type { AppLanguage } from '../../shared/core/deviceLanguage'
 import { formatPrice } from './totals'
 
 export type SettleOutcome = 'accepted' | 'refused' | 'answerNeverCame'
+
+export type SettlementPaymentMethod = NonNullable<PaymentMethod>
 
 export interface AmountPaidWithReason {
   amountPaidCents: number
@@ -154,6 +156,10 @@ export function isPaymentNoticeNeeded(
   selectedTotalCents: number,
 ): boolean {
   return amountPaidCents < selectedTotalCents
+}
+
+export function isAPaymentMethodNeeded(amountPaidCents: number): boolean {
+  return amountPaidCents > 0
 }
 
 export function canTheAmountBeSettled(

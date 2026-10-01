@@ -35,13 +35,14 @@ public sealed class OrderItemSettlementServiceOverlapTest
     var firstBeer = OpenItem(350);
     var secondBeer = OpenItem(350);
     var hotdog = OpenItem(400);
-    _service.MarkSettled(firstBeer, 0, "Kapelle", _anotherWaiter, _earlier);
+    _service.MarkSettled(firstBeer, 0, "Kapelle", PaymentMethod.None, _anotherWaiter, _earlier);
 
     ErrorOr<SettlementResult> settlement = _service.Settle([
                                                              Line(firstBeer, 350),
                                                              Line(secondBeer, 350),
                                                              Line(hotdog, 400)
                                                            ],
+                                                           PaymentMethod.Cash,
                                                            _collectingWaiter,
                                                            AtOneTable(firstBeer, secondBeer, hotdog),
                                                            _now);
@@ -65,13 +66,14 @@ public sealed class OrderItemSettlementServiceOverlapTest
     var firstBeer = OpenItem(350);
     var secondBeer = OpenItem(350);
     var hotdog = OpenItem(400);
-    _service.MarkSettled(firstBeer, 0, "Kapelle", _anotherWaiter, _earlier);
+    _service.MarkSettled(firstBeer, 0, "Kapelle", PaymentMethod.None, _anotherWaiter, _earlier);
 
     ErrorOr<SettlementResult> settlement = _service.Settle([
                                                              Line(firstBeer, 350),
                                                              Line(secondBeer, 100, "Der Tisch zahlt den Rest spaeter"),
                                                              Line(hotdog, 500)
                                                            ],
+                                                           PaymentMethod.Cash,
                                                            _collectingWaiter,
                                                            AtOneTable(firstBeer, secondBeer, hotdog),
                                                            _now);

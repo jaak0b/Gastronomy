@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
-import type { SettleNotice } from '../../core/openItems'
+import { isAPaymentMethodNeeded, type SettleNotice, type SettlementPaymentMethod } from '../../core/openItems'
 import { formatPrice } from '../../core/totals'
 import { useKeyboardInset } from '../../composables/useKeyboardInset'
 import AmountPaidFields from '../AmountPaidFields.vue'
@@ -15,7 +15,7 @@ const props = defineProps<{
   language: AppLanguage
 }>()
 const emit = defineEmits<{
-  confirm: [amountPaidCents: number, paymentNotice: string | null]
+  confirm: [amountPaidCents: number, paymentNotice: string | null, paymentMethod: SettlementPaymentMethod]
   cancel: []
 }>()
 
@@ -27,13 +27,17 @@ const selectedTotal = computed(() => formatPrice(props.selectedTotalCents, props
 const canConfirm = computed(
   () => amountFields.value !== null && amountFields.value.settlement !== null,
 )
+const offersCashAndCard = computed(() => {
+  const typed = amountFields.value?.amountPaidCents
+  return typed === null || typed === undefined || isAPaymentMethodNeeded(typed)
+})
 
-function confirm(): void {
+function confirm(paymentMethod: SettlementPaymentMethod): void {
   const settlement = amountFields.value?.settlement
   if (settlement === null || settlement === undefined) {
     return
   }
-  emit('confirm', settlement.amountPaidCents, settlement.paymentNotice)
+  emit('confirm', settlement.amountPaidCents, settlement.paymentNotice, paymentMethod)
 }
 </script>
 
@@ -53,15 +57,38 @@ function confirm(): void {
         <SettleNoticeAlert v-if="notice !== null" class="mt-2" :notice="notice" :closable="false" />
       </v-card-text>
       <v-card-actions class="actions flex-column align-stretch">
+        <template v-if="offersCashAndCard">
+          <v-btn
+            class="confirm-in-cash"
+            color="primary"
+            variant="flat"
+            size="large"
+            :disabled="isSettling || !canConfirm"
+            @click="confirm('cash')"
+          >
+            {{ t('phone.openItems.actions.settleInCash') }}
+          </v-btn>
+          <v-btn
+            class="confirm-by-card"
+            color="primary"
+            variant="flat"
+            size="large"
+            :disabled="isSettling || !canConfirm"
+            @click="confirm('card')"
+          >
+            {{ t('phone.openItems.actions.settleByCard') }}
+          </v-btn>
+        </template>
         <v-btn
-          class="confirm"
+          v-else
+          class="confirm-nothing-paid"
           color="primary"
           variant="flat"
           size="large"
           :disabled="isSettling || !canConfirm"
-          @click="confirm"
+          @click="confirm('none')"
         >
-          {{ t('phone.openItems.actions.amountPaidConfirm') }}
+          {{ t('phone.openItems.actions.settle') }}
         </v-btn>
         <v-btn
           class="cancel"

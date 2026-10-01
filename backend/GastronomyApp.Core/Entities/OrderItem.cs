@@ -1,3 +1,4 @@
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Announcements;
 
 namespace GastronomyApp.Core.Entities;
@@ -26,6 +27,8 @@ public sealed class OrderItem
   public Guid? SettledByStaffMemberId { get; set; }
 
   public string? PaymentNotice { get; set; }
+
+  public PaymentMethod? PaymentMethod { get; set; }
 
   public StationOrder StationOrder { get; set; } = null!;
 

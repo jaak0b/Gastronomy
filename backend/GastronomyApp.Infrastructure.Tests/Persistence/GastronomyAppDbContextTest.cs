@@ -104,6 +104,84 @@ public sealed class GastronomyAppDbContextTest
   }
 
   [Test]
+  public async Task SaveChanges_OnOrderItemsSettledByCardAndGivenAway_ReadsEachPaymentMethodBack()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    DomainSeeder seeder = new();
+    var seeded = await seeder.SeedAsync(fixture.DbContext, CancellationToken.None);
+    var paidItemId = Guid.NewGuid();
+    var freeItemId = Guid.NewGuid();
+    var openItemId = Guid.NewGuid();
+    DateTime settledAtUtc = new(2026, 8, 27, 19, 0, 0, DateTimeKind.Utc);
+
+    Order order = new()
+                  {
+                    Id = Guid.NewGuid(),
+                    ClientOrderId = Guid.NewGuid(),
+                    FestivalId = seeded.FestivalId,
+                    GlobalOrderNumber = 1,
+                    StaffMemberId = seeded.StaffMemberId,
+                    TableName = "Tisch 3",
+                    CreatedAtUtc = settledAtUtc
+                  };
+    StationOrder stationOrder = new()
+                                {
+                                  Id = Guid.NewGuid(),
+                                  OrderId = order.Id,
+                                  FestivalId = seeded.FestivalId,
+                                  StationId = seeded.KitchenStationId,
+                                  StationOrderNumber = 1,
+                                  DeliveryMode = DeliveryMode.Together
+                                };
+    stationOrder.Items.Add(new()
+                           {
+                             Id = paidItemId,
+                             StationOrderId = stationOrder.Id,
+                             CatalogItemId = seeded.SausageItemId,
+                             ItemName = "Bratwurst",
+                             UnitPriceCents = 350,
+                             SettledAtUtc = settledAtUtc,
+                             ChargedPriceCents = 350,
+                             SettledByStaffMemberId = seeded.StaffMemberId,
+                             PaymentMethod = PaymentMethod.Card
+                           });
+    stationOrder.Items.Add(new()
+                           {
+                             Id = freeItemId,
+                             StationOrderId = stationOrder.Id,
+                             CatalogItemId = seeded.SausageItemId,
+                             ItemName = "Bratwurst",
+                             UnitPriceCents = 350,
+                             SettledAtUtc = settledAtUtc,
+                             ChargedPriceCents = 0,
+                             SettledByStaffMemberId = seeded.StaffMemberId,
+                             PaymentNotice = "Kapelle",
+                             PaymentMethod = PaymentMethod.None
+                           });
+    stationOrder.Items.Add(new()
+                           {
+                             Id = openItemId,
+                             StationOrderId = stationOrder.Id,
+                             CatalogItemId = seeded.SausageItemId,
+                             ItemName = "Bratwurst",
+                             UnitPriceCents = 350
+                           });
+    order.StationOrders.Add(stationOrder);
+    fixture.DbContext.Orders.Add(order);
+    await fixture.DbContext.SaveChangesAsync();
+
+    using var readingContext = fixture.CreateContext();
+    Dictionary<Guid, PaymentMethod?> loaded = await readingContext.OrderItems.ToDictionaryAsync(item => item.Id, item => item.PaymentMethod);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(loaded[paidItemId], Is.EqualTo(PaymentMethod.Card));
+                      Assert.That(loaded[freeItemId], Is.EqualTo(PaymentMethod.None));
+                      Assert.That(loaded[openItemId], Is.Null);
+                    });
+  }
+
+  [Test]
   public async Task Include_OnFestival_LoadsStationsAndMenu()
   {
     using SqliteInMemoryFixture fixture = new();

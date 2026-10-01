@@ -48,7 +48,7 @@ function undoARefusedKeystroke(event: Event): void {
   field.value = shownAmount.value
 }
 
-defineExpose({ settlement })
+defineExpose({ amountPaidCents, settlement })
 </script>
 
 <template>

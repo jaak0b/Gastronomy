@@ -223,24 +223,37 @@ describe('settling what the waiter ticked', () => {
     const { openItems, calls } = await storeWithTheOpenList([jsonOf(SETTLED), jsonOf(EMPTY_LIST)])
     openItems.toggleItem('item-1')
 
-    await openItems.settle(350, null)
+    await openItems.settle(350, null, 'cash')
 
     expect(calls[1]).toEqual({
       url: '/api/open-items/settle',
       method: 'POST',
       body: {
         lines: [{ orderItemId: 'item-1', paidPriceCents: 350, paymentNotice: null }],
+        paymentMethod: 'cash',
       },
     })
     expect(openItems.selectedItemIds).toEqual([])
     expect(openItems.notice).toBeNull()
   })
 
+  it('sends card as the way the table paid when the waiter settles by card', async () => {
+    const { openItems, calls } = await storeWithTheOpenList([jsonOf(SETTLED), jsonOf(EMPTY_LIST)])
+    openItems.toggleItem('item-1')
+
+    await openItems.settle(350, null, 'card')
+
+    expect(calls[1].body).toEqual({
+      lines: [{ orderItemId: 'item-1', paidPriceCents: 350, paymentNotice: null }],
+      paymentMethod: 'card',
+    })
+  })
+
   it('carries the typed reason when the table pays less than it owes', async () => {
     const { openItems, calls } = await storeWithTheOpenList([jsonOf(SETTLED), jsonOf(EMPTY_LIST)])
     openItems.toggleItem('item-1')
 
-    await openItems.settle(0, 'Essen fuer die Kapelle')
+    await openItems.settle(0, 'Essen fuer die Kapelle', 'none')
 
     expect(calls[1]).toEqual({
       url: '/api/open-items/settle',
@@ -249,6 +262,7 @@ describe('settling what the waiter ticked', () => {
         lines: [
           { orderItemId: 'item-1', paidPriceCents: 0, paymentNotice: 'Essen fuer die Kapelle' },
         ],
+        paymentMethod: 'none',
       },
     })
   })
@@ -265,7 +279,7 @@ describe('settling what the waiter ticked', () => {
     openItems.toggleItem('item-1')
     openItems.toggleItem('item-2')
 
-    await openItems.settle(700, null)
+    await openItems.settle(700, null, 'cash')
 
     expect(openItems.notice).toEqual({
       key: 'phone.openItems.messages.someWereAlreadySettled',
@@ -289,7 +303,7 @@ describe('settling what the waiter ticked', () => {
     ])
     openItems.toggleItem('item-1')
 
-    const outcome = await openItems.settle(200, '   ')
+    const outcome = await openItems.settle(200, '   ', 'cash')
 
     expect(outcome).toBe('refused')
     expect(openItems.notice?.key).toBe('errors.settlement.unknownItem')
@@ -315,7 +329,7 @@ describe('settling what the waiter ticked', () => {
       openItems.tables = OPEN_LIST.tables
       openItems.toggleItem('item-1')
 
-      const settling = openItems.settle(350, null)
+      const settling = openItems.settle(350, null, 'cash')
       await vi.advanceTimersByTimeAsync(SEND_TIMEOUT_MS)
 
       expect(await settling).toBe('answerNeverCame')
@@ -335,7 +349,7 @@ describe('settling what the waiter ticked', () => {
     ])
     openItems.toggleItem('item-1')
 
-    await openItems.settle(350, null)
+    await openItems.settle(350, null, 'cash')
 
     expect(openItems.notice?.key).toBe('phone.openItems.errors.settleAnswerNeverCame')
     expect(openItems.selectedItemIds).toEqual(['item-1'])
@@ -356,7 +370,7 @@ describe('settling what the waiter ticked', () => {
     ])
     openItems.toggleItem('item-1')
 
-    await openItems.settle(200, null)
+    await openItems.settle(200, null, 'cash')
 
     expect(openItems.notice?.key).toBe('errors.settlement.cannotBeProcessed')
   })
@@ -568,7 +582,7 @@ describe('the table a waiter looks up', () => {
     await openItems.loadTableReport('Tisch 12')
     openItems.toggleItem('lookup-open')
 
-    await openItems.settle(400, null)
+    await openItems.settle(400, null, 'cash')
 
     expect(calls.map((call) => call.url)).toEqual([
       '/api/open-items',

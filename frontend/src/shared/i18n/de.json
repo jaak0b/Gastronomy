@@ -113,10 +113,11 @@
         "tableOpen": "Offen: {amount}"
       },
       "actions": {
-        "amountPaidConfirm": "Abrechnen",
         "reload": "Liste neu laden",
         "settle": "Abrechnen",
         "settleAmountPaid": "Anderen Betrag abrechnen",
+        "settleByCard": "Mit Karte abrechnen",
+        "settleInCash": "Bar abrechnen",
         "wholeTable": "Ganzen Tisch auswählen"
       },
       "messages": {

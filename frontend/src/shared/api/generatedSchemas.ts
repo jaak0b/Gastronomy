@@ -118,6 +118,9 @@ export const OrderItemRequest = z.strictObject({ catalogItemId: z.string(), unit
 export type OrderStatus = __TypedOpenapi.Schemas.OrderStatus;
 export const OrderStatus = z.enum(["open", "partiallyFulfilled", "fulfilled"]);
 
+export type PaymentMethod = __TypedOpenapi.Schemas.PaymentMethod;
+export const PaymentMethod = z.union([z.literal("none"), z.literal("cash"), z.literal("card"), z.literal(null)]);
+
 export type StationOrderView = __TypedOpenapi.Schemas.StationOrderView;
 export const StationOrderView = z.strictObject({ stationOrderId: z.string(), stationId: z.string(), stationName: z.string(), stationOrderNumber: z.number().int(), deliveryMode: DeliveryMode, itemIds: z.array(z.string()) });
 
@@ -170,7 +173,7 @@ export type SettleLineRequest = __TypedOpenapi.Schemas.SettleLineRequest;
 export const SettleLineRequest = z.strictObject({ orderItemId: z.string(), paidPriceCents: z.number().int().nullable(), paymentNotice: z.string().nullable().optional() });
 
 export type SettleItemsRequest = __TypedOpenapi.Schemas.SettleItemsRequest;
-export const SettleItemsRequest = z.strictObject({ lines: z.array(SettleLineRequest).nullable() });
+export const SettleItemsRequest = z.strictObject({ lines: z.array(SettleLineRequest).nullable(), paymentMethod: PaymentMethod.nullable() });
 
 export type SettlementView = __TypedOpenapi.Schemas.SettlementView;
 export const SettlementView = z.strictObject({ settledOrderItemIds: z.array(z.string()), reappliedOrderItemIds: z.array(z.string()), alreadySettledByOthersOrderItemIds: z.array(z.string()) });

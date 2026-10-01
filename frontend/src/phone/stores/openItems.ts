@@ -5,7 +5,6 @@ import { OpenItemsView, OpenTableView, SettlementView, TableNamesView, TableOrde
 import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import {
-
   noticeAfterSettling,
   type SentSettleLine,
   openTableInReport,
@@ -16,6 +15,7 @@ import {
   withoutItemsThatAreGone,
   type SettleNotice,
   type SettleOutcome,
+  type SettlementPaymentMethod,
 } from '../core/openItems'
 import { SEND_TIMEOUT_MS } from '../core/sendTimeout'
 import { splitSettlement } from '../core/settlementSplit'
@@ -240,6 +240,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   async function settle(
     amountPaidCents: number,
     paymentNotice: string | null,
+    paymentMethod: SettlementPaymentMethod,
   ): Promise<SettleOutcome> {
     isSettling.value = true
     const items = selectedItems(activeTables.value, selectedItemIds.value)
@@ -252,7 +253,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     return await accept(
       await request('/api/open-items/settle', {
         method: 'POST',
-        body: { lines },
+        body: { lines, paymentMethod },
         token: deviceToken(),
         timeoutMs: SEND_TIMEOUT_MS,
         schema: SettlementView,
