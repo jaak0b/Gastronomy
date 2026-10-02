@@ -3,14 +3,10 @@ import {
   amountInputFor,
   amountInputSwitchedTo,
   entryUnitsFor,
-  formatAmount,
+  ingredientUnitOf,
   parseAmountInput,
-  unitSymbolOf,
+  displayedAmountFor,
 } from '../../../src/admin/core/ingredientAmounts'
-
-function pieces(formattedCount: string): string {
-  return `${formattedCount} pcs`
-}
 
 describe('the units an amount can be typed in', () => {
   it('offer grams and kilograms for an ingredient kept in grams', () => {
@@ -76,60 +72,72 @@ describe('an amount the admin typed', () => {
 })
 
 describe('a saved amount shown back in its field', () => {
-  it('is shown in kilograms from 1000 grams on, with a German comma', () => {
-    expect(amountInputFor(1500, 'gram', 'de')).toEqual({ typed: '1,5', entryUnit: 'kilogram' })
+  it('is written in grams with no conversion', () => {
+    expect(amountInputFor(1500, 'gram', 'de')).toEqual({ typed: '1500', entryUnit: 'gram' })
   })
 
-  it('is shown in litres from 1000 millilitres on, with an English point', () => {
-    expect(amountInputFor(1250, 'millilitre', 'en')).toEqual({ typed: '1.25', entryUnit: 'litre' })
+  it('is written in kilograms with a German comma', () => {
+    expect(amountInputFor(1500, 'kilogram', 'de')).toEqual({ typed: '1,5', entryUnit: 'kilogram' })
   })
 
-  it('stays in grams below 1000', () => {
-    expect(amountInputFor(999, 'gram', 'de')).toEqual({ typed: '999', entryUnit: 'gram' })
+  it('is written in litres with an English point', () => {
+    expect(amountInputFor(1250, 'litre', 'en')).toEqual({ typed: '1.25', entryUnit: 'litre' })
   })
 
-  it('stays in pieces however many there are', () => {
-    expect(amountInputFor(2000, 'piece', 'de')).toEqual({ typed: '2000', entryUnit: 'piece' })
+  it('keeps a decimal number of pieces', () => {
+    expect(amountInputFor(0.5, 'piece', 'de')).toEqual({ typed: '0,5', entryUnit: 'piece' })
   })
 
-  it('is an empty field in the smaller unit when there is no amount', () => {
+  it('is an empty field when there is no amount', () => {
     expect(amountInputFor(null, 'millilitre', 'de')).toEqual({ typed: '', entryUnit: 'millilitre' })
   })
 })
 
 describe('an amount written on the screen', () => {
-  it('names kilograms in German from 1000 grams on', () => {
-    expect(formatAmount(1500, 'gram', 'de', pieces)).toBe('1,5 kg')
+  it('is counted in kilograms from 1000 grams on, in German', () => {
+    expect(displayedAmountFor(1500, 'gram', 'de')).toEqual({
+      count: 1.5,
+      formattedCount: '1,5',
+      entryUnit: 'kilogram',
+    })
   })
 
-  it('names kilograms in English from 1000 grams on', () => {
-    expect(formatAmount(1500, 'gram', 'en', pieces)).toBe('1.5 kg')
+  it('is counted in grams below 1000', () => {
+    expect(displayedAmountFor(999, 'gram', 'en')).toEqual({
+      count: 999,
+      formattedCount: '999',
+      entryUnit: 'gram',
+    })
   })
 
-  it('names grams below 1000', () => {
-    expect(formatAmount(999, 'gram', 'de', pieces)).toBe('999 g')
+  it('is counted in litres from 1000 millilitres on, in English', () => {
+    expect(displayedAmountFor(1250, 'millilitre', 'en')).toEqual({
+      count: 1.25,
+      formattedCount: '1.25',
+      entryUnit: 'litre',
+    })
   })
 
-  it('names litres in German from 1000 millilitres on', () => {
-    expect(formatAmount(1250, 'millilitre', 'de', pieces)).toBe('1,25 l')
-  })
-
-  it('names millilitres in English below 1000', () => {
-    expect(formatAmount(250, 'millilitre', 'en', pieces)).toBe('250 mL')
-  })
-
-  it('hands pieces with the number written in the device language to the caller', () => {
-    expect(formatAmount(12000, 'piece', 'de', pieces)).toBe('12.000 pcs')
-    expect(formatAmount(1.5, 'piece', 'en', pieces)).toBe('1.5 pcs')
+  it('stays in pieces with the number written in the device language', () => {
+    expect(displayedAmountFor(12000, 'piece', 'de')).toEqual({
+      count: 12000,
+      formattedCount: '12.000',
+      entryUnit: 'piece',
+    })
   })
 })
 
-describe('the symbol on a unit toggle', () => {
-  it('is the short unit in the device language', () => {
-    expect(unitSymbolOf('kilogram', 'de')).toBe('kg')
-    expect(unitSymbolOf('litre', 'de')).toBe('l')
-    expect(unitSymbolOf('litre', 'en')).toBe('L')
-    expect(unitSymbolOf('millilitre', 'en')).toBe('mL')
+describe('the unit a new ingredient is kept in', () => {
+  it('is grams when the amount was typed in kilograms', () => {
+    expect(ingredientUnitOf('kilogram')).toBe('gram')
+  })
+
+  it('is millilitres when the amount was typed in litres', () => {
+    expect(ingredientUnitOf('litre')).toBe('millilitre')
+  })
+
+  it('is pieces when the amount was typed in pieces', () => {
+    expect(ingredientUnitOf('piece')).toBe('piece')
   })
 })
 
@@ -172,6 +180,15 @@ describe('switching the unit an amount is shown in', () => {
     expect(amountInputSwitchedTo({ typed: '', entryUnit: 'gram' }, 'kilogram', 'de')).toEqual({
       typed: '',
       entryUnit: 'kilogram',
+    })
+  })
+})
+
+describe('switching between units of different kinds', () => {
+  it('keeps the typed number and changes only the unit', () => {
+    expect(amountInputSwitchedTo({ typed: '1,5', entryUnit: 'kilogram' }, 'piece', 'de')).toEqual({
+      typed: '1,5',
+      entryUnit: 'piece',
     })
   })
 })

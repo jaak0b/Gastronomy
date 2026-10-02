@@ -1,58 +1,62 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { IngredientUnit } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { appLanguageOf } from '../../../shared/core/deviceLanguage'
 import {
   amountInputFor,
   amountInputSwitchedTo,
-  entryUnitsFor,
   parseAmountInput,
-  unitSymbolOf,
   type AmountEntryUnit,
   type ParsedAmountInput,
 } from '../../core/ingredientAmounts'
+import { useAmountUnitName } from '../../composables/useAmountUnitName'
 
 const props = defineProps<{
-  unit: IngredientUnit
+  entryUnits: readonly AmountEntryUnit[]
   savedAmount: number | null
   label: string
   errorText?: string | null
 }>()
 const emit = defineEmits<{
-  change: [parsed: ParsedAmountInput]
-  commit: [parsed: ParsedAmountInput]
+  amountTyped: [parsed: ParsedAmountInput, entryUnit: AmountEntryUnit]
+  amountChanged: [parsed: ParsedAmountInput]
 }>()
 
-const { t, locale } = useI18n()
+const { locale } = useI18n()
+const unitName = useAmountUnitName()
 const language = computed(() => appLanguageOf(locale.value))
-const startingInput = amountInputFor(props.savedAmount, props.unit, language.value)
+const startingInput = amountInputFor(props.savedAmount, props.entryUnits[0], language.value)
 const typed = ref(startingInput.typed)
 const entryUnit = ref<AmountEntryUnit>(startingInput.entryUnit)
 
-const toggleUnits = computed(() =>
-  entryUnitsFor(props.unit).flatMap((unit) =>
-    unit === 'piece' ? [] : [{ unit, symbol: unitSymbolOf(unit, language.value) }],
-  ),
+const unitChoices = computed(() =>
+  props.entryUnits.map((unit) => ({ value: unit, title: unitName(unit) })),
 )
 const parsed = computed(() =>
   parseAmountInput({ typed: typed.value, entryUnit: entryUnit.value }),
 )
 
 watch(
-  () => [props.savedAmount, props.unit] as const,
-  ([savedAmount, unit]) => {
-    const shown = amountInputFor(savedAmount, unit, language.value)
-    typed.value = shown.typed
-    entryUnit.value = shown.entryUnit
+  () => props.savedAmount,
+  (savedAmount) => {
+    typed.value = amountInputFor(savedAmount, entryUnit.value, language.value).typed
   },
 )
 
 watch(
-  parsed,
-  (current) => {
-    emit('change', current)
+  () => props.entryUnits,
+  (entryUnits) => {
+    if (!entryUnits.includes(entryUnit.value)) {
+      switchEntryUnit(entryUnits[0])
+    }
+  },
+)
+
+watch(
+  [parsed, entryUnit],
+  ([current, currentEntryUnit]) => {
+    emit('amountTyped', current, currentEntryUnit)
   },
   { immediate: true },
 )
@@ -70,9 +74,9 @@ function namesTheSavedAmount(current: ParsedAmountInput): boolean {
   }
 }
 
-function commit(): void {
+function commitIfChanged(): void {
   if (!namesTheSavedAmount(parsed.value)) {
-    emit('commit', parsed.value)
+    emit('amountChanged', parsed.value)
   }
 }
 
@@ -103,33 +107,28 @@ function leaveTheField(event: KeyboardEvent): void {
       hide-details="auto"
       :label="label"
       :error-messages="errorText ? [errorText] : []"
-      @blur="commit"
+      @blur="commitIfChanged"
       @keydown.enter.prevent="leaveTheField"
     />
-    <v-btn-toggle
-      v-if="toggleUnits.length > 0"
+    <v-select
+      v-if="unitChoices.length > 1"
       :model-value="entryUnit"
-      class="entry-unit-toggle"
+      class="amount-unit-select"
       density="compact"
-      mandatory
-      variant="outlined"
+      hide-details
+      :items="unitChoices"
       @update:model-value="switchEntryUnit"
-    >
-      <v-btn
-        v-for="option in toggleUnits"
-        :key="option.unit"
-        :class="`entry-unit-${option.unit}`"
-        :value="option.unit"
-      >
-        {{ option.symbol }}
-      </v-btn>
-    </v-btn-toggle>
-    <span v-else class="pieces-word text-body-1 pt-2">{{ t('admin.ingredients.labels.pieces') }}</span>
+    />
+    <span v-else class="amount-unit text-body-1 pt-2">{{ unitName(entryUnit) }}</span>
   </div>
 </template>
 
 <style scoped>
 .amount-input {
   flex: 0 0 9rem;
+}
+
+.amount-unit-select {
+  flex: 0 0 6.5rem;
 }
 </style>

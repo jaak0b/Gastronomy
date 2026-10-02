@@ -14,9 +14,25 @@ export type ParsedAmountInput =
   | { kind: 'empty' }
   | { kind: 'unreadable' }
 
+export interface ShownAmount {
+  count: number
+  formattedCount: string
+  entryUnit: AmountEntryUnit
+}
+
 const AMOUNT_INPUT = /^\d+(?:[.,]\d+)?$/
 
 const THOUSAND = 1000
+
+export const ALL_ENTRY_UNITS: readonly AmountEntryUnit[] = [
+  'piece',
+  'gram',
+  'kilogram',
+  'millilitre',
+  'litre',
+]
+
+export const INGREDIENT_UNITS: readonly IngredientUnit[] = ['piece', 'gram', 'millilitre']
 
 export function entryUnitsFor(unit: IngredientUnit): readonly AmountEntryUnit[] {
   switch (unit) {
@@ -28,6 +44,21 @@ export function entryUnitsFor(unit: IngredientUnit): readonly AmountEntryUnit[] 
       return ['millilitre', 'litre']
     default:
       return assertNever(unit)
+  }
+}
+
+export function ingredientUnitOf(entryUnit: AmountEntryUnit): IngredientUnit {
+  switch (entryUnit) {
+    case 'piece':
+      return 'piece'
+    case 'gram':
+    case 'kilogram':
+      return 'gram'
+    case 'millilitre':
+    case 'litre':
+      return 'millilitre'
+    default:
+      return assertNever(entryUnit)
   }
 }
 
@@ -45,21 +76,14 @@ function isThousandfold(entryUnit: AmountEntryUnit): boolean {
   }
 }
 
-export type MeasureUnit = Exclude<AmountEntryUnit, 'piece'>
-
-interface MeasureScale {
-  smaller: MeasureUnit
-  larger: MeasureUnit
-}
-
-function measureScaleOf(unit: IngredientUnit): MeasureScale | null {
+function largerEntryUnitOf(unit: IngredientUnit): AmountEntryUnit | null {
   switch (unit) {
     case 'piece':
       return null
     case 'gram':
-      return { smaller: 'gram', larger: 'kilogram' }
+      return 'kilogram'
     case 'millilitre':
-      return { smaller: 'millilitre', larger: 'litre' }
+      return 'litre'
     default:
       return assertNever(unit)
   }
@@ -99,20 +123,19 @@ function writtenIn(amount: number, language: AppLanguage): string {
   }
 }
 
+function inEntryUnit(baseAmount: number, entryUnit: AmountEntryUnit): number {
+  return isThousandfold(entryUnit) ? thousandths(baseAmount) : baseAmount
+}
+
 export function amountInputFor(
   baseAmount: number | null,
-  unit: IngredientUnit,
+  entryUnit: AmountEntryUnit,
   language: AppLanguage,
 ): AmountInput {
-  const baseEntryUnit = entryUnitsFor(unit)[0]
   if (baseAmount === null) {
-    return { typed: '', entryUnit: baseEntryUnit }
+    return { typed: '', entryUnit }
   }
-  const scale = measureScaleOf(unit)
-  if (scale !== null && baseAmount >= THOUSAND) {
-    return { typed: writtenIn(thousandths(baseAmount), language), entryUnit: scale.larger }
-  }
-  return { typed: writtenIn(baseAmount, language), entryUnit: baseEntryUnit }
+  return { typed: writtenIn(inEntryUnit(baseAmount, entryUnit), language), entryUnit }
 }
 
 export function amountInputSwitchedTo(
@@ -120,16 +143,13 @@ export function amountInputSwitchedTo(
   entryUnit: AmountEntryUnit,
   language: AppLanguage,
 ): AmountInput {
+  if (ingredientUnitOf(input.entryUnit) !== ingredientUnitOf(entryUnit)) {
+    return { typed: input.typed, entryUnit }
+  }
   const parsed = parseAmountInput(input)
   switch (parsed.kind) {
     case 'amount':
-      return {
-        typed: writtenIn(
-          isThousandfold(entryUnit) ? thousandths(parsed.baseAmount) : parsed.baseAmount,
-          language,
-        ),
-        entryUnit,
-      }
+      return amountInputFor(parsed.baseAmount, entryUnit, language)
     case 'empty':
     case 'unreadable':
       return { typed: input.typed, entryUnit }
@@ -138,50 +158,18 @@ export function amountInputSwitchedTo(
   }
 }
 
-function intlUnitOf(entryUnit: MeasureUnit): string {
-  switch (entryUnit) {
-    case 'gram':
-      return 'gram'
-    case 'kilogram':
-      return 'kilogram'
-    case 'millilitre':
-      return 'milliliter'
-    case 'litre':
-      return 'liter'
-    default:
-      return assertNever(entryUnit)
-  }
-}
-
-export function unitSymbolOf(
-  entryUnit: MeasureUnit,
-  language: AppLanguage,
-): string {
-  const parts = new Intl.NumberFormat(language, {
-    style: 'unit',
-    unit: intlUnitOf(entryUnit),
-    unitDisplay: 'short',
-  }).formatToParts(1)
-  return parts.find((part) => part.type === 'unit')?.value ?? ''
-}
-
-export function formatAmount(
+export function displayedAmountFor(
   baseAmount: number,
   unit: IngredientUnit,
   language: AppLanguage,
-  describePieces: (formattedCount: string, count: number) => string,
-): string {
-  const scale = measureScaleOf(unit)
-  if (scale === null) {
-    return describePieces(
-      new Intl.NumberFormat(language, { maximumFractionDigits: 3 }).format(baseAmount),
-      baseAmount,
-    )
+): ShownAmount {
+  const largerEntryUnit = largerEntryUnitOf(unit)
+  const entryUnit =
+    largerEntryUnit !== null && baseAmount >= THOUSAND ? largerEntryUnit : unit
+  const count = inEntryUnit(baseAmount, entryUnit)
+  return {
+    count,
+    formattedCount: new Intl.NumberFormat(language, { maximumFractionDigits: 3 }).format(count),
+    entryUnit,
   }
-  const showsLargerUnit = baseAmount >= THOUSAND
-  return new Intl.NumberFormat(language, {
-    style: 'unit',
-    unit: intlUnitOf(showsLargerUnit ? scale.larger : scale.smaller),
-    maximumFractionDigits: 3,
-  }).format(showsLargerUnit ? thousandths(baseAmount) : baseAmount)
 }

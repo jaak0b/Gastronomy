@@ -37,7 +37,8 @@ describe('the text of an ingredient amount', () => {
 
     expect(amountText(250, 'gram')).toBe('250 g')
     expect(amountText(1500, 'gram')).toBe('1.5 kg')
-    expect(amountText(2500, 'millilitre')).toBe('2.5 L')
+    expect(amountText(2500, 'millilitre')).toBe('2.5 l')
+    expect(amountText(250, 'millilitre')).toBe('250 ml')
     expect(amountText(1, 'piece')).toBe('1 piece')
     expect(amountText(3, 'piece')).toBe('3 pieces')
   })

@@ -1,17 +1,22 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminIngredientView, IngredientUnit } from '../../../shared/api/generatedSchemas'
 import type { IngredientDraft } from '../../stores/ingredients'
-import { useIngredientUnitChoices } from '../../composables/useIngredientUnitChoices'
+import { INGREDIENT_UNITS } from '../../core/ingredientAmounts'
+import { useAmountUnitName } from '../../composables/useAmountUnitName'
 
 const props = defineProps<{ ingredient: AdminIngredientView }>()
 const emit = defineEmits<{ save: [draft: IngredientDraft]; deactivate: []; activate: [] }>()
 
 const { t } = useI18n()
-const unitChoices = useIngredientUnitChoices()
+const unitName = useAmountUnitName()
 const name = ref(props.ingredient.name)
 const unit = ref<IngredientUnit>(props.ingredient.unit)
+
+const unitChoices = computed(() =>
+  INGREDIENT_UNITS.map((choice) => ({ value: choice, title: unitName(choice) })),
+)
 
 watch(
   () => props.ingredient.name,

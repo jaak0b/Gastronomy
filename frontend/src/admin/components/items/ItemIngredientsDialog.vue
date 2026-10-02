@@ -1,33 +1,31 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminActionResult } from '../../core/adminActionResult'
+import { adminErrorMessageForKey } from '../../core/adminErrorMessage'
 import {
-  adminErrorMessageForKey,
-  type AdminErrorMessage,
-} from '../../core/adminErrorMessage'
-import type { ParsedAmountInput } from '../../core/ingredientAmounts'
-import type {
-  AdminIngredientView,
-  AdminItemView,
-  IngredientUnit,
-} from '../../../shared/api/generatedSchemas'
+  ALL_ENTRY_UNITS,
+  entryUnitsFor,
+  ingredientUnitOf,
+  type AmountEntryUnit,
+  type ParsedAmountInput,
+} from '../../core/ingredientAmounts'
+import type { AdminIngredientView, AdminItemView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
-import { useAdminIngredientsStore, type IngredientDraft } from '../../stores/ingredients'
+import { useAdminIngredientsStore } from '../../stores/ingredients'
 import { useAdminItemsStore } from '../../stores/items'
-import { useIngredientUnitChoices } from '../../composables/useIngredientUnitChoices'
-import { useRefusalText } from '../../composables/useRefusalText'
-import BaseConfirmDialog from '../BaseConfirmDialog.vue'
+import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import BaseFormDialog from '../BaseFormDialog.vue'
 import IngredientAmountField from '../ingredients/IngredientAmountField.vue'
-import IngredientEditLine from '../ingredients/IngredientEditLine.vue'
-
-type AddMode = 'existing' | 'new'
 
 interface RecipeLine {
   ingredient: AdminIngredientView
   amount: number
 }
+
+type AddedIngredient =
+  | { kind: 'existing'; ingredient: AdminIngredientView }
+  | { kind: 'new'; name: string }
+  | { kind: 'none' }
 
 const AMOUNT_INVALID_KEY = 'errors.admin.ingredients.amountInvalid'
 
@@ -37,18 +35,12 @@ const emit = defineEmits<{ close: [] }>()
 const { t } = useI18n()
 const ingredients = useAdminIngredientsStore()
 const items = useAdminItemsStore()
-const unitChoices = useIngredientUnitChoices()
-const refusal = ref<AdminErrorMessage | null>(null)
-const addMode = ref<AddMode>('existing')
-const pickedIngredientId = ref<string | null>(null)
-const newName = ref('')
-const newUnit = ref<IngredientUnit>('gram')
+const { refusal, refusalText, showRefusalOf } = useRefusalDisplay()
+const chosenIngredient = ref<AdminIngredientView | string | null>(null)
 const addedAmount = ref<ParsedAmountInput>({ kind: 'empty' })
+const addedEntryUnit = ref<AmountEntryUnit>(ALL_ENTRY_UNITS[0])
 const addRowVersion = ref(0)
 const isAdding = ref(false)
-const deactivatedIngredientId = ref<string | null>(null)
-
-const refusalText = useRefusalText(refusal)
 
 const recipeLines = computed<RecipeLine[]>(() =>
   props.item.ingredients.flatMap((line) => {
@@ -64,79 +56,78 @@ const offeredIngredients = computed(() => {
   )
 })
 
-const addedUnit = computed<IngredientUnit | null>(() => {
-  switch (addMode.value) {
-    case 'new':
-      return newUnit.value
+const addedIngredient = computed<AddedIngredient>(() => {
+  const chosen = chosenIngredient.value
+  if (chosen === null) {
+    return { kind: 'none' }
+  }
+  if (typeof chosen !== 'string') {
+    return { kind: 'existing', ingredient: chosen }
+  }
+  const named = offeredIngredients.value.find((ingredient) => ingredient.name === chosen)
+  if (named !== undefined) {
+    return { kind: 'existing', ingredient: named }
+  }
+  return chosen.trim().length === 0 ? { kind: 'none' } : { kind: 'new', name: chosen }
+})
+
+const addedEntryUnits = computed(() => {
+  const added = addedIngredient.value
+  switch (added.kind) {
     case 'existing':
-      return pickedIngredientId.value === null
-        ? null
-        : (ingredients.findIngredientWithId(pickedIngredientId.value)?.unit ?? null)
+      return entryUnitsFor(added.ingredient.unit)
+    case 'new':
+    case 'none':
+      return ALL_ENTRY_UNITS
     default:
-      return assertNever(addMode.value)
+      return assertNever(added)
   }
 })
 
-const addIsImpossible = computed(() => {
-  switch (addMode.value) {
-    case 'new':
-      return newName.value.trim().length === 0
-    case 'existing':
-      return pickedIngredientId.value === null
-    default:
-      return assertNever(addMode.value)
-  }
-})
-
-function wasRefused(result: AdminActionResult<unknown>): boolean {
-  switch (result.kind) {
-    case 'ok':
-      return false
-    case 'failed':
-      refusal.value = result.message
-      return true
-    default:
-      return assertNever(result)
-  }
-}
-
-function amountFrom(parsed: ParsedAmountInput): number | null {
-  switch (parsed.kind) {
-    case 'amount':
-      return parsed.baseAmount
-    case 'empty':
-    case 'unreadable':
-      refusal.value = adminErrorMessageForKey(AMOUNT_INVALID_KEY)
-      return null
-    default:
-      return assertNever(parsed)
-  }
-}
+const addIsPossible = computed(
+  () =>
+    addedIngredient.value.kind !== 'none' &&
+    addedAmount.value.kind === 'amount' &&
+    addedAmount.value.baseAmount > 0,
+)
 
 async function changeAmount(ingredientId: string, parsed: ParsedAmountInput): Promise<void> {
   refusal.value = null
-  const amount = amountFrom(parsed)
-  if (amount !== null) {
-    wasRefused(await items.setIngredientAmount(props.item.itemId, ingredientId, amount))
+  switch (parsed.kind) {
+    case 'amount':
+      showRefusalOf(await items.setIngredientAmount(props.item.itemId, ingredientId, parsed.baseAmount))
+      return
+    case 'empty':
+    case 'unreadable':
+      refusal.value = adminErrorMessageForKey(AMOUNT_INVALID_KEY)
+      return
+    default:
+      assertNever(parsed)
   }
 }
 
 async function removeLine(ingredientId: string): Promise<void> {
   refusal.value = null
-  wasRefused(await items.removeIngredient(props.item.itemId, ingredientId))
+  showRefusalOf(await items.removeIngredient(props.item.itemId, ingredientId))
 }
 
-async function ingredientToAdd(): Promise<string | null> {
-  switch (addMode.value) {
+function noteAddedAmount(parsed: ParsedAmountInput, entryUnit: AmountEntryUnit): void {
+  addedAmount.value = parsed
+  addedEntryUnit.value = entryUnit
+}
+
+async function ingredientIdToAdd(added: AddedIngredient): Promise<string | null> {
+  switch (added.kind) {
     case 'existing':
-      return pickedIngredientId.value
+      return added.ingredient.ingredientId
     case 'new': {
-      const created = await ingredients.create({ name: newName.value, unit: newUnit.value })
+      const created = await ingredients.create({
+        name: added.name,
+        unit: ingredientUnitOf(addedEntryUnit.value),
+      })
       switch (created.kind) {
         case 'ok':
-          pickedIngredientId.value = created.value.ingredientId
-          addMode.value = 'existing'
-          newName.value = ''
+          chosenIngredient.value = created.value
           return created.value.ingredientId
         case 'failed':
           refusal.value = created.message
@@ -145,53 +136,31 @@ async function ingredientToAdd(): Promise<string | null> {
           return assertNever(created)
       }
     }
+    case 'none':
+      return null
     default:
-      return assertNever(addMode.value)
+      return assertNever(added)
   }
 }
 
 async function add(): Promise<void> {
-  refusal.value = null
-  const amount = amountFrom(addedAmount.value)
-  if (amount === null) {
+  const amount = addedAmount.value
+  if (amount.kind !== 'amount') {
     return
   }
+  refusal.value = null
   isAdding.value = true
-  const ingredientId = await ingredientToAdd()
+  const ingredientId = await ingredientIdToAdd(addedIngredient.value)
   if (ingredientId === null) {
     isAdding.value = false
     return
   }
-  const saved = await items.setIngredientAmount(props.item.itemId, ingredientId, amount)
+  const saved = await items.setIngredientAmount(props.item.itemId, ingredientId, amount.baseAmount)
   isAdding.value = false
-  if (!wasRefused(saved)) {
-    pickedIngredientId.value = null
+  if (!showRefusalOf(saved)) {
+    chosenIngredient.value = null
     addedAmount.value = { kind: 'empty' }
     addRowVersion.value += 1
-  }
-}
-
-function switchAddMode(mode: AddMode): void {
-  refusal.value = null
-  addMode.value = mode
-}
-
-async function saveIngredient(ingredientId: string, draft: IngredientDraft): Promise<void> {
-  refusal.value = null
-  wasRefused(await ingredients.save(ingredientId, draft))
-}
-
-async function activateIngredient(ingredientId: string): Promise<void> {
-  refusal.value = null
-  wasRefused(await ingredients.setActive(ingredientId, true))
-}
-
-async function deactivateIngredient(): Promise<void> {
-  const ingredientId = deactivatedIngredientId.value
-  deactivatedIngredientId.value = null
-  if (ingredientId !== null) {
-    refusal.value = null
-    wasRefused(await ingredients.setActive(ingredientId, false))
   }
 }
 </script>
@@ -200,11 +169,9 @@ async function deactivateIngredient(): Promise<void> {
   <BaseFormDialog
     :title="t('admin.ingredients.labels.recipeTitle', { item: item.name })"
     :error-text="refusalText"
-    :save-label="t('admin.ingredients.actions.add')"
     :cancel-label="t('admin.ingredients.actions.close')"
-    :save-disabled="addIsImpossible"
     :busy="isAdding"
-    @save="add"
+    close-only
     @cancel="emit('close')"
   >
     <div class="recipe-lines mb-4">
@@ -215,10 +182,10 @@ async function deactivateIngredient(): Promise<void> {
       >
         <span class="recipe-ingredient-name text-body-1 flex-grow-1">{{ line.ingredient.name }}</span>
         <IngredientAmountField
-          :unit="line.ingredient.unit"
+          :entry-units="[line.ingredient.unit]"
           :saved-amount="line.amount"
           :label="t('admin.ingredients.labels.amount')"
-          @commit="changeAmount(line.ingredient.ingredientId, $event)"
+          @amount-changed="changeAmount(line.ingredient.ingredientId, $event)"
         />
         <v-btn
           class="remove-recipe-line"
@@ -231,86 +198,32 @@ async function deactivateIngredient(): Promise<void> {
     </div>
 
     <div class="add-recipe-line d-flex align-start flex-wrap ga-2">
-      <v-select
-        v-if="addMode === 'existing'"
-        v-model="pickedIngredientId"
-        class="picked-ingredient flex-grow-1"
+      <v-combobox
+        v-model="chosenIngredient"
+        class="added-ingredient flex-grow-1"
+        maxlength="200"
         density="compact"
         hide-details
         :label="t('admin.ingredients.labels.ingredient')"
         :items="offeredIngredients"
         item-title="name"
         item-value="ingredientId"
-        :no-data-text="t('admin.ingredients.messages.noneYet')"
       />
-      <template v-else>
-        <v-text-field
-          v-model="newName"
-          class="new-ingredient-name flex-grow-1"
-          maxlength="200"
-          density="compact"
-          hide-details
-          :label="t('admin.ingredients.labels.name')"
-        />
-        <v-select
-          v-model="newUnit"
-          class="new-ingredient-unit"
-          density="compact"
-          hide-details
-          :label="t('admin.ingredients.labels.unit')"
-          :items="unitChoices"
-        />
-      </template>
       <IngredientAmountField
-        v-if="addedUnit !== null"
-        :key="`${addedUnit}-${addRowVersion}`"
-        :unit="addedUnit"
+        :key="addRowVersion"
+        :entry-units="addedEntryUnits"
         :saved-amount="null"
         :label="t('admin.ingredients.labels.amount')"
-        @change="addedAmount = $event"
+        @amount-typed="noteAddedAmount"
       />
+      <v-btn
+        class="add-to-recipe"
+        color="primary"
+        :disabled="!addIsPossible || isAdding"
+        @click="add"
+      >
+        {{ t('admin.ingredients.actions.addToRecipe') }}
+      </v-btn>
     </div>
-    <v-btn
-      v-if="addMode === 'existing'"
-      class="start-new-ingredient mt-2"
-      variant="text"
-      @click="switchAddMode('new')"
-    >
-      {{ t('admin.ingredients.actions.new') }}
-    </v-btn>
-    <v-btn
-      v-else
-      class="choose-existing-ingredient mt-2"
-      variant="text"
-      @click="switchAddMode('existing')"
-    >
-      {{ t('admin.ingredients.actions.chooseExisting') }}
-    </v-btn>
-
-    <v-expansion-panels class="all-ingredients mt-4" variant="accordion">
-      <v-expansion-panel>
-        <v-expansion-panel-title class="all-ingredients-title">
-          {{ t('admin.ingredients.labels.allIngredients') }}
-        </v-expansion-panel-title>
-        <v-expansion-panel-text>
-          <IngredientEditLine
-            v-for="ingredient in ingredients.ingredients"
-            :key="ingredient.ingredientId"
-            :ingredient="ingredient"
-            @save="saveIngredient(ingredient.ingredientId, $event)"
-            @activate="activateIngredient(ingredient.ingredientId)"
-            @deactivate="deactivatedIngredientId = ingredient.ingredientId"
-          />
-        </v-expansion-panel-text>
-      </v-expansion-panel>
-    </v-expansion-panels>
   </BaseFormDialog>
-  <BaseConfirmDialog
-    v-if="deactivatedIngredientId !== null"
-    :title="t('admin.ingredients.labels.deactivateTitle')"
-    :body="t('admin.ingredients.messages.deactivateCost')"
-    :confirm-label="t('admin.ingredients.actions.deactivateConfirm')"
-    @confirm="deactivateIngredient"
-    @cancel="deactivatedIngredientId = null"
-  />
 </template>

@@ -970,3 +970,52 @@ describe('the ingredients button on an article', () => {
     await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
   })
 })
+
+describe('the manage ingredients button', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('opens the ingredient management in German', async () => {
+    stubLaptop()
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.manage-ingredients').exists()).toBe(true))
+    expect(list.get('.manage-ingredients').text()).toBe('Zutaten verwalten')
+
+    await list.get('.manage-ingredients').trigger('click')
+
+    await vi.waitFor(() =>
+      expect(document.querySelector('.form-dialog-title')?.textContent).toBe('Zutaten'),
+    )
+  })
+
+  it('is worded in English', async () => {
+    stubLaptop()
+
+    const list = mount(ItemsList, {
+      global: { plugins: testPlugins('en') },
+      attachTo: document.body,
+    })
+    await vi.waitFor(() => expect(list.find('.manage-ingredients').exists()).toBe(true))
+
+    expect(list.get('.manage-ingredients').text()).toBe('Manage ingredients')
+  })
+
+  it('closes the management when the admin presses close', async () => {
+    stubLaptop()
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.manage-ingredients').exists()).toBe(true))
+    await list.get('.manage-ingredients').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.form-cancel')).not.toBeNull())
+
+    ;(document.querySelector('.form-cancel') as HTMLElement).click()
+
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
+  })
+})

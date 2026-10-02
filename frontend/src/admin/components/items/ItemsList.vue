@@ -20,6 +20,7 @@ import CategoryDialog from '../categories/CategoryDialog.vue'
 import BaseConfirmDialog from '../BaseConfirmDialog.vue'
 import { useRefusalText } from '../../composables/useRefusalText'
 import ItemDialog from './ItemDialog.vue'
+import IngredientsManageDialog from '../ingredients/IngredientsManageDialog.vue'
 import ItemIngredientsDialog from './ItemIngredientsDialog.vue'
 
 const { t } = useI18n()
@@ -28,6 +29,7 @@ const categories = useAdminCategoriesStore()
 const festivals = useAdminFestivalsStore()
 const ingredients = useAdminIngredientsStore()
 const recipeItemId = ref<string | null>(null)
+const managesIngredients = ref(false)
 const editingItem = ref<AdminItemView | null>(null)
 const isCreating = ref(false)
 const showsDeactivated = ref(false)
@@ -371,6 +373,14 @@ onUnmounted(() => {
       <v-btn class="new-category" color="primary" variant="tonal" @click="startCreatingCategory">
         {{ t('admin.categories.actions.new') }}
       </v-btn>
+      <v-btn
+        class="manage-ingredients"
+        color="primary"
+        variant="tonal"
+        @click="managesIngredients = true"
+      >
+        {{ t('admin.ingredients.actions.manage') }}
+      </v-btn>
     </div>
 
     <ItemDialog
@@ -392,6 +402,7 @@ onUnmounted(() => {
       :item="recipeItem"
       @close="recipeItemId = null"
     />
+    <IngredientsManageDialog v-if="managesIngredients" @close="managesIngredients = false" />
     <CategoryDialog
       v-if="isCategoryDialogOpen"
       :key="renamedCategory?.categoryId ?? 'new'"

@@ -8,6 +8,7 @@ defineProps<{
   cancelLabel?: string
   saveDisabled?: boolean
   busy?: boolean
+  closeOnly?: boolean
 }>()
 const emit = defineEmits<{ save: []; cancel: [] }>()
 
@@ -31,6 +32,7 @@ const { t } = useI18n()
             {{ cancelLabel ?? t('common.actions.cancel') }}
           </v-btn>
           <v-btn
+            v-if="!closeOnly"
             class="form-save"
             type="submit"
             color="primary"

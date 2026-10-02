@@ -310,7 +310,6 @@
       "title": "Zutaten",
       "labels": {
         "recipeTitle": "Zutaten für {item}",
-        "allIngredients": "Alle Zutaten",
         "ingredient": "Zutat",
         "name": "Name der Zutat",
         "unit": "Einheit",
@@ -318,25 +317,27 @@
         "available": "Verfügbar",
         "used": "Verbraucht: {amount}",
         "runsOutAt": "Reicht voraussichtlich bis {moment}",
-        "pieces": "Stück",
         "pieceCount": "{amount} Stück | {amount} Stück",
-        "unitPiece": "Stück",
-        "unitGram": "Gramm",
-        "unitMillilitre": "Milliliter",
         "deactivateTitle": "Zutat deaktivieren?"
       },
       "actions": {
         "edit": "Zutaten bearbeiten",
-        "add": "Zutat hinzufügen",
-        "new": "Neue Zutat",
-        "chooseExisting": "Vorhandene Zutat wählen",
         "close": "Schließen",
         "activate": "Zutat aktivieren",
-        "deactivateConfirm": "Zutat deaktivieren"
+        "deactivateConfirm": "Zutat deaktivieren",
+        "manage": "Zutaten verwalten",
+        "addToRecipe": "Hinzufügen"
       },
       "messages": {
         "deactivateCost": "Eine deaktivierte Zutat begrenzt den Verkauf nicht mehr.",
         "noneYet": "Es gibt noch keine Zutaten."
+      },
+      "units": {
+        "piece": "Stück",
+        "gram": "g",
+        "kilogram": "kg",
+        "millilitre": "ml",
+        "litre": "l"
       }
     },
     "items": {

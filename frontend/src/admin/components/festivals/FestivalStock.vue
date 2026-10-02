@@ -6,7 +6,7 @@ import {
   type AdminErrorMessage,
 } from '../../core/adminErrorMessage'
 import { formatRunOutMoment } from '../../core/festivalTimes'
-import type { ParsedAmountInput } from '../../core/ingredientAmounts'
+import { entryUnitsFor, type ParsedAmountInput } from '../../core/ingredientAmounts'
 import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminFestivalStockStore } from '../../stores/festivalStock'
 import { useIngredientAmountText } from '../../composables/useIngredientAmountText'
@@ -86,10 +86,10 @@ function runOutText(runsOutAtUtc: string | null): string {
           <div class="row-line d-flex align-center flex-wrap ga-4 py-2 px-3">
             <span class="name text-body-1 flex-grow-1">{{ ingredient.name }}</span>
             <IngredientAmountField
-              :unit="ingredient.unit"
+              :entry-units="entryUnitsFor(ingredient.unit)"
               :saved-amount="ingredient.availableAmount"
               :label="t('admin.ingredients.labels.available')"
-              @commit="changeAvailableAmount(ingredient.ingredientId, $event)"
+              @amount-changed="changeAvailableAmount(ingredient.ingredientId, $event)"
             />
             <span class="used-amount text-body-2">
               {{

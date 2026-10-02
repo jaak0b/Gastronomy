@@ -310,7 +310,6 @@
       "title": "Ingredients",
       "labels": {
         "recipeTitle": "Ingredients for {item}",
-        "allIngredients": "All ingredients",
         "ingredient": "Ingredient",
         "name": "Name of the ingredient",
         "unit": "Unit",
@@ -318,25 +317,27 @@
         "available": "Available",
         "used": "Used: {amount}",
         "runsOutAt": "Expected to last until {moment}",
-        "pieces": "pieces",
         "pieceCount": "{amount} piece | {amount} pieces",
-        "unitPiece": "Pieces",
-        "unitGram": "Grams",
-        "unitMillilitre": "Millilitres",
         "deactivateTitle": "Deactivate this ingredient?"
       },
       "actions": {
         "edit": "Edit ingredients",
-        "add": "Add the ingredient",
-        "new": "New ingredient",
-        "chooseExisting": "Choose an existing ingredient",
         "close": "Close",
         "activate": "Activate the ingredient",
-        "deactivateConfirm": "Deactivate the ingredient"
+        "deactivateConfirm": "Deactivate the ingredient",
+        "manage": "Manage ingredients",
+        "addToRecipe": "Add"
       },
       "messages": {
         "deactivateCost": "A deactivated ingredient no longer limits what can be sold.",
         "noneYet": "There are no ingredients yet."
+      },
+      "units": {
+        "piece": "pieces",
+        "gram": "g",
+        "kilogram": "kg",
+        "millilitre": "ml",
+        "litre": "l"
       }
     },
     "items": {
