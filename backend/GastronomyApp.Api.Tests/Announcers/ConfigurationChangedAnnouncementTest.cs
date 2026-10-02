@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
 
 namespace GastronomyApp.Api.Tests.Announcers;
@@ -148,6 +149,90 @@ public sealed class ConfigurationChangedAnnouncementTest
     await Task.Delay(_settleTime);
 
     Assert.That(_admin.HeardCount, Is.EqualTo(1));
+  }
+
+  [Test]
+  public async Task PostIngredient_ANewIngredient_TellsEveryScreenOnce()
+  {
+    await ListenAsync();
+
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/ingredients",
+                                                               new
+                                                               {
+                                                                 name = "Senf",
+                                                                 unit = "gram"
+                                                               });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    await AssertEveryScreenHeardOnceAsync();
+  }
+
+  [Test]
+  public async Task PutItemIngredient_ANewRecipeLine_TellsEveryScreenOnce()
+  {
+    var mustardId = await CreateIngredientAsync();
+    await ListenAsync();
+
+    using var response = await _context.Client.PutAsJsonAsync($"/api/admin/items/{_context.World.BratwurstItemId}/ingredients/{mustardId}", new { amount = 20 });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await AssertEveryScreenHeardOnceAsync();
+  }
+
+  [Test]
+  public async Task PutFestivalIngredient_AnAvailableAmountThatSellsOutAnArticle_TellsEveryScreenOnce()
+  {
+    var mustardId = await CreateIngredientAsync();
+    using (var recipe = await _context.Client.PutAsJsonAsync($"/api/admin/items/{_context.World.BratwurstItemId}/ingredients/{mustardId}", new { amount = 20 }))
+    {
+      Assert.That(recipe.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    await ListenAsync();
+
+    using var response = await _context.Client.PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/ingredients/{mustardId}", new { availableAmount = 10 });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await AssertEveryScreenHeardOnceAsync();
+  }
+
+  [Test]
+  public async Task PostOrder_AnOrderThatSellsOutAnArticle_TellsEveryScreenOnceAndAnnouncesTheOrderOnce()
+  {
+    var mustardId = await CreateIngredientAsync();
+    using (var recipe = await _context.Client.PutAsJsonAsync($"/api/admin/items/{_context.World.BratwurstItemId}/ingredients/{mustardId}", new { amount = 20 }))
+    {
+      Assert.That(recipe.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    using (var stock = await _context.Client.PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/ingredients/{mustardId}", new { availableAmount = 50 }))
+    {
+      Assert.That(stock.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    await using HubEventListener ordersListener = new(new(_context.Factory.BaseAddress, "hub"), "OrdersChanged");
+    await ordersListener.StartAsync();
+    await ListenAsync();
+
+    using var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    await AssertEveryScreenHeardOnceAsync();
+    Assert.That(ordersListener.HeardCount, Is.EqualTo(1), "The order itself is one change to the orders.");
+  }
+
+  private async Task<Guid> CreateIngredientAsync()
+  {
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/ingredients",
+                                                               new
+                                                               {
+                                                                 name = "Senf",
+                                                                 unit = "gram"
+                                                               });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+
+    return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("ingredientId").GetGuid();
   }
 
   private async Task ListenAsync()

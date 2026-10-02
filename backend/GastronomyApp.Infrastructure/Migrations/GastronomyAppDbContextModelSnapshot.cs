@@ -77,6 +77,30 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.ToTable("CatalogItems");
                 });
 
+            modelBuilder.Entity("GastronomyApp.Core.Entities.CatalogItemIngredient", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Amount")
+                        .HasColumnType("REAL");
+
+                    b.Property<Guid>("CatalogItemId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("IngredientId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IngredientId");
+
+                    b.HasIndex("CatalogItemId", "IngredientId")
+                        .IsUnique();
+
+                    b.ToTable("CatalogItemIngredients");
+                });
+
             modelBuilder.Entity("GastronomyApp.Core.Entities.Device", b =>
                 {
                     b.Property<Guid>("Id")
@@ -224,6 +248,30 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.ToTable("FestivalCatalogItems");
                 });
 
+            modelBuilder.Entity("GastronomyApp.Core.Entities.FestivalIngredient", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("AvailableAmount")
+                        .HasColumnType("REAL");
+
+                    b.Property<Guid>("FestivalId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("IngredientId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IngredientId");
+
+                    b.HasIndex("FestivalId", "IngredientId")
+                        .IsUnique();
+
+                    b.ToTable("FestivalIngredients");
+                });
+
             modelBuilder.Entity("GastronomyApp.Core.Entities.FestivalStation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -247,6 +295,30 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("FestivalStations");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Ingredient", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<int>("Unit")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Ingredients");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.ItemStationAssignment", b =>
@@ -479,6 +551,25 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Navigation("Category");
                 });
 
+            modelBuilder.Entity("GastronomyApp.Core.Entities.CatalogItemIngredient", b =>
+                {
+                    b.HasOne("GastronomyApp.Core.Entities.CatalogItem", "CatalogItem")
+                        .WithMany("Ingredients")
+                        .HasForeignKey("CatalogItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GastronomyApp.Core.Entities.Ingredient", "Ingredient")
+                        .WithMany("CatalogItems")
+                        .HasForeignKey("IngredientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CatalogItem");
+
+                    b.Navigation("Ingredient");
+                });
+
             modelBuilder.Entity("GastronomyApp.Core.Entities.EnrolmentInvitation", b =>
                 {
                     b.HasOne("GastronomyApp.Core.Entities.Device", "ConsumedByDevice")
@@ -506,6 +597,25 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Navigation("CatalogItem");
 
                     b.Navigation("Festival");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.FestivalIngredient", b =>
+                {
+                    b.HasOne("GastronomyApp.Core.Entities.Festival", "Festival")
+                        .WithMany("Ingredients")
+                        .HasForeignKey("FestivalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GastronomyApp.Core.Entities.Ingredient", "Ingredient")
+                        .WithMany("FestivalIngredients")
+                        .HasForeignKey("IngredientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Festival");
+
+                    b.Navigation("Ingredient");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.FestivalStation", b =>
@@ -669,6 +779,8 @@ namespace GastronomyApp.Infrastructure.Migrations
                 {
                     b.Navigation("FestivalCatalogItems");
 
+                    b.Navigation("Ingredients");
+
                     b.Navigation("StationAssignments");
                 });
 
@@ -676,9 +788,18 @@ namespace GastronomyApp.Infrastructure.Migrations
                 {
                     b.Navigation("CatalogItems");
 
+                    b.Navigation("Ingredients");
+
                     b.Navigation("ItemStationAssignments");
 
                     b.Navigation("Stations");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Ingredient", b =>
+                {
+                    b.Navigation("CatalogItems");
+
+                    b.Navigation("FestivalIngredients");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.Order", b =>

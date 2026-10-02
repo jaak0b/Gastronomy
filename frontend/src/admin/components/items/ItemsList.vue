@@ -14,16 +14,20 @@ import {
   type CategoryMoveDirection,
 } from '../../stores/categories'
 import { useAdminFestivalsStore } from '../../stores/festivals'
+import { useAdminIngredientsStore } from '../../stores/ingredients'
 import { useAdminItemsStore, type AdminItemDraft } from '../../stores/items'
 import CategoryDialog from '../categories/CategoryDialog.vue'
 import BaseConfirmDialog from '../BaseConfirmDialog.vue'
 import { useRefusalText } from '../../composables/useRefusalText'
 import ItemDialog from './ItemDialog.vue'
+import ItemIngredientsDialog from './ItemIngredientsDialog.vue'
 
 const { t } = useI18n()
 const items = useAdminItemsStore()
 const categories = useAdminCategoriesStore()
 const festivals = useAdminFestivalsStore()
+const ingredients = useAdminIngredientsStore()
+const recipeItemId = ref<string | null>(null)
 const editingItem = ref<AdminItemView | null>(null)
 const isCreating = ref(false)
 const showsDeactivated = ref(false)
@@ -53,6 +57,9 @@ const itemRefusalText = useRefusalText(itemRefusal)
 const categoryRefusalText = useRefusalText(categoryRefusal)
 const isCategoryDialogOpen = computed(
   () => isCreatingCategory.value || renamedCategory.value !== null,
+)
+const recipeItem = computed(
+  () => items.items.find((item) => item.itemId === recipeItemId.value) ?? null,
 )
 const isItemDialogOpen = computed(() => isCreating.value || editingItem.value !== null)
 
@@ -191,7 +198,12 @@ async function deactivateCategory(): Promise<void> {
 }
 
 function listenToTheLaptop(): () => void {
-  const releases = [categories.listen(), items.listen(), festivals.listen()]
+  const releases = [
+    categories.listen(),
+    items.listen(),
+    festivals.listen(),
+    ingredients.listen(),
+  ]
   return () => {
     for (const release of releases) {
       release()
@@ -211,6 +223,7 @@ onMounted(async () => {
   await categories.load()
   await festivals.load()
   await readItemsForTheRunningFestival()
+  await ingredients.load()
 })
 
 onUnmounted(() => {
@@ -249,7 +262,9 @@ onUnmounted(() => {
       {{ categoryRefusalText }}
     </v-alert>
     <v-alert
-      v-if="items.loadFailed || categories.loadFailed || festivals.loadFailed"
+      v-if="
+        items.loadFailed || categories.loadFailed || festivals.loadFailed || ingredients.loadFailed
+      "
       class="error"
       type="error"
       variant="tonal"
@@ -314,6 +329,9 @@ onUnmounted(() => {
             {{ t('admin.common.labels.deactivated') }}
           </v-chip>
           <v-spacer />
+          <v-btn class="edit-ingredients" variant="text" @click="recipeItemId = item.itemId">
+            {{ t('admin.ingredients.actions.edit') }}
+          </v-btn>
           <v-btn class="edit" variant="text" @click="startEditing(item)">
             {{ t('admin.common.actions.edit') }}
           </v-btn>
@@ -368,6 +386,11 @@ onUnmounted(() => {
       :error-text="itemRefusalText"
       @save="save"
       @cancel="stopCreating"
+    />
+    <ItemIngredientsDialog
+      v-if="recipeItem !== null"
+      :item="recipeItem"
+      @close="recipeItemId = null"
     />
     <CategoryDialog
       v-if="isCategoryDialogOpen"

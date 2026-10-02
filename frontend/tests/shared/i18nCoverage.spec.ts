@@ -15,6 +15,7 @@ const PLURAL_KEYS = [
   'admin.festivals.labels.orderCount',
   'phone.openItems.messages.listIncomplete',
   'phone.openItems.messages.someWereAlreadySettled',
+  'admin.ingredients.labels.pieceCount',
 ]
 
 function flatten(tree: LocaleTree, prefix = ''): Map<string, string> {

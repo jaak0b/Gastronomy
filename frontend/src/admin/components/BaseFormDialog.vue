@@ -5,6 +5,7 @@ defineProps<{
   title: string
   errorText: string | null
   saveLabel?: string
+  cancelLabel?: string
   saveDisabled?: boolean
   busy?: boolean
 }>()
@@ -27,7 +28,7 @@ const { t } = useI18n()
         <v-card-actions>
           <v-spacer />
           <v-btn class="form-cancel" variant="text" :disabled="busy" @click="emit('cancel')">
-            {{ t('common.actions.cancel') }}
+            {{ cancelLabel ?? t('common.actions.cancel') }}
           </v-btn>
           <v-btn
             class="form-save"

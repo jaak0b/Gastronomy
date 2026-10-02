@@ -46,6 +46,7 @@ public sealed class ApiPipeline
     routesInOneTransaction.MapAdminEnrolmentEndpoints();
     routesInOneTransaction.MapAdminInvitationQREndpoints();
     routesInOneTransaction.MapAdminFestivalEndpoints();
+    routesInOneTransaction.MapAdminIngredientEndpoints();
     app.MapFallback("/{*clientRoute:nonfile}", (HttpContext httpContext, ClientRouteFallbackResponder responder) => responder.Respond(httpContext));
     app.MapHub<GastronomyHub>("/hub");
   }

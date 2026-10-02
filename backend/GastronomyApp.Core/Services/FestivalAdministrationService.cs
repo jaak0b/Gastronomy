@@ -8,12 +8,14 @@ namespace GastronomyApp.Core.Services;
 public sealed class FestivalAdministrationService
 {
   private const int FirstNumber = 1;
+  private readonly IIngredientRepository _ingredientRepository;
   private readonly IFestivalRepository _repository;
   private readonly RunningFestivalLookup _runningFestival;
   private readonly FestivalSchedule _schedule;
 
-  public FestivalAdministrationService(IFestivalRepository repository, FestivalSchedule schedule, RunningFestivalLookup runningFestival)
+  public FestivalAdministrationService(IFestivalRepository repository, IIngredientRepository ingredientRepository, FestivalSchedule schedule, RunningFestivalLookup runningFestival)
   {
+    _ingredientRepository = ingredientRepository;
     _repository = repository;
     _schedule = schedule;
     _runningFestival = runningFestival;
@@ -43,6 +45,7 @@ public sealed class FestivalAdministrationService
       return refusal;
 
     var created = BuildFestival(name!, startsAtUtc, endsAtUtc);
+    await AddUnlimitedStockRowsAsync(created, cancellationToken);
 
     await _repository.AddAsync(created, cancellationToken);
     await _repository.SaveChangesAsync(cancellationToken);
@@ -84,6 +87,7 @@ public sealed class FestivalAdministrationService
       return refusal;
 
     var copy = BuildFestival(name!, startsAtUtc, endsAtUtc);
+    await AddUnlimitedStockRowsAsync(copy, cancellationToken);
 
     await _repository.AddAsync(copy, cancellationToken);
     await _repository.CopyContentsAsync(festivalId, copy.Id, cancellationToken);
@@ -139,6 +143,20 @@ public sealed class FestivalAdministrationService
       return null;
 
     return Refusal.Festival.PeriodOverlapsAnotherFestival(inTheWay.Name);
+  }
+
+  private async Task AddUnlimitedStockRowsAsync(Festival festival, CancellationToken cancellationToken)
+  {
+    IReadOnlyList<Ingredient> ingredients = await _ingredientRepository.FindAllOrderedByNameAsync(cancellationToken);
+
+    foreach (var ingredient in ingredients)
+      festival.Ingredients.Add(new()
+                               {
+                                 Id = Guid.NewGuid(),
+                                 FestivalId = festival.Id,
+                                 IngredientId = ingredient.Id,
+                                 AvailableAmount = null
+                               });
   }
 
   private DateTime AsUtc(DateTime moment)

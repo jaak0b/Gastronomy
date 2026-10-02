@@ -4,6 +4,7 @@ using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
+using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Core.Services;
 
@@ -12,6 +13,8 @@ public sealed class OrderAcceptanceService
   private readonly TimeProvider _timeProvider;
   private readonly OrderItemResolutionService _itemResolutionService;
   private readonly INumberAllocator _numberAllocator;
+  private readonly ILogger<OrderAcceptanceService> _logger;
+  private readonly StockSoldOutMarker _soldOutMarker;
 
   private readonly IOrderRepository _orderRepository;
   private readonly RunningFestivalLookup _runningFestival;
@@ -20,13 +23,17 @@ public sealed class OrderAcceptanceService
                                 RunningFestivalLookup runningFestival,
                                 INumberAllocator numberAllocator,
                                 OrderItemResolutionService itemResolutionService,
-                                TimeProvider timeProvider)
+                                StockSoldOutMarker soldOutMarker,
+                                TimeProvider timeProvider,
+                                ILogger<OrderAcceptanceService> logger)
   {
     _orderRepository = orderRepository;
     _runningFestival = runningFestival;
     _numberAllocator = numberAllocator;
     _itemResolutionService = itemResolutionService;
+    _soldOutMarker = soldOutMarker;
     _timeProvider = timeProvider;
+    _logger = logger;
   }
 
   public async Task<ErrorOr<Order>> AcceptAsync(PlaceOrderRequest request, Guid staffMemberId, CancellationToken cancellationToken)
@@ -53,6 +60,15 @@ public sealed class OrderAcceptanceService
     var order = await BuildOrderAsync(request, staffMemberId, festival.Id, routedItems, cancellationToken);
 
     await _orderRepository.AddAsync(order, cancellationToken);
+
+    try
+    {
+      await _soldOutMarker.MarkItemsWithoutEnoughStockSoldOutAsync(festival.Id, cancellationToken);
+    }
+    catch (Exception exception) when (exception is not OperationCanceledException)
+    {
+      _logger.LogError(exception, "The order {OrderId} was accepted, but checking the ingredient stock afterwards failed, so no article was marked sold out by it.", order.Id);
+    }
 
     return await AcceptedOrderAsync(order.Id, cancellationToken);
   }

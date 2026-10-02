@@ -6,6 +6,7 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
@@ -21,6 +22,8 @@ public sealed class OrderAcceptanceServiceTest
     _stationRepository = A.Fake<IStationRepository>();
     _festivalRepository = A.Fake<IFestivalRepository>();
     _numberAllocator = A.Fake<INumberAllocator>();
+    _stockRepository = A.Fake<IIngredientStockRepository>();
+    _logger = A.Fake<ILogger<OrderAcceptanceService>>();
     _clock = new FakeTimeProvider(new(_now));
 
     A.CallTo(() => _orderRepository.FindByClientOrderIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Order?>(null));
@@ -45,7 +48,9 @@ public sealed class OrderAcceptanceServiceTest
                    runningFestival,
                    _numberAllocator,
                    new(_catalogItemRepository, _stationRepository, new()),
-                   _clock);
+                   new(_stockRepository, A.Fake<ILogger<StockSoldOutMarker>>()),
+                   _clock,
+                   _logger);
   }
 
   private readonly Guid _eventSessionId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
@@ -67,6 +72,8 @@ public sealed class OrderAcceptanceServiceTest
   private IStationRepository _stationRepository = null!;
   private IFestivalRepository _festivalRepository = null!;
   private INumberAllocator _numberAllocator = null!;
+  private IIngredientStockRepository _stockRepository = null!;
+  private ILogger<OrderAcceptanceService> _logger = null!;
   private TimeProvider _clock = null!;
   private OrderAcceptanceService _service = null!;
 
@@ -524,5 +531,71 @@ public sealed class OrderAcceptanceServiceTest
   private void Remember(Order order)
   {
     _ordersTheLaptopHolds[order.Id] = order;
+  }
+
+  [Test]
+  public async Task AcceptAsync_AnIngredientLeftWithLessThanOnePortion_MarksTheArticleSoldOut()
+  {
+    var mustardId = Guid.NewGuid();
+    FestivalCatalogItem bratwurstOnTheMenu = new()
+    {
+      Id = Guid.NewGuid(),
+      FestivalId = _festivalId,
+      CatalogItemId = _bratwurstId,
+      PriceCents = 350,
+      IsAvailable = true,
+      CatalogItem = new()
+      {
+        Id = _bratwurstId,
+        Name = "Bratwurst",
+        CategoryId = Guid.NewGuid(),
+        SortOrder = 1,
+        IsActive = true
+      }
+    };
+    bratwurstOnTheMenu.CatalogItem.Ingredients.Add(new()
+                                                   {
+                                                     Id = Guid.NewGuid(),
+                                                     CatalogItemId = _bratwurstId,
+                                                     IngredientId = mustardId,
+                                                     Amount = 20
+                                                   });
+    A.CallTo(() => _stockRepository.FindActiveWithAvailableAmountAsync(_festivalId, A<CancellationToken>._))
+     .Returns(Task.FromResult<IReadOnlyList<FestivalIngredient>>([
+                                                                   new()
+                                                                   {
+                                                                     Id = Guid.NewGuid(),
+                                                                     FestivalId = _festivalId,
+                                                                     IngredientId = mustardId,
+                                                                     AvailableAmount = 50
+                                                                   }
+                                                                 ]));
+    A.CallTo(() => _stockRepository.SumConsumedAmountsAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyDictionary<Guid, double>>(new Dictionary<Guid, double> { [mustardId] = 40 }));
+    A.CallTo(() => _stockRepository.FindAvailableMenuRowsWithRecipesAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<FestivalCatalogItem>>([bratwurstOnTheMenu]));
+
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)]), _staffMemberId, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsError, Is.False);
+                      Assert.That(bratwurstOnTheMenu.IsAvailable, Is.False);
+                    });
+    A.CallTo(() => _stockRepository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task AcceptAsync_TheStockCheckThrows_ReturnsTheOrderAndLogsAnErrorNamingIt()
+  {
+    A.CallTo(() => _stockRepository.FindActiveWithAvailableAmountAsync(A<Guid>._, A<CancellationToken>._)).ThrowsAsync(new InvalidOperationException("The stock table could not be read."));
+
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)]), _staffMemberId, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsError, Is.False);
+                      Assert.That(result.Value.GlobalOrderNumber, Is.EqualTo(137));
+                    });
+    A.CallTo(() => _orderRepository.AddAsync(A<Order>._, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+    A.CallTo(_logger).Where(call => call.Method.Name == nameof(ILogger.Log) && call.GetArgument<LogLevel>(0) == LogLevel.Error && call.GetArgument<object>(2)!.ToString()!.Contains(result.Value.Id.ToString(), StringComparison.Ordinal)).MustHaveHappenedOnceExactly();
   }
 }

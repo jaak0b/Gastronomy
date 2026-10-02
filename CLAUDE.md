@@ -36,6 +36,17 @@ Flow:
    Giving something away is that same act with the amount set to zero, not a second kind of
    settlement.
 
+**Stock is an estimate, computed live and never stored.** An article may list the ingredients one
+portion uses (an ingredient has a name and a unit: pieces, grams or millilitres). Per festival the
+admin may enter an available amount for an ingredient; an empty amount means unlimited, and one row
+exists for every festival and ingredient. Consumption is summed from the festival's order items and
+the recipes on every read, and the festival page shows available, used and a linear prediction of
+the moment the stock runs out, counted from the festival's start. After an order is accepted, and
+after the admin changes an amount, every menu row whose article needs more of a limited ingredient
+than is left is switched off through the existing availability switch, and nothing switches it back
+on by itself. Stock never refuses an order and may go negative; a failure in the stock step is
+logged and the order is accepted anyway.
+
 **No money changes hands in the app.** It displays prices to help the server add up, and it records
 whether items have been settled so the people running the stand can see what a table still owes. It
 takes no payment, handles no cash, and never issues a receipt.

@@ -23,4 +23,6 @@ public sealed class Festival
   public Collection<FestivalCatalogItem> CatalogItems { get; } = [];
 
   public Collection<ItemStationAssignment> ItemStationAssignments { get; } = [];
+
+  public Collection<FestivalIngredient> Ingredients { get; } = [];
 }

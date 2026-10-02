@@ -1,5 +1,6 @@
 ﻿using ErrorOr;
 using FakeItEasy;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
@@ -15,13 +16,16 @@ public sealed class FestivalAdministrationServiceTest
   public void SetUp()
   {
     _repository = A.Fake<IFestivalRepository>();
+    _ingredientRepository = A.Fake<IIngredientRepository>();
     _clock = new FakeTimeProvider(new(_now));
 
     A.CallTo(() => _repository.FindAllAsync(A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Festival>>([]));
     A.CallTo(() => _repository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
     A.CallTo(() => _repository.ExistsAsync(A<Guid>._, A<CancellationToken>._)).Returns(true);
 
-    _service = new(_repository, new(), new(_repository, new(), _clock));
+    A.CallTo(() => _ingredientRepository.FindAllOrderedByNameAsync(A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Ingredient>>([]));
+
+    _service = new(_repository, _ingredientRepository, new(), new(_repository, new(), _clock));
   }
 
   private readonly FestivalService _festivalService = new();
@@ -30,6 +34,7 @@ public sealed class FestivalAdministrationServiceTest
 
   private TimeProvider _clock = null!;
   private IFestivalRepository _repository = null!;
+  private IIngredientRepository _ingredientRepository = null!;
   private FestivalAdministrationService _service = null!;
 
   [Test]
@@ -189,6 +194,56 @@ public sealed class FestivalAdministrationServiceTest
                       Assert.That(updated.IsSuccess, Is.False);
                       Assert.That(updated.RefusalMessageKey(), Is.EqualTo("FestivalNotFound"));
                     });
+  }
+
+  [Test]
+  public async Task CreateAsync_TwoIngredientsExist_GivesTheNewFestivalAnUnlimitedStockRowForEach()
+  {
+    GivenIngredients(out var mustardId, out var bunId);
+
+    ErrorOr<Festival> created = await _service.CreateAsync("Sommerfest", _now, _now.AddHours(2), CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(created.Value.Ingredients.Select(stock => stock.IngredientId), Is.EquivalentTo(new[] { mustardId, bunId }));
+                      Assert.That(created.Value.Ingredients.All(stock => stock.FestivalId == created.Value.Id && stock.AvailableAmount == null), Is.True);
+                    });
+  }
+
+  [Test]
+  public async Task CopyAsync_TwoIngredientsExist_GivesTheCopyUnlimitedStockRowsInsteadOfCopyingAmounts()
+  {
+    GivenIngredients(out var mustardId, out var bunId);
+
+    ErrorOr<Festival> copy = await _service.CopyAsync(_festivalId, "Herbstfest", _now, _now.AddHours(2), CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(copy.Value.Ingredients.Select(stock => stock.IngredientId), Is.EquivalentTo(new[] { mustardId, bunId }));
+                      Assert.That(copy.Value.Ingredients.All(stock => stock.FestivalId == copy.Value.Id && stock.AvailableAmount == null), Is.True);
+                    });
+  }
+
+  private void GivenIngredients(out Guid mustardId, out Guid bunId)
+  {
+    mustardId = Guid.NewGuid();
+    bunId = Guid.NewGuid();
+    Ingredient mustard = new()
+    {
+      Id = mustardId,
+      Name = "Senf",
+      Unit = IngredientUnit.Gram,
+      IsActive = true
+    };
+    Ingredient bun = new()
+    {
+      Id = bunId,
+      Name = "Semmel",
+      Unit = IngredientUnit.Piece,
+      IsActive = false
+    };
+
+    A.CallTo(() => _ingredientRepository.FindAllOrderedByNameAsync(A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Ingredient>>([bun, mustard]));
   }
 
   private Festival BuildFestival(Guid festivalId, bool isHidden)

@@ -7,12 +7,14 @@ import { assertNever } from '../../../shared/core/assertNever'
 import { localInputToUtcIso, utcIsoToLocalInput } from '../../core/festivalTimes'
 import { laptopConfirmedField, stillDiffersFromTheLaptop } from '../../core/laptopConfirmedField'
 import { useAdminCategoriesStore } from '../../stores/categories'
+import { useAdminFestivalStockStore } from '../../stores/festivalStock'
 import { useAdminFestivalsStore } from '../../stores/festivals'
 import { useAdminItemsStore } from '../../stores/items'
 import { useAdminStationsStore } from '../../stores/stations'
 import { useRefusalText } from '../../composables/useRefusalText'
 import FestivalItems from './FestivalItems.vue'
 import FestivalStations from './FestivalStations.vue'
+import FestivalStock from './FestivalStock.vue'
 
 const props = defineProps<{ festivalId: string }>()
 
@@ -21,6 +23,7 @@ const festivals = useAdminFestivalsStore()
 const stations = useAdminStationsStore()
 const categories = useAdminCategoriesStore()
 const items = useAdminItemsStore()
+const stock = useAdminFestivalStockStore()
 const festivalName = ref(laptopConfirmedField('', ''))
 const startsAt = ref(laptopConfirmedField('', ''))
 const endsAt = ref(laptopConfirmedField('', ''))
@@ -100,6 +103,7 @@ function listenToTheLaptop(): () => void {
     stations.listen(),
     categories.listen(),
     items.listen(),
+    stock.listen(),
   ]
   return () => {
     for (const release of releases) {
@@ -119,6 +123,7 @@ async function reload(): Promise<void> {
   await stations.loadAtTheFestival(props.festivalId)
   await categories.load()
   await items.loadAtTheFestival(props.festivalId)
+  await stock.loadForFestival(props.festivalId)
 }
 
 watch(
@@ -149,7 +154,12 @@ onUnmounted(() => {
     >
       {{ t('common.actions.back') }}
     </v-btn>
-    <v-alert v-if="festivals.loadFailed" class="error mb-4" type="error" variant="tonal">
+    <v-alert
+      v-if="festivals.loadFailed || stock.loadFailed"
+      class="error mb-4"
+      type="error"
+      variant="tonal"
+    >
       {{ t('admin.common.errors.loadFailed') }}
     </v-alert>
 
@@ -209,6 +219,7 @@ onUnmounted(() => {
 
       <FestivalStations :festival-id="festivalId" />
       <FestivalItems :festival-id="festivalId" :is-running="festival?.isRunning === true" />
+      <FestivalStock :festival-id="festivalId" />
     </template>
   </v-container>
 </template>

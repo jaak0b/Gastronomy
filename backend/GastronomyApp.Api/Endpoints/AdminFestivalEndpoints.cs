@@ -1,5 +1,6 @@
 ﻿using GastronomyApp.Api.Handlers;
 using GastronomyApp.Contracts.Admin.Festivals;
+using GastronomyApp.Contracts.Admin.Ingredients;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 
@@ -32,6 +33,10 @@ public static class AdminFestivalEndpoints
     group.MapPut("/{festivalId:guid}/stations/{stationId:guid}", async (Guid festivalId, Guid stationId, AdminFestivalStationHandler handler, CancellationToken cancellationToken) => await handler.AddAsync(festivalId, stationId, cancellationToken));
 
     group.MapDelete("/{festivalId:guid}/stations/{stationId:guid}", async (Guid festivalId, Guid stationId, AdminFestivalStationHandler handler, CancellationToken cancellationToken) => await handler.RemoveAsync(festivalId, stationId, cancellationToken));
+
+    group.MapGet("/{festivalId:guid}/ingredients", async (Guid festivalId, AdminFestivalStockHandler handler, CancellationToken cancellationToken) => await handler.ListAsync(festivalId, cancellationToken));
+
+    group.MapPut("/{festivalId:guid}/ingredients/{ingredientId:guid}", async (Guid festivalId, Guid ingredientId, SaveFestivalIngredientRequest request, AdminFestivalStockHandler handler, CancellationToken cancellationToken) => await handler.SetAvailableAmountAsync(festivalId, ingredientId, request, cancellationToken));
 
     return routes;
   }

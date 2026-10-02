@@ -51,6 +51,9 @@ public sealed class ReleasedDatabaseUpgradeTest
     var order = await context.Set<Order>().SingleAsync(persisted => persisted.Id == orderId);
     var orderItem = await context.Set<OrderItem>().SingleAsync(persisted => persisted.Id == orderItemId);
     List<string> appliedMigrations = (await context.Database.GetAppliedMigrationsAsync()).ToList();
+    var ingredientCount = await context.Set<Ingredient>().CountAsync();
+    var stockRowCount = await context.Set<FestivalIngredient>().CountAsync();
+    var recipeLineCount = await context.Set<CatalogItemIngredient>().CountAsync();
 
     Assert.Multiple(() =>
                     {
@@ -67,12 +70,16 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(orderItem.SettledAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 18, 0, 0)));
                       Assert.That(orderItem.SettledByStaffMemberId, Is.EqualTo(staffMemberId));
                       Assert.That(orderItem.PaymentMethod, Is.Null);
-                      Assert.That(appliedMigrations, Has.Count.EqualTo(5));
+                      Assert.That(appliedMigrations, Has.Count.EqualTo(6));
                       Assert.That(appliedMigrations[0], Is.EqualTo(_releasedSchema.MigrationId));
                       Assert.That(appliedMigrations[1], Does.EndWith("_CollateCategoryNamesAndCapitalizeQRColumns"));
                       Assert.That(appliedMigrations[2], Does.EndWith("_DropOrderNote"));
                       Assert.That(appliedMigrations[3], Does.EndWith("_AddEntityNavigations"));
                       Assert.That(appliedMigrations[4], Does.EndWith("_AddOrderItemPaymentMethod"));
+                      Assert.That(appliedMigrations[5], Does.EndWith("_AddIngredientStock"));
+                      Assert.That(ingredientCount, Is.Zero);
+                      Assert.That(stockRowCount, Is.Zero);
+                      Assert.That(recipeLineCount, Is.Zero);
                     });
   }
 

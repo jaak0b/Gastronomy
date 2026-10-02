@@ -38,7 +38,10 @@ public sealed class GastronomyAppDbContextTest
                                   "OrderItems",
                                   "Festivals",
                                   "FestivalStations",
-                                  "FestivalCatalogItems"
+                                  "FestivalCatalogItems",
+                                  "Ingredients",
+                                  "CatalogItemIngredients",
+                                  "FestivalIngredients"
                                 }));
   }
 

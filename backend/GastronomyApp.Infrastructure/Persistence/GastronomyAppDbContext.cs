@@ -35,6 +35,12 @@ public sealed class GastronomyAppDbContext : DbContext
 
   public DbSet<FestivalCatalogItem> FestivalCatalogItems => Set<FestivalCatalogItem>();
 
+  public DbSet<Ingredient> Ingredients => Set<Ingredient>();
+
+  public DbSet<CatalogItemIngredient> CatalogItemIngredients => Set<CatalogItemIngredient>();
+
+  public DbSet<FestivalIngredient> FestivalIngredients => Set<FestivalIngredient>();
+
   override protected void OnModelCreating(ModelBuilder modelBuilder)
   {
     modelBuilder.ApplyConfigurationsFromAssembly(typeof(GastronomyAppDbContext).Assembly);

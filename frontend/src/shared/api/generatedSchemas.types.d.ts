@@ -3,10 +3,16 @@
     // <Schemas>
   export type AdminCategoryView = { categoryId: string, name: string, colourHex: string, sortOrder: number, isActive: boolean }
 export type AdminCategoryListView = { categories: Array<AdminCategoryView> }
+export type IngredientUnit = ("piece" | "gram" | "millilitre")
+export type AdminFestivalIngredientView = { ingredientId: string, name: string, unit: IngredientUnit, isActive: boolean, availableAmount: (null | number), usedAmount: number, runsOutAtUtc: (null | string) }
+export type AdminFestivalIngredientListView = { ingredients: Array<AdminFestivalIngredientView> }
 export type AdminFestivalView = { festivalId: string, name: string, startsAtUtc: string, endsAtUtc: string, isHidden: boolean, isRunning: boolean, stationCount: number, menuItemCount: number, orderCount: number }
 export type AdminFestivalListView = { festivals: Array<AdminFestivalView> }
+export type AdminIngredientView = { ingredientId: string, name: string, unit: IngredientUnit, isActive: boolean }
+export type AdminIngredientListView = { ingredients: Array<AdminIngredientView> }
 export type AdminItemAtFestivalView = { priceCents: number, isAvailable: boolean, stationIds: Array<string> }
-export type AdminItemView = { itemId: string, name: string, categoryId: string, sortOrder: number, isActive: boolean, productionMinutes: (null | number), isQueueIndependent: boolean, atTheFestival: (null | AdminItemAtFestivalView) }
+export type AdminItemIngredientView = { ingredientId: string, amount: number }
+export type AdminItemView = { itemId: string, name: string, categoryId: string, sortOrder: number, isActive: boolean, productionMinutes: (null | number), isQueueIndependent: boolean, atTheFestival: (null | AdminItemAtFestivalView), ingredients: Array<AdminItemIngredientView> }
 export type AdminItemListView = { items: Array<AdminItemView> }
 export type AdminStaffMemberView = { staffMemberId: string, name: string, isActive: boolean, hasDevice: boolean }
 export type AdminStaffMemberListView = { staffMembers: Array<AdminStaffMemberView> }
@@ -47,11 +53,16 @@ export type RedeemedEnrolmentView = { deviceId: string, deviceToken: string, sta
 export type RedeemEnrolmentRequest = { code: (null | string), name?: (null | string), userAgent?: (null | string), previousDeviceToken?: (null | string) }
 export type RenameStaffMemberRequest = { name: (null | string) }
 export type SaveCategoryRequest = { name: (null | string), colourHex: (null | string) }
+export type SavedFestivalIngredientView = { ingredientId: string }
 export type SavedFestivalView = { festivalId: string }
+export type SavedIngredientView = { ingredientId: string }
 export type SavedItemView = { itemId: string }
 export type SavedStationView = { stationId: string }
+export type SaveFestivalIngredientRequest = { availableAmount: (null | number) }
 export type SaveFestivalItemRequest = { priceCents: number, stationIds: (null | Array<string>) }
 export type SaveFestivalRequest = { name: (null | string), startsAtUtc: string, endsAtUtc: string }
+export type SaveIngredientRequest = { name: (null | string), unit: (null | IngredientUnit) }
+export type SaveItemIngredientRequest = { amount: (null | number) }
 export type SaveItemRequest = { name: (null | string), categoryId: (null | string), sortOrder: number, productionMinutes?: (null | number), isQueueIndependent?: boolean }
 export type SaveStationRequest = { name: (null | string), sortOrder: number }
 export type SessionView = { deviceId: string, staffMember: (null | StaffMemberView), station: (null | StationSummaryView), language: string }
@@ -581,6 +592,38 @@ export type post__api_admin_items_ItemId_deactivate = {
 },
       
     }
+export type put__api_admin_items_ItemId_ingredients_IngredientId = {
+      method: "PUT",
+      path: "/api/admin/items/{itemId}/ingredients/{ingredientId}",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { itemId: string, ingredientId: string },
+        
+        
+        body:  Schemas.SaveItemIngredientRequest,
+          }
+      responses: {200: Schemas.SavedItemView,
+},
+      
+    }
+export type delete__api_admin_items_ItemId_ingredients_IngredientId = {
+      method: "DELETE",
+      path: "/api/admin/items/{itemId}/ingredients/{ingredientId}",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { itemId: string, ingredientId: string },
+        
+        
+        
+          }
+      responses: {204: unknown,
+},
+      
+    }
 export type get__api_admin_staffMembers = {
       method: "GET",
       path: "/api/admin/staff-members",
@@ -809,6 +852,112 @@ export type delete__api_admin_festivals_FestivalId_stations_StationId = {
 },
       
     }
+export type get__api_admin_festivals_FestivalId_ingredients = {
+      method: "GET",
+      path: "/api/admin/festivals/{festivalId}/ingredients",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string },
+        
+        
+        
+          }
+      responses: {200: Schemas.AdminFestivalIngredientListView,
+},
+      
+    }
+export type put__api_admin_festivals_FestivalId_ingredients_IngredientId = {
+      method: "PUT",
+      path: "/api/admin/festivals/{festivalId}/ingredients/{ingredientId}",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string, ingredientId: string },
+        
+        
+        body:  Schemas.SaveFestivalIngredientRequest,
+          }
+      responses: {200: Schemas.SavedFestivalIngredientView,
+},
+      
+    }
+export type get__api_admin_ingredients = {
+      method: "GET",
+      path: "/api/admin/ingredients",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: never,
+      responses: {200: Schemas.AdminIngredientListView,
+},
+      
+    }
+export type post__api_admin_ingredients = {
+      method: "POST",
+      path: "/api/admin/ingredients",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        
+        
+        
+        body:  Schemas.SaveIngredientRequest,
+          }
+      responses: {201: Schemas.AdminIngredientView,
+},
+      
+    }
+export type put__api_admin_ingredients_IngredientId = {
+      method: "PUT",
+      path: "/api/admin/ingredients/{ingredientId}",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { ingredientId: string },
+        
+        
+        body:  Schemas.SaveIngredientRequest,
+          }
+      responses: {200: Schemas.SavedIngredientView,
+},
+      
+    }
+export type post__api_admin_ingredients_IngredientId_activate = {
+      method: "POST",
+      path: "/api/admin/ingredients/{ingredientId}/activate",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { ingredientId: string },
+        
+        
+        
+          }
+      responses: {200: Schemas.SavedIngredientView,
+},
+      
+    }
+export type post__api_admin_ingredients_IngredientId_deactivate = {
+      method: "POST",
+      path: "/api/admin/ingredients/{ingredientId}/deactivate",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { ingredientId: string },
+        
+        
+        
+          }
+      responses: {200: Schemas.SavedIngredientView,
+},
+      
+    }
 
   // </Endpoints>
   }
@@ -841,7 +990,10 @@ export type delete__api_admin_festivals_FestivalId_stations_StationId = {
 "/api/admin/festivals/{festivalId}/copy": Endpoints.post__api_admin_festivals_FestivalId_copy,
 "/api/admin/festivals/{festivalId}/hide": Endpoints.post__api_admin_festivals_FestivalId_hide,
 "/api/admin/festivals/{festivalId}/show": Endpoints.post__api_admin_festivals_FestivalId_show,
-"/api/admin/festivals/{festivalId}/items/{itemId}/availability": Endpoints.post__api_admin_festivals_FestivalId_items_ItemId_availability
+"/api/admin/festivals/{festivalId}/items/{itemId}/availability": Endpoints.post__api_admin_festivals_FestivalId_items_ItemId_availability,
+"/api/admin/ingredients": Endpoints.post__api_admin_ingredients,
+"/api/admin/ingredients/{ingredientId}/activate": Endpoints.post__api_admin_ingredients_IngredientId_activate,
+"/api/admin/ingredients/{ingredientId}/deactivate": Endpoints.post__api_admin_ingredients_IngredientId_deactivate
          },
 get: {
            "/api/catalog": Endpoints.get__api_catalog,
@@ -858,20 +1010,26 @@ get: {
 "/api/admin/categories": Endpoints.get__api_admin_categories,
 "/api/admin/items": Endpoints.get__api_admin_items,
 "/api/admin/staff-members": Endpoints.get__api_admin_staffMembers,
-"/api/admin/festivals": Endpoints.get__api_admin_festivals
+"/api/admin/festivals": Endpoints.get__api_admin_festivals,
+"/api/admin/festivals/{festivalId}/ingredients": Endpoints.get__api_admin_festivals_FestivalId_ingredients,
+"/api/admin/ingredients": Endpoints.get__api_admin_ingredients
          },
 put: {
            "/api/session/language": Endpoints.put__api_session_language,
 "/api/admin/stations/{stationId}": Endpoints.put__api_admin_stations_StationId,
 "/api/admin/categories/{categoryId}": Endpoints.put__api_admin_categories_CategoryId,
 "/api/admin/items/{itemId}": Endpoints.put__api_admin_items_ItemId,
+"/api/admin/items/{itemId}/ingredients/{ingredientId}": Endpoints.put__api_admin_items_ItemId_ingredients_IngredientId,
 "/api/admin/staff-members/{staffMemberId}": Endpoints.put__api_admin_staffMembers_StaffMemberId,
 "/api/admin/festivals/{festivalId}": Endpoints.put__api_admin_festivals_FestivalId,
 "/api/admin/festivals/{festivalId}/items/{itemId}": Endpoints.put__api_admin_festivals_FestivalId_items_ItemId,
-"/api/admin/festivals/{festivalId}/stations/{stationId}": Endpoints.put__api_admin_festivals_FestivalId_stations_StationId
+"/api/admin/festivals/{festivalId}/stations/{stationId}": Endpoints.put__api_admin_festivals_FestivalId_stations_StationId,
+"/api/admin/festivals/{festivalId}/ingredients/{ingredientId}": Endpoints.put__api_admin_festivals_FestivalId_ingredients_IngredientId,
+"/api/admin/ingredients/{ingredientId}": Endpoints.put__api_admin_ingredients_IngredientId
          },
 delete: {
-           "/api/admin/festivals/{festivalId}/items/{itemId}": Endpoints.delete__api_admin_festivals_FestivalId_items_ItemId,
+           "/api/admin/items/{itemId}/ingredients/{ingredientId}": Endpoints.delete__api_admin_items_ItemId_ingredients_IngredientId,
+"/api/admin/festivals/{festivalId}/items/{itemId}": Endpoints.delete__api_admin_festivals_FestivalId_items_ItemId,
 "/api/admin/festivals/{festivalId}/stations/{stationId}": Endpoints.delete__api_admin_festivals_FestivalId_stations_StationId
          }
      }

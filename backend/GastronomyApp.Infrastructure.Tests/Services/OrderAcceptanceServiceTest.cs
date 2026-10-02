@@ -1,4 +1,5 @@
 ﻿using ErrorOr;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -92,6 +93,50 @@ public sealed class OrderAcceptanceServiceTest
                       Assert.That(orderCount, Is.EqualTo(1));
                       Assert.That(storedItems, Has.Count.EqualTo(2));
                       Assert.That(nextOrderNumber, Is.EqualTo(2));
+                    });
+  }
+
+  [Test]
+  public async Task AcceptAsync_TheOrderLeavesLessThanOnePortionOfAnIngredient_StoresTheArticleAsSoldOut()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    Ingredient mustard = new()
+    {
+      Id = Guid.NewGuid(),
+      Name = "Senf",
+      Unit = IngredientUnit.Gram,
+      IsActive = true
+    };
+    mustard.FestivalIngredients.Add(new()
+                                    {
+                                      Id = Guid.NewGuid(),
+                                      FestivalId = seeded.FestivalId,
+                                      IngredientId = mustard.Id,
+                                      AvailableAmount = 30
+                                    });
+    fixture.DbContext.Ingredients.Add(mustard);
+    fixture.DbContext.CatalogItemIngredients.Add(new()
+                                                 {
+                                                   Id = Guid.NewGuid(),
+                                                   CatalogItemId = seeded.SausageItemId,
+                                                   IngredientId = mustard.Id,
+                                                   Amount = 20
+                                                 });
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
+
+    ErrorOr<Order> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    fixture.DbContext.ChangeTracker.Clear();
+
+    var sausageRow = await fixture.DbContext.FestivalCatalogItems.SingleAsync(menuRow => menuRow.CatalogItemId == seeded.SausageItemId, TestContext.CurrentContext.CancellationToken);
+    var lemonadeRow = await fixture.DbContext.FestivalCatalogItems.SingleAsync(menuRow => menuRow.CatalogItemId == seeded.LemonadeItemId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsSuccess, Is.True);
+                      Assert.That(sausageRow.IsAvailable, Is.False);
+                      Assert.That(lemonadeRow.IsAvailable, Is.True);
                     });
   }
 

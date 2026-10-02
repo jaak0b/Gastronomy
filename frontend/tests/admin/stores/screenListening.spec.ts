@@ -10,6 +10,8 @@ const { useAdminCategoriesStore } = await import('../../../src/admin/stores/cate
 const { useAdminStaffStore } = await import('../../../src/admin/stores/staff')
 const { useAdminStationsStore } = await import('../../../src/admin/stores/stations')
 const { useAdminItemsStore } = await import('../../../src/admin/stores/items')
+const { useAdminIngredientsStore } = await import('../../../src/admin/stores/ingredients')
+const { useAdminFestivalStockStore } = await import('../../../src/admin/stores/festivalStock')
 
 const EMPTY_LISTS = { staffMembers: [], stations: [] }
 
@@ -195,6 +197,104 @@ describe('the item list of the admin', () => {
     const stopListening = useAdminItemsStore().listen()
 
     stopListening()
+    await useConnectionStore().refetchAll()
+
+    expect(urls).toEqual([])
+  })
+})
+
+describe('the ingredient list of the admin', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    forgetHubEvents()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('is reloaded while the screen that asked for it is open', async () => {
+    const urls = stubTheLaptop()
+    useAdminIngredientsStore().listen()
+
+    await useConnectionStore().refetchAll()
+
+    expect(urls).toEqual(['/api/admin/ingredients'])
+  })
+
+  it('is read again when the laptop says the configuration changed', async () => {
+    const urls = stubTheLaptop()
+    useAdminIngredientsStore().listen()
+    await useConnectionStore().connect({})
+    urls.length = 0
+
+    fireHubEvent('ConfigurationChanged')
+
+    await vi.waitFor(() => expect(urls).toEqual(['/api/admin/ingredients']))
+  })
+
+  it('is left alone once the admin has moved to another screen', async () => {
+    const urls = stubTheLaptop()
+    const stopListening = useAdminIngredientsStore().listen()
+
+    stopListening()
+    await useConnectionStore().refetchAll()
+
+    expect(urls).toEqual([])
+  })
+})
+
+describe('the stock of the festival whose page is open', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    forgetHubEvents()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  async function listenOnTheFestivalPage(): Promise<{ urls: string[]; stop: () => void }> {
+    const urls = stubTheLaptop()
+    const stock = useAdminFestivalStockStore()
+    const stop = stock.listen()
+    await stock.loadForFestival('fest-1')
+    urls.length = 0
+    return { urls, stop }
+  }
+
+  it('is reloaded on a reconnect', async () => {
+    const { urls } = await listenOnTheFestivalPage()
+
+    await useConnectionStore().refetchAll()
+
+    expect(urls).toEqual(['/api/admin/festivals/fest-1/ingredients'])
+  })
+
+  it('is read again when the laptop says the configuration changed', async () => {
+    const { urls } = await listenOnTheFestivalPage()
+    await useConnectionStore().connect({})
+    urls.length = 0
+
+    fireHubEvent('ConfigurationChanged')
+
+    await vi.waitFor(() => expect(urls).toEqual(['/api/admin/festivals/fest-1/ingredients']))
+  })
+
+  it('is read again when the laptop says the orders changed, because orders use up the stock', async () => {
+    const { urls } = await listenOnTheFestivalPage()
+    await useConnectionStore().connect({})
+    urls.length = 0
+
+    fireHubEvent('OrdersChanged')
+
+    await vi.waitFor(() => expect(urls).toEqual(['/api/admin/festivals/fest-1/ingredients']))
+  })
+
+  it('is left alone once the admin has moved to another screen', async () => {
+    const { urls, stop } = await listenOnTheFestivalPage()
+
+    stop()
     await useConnectionStore().refetchAll()
 
     expect(urls).toEqual([])

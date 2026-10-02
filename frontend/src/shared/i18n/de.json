@@ -306,6 +306,39 @@
         "namedItemNeedsAStation": "{item} braucht mindestens eine Ausgabestelle."
       }
     },
+    "ingredients": {
+      "title": "Zutaten",
+      "labels": {
+        "recipeTitle": "Zutaten für {item}",
+        "allIngredients": "Alle Zutaten",
+        "ingredient": "Zutat",
+        "name": "Name der Zutat",
+        "unit": "Einheit",
+        "amount": "Menge",
+        "available": "Verfügbar",
+        "used": "Verbraucht: {amount}",
+        "runsOutAt": "Reicht voraussichtlich bis {moment}",
+        "pieces": "Stück",
+        "pieceCount": "{amount} Stück | {amount} Stück",
+        "unitPiece": "Stück",
+        "unitGram": "Gramm",
+        "unitMillilitre": "Milliliter",
+        "deactivateTitle": "Zutat deaktivieren?"
+      },
+      "actions": {
+        "edit": "Zutaten bearbeiten",
+        "add": "Zutat hinzufügen",
+        "new": "Neue Zutat",
+        "chooseExisting": "Vorhandene Zutat wählen",
+        "close": "Schließen",
+        "activate": "Zutat aktivieren",
+        "deactivateConfirm": "Zutat deaktivieren"
+      },
+      "messages": {
+        "deactivateCost": "Eine deaktivierte Zutat begrenzt den Verkauf nicht mehr.",
+        "noneYet": "Es gibt noch keine Zutaten."
+      }
+    },
     "items": {
       "title": "Artikel",
       "labels": {
@@ -388,6 +421,12 @@
         "overlaps": "Das Fest {name} überschneidet sich mit diesem Zeitraum. Verschieben Sie den Beginn oder das Ende.",
         "periodInvalid": "Das Ende muss nach dem Beginn liegen. Tragen Sie beim Ende einen späteren Zeitpunkt ein.",
         "stationHasOrdersAtTheFestival": "Solange das Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht entfernt werden."
+      },
+      "ingredients": {
+        "nameMissing": "Geben Sie einen Namen für die Zutat an.",
+        "nameTaken": "Eine Zutat mit diesem Namen gibt es schon.",
+        "amountInvalid": "Geben Sie eine Menge größer als null an.",
+        "stockInvalid": "Geben Sie null oder mehr an, oder lassen Sie das Feld leer."
       },
       "items": {
         "categoryIsOff": "Diese Kategorie ist abgeschaltet. Schalten Sie zuerst die Kategorie ein.",

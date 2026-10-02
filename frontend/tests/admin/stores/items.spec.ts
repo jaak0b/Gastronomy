@@ -18,6 +18,7 @@ const CREATED_ITEM = {
   isActive: true,
   productionMinutes: null,
   isQueueIndependent: false,
+  ingredients: [],
   atTheFestival: null,
 }
 
@@ -305,5 +306,72 @@ describe('a new item the laptop creates', () => {
       message: { key: 'errors.admin.items.nameTaken', parameters: {}, count: null },
     })
     expect(items.items).toEqual([])
+  })
+})
+
+describe('the recipe of an article', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('sets the amount of an ingredient and reads the articles again', async () => {
+    const calls = answerWith((_url, method) =>
+      method === 'GET' ? { items: [] } : { itemId: 'item-neu' },
+    )
+    const items = useAdminItemsStore()
+
+    const result = await items.setIngredientAmount('item-neu', 'ingredient-mehl', 1500)
+
+    expect(result).toEqual({ kind: 'ok', value: null })
+    expect(calls).toEqual([
+      {
+        url: '/api/admin/items/item-neu/ingredients/ingredient-mehl',
+        method: 'PUT',
+        body: { amount: 1500 },
+      },
+      { url: '/api/admin/items', method: 'GET', body: null },
+    ])
+  })
+
+  it('removes an ingredient from the recipe and reads the articles again', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) =>
+        (init?.method ?? 'GET') === 'GET'
+          ? new Response(JSON.stringify({ items: [] }), { status: 200 })
+          : new Response(null, { status: 204 }),
+      ),
+    )
+    const items = useAdminItemsStore()
+
+    const result = await items.removeIngredient('item-neu', 'ingredient-mehl')
+
+    expect(result).toEqual({ kind: 'ok', value: null })
+    const fetched = vi.mocked(fetch).mock.calls.map(([url, init]) => `${init?.method ?? 'GET'} ${url}`)
+    expect(fetched).toEqual([
+      'DELETE /api/admin/items/item-neu/ingredients/ingredient-mehl',
+      'GET /api/admin/items',
+    ])
+  })
+
+  it('hands back the reason the laptop named when it refuses an amount', async () => {
+    refuseWith(422, {
+      code: 'UnprocessableEntity',
+      messageKey: 'errors.admin.ingredients.amountInvalid',
+      parameters: {},
+      details: null,
+    })
+    const items = useAdminItemsStore()
+
+    const result = await items.setIngredientAmount('item-neu', 'ingredient-mehl', 0)
+
+    expect(result).toEqual({
+      kind: 'failed',
+      message: { key: 'errors.admin.ingredients.amountInvalid', parameters: {}, count: null },
+    })
   })
 })

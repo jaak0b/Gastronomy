@@ -12,6 +12,7 @@ public sealed class AdminItemMapping : IMappingRegistration
 
     config.NewConfig<CatalogItem, AdminItemView>()
           .Map(view => view.ItemId, item => item.Id)
+          .Map(view => view.Ingredients, item => item.Ingredients.OrderBy(recipeLine => recipeLine.Ingredient.Name).Select(recipeLine => new AdminItemIngredientView(recipeLine.IngredientId, recipeLine.Amount)).ToList())
           .Map(view => view.AtTheFestival,
                item => item.FestivalCatalogItems.FirstOrDefault() == null
                          ? null

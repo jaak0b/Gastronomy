@@ -70,6 +70,7 @@ const ONE_ITEM = {
       isActive: true,
       productionMinutes: null,
       isQueueIndependent: false,
+      ingredients: [],
       atTheFestival: { priceCents: 350, isAvailable: true, stationIds: [STATION_ID] },
     },
   ],
@@ -113,6 +114,7 @@ interface Laptop {
   festivals?: unknown
   refusal?: { status: number; body: unknown }
   itemRefusal?: { status: number; body: unknown }
+  ingredients?: unknown
 }
 
 function stubLaptop(laptop: Laptop = {}): Call[] {
@@ -136,6 +138,11 @@ function stubLaptop(laptop: Laptop = {}): Call[] {
           return new Response(JSON.stringify(CREATED_CATEGORY), { status: 201 })
         }
         return new Response(JSON.stringify(laptop.categories ?? TWO_CATEGORIES), { status: 200 })
+      }
+      if (url.includes('/api/admin/ingredients')) {
+        return new Response(JSON.stringify(laptop.ingredients ?? { ingredients: [] }), {
+          status: 200,
+        })
       }
       if (url.includes('/api/admin/festivals/')) {
         return new Response(JSON.stringify({}), { status: 200 })
@@ -908,5 +915,58 @@ describe('a refusal the admin has walked away from', () => {
     await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
 
     expect(list.find('.admin-items .refusal').exists()).toBe(false)
+  })
+})
+
+describe('the ingredients button on an article', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('opens the recipe of that article in German', async () => {
+    stubLaptop()
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.edit-ingredients').exists()).toBe(true))
+    expect(list.get('.edit-ingredients').text()).toBe('Zutaten bearbeiten')
+    await list.get('.edit-ingredients').trigger('click')
+
+    await vi.waitFor(() =>
+      expect(document.querySelector('.form-dialog-title')?.textContent).toBe(
+        'Zutaten für Bratwurst',
+      ),
+    )
+  })
+
+  it('is worded in English', async () => {
+    stubLaptop()
+
+    const list = mount(ItemsList, {
+      global: { plugins: testPlugins('en') },
+      attachTo: document.body,
+    })
+    await vi.waitFor(() => expect(list.find('.edit-ingredients').exists()).toBe(true))
+
+    expect(list.get('.edit-ingredients').text()).toBe('Edit ingredients')
+  })
+
+  it('closes the recipe when the admin presses close', async () => {
+    stubLaptop()
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.edit-ingredients').exists()).toBe(true))
+    await list.get('.edit-ingredients').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.form-cancel')).not.toBeNull())
+    const close = document.querySelector('.form-cancel') as HTMLElement
+
+    expect(close.textContent?.trim()).toBe('Schließen')
+    close.click()
+
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
   })
 })

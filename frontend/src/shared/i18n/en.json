@@ -306,6 +306,39 @@
         "namedItemNeedsAStation": "{item} needs at least one station."
       }
     },
+    "ingredients": {
+      "title": "Ingredients",
+      "labels": {
+        "recipeTitle": "Ingredients for {item}",
+        "allIngredients": "All ingredients",
+        "ingredient": "Ingredient",
+        "name": "Name of the ingredient",
+        "unit": "Unit",
+        "amount": "Amount",
+        "available": "Available",
+        "used": "Used: {amount}",
+        "runsOutAt": "Expected to last until {moment}",
+        "pieces": "pieces",
+        "pieceCount": "{amount} piece | {amount} pieces",
+        "unitPiece": "Pieces",
+        "unitGram": "Grams",
+        "unitMillilitre": "Millilitres",
+        "deactivateTitle": "Deactivate this ingredient?"
+      },
+      "actions": {
+        "edit": "Edit ingredients",
+        "add": "Add the ingredient",
+        "new": "New ingredient",
+        "chooseExisting": "Choose an existing ingredient",
+        "close": "Close",
+        "activate": "Activate the ingredient",
+        "deactivateConfirm": "Deactivate the ingredient"
+      },
+      "messages": {
+        "deactivateCost": "A deactivated ingredient no longer limits what can be sold.",
+        "noneYet": "There are no ingredients yet."
+      }
+    },
     "items": {
       "title": "Items",
       "labels": {
@@ -388,6 +421,12 @@
         "overlaps": "The festival {name} overlaps this period. Move the start or the end.",
         "periodInvalid": "The end has to come after the start. Set the end to a later time.",
         "stationHasOrdersAtTheFestival": "While the festival is active, a station with open orders cannot be removed."
+      },
+      "ingredients": {
+        "nameMissing": "Enter a name for the ingredient.",
+        "nameTaken": "An ingredient with this name already exists.",
+        "amountInvalid": "Enter an amount above zero.",
+        "stockInvalid": "Enter zero or more, or leave the field empty."
       },
       "items": {
         "categoryIsOff": "This category is switched off. Switch the category on first.",

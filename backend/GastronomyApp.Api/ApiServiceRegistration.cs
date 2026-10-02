@@ -43,6 +43,7 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton<IMappingRegistration, AdminCategoryMapping>();
     services.AddSingleton<IMappingRegistration, AdminFestivalMapping>();
+    services.AddSingleton<IMappingRegistration, AdminIngredientMapping>();
     services.AddSingleton<IMappingRegistration, AdminItemMapping>();
     services.AddSingleton<IMappingRegistration, AdminStaffMembersMapping>();
     services.AddSingleton<IMappingRegistration, AdminStationMapping>();
@@ -85,6 +86,9 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IFestivalStationRepository, FestivalStationRepository>();
     services.AddScoped<INumberAllocator, SequenceNumberAllocator>();
     services.AddScoped<IStationOrderRepository, StationOrderRepository>();
+    services.AddScoped<IIngredientRepository, IngredientRepository>();
+    services.AddScoped<ICatalogItemIngredientRepository, CatalogItemIngredientRepository>();
+    services.AddScoped<IIngredientStockRepository, IngredientStockRepository>();
 
     services.AddSingleton<OrderRoutingResolver>();
     services.AddSingleton<OrderService>();
@@ -117,6 +121,10 @@ public sealed class ApiServiceRegistration
     services.AddScoped<StationQueueWriter>();
     services.AddScoped<StationQueueChangeService>();
     services.AddScoped<EstimateService>();
+    services.AddScoped<IngredientAdministrationService>();
+    services.AddScoped<CatalogItemRecipeService>();
+    services.AddScoped<IngredientStockService>();
+    services.AddScoped<StockSoldOutMarker>();
 
     services.AddScoped<IDeviceOwnerStore, DeviceOwnerStore>();
     services.AddScoped<IDeviceTokenStore, DeviceTokenStore>();
@@ -150,6 +158,9 @@ public sealed class ApiServiceRegistration
     services.AddScoped<AdminFestivalStationHandler>();
     services.AddScoped<AdminCategoryHandler>();
     services.AddScoped<AdminItemHandler>();
+    services.AddScoped<AdminItemRecipeHandler>();
+    services.AddScoped<AdminIngredientHandler>();
+    services.AddScoped<AdminFestivalStockHandler>();
     services.AddScoped<CatalogHandler>();
     services.AddScoped<AdminStaffMembersHandler>();
     services.AddScoped<AdminEnrolmentHandler>();

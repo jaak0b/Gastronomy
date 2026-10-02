@@ -8,6 +8,14 @@ public static class RefusalMessageKeys
 
   public const string AdminFestivalNameMissing = "errors.admin.festivals.nameMissing";
 
+  public const string AdminIngredientAmountInvalid = "errors.admin.ingredients.amountInvalid";
+
+  public const string AdminIngredientNameMissing = "errors.admin.ingredients.nameMissing";
+
+  public const string AdminIngredientNameTaken = "errors.admin.ingredients.nameTaken";
+
+  public const string AdminIngredientStockInvalid = "errors.admin.ingredients.stockInvalid";
+
   public const string AdminItemNameMissing = "errors.admin.items.nameMissing";
 
   public const string AdminStaffMemberNameMissing = "errors.admin.staff.nameMissing";

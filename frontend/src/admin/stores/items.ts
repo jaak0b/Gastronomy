@@ -173,6 +173,32 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     )
   }
 
+  async function setIngredientAmount(
+    itemId: string,
+    ingredientId: string,
+    amount: number,
+  ): Promise<AdminActionResult<null>> {
+    return await reloadOrFailureOf(
+      await requestAction(`/api/admin/items/${itemId}/ingredients/${ingredientId}`, {
+        method: 'PUT',
+        body: { amount },
+      }),
+      reload,
+    )
+  }
+
+  async function removeIngredient(
+    itemId: string,
+    ingredientId: string,
+  ): Promise<AdminActionResult<null>> {
+    return await reloadOrFailureOf(
+      await requestAction(`/api/admin/items/${itemId}/ingredients/${ingredientId}`, {
+        method: 'DELETE',
+      }),
+      reload,
+    )
+  }
+
   function listen(): () => void {
     const connection = useConnectionStore()
     const releases = [
@@ -199,6 +225,8 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     removeFromTheFestival,
     setAvailability,
     setActive,
+    setIngredientAmount,
+    removeIngredient,
     listen,
   }
 })

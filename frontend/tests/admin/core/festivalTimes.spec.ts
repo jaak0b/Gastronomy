@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { localInputToUtcIso, utcIsoToLocalInput } from '../../../src/admin/core/festivalTimes'
+import {
+  formatRunOutMoment,
+  localInputToUtcIso,
+  utcIsoToLocalInput,
+} from '../../../src/admin/core/festivalTimes'
 
 describe('the moment the admin types', () => {
   it('travels as an ISO string in UTC ending in Z', () => {
@@ -26,3 +30,29 @@ describe('the moment the admin types', () => {
   })
 })
 
+
+describe('the moment the stock of an ingredient is expected to run out', () => {
+  const NOW = new Date(2026, 6, 18, 18, 0)
+
+  it('is written as the time of day in German when it is today', () => {
+    const today = new Date(2026, 6, 18, 21, 30).toISOString()
+
+    expect(formatRunOutMoment(today, 'de', NOW)).toBe('21:30')
+  })
+
+  it('is written as the time of day in English when it is today', () => {
+    const today = new Date(2026, 6, 18, 21, 30).toISOString()
+
+    expect(formatRunOutMoment(today, 'en', NOW)).toBe('09:30 PM')
+  })
+
+  it('carries the date when it is another day', () => {
+    const tomorrow = new Date(2026, 6, 19, 1, 15).toISOString()
+
+    expect(formatRunOutMoment(tomorrow, 'de', NOW)).toBe('19.07., 01:15')
+  })
+
+  it('is blank when the laptop sent something unreadable', () => {
+    expect(formatRunOutMoment('not a moment', 'de', NOW)).toBe('')
+  })
+})

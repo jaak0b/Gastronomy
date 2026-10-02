@@ -62,6 +62,7 @@ const SAUSAGE = {
   isActive: true,
   productionMinutes: null,
   isQueueIndependent: false,
+  ingredients: [],
   atTheFestival: { priceCents: 350, isAvailable: true, stationIds: [KITCHEN_ID] },
 }
 
@@ -83,6 +84,7 @@ const BEER = {
   isActive: true,
   productionMinutes: null,
   isQueueIndependent: false,
+  ingredients: [],
   atTheFestival: null,
 }
 
@@ -101,6 +103,7 @@ interface Laptop {
   refuses?: (call: Call) => { status: number; body: unknown } | null
   created?: Record<string, unknown>
   waitBeforeAnswering?: (call: Call) => Promise<void>
+  stock?: unknown[]
 }
 
 function stubLaptop(laptop: Laptop = {}): Call[] {
@@ -127,6 +130,9 @@ function stubLaptop(laptop: Laptop = {}): Call[] {
       }
       if (method !== 'GET') {
         return new Response(JSON.stringify(laptop.created ?? {}), { status: 200 })
+      }
+      if (url.endsWith('/ingredients')) {
+        return new Response(JSON.stringify({ ingredients: laptop.stock ?? [] }), { status: 200 })
       }
       if (url.startsWith('/api/admin/festivals')) {
         return new Response(JSON.stringify({ festivals: laptop.festivals ?? [SUMMER] }), {
@@ -870,6 +876,7 @@ describe('the items of this festival', () => {
         isActive: true,
         productionMinutes: null,
         isQueueIndependent: false,
+  ingredients: [],
         atTheFestival: null,
       },
       items: [
@@ -883,6 +890,7 @@ describe('the items of this festival', () => {
           isActive: true,
           productionMinutes: null,
           isQueueIndependent: false,
+  ingredients: [],
           atTheFestival: null,
         },
       ],
@@ -921,6 +929,7 @@ describe('the items of this festival', () => {
         isActive: true,
         productionMinutes: null,
         isQueueIndependent: false,
+  ingredients: [],
         atTheFestival: null,
       },
       items: [SAUSAGE, BEER],
@@ -1224,5 +1233,153 @@ describe('an item change the laptop refuses', () => {
       expect(inDialog('.form-dialog .refusal').textContent?.trim()).toBe(REFUSAL_TEXT),
     )
     expect(document.querySelector('.form-dialog')).not.toBeNull()
+  })
+})
+
+describe('the ingredient stock of the festival', () => {
+  const FLOUR_STOCK = {
+    ingredientId: 'ingredient-mehl',
+    name: 'Mehl',
+    unit: 'gram',
+    isActive: true,
+    availableAmount: 25000,
+    usedAmount: 1250,
+    runsOutAtUtc: null,
+  }
+  const BUN_STOCK = {
+    ingredientId: 'ingredient-broetchen',
+    name: 'Brötchen',
+    unit: 'piece',
+    isActive: true,
+    availableAmount: null,
+    usedAmount: 40,
+    runsOutAtUtc: null,
+  }
+
+  async function mountWithStock(stock: unknown[], locale: 'de' | 'en' = 'de') {
+    const calls = stubLaptop({ stock })
+    const page = mount(FestivalPage, {
+      props: { festivalId: FESTIVAL_ID },
+      global: { plugins: testPlugins(locale) },
+      attachTo: document.body,
+    })
+    await vi.waitFor(() => expect(page.find('.festival-ingredient-row').exists()).toBe(true))
+    return { page, calls }
+  }
+
+  it('lists each ingredient with its available amount, the amount used and the unit', async () => {
+    const { page } = await mountWithStock([FLOUR_STOCK, BUN_STOCK])
+
+    const rows = page.findAll('.festival-ingredient-row')
+    expect(page.get('.festival-stock .section-heading').text()).toBe('Zutaten')
+    expect(rows.map((row) => row.get('.name').text())).toEqual(['Mehl', 'Brötchen'])
+    expect(
+      rows.map((row) => (row.get('.amount-input input').element as HTMLInputElement).value),
+    ).toEqual(['25', ''])
+    expect(rows[0].get('.entry-unit-kilogram').classes()).toContain('v-btn--active')
+    expect(rows.map((row) => row.get('.used-amount').text())).toEqual([
+      'Verbraucht: 1,25 kg',
+      'Verbraucht: 40 Stück',
+    ])
+  })
+
+  it('writes the used amount in English', async () => {
+    const { page } = await mountWithStock([FLOUR_STOCK, { ...BUN_STOCK, usedAmount: 1 }], 'en')
+
+    expect(page.findAll('.used-amount').map((label) => label.text())).toEqual([
+      'Used: 1.25 kg',
+      'Used: 1 piece',
+    ])
+  })
+
+  it('names the time of day the stock is expected to run out today', async () => {
+    const runsOutAtUtc = new Date(new Date().setHours(21, 30, 0, 0)).toISOString()
+
+    const { page } = await mountWithStock([{ ...FLOUR_STOCK, runsOutAtUtc }])
+
+    expect(page.get('.runs-out').text()).toBe('Reicht voraussichtlich bis 21:30')
+  })
+
+  it('adds the date when the stock is expected to run out on another day', async () => {
+    const later = new Date(2030, 6, 19, 1, 15).toISOString()
+
+    const { page } = await mountWithStock([{ ...FLOUR_STOCK, runsOutAtUtc: later }], 'en')
+
+    expect(page.get('.runs-out').text()).toBe('Expected to last until 07/19, 01:15 AM')
+  })
+
+  it('leaves the run out label blank when the laptop predicts nothing', async () => {
+    const { page } = await mountWithStock([FLOUR_STOCK])
+
+    expect(page.get('.runs-out').text()).toBe('')
+  })
+
+  it('sends an amount typed in kilograms as grams', async () => {
+    const { page, calls } = await mountWithStock([
+      BUN_STOCK,
+      { ...FLOUR_STOCK, availableAmount: null },
+    ])
+    const flourRow = page.findAll('.festival-ingredient-row')[1]
+
+    await flourRow.get('.entry-unit-kilogram').trigger('click')
+    await flourRow.get('.amount-input input').setValue('12,5')
+    await flourRow.get('.amount-input input').trigger('blur')
+
+    await vi.waitFor(() =>
+      expect(writtenCalls(calls)).toEqual([
+        {
+          url: `/api/admin/festivals/${FESTIVAL_ID}/ingredients/ingredient-mehl`,
+          method: 'PUT',
+          body: { availableAmount: 12500 },
+        },
+      ]),
+    )
+  })
+
+  it('sends null when the admin empties the field', async () => {
+    const { page, calls } = await mountWithStock([FLOUR_STOCK])
+
+    await page.get('.amount-input input').setValue('')
+    await page.get('.amount-input input').trigger('blur')
+
+    await vi.waitFor(() =>
+      expect(writtenCalls(calls).map((call) => call.body)).toEqual([{ availableAmount: null }]),
+    )
+  })
+
+  it('shows the reason when the laptop refuses the amount and keeps what was typed', async () => {
+    const { page } = await mountWithStock([FLOUR_STOCK])
+    stubLaptop({
+      stock: [FLOUR_STOCK],
+      refusal: {
+        status: 422,
+        method: 'PUT',
+        body: {
+          code: 'UnprocessableEntity',
+          messageKey: 'errors.admin.ingredients.stockInvalid',
+          parameters: {},
+          details: null,
+        },
+      },
+    })
+
+    await page.get('.amount-input input').setValue('0')
+    await page.get('.amount-input input').trigger('blur')
+
+    await vi.waitFor(() =>
+      expect(page.get('.festival-ingredient-row .refusal').text()).toBe(
+        'Geben Sie null oder mehr an, oder lassen Sie das Feld leer.',
+      ),
+    )
+    expect((page.get('.amount-input input').element as HTMLInputElement).value).toBe('0')
+  })
+
+  it('is hidden while no article on the menu uses an ingredient', async () => {
+    stubLaptop({ stock: [] })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.festival-name').exists()).toBe(true))
+
+    expect(page.find('.festival-stock').exists()).toBe(false)
   })
 })

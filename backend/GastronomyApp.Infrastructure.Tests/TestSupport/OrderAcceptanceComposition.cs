@@ -2,6 +2,7 @@
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Repositories;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace GastronomyApp.Infrastructure.Tests.TestSupport;
 
@@ -19,6 +20,8 @@ public sealed class OrderAcceptanceComposition
     FestivalRepository festivalRepository = new(dbContext, new());
     RunningFestivalLookup runningFestival = new(festivalRepository, new(), TimeProvider.System);
 
-    return new(new OrderRepository(dbContext), runningFestival, numberAllocator, itemResolutionService, TimeProvider.System);
+    StockSoldOutMarker soldOutMarker = new(new IngredientStockRepository(dbContext), NullLogger<StockSoldOutMarker>.Instance);
+
+    return new(new OrderRepository(dbContext), runningFestival, numberAllocator, itemResolutionService, soldOutMarker, TimeProvider.System, NullLogger<OrderAcceptanceService>.Instance);
   }
 }

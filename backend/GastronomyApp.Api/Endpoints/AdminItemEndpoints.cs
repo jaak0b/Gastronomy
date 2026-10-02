@@ -21,6 +21,10 @@ public static class AdminItemEndpoints
 
     group.MapPost("/{itemId:guid}/deactivate", async (Guid itemId, AdminItemHandler handler, CancellationToken cancellationToken) => await handler.DeactivateAsync(itemId, cancellationToken));
 
+    group.MapPut("/{itemId:guid}/ingredients/{ingredientId:guid}", async (Guid itemId, Guid ingredientId, SaveItemIngredientRequest request, AdminItemRecipeHandler handler, CancellationToken cancellationToken) => await handler.SetAmountAsync(itemId, ingredientId, request, cancellationToken));
+
+    group.MapDelete("/{itemId:guid}/ingredients/{ingredientId:guid}", async (Guid itemId, Guid ingredientId, AdminItemRecipeHandler handler, CancellationToken cancellationToken) => await handler.RemoveAsync(itemId, ingredientId, cancellationToken));
+
     return routes;
   }
 }

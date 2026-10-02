@@ -964,6 +964,85 @@
         }
       }
     },
+    "/api/admin/items/{itemId}/ingredients/{ingredientId}": {
+      "put": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ingredientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveItemIngredientRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedItemView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ingredientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/admin/staff-members": {
       "get": {
         "tags": [
@@ -1465,6 +1544,231 @@
           }
         }
       }
+    },
+    "/api/admin/festivals/{festivalId}/ingredients": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminFestivalIngredientListView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/ingredients/{ingredientId}": {
+      "put": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ingredientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveFestivalIngredientRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedFestivalIngredientView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/ingredients": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminIngredientListView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveIngredientRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminIngredientView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/ingredients/{ingredientId}": {
+      "put": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "ingredientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveIngredientRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedIngredientView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/ingredients/{ingredientId}/activate": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "ingredientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedIngredientView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/ingredients/{ingredientId}/deactivate": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "ingredientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedIngredientView"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1509,6 +1813,65 @@
           },
           "isActive": {
             "type": "boolean"
+          }
+        }
+      },
+      "AdminFestivalIngredientListView": {
+        "required": [
+          "ingredients"
+        ],
+        "type": "object",
+        "properties": {
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminFestivalIngredientView"
+            }
+          }
+        }
+      },
+      "AdminFestivalIngredientView": {
+        "required": [
+          "ingredientId",
+          "name",
+          "unit",
+          "isActive",
+          "availableAmount",
+          "usedAmount",
+          "runsOutAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "ingredientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/IngredientUnit"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "availableAmount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "usedAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "runsOutAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -1575,6 +1938,44 @@
           }
         }
       },
+      "AdminIngredientListView": {
+        "required": [
+          "ingredients"
+        ],
+        "type": "object",
+        "properties": {
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminIngredientView"
+            }
+          }
+        }
+      },
+      "AdminIngredientView": {
+        "required": [
+          "ingredientId",
+          "name",
+          "unit",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "ingredientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/IngredientUnit"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
       "AdminItemAtFestivalView": {
         "required": [
           "priceCents",
@@ -1596,6 +1997,23 @@
               "type": "string",
               "format": "uuid"
             }
+          }
+        }
+      },
+      "AdminItemIngredientView": {
+        "required": [
+          "ingredientId",
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "ingredientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -1622,7 +2040,8 @@
           "isActive",
           "productionMinutes",
           "isQueueIndependent",
-          "atTheFestival"
+          "atTheFestival",
+          "ingredients"
         ],
         "type": "object",
         "properties": {
@@ -1663,6 +2082,12 @@
                 "$ref": "#/components/schemas/AdminItemAtFestivalView"
               }
             ]
+          },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminItemIngredientView"
+            }
           }
         }
       },
@@ -2017,6 +2442,13 @@
             }
           }
         }
+      },
+      "IngredientUnit": {
+        "enum": [
+          "piece",
+          "gram",
+          "millilitre"
+        ]
       },
       "InvitationView": {
         "required": [
@@ -2470,6 +2902,18 @@
           }
         }
       },
+      "SavedFestivalIngredientView": {
+        "required": [
+          "ingredientId"
+        ],
+        "type": "object",
+        "properties": {
+          "ingredientId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "SavedFestivalView": {
         "required": [
           "festivalId"
@@ -2477,6 +2921,18 @@
         "type": "object",
         "properties": {
           "festivalId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "SavedIngredientView": {
+        "required": [
+          "ingredientId"
+        ],
+        "type": "object",
+        "properties": {
+          "ingredientId": {
             "type": "string",
             "format": "uuid"
           }
@@ -2503,6 +2959,21 @@
           "stationId": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "SaveFestivalIngredientRequest": {
+        "required": [
+          "availableAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "availableAmount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
           }
         }
       },
@@ -2552,6 +3023,46 @@
           "endsAtUtc": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "SaveIngredientRequest": {
+        "required": [
+          "name",
+          "unit"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IngredientUnit"
+              }
+            ]
+          }
+        }
+      },
+      "SaveItemIngredientRequest": {
+        "required": [
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
           }
         }
       },

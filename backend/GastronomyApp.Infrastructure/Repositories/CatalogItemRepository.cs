@@ -31,12 +31,14 @@ public sealed class CatalogItemRepository : ICatalogItemRepository
   public async Task<IReadOnlyList<CatalogItem>> FindAllOrderedAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
     if (festivalId is not { } menuFestivalId)
-      return await _dbContext.CatalogItems.AsNoTracking().OrderBy(item => item.SortOrder).ToListAsync(cancellationToken);
+      return await _dbContext.CatalogItems.AsNoTracking().OrderBy(item => item.SortOrder).Include(item => item.Ingredients).ThenInclude(recipeLine => recipeLine.Ingredient).ToListAsync(cancellationToken);
 
     return await _dbContext.CatalogItems.AsNoTracking()
                            .OrderBy(item => item.SortOrder)
                            .Include(item => item.FestivalCatalogItems.Where(menuRow => menuRow.FestivalId == menuFestivalId))
                            .Include(item => item.StationAssignments.Where(assignment => assignment.FestivalId == menuFestivalId))
+                           .Include(item => item.Ingredients)
+                           .ThenInclude(recipeLine => recipeLine.Ingredient)
                            .ToListAsync(cancellationToken);
   }
 

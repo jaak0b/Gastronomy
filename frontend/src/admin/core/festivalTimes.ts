@@ -23,3 +23,23 @@ export function utcIsoToLocalInput(value: string): string {
     + `T${twoDigits(moment.getHours())}:${twoDigits(moment.getMinutes())}`
   )
 }
+
+function isSameLocalDay(first: Date, second: Date): boolean {
+  return (
+    first.getFullYear() === second.getFullYear()
+    && first.getMonth() === second.getMonth()
+    && first.getDate() === second.getDate()
+  )
+}
+
+export function formatRunOutMoment(utcIso: string, language: string, now: Date): string {
+  const moment = new Date(utcIso)
+  if (Number.isNaN(moment.getTime())) {
+    return ''
+  }
+  const timeOfDay: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }
+  if (isSameLocalDay(moment, now)) {
+    return moment.toLocaleTimeString(language, timeOfDay)
+  }
+  return moment.toLocaleString(language, { day: '2-digit', month: '2-digit', ...timeOfDay })
+}
