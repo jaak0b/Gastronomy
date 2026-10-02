@@ -1,16 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {
-  adminErrorMessageForKey,
-  type AdminErrorMessage,
-} from '../../core/adminErrorMessage'
+import { adminErrorMessageForKey } from '../../core/adminErrorMessage'
 import { formatRunOutMoment } from '../../core/festivalTimes'
 import { entryUnitsFor, type ParsedAmountInput } from '../../core/ingredientAmounts'
 import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminFestivalStockStore } from '../../stores/festivalStock'
 import { useIngredientAmountText } from '../../composables/useIngredientAmountText'
-import { useRefusalText } from '../../composables/useRefusalText'
+import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import IngredientAmountField from '../ingredients/IngredientAmountField.vue'
 
 const STOCK_INVALID_KEY = 'errors.admin.ingredients.stockInvalid'
@@ -21,9 +18,7 @@ const { t, locale } = useI18n()
 const stock = useAdminFestivalStockStore()
 const amountText = useIngredientAmountText()
 const refusedIngredientId = ref<string | null>(null)
-const refusal = ref<AdminErrorMessage | null>(null)
-
-const refusalText = useRefusalText(refusal)
+const { refusal, refusalText } = useRefusalDisplay()
 
 async function saveAvailableAmount(
   ingredientId: string,
@@ -81,17 +76,27 @@ function runOutText(runsOutAtUtc: string | null): string {
           v-for="(ingredient, position) in stock.ingredients"
           :key="ingredient.ingredientId"
           class="festival-ingredient-row"
+          data-test="festival-ingredient-row"
+          :data-test-id="ingredient.ingredientId"
           :class="{ 'tinted-row': position % 2 === 1 }"
         >
           <div class="row-line d-flex align-center flex-wrap ga-4 py-2 px-3">
-            <span class="name text-body-1 flex-grow-1">{{ ingredient.name }}</span>
+            <span
+              class="name text-body-1 flex-grow-1"
+              data-test="ingredient-name"
+            >
+              {{ ingredient.name }}
+            </span>
             <IngredientAmountField
               :entry-units="entryUnitsFor(ingredient.unit)"
               :saved-amount="ingredient.availableAmount"
               :label="t('admin.ingredients.labels.available')"
               @amount-changed="changeAvailableAmount(ingredient.ingredientId, $event)"
             />
-            <span class="used-amount text-body-2">
+            <span
+              class="used-amount text-body-2"
+              data-test="used-amount"
+            >
               {{
                 t('admin.ingredients.labels.used', {
                   amount: amountText(ingredient.usedAmount, ingredient.unit),

@@ -1,8 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { HubConnectionBuilder, HubConnectionState, type HubConnection } from '@microsoft/signalr'
+import { combineReleases } from '../core/combineReleases'
 
 export type ConnectionState = 'connected' | 'reconnecting' | 'offline'
+
+export type ReloadEventName = 'ConfigurationChanged' | 'OrdersChanged'
 
 export interface HubCredential {
   deviceToken?: string
@@ -59,6 +62,20 @@ export const useConnectionStore = defineStore('connection', () => {
       eventHandlers.set(eventName, remaining)
       connection?.off(eventName, registered)
     }
+  }
+
+  function listenToTheLaptop(
+    events: readonly ReloadEventName[],
+    reload: () => Promise<void>,
+  ): () => void {
+    return combineReleases(
+      registerRefetch(reload),
+      ...events.map((eventName) =>
+        onEvent<unknown>(eventName, () => {
+          void reload()
+        }),
+      ),
+    )
   }
 
   function startPolling(): void {
@@ -142,6 +159,7 @@ export const useConnectionStore = defineStore('connection', () => {
     registerRefetch,
     refetchAll,
     onEvent,
+    listenToTheLaptop,
     connect,
     disconnect,
   }

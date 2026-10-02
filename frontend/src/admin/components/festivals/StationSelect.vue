@@ -41,6 +41,7 @@ function toggle(stationId: string): void {
         <v-btn
           v-bind="activatorProps"
           class="station-select"
+          data-test="station-select"
           variant="outlined"
           :color="hasNoStation ? 'error' : undefined"
         >
@@ -51,6 +52,8 @@ function toggle(stationId: string): void {
         <v-list-item v-for="station in stations" :key="station.stationId">
           <v-checkbox
             class="station-checkbox"
+            data-test="station-checkbox"
+            :data-test-id="station.stationId"
             :model-value="selectedStationIds.includes(station.stationId)"
             :label="station.name"
             hide-details

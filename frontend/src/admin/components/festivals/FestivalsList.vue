@@ -2,13 +2,12 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { navigate } from '../../../shared/router/router'
-import type { AdminErrorMessage } from '../../core/adminErrorMessage'
 import { AdminFestivalView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { formatFestivalMoment } from '../../../shared/core/festivalTimes'
 import { useAdminFestivalsStore, type FestivalDraft } from '../../stores/festivals'
 import BaseConfirmDialog from '../BaseConfirmDialog.vue'
-import { useRefusalText } from '../../composables/useRefusalText'
+import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import FestivalDialog from './FestivalDialog.vue'
 
 const { t, locale } = useI18n()
@@ -17,10 +16,8 @@ const showsHidden = ref(false)
 const isCreating = ref(false)
 const copiedFestival = ref<AdminFestivalView | null>(null)
 const hiddenFestival = ref<AdminFestivalView | null>(null)
-const refusal = ref<AdminErrorMessage | null>(null)
+const { refusal, refusalText } = useRefusalDisplay()
 let stopListening: (() => void) | null = null
-
-const refusalText = useRefusalText(refusal)
 
 const shown = computed(() =>
   festivals.festivals.filter((festival) => showsHidden.value || !festival.isHidden),

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminErrorMessage } from '../../core/adminErrorMessage'
 import { AdminCategoryView, AdminItemView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
@@ -10,7 +9,7 @@ import { useAdminCategoriesStore, type AdminCategoryDraft } from '../../stores/c
 import { useAdminItemsStore, type AdminItemDraft } from '../../stores/items'
 import { useAdminStationsStore } from '../../stores/stations'
 import { useFestivalItemRows } from '../../composables/useFestivalItemRows'
-import { useRefusalText } from '../../composables/useRefusalText'
+import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import BaseConfirmDialog from '../BaseConfirmDialog.vue'
 import CategoryDialog from '../categories/CategoryDialog.vue'
 import ItemDialog from '../items/ItemDialog.vue'
@@ -29,13 +28,9 @@ const isCreating = ref(false)
 const editingCategory = ref<AdminCategoryView | null>(null)
 const editingItem = ref<AdminItemView | null>(null)
 const removedItem = ref<AdminItemView | null>(null)
-const createRefusal = ref<AdminErrorMessage | null>(null)
-const categoryRefusal = ref<AdminErrorMessage | null>(null)
-const itemRefusal = ref<AdminErrorMessage | null>(null)
-
-const createRefusalText = useRefusalText(createRefusal)
-const categoryRefusalText = useRefusalText(categoryRefusal)
-const itemRefusalText = useRefusalText(itemRefusal)
+const { refusal: createRefusal, refusalText: createRefusalText } = useRefusalDisplay()
+const { refusal: categoryRefusal, refusalText: categoryRefusalText } = useRefusalDisplay()
+const { refusal: itemRefusal, refusalText: itemRefusalText } = useRefusalDisplay()
 
 const {
   itemsAtTheFestival,
@@ -245,10 +240,17 @@ async function remove(): Promise<void> {
               v-for="item in group.items"
               :key="item.itemId"
               class="festival-item-row"
+              data-test="festival-item-row"
+              :data-test-id="item.itemId"
               :class="{ 'tinted-row': tintedItemIds.has(item.itemId) }"
             >
               <div class="item-line d-flex align-center flex-wrap ga-3 py-2 px-3">
-                <span class="name text-body-1">{{ item.name }}</span>
+                <span
+                  class="name text-body-1"
+                  data-test="item-name"
+                >
+                  {{ item.name }}
+                </span>
                 <v-chip v-if="!item.isActive" class="deactivated" size="small" color="grey">
                   {{ t('admin.common.labels.deactivated') }}
                 </v-chip>
@@ -316,6 +318,7 @@ async function remove(): Promise<void> {
             <v-autocomplete
               v-model="chosenItemId"
               class="item-search flex-grow-1"
+              data-test="item-search"
               :items="stillToAdd"
               item-title="name"
               item-value="itemId"
@@ -326,6 +329,7 @@ async function remove(): Promise<void> {
             />
             <v-btn
               class="add-item"
+              data-test="add-item"
               color="primary"
               variant="tonal"
               :disabled="chosenItemId === null"

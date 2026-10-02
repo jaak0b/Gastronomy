@@ -7,6 +7,7 @@ import { reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { useConnectionStore } from '../../shared/stores/connection'
+import { combineReleases } from '../../shared/core/combineReleases'
 import { useAdminEnrolmentStore } from './enrolment'
 
 export const useAdminStaffStore = defineStore('adminStaff', () => {
@@ -46,21 +47,12 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
   }
 
   function listen(): () => void {
-    const connection = useConnectionStore()
-    const releases = [
-      connection.registerRefetch(load),
-      connection.onEvent<unknown>('ConfigurationChanged', () => {
-        void load()
-      }),
+    return combineReleases(
+      useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], load),
       useAdminEnrolmentStore().listen(() => {
         void load()
       }),
-    ]
-    return () => {
-      for (const release of releases) {
-        release()
-      }
-    }
+    )
   }
 
   return {

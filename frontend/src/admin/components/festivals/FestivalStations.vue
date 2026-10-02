@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminErrorMessage } from '../../core/adminErrorMessage'
 import { AdminStationView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminStationsStore, type StationDraft } from '../../stores/stations'
 import BaseConfirmDialog from '../BaseConfirmDialog.vue'
-import { useRefusalText } from '../../composables/useRefusalText'
+import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import StationDialog from '../stations/StationDialog.vue'
 
 const props = defineProps<{ festivalId: string }>()
@@ -18,11 +17,8 @@ const isCreating = ref(false)
 const editingStation = ref<AdminStationView | null>(null)
 const removedStation = ref<AdminStationView | null>(null)
 const refusedStationId = ref<string | null>(null)
-const refusal = ref<AdminErrorMessage | null>(null)
-const stationRefusal = ref<AdminErrorMessage | null>(null)
-
-const refusalText = useRefusalText(refusal)
-const stationRefusalText = useRefusalText(stationRefusal)
+const { refusal, refusalText } = useRefusalDisplay()
+const { refusal: stationRefusal, refusalText: stationRefusalText } = useRefusalDisplay()
 
 const atTheFestival = computed(() =>
   stations.stations.filter((station) => station.isAtAnyFestival),
@@ -135,10 +131,17 @@ async function remove(): Promise<void> {
             v-for="(station, position) in atTheFestival"
             :key="station.stationId"
             class="festival-station-row"
+            data-test="festival-station-row"
+            :data-test-id="station.stationId"
             :class="{ 'tinted-row': position % 2 === 1 }"
           >
             <div class="row-line d-flex align-center flex-wrap ga-3 py-2 px-3">
-              <span class="name text-body-1">{{ station.name }}</span>
+              <span
+                class="name text-body-1"
+                data-test="station-name"
+              >
+                {{ station.name }}
+              </span>
               <v-chip v-if="!station.isActive" class="deactivated" size="small" color="grey">
                 {{ t('admin.common.labels.deactivated') }}
               </v-chip>
@@ -175,6 +178,7 @@ async function remove(): Promise<void> {
           <v-autocomplete
             v-model="chosenStationId"
             class="station-search flex-grow-1"
+            data-test="station-search"
             :items="stillToAdd"
             item-title="name"
             item-value="stationId"

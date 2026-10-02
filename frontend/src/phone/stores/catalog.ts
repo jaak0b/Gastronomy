@@ -57,12 +57,8 @@ export const useCatalogStore = defineStore('catalog', () => {
     useOrderStore().dropTheDraftIfTheFestivalChanged()
   }
 
-  function listen(): void {
-    const connection = useConnectionStore()
-    connection.registerRefetch(load)
-    connection.onEvent<unknown>('ConfigurationChanged', () => {
-      void load()
-    })
+  function listen(): () => void {
+    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], load)
   }
 
   return { catalog, hasLoaded, groups, stationName, load, listen }

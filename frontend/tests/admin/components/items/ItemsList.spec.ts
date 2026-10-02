@@ -379,7 +379,7 @@ describe('the controls beside a category name', () => {
     await pressInDialog('.confirm')
 
     await vi.waitFor(() =>
-      expect(list.get('.admin-items .refusal').text()).toContain(
+      expect(list.get('[data-test="category-refusal"]').text()).toContain(
         'Diese Kategorie hat noch eingeschaltete Artikel.',
       ),
     )
@@ -724,14 +724,14 @@ describe('adding an item', () => {
     await vi.waitFor(() => expect(list.find('.category-heading').exists()).toBe(true))
     await list.get('.deactivate-category').trigger('click')
     await pressInDialog('.confirm')
-    await vi.waitFor(() => expect(list.find('.admin-items .refusal').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="category-refusal"]').exists()).toBe(true))
 
     await list.get('.new-item').trigger('click')
     await vi.waitFor(() => expect(document.querySelector('.form-dialog')).not.toBeNull())
     await list.findComponent(ItemDialog).vm.$emit('cancel')
     await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
 
-    expect(list.find('.admin-items .refusal').exists()).toBe(false)
+    expect(list.find('[data-test="category-refusal"]').exists()).toBe(false)
   })
 })
 
@@ -767,7 +767,7 @@ describe('a refusal beside an open item form', () => {
     await list.get('.move-category-up').trigger('click')
 
     await vi.waitFor(() =>
-      expect(list.get('.admin-items .refusal').text()).toContain(
+      expect(list.get('[data-test="category-refusal"]').text()).toContain(
         'Diese Kategorie hat noch eingeschaltete Artikel.',
       ),
     )
@@ -792,7 +792,7 @@ describe('a refusal beside an open item form', () => {
     await pressInDialog('.confirm')
 
     await vi.waitFor(() =>
-      expect(list.get('.admin-items .refusal').text()).toContain('Die Aktion ist fehlgeschlagen.'),
+      expect(list.get('[data-test="item-refusal"]').text()).toContain('Die Aktion ist fehlgeschlagen.'),
     )
   })
 
@@ -825,7 +825,7 @@ describe('a refusal beside an open item form', () => {
     await vi.waitFor(() =>
       expect(list.findComponent(ItemDialog).props('errorText')).toContain('Die Aktion ist fehlgeschlagen.'),
     )
-    expect(list.find('.admin-items .refusal').exists()).toBe(false)
+    expect(list.find('[data-test="item-refusal"]').exists()).toBe(false)
   })
 })
 
@@ -882,7 +882,7 @@ describe('a refusal the admin has walked away from', () => {
     await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
     await list.get('.deactivate').trigger('click')
     await pressInDialog('.confirm')
-    await vi.waitFor(() => expect(list.find('.admin-items .refusal').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="item-refusal"]').exists()).toBe(true))
     list.unmount()
 
     await useAdminStationsStore().load()
@@ -914,7 +914,7 @@ describe('a refusal the admin has walked away from', () => {
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
 
-    expect(list.find('.admin-items .refusal').exists()).toBe(false)
+    expect(list.find('[data-test="item-refusal"]').exists()).toBe(false)
   })
 })
 

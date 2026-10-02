@@ -34,8 +34,10 @@ in `src/shared/core/deviceLanguage.ts`, `DraftLine` and `DraftOrder` in `src/pho
 0. **Read the `typescript-vue-design-guidelines` skill before touching any `.ts` or `.vue` file.** This comes before the first edit, before a rename, before a new test, and before a review, and it binds the main agent and every subagent without exception: a subagent prompt that concerns TypeScript or Vue must say so. The skill lives at `frontend/.claude/skills/typescript-vue-design-guidelines/SKILL.md` and is the checklist of the Google TypeScript Style Guide, the TypeScript declaration Do's and Don'ts and the official Vue style guide; its reference files hold the full rules. Code written without reading it is handed back, and a name, type, function or component that fails a checklist item is a review finding.
 
 1. **Keep the core framework-agnostic and modular.** Code in any `core/` folder, under `src/shared/`
-   or under a surface, must not import Vue or Pinia and must not touch the DOM. Order building, price totalling, routing rules, draft cart persistence
-   and submission identity are plain TypeScript, so they are testable without mounting anything.
+   or under a surface, must not import Vue or Pinia and must not touch the document. Browser storage
+   (`localStorage`) is allowed there, because the draft cart and the device language live in it.
+   Order building, price totalling, routing rules, draft cart persistence and submission identity
+   are plain TypeScript, so they are testable without mounting anything.
 
 2. **Exhaustive switches over union types.** Any branch on a discriminated union (an order status, a
    delivery mode, a device session) must handle every member explicitly and end in
@@ -104,7 +106,7 @@ in `src/shared/core/deviceLanguage.ts`, `DraftLine` and `DraftOrder` in `src/pho
 
 9. **No aria-labels.** `aria-label` and `aria-labelledby` are forbidden in every template and
    component, and no locale key exists only to feed one. Every control says what it does through its
-   visible text or its icon, and a test selects an element by its class, its data attribute or its
+   visible text or its icon, and a test selects an element by its `data-test` attribute or its
    text, never by an accessibility attribute. A review lists any aria attribute as a finding.
 
 10. **A store holding laptop data reloads on the hub event whose name says what it holds.** The
@@ -156,7 +158,8 @@ Governed by its own skill in `.claude/skills/`:
 
 - **Unit tests (Vitest, `tests/`)** are the internal correctness net. Core logic first: totals, routing,
   draft cart persistence, submission identity across retries, state transitions. See
-  `writing-unittests`.
+  `writing-unittests`. A test finds an element through a `data-test` attribute the template
+  carries for it, never by its position among its siblings (`[0]`, `.at(-1)`) or by a styling class.
 
 ## Commands
 

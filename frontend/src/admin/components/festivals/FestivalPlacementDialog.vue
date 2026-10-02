@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminErrorMessage } from '../../core/adminErrorMessage'
 import { AdminItemView, AdminStationView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { appLanguageOf } from '../../../shared/core/deviceLanguage'
 import { formatEuroInput, parseEuroInput } from '../../../shared/core/money'
 import { useAdminItemsStore } from '../../stores/items'
 import BaseFormDialog from '../BaseFormDialog.vue'
-import { useRefusalText } from '../../composables/useRefusalText'
+import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import StationSelect from './StationSelect.vue'
 
 const props = defineProps<{
@@ -27,9 +26,7 @@ const selectedStationIds = ref<string[]>([...(props.item.atTheFestival?.stationI
 const priceRefused = ref(false)
 const stationRefused = ref(false)
 const isSending = ref(false)
-const refusal = ref<AdminErrorMessage | null>(null)
-
-const refusalText = useRefusalText(refusal)
+const { refusal, refusalText } = useRefusalDisplay()
 
 const stationErrorText = computed(() =>
   stationRefused.value ? t('admin.festivals.errors.namedItemNeedsAStation', { item: props.item.name }) : null,

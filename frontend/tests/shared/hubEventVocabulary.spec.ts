@@ -17,8 +17,14 @@ function eventsThePhoneWaitsFor(): Map<string, string> {
   const waited = new Map<string, string>()
   for (const file of sourceFilesUnder(SOURCE_ROOT)) {
     const source = readFileSync(file, 'utf8')
+    const relativePath = file.substring(SOURCE_ROOT.length + 1)
     for (const match of source.matchAll(/onEvent(?:<[\s\S]*?>)?\s*\(\s*'(\w+)'/g)) {
-      waited.set(match[1], file.substring(SOURCE_ROOT.length + 1))
+      waited.set(match[1], relativePath)
+    }
+    for (const match of source.matchAll(/listenToTheLaptop\(\s*\[([^\]]*)\]/g)) {
+      for (const name of match[1].matchAll(/'(\w+)'/g)) {
+        waited.set(name[1], relativePath)
+      }
     }
   }
   return waited

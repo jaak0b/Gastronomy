@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { VAutocomplete, VCheckbox } from 'vuetify/components'
+import { VAutocomplete, VCheckbox, VSelect } from 'vuetify/components'
 import FestivalPage from '../../../../src/admin/components/festivals/FestivalPage.vue'
 import FestivalPlacementDialog from '../../../../src/admin/components/festivals/FestivalPlacementDialog.vue'
 import StationSelect from '../../../../src/admin/components/festivals/StationSelect.vue'
@@ -180,25 +180,48 @@ function writtenCalls(calls: Call[]): Call[] {
 }
 
 async function openPlacementDialog(page: VueWrapper): Promise<void> {
-  await page.findAllComponents(VAutocomplete)[1].setValue(BEER_ID)
-  await page.get('.add-item').trigger('click')
+  await page.getComponent<typeof VAutocomplete>('[data-test="item-search"]').setValue(BEER_ID)
+  await page.get('[data-test="add-item"]').trigger('click')
   await vi.waitFor(() =>
     expect(document.querySelector('.form-dialog-title')?.textContent).toContain('Bier'),
   )
 }
 
-async function openRowStations(page: VueWrapper, rowIndex = 0): Promise<VueWrapper[]> {
-  await page.findAll('.festival-item-row')[rowIndex].get('.station-select').trigger('click')
-  const select = page.findAllComponents(StationSelect)[rowIndex]
-  await vi.waitFor(() => expect(select.findAllComponents(VCheckbox).length).toBeGreaterThan(0))
-  return select.findAllComponents(VCheckbox)
+function itemRow(page: VueWrapper, itemId: string) {
+  return page.get(`[data-test="festival-item-row"][data-test-id="${itemId}"]`)
 }
 
-async function openDialogStations(page: VueWrapper): Promise<VueWrapper[]> {
-  inDialog('.form-dialog .station-select').click()
+function stationRow(page: VueWrapper, stationId: string) {
+  return page.get(`[data-test="festival-station-row"][data-test-id="${stationId}"]`)
+}
+
+function ingredientRow(page: VueWrapper, ingredientId: string) {
+  return page.get(`[data-test="festival-ingredient-row"][data-test-id="${ingredientId}"]`)
+}
+
+function stationBox(stations: VueWrapper, stationId: string): VueWrapper {
+  return stations.getComponent<typeof VCheckbox>(
+    `[data-test="station-checkbox"][data-test-id="${stationId}"]`,
+  )
+}
+
+async function openRowStations(page: VueWrapper, itemId = SAUSAGE_ID): Promise<VueWrapper> {
+  const row = itemRow(page, itemId)
+  await row.get('[data-test="station-select"]').trigger('click')
+  const select = row.getComponent(StationSelect)
+  await vi.waitFor(() =>
+    expect(select.findComponent('[data-test="station-checkbox"]').exists()).toBe(true),
+  )
+  return select
+}
+
+async function openDialogStations(page: VueWrapper): Promise<VueWrapper> {
+  inDialog('.form-dialog [data-test="station-select"]').click()
   const select = page.findComponent(FestivalPlacementDialog).findComponent(StationSelect)
-  await vi.waitFor(() => expect(select.findAllComponents(VCheckbox).length).toBeGreaterThan(0))
-  return select.findAllComponents(VCheckbox)
+  await vi.waitFor(() =>
+    expect(select.findComponent('[data-test="station-checkbox"]').exists()).toBe(true),
+  )
+  return select
 }
 
 function listedItems(): AdminItemView[] {
@@ -336,9 +359,9 @@ describe('the stations of this festival', () => {
     stubLaptop()
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.find('.festival-station-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="festival-station-row"]').exists()).toBe(true))
 
-    expect(page.findAll('.festival-station-row .name').map((row) => row.text())).toEqual(['Küche'])
+    expect(page.findAll('[data-test="station-name"]').map((row) => row.text())).toEqual(['Küche'])
   })
 
   it('keeps an empty row in place while none belongs to the festival', async () => {
@@ -349,8 +372,8 @@ describe('the stations of this festival', () => {
       expect(page.find('.festival-station-placeholder').exists()).toBe(true),
     )
 
-    expect(page.find('.festival-station-row').exists()).toBe(false)
-    expect(page.find('.station-search').exists()).toBe(true)
+    expect(page.find('[data-test="festival-station-row"]').exists()).toBe(false)
+    expect(page.find('[data-test="station-search"]').exists()).toBe(true)
   })
 
   it('offers only the stations that are switched on and not here yet', async () => {
@@ -359,17 +382,17 @@ describe('the stations of this festival', () => {
     })
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.find('.station-search').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="station-search"]').exists()).toBe(true))
 
-    expect(page.findAllComponents(VAutocomplete)[0].props('items')).toEqual([BAR])
+    expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('items')).toEqual([BAR])
   })
 
   it('waits for the button before it adds the station the admin picked', async () => {
     const calls = stubLaptop()
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.find('.station-search').exists()).toBe(true))
-    await page.findAllComponents(VAutocomplete)[0].setValue(BAR_ID)
+    await vi.waitFor(() => expect(page.find('[data-test="station-search"]').exists()).toBe(true))
+    await page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').setValue(BAR_ID)
     await page.vm.$nextTick()
 
     expect(writtenCalls(calls)).toEqual([])
@@ -409,8 +432,8 @@ describe('the stations of this festival', () => {
     expect(writtenCalls(calls).map((call) => `${call.method} ${call.url}`)).toEqual([
       'POST /api/admin/stations',
     ])
-    expect(page.findAllComponents(VAutocomplete)[0].props('modelValue')).toBe('station-neu')
-    expect(page.findAllComponents(VAutocomplete)[0].props('items')).toEqual([BAR, NEW_STATION])
+    expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('modelValue')).toBe('station-neu')
+    expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('items')).toEqual([BAR, NEW_STATION])
   })
 
   it('renames the station through the dialog on its row', async () => {
@@ -463,11 +486,10 @@ describe('the stations of this festival', () => {
     stubLaptop({ stations: [KITCHEN, { ...BAR, isAtAnyFestival: true }] })
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.findAll('.festival-station-row').length).toBe(2))
+    await vi.waitFor(() => expect(page.findAll('[data-test="festival-station-row"]').length).toBe(2))
 
-    const rows = page.findAll('.festival-station-row')
-    expect(rows[0].classes()).not.toContain('tinted-row')
-    expect(rows[1].classes()).toContain('tinted-row')
+    expect(stationRow(page, KITCHEN_ID).classes()).not.toContain('tinted-row')
+    expect(stationRow(page, BAR_ID).classes()).toContain('tinted-row')
   })
 
   it('names how many orders the station already took when the laptop keeps it', async () => {
@@ -490,7 +512,7 @@ describe('the stations of this festival', () => {
     await pressInDialog('.confirm')
 
     await vi.waitFor(() =>
-      expect(page.get('.festival-station-row .refusal').text()).toBe(
+      expect(stationRow(page, KITCHEN_ID).get('.refusal').text()).toBe(
         'Solange das Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht entfernt werden.',
       ),
     )
@@ -502,12 +524,12 @@ describe('the items of this festival', () => {
     stubLaptop()
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.find('.festival-item-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="festival-item-row"]').exists()).toBe(true))
 
     expect(page.get('.category-name').text()).toBe('Speisen')
-    expect(page.findAll('.festival-item-row .name').map((row) => row.text())).toEqual(['Bratwurst'])
+    expect(page.findAll('[data-test="item-name"]').map((row) => row.text())).toEqual(['Bratwurst'])
     expect((page.get('.price-field input').element as HTMLInputElement).value).toBe('3,50')
-    expect(page.get('.festival-item-row .station-select').text()).toBe('Küche')
+    expect(itemRow(page, SAUSAGE_ID).get('[data-test="station-select"]').text()).toBe('Küche')
   })
 
   it('asks for a station first while the festival has none', async () => {
@@ -519,28 +541,28 @@ describe('the items of this festival', () => {
     expect(page.get('.needs-a-station').text()).toBe(
       'Dieses Fest hat noch keine Ausgabestelle. Fügen Sie zuerst eine hinzu.',
     )
-    expect(page.find('.item-search').exists()).toBe(false)
-    expect(page.find('.add-item').exists()).toBe(false)
+    expect(page.find('[data-test="item-search"]').exists()).toBe(false)
+    expect(page.find('[data-test="add-item"]').exists()).toBe(false)
   })
 
   it('opens the placement dialog for the item the admin chose and clears the search', async () => {
     const calls = stubLaptop()
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.find('.item-search').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="item-search"]').exists()).toBe(true))
     await openPlacementDialog(page)
 
     expect(document.querySelector('.form-dialog-title')?.textContent).toContain('Bier')
-    expect(page.findAll('.festival-item-row').length).toBe(1)
+    expect(page.findAll('[data-test="festival-item-row"]').length).toBe(1)
     expect(writtenCalls(calls)).toEqual([])
-    expect(page.findAllComponents(VAutocomplete)[1].props('modelValue')).toBeNull()
+    expect(page.getComponent<typeof VAutocomplete>('[data-test="item-search"]').props('modelValue')).toBeNull()
   })
 
   it('refuses a missing price and a missing station in the dialog, naming the item', async () => {
     const calls = stubLaptop()
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.find('.item-search').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="item-search"]').exists()).toBe(true))
     await openPlacementDialog(page)
 
     inDialog('.form-dialog .form-save').click()
@@ -575,12 +597,12 @@ describe('the items of this festival', () => {
     })
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.find('.item-search').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="item-search"]').exists()).toBe(true))
     await openPlacementDialog(page)
 
     writeInto('.form-dialog .price-field input', '4,20')
-    const boxes = await openDialogStations(page)
-    await boxes[0].setValue(true)
+    const stations = await openDialogStations(page)
+    await stationBox(stations, KITCHEN_ID).setValue(true)
     inDialog('.form-dialog .form-save').click()
 
     await vi.waitFor(() => {
@@ -589,12 +611,12 @@ describe('the items of this festival', () => {
       expect(sent?.body).toEqual({ priceCents: 420, stationIds: [KITCHEN_ID] })
     })
     await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
-    await vi.waitFor(() => expect(page.findAll('.festival-item-row').length).toBe(2))
-    expect(page.findAll('.festival-item-row .name').map((row) => row.text())).toEqual([
+    await vi.waitFor(() => expect(page.findAll('[data-test="festival-item-row"]').length).toBe(2))
+    expect(page.findAll('[data-test="item-name"]').map((row) => row.text())).toEqual([
       'Bier',
       'Bratwurst',
     ])
-    expect(page.findAll('.festival-item-row .station-select')[0].text()).toBe('Küche')
+    expect(itemRow(page, BEER_ID).get('[data-test="station-select"]').text()).toBe('Küche')
   })
 
   it('summarises the stations on the row and refuses to empty the selection', async () => {
@@ -602,20 +624,20 @@ describe('the items of this festival', () => {
 
     const page = mountPage()
     await vi.waitFor(() =>
-      expect(page.find('.festival-item-row .station-select').exists()).toBe(true),
+      expect(page.find('[data-test="festival-item-row"] [data-test="station-select"]').exists()).toBe(true),
     )
-    expect(page.get('.festival-item-row .station-select').text()).toBe('Küche')
+    expect(itemRow(page, SAUSAGE_ID).get('[data-test="station-select"]').text()).toBe('Küche')
 
-    const boxes = await openRowStations(page)
-    await boxes[0].setValue(false)
+    const stations = await openRowStations(page)
+    await stationBox(stations, KITCHEN_ID).setValue(false)
 
     await vi.waitFor(() =>
-      expect(page.get('.festival-item-row .refusal').text()).toBe(
+      expect(itemRow(page, SAUSAGE_ID).get('.refusal').text()).toBe(
         'Bratwurst braucht mindestens eine Ausgabestelle.',
       ),
     )
-    expect(boxes[0].props('modelValue')).toBe(true)
-    expect(page.get('.festival-item-row .station-select').text()).toBe('Küche')
+    expect(stationBox(stations, KITCHEN_ID).props('modelValue')).toBe(true)
+    expect(itemRow(page, SAUSAGE_ID).get('[data-test="station-select"]').text()).toBe('Küche')
     expect(writtenCalls(calls)).toEqual([])
   })
 
@@ -637,11 +659,11 @@ describe('the items of this festival', () => {
 
     const page = mountPage()
     await vi.waitFor(() =>
-      expect(page.find('.festival-item-row .station-select').exists()).toBe(true),
+      expect(page.find('[data-test="festival-item-row"] [data-test="station-select"]').exists()).toBe(true),
     )
 
-    const boxes = await openRowStations(page)
-    await boxes[1].setValue(true)
+    const stations = await openRowStations(page)
+    await stationBox(stations, BAR_ID).setValue(true)
 
     await vi.waitFor(() => {
       const sent = calls.find((call) => call.method === 'PUT')
@@ -649,7 +671,7 @@ describe('the items of this festival', () => {
       expect(sent?.body).toEqual({ priceCents: 350, stationIds: [KITCHEN_ID, BAR_ID] })
     })
     await vi.waitFor(() =>
-      expect(page.get('.festival-item-row .station-select').text()).toBe('Küche, Theke'),
+      expect(itemRow(page, SAUSAGE_ID).get('[data-test="station-select"]').text()).toBe('Küche, Theke'),
     )
   })
 
@@ -657,7 +679,7 @@ describe('the items of this festival', () => {
     const calls = stubLaptop()
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.find('.festival-item-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="festival-item-row"]').exists()).toBe(true))
     await page.get('.price-field input').setValue('4,00')
     await page.get('.price-field input').trigger('blur')
 
@@ -677,18 +699,17 @@ describe('the items of this festival', () => {
     })
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.findAll('.festival-item-row').length).toBe(2))
+    await vi.waitFor(() => expect(page.findAll('[data-test="festival-item-row"]').length).toBe(2))
 
-    const rows = page.findAll('.festival-item-row')
-    expect(rows[0].classes()).not.toContain('tinted-row')
-    expect(rows[1].classes()).toContain('tinted-row')
+    expect(itemRow(page, BEER_ID).classes()).not.toContain('tinted-row')
+    expect(itemRow(page, SAUSAGE_ID).classes()).toContain('tinted-row')
   })
 
   it('says once that the price cannot be read, at the field the admin typed in', async () => {
     const calls = stubLaptop()
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.find('.festival-item-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="festival-item-row"]').exists()).toBe(true))
     await page.get('.price-field input').setValue('drei euro')
     await page.get('.price-field input').trigger('blur')
     await page.vm.$nextTick()
@@ -696,7 +717,7 @@ describe('the items of this festival', () => {
     expect(page.get('.price-field .v-messages__message').text()).toBe(
       'Tragen Sie den Preis in Euro ein, zum Beispiel 3,50.',
     )
-    expect(page.find('.festival-item-row .refusal').exists()).toBe(false)
+    expect(page.find('[data-test="festival-item-row"] .refusal').exists()).toBe(false)
     expect(writtenCalls(calls)).toEqual([])
   })
 
@@ -705,16 +726,16 @@ describe('the items of this festival', () => {
 
     const page = mountPage()
     await vi.waitFor(() =>
-      expect(page.find('.festival-item-row .station-select').exists()).toBe(true),
+      expect(page.find('[data-test="festival-item-row"] [data-test="station-select"]').exists()).toBe(true),
     )
     await page.get('.price-field input').setValue('drei euro')
-    const boxes = await openRowStations(page)
-    await boxes[1].setValue(true)
+    const stations = await openRowStations(page)
+    await stationBox(stations, BAR_ID).setValue(true)
     await page.vm.$nextTick()
 
-    expect(boxes[1].props('modelValue')).toBe(false)
+    expect(stationBox(stations, BAR_ID).props('modelValue')).toBe(false)
     expect(writtenCalls(calls)).toEqual([])
-    expect(page.get('.festival-item-row .refusal').text()).toBe(
+    expect(itemRow(page, SAUSAGE_ID).get('.refusal').text()).toBe(
       'Tragen Sie einen Preis zwischen 0,00 und 999,99 Euro ein.',
     )
   })
@@ -733,11 +754,10 @@ describe('the items of this festival', () => {
     })
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.findAll('.festival-item-row').length).toBe(2))
+    await vi.waitFor(() => expect(page.findAll('[data-test="festival-item-row"]').length).toBe(2))
 
-    const rows = page.findAll('.festival-item-row')
-    expect(rows[0].classes()).not.toContain('tinted-row')
-    expect(rows[1].classes()).toContain('tinted-row')
+    expect(itemRow(page, SAUSAGE_ID).classes()).not.toContain('tinted-row')
+    expect(itemRow(page, BEER_ID).classes()).toContain('tinted-row')
   })
 
   it('marks an item sold out at this festival alone', async () => {
@@ -811,10 +831,10 @@ describe('the items of this festival', () => {
     })
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.find('.item-search').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="item-search"]').exists()).toBe(true))
 
     expect(
-      (page.findAllComponents(VAutocomplete)[1].props('items') as { name: string }[]).map(
+      (page.getComponent<typeof VAutocomplete>('[data-test="item-search"]').props('items') as { name: string }[]).map(
         (item) => item.name,
       ),
     ).toEqual(['Bier'])
@@ -968,11 +988,11 @@ describe('the items of this festival', () => {
     })
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.find('.item-search').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="item-search"]').exists()).toBe(true))
     await openPlacementDialog(page)
     writeInto('.form-dialog .price-field input', '4,20')
-    const boxes = await openDialogStations(page)
-    await boxes[0].setValue(true)
+    const stations = await openDialogStations(page)
+    await stationBox(stations, KITCHEN_ID).setValue(true)
     inDialog('.form-dialog .form-save').click()
 
     await vi.waitFor(() =>
@@ -1023,29 +1043,29 @@ describe('an item change the laptop refuses', () => {
 
     const page = mountPage()
     await vi.waitFor(() =>
-      expect(page.find('.festival-item-row .station-select').exists()).toBe(true),
+      expect(page.find('[data-test="festival-item-row"] [data-test="station-select"]').exists()).toBe(true),
     )
-    const boxes = await openRowStations(page)
-    await boxes[1].setValue(true)
+    const stations = await openRowStations(page)
+    await stationBox(stations, BAR_ID).setValue(true)
 
     await vi.waitFor(() =>
-      expect(page.get('.festival-item-row .refusal').text()).toBe(REFUSAL_TEXT),
+      expect(itemRow(page, SAUSAGE_ID).get('.refusal').text()).toBe(REFUSAL_TEXT),
     )
     await page.vm.$nextTick()
-    expect(boxes[0].props('modelValue')).toBe(true)
-    expect(boxes[1].props('modelValue')).toBe(false)
+    expect(stationBox(stations, KITCHEN_ID).props('modelValue')).toBe(true)
+    expect(stationBox(stations, BAR_ID).props('modelValue')).toBe(false)
   })
 
   it('puts the price back to the one the laptop has', async () => {
     stubLaptop({ refusal: REFUSED_PUT })
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.find('.festival-item-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="festival-item-row"]').exists()).toBe(true))
     await page.get('.price-field input').setValue('4,00')
     await page.get('.price-field input').trigger('blur')
 
     await vi.waitFor(() =>
-      expect(page.get('.festival-item-row .refusal').text()).toBe(REFUSAL_TEXT),
+      expect(itemRow(page, SAUSAGE_ID).get('.refusal').text()).toBe(REFUSAL_TEXT),
     )
     await page.vm.$nextTick()
     expect((page.get('.price-field input').element as HTMLInputElement).value).toBe('3,50')
@@ -1070,7 +1090,7 @@ describe('an item change the laptop refuses', () => {
     await page.get('.sold-out-switch input').setValue(true)
 
     await vi.waitFor(() =>
-      expect(page.get('.festival-item-row .refusal').text()).toBe(REFUSAL_TEXT),
+      expect(itemRow(page, SAUSAGE_ID).get('.refusal').text()).toBe(REFUSAL_TEXT),
     )
     await page.vm.$nextTick()
     expect((page.get('.sold-out-switch input').element as HTMLInputElement).checked).toBe(false)
@@ -1094,11 +1114,11 @@ describe('an item change the laptop refuses', () => {
 
     const page = mountPage()
     await vi.waitFor(() =>
-      expect(page.find('.festival-item-row .station-select').exists()).toBe(true),
+      expect(page.find('[data-test="festival-item-row"] [data-test="station-select"]').exists()).toBe(true),
     )
-    const boxes = await openRowStations(page)
-    await boxes[1].setValue(true)
-    await boxes[1].setValue(false)
+    const stations = await openRowStations(page)
+    await stationBox(stations, BAR_ID).setValue(true)
+    await stationBox(stations, BAR_ID).setValue(false)
 
     expect(writtenCalls(calls).length).toBe(1)
 
@@ -1110,14 +1130,14 @@ describe('an item change the laptop refuses', () => {
       { priceCents: 350, stationIds: [KITCHEN_ID, BAR_ID] },
       { priceCents: 350, stationIds: [KITCHEN_ID] },
     ])
-    await vi.waitFor(() => expect(boxes[1].props('modelValue')).toBe(false))
+    await vi.waitFor(() => expect(stationBox(stations, BAR_ID).props('modelValue')).toBe(false))
   })
 
   it('sends one price change once when the admin presses enter and then leaves the field', async () => {
     const calls = stubLaptop()
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.find('.festival-item-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="festival-item-row"]').exists()).toBe(true))
     await page.get('.price-field input').setValue('4,00')
     await page.get('.price-field input').trigger('keyup.enter')
     await page.get('.price-field input').trigger('blur')
@@ -1185,22 +1205,25 @@ describe('an item change the laptop refuses', () => {
     })
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.findAll('.price-field input').length).toBe(2))
+    await vi.waitFor(() => expect(page.findAll('[data-test="festival-item-row"]').length).toBe(2))
 
-    await page.findAll('.price-field input')[0].setValue('4,50')
-    await page.findAll('.price-field input')[0].trigger('blur')
-    await page.findAll('.price-field input')[1].setValue('5,00')
-    await page.findAll('.price-field input')[1].trigger('blur')
+    await itemRow(page, BEER_ID).get('.price-field input').setValue('4,50')
+    await itemRow(page, BEER_ID).get('.price-field input').trigger('blur')
+    await itemRow(page, SAUSAGE_ID).get('.price-field input').setValue('5,00')
+    await itemRow(page, SAUSAGE_ID).get('.price-field input').trigger('blur')
     await vi.waitFor(() => expect(writtenCalls(calls).length).toBe(2))
 
     releaseTheRefusedAnswer()
-    await vi.waitFor(() => expect(page.findAll('.festival-item-row .refusal').length).toBe(1))
+    await vi.waitFor(() => expect(page.findAll('[data-test="festival-item-row"] .refusal').length).toBe(1))
 
-    const rows = page.findAll('.festival-item-row')
-    expect(rows[0].get('.refusal').text()).toBe(REFUSAL_TEXT)
-    expect(rows[1].find('.refusal').exists()).toBe(false)
-    expect((page.findAll('.price-field input')[0].element as HTMLInputElement).value).toBe('4,00')
-    expect((page.findAll('.price-field input')[1].element as HTMLInputElement).value).toBe('5,00')
+    expect(itemRow(page, BEER_ID).get('.refusal').text()).toBe(REFUSAL_TEXT)
+    expect(itemRow(page, SAUSAGE_ID).find('.refusal').exists()).toBe(false)
+    expect(
+      (itemRow(page, BEER_ID).get('.price-field input').element as HTMLInputElement).value,
+    ).toBe('4,00')
+    expect(
+      (itemRow(page, SAUSAGE_ID).get('.price-field input').element as HTMLInputElement).value,
+    ).toBe('5,00')
   })
 
   it('keeps a refusal on its row when the laptop reloads the item list afterwards', async () => {
@@ -1210,23 +1233,23 @@ describe('an item change the laptop refuses', () => {
     await vi.waitFor(() => expect(page.find('.price-field input').exists()).toBe(true))
     await page.get('.price-field input').setValue('4,50')
     await page.get('.price-field input').trigger('blur')
-    await vi.waitFor(() => expect(page.find('.festival-item-row .refusal').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="festival-item-row"] .refusal').exists()).toBe(true))
 
     await useConnectionStore().refetchAll()
-    await vi.waitFor(() => expect(page.find('.festival-item-row .refusal').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="festival-item-row"] .refusal').exists()).toBe(true))
 
-    expect(page.get('.festival-item-row .refusal').text()).toBe(REFUSAL_TEXT)
+    expect(itemRow(page, SAUSAGE_ID).get('.refusal').text()).toBe(REFUSAL_TEXT)
   })
 
   it('keeps the placement dialog open and says why the laptop refused', async () => {
     stubLaptop({ refusal: REFUSED_PUT })
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.find('.item-search').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="item-search"]').exists()).toBe(true))
     await openPlacementDialog(page)
     writeInto('.form-dialog .price-field input', '4,20')
-    const boxes = await openDialogStations(page)
-    await boxes[0].setValue(true)
+    const stations = await openDialogStations(page)
+    await stationBox(stations, KITCHEN_ID).setValue(true)
     inDialog('.form-dialog .form-save').click()
 
     await vi.waitFor(() =>
@@ -1263,30 +1286,37 @@ describe('the ingredient stock of the festival', () => {
       global: { plugins: testPlugins(locale) },
       attachTo: document.body,
     })
-    await vi.waitFor(() => expect(page.find('.festival-ingredient-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('[data-test="festival-ingredient-row"]').exists()).toBe(true))
     return { page, calls }
   }
 
   it('lists each ingredient with its available amount, the amount used and the unit', async () => {
     const { page } = await mountWithStock([FLOUR_STOCK, BUN_STOCK])
 
-    const rows = page.findAll('.festival-ingredient-row')
+    const flourRow = ingredientRow(page, 'ingredient-mehl')
+    const bunRow = ingredientRow(page, 'ingredient-broetchen')
     expect(page.get('.festival-stock .section-heading').text()).toBe('Zutaten')
-    expect(rows.map((row) => row.get('.name').text())).toEqual(['Mehl', 'Brötchen'])
-    expect(
-      rows.map((row) => (row.get('.amount-input input').element as HTMLInputElement).value),
-    ).toEqual(['25', ''])
-    expect(rows[0].get('.entry-unit-kilogram').classes()).toContain('v-btn--active')
-    expect(rows.map((row) => row.get('.used-amount').text())).toEqual([
-      'Verbraucht: 1,25 kg',
-      'Verbraucht: 40 Stück',
+    expect(page.findAll('[data-test="ingredient-name"]').map((name) => name.text())).toEqual([
+      'Mehl',
+      'Brötchen',
     ])
+    expect((flourRow.get('[data-test="amount-input"] input').element as HTMLInputElement).value).toBe(
+      '25000',
+    )
+    expect((bunRow.get('[data-test="amount-input"] input').element as HTMLInputElement).value).toBe('')
+    expect(
+      flourRow.getComponent<typeof VSelect>('[data-test="amount-unit-select"]').props('modelValue'),
+    ).toBe('gram')
+    expect(flourRow.get('[data-test="amount-unit-select"]').text()).toContain('g')
+    expect(bunRow.get('[data-test="amount-unit"]').text()).toBe('Stück')
+    expect(flourRow.get('[data-test="used-amount"]').text()).toBe('Verbraucht: 1,25 kg')
+    expect(bunRow.get('[data-test="used-amount"]').text()).toBe('Verbraucht: 40 Stück')
   })
 
   it('writes the used amount in English', async () => {
     const { page } = await mountWithStock([FLOUR_STOCK, { ...BUN_STOCK, usedAmount: 1 }], 'en')
 
-    expect(page.findAll('.used-amount').map((label) => label.text())).toEqual([
+    expect(page.findAll('[data-test="used-amount"]').map((label) => label.text())).toEqual([
       'Used: 1.25 kg',
       'Used: 1 piece',
     ])
@@ -1319,11 +1349,13 @@ describe('the ingredient stock of the festival', () => {
       BUN_STOCK,
       { ...FLOUR_STOCK, availableAmount: null },
     ])
-    const flourRow = page.findAll('.festival-ingredient-row')[1]
+    const flourRow = ingredientRow(page, 'ingredient-mehl')
 
-    await flourRow.get('.entry-unit-kilogram').trigger('click')
-    await flourRow.get('.amount-input input').setValue('12,5')
-    await flourRow.get('.amount-input input').trigger('blur')
+    await flourRow
+      .getComponent<typeof VSelect>('[data-test="amount-unit-select"]')
+      .setValue('kilogram')
+    await flourRow.get('[data-test="amount-input"] input').setValue('12,5')
+    await flourRow.get('[data-test="amount-input"] input').trigger('blur')
 
     await vi.waitFor(() =>
       expect(writtenCalls(calls)).toEqual([
@@ -1339,8 +1371,8 @@ describe('the ingredient stock of the festival', () => {
   it('sends null when the admin empties the field', async () => {
     const { page, calls } = await mountWithStock([FLOUR_STOCK])
 
-    await page.get('.amount-input input').setValue('')
-    await page.get('.amount-input input').trigger('blur')
+    await page.get('[data-test="amount-input"] input').setValue('')
+    await page.get('[data-test="amount-input"] input').trigger('blur')
 
     await vi.waitFor(() =>
       expect(writtenCalls(calls).map((call) => call.body)).toEqual([{ availableAmount: null }]),
@@ -1363,15 +1395,15 @@ describe('the ingredient stock of the festival', () => {
       },
     })
 
-    await page.get('.amount-input input').setValue('0')
-    await page.get('.amount-input input').trigger('blur')
+    await page.get('[data-test="amount-input"] input').setValue('0')
+    await page.get('[data-test="amount-input"] input').trigger('blur')
 
     await vi.waitFor(() =>
-      expect(page.get('.festival-ingredient-row .refusal').text()).toBe(
+      expect(ingredientRow(page, 'ingredient-mehl').get('.refusal').text()).toBe(
         'Geben Sie null oder mehr an, oder lassen Sie das Feld leer.',
       ),
     )
-    expect((page.get('.amount-input input').element as HTMLInputElement).value).toBe('0')
+    expect((page.get('[data-test="amount-input"] input').element as HTMLInputElement).value).toBe('0')
   })
 
   it('is hidden while no article on the menu uses an ingredient', async () => {

@@ -174,21 +174,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   }
 
   function listen(): () => void {
-    const connection = useConnectionStore()
-    const releases = [
-      connection.registerRefetch(load),
-      connection.onEvent('ConfigurationChanged', () => {
-        void load()
-      }),
-      connection.onEvent('OrdersChanged', () => {
-        void load()
-      }),
-    ]
-    return () => {
-      for (const release of releases) {
-        release()
-      }
-    }
+    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged', 'OrdersChanged'], load)
   }
 
   function dismissNotice(): void {

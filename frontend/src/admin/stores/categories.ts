@@ -112,18 +112,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
   }
 
   function listen(): () => void {
-    const connection = useConnectionStore()
-    const releases = [
-      connection.registerRefetch(load),
-      connection.onEvent<unknown>('ConfigurationChanged', () => {
-        void load()
-      }),
-    ]
-    return () => {
-      for (const release of releases) {
-        release()
-      }
-    }
+    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], load)
   }
 
   return {

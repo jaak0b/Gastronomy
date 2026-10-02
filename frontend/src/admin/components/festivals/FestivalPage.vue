@@ -2,8 +2,8 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { navigate } from '../../../shared/router/router'
-import type { AdminErrorMessage } from '../../core/adminErrorMessage'
 import { assertNever } from '../../../shared/core/assertNever'
+import { combineReleases } from '../../../shared/core/combineReleases'
 import { localInputToUtcIso, utcIsoToLocalInput } from '../../core/festivalTimes'
 import { laptopConfirmedField, stillDiffersFromTheLaptop } from '../../core/laptopConfirmedField'
 import { useAdminCategoriesStore } from '../../stores/categories'
@@ -11,7 +11,7 @@ import { useAdminFestivalStockStore } from '../../stores/festivalStock'
 import { useAdminFestivalsStore } from '../../stores/festivals'
 import { useAdminItemsStore } from '../../stores/items'
 import { useAdminStationsStore } from '../../stores/stations'
-import { useRefusalText } from '../../composables/useRefusalText'
+import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import FestivalItems from './FestivalItems.vue'
 import FestivalStations from './FestivalStations.vue'
 import FestivalStock from './FestivalStock.vue'
@@ -28,11 +28,10 @@ const festivalName = ref(laptopConfirmedField('', ''))
 const startsAt = ref(laptopConfirmedField('', ''))
 const endsAt = ref(laptopConfirmedField('', ''))
 const refusedField = ref<'name' | 'period' | null>(null)
-const refusal = ref<AdminErrorMessage | null>(null)
+const { refusal, refusalText } = useRefusalDisplay()
 let stopListening: (() => void) | null = null
 
 const festival = computed(() => festivals.findFestivalWithId(props.festivalId))
-const refusalText = useRefusalText(refusal)
 
 watch(
   festival,
@@ -97,21 +96,6 @@ async function saveTheFields(): Promise<void> {
   }
 }
 
-function listenToTheLaptop(): () => void {
-  const releases = [
-    festivals.listen(),
-    stations.listen(),
-    categories.listen(),
-    items.listen(),
-    stock.listen(),
-  ]
-  return () => {
-    for (const release of releases) {
-      release()
-    }
-  }
-}
-
 async function reload(): Promise<void> {
   await festivals.load()
   if (festival.value === null) {
@@ -134,7 +118,13 @@ watch(
 )
 
 onMounted(async () => {
-  stopListening = listenToTheLaptop()
+  stopListening = combineReleases(
+    festivals.listen(),
+    stations.listen(),
+    categories.listen(),
+    items.listen(),
+    stock.listen(),
+  )
   await reload()
 })
 

@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { refusalFrom, type AdminActionResult } from '../../core/adminActionResult'
-import type { AdminErrorMessage } from '../../core/adminErrorMessage'
 import { AdminStaffMemberView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminStaffStore } from '../../stores/staff'
 import { useAdminEnrolmentStore } from '../../stores/enrolment'
 import BaseConfirmDialog from '../BaseConfirmDialog.vue'
 import InvitationPanel from '../enrolment/InvitationPanel.vue'
-import { useRefusalText } from '../../composables/useRefusalText'
+import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import StaffRenameDialog from './StaffRenameDialog.vue'
 
 const { t } = useI18n()
@@ -18,30 +16,21 @@ const enrolment = useAdminEnrolmentStore()
 const renamingStaffMember = ref<AdminStaffMemberView | null>(null)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
-const refusal = ref<AdminErrorMessage | null>(null)
+const { refusal, refusalText, showRefusalOf } = useRefusalDisplay()
 let stopListening: (() => void) | null = null
 
 const shown = computed(() =>
   staff.staffMembers.filter((staffMember) => showsDeactivated.value || staffMember.isActive),
 )
 
-const refusalText = useRefusalText(refusal)
-
-function note(result: AdminActionResult<unknown>): void {
-  const message = refusalFrom(result)
-  if (message !== null) {
-    refusal.value = message
-  }
-}
-
 async function inviteStaffMember(staffMemberId: string): Promise<void> {
   refusal.value = null
-  note(await enrolment.createInvitation({ kind: 'staffMember', staffMemberId }))
+  showRefusalOf(await enrolment.createInvitation({ kind: 'staffMember', staffMemberId }))
 }
 
 async function inviteSomebodyNew(): Promise<void> {
   refusal.value = null
-  note(await enrolment.createInvitation({ kind: 'somebodyNew' }))
+  showRefusalOf(await enrolment.createInvitation({ kind: 'somebodyNew' }))
 }
 
 async function deactivate(): Promise<void> {
@@ -49,13 +38,13 @@ async function deactivate(): Promise<void> {
   askingAboutId.value = null
   if (staffMemberId !== null) {
     refusal.value = null
-    note(await staff.setActive(staffMemberId, false))
+    showRefusalOf(await staff.setActive(staffMemberId, false))
   }
 }
 
 async function reactivate(staffMemberId: string): Promise<void> {
   refusal.value = null
-  note(await staff.setActive(staffMemberId, true))
+  showRefusalOf(await staff.setActive(staffMemberId, true))
 }
 
 async function rename(name: string): Promise<void> {

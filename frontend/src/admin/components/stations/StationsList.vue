@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { refusalFrom, type AdminActionResult } from '../../core/adminActionResult'
-import type { AdminErrorMessage } from '../../core/adminErrorMessage'
 import { AdminStationView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminStationsStore } from '../../stores/stations'
 import { useAdminEnrolmentStore } from '../../stores/enrolment'
 import BaseConfirmDialog from '../BaseConfirmDialog.vue'
 import InvitationPanel from '../enrolment/InvitationPanel.vue'
-import { useRefusalText } from '../../composables/useRefusalText'
+import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import StationDialog from './StationDialog.vue'
 
 const { t } = useI18n()
@@ -19,28 +17,20 @@ const editingStation = ref<AdminStationView | null>(null)
 const isCreating = ref(false)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
-const refusal = ref<AdminErrorMessage | null>(null)
+const { refusal, refusalText, showRefusalOf } = useRefusalDisplay()
 let stopListening: (() => void) | null = null
 
 const shown = computed(() =>
   stations.stations.filter((station) => showsDeactivated.value || station.isActive),
 )
 
-const refusalText = useRefusalText(refusal)
 const isStationDialogOpen = computed(
   () => isCreating.value || editingStation.value !== null,
 )
 
-function note(result: AdminActionResult<unknown>): void {
-  const message = refusalFrom(result)
-  if (message !== null) {
-    refusal.value = message
-  }
-}
-
 async function inviteStation(stationId: string): Promise<void> {
   refusal.value = null
-  note(await enrolment.createInvitation({ kind: 'station', stationId }))
+  showRefusalOf(await enrolment.createInvitation({ kind: 'station', stationId }))
 }
 
 function startEditing(station: AdminStationView): void {
@@ -84,13 +74,13 @@ async function deactivate(): Promise<void> {
   askingAboutId.value = null
   if (stationId !== null) {
     refusal.value = null
-    note(await stations.setActive(stationId, false))
+    showRefusalOf(await stations.setActive(stationId, false))
   }
 }
 
 async function reactivate(stationId: string): Promise<void> {
   refusal.value = null
-  note(await stations.setActive(stationId, true))
+  showRefusalOf(await stations.setActive(stationId, true))
 }
 
 onMounted(async () => {

@@ -59,21 +59,7 @@ export const useAdminFestivalStockStore = defineStore('adminFestivalStock', () =
   }
 
   function listen(): () => void {
-    const connection = useConnectionStore()
-    const releases = [
-      connection.registerRefetch(reload),
-      connection.onEvent<unknown>('ConfigurationChanged', () => {
-        void reload()
-      }),
-      connection.onEvent<unknown>('OrdersChanged', () => {
-        void reload()
-      }),
-    ]
-    return () => {
-      for (const release of releases) {
-        release()
-      }
-    }
+    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged', 'OrdersChanged'], reload)
   }
 
   return {

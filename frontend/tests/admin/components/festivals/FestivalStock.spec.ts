@@ -69,7 +69,7 @@ function allTexts(selector: string): string[] {
 }
 
 function amountInputs(): HTMLInputElement[] {
-  return [...document.querySelectorAll<HTMLInputElement>('.festival-ingredient-row .amount-input input')]
+  return [...document.querySelectorAll<HTMLInputElement>('.festival-ingredient-row [data-test="amount-input"] input')]
 }
 
 function typeInto(input: HTMLInputElement, value: string): void {
@@ -102,7 +102,7 @@ describe('the stock of a festival', () => {
 
     expect(allTexts('.festival-ingredient-row .name')).toEqual(['Mehl', 'Brötchen'])
     expect(amountInputs().map((input) => input.value)).toEqual(['1500', ''])
-    expect(allTexts('.festival-ingredient-row .amount-unit')).toEqual(['Stück'])
+    expect(allTexts('.festival-ingredient-row [data-test="amount-unit"]')).toEqual(['Stück'])
     expect(allTexts('.used-amount')).toEqual(['Verbraucht: 250 g', 'Verbraucht: 3 Stück'])
     expect(allTexts('.runs-out')).toEqual(['Reicht voraussichtlich bis 12.07., 18:30', ''])
   })
@@ -113,7 +113,7 @@ describe('the stock of a festival', () => {
     await mountStock('en')
 
     expect(amountInputs().map((input) => input.value)).toEqual(['1500', ''])
-    expect(allTexts('.festival-ingredient-row .amount-unit')).toEqual(['pieces'])
+    expect(allTexts('.festival-ingredient-row [data-test="amount-unit"]')).toEqual(['pieces'])
     expect(allTexts('.used-amount')).toEqual(['Used: 250 g', 'Used: 3 pieces'])
     expect(allTexts('.runs-out')).toEqual(['Expected to last until 07/12, 06:30 PM', ''])
   })

@@ -102,6 +102,7 @@ function leaveTheField(event: KeyboardEvent): void {
     <v-text-field
       v-model="typed"
       class="amount-input"
+      data-test="amount-input"
       inputmode="decimal"
       density="compact"
       hide-details="auto"
@@ -114,12 +115,19 @@ function leaveTheField(event: KeyboardEvent): void {
       v-if="unitChoices.length > 1"
       :model-value="entryUnit"
       class="amount-unit-select"
+      data-test="amount-unit-select"
       density="compact"
       hide-details
       :items="unitChoices"
       @update:model-value="switchEntryUnit"
     />
-    <span v-else class="amount-unit text-body-1 pt-2">{{ unitName(entryUnit) }}</span>
+    <span
+      v-else
+      class="amount-unit text-body-1 pt-2"
+      data-test="amount-unit"
+    >
+      {{ unitName(entryUnit) }}
+    </span>
   </div>
 </template>
 

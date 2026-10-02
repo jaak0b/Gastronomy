@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { refusalFrom, type AdminActionResult } from '../../core/adminActionResult'
-import type { AdminErrorMessage } from '../../core/adminErrorMessage'
 import { AdminCategoryView, AdminItemView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
+import { combineReleases } from '../../../shared/core/combineReleases'
 import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
 import { letteringColourOn } from '../../../shared/core/letteringColour'
 import {
-
   useAdminCategoriesStore,
   type AdminCategoryDraft,
   type CategoryMoveDirection,
@@ -18,7 +16,7 @@ import { useAdminIngredientsStore } from '../../stores/ingredients'
 import { useAdminItemsStore, type AdminItemDraft } from '../../stores/items'
 import CategoryDialog from '../categories/CategoryDialog.vue'
 import BaseConfirmDialog from '../BaseConfirmDialog.vue'
-import { useRefusalText } from '../../composables/useRefusalText'
+import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import ItemDialog from './ItemDialog.vue'
 import IngredientsManageDialog from '../ingredients/IngredientsManageDialog.vue'
 import ItemIngredientsDialog from './ItemIngredientsDialog.vue'
@@ -37,8 +35,16 @@ const askingAboutId = ref<string | null>(null)
 const askingAboutCategoryId = ref<string | null>(null)
 const renamedCategory = ref<AdminCategoryView | null>(null)
 const isCreatingCategory = ref(false)
-const itemRefusal = ref<AdminErrorMessage | null>(null)
-const categoryRefusal = ref<AdminErrorMessage | null>(null)
+const {
+  refusal: itemRefusal,
+  refusalText: itemRefusalText,
+  showRefusalOf: showItemRefusalOf,
+} = useRefusalDisplay()
+const {
+  refusal: categoryRefusal,
+  refusalText: categoryRefusalText,
+  showRefusalOf: showCategoryRefusalOf,
+} = useRefusalDisplay()
 let stopListening: (() => void) | null = null
 
 const shownItems = computed(() =>
@@ -55,8 +61,6 @@ const groups = computed(() =>
   ),
 )
 
-const itemRefusalText = useRefusalText(itemRefusal)
-const categoryRefusalText = useRefusalText(categoryRefusal)
 const isCategoryDialogOpen = computed(
   () => isCreatingCategory.value || renamedCategory.value !== null,
 )
@@ -72,20 +76,6 @@ function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
 function readItemsForTheRunningFestival(): Promise<void> {
   const festivalId = festivals.runningFestival?.festivalId ?? null
   return festivalId === null ? items.load() : items.loadAtTheFestival(festivalId)
-}
-
-function noteItem(result: AdminActionResult<unknown>): void {
-  const message = refusalFrom(result)
-  if (message !== null) {
-    itemRefusal.value = message
-  }
-}
-
-function noteCategory(result: AdminActionResult<unknown>): void {
-  const message = refusalFrom(result)
-  if (message !== null) {
-    categoryRefusal.value = message
-  }
 }
 
 async function save(item: AdminItemDraft): Promise<void> {
@@ -134,18 +124,18 @@ async function deactivate(): Promise<void> {
   askingAboutId.value = null
   if (itemId !== null) {
     itemRefusal.value = null
-    noteItem(await items.setActive(itemId, false))
+    showItemRefusalOf(await items.setActive(itemId, false))
   }
 }
 
 async function reactivate(itemId: string): Promise<void> {
   itemRefusal.value = null
-  noteItem(await items.setActive(itemId, true))
+  showItemRefusalOf(await items.setActive(itemId, true))
 }
 
 async function moveCategory(categoryId: string, direction: CategoryMoveDirection): Promise<void> {
   categoryRefusal.value = null
-  noteCategory(await categories.move(categoryId, direction))
+  showCategoryRefusalOf(await categories.move(categoryId, direction))
 }
 
 function startCreatingCategory(): void {
@@ -187,7 +177,7 @@ async function saveCategory(draft: AdminCategoryDraft): Promise<void> {
 
 async function activateCategory(categoryId: string): Promise<void> {
   categoryRefusal.value = null
-  noteCategory(await categories.setActive(categoryId, true))
+  showCategoryRefusalOf(await categories.setActive(categoryId, true))
 }
 
 async function deactivateCategory(): Promise<void> {
@@ -195,21 +185,7 @@ async function deactivateCategory(): Promise<void> {
   askingAboutCategoryId.value = null
   if (categoryId !== null) {
     categoryRefusal.value = null
-    noteCategory(await categories.setActive(categoryId, false))
-  }
-}
-
-function listenToTheLaptop(): () => void {
-  const releases = [
-    categories.listen(),
-    items.listen(),
-    festivals.listen(),
-    ingredients.listen(),
-  ]
-  return () => {
-    for (const release of releases) {
-      release()
-    }
+    showCategoryRefusalOf(await categories.setActive(categoryId, false))
   }
 }
 
@@ -221,7 +197,12 @@ watch(
 )
 
 onMounted(async () => {
-  stopListening = listenToTheLaptop()
+  stopListening = combineReleases(
+    categories.listen(),
+    items.listen(),
+    festivals.listen(),
+    ingredients.listen(),
+  )
   await categories.load()
   await festivals.load()
   await readItemsForTheRunningFestival()
@@ -250,6 +231,7 @@ onUnmounted(() => {
     <v-alert
       v-if="itemRefusalText !== null && !isItemDialogOpen"
       class="refusal mb-4"
+      data-test="item-refusal"
       type="warning"
       variant="tonal"
     >
@@ -258,6 +240,7 @@ onUnmounted(() => {
     <v-alert
       v-if="categoryRefusalText !== null && !isCategoryDialogOpen"
       class="refusal mb-4"
+      data-test="category-refusal"
       type="warning"
       variant="tonal"
     >

@@ -200,18 +200,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
   }
 
   function listen(): () => void {
-    const connection = useConnectionStore()
-    const releases = [
-      connection.registerRefetch(reload),
-      connection.onEvent<unknown>('ConfigurationChanged', () => {
-        void reload()
-      }),
-    ]
-    return () => {
-      for (const release of releases) {
-        release()
-      }
-    }
+    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], reload)
   }
 
   return {

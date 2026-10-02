@@ -9,6 +9,7 @@ import { createPendingCreatedEntities } from '../core/pendingCreatedEntities'
 import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { useConnectionStore } from '../../shared/stores/connection'
+import { combineReleases } from '../../shared/core/combineReleases'
 import { useAdminEnrolmentStore } from './enrolment'
 
 export interface StationDraft {
@@ -143,21 +144,12 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
   }
 
   function listen(): () => void {
-    const connection = useConnectionStore()
-    const releases = [
-      connection.registerRefetch(reload),
-      connection.onEvent<unknown>('ConfigurationChanged', () => {
-        void reload()
-      }),
+    return combineReleases(
+      useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], reload),
       useAdminEnrolmentStore().listen(() => {
         void reload()
       }),
-    ]
-    return () => {
-      for (const release of releases) {
-        release()
-      }
-    }
+    )
   }
 
   return {

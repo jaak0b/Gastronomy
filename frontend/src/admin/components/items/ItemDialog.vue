@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminErrorMessage } from '../../core/adminErrorMessage'
 import { AdminItemView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { LONGEST_PRODUCTION_MINUTES } from '../../../shared/core/productionMinutes'
@@ -13,7 +12,7 @@ import {
 import type { AdminItemDraft } from '../../stores/items'
 import CategoryDialog from '../categories/CategoryDialog.vue'
 import BaseFormDialog from '../BaseFormDialog.vue'
-import { useRefusalText } from '../../composables/useRefusalText'
+import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 
 const props = defineProps<{
   item: AdminItemView | null
@@ -45,8 +44,7 @@ const decimalSeparator = computed(() => (locale.value === 'de' ? ',' : '.'))
 
 const nameIsMissing = computed(() => name.value.trim().length === 0)
 
-const categoryRefusal = ref<AdminErrorMessage | null>(null)
-const categoryRefusalText = useRefusalText(categoryRefusal)
+const { refusal: categoryRefusal, refusalText: categoryRefusalText } = useRefusalDisplay()
 
 function startCreatingCategory(): void {
   categoryRefusal.value = null

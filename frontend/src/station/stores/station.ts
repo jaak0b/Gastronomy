@@ -183,21 +183,7 @@ export const useStationStore = defineStore('station', () => {
   }
 
   function listen(): () => void {
-    const connection = useConnectionStore()
-    const releases = [
-      connection.registerRefetch(refresh),
-      connection.onEvent<unknown>('ConfigurationChanged', () => {
-        void refresh()
-      }),
-      connection.onEvent<unknown>('OrdersChanged', () => {
-        void refresh()
-      }),
-    ]
-    return () => {
-      for (const release of releases) {
-        release()
-      }
-    }
+    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged', 'OrdersChanged'], refresh)
   }
 
   return {

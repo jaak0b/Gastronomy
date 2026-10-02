@@ -132,21 +132,7 @@ export const useEstimatesStore = defineStore('estimates', () => {
   }
 
   function listen(): () => void {
-    const connection = useConnectionStore()
-    const releases = [
-      connection.registerRefetch(refresh),
-      ...['ConfigurationChanged', 'OrdersChanged'].map(
-        (eventName) =>
-          connection.onEvent<unknown>(eventName, () => {
-            void refresh()
-          }),
-      ),
-    ]
-    return () => {
-      for (const release of releases) {
-        release()
-      }
-    }
+    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged', 'OrdersChanged'], refresh)
   }
 
   return {
