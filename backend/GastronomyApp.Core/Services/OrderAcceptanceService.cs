@@ -4,7 +4,6 @@ using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
-using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Core.Services;
 
@@ -13,7 +12,6 @@ public sealed class OrderAcceptanceService
   private readonly TimeProvider _timeProvider;
   private readonly OrderItemResolutionService _itemResolutionService;
   private readonly INumberAllocator _numberAllocator;
-  private readonly ILogger<OrderAcceptanceService> _logger;
   private readonly StockSoldOutMarker _soldOutMarker;
 
   private readonly IOrderRepository _orderRepository;
@@ -24,8 +22,7 @@ public sealed class OrderAcceptanceService
                                 INumberAllocator numberAllocator,
                                 OrderItemResolutionService itemResolutionService,
                                 StockSoldOutMarker soldOutMarker,
-                                TimeProvider timeProvider,
-                                ILogger<OrderAcceptanceService> logger)
+                                TimeProvider timeProvider)
   {
     _orderRepository = orderRepository;
     _runningFestival = runningFestival;
@@ -33,7 +30,6 @@ public sealed class OrderAcceptanceService
     _itemResolutionService = itemResolutionService;
     _soldOutMarker = soldOutMarker;
     _timeProvider = timeProvider;
-    _logger = logger;
   }
 
   public async Task<ErrorOr<Order>> AcceptAsync(PlaceOrderRequest request, Guid staffMemberId, CancellationToken cancellationToken)
@@ -61,14 +57,7 @@ public sealed class OrderAcceptanceService
 
     await _orderRepository.AddAsync(order, cancellationToken);
 
-    try
-    {
-      await _soldOutMarker.MarkItemsWithoutEnoughStockSoldOutAsync(festival.Id, cancellationToken);
-    }
-    catch (Exception exception) when (exception is not OperationCanceledException)
-    {
-      _logger.LogError(exception, "The order {OrderId} was accepted, but checking the ingredient stock afterwards failed, so no article was marked sold out by it.", order.Id);
-    }
+    await _soldOutMarker.MarkItemsWithoutEnoughStockSoldOutAsync(festival.Id, cancellationToken);
 
     return await AcceptedOrderAsync(order.Id, cancellationToken);
   }

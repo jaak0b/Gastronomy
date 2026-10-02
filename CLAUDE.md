@@ -44,8 +44,8 @@ the recipes on every read, and the festival page shows available, used and a lin
 the moment the stock runs out, counted from the festival's start. After an order is accepted, and
 after the admin changes an amount, every menu row whose article needs more of a limited ingredient
 than is left is switched off through the existing availability switch, and nothing switches it back
-on by itself. Stock never refuses an order and may go negative; a failure in the stock step is
-logged and the order is accepted anyway.
+on by itself. Stock never refuses an order and may go negative. The stock step runs in the
+order's transaction without a catch: a bug there fails the order loudly so it is found at once.
 
 **No money changes hands in the app.** It displays prices to help the server add up, and it records
 whether items have been settled so the people running the stand can see what a table still owes. It

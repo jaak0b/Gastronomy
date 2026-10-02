@@ -23,7 +23,6 @@ public sealed class OrderAcceptanceServiceTest
     _festivalRepository = A.Fake<IFestivalRepository>();
     _numberAllocator = A.Fake<INumberAllocator>();
     _stockRepository = A.Fake<IIngredientStockRepository>();
-    _logger = A.Fake<ILogger<OrderAcceptanceService>>();
     _clock = new FakeTimeProvider(new(_now));
 
     A.CallTo(() => _orderRepository.FindByClientOrderIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Order?>(null));
@@ -49,8 +48,7 @@ public sealed class OrderAcceptanceServiceTest
                    _numberAllocator,
                    new(_catalogItemRepository, _stationRepository, new()),
                    new(_stockRepository, A.Fake<ILogger<StockSoldOutMarker>>()),
-                   _clock,
-                   _logger);
+                   _clock);
   }
 
   private readonly Guid _eventSessionId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
@@ -73,7 +71,6 @@ public sealed class OrderAcceptanceServiceTest
   private IFestivalRepository _festivalRepository = null!;
   private INumberAllocator _numberAllocator = null!;
   private IIngredientStockRepository _stockRepository = null!;
-  private ILogger<OrderAcceptanceService> _logger = null!;
   private TimeProvider _clock = null!;
   private OrderAcceptanceService _service = null!;
 
@@ -581,21 +578,5 @@ public sealed class OrderAcceptanceServiceTest
                       Assert.That(bratwurstOnTheMenu.IsAvailable, Is.False);
                     });
     A.CallTo(() => _stockRepository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
-  }
-
-  [Test]
-  public async Task AcceptAsync_TheStockCheckThrows_ReturnsTheOrderAndLogsAnErrorNamingIt()
-  {
-    A.CallTo(() => _stockRepository.FindActiveWithAvailableAmountAsync(A<Guid>._, A<CancellationToken>._)).ThrowsAsync(new InvalidOperationException("The stock table could not be read."));
-
-    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)]), _staffMemberId, CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsError, Is.False);
-                      Assert.That(result.Value.GlobalOrderNumber, Is.EqualTo(137));
-                    });
-    A.CallTo(() => _orderRepository.AddAsync(A<Order>._, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
-    A.CallTo(_logger).Where(call => call.Method.Name == nameof(ILogger.Log) && call.GetArgument<LogLevel>(0) == LogLevel.Error && call.GetArgument<object>(2)!.ToString()!.Contains(result.Value.Id.ToString(), StringComparison.Ordinal)).MustHaveHappenedOnceExactly();
   }
 }

@@ -22,6 +22,6 @@ public sealed class OrderAcceptanceComposition
 
     StockSoldOutMarker soldOutMarker = new(new IngredientStockRepository(dbContext), NullLogger<StockSoldOutMarker>.Instance);
 
-    return new(new OrderRepository(dbContext), runningFestival, numberAllocator, itemResolutionService, soldOutMarker, TimeProvider.System, NullLogger<OrderAcceptanceService>.Instance);
+    return new(new OrderRepository(dbContext), runningFestival, numberAllocator, itemResolutionService, soldOutMarker, TimeProvider.System);
   }
 }
