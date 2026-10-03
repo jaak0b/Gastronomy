@@ -2,40 +2,33 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { fetchInvitationQr, invitationQrPath } from '../../../src/admin/api/invitationQrRequests'
 import { useAdminEnrolmentStore } from '../../../src/admin/stores/enrolment'
+import { stubLaptop, refusal, noConnection, answer, type LaptopReply, type StubbedLaptop } from '../../support/laptop'
 
 const INVITATION_ID = '44444444-4444-4444-4444-444444444444'
 const STAFF_MEMBER_ID = '33333333-3333-3333-3333-333333333333'
 const STATION_ID = '55555555-5555-5555-5555-555555555555'
 const SVG = '<svg width="176"></svg>'
 
-function stubLaptop(qrResponse: () => Response) {
-  const urls: string[] = []
-  const bodies: unknown[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string, options?: RequestInit) => {
-      urls.push(url)
-      if (url.endsWith('/qr.svg')) {
-        return qrResponse()
-      }
-      if (url.endsWith('/invitations')) {
-        bodies.push(JSON.parse(String(options?.body ?? 'null')))
-        return new Response(
-          JSON.stringify({
-            invitationId: INVITATION_ID,
-            qrUrl: 'http://192.168.1.20:5000/j/CODE',
-            expiresAtUtc: '2026-08-27T20:00:00Z',
-            staffMember: null,
-            station: null,
-          }),
-          { status: 201 },
-        )
-      }
-      return new Response(JSON.stringify({ staffMembers: [] }), { status: 200 })
-    }),
-  )
-  return { urls, bodies }
+function invitationLaptop(qrReply: LaptopReply): StubbedLaptop {
+  return stubLaptop()
+    .answersEverythingElse(answer({ staffMembers: [] }))
+    .answers(
+      'ANY',
+      /\/invitations$/,
+      answer(
+        {
+          invitationId: INVITATION_ID,
+          qrUrl: 'http://192.168.1.20:5000/j/CODE',
+          expiresAtUtc: '2026-08-27T20:00:00Z',
+          staffMember: null,
+          station: null,
+        },
+        201,
+      ),
+    )
+    .answers('GET', /\/qr\.svg$/, qrReply)
 }
+
 
 function renderedQr(): Response {
   return new Response(SVG, { status: 200, headers: { 'Content-Type': 'image/svg+xml' } })
@@ -55,7 +48,7 @@ describe('fetching an invitation QR code', () => {
   })
 
   it('turns the rendered drawing into something an image tag can show', async () => {
-    stubLaptop(renderedQr)
+    invitationLaptop(renderedQr)
 
     const qr = await fetchInvitationQr(INVITATION_ID)
 
@@ -66,7 +59,7 @@ describe('fetching an invitation QR code', () => {
   })
 
   it('carries the laptop wording through when the code is no longer usable', async () => {
-    stubLaptop(
+    invitationLaptop(
       () =>
         new Response(
           JSON.stringify({
@@ -88,12 +81,7 @@ describe('fetching an invitation QR code', () => {
   })
 
   it('says the laptop could not be reached rather than showing a broken picture', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => {
-        throw new TypeError('Failed to fetch')
-      }),
-    )
+    stubLaptop().answersEverythingElse(noConnection())
 
     expect(await fetchInvitationQr(INVITATION_ID)).toEqual({ kind: 'unreachable' })
   })
@@ -109,12 +97,12 @@ describe('creating an invitation from the admin screen', () => {
   })
 
   it('fetches the QR code of the invitation it just created', async () => {
-    const { urls } = stubLaptop(renderedQr)
+    const laptop = invitationLaptop(renderedQr)
     const enrolment = useAdminEnrolmentStore()
 
     await enrolment.createInvitation({ kind: 'staffMember', staffMemberId: STAFF_MEMBER_ID })
 
-    expect(urls).toContain(`/api/admin/enrolment/invitations/${INVITATION_ID}/qr.svg`)
+    expect(laptop.urls()).toContain(`/api/admin/enrolment/invitations/${INVITATION_ID}/qr.svg`)
     expect(enrolment.invitationQr).toEqual({
       kind: 'ready',
       imageUrl: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(SVG)}`,
@@ -122,34 +110,34 @@ describe('creating an invitation from the admin screen', () => {
   })
 
   it('names the waiter the code belongs to and nothing else', async () => {
-    const { bodies } = stubLaptop(renderedQr)
+    const laptop = invitationLaptop(renderedQr)
     const enrolment = useAdminEnrolmentStore()
 
     await enrolment.createInvitation({ kind: 'staffMember', staffMemberId: STAFF_MEMBER_ID })
 
-    expect(bodies).toEqual([{ staffMemberId: STAFF_MEMBER_ID }])
+    expect(laptop.writtenBodies()).toEqual([{ staffMemberId: STAFF_MEMBER_ID }])
   })
 
   it('names nobody when the waiter is not on the list yet', async () => {
-    const { bodies } = stubLaptop(renderedQr)
+    const laptop = invitationLaptop(renderedQr)
     const enrolment = useAdminEnrolmentStore()
 
     await enrolment.createInvitation({ kind: 'somebodyNew' })
 
-    expect(bodies).toEqual([{}])
+    expect(laptop.writtenBodies()).toEqual([{}])
   })
 
   it('names the station the code belongs to and nothing else', async () => {
-    const { bodies } = stubLaptop(renderedQr)
+    const laptop = invitationLaptop(renderedQr)
     const enrolment = useAdminEnrolmentStore()
 
     await enrolment.createInvitation({ kind: 'station', stationId: STATION_ID })
 
-    expect(bodies).toEqual([{ stationId: STATION_ID }])
+    expect(laptop.writtenBodies()).toEqual([{ stationId: STATION_ID }])
   })
 
   it('holds the refusal when the laptop will not render that code', async () => {
-    stubLaptop(
+    invitationLaptop(
       () =>
         new Response(
           JSON.stringify({
@@ -212,20 +200,11 @@ describe('creating an invitation from the admin screen', () => {
   })
 
   it('says why the laptop would not create the code', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(
-            JSON.stringify({
-              code: 'ValidationFailed',
-              messageKey: 'errors.enrolment.atMostOneOwner',
-              parameters: {},
-              details: null,
-            }),
-            { status: 400 },
-          ),
-      ),
+    stubLaptop().answersEverythingElse(
+      refusal('errors.enrolment.atMostOneOwner', {
+        status: 400,
+        code: 'ValidationFailed',
+      }),
     )
     const enrolment = useAdminEnrolmentStore()
 
@@ -241,7 +220,7 @@ describe('creating an invitation from the admin screen', () => {
   })
 
   it('drops the drawing again when the panel is closed', async () => {
-    stubLaptop(renderedQr)
+    invitationLaptop(renderedQr)
     const enrolment = useAdminEnrolmentStore()
     await enrolment.createInvitation({ kind: 'staffMember', staffMemberId: STAFF_MEMBER_ID })
 

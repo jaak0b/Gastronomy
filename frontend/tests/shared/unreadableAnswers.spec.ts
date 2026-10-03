@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { OpenTableView } from '../../src/shared/api/generatedSchemas'
+import { stubLaptop, answer } from '../support/laptop'
 
 const { useOpenItemsStore } = await import('../../src/phone/stores/openItems')
 const { useOrderStore } = await import('../../src/phone/stores/order')
@@ -8,10 +9,7 @@ const { TOKEN_STORAGE_KEY, useSessionStore } = await import('../../src/shared/st
 const { useStationStore } = await import('../../src/station/stores/station')
 
 function aLaptopThatAnswersWith(aBody: unknown): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response(JSON.stringify(aBody), { status: 200 })),
-  )
+  stubLaptop().answersEverythingElse(answer(aBody))
 }
 
 const A_TABLE: OpenTableView = {

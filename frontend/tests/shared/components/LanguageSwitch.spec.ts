@@ -12,8 +12,8 @@ function mountSwitch(language: 'de' | 'en', locale: 'de' | 'en' = 'de') {
 }
 
 async function openTheOptions(control: ReturnType<typeof mountSwitch>): Promise<void> {
-  await control.get('.language-switch .v-field').trigger('mousedown')
-  await vi.waitFor(() => expect(document.querySelector('.option-de')).not.toBeNull())
+  await control.get('[data-test="language-switch"] .v-field').trigger('mousedown')
+  await vi.waitFor(() => expect(document.querySelector('[data-test="option-de"]')).not.toBeNull())
 }
 
 describe('LanguageSwitch', () => {
@@ -24,36 +24,36 @@ describe('LanguageSwitch', () => {
   it('shows the language in force on the closed picker', () => {
     const control = mountSwitch('de')
 
-    expect(control.get('.language-switch').text()).toBe('Deutsch')
+    expect(control.get('[data-test="language-switch"]').text()).toBe('Deutsch')
   })
 
   it('shows the English name when English is in force', () => {
     const control = mountSwitch('en', 'en')
 
-    expect(control.get('.language-switch').text()).toBe('English')
+    expect(control.get('[data-test="language-switch"]').text()).toBe('English')
   })
 
   it('writes each option in its own language, so a reader finds their own', async () => {
     const control = mountSwitch('de')
     await openTheOptions(control)
 
-    expect(document.querySelector('.option-de')?.textContent?.trim()).toBe('Deutsch')
-    expect(document.querySelector('.option-en')?.textContent?.trim()).toBe('English')
+    expect(document.querySelector('[data-test="option-de"]')?.textContent?.trim()).toBe('Deutsch')
+    expect(document.querySelector('[data-test="option-en"]')?.textContent?.trim()).toBe('English')
   })
 
   it('writes the options the same way when the page is already in English', async () => {
     const control = mountSwitch('en', 'en')
     await openTheOptions(control)
 
-    expect(document.querySelector('.option-de')?.textContent?.trim()).toBe('Deutsch')
-    expect(document.querySelector('.option-en')?.textContent?.trim()).toBe('English')
+    expect(document.querySelector('[data-test="option-de"]')?.textContent?.trim()).toBe('Deutsch')
+    expect(document.querySelector('[data-test="option-en"]')?.textContent?.trim()).toBe('English')
   })
 
   it('asks for English when the reader taps English', async () => {
     const control = mountSwitch('de')
     await openTheOptions(control)
 
-    ;(document.querySelector('.option-en') as HTMLElement).click()
+    ;(document.querySelector('[data-test="option-en"]') as HTMLElement).click()
 
     expect(control.emitted('select')).toEqual([['en']])
   })
@@ -62,7 +62,7 @@ describe('LanguageSwitch', () => {
     const control = mountSwitch('en', 'en')
     await openTheOptions(control)
 
-    ;(document.querySelector('.option-de') as HTMLElement).click()
+    ;(document.querySelector('[data-test="option-de"]') as HTMLElement).click()
 
     expect(control.emitted('select')).toEqual([['de']])
   })

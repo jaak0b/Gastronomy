@@ -129,7 +129,7 @@ in `src/shared/core/deviceLanguage.ts`, `DraftLine` and `DraftOrder` in `src/pho
   and that choice belongs to the order line, not to a session, a device or a shift. Never introduce a
   remembered location preference or a shift-start selection screen.
 - **Enrolment is a QR scan.** The QR carries the full URL including the laptop's current IP, so nothing
-  in the app may depend on a remembered address. A 6-digit code is the fallback for a broken camera.
+  in the app may depend on a remembered address.
   The same QR flow enrols a waiter's phone and a station's tablet; the invitation says which of the
   two it belongs to, and the laptop tells the device which of the two it is when it starts.
 - **The owner the device belongs to decides the screen.** A station tablet lands on the station screen and stays
@@ -160,6 +160,8 @@ Governed by its own skill in `.claude/skills/`:
   draft cart persistence, submission identity across retries, state transitions. See
   `writing-unittests`. A test finds an element through a `data-test` attribute the template
   carries for it, never by its position among its siblings (`[0]`, `.at(-1)`) or by a styling class.
+  The one exception is a Vuetify-internal element that carries nothing of ours to tag, such as a
+  field's message line; there the Vuetify class is the handle.
 
 ## Commands
 

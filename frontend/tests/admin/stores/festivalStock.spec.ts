@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminFestivalStockStore } from '../../../src/admin/stores/festivalStock'
+import { stubLaptop, answer, neverAnswers, type StubbedLaptop } from '../../support/laptop'
 
 const FLOUR_STOCK = {
   ingredientId: 'ingredient-mehl',
@@ -12,31 +13,13 @@ const FLOUR_STOCK = {
   runsOutAtUtc: '2026-07-18T20:30:00Z',
 }
 
-interface Call {
-  url: string
-  method: string
-  body: unknown
+
+function stockLaptop(writeStatus = 200, writeAnswer: unknown = {}): StubbedLaptop {
+  return stubLaptop()
+    .answersEverythingElse(answer(writeAnswer, writeStatus))
+    .answers('GET', /./, answer({ ingredients: [FLOUR_STOCK] }))
 }
 
-function stubLaptop(writeStatus = 200, writeAnswer: unknown = {}): Call[] {
-  const calls: Call[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string, init?: RequestInit) => {
-      const method = init?.method ?? 'GET'
-      calls.push({
-        url,
-        method,
-        body: init?.body === undefined ? null : JSON.parse(String(init.body)),
-      })
-      if (method === 'GET') {
-        return new Response(JSON.stringify({ ingredients: [FLOUR_STOCK] }), { status: 200 })
-      }
-      return new Response(JSON.stringify(writeAnswer), { status: writeStatus })
-    }),
-  )
-  return calls
-}
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -48,17 +31,17 @@ afterEach(() => {
 
 describe('the stock of a festival', () => {
   it('holds what the laptop lists for that festival', async () => {
-    const calls = stubLaptop()
+    const laptop = stockLaptop()
     const stock = useAdminFestivalStockStore()
 
     await stock.loadForFestival('fest-1')
 
-    expect(calls.map((call) => call.url)).toEqual(['/api/admin/festivals/fest-1/ingredients'])
+    expect(laptop.calls.map((call) => call.url)).toEqual(['/api/admin/festivals/fest-1/ingredients'])
     expect(stock.ingredients).toEqual([FLOUR_STOCK])
   })
 
   it('says so when the stock cannot be read', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 500 })))
+    stubLaptop().answersEverythingElse(answer({}, 500))
     const stock = useAdminFestivalStockStore()
 
     await stock.loadForFestival('fest-1')
@@ -67,10 +50,10 @@ describe('the stock of a festival', () => {
   })
 
   it('drops the rows of another festival as soon as a different festival is opened', async () => {
-    stubLaptop()
+    stockLaptop()
     const stock = useAdminFestivalStockStore()
     await stock.loadForFestival('fest-1')
-    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => undefined)))
+    stubLaptop().answersEverythingElse(neverAnswers())
 
     void stock.loadForFestival('fest-2')
 
@@ -114,35 +97,35 @@ describe('the stock of a festival', () => {
 
 describe('setting the available amount', () => {
   it('sends the amount in the base unit and reads the stock again', async () => {
-    const calls = stubLaptop(200, { ingredientId: 'ingredient-mehl' })
+    const laptop = stockLaptop(200, { ingredientId: 'ingredient-mehl' })
     const stock = useAdminFestivalStockStore()
     await stock.loadForFestival('fest-1')
-    calls.length = 0
+    laptop.calls.length = 0
 
     const result = await stock.setAvailableAmount('fest-1', 'ingredient-mehl', 5000)
 
     expect(result).toEqual({ kind: 'ok', value: null })
-    expect(calls).toEqual([
+    expect(laptop.calls).toEqual([
       {
         url: '/api/admin/festivals/fest-1/ingredients/ingredient-mehl',
         method: 'PUT',
         body: { availableAmount: 5000 },
       },
-      { url: '/api/admin/festivals/fest-1/ingredients', method: 'GET', body: null },
+      { url: '/api/admin/festivals/fest-1/ingredients', method: 'GET', body: undefined },
     ])
   })
 
   it('sends null for an unlimited stock', async () => {
-    const calls = stubLaptop(200, { ingredientId: 'ingredient-mehl' })
+    const laptop = stockLaptop(200, { ingredientId: 'ingredient-mehl' })
     const stock = useAdminFestivalStockStore()
 
     await stock.setAvailableAmount('fest-1', 'ingredient-mehl', null)
 
-    expect(calls[0].body).toEqual({ availableAmount: null })
+    expect(laptop.calls[0].body).toEqual({ availableAmount: null })
   })
 
   it('hands back the reason the laptop named when it refuses', async () => {
-    stubLaptop(422, {
+    stockLaptop(422, {
       code: 'UnprocessableEntity',
       messageKey: 'errors.admin.ingredients.stockInvalid',
       parameters: {},

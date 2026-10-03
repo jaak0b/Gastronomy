@@ -6,6 +6,9 @@ import ItemIngredientsDialog from '../../../../src/admin/components/items/ItemIn
 import { useAdminIngredientsStore } from '../../../../src/admin/stores/ingredients'
 import type { AdminItemView } from '../../../../src/shared/api/generatedSchemas'
 import { testPlugins } from '../../../support/plugins'
+import { stubLaptop, answer, emptyAnswer, refusal, type LaptopCall, type LaptopReply, type StubbedLaptop } from '../../../support/laptop'
+import { onScreen, allOnScreen, typeInto, leave, inputOf } from '../../../support/dom'
+import { nextTick } from 'vue'
 
 const FLOUR = { ingredientId: 'ingredient-mehl', name: 'Mehl', unit: 'gram', isActive: true }
 const MILK = { ingredientId: 'ingredient-milch', name: 'Milch', unit: 'millilitre', isActive: true }
@@ -33,98 +36,45 @@ interface Call {
   body: unknown
 }
 
-interface Refusal {
-  status: number
-  body: unknown
-}
-
-function stubLaptop(refuses: (call: Call) => Refusal | null = () => null): Call[] {
-  const calls: Call[] = []
+function recipeLaptop(refuses: (call: LaptopCall) => LaptopReply | null = () => null): StubbedLaptop {
   let eggWasCreated = false
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string, init?: RequestInit) => {
-      const method = init?.method ?? 'GET'
-      const call = {
-        url,
-        method,
-        body: init?.body === undefined ? null : JSON.parse(String(init.body)),
-      }
-      calls.push(call)
-      const refusal = refuses(call)
-      if (refusal !== null) {
-        return new Response(JSON.stringify(refusal.body), { status: refusal.status })
-      }
-      if (url === '/api/admin/ingredients' && method === 'POST') {
-        eggWasCreated = true
-        return new Response(JSON.stringify(CREATED_EGG), { status: 201 })
-      }
-      if (url === '/api/admin/ingredients') {
-        const ingredients = eggWasCreated ? [BUN, CREATED_EGG, FLOUR, MILK] : [BUN, FLOUR, MILK]
-        return new Response(JSON.stringify({ ingredients }), { status: 200 })
-      }
-      if (method === 'DELETE') {
-        return new Response(null, { status: 204 })
-      }
-      if (method !== 'GET') {
-        return new Response(JSON.stringify({}), { status: 200 })
-      }
-      return new Response(JSON.stringify({ items: [PANCAKE] }), { status: 200 })
-    }),
-  )
-  return calls
+  return stubLaptop()
+    .answersEverythingElse(answer({}))
+    .answers('GET', /./, answer({ items: [PANCAKE] }))
+    .answers('DELETE', /./, emptyAnswer(204))
+    .answers('GET', (call) => call.url === '/api/admin/ingredients', (call) =>
+      answer({
+        ingredients: eggWasCreated ? [BUN, CREATED_EGG, FLOUR, MILK] : [BUN, FLOUR, MILK],
+      })(call),
+    )
+    .answers('POST', (call) => call.url === '/api/admin/ingredients', (call) => {
+      eggWasCreated = true
+      return answer(CREATED_EGG, 201)(call)
+    })
+    .answers('ANY', (call) => refuses(call) !== null, (call) => (refuses(call) as LaptopReply)(call))
 }
 
-function refusalOf(messageKey: string): Refusal {
-  return {
-    status: 422,
-    body: { code: 'UnprocessableEntity', messageKey, parameters: {}, details: null },
-  }
-}
-
-async function openDialog(locale: 'de' | 'en' = 'de'): Promise<VueWrapper> {
+async function mountDialog(locale: 'de' | 'en' = 'de'): Promise<VueWrapper> {
   await useAdminIngredientsStore().load()
   const dialog = mount(ItemIngredientsDialog, {
     props: { item: PANCAKE },
     global: { plugins: testPlugins(locale) },
     attachTo: document.body,
   })
-  await vi.waitFor(() => expect(document.querySelector('.recipe-line')).not.toBeNull())
+  await vi.waitFor(() => expect(document.querySelector('[data-test="recipe-line"]')).not.toBeNull())
   return dialog
 }
 
-function inDialog(selector: string): HTMLElement {
-  return document.querySelector(selector) as HTMLElement
-}
-
-function allInDialog(selector: string): HTMLElement[] {
-  return [...document.querySelectorAll<HTMLElement>(selector)]
-}
-
-function typeInto(field: HTMLElement, value: string): void {
-  const input = field as HTMLInputElement
-  input.value = value
-  input.dispatchEvent(new Event('input'))
-}
-
-function leave(field: HTMLElement): void {
-  field.dispatchEvent(new FocusEvent('blur'))
-}
-
 function addedAmountInput(): HTMLInputElement {
-  return inDialog('.add-recipe-line .amount-input input') as HTMLInputElement
+  return onScreen('[data-test="add-recipe-line"] [data-test="amount-input"] input') as HTMLInputElement
 }
 
 function addButtonIsDisabled(): boolean {
-  return inDialog('.add-to-recipe').hasAttribute('disabled')
+  return onScreen('[data-test="add-to-recipe"]').hasAttribute('disabled')
 }
 
 async function chooseUnit(dialog: VueWrapper, entryUnit: string): Promise<void> {
-  await dialog.findAllComponents(VSelect).at(-1)?.setValue(entryUnit)
-}
-
-function written(calls: Call[]): Call[] {
-  return calls.filter((call) => call.method !== 'GET')
+  await dialog.getComponent('[data-test="add-recipe-line"] [data-test="amount-unit-select"]').setValue(entryUnit)
 }
 
 beforeEach(() => {
@@ -138,45 +88,45 @@ afterEach(() => {
 
 describe('the recipe lines of an article', () => {
   it('show each ingredient with its amount and its unit in German', async () => {
-    stubLaptop()
+    recipeLaptop()
 
-    await openDialog()
+    await mountDialog()
 
-    expect(inDialog('.form-dialog-title').textContent).toBe('Zutaten für Pfannkuchen')
-    expect(allInDialog('.recipe-ingredient-name').map((name) => name.textContent)).toEqual([
+    expect(onScreen('[data-test="form-dialog-title"]').textContent).toBe('Zutaten für Pfannkuchen')
+    expect(allOnScreen('[data-test="recipe-ingredient-name"]').map((name) => name.textContent)).toEqual([
       'Mehl',
       'Brötchen',
     ])
-    const amounts = allInDialog('.recipe-line .amount-input input') as HTMLInputElement[]
+    const amounts = allOnScreen('[data-test="recipe-line"] [data-test="amount-input"] input') as HTMLInputElement[]
     expect(amounts.map((input) => input.value)).toEqual(['1500', '2'])
-    expect(allInDialog('.recipe-line .amount-unit').map((unit) => unit.textContent)).toEqual([
+    expect(allOnScreen('[data-test="recipe-line"] [data-test="amount-unit"]').map((unit) => unit.textContent)).toEqual([
       'g',
       'Stück',
     ])
   })
 
   it('show the title and the units in English', async () => {
-    stubLaptop()
+    recipeLaptop()
 
-    await openDialog('en')
+    await mountDialog('en')
 
-    expect(inDialog('.form-dialog-title').textContent).toBe('Ingredients for Pfannkuchen')
-    expect(allInDialog('.recipe-line .amount-unit').map((unit) => unit.textContent)).toEqual([
+    expect(onScreen('[data-test="form-dialog-title"]').textContent).toBe('Ingredients for Pfannkuchen')
+    expect(allOnScreen('[data-test="recipe-line"] [data-test="amount-unit"]').map((unit) => unit.textContent)).toEqual([
       'g',
       'pieces',
     ])
   })
 
   it('save a changed decimal amount as soon as the admin leaves the field', async () => {
-    const calls = stubLaptop()
-    await openDialog()
-    const flourAmount = allInDialog('.recipe-line .amount-input input')[0]
+    const laptop = recipeLaptop()
+    await mountDialog()
+    const flourAmount = inputOf('[data-test="recipe-line"][data-test-id="ingredient-mehl"] [data-test="amount-input"]')
 
     typeInto(flourAmount, '2250,5')
     leave(flourAmount)
 
     await vi.waitFor(() =>
-      expect(written(calls)).toEqual([
+      expect(laptop.writes()).toEqual([
         {
           url: '/api/admin/items/item-pfannkuchen/ingredients/ingredient-mehl',
           method: 'PUT',
@@ -187,47 +137,47 @@ describe('the recipe lines of an article', () => {
   })
 
   it('remove an ingredient from the recipe', async () => {
-    const calls = stubLaptop()
-    await openDialog()
+    const laptop = recipeLaptop()
+    await mountDialog()
 
-    allInDialog('.remove-recipe-line')[1].click()
+    onScreen('[data-test="recipe-line"][data-test-id="ingredient-broetchen"] [data-test="remove-recipe-line"]').click()
 
     await vi.waitFor(() =>
-      expect(written(calls).map((call) => `${call.method} ${call.url}`)).toEqual([
+      expect(laptop.writes().map((call) => `${call.method} ${call.url}`)).toEqual([
         'DELETE /api/admin/items/item-pfannkuchen/ingredients/ingredient-broetchen',
       ]),
     )
   })
 
   it('refuse an amount that is not a number without sending it and keep what was typed', async () => {
-    const calls = stubLaptop()
-    await openDialog()
-    const flourAmount = allInDialog('.recipe-line .amount-input input')[0] as HTMLInputElement
+    const laptop = recipeLaptop()
+    await mountDialog()
+    const flourAmount = inputOf('[data-test="recipe-line"][data-test-id="ingredient-mehl"] [data-test="amount-input"]') as HTMLInputElement
 
     typeInto(flourAmount, 'viel')
     leave(flourAmount)
 
     await vi.waitFor(() =>
-      expect(inDialog('.form-dialog .refusal').textContent?.trim()).toBe(
+      expect(onScreen('[data-test="form-dialog"] [data-test="refusal"]').textContent?.trim()).toBe(
         'Geben Sie eine Menge größer als null an.',
       ),
     )
-    expect(written(calls)).toEqual([])
+    expect(laptop.writes()).toEqual([])
     expect(flourAmount.value).toBe('viel')
   })
 
   it('show the reason in English when the laptop refuses an amount', async () => {
-    stubLaptop((call) =>
-      call.method === 'PUT' ? refusalOf('errors.admin.ingredients.amountInvalid') : null,
+    recipeLaptop((call) =>
+      call.method === 'PUT' ? refusal('errors.admin.ingredients.amountInvalid', { status: 422, code: 'UnprocessableEntity' }) : null,
     )
-    await openDialog('en')
-    const flourAmount = allInDialog('.recipe-line .amount-input input')[0]
+    await mountDialog('en')
+    const flourAmount = inputOf('[data-test="recipe-line"][data-test-id="ingredient-mehl"] [data-test="amount-input"]')
 
     typeInto(flourAmount, '0')
     leave(flourAmount)
 
     await vi.waitFor(() =>
-      expect(inDialog('.form-dialog .refusal').textContent?.trim()).toBe(
+      expect(onScreen('[data-test="form-dialog"] [data-test="refusal"]').textContent?.trim()).toBe(
         'Enter an amount above zero.',
       ),
     )
@@ -236,8 +186,8 @@ describe('the recipe lines of an article', () => {
 
 describe('adding an ingredient to the recipe', () => {
   it('offers only the active ingredients that are not yet in the recipe', async () => {
-    stubLaptop()
-    const dialog = await openDialog()
+    recipeLaptop()
+    const dialog = await mountDialog()
 
     const offered = dialog.findComponent(VCombobox).props('items') as { name: string }[]
 
@@ -245,16 +195,16 @@ describe('adding an ingredient to the recipe', () => {
   })
 
   it('adds an existing ingredient with one request for the amount', async () => {
-    const calls = stubLaptop()
-    const dialog = await openDialog()
+    const laptop = recipeLaptop()
+    const dialog = await mountDialog()
 
     await dialog.findComponent(VCombobox).setValue(MILK)
     typeInto(addedAmountInput(), '250')
     await vi.waitFor(() => expect(addButtonIsDisabled()).toBe(false))
-    inDialog('.add-to-recipe').click()
+    onScreen('[data-test="add-to-recipe"]').click()
 
     await vi.waitFor(() =>
-      expect(written(calls)).toEqual([
+      expect(laptop.writes()).toEqual([
         {
           url: '/api/admin/items/item-pfannkuchen/ingredients/ingredient-milch',
           method: 'PUT',
@@ -265,14 +215,14 @@ describe('adding an ingredient to the recipe', () => {
   })
 
   it('offers only the units of the chosen ingredient', async () => {
-    stubLaptop()
-    const dialog = await openDialog()
+    recipeLaptop()
+    const dialog = await mountDialog()
 
     await dialog.findComponent(VCombobox).setValue(MILK)
 
     await vi.waitFor(() =>
       expect(
-        (dialog.findAllComponents(VSelect).at(-1)?.props('items') as { title: string }[]).map(
+        (dialog.getComponent<typeof VSelect>('[data-test="add-recipe-line"] [data-test="amount-unit-select"]').props('items') as { title: string }[]).map(
           (choice) => choice.title,
         ),
       ).toEqual(['ml', 'l']),
@@ -280,17 +230,17 @@ describe('adding an ingredient to the recipe', () => {
   })
 
   it('sends an amount typed in litres in millilitres', async () => {
-    const calls = stubLaptop()
-    const dialog = await openDialog()
+    const laptop = recipeLaptop()
+    const dialog = await mountDialog()
 
     await dialog.findComponent(VCombobox).setValue(MILK)
     await chooseUnit(dialog, 'litre')
     typeInto(addedAmountInput(), '0,25')
     await vi.waitFor(() => expect(addButtonIsDisabled()).toBe(false))
-    inDialog('.add-to-recipe').click()
+    onScreen('[data-test="add-to-recipe"]').click()
 
     await vi.waitFor(() =>
-      expect(written(calls)).toEqual([
+      expect(laptop.writes()).toEqual([
         {
           url: '/api/admin/items/item-pfannkuchen/ingredients/ingredient-milch',
           method: 'PUT',
@@ -301,17 +251,17 @@ describe('adding an ingredient to the recipe', () => {
   })
 
   it('creates a typed new name in grams when the amount was typed in kilograms, then adds it', async () => {
-    const calls = stubLaptop()
-    const dialog = await openDialog()
+    const laptop = recipeLaptop()
+    const dialog = await mountDialog()
 
     await dialog.findComponent(VCombobox).setValue('Zucker')
     await chooseUnit(dialog, 'kilogram')
     typeInto(addedAmountInput(), '1,5')
     await vi.waitFor(() => expect(addButtonIsDisabled()).toBe(false))
-    inDialog('.add-to-recipe').click()
+    onScreen('[data-test="add-to-recipe"]').click()
 
     await vi.waitFor(() =>
-      expect(written(calls)).toEqual([
+      expect(laptop.writes()).toEqual([
         { url: '/api/admin/ingredients', method: 'POST', body: { name: 'Zucker', unit: 'gram' } },
         {
           url: '/api/admin/items/item-pfannkuchen/ingredients/ingredient-ei',
@@ -323,29 +273,29 @@ describe('adding an ingredient to the recipe', () => {
   })
 
   it('treats a typed name of an offered ingredient as that ingredient', async () => {
-    const calls = stubLaptop()
-    const dialog = await openDialog()
+    const laptop = recipeLaptop()
+    const dialog = await mountDialog()
 
     await dialog.findComponent(VCombobox).setValue('Milch')
     typeInto(addedAmountInput(), '100')
     await vi.waitFor(() => expect(addButtonIsDisabled()).toBe(false))
-    inDialog('.add-to-recipe').click()
+    onScreen('[data-test="add-to-recipe"]').click()
 
     await vi.waitFor(() =>
-      expect(written(calls).map((call) => `${call.method} ${call.url}`)).toEqual([
+      expect(laptop.writes().map((call) => `${call.method} ${call.url}`)).toEqual([
         'PUT /api/admin/items/item-pfannkuchen/ingredients/ingredient-milch',
       ]),
     )
   })
 
   it('clears the add row after a successful add', async () => {
-    stubLaptop()
-    const dialog = await openDialog()
+    recipeLaptop()
+    const dialog = await mountDialog()
 
     await dialog.findComponent(VCombobox).setValue(MILK)
     typeInto(addedAmountInput(), '250')
     await vi.waitFor(() => expect(addButtonIsDisabled()).toBe(false))
-    inDialog('.add-to-recipe').click()
+    onScreen('[data-test="add-to-recipe"]').click()
 
     await vi.waitFor(() => expect(dialog.findComponent(VCombobox).props('modelValue')).toBeNull())
     expect(addedAmountInput().value).toBe('')
@@ -357,59 +307,59 @@ describe('adding an ingredient to the recipe', () => {
     ['zero', MILK, '0'],
     ['unreadable text', MILK, 'viel'],
   ])('keeps the add button disabled with %s', async (_description, chosen, amount) => {
-    stubLaptop()
-    const dialog = await openDialog()
+    recipeLaptop()
+    const dialog = await mountDialog()
 
     await dialog.findComponent(VCombobox).setValue(chosen)
     typeInto(addedAmountInput(), amount)
-    await dialog.vm.$nextTick()
+    await nextTick()
 
     expect(addButtonIsDisabled()).toBe(true)
   })
 
   it('shows the reason in German when the laptop refuses the new name, and keeps everything typed', async () => {
-    const calls = stubLaptop((call) =>
-      call.method === 'POST' ? refusalOf('errors.admin.ingredients.nameTaken') : null,
+    const laptop = recipeLaptop((call) =>
+      call.method === 'POST' ? refusal('errors.admin.ingredients.nameTaken', { status: 422, code: 'UnprocessableEntity' }) : null,
     )
-    const dialog = await openDialog()
+    const dialog = await mountDialog()
 
     await dialog.findComponent(VCombobox).setValue('Mehl')
     typeInto(addedAmountInput(), '100')
     await vi.waitFor(() => expect(addButtonIsDisabled()).toBe(false))
-    inDialog('.add-to-recipe').click()
+    onScreen('[data-test="add-to-recipe"]').click()
 
     await vi.waitFor(() =>
-      expect(inDialog('.form-dialog .refusal').textContent?.trim()).toBe(
+      expect(onScreen('[data-test="form-dialog"] [data-test="refusal"]').textContent?.trim()).toBe(
         'Eine Zutat mit diesem Namen gibt es schon.',
       ),
     )
     expect(dialog.findComponent(VCombobox).props('modelValue')).toBe('Mehl')
     expect(addedAmountInput().value).toBe('100')
-    expect(written(calls).map((call) => call.method)).toEqual(['POST'])
+    expect(laptop.writes().map((call) => call.method)).toEqual(['POST'])
   })
 
   it('keeps the created ingredient chosen and the amount when the laptop refuses the amount, and sends only the amount again', async () => {
-    const calls = stubLaptop((call) =>
-      call.method === 'PUT' ? refusalOf('errors.admin.ingredients.amountInvalid') : null,
+    const laptop = recipeLaptop((call) =>
+      call.method === 'PUT' ? refusal('errors.admin.ingredients.amountInvalid', { status: 422, code: 'UnprocessableEntity' }) : null,
     )
-    const dialog = await openDialog()
+    const dialog = await mountDialog()
 
     await dialog.findComponent(VCombobox).setValue('Ei')
     typeInto(addedAmountInput(), '3')
     await vi.waitFor(() => expect(addButtonIsDisabled()).toBe(false))
-    inDialog('.add-to-recipe').click()
+    onScreen('[data-test="add-to-recipe"]').click()
 
     await vi.waitFor(() =>
-      expect(inDialog('.form-dialog .refusal').textContent?.trim()).toBe(
+      expect(onScreen('[data-test="form-dialog"] [data-test="refusal"]').textContent?.trim()).toBe(
         'Geben Sie eine Menge größer als null an.',
       ),
     )
     expect(dialog.findComponent(VCombobox).props('modelValue')).toEqual(CREATED_EGG)
     expect(addedAmountInput().value).toBe('3')
-    inDialog('.add-to-recipe').click()
+    onScreen('[data-test="add-to-recipe"]').click()
 
     await vi.waitFor(() =>
-      expect(written(calls).map((call) => `${call.method} ${call.url}`)).toEqual([
+      expect(laptop.writes().map((call) => `${call.method} ${call.url}`)).toEqual([
         'POST /api/admin/ingredients',
         'PUT /api/admin/items/item-pfannkuchen/ingredients/ingredient-ei',
         'PUT /api/admin/items/item-pfannkuchen/ingredients/ingredient-ei',

@@ -101,6 +101,7 @@ onUnmounted(() => {
       <v-checkbox
         v-model="showsDeactivated"
         class="show-deactivated"
+        data-test="show-deactivated"
         density="compact"
         hide-details
         :label="t('admin.common.actions.showDeactivated')"
@@ -118,6 +119,7 @@ onUnmounted(() => {
     <v-alert
       v-if="refusalText !== null && !isStationDialogOpen"
       class="refusal mb-4"
+      data-test="refusal"
       type="warning"
       variant="tonal"
     >
@@ -127,25 +129,26 @@ onUnmounted(() => {
       {{ t('admin.common.errors.loadFailed') }}
     </v-alert>
 
-    <v-card v-for="station in shown" :key="station.stationId" class="station-row mb-2">
+    <v-card v-for="station in shown" :key="station.stationId" class="station-row mb-2" data-test="station-row">
       <div class="d-flex align-center flex-wrap ga-2 px-4 py-2">
-        <span class="name text-h6">{{ station.name }}</span>
-        <v-chip v-if="!station.isActive" class="deactivated" size="small" color="grey">
+        <span class="name text-h6" data-test="name">{{ station.name }}</span>
+        <v-chip v-if="!station.isActive" class="deactivated" data-test="deactivated" size="small" color="grey">
           {{ t('admin.common.labels.deactivated') }}
         </v-chip>
         <v-chip v-if="!station.hasDevice" class="no-tablet" size="small" color="warning">
           {{ t('admin.stations.labels.noTablet') }}
         </v-chip>
         <v-spacer />
-        <v-btn class="set-up-device" variant="text" @click="inviteStation(station.stationId)">
+        <v-btn class="set-up-device" data-test="set-up-device" variant="text" @click="inviteStation(station.stationId)">
           {{ t('admin.stations.actions.setUpDevice') }}
         </v-btn>
-        <v-btn class="edit" variant="text" @click="startEditing(station)">
+        <v-btn class="edit" data-test="edit" variant="text" @click="startEditing(station)">
           {{ t('admin.common.actions.edit') }}
         </v-btn>
         <v-btn
           v-if="station.isActive"
           class="deactivate"
+          data-test="deactivate"
           icon="mdi-delete"
           variant="text"
           color="error"
@@ -154,6 +157,7 @@ onUnmounted(() => {
         <v-btn
           v-else
           class="reactivate"
+          data-test="reactivate"
           variant="text"
           @click="reactivate(station.stationId)"
         >
@@ -171,7 +175,7 @@ onUnmounted(() => {
       </v-expand-transition>
     </v-card>
 
-    <v-btn class="new-station mt-6" color="primary" @click="startCreating">
+    <v-btn class="new-station mt-6" data-test="new-station" color="primary" @click="startCreating">
       {{ t('admin.stations.actions.new') }}
     </v-btn>
 

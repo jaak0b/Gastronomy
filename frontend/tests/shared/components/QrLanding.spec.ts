@@ -7,38 +7,23 @@ import { useLocaleBinding } from '../../../src/shared/composables/useLocaleBindi
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
 import { navigate, startOverAt } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
+import { stubLaptop, answer, noConnection, inTurn } from '../../support/laptop'
 
 vi.mock('../../../src/shared/router/router', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../src/shared/router/router')>()),
   startOverAt: vi.fn(),
 }))
 
-function answerWith(status: number, body: object) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response(JSON.stringify(body), { status })),
-  )
+function answerWith(status: number, body: object): void {
+  stubLaptop().answersEverythingElse(answer(body, status))
 }
 
-function answerInTurn(...answers: { status: number; body: object }[]) {
-  let next = 0
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => {
-      const answer = answers[Math.min(next, answers.length - 1)]
-      next += 1
-      return new Response(JSON.stringify(answer.body), { status: answer.status })
-    }),
-  )
+function answerInTurn(...answers: { status: number; body: object }[]): void {
+  stubLaptop().answersEverythingElse(inTurn(...answers.map(({ status, body }) => answer(body, status))))
 }
 
 function refuseEveryConnection() {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => {
-      throw new TypeError('Failed to fetch')
-    }),
-  )
+  stubLaptop().answersEverythingElse(noConnection())
 }
 
 function mountLanding() {
@@ -67,8 +52,8 @@ function mountLandingFollowingTheChosenLanguage() {
 }
 
 async function failureNoticeOf(landing: ReturnType<typeof mountLanding>): Promise<string> {
-  await vi.waitFor(() => expect(landing.find('.failure-notice').exists()).toBe(true))
-  return landing.get('.failure-notice').text()
+  await vi.waitFor(() => expect(landing.find('[data-test="failure-notice"]').exists()).toBe(true))
+  return landing.get('[data-test="failure-notice"]').text()
 }
 
 describe('landing on a QR code link', () => {
@@ -98,9 +83,9 @@ describe('landing on a QR code link', () => {
     answerWith(400, { code: 'ValidationFailed', messageKey: 'errors.enrolment.nameMissing', parameters: {}, details: null })
 
     const landing = mountLanding()
-    await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
+    await vi.waitFor(() => expect(landing.find('[data-test="enrolment"]').exists()).toBe(true))
 
-    expect(landing.find('.failure-notice').exists()).toBe(false)
+    expect(landing.find('[data-test="failure-notice"]').exists()).toBe(false)
   })
 
   it('starts the app over once the name has been entered', async () => {
@@ -119,10 +104,10 @@ describe('landing on a QR code link', () => {
     )
 
     const landing = mountLanding()
-    await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
+    await vi.waitFor(() => expect(landing.find('[data-test="enrolment"]').exists()).toBe(true))
 
-    await landing.get('.name-field input').setValue('Bernd')
-    await landing.get('.continue').trigger('click')
+    await landing.get('[data-test="name-field"] input').setValue('Bernd')
+    await landing.get('[data-test="continue"]').trigger('click')
 
     await vi.waitFor(() => expect(vi.mocked(startOverAt)).toHaveBeenCalledWith('/'))
   })
@@ -142,13 +127,13 @@ describe('landing on a QR code link', () => {
     )
 
     const landing = mountLanding()
-    await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
+    await vi.waitFor(() => expect(landing.find('[data-test="enrolment"]').exists()).toBe(true))
 
-    await landing.get('.name-field input').setValue('Bernd')
-    await landing.get('.continue').trigger('click')
+    await landing.get('[data-test="name-field"] input').setValue('Bernd')
+    await landing.get('[data-test="continue"]').trigger('click')
 
-    await vi.waitFor(() => expect(landing.find('.error').exists()).toBe(true))
-    expect(landing.get('.error').text()).toBe(
+    await vi.waitFor(() => expect(landing.find('[data-test="redeem-error"]').exists()).toBe(true))
+    expect(landing.get('[data-test="redeem-error"]').text()).toBe(
       'Warten Sie einen Moment und versuchen Sie es dann noch einmal. Der Rechner bekommt gerade zu viele Anfragen auf einmal.',
     )
   })
@@ -193,7 +178,7 @@ describe('landing on a QR code link', () => {
     const notice = await failureNoticeOf(landing)
 
     expect(notice).toContain('Dieser Code gilt nicht mehr.')
-    expect(landing.get('.carry-on').text()).toContain('Mit diesem Telefon weiterarbeiten')
+    expect(landing.get('[data-test="carry-on"]').text()).toContain('Mit diesem Telefon weiterarbeiten')
   })
 })
 
@@ -209,9 +194,9 @@ describe('the length of the name a waiter types while enrolling', () => {
     answerWith(400, { code: 'ValidationFailed', messageKey: 'errors.enrolment.nameMissing', parameters: {}, details: null })
 
     const landing = mountLanding()
-    await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
+    await vi.waitFor(() => expect(landing.find('[data-test="enrolment"]').exists()).toBe(true))
 
-    expect(landing.get('.name-field input').attributes('maxlength')).toBe('40')
+    expect(landing.get('[data-test="name-field"] input').attributes('maxlength')).toBe('40')
   })
 })
 
@@ -227,13 +212,13 @@ describe('the language picker on the QR landing', () => {
     answerWith(400, { code: 'ValidationFailed', messageKey: 'errors.enrolment.nameMissing', parameters: {}, details: null })
 
     const landing = mountLandingFollowingTheChosenLanguage()
-    await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
+    await vi.waitFor(() => expect(landing.find('[data-test="enrolment"]').exists()).toBe(true))
 
     expect(landing.get('h1').text()).toBe('Dieses Telefon einrichten')
 
-    await landing.get('.language-switch .v-field').trigger('mousedown')
-    await vi.waitFor(() => expect(document.querySelector('.option-en')).not.toBeNull())
-    ;(document.querySelector('.option-en') as HTMLElement).click()
+    await landing.get('[data-test="language-switch"] .v-field').trigger('mousedown')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="option-en"]')).not.toBeNull())
+    ;(document.querySelector('[data-test="option-en"]') as HTMLElement).click()
     await flushPromises()
 
     expect(landing.get('h1').text()).toBe('Set up this phone')

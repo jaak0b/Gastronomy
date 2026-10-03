@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { stubLaptop, answer } from './support/laptop'
+import { nextTick } from 'vue'
 
 vi.mock('@microsoft/signalr', async () => (await import('./support/hubConnection')).signalrModuleFake())
 
@@ -10,32 +12,20 @@ const { TOKEN_STORAGE_KEY } = await import('../src/shared/stores/session')
 const App = (await import('../src/App.vue')).default
 const { testPlugins } = await import('./support/plugins')
 
-function answerFor(url: string): unknown {
-  if (url.startsWith('/api/catalog')) {
-    return { festival: null, categories: [], items: [], stations: [] }
-  }
-  if (url.startsWith('/api/estimates')) {
-    return []
-  }
-  if (url.startsWith('/api/open-items/table-names')) {
-    return { tableNames: [] }
-  }
-  if (url.startsWith('/api/open-items')) {
-    return { tables: [], itemsWithoutAnOrderCount: 0 }
-  }
-  return {
-    deviceId: 'device-1',
-    staffMember: { id: 'staff-1', name: 'Anna' },
-    station: null,
-    language: 'de',
-  }
-}
-
-function stubTheLaptop(): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string) => new Response(JSON.stringify(answerFor(url)), { status: 200 })),
-  )
+function phoneLaptop(): void {
+  stubLaptop()
+    .answersEverythingElse(
+      answer({
+        deviceId: 'device-1',
+        staffMember: { id: 'staff-1', name: 'Anna' },
+        station: null,
+        language: 'de',
+      }),
+    )
+    .answers('GET', /^\/api\/open-items/, answer({ tables: [], itemsWithoutAnOrderCount: 0 }))
+    .answers('GET', /^\/api\/open-items\/table-names/, answer({ tableNames: [] }))
+    .answers('GET', /^\/api\/estimates/, answer([]))
+    .answers('GET', /^\/api\/catalog/, answer({ festival: null, categories: [], items: [], stations: [] }))
 }
 
 describe('where a notice sits on the screen', () => {
@@ -44,7 +34,7 @@ describe('where a notice sits on the screen', () => {
     localStorage.clear()
     sessionStorage.setItem('theDoorAnchor', 'yes')
     document.body.innerHTML = ''
-    stubTheLaptop()
+    phoneLaptop()
   })
 
   it('stands in the page rather than behind the fixed row of buttons', async () => {
@@ -54,11 +44,11 @@ describe('where a notice sits on the screen', () => {
     await flushPromises()
     const connection = useConnectionStore()
     connection.state = 'offline'
-    await app.vm.$nextTick()
+    await nextTick()
 
-    const notice = app.get('.connection').element
+    const notice = app.get('[data-test="connection"]').element
 
-    expect(notice.closest('.v-main')).not.toBeNull()
+    expect(notice.closest('[data-test="main"]')).not.toBeNull()
   })
 })
 
@@ -68,7 +58,7 @@ describe('where the app bar stands', () => {
     localStorage.clear()
     sessionStorage.setItem('theDoorAnchor', 'yes')
     document.body.innerHTML = ''
-    stubTheLaptop()
+    phoneLaptop()
   })
 
   async function mountAppAt(path: string) {
@@ -82,22 +72,22 @@ describe('where the app bar stands', () => {
   it('keeps the bar over the catalogue', async () => {
     const app = await mountAppAt('/')
 
-    expect(app.find('.app-header').exists()).toBe(true)
+    expect(app.find('[data-test="app-header"]').exists()).toBe(true)
   })
 
   it('keeps the bar over the open items', async () => {
     const app = await mountAppAt('/open-items')
 
-    expect(app.find('.app-header').exists()).toBe(true)
+    expect(app.find('[data-test="app-header"]').exists()).toBe(true)
   })
 
   it('leaves the bar off the review, and still shows the notices there', async () => {
     const app = await mountAppAt('/review')
     const connection = useConnectionStore()
     connection.state = 'offline'
-    await app.vm.$nextTick()
+    await nextTick()
 
-    expect(app.find('.app-header').exists()).toBe(false)
-    expect(app.get('.connection').exists()).toBe(true)
+    expect(app.find('[data-test="app-header"]').exists()).toBe(false)
+    expect(app.get('[data-test="connection"]').exists()).toBe(true)
   })
 })

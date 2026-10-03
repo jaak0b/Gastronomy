@@ -57,7 +57,7 @@ describe('a phone carrying values an older build left in its storage', () => {
     device = mount(App, { global: { plugins: testPlugins() }, attachTo: document.body })
     await flushPromises()
 
-    expect(device.find('.welcome').exists()).toBe(true)
+    expect(device.find('[data-test="welcome"]').exists()).toBe(true)
     expect(order.draft.tableName).toBe('')
     expect(order.draft.lines).toEqual([])
     expect(order.sendState).toBe('idle')

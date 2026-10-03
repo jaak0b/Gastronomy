@@ -132,6 +132,7 @@ onUnmounted(() => {
       <v-checkbox
         v-model="showsHidden"
         class="show-hidden"
+        data-test="show-hidden"
         density="compact"
         hide-details
         :label="t('admin.festivals.actions.showHidden')"
@@ -141,6 +142,7 @@ onUnmounted(() => {
     <v-alert
       v-if="refusalText !== null && !isCreating && copiedFestival === null"
       class="refusal mb-4"
+      data-test="refusal"
       type="warning"
       variant="tonal"
     >
@@ -150,7 +152,7 @@ onUnmounted(() => {
       {{ t('admin.common.errors.loadFailed') }}
     </v-alert>
 
-    <p v-if="shown.length === 0" class="none-yet text-medium-emphasis mb-4">
+    <p v-if="shown.length === 0" class="none-yet text-medium-emphasis mb-4" data-test="none-yet">
       {{ t('admin.festivals.messages.noneYet') }}
     </p>
 
@@ -158,27 +160,29 @@ onUnmounted(() => {
       v-for="festival in shown"
       :key="festival.festivalId"
       class="festival-row mb-2"
+      data-test="festival-row"
     >
       <div class="d-flex align-center flex-wrap ga-2 px-4 py-2">
-        <span class="name text-h6">{{ festival.name }}</span>
-        <v-chip v-if="festival.isRunning" class="running" size="small" color="success">
+        <span class="name text-h6" data-test="name">{{ festival.name }}</span>
+        <v-chip v-if="festival.isRunning" class="running" data-test="running" size="small" color="success">
           {{ t('admin.festivals.labels.running') }}
         </v-chip>
         <v-chip v-if="festival.isHidden" class="hidden" size="small" color="grey">
           {{ t('admin.festivals.labels.hidden') }}
         </v-chip>
         <v-spacer />
-        <div class="actions d-flex align-center ga-2">
-          <v-btn class="open" color="primary" variant="tonal" @click="open(festival)">
+        <div class="actions d-flex align-center ga-2" data-test="actions">
+          <v-btn class="open" data-test="open" color="primary" variant="tonal" @click="open(festival)">
             {{ t('admin.festivals.actions.edit') }}
           </v-btn>
-          <v-btn class="copy" variant="text" @click="startCopying(festival)">
+          <v-btn class="copy" data-test="copy" variant="text" @click="startCopying(festival)">
             {{ t('admin.festivals.actions.copy') }}
           </v-btn>
-          <span class="conditional-action">
+          <span class="conditional-action" data-test="conditional-action">
             <v-btn
               v-if="!festival.isRunning && !festival.isHidden"
               class="hide"
+              data-test="hide"
               variant="text"
               @click="hiddenFestival = festival"
             >
@@ -192,7 +196,7 @@ onUnmounted(() => {
             >
               {{ t('admin.festivals.actions.show') }}
             </v-btn>
-            <v-btn class="action-measure" variant="text" tabindex="-1">
+            <v-btn class="action-measure" data-test="action-measure" variant="text" tabindex="-1">
               <span class="measure-labels">
                 <span>{{ t('admin.festivals.actions.hide') }}</span>
                 <span>{{ t('admin.festivals.actions.show') }}</span>
@@ -208,19 +212,19 @@ onUnmounted(() => {
         <span class="period-end">
           {{ t('admin.festivals.labels.end') }}: {{ moment(festival.endsAtUtc) }}
         </span>
-        <span class="station-count">
+        <span class="station-count" data-test="station-count">
           {{ t('admin.festivals.labels.stationCount', { count: festival.stationCount }, festival.stationCount) }}
         </span>
-        <span class="menu-item-count">
+        <span class="menu-item-count" data-test="menu-item-count">
           {{ t('admin.festivals.labels.menuItemCount', { count: festival.menuItemCount }, festival.menuItemCount) }}
         </span>
-        <span class="order-count">
+        <span class="order-count" data-test="order-count">
           {{ t('admin.festivals.labels.orderCount', { count: festival.orderCount }, festival.orderCount) }}
         </span>
       </div>
     </v-card>
 
-    <v-btn class="new-festival mt-6" color="primary" @click="startCreating">
+    <v-btn class="new-festival mt-6" data-test="new-festival" color="primary" @click="startCreating">
       {{ t('admin.festivals.actions.new') }}
     </v-btn>
 

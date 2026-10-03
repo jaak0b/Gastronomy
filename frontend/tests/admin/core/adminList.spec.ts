@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { loadAdminList } from '../../../src/admin/core/adminList'
 import { createLatestRequestGate, type LatestRequestGate } from '../../../src/shared/core/latestRequestGate'
+import { stubLaptop, answer } from '../../support/laptop'
 
 const SCHEMA = z.object({ items: z.array(z.string()) })
 
@@ -30,17 +31,11 @@ function listLoad(gate: LatestRequestGate, seen: Watched) {
 }
 
 function laptopLists(items: string[]): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response(JSON.stringify({ items }), { status: 200 })),
-  )
+  stubLaptop().answersEverythingElse(answer({ items }))
 }
 
 function laptopRefuses(): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response(JSON.stringify({}), { status: 500 })),
-  )
+  stubLaptop().answersEverythingElse(answer({}, 500))
 }
 
 async function nextTurn(): Promise<void> {

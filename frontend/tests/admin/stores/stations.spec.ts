@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminStationsStore } from '../../../src/admin/stores/stations'
+import { stubLaptopAnswering, answer, stubLaptop, type StubbedLaptop } from '../../support/laptop'
 
 const BACKEND_STATION = {
   stationId: '11111111-1111-1111-1111-111111111111',
@@ -20,48 +21,13 @@ const ZELT = {
   isAtAnyFestival: false,
 }
 
-interface RecordedCall {
-  url: string
-  method: string
-}
-
-interface Call {
-  url: string
-  method: string
-  body: unknown
-}
-
-function stubFetch(responder: (url: string) => { status: number; payload: unknown }) {
-  const calls: RecordedCall[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string, init?: RequestInit) => {
-      calls.push({ url, method: init?.method ?? 'GET' })
-      const { status, payload } = responder(url)
-      return new Response(JSON.stringify(payload), { status })
-    }),
-  )
-  return calls
-}
-
-function answerWith(payloadFor: (url: string, method: string) => unknown, status = 200): Call[] {
-  const calls: Call[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string, init?: RequestInit) => {
-      const method = init?.method ?? 'GET'
-      calls.push({
-        url,
-        method,
-        body: init?.body === undefined ? null : JSON.parse(init.body as string),
-      })
-      const isRead = method === 'GET'
-      return new Response(JSON.stringify(payloadFor(url, method)), {
-        status: isRead ? 200 : status,
-      })
-    }),
-  )
-  return calls
+function laptopReplyingBy(
+  responder: (url: string) => { status: number; payload: unknown },
+): StubbedLaptop {
+  return stubLaptop().answersEverythingElse((call) => {
+    const { status, payload } = responder(call.url)
+    return answer(payload, status)(call)
+  })
 }
 
 describe('the station list the admin configures', () => {
@@ -74,7 +40,7 @@ describe('the station list the admin configures', () => {
   })
 
   it('updates an edited station instead of creating a second one beside it', async () => {
-    const calls = stubFetch(() => ({ status: 200, payload: { stations: [BACKEND_STATION] } }))
+    const laptop = laptopReplyingBy(() => ({ status: 200, payload: { stations: [BACKEND_STATION] } }))
     const stations = useAdminStationsStore()
     await stations.load()
 
@@ -84,13 +50,12 @@ describe('the station list the admin configures', () => {
       sortOrder: 1,
     })
 
-    const write = calls.find((call) => call.method !== 'GET')
-    expect(write).toEqual({
+    const write = laptop.calls.find((call) => call.method !== 'GET')
+    expect(write).toMatchObject({
       url: `/api/admin/stations/${BACKEND_STATION.stationId}`,
       method: 'PUT',
     })
   })
-
 })
 
 describe('a new station', () => {
@@ -103,7 +68,7 @@ describe('a new station', () => {
   })
 
   it('hands back the station the laptop created, so it can be picked right away', async () => {
-    answerWith((_url, method) => (method === 'GET' ? { stations: [BACKEND_STATION] } : ZELT))
+    stubLaptopAnswering((_url, method) => (method === 'GET' ? { stations: [BACKEND_STATION] } : ZELT))
     const stations = useAdminStationsStore()
 
     const created = await stations.create({ name: 'Zelt', sortOrder: 2 })
@@ -112,14 +77,14 @@ describe('a new station', () => {
   })
 
   it('takes the created station from the answer instead of reading the whole list again', async () => {
-    const calls = answerWith((_url, method) =>
+    const laptop = stubLaptopAnswering((_url, method) =>
       method === 'GET' ? { stations: [BACKEND_STATION] } : ZELT,
     )
     const stations = useAdminStationsStore()
 
     await stations.create({ name: 'Zelt', sortOrder: 2 })
 
-    expect(calls.map((call) => call.method)).toEqual(['POST'])
+    expect(laptop.calls.map((call) => call.method)).toEqual(['POST'])
     expect(stations.stations).toEqual([ZELT])
   })
 
@@ -141,7 +106,7 @@ describe('a new station', () => {
   })
 
   it('keeps the reason the laptop refused it and appends nothing', async () => {
-    answerWith(
+    stubLaptopAnswering(
       (_url, method) =>
         method === 'GET'
           ? { stations: [BACKEND_STATION] }

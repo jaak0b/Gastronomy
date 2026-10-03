@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
+import { stubLaptop, answer, inTurn, noConnection, type LaptopReply, type StubbedLaptop } from '../../support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -49,39 +50,8 @@ const SOMEBODY_ELSE_HAD_ITEM_ONE = {
   alreadySettledByOthersOrderItemIds: ['item-1'],
 }
 
-interface RecordedCall {
-  url: string
-  method: string
-  body: Record<string, unknown> | null
-}
-
-function answerWith(replies: (() => Response)[]): RecordedCall[] {
-  const calls: RecordedCall[] = []
-  let position = 0
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string, options: { method?: string; body?: string }) => {
-      calls.push({
-        url,
-        method: options?.method ?? 'GET',
-        body: options?.body === undefined ? null : JSON.parse(options.body),
-      })
-      const reply = replies[Math.min(position, replies.length - 1)]
-      position += 1
-      return reply()
-    }),
-  )
-  return calls
-}
-
-function jsonOf(payload: unknown, status = 200): () => Response {
-  return () => new Response(JSON.stringify(payload), { status })
-}
-
-function theWifiDrops(): () => Response {
-  return () => {
-    throw new TypeError('the laptop cannot be reached')
-  }
+function laptopAnsweringInTurn(replies: LaptopReply[]): StubbedLaptop {
+  return stubLaptop().answersEverythingElse(inTurn(...replies))
 }
 
 async function theTableWithTwoItems() {
@@ -107,19 +77,19 @@ describe('settling the same items again after the answer never came', () => {
   })
 
   it('sends the same lines and the same way of paying again, so the laptop can take it as this phone settling twice', async () => {
-    const calls = answerWith([
-      jsonOf(OPEN_LIST),
-      theWifiDrops(),
-      jsonOf(OWN_SETTLEMENT_APPLIED_AGAIN),
-      jsonOf(LIST_AFTER_THE_SETTLEMENT),
+    const laptop = laptopAnsweringInTurn([
+      answer(OPEN_LIST),
+      noConnection(),
+      answer(OWN_SETTLEMENT_APPLIED_AGAIN),
+      answer(LIST_AFTER_THE_SETTLEMENT),
     ])
     const openItems = await theTableWithTwoItems()
 
     await openItems.settle(1200, null, 'card')
     await openItems.settle(1200, null, 'card')
 
-    expect(calls[1].body).toEqual(calls[2].body)
-    expect(calls[2].body).toEqual({
+    expect(laptop.calls[1].body).toEqual(laptop.calls[2].body)
+    expect(laptop.calls[2].body).toEqual({
       lines: [
         { orderItemId: 'item-1', paidPriceCents: 900, paymentNotice: null },
         { orderItemId: 'item-2', paidPriceCents: 300, paymentNotice: null },
@@ -129,11 +99,11 @@ describe('settling the same items again after the answer never came', () => {
   })
 
   it('does not tell the waiter to hand back the twelve euros they correctly collected', async () => {
-    const calls = answerWith([
-      jsonOf(OPEN_LIST),
-      theWifiDrops(),
-      jsonOf(OWN_SETTLEMENT_APPLIED_AGAIN),
-      jsonOf(LIST_AFTER_THE_SETTLEMENT),
+    const laptop = laptopAnsweringInTurn([
+      answer(OPEN_LIST),
+      noConnection(),
+      answer(OWN_SETTLEMENT_APPLIED_AGAIN),
+      answer(LIST_AFTER_THE_SETTLEMENT),
     ])
     const openItems = await theTableWithTwoItems()
 
@@ -144,10 +114,10 @@ describe('settling the same items again after the answer never came', () => {
   })
 
   it('names the amount this phone sent for the lines somebody else had already taken', async () => {
-    const calls = answerWith([
-      jsonOf(OPEN_LIST),
-      jsonOf(SOMEBODY_ELSE_HAD_ITEM_ONE),
-      jsonOf(LIST_AFTER_THE_SETTLEMENT),
+    const laptop = laptopAnsweringInTurn([
+      answer(OPEN_LIST),
+      answer(SOMEBODY_ELSE_HAD_ITEM_ONE),
+      answer(LIST_AFTER_THE_SETTLEMENT),
     ])
     const openItems = await theTableWithTwoItems()
 

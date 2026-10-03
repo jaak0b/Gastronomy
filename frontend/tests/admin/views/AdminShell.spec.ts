@@ -4,21 +4,16 @@ import { createPinia, setActivePinia } from 'pinia'
 import AdminShell from '../../../src/admin/views/AdminShell.vue'
 import { navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
+import { stubLaptop, answer, emptyAnswer } from '../../support/laptop'
 
-function stubTheLaptop(adminStatus: number) {
-  const fetchStub = vi.fn(async (url: string) => {
-    if (url.startsWith('/api/language')) {
-      return new Response(JSON.stringify({ language: 'de' }), { status: 200 })
-    }
-    if (adminStatus !== 200) {
-      return new Response(null, { status: adminStatus })
-    }
-    return new Response(
-      JSON.stringify({ festivals: [], staffMembers: [], stations: [], categories: [], items: [] }),
-      { status: 200 },
+function shellLaptop(adminStatus: number): void {
+  stubLaptop()
+    .answersEverythingElse(
+      adminStatus === 200
+        ? answer({ festivals: [], staffMembers: [], stations: [], categories: [], items: [] })
+        : emptyAnswer(adminStatus),
     )
-  })
-  vi.stubGlobal('fetch', fetchStub)
+    .answers('GET', '/api/language', answer({ language: 'de' }))
 }
 
 function mountShellAt(path: string) {
@@ -33,7 +28,7 @@ describe('the admin shell', () => {
   })
 
   it('says the admin pages only open on the laptop when the festivals screen is refused', async () => {
-    stubTheLaptop(404)
+    shellLaptop(404)
 
     const shell = mountShellAt('/admin/festivals')
 
@@ -42,7 +37,7 @@ describe('the admin shell', () => {
   })
 
   it('says the admin pages only open on the laptop when the staff screen is refused', async () => {
-    stubTheLaptop(404)
+    shellLaptop(404)
 
     const shell = mountShellAt('/admin/staff')
 
@@ -51,7 +46,7 @@ describe('the admin shell', () => {
   })
 
   it('shows the admin tabs when the laptop answers', async () => {
-    stubTheLaptop(200)
+    shellLaptop(200)
 
     const shell = mountShellAt('/admin/staff')
     await flushPromises()

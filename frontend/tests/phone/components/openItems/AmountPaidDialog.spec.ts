@@ -3,6 +3,7 @@ import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import AmountPaidDialog from '../../../../src/phone/components/openItems/AmountPaidDialog.vue'
 import type { AppLanguage } from '../../../../src/shared/core/deviceLanguage'
 import { testPlugins } from '../../../support/plugins'
+import { inputOf, typeIn } from '../../../support/dom'
 
 enableAutoUnmount(afterEach)
 
@@ -14,23 +15,14 @@ function mountDialog(language: AppLanguage = 'de', selectedTotalCents = 700) {
   })
 }
 
-function fieldIn(selector: string): HTMLInputElement {
-  return document.querySelector(`.amount-paid-dialog ${selector} input`) as HTMLInputElement
-}
-
-async function typeIn(selector: string, typed: string): Promise<void> {
-  const field = fieldIn(selector)
-  field.value = typed
-  field.dispatchEvent(new Event('input', { bubbles: true }))
-  await flushPromises()
-}
+const AMOUNT_DIALOG = '[data-test="amount-paid-dialog"]'
 
 function confirmButton(): HTMLButtonElement {
-  return document.querySelector('.amount-paid-dialog .confirm-in-cash') as HTMLButtonElement
+  return document.querySelector('[data-test="amount-paid-dialog"] [data-test="confirm-in-cash"]') as HTMLButtonElement
 }
 
 function buttonTexts(): string[] {
-  return Array.from(document.querySelectorAll('.amount-paid-dialog .actions button')).map(
+  return Array.from(document.querySelectorAll('[data-test="amount-paid-dialog"] [data-test="actions"] button')).map(
     (button) => button.textContent?.trim() ?? '',
   )
 }
@@ -44,21 +36,21 @@ describe('the dialog that asks what the table handed over', () => {
     mountDialog('de')
     await flushPromises()
 
-    expect(fieldIn('.amount-field').value).toBe('7,00')
+    expect(inputOf(`${AMOUNT_DIALOG} [data-test="amount-field"]`).value).toBe('7,00')
   })
 
   it('offers the same amount with a dot to an English waiter', async () => {
     mountDialog('en')
     await flushPromises()
 
-    expect(fieldIn('.amount-field').value).toBe('7.00')
+    expect(inputOf(`${AMOUNT_DIALOG} [data-test="amount-field"]`).value).toBe('7.00')
   })
 
   it('names what the selection comes to, so the full price is on screen', async () => {
     mountDialog('de')
     await flushPromises()
 
-    expect(document.querySelector('.amount-paid-dialog .selected-total')?.textContent).toContain(
+    expect(document.querySelector('[data-test="amount-paid-dialog"] [data-test="selected-total"]')?.textContent).toContain(
       'Ausgewählt: 7,00 €',
     )
   })
@@ -67,8 +59,8 @@ describe('the dialog that asks what the table handed over', () => {
     const dialog = mountDialog('de')
     await flushPromises()
 
-    await typeIn('.amount-field', '2,50')
-    await typeIn('.reason-field', 'Stammgast')
+    await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '2,50')
+    await typeIn(`${AMOUNT_DIALOG} [data-test="reason-field"]`, 'Stammgast')
     confirmButton().click()
     await flushPromises()
 
@@ -79,7 +71,7 @@ describe('the dialog that asks what the table handed over', () => {
     const dialog = mountDialog('de')
     await flushPromises()
 
-    ;(document.querySelector('.amount-paid-dialog .confirm-by-card') as HTMLElement).click()
+    ;(document.querySelector('[data-test="amount-paid-dialog"] [data-test="confirm-by-card"]') as HTMLElement).click()
     await flushPromises()
 
     expect(dialog.emitted('confirm')).toEqual([[700, null, 'card']])
@@ -103,10 +95,10 @@ describe('the dialog that asks what the table handed over', () => {
     const dialog = mountDialog('de')
     await flushPromises()
 
-    await typeIn('.amount-field', '0')
-    await typeIn('.reason-field', 'Essen für die Kapelle')
+    await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '0')
+    await typeIn(`${AMOUNT_DIALOG} [data-test="reason-field"]`, 'Essen für die Kapelle')
     expect(buttonTexts()).toEqual(['Abrechnen', 'Abbrechen'])
-    ;(document.querySelector('.amount-paid-dialog .confirm-nothing-paid') as HTMLElement).click()
+    ;(document.querySelector('[data-test="amount-paid-dialog"] [data-test="confirm-nothing-paid"]') as HTMLElement).click()
     await flushPromises()
 
     expect(dialog.emitted('confirm')).toEqual([[0, 'Essen für die Kapelle', 'none']])
@@ -116,8 +108,8 @@ describe('the dialog that asks what the table handed over', () => {
     mountDialog('de')
     await flushPromises()
 
-    await typeIn('.amount-field', '0')
-    await typeIn('.amount-field', '0,50')
+    await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '0')
+    await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '0,50')
 
     expect(buttonTexts()).toEqual(['Bar abrechnen', 'Mit Karte abrechnen', 'Abbrechen'])
   })
@@ -130,7 +122,7 @@ describe('the dialog that asks what the table handed over', () => {
     })
     await flushPromises()
 
-    const shut = Array.from(document.querySelectorAll('.amount-paid-dialog .actions button')).map(
+    const shut = Array.from(document.querySelectorAll('[data-test="amount-paid-dialog"] [data-test="actions"] button')).map(
       (button) => button.hasAttribute('disabled'),
     )
     expect(shut).toEqual([true, true, true])
@@ -150,7 +142,7 @@ describe('the dialog that asks what the table handed over', () => {
     const dialog = mountDialog('de')
     await flushPromises()
 
-    await typeIn('.amount-field', '10,00')
+    await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '10,00')
     confirmButton().click()
     await flushPromises()
 
@@ -161,7 +153,7 @@ describe('the dialog that asks what the table handed over', () => {
     const dialog = mountDialog('de')
     await flushPromises()
 
-    await typeIn('.amount-field', '')
+    await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '')
     confirmButton().click()
     await flushPromises()
 
@@ -173,36 +165,36 @@ describe('the dialog that asks what the table handed over', () => {
     mountDialog('de')
     await flushPromises()
 
-    await typeIn('.amount-field', '12,5')
+    await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '12,5')
 
-    expect(fieldIn('.amount-field').value).toBe('12,5')
+    expect(inputOf(`${AMOUNT_DIALOG} [data-test="amount-field"]`).value).toBe('12,5')
   })
 
   it('refuses a keystroke that can never be part of an amount', async () => {
     mountDialog('de')
     await flushPromises()
 
-    await typeIn('.amount-field', '12,50')
-    await typeIn('.amount-field', '12,50€')
+    await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '12,50')
+    await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '12,50€')
 
-    expect(fieldIn('.amount-field').value).toBe('12,50')
+    expect(inputOf(`${AMOUNT_DIALOG} [data-test="amount-field"]`).value).toBe('12,50')
   })
 
   it('refuses a third decimal, so the field never holds an amount nobody can hand over', async () => {
     mountDialog('de')
     await flushPromises()
 
-    await typeIn('.amount-field', '12,50')
-    await typeIn('.amount-field', '12,509')
+    await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '12,50')
+    await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '12,509')
 
-    expect(fieldIn('.amount-field').value).toBe('12,50')
+    expect(inputOf(`${AMOUNT_DIALOG} [data-test="amount-field"]`).value).toBe('12,50')
   })
 
   it('keeps the confirming button shut while a short amount carries no reason', async () => {
     const dialog = mountDialog('de')
     await flushPromises()
 
-    await typeIn('.amount-field', '2,50')
+    await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '2,50')
     confirmButton().click()
     await flushPromises()
 
@@ -214,18 +206,18 @@ describe('the dialog that asks what the table handed over', () => {
     mountDialog('de')
     await flushPromises()
 
-    expect(document.querySelector('.amount-paid-dialog .reason-field')).toBeNull()
+    expect(document.querySelector('[data-test="amount-paid-dialog"] [data-test="reason-field"]')).toBeNull()
 
-    await typeIn('.amount-field', '2,50')
+    await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '2,50')
 
-    expect(document.querySelector('.amount-paid-dialog .reason-field')).not.toBeNull()
+    expect(document.querySelector('[data-test="amount-paid-dialog"] [data-test="reason-field"]')).not.toBeNull()
   })
 
   it('says that the waiter backed out and hands back nothing', async () => {
     const dialog = mountDialog('de')
     await flushPromises()
 
-    ;(document.querySelector('.amount-paid-dialog .cancel') as HTMLElement).click()
+    ;(document.querySelector('[data-test="amount-paid-dialog"] [data-test="cancel"]') as HTMLElement).click()
     await flushPromises()
 
     expect(dialog.emitted('cancel')).toHaveLength(1)
@@ -250,7 +242,7 @@ describe('the dialog on a phone whose keyboard covers the lower screen', () => {
     mountDialog('de')
     await flushPromises()
 
-    const card = document.querySelector('.amount-paid-dialog .card') as HTMLElement
+    const card = document.querySelector('[data-test="amount-paid-dialog"] [data-test="card"]') as HTMLElement
     expect(card.style.paddingBottom).toBe('400px')
   })
 })

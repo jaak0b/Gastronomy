@@ -11,8 +11,8 @@ defineEmits<{ close: [] }>()
 
 <template>
   <v-dialog :model-value="true" max-width="480" @update:model-value="$emit('close')">
-    <v-card class="settings-sheet">
-      <v-card-title>{{ t('phone.settings.title') }}</v-card-title>
+    <v-card class="settings-sheet" data-test="settings-sheet">
+      <v-card-title data-test="settings-title">{{ t('phone.settings.title') }}</v-card-title>
       <v-card-text>
         <p v-if="session.staffMember !== null">
           {{ t('phone.settings.messages.servingAs', { name: session.staffMember.name }) }}

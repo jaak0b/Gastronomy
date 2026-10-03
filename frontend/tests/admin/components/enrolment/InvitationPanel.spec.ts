@@ -33,20 +33,20 @@ describe('the invitation panel', () => {
   it('shows the address exactly once, as a code block', () => {
     const panel = mountPanel()
 
-    expect(panel.findAll('.qr-url')).toHaveLength(1)
+    expect(panel.findAll('[data-test="qr-url"]')).toHaveLength(1)
     expect(panel.get('code.qr-url').text()).toBe('http://192.168.1.20:5000/j/abc123')
   })
 
   it('offers a copy button beside the address, because nobody types that by hand', () => {
     const panel = mountPanel()
 
-    expect(panel.find('.copy-url').exists()).toBe(true)
+    expect(panel.find('[data-test="copy-url"]').exists()).toBe(true)
   })
 
   it('tells the admin what happens, before showing the code', () => {
     const panel = mountPanel()
 
-    expect(panel.get('.instruction').text()).toBe(
+    expect(panel.get('[data-test="instruction"]').text()).toBe(
       'Scannen Sie diesen QR-Code mit der Kamera des Telefons.',
     )
   })
@@ -54,7 +54,7 @@ describe('the invitation panel', () => {
   it('names the name step when the code belongs to nobody yet', () => {
     const panel = mountPanel(READY, { ...INVITATION, staffMember: null })
 
-    expect(panel.get('.instruction').text()).toBe(
+    expect(panel.get('[data-test="instruction"]').text()).toBe(
       'Scannen Sie diesen QR-Code mit der Kamera des Telefons. Geben Sie danach am Telefon den Namen ein.',
     )
   })
@@ -81,7 +81,7 @@ describe('the copy button beside the address', () => {
     offerAClipboard(written)
     const panel = mountPanel()
 
-    await panel.get('.copy-url').trigger('click')
+    await panel.get('[data-test="copy-url"]').trigger('click')
 
     expect(written).toEqual(['http://192.168.1.20:5000/j/abc123'])
   })
@@ -89,15 +89,15 @@ describe('the copy button beside the address', () => {
   it('says nothing while nobody has pressed it', () => {
     const panel = mountPanel()
 
-    expect(panel.find('.copy-unavailable').exists()).toBe(false)
+    expect(panel.find('[data-test="copy-unavailable"]').exists()).toBe(false)
   })
 
   it('says to type the address instead when the browser offers no clipboard', async () => {
     const panel = mountPanel()
 
-    await panel.get('.copy-url').trigger('click')
+    await panel.get('[data-test="copy-url"]').trigger('click')
 
-    expect(panel.get('.copy-unavailable').text()).toBe(
+    expect(panel.get('[data-test="copy-unavailable"]').text()).toBe(
       'Tippen Sie die Adresse oben von Hand ab. Das Kopieren ist auf dieser Seite nicht möglich.',
     )
   })
@@ -108,9 +108,9 @@ describe('the copy button beside the address', () => {
       global: { plugins: testPlugins('en') },
     })
 
-    await panel.get('.copy-url').trigger('click')
+    await panel.get('[data-test="copy-url"]').trigger('click')
 
-    expect(panel.get('.copy-unavailable').text()).toBe(
+    expect(panel.get('[data-test="copy-unavailable"]').text()).toBe(
       'Type the address above by hand. Copying is not available on this page.',
     )
   })
@@ -126,7 +126,7 @@ describe('the same panel used for the tablet of a station', () => {
   it('names the station whose tablet is to scan the code', () => {
     const panel = mountPanel(READY, STATION_INVITATION)
 
-    expect(panel.get('.instruction').text()).toBe(
+    expect(panel.get('[data-test="instruction"]').text()).toBe(
       'Scannen Sie diesen QR-Code mit der Kamera des Tablets an der Ausgabestelle Küche.',
     )
   })
@@ -134,7 +134,7 @@ describe('the same panel used for the tablet of a station', () => {
   it('says it is setting up a tablet rather than a phone', () => {
     const panel = mountPanel(READY, STATION_INVITATION)
 
-    expect(panel.get('.v-card-title').text()).toBe('Tablet einrichten')
+    expect(panel.get('[data-test="invitation-title"]').text()).toBe('Tablet einrichten')
   })
 
   it('shows the same QR code and the same address as for a phone', () => {
@@ -147,7 +147,7 @@ describe('the same panel used for the tablet of a station', () => {
   it('says it is setting up a phone when no station is named', () => {
     const panel = mountPanel()
 
-    expect(panel.get('.v-card-title').text()).toBe('Telefon einrichten')
+    expect(panel.get('[data-test="invitation-title"]').text()).toBe('Telefon einrichten')
   })
 })
 
@@ -158,7 +158,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
       message: { key: 'errors.enrolment.qrAlreadyUsed', parameters: {}, count: null },
     })
 
-    expect(panel.get('.qr-gone').text()).toBe(
+    expect(panel.get('[data-test="qr-gone"]').text()).toBe(
       'Erstellen Sie einen neuen QR-Code. Dieser wurde schon von einem Gerät benutzt.',
     )
   })
@@ -175,7 +175,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
       global: { plugins: testPlugins('en') },
     })
 
-    expect(panel.get('.qr-gone').text()).toBe(
+    expect(panel.get('[data-test="qr-gone"]').text()).toBe(
       'Create a new QR code. This one has already been used by a device.',
     )
   })
@@ -186,7 +186,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
       message: { key: 'errors.enrolment.qrExpired', parameters: {}, count: null },
     })
 
-    expect(panel.get('.qr-gone').text()).toBe(
+    expect(panel.get('[data-test="qr-gone"]').text()).toBe(
       'Erstellen Sie einen neuen QR-Code. Dieser wurde fünf Minuten lang nicht gescannt.',
     )
   })
@@ -198,7 +198,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
     })
 
     expect(panel.find('img.qr-image').exists()).toBe(false)
-    expect(panel.find('.qr-url').exists()).toBe(false)
+    expect(panel.find('[data-test="qr-url"]').exists()).toBe(false)
   })
 
   it('offers the button that creates a new one', () => {
@@ -207,7 +207,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
       message: { key: 'errors.enrolment.qrUnavailable', parameters: {}, count: null },
     })
 
-    expect(panel.get('.renew-code').text()).toBe('Neuen QR-Code erstellen')
+    expect(panel.get('[data-test="renew-code"]').text()).toBe('Neuen QR-Code erstellen')
   })
 
   it('asks for a new one when that button is pressed', async () => {
@@ -216,7 +216,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
       message: { key: 'errors.enrolment.qrUnavailable', parameters: {}, count: null },
     })
 
-    await panel.get('.renew-code').trigger('click')
+    await panel.get('[data-test="renew-code"]').trigger('click')
 
     expect(panel.emitted('renew')).toHaveLength(1)
   })
@@ -224,7 +224,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
   it('says the laptop did not answer when the request never arrived', () => {
     const panel = mountPanel({ kind: 'unreachable' })
 
-    expect(panel.get('.qr-gone').text()).toBe(
+    expect(panel.get('[data-test="qr-gone"]').text()).toBe(
       'Der QR-Code konnte nicht geladen werden. Laden Sie die Seite neu.',
     )
   })
@@ -235,6 +235,6 @@ describe('an invitation whose QR code is still on its way', () => {
     const panel = mountPanel({ kind: 'loading' })
 
     expect(panel.find('img.qr-image').exists()).toBe(false)
-    expect(panel.find('.qr-gone').exists()).toBe(false)
+    expect(panel.find('[data-test="qr-gone"]').exists()).toBe(false)
   })
 })

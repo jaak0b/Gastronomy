@@ -19,17 +19,19 @@ async function askTheLaptopAgain(): Promise<void> {
 </script>
 
 <template>
-  <v-container class="starting-up">
+  <v-container class="starting-up" data-test="starting-up">
     <v-progress-circular
       v-if="isStillWaiting"
       class="starting-up-spinner mb-4"
+      data-test="starting-up-spinner"
       indeterminate
       size="48"
     />
-    <p v-if="message !== null" class="starting-up-message text-body-1">{{ message }}</p>
+    <p v-if="message !== null" class="starting-up-message text-body-1" data-test="starting-up-message">{{ message }}</p>
     <v-btn
       v-if="!isStillWaiting"
       class="starting-up-try-again mt-4"
+      data-test="starting-up-try-again"
       color="primary"
       block
       size="x-large"

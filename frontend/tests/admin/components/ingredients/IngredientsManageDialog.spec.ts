@@ -4,7 +4,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { VSelect } from 'vuetify/components'
 import IngredientsManageDialog from '../../../../src/admin/components/ingredients/IngredientsManageDialog.vue'
 import { useAdminIngredientsStore } from '../../../../src/admin/stores/ingredients'
-import { testPlugins, waitForDialog } from '../../../support/plugins'
+import { testPlugins } from '../../../support/plugins'
+import { waitForDialog, onScreen, allOnScreen, typeInto, inputOf } from '../../../support/dom'
+import { stubLaptop, answer, emptyAnswer, type StubbedLaptop } from '../../../support/laptop'
 
 const FLOUR = { ingredientId: 'ingredient-mehl', name: 'Mehl', unit: 'gram', isActive: true }
 const BUN = { ingredientId: 'ingredient-broetchen', name: 'Brötchen', unit: 'piece', isActive: true }
@@ -21,57 +23,28 @@ interface Call {
   body: unknown
 }
 
-function stubLaptop(): Call[] {
-  const calls: Call[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string, init?: RequestInit) => {
-      const method = init?.method ?? 'GET'
-      calls.push({
-        url,
-        method,
-        body: init?.body === undefined ? null : JSON.parse(String(init.body)),
-      })
-      if (method !== 'GET') {
-        return new Response(null, { status: 204 })
-      }
-      return new Response(JSON.stringify({ ingredients: [BUN, FLOUR, OLD_MILK] }), {
-        status: 200,
-      })
-    }),
-  )
-  return calls
+function ingredientsLaptop(): StubbedLaptop {
+  return stubLaptop()
+    .answersEverythingElse(emptyAnswer(204))
+    .answers('GET', /./, answer({ ingredients: [BUN, FLOUR, OLD_MILK] }))
 }
 
-async function openDialog(locale: 'de' | 'en' = 'de'): Promise<VueWrapper> {
+async function mountDialog(locale: 'de' | 'en' = 'de'): Promise<VueWrapper> {
   await useAdminIngredientsStore().load()
   const dialog = mount(IngredientsManageDialog, {
     global: { plugins: testPlugins(locale) },
     attachTo: document.body,
   })
-  await vi.waitFor(() => expect(allInDialog('.ingredient-edit-line').length).toBe(3))
+  await vi.waitFor(() => expect(allOnScreen('[data-test="ingredient-edit-line"]').length).toBe(3))
   return dialog
 }
 
-function inDialog(selector: string): HTMLElement {
-  return document.querySelector(selector) as HTMLElement
-}
-
-function allInDialog(selector: string): HTMLElement[] {
-  return [...document.querySelectorAll<HTMLElement>(selector)]
+function lineOf(ingredientId: string): string {
+  return `[data-test="ingredient-edit-line"][data-test-id="${ingredientId}"]`
 }
 
 function nameInputs(): HTMLInputElement[] {
-  return allInDialog('.ingredient-edit-line .ingredient-name-field input') as HTMLInputElement[]
-}
-
-function typeInto(input: HTMLInputElement, value: string): void {
-  input.value = value
-  input.dispatchEvent(new Event('input'))
-}
-
-function written(calls: Call[]): Call[] {
-  return calls.filter((call) => call.method !== 'GET')
+  return allOnScreen('[data-test="ingredient-edit-line"] [data-test="ingredient-name-field"] input') as HTMLInputElement[]
 }
 
 beforeEach(() => {
@@ -85,35 +58,35 @@ afterEach(() => {
 
 describe('the ingredient management dialog', () => {
   it('lists every ingredient under its German title', async () => {
-    stubLaptop()
+    ingredientsLaptop()
 
-    await openDialog()
+    await mountDialog()
 
-    expect(inDialog('.form-dialog-title').textContent).toBe('Zutaten')
+    expect(onScreen('[data-test="form-dialog-title"]').textContent).toBe('Zutaten')
     expect(nameInputs().map((input) => input.value)).toEqual(['Brötchen', 'Mehl', 'Milch'])
-    expect(inDialog('.form-cancel').textContent?.trim()).toBe('Schließen')
+    expect(onScreen('[data-test="form-cancel"]').textContent?.trim()).toBe('Schließen')
   })
 
   it('offers the three units in English', async () => {
-    stubLaptop()
-    const dialog = await openDialog('en')
+    ingredientsLaptop()
+    const dialog = await mountDialog('en')
 
-    const offered = dialog.findAllComponents(VSelect)[0].props('items') as { title: string }[]
+    const offered = dialog.getComponent<typeof VSelect>(`${lineOf('ingredient-broetchen')} [data-test="ingredient-unit-field"]`).props('items') as { title: string }[]
 
-    expect(inDialog('.form-dialog-title').textContent).toBe('Ingredients')
+    expect(onScreen('[data-test="form-dialog-title"]').textContent).toBe('Ingredients')
     expect(offered.map((choice) => choice.title)).toEqual(['pieces', 'g', 'ml'])
   })
 
   it('renames an ingredient as soon as the admin leaves the field', async () => {
-    const calls = stubLaptop()
-    await openDialog()
-    const flourName = nameInputs()[1]
+    const laptop = ingredientsLaptop()
+    await mountDialog()
+    const flourName = inputOf(`${lineOf('ingredient-mehl')} [data-test="ingredient-name-field"]`)
 
     typeInto(flourName, 'Weizenmehl')
     flourName.dispatchEvent(new FocusEvent('blur'))
 
     await vi.waitFor(() =>
-      expect(written(calls)).toEqual([
+      expect(laptop.writes()).toEqual([
         {
           url: '/api/admin/ingredients/ingredient-mehl',
           method: 'PUT',
@@ -124,13 +97,13 @@ describe('the ingredient management dialog', () => {
   })
 
   it('saves a changed unit at once', async () => {
-    const calls = stubLaptop()
-    const dialog = await openDialog()
+    const laptop = ingredientsLaptop()
+    const dialog = await mountDialog()
 
-    await dialog.findAllComponents(VSelect)[1].setValue('millilitre')
+    await dialog.getComponent(`${lineOf('ingredient-mehl')} [data-test="ingredient-unit-field"]`).setValue('millilitre')
 
     await vi.waitFor(() =>
-      expect(written(calls)).toEqual([
+      expect(laptop.writes()).toEqual([
         {
           url: '/api/admin/ingredients/ingredient-mehl',
           method: 'PUT',
@@ -141,44 +114,44 @@ describe('the ingredient management dialog', () => {
   })
 
   it('keeps a name the admin is typing when the ingredients load again', async () => {
-    stubLaptop()
-    await openDialog()
-    const flourName = nameInputs()[1]
+    ingredientsLaptop()
+    await mountDialog()
+    const flourName = inputOf(`${lineOf('ingredient-mehl')} [data-test="ingredient-name-field"]`)
 
     typeInto(flourName, 'Weizenmehl')
     await useAdminIngredientsStore().load()
 
-    await vi.waitFor(() => expect(allInDialog('.ingredient-edit-line').length).toBe(3))
+    await vi.waitFor(() => expect(allOnScreen('[data-test="ingredient-edit-line"]').length).toBe(3))
     expect(flourName.value).toBe('Weizenmehl')
   })
 
   it('deactivates an ingredient after the admin confirms', async () => {
-    const calls = stubLaptop()
-    await openDialog()
+    const laptop = ingredientsLaptop()
+    await mountDialog()
 
-    allInDialog('.deactivate-ingredient')[0].click()
+    onScreen(`${lineOf('ingredient-broetchen')} [data-test="deactivate-ingredient"]`).click()
     await waitForDialog()
-    expect(inDialog('.confirm-title').textContent).toBe('Zutat deaktivieren?')
-    expect(inDialog('.confirm-body').textContent).toBe(
+    expect(onScreen('[data-test="confirm-title"]').textContent).toBe('Zutat deaktivieren?')
+    expect(onScreen('[data-test="confirm-body"]').textContent).toBe(
       'Eine deaktivierte Zutat begrenzt den Verkauf nicht mehr.',
     )
-    inDialog('.confirm-dialog .confirm').click()
+    onScreen('[data-test="confirm-dialog"] [data-test="confirm"]').click()
 
     await vi.waitFor(() =>
-      expect(written(calls).map((call) => `${call.method} ${call.url}`)).toEqual([
+      expect(laptop.writes().map((call) => `${call.method} ${call.url}`)).toEqual([
         'POST /api/admin/ingredients/ingredient-broetchen/deactivate',
       ]),
     )
   })
 
   it('activates a deactivated ingredient', async () => {
-    const calls = stubLaptop()
-    await openDialog()
+    const laptop = ingredientsLaptop()
+    await mountDialog()
 
-    inDialog('.activate-ingredient').click()
+    onScreen('[data-test="activate-ingredient"]').click()
 
     await vi.waitFor(() =>
-      expect(written(calls).map((call) => `${call.method} ${call.url}`)).toEqual([
+      expect(laptop.writes().map((call) => `${call.method} ${call.url}`)).toEqual([
         'POST /api/admin/ingredients/ingredient-milch/activate',
       ]),
     )

@@ -4,6 +4,7 @@ import { fireHubEvent, forgetHubEvents } from '../../support/hubConnection'
 import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useConnectionStore } from '../../../src/shared/stores/connection'
 import { useSessionStore, TOKEN_STORAGE_KEY } from '../../../src/shared/stores/session'
+import { stubLaptop, answer } from '../../support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -29,10 +30,7 @@ const FULL_CATALOG = {
 }
 
 function laptopAnswers(payload: unknown) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response(JSON.stringify(payload), { status: 200 })),
-  )
+  stubLaptop().answersEverythingElse(answer(payload))
 }
 
 describe('the catalog on the phone', () => {

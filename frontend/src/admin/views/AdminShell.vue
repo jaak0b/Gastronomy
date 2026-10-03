@@ -58,7 +58,7 @@ void isThisTheLaptop().then((isLaptop) => {
 
 <template>
   <NotOnLaptop v-if="!isReachable" />
-  <div v-else class="admin-shell">
+  <div v-else class="admin-shell" data-test="admin-shell">
     <v-toolbar class="admin-nav" density="comfortable" color="surface">
       <v-tabs :model-value="section" class="admin-tabs" data-test="admin-tabs">
         <v-tab

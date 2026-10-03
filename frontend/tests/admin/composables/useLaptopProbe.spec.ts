@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useLaptopProbe } from '../../../src/admin/composables/useLaptopProbe'
+import { stubLaptop, answer } from '../../support/laptop'
 
 describe('asking whether this device is the laptop', () => {
   afterEach(() => {
@@ -13,7 +14,7 @@ describe('asking whether this device is the laptop', () => {
   })
 
   it('says yes when the laptop answers the festivals', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ festivals: [] }), { status: 200 })))
+    stubLaptop().answersEverythingElse(answer({ festivals: [] }))
 
     expect(await useLaptopProbe().isThisTheLaptop()).toBe(true)
   })

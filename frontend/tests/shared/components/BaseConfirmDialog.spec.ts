@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BaseConfirmDialog from '../../../src/shared/components/BaseConfirmDialog.vue'
-import { dialogText, testPlugins, waitForDialog } from '../../support/plugins'
+import { testPlugins } from '../../support/plugins'
+import { dialogText, waitForDialog } from '../../support/dom'
 
 function mountDialog() {
   return mount(BaseConfirmDialog, {

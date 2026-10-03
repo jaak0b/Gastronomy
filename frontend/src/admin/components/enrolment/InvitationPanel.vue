@@ -55,11 +55,11 @@ async function copyUrl(): Promise<void> {
 </script>
 
 <template>
-  <v-card class="invitation-panel mt-4">
-    <v-card-title>{{ title }}</v-card-title>
+  <v-card class="invitation-panel mt-4" data-test="invitation-panel">
+    <v-card-title data-test="invitation-title">{{ title }}</v-card-title>
     <v-card-text>
       <template v-if="view.messageKey === null">
-        <p class="instruction">{{ instruction }}</p>
+        <p class="instruction" data-test="instruction">{{ instruction }}</p>
         <img
           v-if="view.imageUrl !== null"
           class="qr-image mt-3"
@@ -69,20 +69,21 @@ async function copyUrl(): Promise<void> {
         />
         <p class="validity text-medium-emphasis mt-2">{{ t('admin.enrolment.messages.validity') }}</p>
         <div class="d-flex align-center ga-2 mt-4">
-          <code class="qr-url flex-grow-1 pa-2 rounded">{{ invitation.qrUrl }}</code>
+          <code class="qr-url flex-grow-1 pa-2 rounded" data-test="qr-url">{{ invitation.qrUrl }}</code>
           <v-btn
             class="copy-url"
+            data-test="copy-url"
             variant="text"
             size="small"
             :icon="wasCopied ? 'mdi-check' : 'mdi-content-copy'"
             @click="copyUrl"
           />
         </div>
-        <p v-if="copyingIsUnavailable" class="copy-unavailable text-medium-emphasis mt-2">
+        <p v-if="copyingIsUnavailable" class="copy-unavailable text-medium-emphasis mt-2" data-test="copy-unavailable">
           {{ t('admin.enrolment.messages.copyUnavailable') }}
         </p>
       </template>
-      <v-alert v-else class="qr-gone" type="warning" variant="tonal">
+      <v-alert v-else class="qr-gone" data-test="qr-gone" type="warning" variant="tonal">
         {{ t(view.messageKey) }}
       </v-alert>
     </v-card-text>
@@ -90,6 +91,7 @@ async function copyUrl(): Promise<void> {
       <v-btn
         v-if="view.messageKey !== null"
         class="renew-code"
+        data-test="renew-code"
         color="primary"
         variant="text"
         @click="$emit('renew')"

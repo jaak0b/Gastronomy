@@ -190,7 +190,7 @@ async function remove(): Promise<void> {
                 >
                   {{ item.name }}
                 </span>
-                <v-chip v-if="!item.isActive" class="deactivated" size="small" color="grey">
+                <v-chip v-if="!item.isActive" class="deactivated" data-test="deactivated" size="small" color="grey">
                   {{ t('admin.common.labels.deactivated') }}
                 </v-chip>
                 <v-text-field

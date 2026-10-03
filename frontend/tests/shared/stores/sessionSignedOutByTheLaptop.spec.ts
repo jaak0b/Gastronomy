@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { fireHubEvent, forgetHubEvents } from '../../support/hubConnection'
+import { stubLaptop, answer } from '../../support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -15,10 +16,7 @@ const THE_TABLET = {
 }
 
 function aLaptopThatKnowsTheTablet(): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response(JSON.stringify(THE_TABLET), { status: 200 })),
-  )
+  stubLaptop().answersEverythingElse(answer(THE_TABLET))
 }
 
 async function aTabletListeningForTheLaptop() {

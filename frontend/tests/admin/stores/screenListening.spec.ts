@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { fireHubEvent, forgetHubEvents, hubEventsRegistered } from '../../support/hubConnection'
+import { stubLaptop, answer, type StubbedLaptop } from '../../support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -15,16 +16,8 @@ const { useAdminFestivalStockStore } = await import('../../../src/admin/stores/f
 
 const EMPTY_LISTS = { staffMembers: [], stations: [] }
 
-function stubTheLaptop(): string[] {
-  const urls: string[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string) => {
-      urls.push(url)
-      return new Response(JSON.stringify(EMPTY_LISTS), { status: 200 })
-    }),
-  )
-  return urls
+function listsLaptop(): StubbedLaptop {
+  return stubLaptop().answersEverythingElse(answer(EMPTY_LISTS))
 }
 
 describe('the waiter list of the admin', () => {
@@ -38,33 +31,33 @@ describe('the waiter list of the admin', () => {
   })
 
   it('is reloaded while the screen that asked for it is open', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     useAdminStaffStore().listen()
 
     await useConnectionStore().refetchAll()
 
-    expect(urls).toEqual(['/api/admin/staff-members'])
+    expect(laptop.urls()).toEqual(['/api/admin/staff-members'])
   })
 
   it('is read again when the laptop says the configuration changed', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     useAdminStaffStore().listen()
     await useConnectionStore().connect({})
-    urls.length = 0
+    laptop.calls.length = 0
 
     fireHubEvent('ConfigurationChanged')
 
-    await vi.waitFor(() => expect(urls).toEqual(['/api/admin/staff-members']))
+    await vi.waitFor(() => expect(laptop.urls()).toEqual(['/api/admin/staff-members']))
   })
 
   it('is left alone once the admin has moved to another screen', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     const stopListening = useAdminStaffStore().listen()
 
     stopListening()
     await useConnectionStore().refetchAll()
 
-    expect(urls).toEqual([])
+    expect(laptop.urls()).toEqual([])
   })
 })
 
@@ -79,33 +72,33 @@ describe('the station list of the admin', () => {
   })
 
   it('is reloaded while the screen that asked for it is open', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     useAdminStationsStore().listen()
 
     await useConnectionStore().refetchAll()
 
-    expect(urls).toEqual(['/api/admin/stations'])
+    expect(laptop.urls()).toEqual(['/api/admin/stations'])
   })
 
   it('is read again when the laptop says the configuration changed', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     useAdminStationsStore().listen()
     await useConnectionStore().connect({})
-    urls.length = 0
+    laptop.calls.length = 0
 
     fireHubEvent('ConfigurationChanged')
 
-    await vi.waitFor(() => expect(urls).toEqual(['/api/admin/stations']))
+    await vi.waitFor(() => expect(laptop.urls()).toEqual(['/api/admin/stations']))
   })
 
   it('is left alone once the admin has moved to another screen', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     const stopListening = useAdminStationsStore().listen()
 
     stopListening()
     await useConnectionStore().refetchAll()
 
-    expect(urls).toEqual([])
+    expect(laptop.urls()).toEqual([])
   })
 })
 
@@ -120,33 +113,33 @@ describe('the category list of the admin', () => {
   })
 
   it('is reloaded while the screen that asked for it is open', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     useAdminCategoriesStore().listen()
 
     await useConnectionStore().refetchAll()
 
-    expect(urls).toEqual(['/api/admin/categories'])
+    expect(laptop.urls()).toEqual(['/api/admin/categories'])
   })
 
   it('is read again when the laptop says the configuration changed', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     useAdminCategoriesStore().listen()
     await useConnectionStore().connect({})
-    urls.length = 0
+    laptop.calls.length = 0
 
     fireHubEvent('ConfigurationChanged')
 
-    await vi.waitFor(() => expect(urls).toEqual(['/api/admin/categories']))
+    await vi.waitFor(() => expect(laptop.urls()).toEqual(['/api/admin/categories']))
   })
 
   it('is left alone once the admin has moved to another screen', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     const stopListening = useAdminCategoriesStore().listen()
 
     stopListening()
     await useConnectionStore().refetchAll()
 
-    expect(urls).toEqual([])
+    expect(laptop.urls()).toEqual([])
   })
 })
 
@@ -161,45 +154,45 @@ describe('the item list of the admin', () => {
   })
 
   it('is reloaded while the screen that asked for it is open', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     useAdminItemsStore().listen()
 
     await useConnectionStore().refetchAll()
 
-    expect(urls).toEqual(['/api/admin/items'])
+    expect(laptop.urls()).toEqual(['/api/admin/items'])
   })
 
   it('stays on the festival whose page is open when it is read again', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     const items = useAdminItemsStore()
     items.listen()
     await items.loadAtTheFestival('fest-1')
-    urls.length = 0
+    laptop.calls.length = 0
 
     await useConnectionStore().refetchAll()
 
-    expect(urls).toEqual(['/api/admin/items?festivalId=fest-1'])
+    expect(laptop.urls()).toEqual(['/api/admin/items?festivalId=fest-1'])
   })
 
   it('is read again when the laptop says the configuration changed', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     useAdminItemsStore().listen()
     await useConnectionStore().connect({})
-    urls.length = 0
+    laptop.calls.length = 0
 
     fireHubEvent('ConfigurationChanged')
 
-    await vi.waitFor(() => expect(urls).toEqual(['/api/admin/items']))
+    await vi.waitFor(() => expect(laptop.urls()).toEqual(['/api/admin/items']))
   })
 
   it('is left alone once the admin has moved to another screen', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     const stopListening = useAdminItemsStore().listen()
 
     stopListening()
     await useConnectionStore().refetchAll()
 
-    expect(urls).toEqual([])
+    expect(laptop.urls()).toEqual([])
   })
 })
 
@@ -214,33 +207,33 @@ describe('the ingredient list of the admin', () => {
   })
 
   it('is reloaded while the screen that asked for it is open', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     useAdminIngredientsStore().listen()
 
     await useConnectionStore().refetchAll()
 
-    expect(urls).toEqual(['/api/admin/ingredients'])
+    expect(laptop.urls()).toEqual(['/api/admin/ingredients'])
   })
 
   it('is read again when the laptop says the configuration changed', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     useAdminIngredientsStore().listen()
     await useConnectionStore().connect({})
-    urls.length = 0
+    laptop.calls.length = 0
 
     fireHubEvent('ConfigurationChanged')
 
-    await vi.waitFor(() => expect(urls).toEqual(['/api/admin/ingredients']))
+    await vi.waitFor(() => expect(laptop.urls()).toEqual(['/api/admin/ingredients']))
   })
 
   it('is left alone once the admin has moved to another screen', async () => {
-    const urls = stubTheLaptop()
+    const laptop = listsLaptop()
     const stopListening = useAdminIngredientsStore().listen()
 
     stopListening()
     await useConnectionStore().refetchAll()
 
-    expect(urls).toEqual([])
+    expect(laptop.urls()).toEqual([])
   })
 })
 
@@ -254,50 +247,50 @@ describe('the stock of the festival whose page is open', () => {
     vi.unstubAllGlobals()
   })
 
-  async function listenOnTheFestivalPage(): Promise<{ urls: string[]; stop: () => void }> {
-    const urls = stubTheLaptop()
+  async function listenOnTheFestivalPage(): Promise<{ laptop: StubbedLaptop; stop: () => void }> {
+    const laptop = listsLaptop()
     const stock = useAdminFestivalStockStore()
     const stop = stock.listen()
     await stock.loadForFestival('fest-1')
-    urls.length = 0
-    return { urls, stop }
+    laptop.calls.length = 0
+    return { laptop, stop }
   }
 
   it('is reloaded on a reconnect', async () => {
-    const { urls } = await listenOnTheFestivalPage()
+    const { laptop } = await listenOnTheFestivalPage()
 
     await useConnectionStore().refetchAll()
 
-    expect(urls).toEqual(['/api/admin/festivals/fest-1/ingredients'])
+    expect(laptop.urls()).toEqual(['/api/admin/festivals/fest-1/ingredients'])
   })
 
   it('is read again when the laptop says the configuration changed', async () => {
-    const { urls } = await listenOnTheFestivalPage()
+    const { laptop } = await listenOnTheFestivalPage()
     await useConnectionStore().connect({})
-    urls.length = 0
+    laptop.calls.length = 0
 
     fireHubEvent('ConfigurationChanged')
 
-    await vi.waitFor(() => expect(urls).toEqual(['/api/admin/festivals/fest-1/ingredients']))
+    await vi.waitFor(() => expect(laptop.urls()).toEqual(['/api/admin/festivals/fest-1/ingredients']))
   })
 
   it('is read again when the laptop says the orders changed, because orders use up the stock', async () => {
-    const { urls } = await listenOnTheFestivalPage()
+    const { laptop } = await listenOnTheFestivalPage()
     await useConnectionStore().connect({})
-    urls.length = 0
+    laptop.calls.length = 0
 
     fireHubEvent('OrdersChanged')
 
-    await vi.waitFor(() => expect(urls).toEqual(['/api/admin/festivals/fest-1/ingredients']))
+    await vi.waitFor(() => expect(laptop.urls()).toEqual(['/api/admin/festivals/fest-1/ingredients']))
   })
 
   it('is left alone once the admin has moved to another screen', async () => {
-    const { urls, stop } = await listenOnTheFestivalPage()
+    const { laptop, stop } = await listenOnTheFestivalPage()
 
     stop()
     await useConnectionStore().refetchAll()
 
-    expect(urls).toEqual([])
+    expect(laptop.urls()).toEqual([])
   })
 })
 
@@ -312,7 +305,7 @@ describe('the handler that answers a finished enrolment', () => {
   })
 
   it('sits on the hub while the screen that asked for it is open', async () => {
-    stubTheLaptop()
+    listsLaptop()
     useAdminEnrolmentStore().listen(() => undefined)
 
     await useConnectionStore().connect({})
@@ -321,7 +314,7 @@ describe('the handler that answers a finished enrolment', () => {
   })
 
   it('is taken off the hub once the admin has moved to another screen', async () => {
-    stubTheLaptop()
+    listsLaptop()
     const stopListening = useAdminEnrolmentStore().listen(() => undefined)
 
     stopListening()

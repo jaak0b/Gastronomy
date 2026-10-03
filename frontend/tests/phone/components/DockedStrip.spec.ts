@@ -3,11 +3,13 @@ import { mount } from '@vue/test-utils'
 import DockedStrip from '../../../src/phone/components/DockedStrip.vue'
 import { MILLISECONDS_A_DOCKED_STRIP_IGNORES_AFTER_A_SCROLL } from '../../../src/phone/core/dockedStripTaps'
 import { testPlugins } from '../../support/plugins'
+import { nextTick } from 'vue'
 
 const StripWithASendButton = {
   components: { DockedStrip },
   data: () => ({ taps: 0 }),
-  template: '<DockedStrip><button class="send" @click="taps += 1">Senden</button></DockedStrip>',
+  template:
+    '<DockedStrip><button data-test="send" @click="taps += 1">Senden</button><span data-test="taps">{{ taps }}</span></DockedStrip>',
 }
 
 let now = 100_000
@@ -32,7 +34,12 @@ function mountStrip() {
 type MountedStrip = ReturnType<typeof mountStrip>
 
 function theSendButton(strip: MountedStrip): HTMLElement {
-  return strip.get('.send').element as HTMLElement
+  return strip.get('[data-test="send"]').element as HTMLElement
+}
+
+async function tapsCounted(strip: MountedStrip): Promise<string> {
+  await nextTick()
+  return strip.get('[data-test="taps"]').text()
 }
 
 function theListScrolls(): void {
@@ -62,17 +69,17 @@ describe('a docked strip that carries a button which cannot be undone', () => {
     vi.restoreAllMocks()
   })
 
-  it('answers a tap from a waiter who never scrolled', () => {
+  it('answers a tap from a waiter who never scrolled', async () => {
     const strip = mountStrip()
     const button = theSendButton(strip)
 
     theFingerComesDownOn(button, 100, 700)
     theFingerLifts(button)
 
-    expect(strip.vm.taps).toBe(1)
+    expect(await tapsCounted(strip)).toBe('1')
   })
 
-  it('answers a tap from a waiter who scrolled, stopped, looked and pressed', () => {
+  it('answers a tap from a waiter who scrolled, stopped, looked and pressed', async () => {
     const strip = mountStrip()
     const button = theSendButton(strip)
     theListScrolls()
@@ -81,10 +88,10 @@ describe('a docked strip that carries a button which cannot be undone', () => {
     theFingerComesDownOn(button, 100, 700)
     theFingerLifts(button)
 
-    expect(strip.vm.taps).toBe(1)
+    expect(await tapsCounted(strip)).toBe('1')
   })
 
-  it('ignores a finger that comes down to stop a list that is still flying', () => {
+  it('ignores a finger that comes down to stop a list that is still flying', async () => {
     const strip = mountStrip()
     const button = theSendButton(strip)
     theListScrolls()
@@ -93,10 +100,10 @@ describe('a docked strip that carries a button which cannot be undone', () => {
     theFingerComesDownOn(button, 100, 700)
     theFingerLifts(button)
 
-    expect(strip.vm.taps).toBe(0)
+    expect(await tapsCounted(strip)).toBe('0')
   })
 
-  it('answers again the moment the waiting time after the scroll is over', () => {
+  it('answers again the moment the waiting time after the scroll is over', async () => {
     const strip = mountStrip()
     const button = theSendButton(strip)
     theListScrolls()
@@ -105,10 +112,10 @@ describe('a docked strip that carries a button which cannot be undone', () => {
     theFingerComesDownOn(button, 100, 700)
     theFingerLifts(button)
 
-    expect(strip.vm.taps).toBe(1)
+    expect(await tapsCounted(strip)).toBe('1')
   })
 
-  it('ignores a finger that was dragged across the button before it lifted', () => {
+  it('ignores a finger that was dragged across the button before it lifted', async () => {
     const strip = mountStrip()
     const button = theSendButton(strip)
 
@@ -116,10 +123,10 @@ describe('a docked strip that carries a button which cannot be undone', () => {
     theFingerSlidesTo(button, 100, 620)
     theFingerLifts(button)
 
-    expect(strip.vm.taps).toBe(0)
+    expect(await tapsCounted(strip)).toBe('0')
   })
 
-  it('answers the next tap after it swallowed a dragged one', () => {
+  it('answers the next tap after it swallowed a dragged one', async () => {
     const strip = mountStrip()
     const button = theSendButton(strip)
     theFingerComesDownOn(button, 100, 700)
@@ -129,6 +136,6 @@ describe('a docked strip that carries a button which cannot be undone', () => {
     theFingerComesDownOn(button, 100, 700)
     theFingerLifts(button)
 
-    expect(strip.vm.taps).toBe(1)
+    expect(await tapsCounted(strip)).toBe('1')
   })
 })

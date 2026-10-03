@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import StationOpenBoard from '../../../src/station/components/StationOpenBoard.vue'
 import { testPlugins } from '../../support/plugins'
 import type { ItemLine } from '../../../src/shared/core/stationBoard'
+import { nextTick } from 'vue'
 
 function line(itemName: string, note: string | null, units: number): ItemLine {
   return { key: `${itemName}|${note ?? ''}`, itemName, note, units }
@@ -28,11 +29,11 @@ describe('the overview board at a station', () => {
   it('names the heading and the two mode counts', () => {
     board([])
 
-    expect(document.querySelector('.station-open-board .board-heading')?.textContent?.trim()).toBe(
+    expect(document.querySelector('[data-test="station-open-board"] [data-test="board-heading"]')?.textContent?.trim()).toBe(
       'Offene Artikel',
     )
-    expect(textsOf('.station-open-board .stat-together')).toEqual(['Gemeinsam 2'])
-    expect(textsOf('.station-open-board .stat-as-it-comes')).toEqual(['Einzeln 3'])
+    expect(textsOf('[data-test="station-open-board"] [data-test="stat-together"]')).toEqual(['Gemeinsam 2'])
+    expect(textsOf('[data-test="station-open-board"] [data-test="stat-as-it-comes"]')).toEqual(['Einzeln 3'])
   })
 
   it('lists every open article once per note, largest count first and ties by name', () => {
@@ -44,7 +45,7 @@ describe('the overview board at a station', () => {
       line('Bratwurst', null, 2),
     ])
 
-    expect(textsOf('.station-open-board .unit')).toEqual([
+    expect(textsOf('[data-test="station-open-board"] [data-test="unit"]')).toEqual([
       '20 x Hotdog',
       '3 x Bier',
       '3 x Hotdog · Hinweis: Ohne Ketchup',
@@ -60,16 +61,16 @@ describe('the overview board at a station', () => {
       lines: [line('Bratwurst', null, 1), line('Bier', null, 2)],
     })
 
-    expect(textsOf('.station-open-board .unit')).toEqual(['2 x Bier', '1 x Bratwurst'])
+    expect(textsOf('[data-test="station-open-board"] [data-test="unit"]')).toEqual(['2 x Bier', '1 x Bratwurst'])
   })
 
   it('goes back to the orders on the back button', async () => {
     const page = board([])
 
-    expect(textsOf('.station-open-board .back-to-orders')).toEqual(['Zurück zu den Bestellungen'])
+    expect(textsOf('[data-test="station-open-board"] [data-test="back-to-orders"]')).toEqual(['Zurück zu den Bestellungen'])
 
-    ;(document.querySelector('.station-open-board .back-to-orders') as HTMLElement).click()
-    await page.vm.$nextTick()
+    ;(document.querySelector('[data-test="station-open-board"] [data-test="back-to-orders"]') as HTMLElement).click()
+    await nextTick()
 
     expect(page.emitted('close')).toEqual([[]])
   })
@@ -80,8 +81,8 @@ describe('the overview board at a station', () => {
       'Laden Sie die Seite neu. Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein.',
     )
 
-    const warning = document.querySelector('.station-open-board .board-failed')
-    const counts = document.querySelector('.station-open-board .mode-counts')
+    const warning = document.querySelector('[data-test="station-open-board"] [data-test="board-failed"]')
+    const counts = document.querySelector('[data-test="station-open-board"] [data-test="mode-counts"]')
 
     expect(warning?.textContent?.trim()).toBe(
       'Laden Sie die Seite neu. Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein.',
@@ -95,6 +96,6 @@ describe('the overview board at a station', () => {
   it('shows no warning when the page behind it has nothing to report', () => {
     board([])
 
-    expect(document.querySelector('.station-open-board .board-failed')).toBeNull()
+    expect(document.querySelector('[data-test="station-open-board"] [data-test="board-failed"]')).toBeNull()
   })
 })

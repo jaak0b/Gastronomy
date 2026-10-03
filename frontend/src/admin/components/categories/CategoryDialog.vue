@@ -30,12 +30,13 @@ function save(): void {
     <v-text-field
       v-model="name"
       class="category-name-field mb-4"
+      data-test="category-name-field"
       maxlength="200"
       :label="t('admin.categories.labels.name')"
     />
-    <label class="category-colour-label d-flex align-center ga-3">
+    <label class="category-colour-label d-flex align-center ga-3" data-test="category-colour-label">
       <span>{{ t('admin.categories.labels.colour') }}</span>
-      <input v-model="colourHex" class="category-colour-field" type="color" />
+      <input v-model="colourHex" class="category-colour-field" data-test="category-colour-field" type="color" />
     </label>
   </BaseFormDialog>
 </template>

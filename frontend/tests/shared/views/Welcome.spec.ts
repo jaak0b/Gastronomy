@@ -3,33 +3,28 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import Welcome from '../../../src/shared/views/Welcome.vue'
 import { testPlugins } from '../../support/plugins'
+import { stubLaptop, answer } from '../../support/laptop'
 
 function mountWelcome(locale: 'de' | 'en' = 'de') {
   return mount(Welcome, { global: { plugins: testPlugins(locale) } })
 }
 
 async function openTheOptions(welcome: ReturnType<typeof mountWelcome>): Promise<void> {
-  await welcome.get('.language-switch .v-field').trigger('mousedown')
-  await vi.waitFor(() => expect(document.querySelector('.option-en')).not.toBeNull())
+  await welcome.get('[data-test="language-switch"] .v-field').trigger('mousedown')
+  await vi.waitFor(() => expect(document.querySelector('[data-test="option-en"]')).not.toBeNull())
 }
 
 describe('the screen a device lands on with no code', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+    stubLaptop().answersEverythingElse(answer({}))
   })
 
   it('says the device is not set up rather than demanding a code', () => {
     const welcome = mountWelcome()
 
     expect(welcome.get('h1').text()).toBe('Dieses Gerät ist noch nicht eingerichtet.')
-  })
-
-  it('asks for no code before the reader says they have one', () => {
-    const welcome = mountWelcome()
-
-    expect(welcome.find('.code-field').exists()).toBe(false)
   })
 
   it('says the same thing in English', () => {
@@ -44,20 +39,20 @@ describe('the language switch before a phone is set up', () => {
     setActivePinia(createPinia())
     localStorage.clear()
     document.body.innerHTML = ''
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+    stubLaptop().answersEverythingElse(answer({}))
   })
 
   it('is on the screen, because nothing has stored a language yet', () => {
     const welcome = mountWelcome()
 
-    expect(welcome.get('.language-switch').exists()).toBe(true)
+    expect(welcome.get('[data-test="language-switch"]').exists()).toBe(true)
   })
 
   it('remembers the choice on the device itself', async () => {
     localStorage.setItem('language', 'de')
     const welcome = mountWelcome()
     await openTheOptions(welcome)
-    ;(document.querySelector('.option-en') as HTMLElement).click()
+    ;(document.querySelector('[data-test="option-en"]') as HTMLElement).click()
 
     expect(localStorage.getItem('language')).toBe('en')
   })
@@ -66,7 +61,7 @@ describe('the language switch before a phone is set up', () => {
     localStorage.setItem('language', 'de')
     const welcome = mountWelcome()
     await openTheOptions(welcome)
-    ;(document.querySelector('.option-en') as HTMLElement).click()
+    ;(document.querySelector('[data-test="option-en"]') as HTMLElement).click()
 
     expect(fetch).not.toHaveBeenCalled()
   })

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminItemsStore } from '../../../src/admin/stores/items'
+import { stubLaptopAnswering, answer } from '../../support/laptop'
 
 const AN_ITEM = {
   name: 'Bratwurst',
@@ -20,32 +21,6 @@ const CREATED_ITEM = {
   isQueueIndependent: false,
   ingredients: [],
   atTheFestival: null,
-}
-
-interface Call {
-  url: string
-  method: string
-  body: unknown
-}
-
-function answerWith(payloadFor: (url: string, method: string) => unknown, status = 200): Call[] {
-  const calls: Call[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string, init?: RequestInit) => {
-      const method = init?.method ?? 'GET'
-      calls.push({
-        url,
-        method,
-        body: init?.body === undefined ? null : JSON.parse(init.body as string),
-      })
-      const isRead = method === 'GET'
-      return new Response(JSON.stringify(payloadFor(url, method)), {
-        status: isRead ? 200 : status,
-      })
-    }),
-  )
-  return calls
 }
 
 function refuseWith(status: number, body: unknown) {
@@ -240,7 +215,7 @@ describe('a new item the laptop creates', () => {
   })
 
   it('hands back the article from the answer, so it can be placed right away', async () => {
-    answerWith((_url, method) => (method === 'GET' ? { items: [] } : CREATED_ITEM))
+    stubLaptopAnswering((_url, method) => (method === 'GET' ? { items: [] } : CREATED_ITEM))
     const items = useAdminItemsStore()
 
     const created = await items.create(AN_ITEM)
@@ -249,12 +224,12 @@ describe('a new item the laptop creates', () => {
   })
 
   it('writes only the article and does not read the list again', async () => {
-    const calls = answerWith((_url, method) => (method === 'GET' ? { items: [] } : CREATED_ITEM))
+    const laptop = stubLaptopAnswering((_url, method) => (method === 'GET' ? { items: [] } : CREATED_ITEM))
     const items = useAdminItemsStore()
 
     await items.create(AN_ITEM)
 
-    expect(calls).toEqual([
+    expect(laptop.calls).toEqual([
       {
         url: '/api/admin/items',
         method: 'POST',
@@ -288,7 +263,7 @@ describe('a new item the laptop creates', () => {
   })
 
   it('keeps the reason the laptop refused it and appends nothing', async () => {
-    answerWith(
+    stubLaptopAnswering(
       () => ({
         code: 'Conflict',
         messageKey: 'errors.admin.items.nameTaken',
@@ -319,7 +294,7 @@ describe('the recipe of an article', () => {
   })
 
   it('sets the amount of an ingredient and reads the articles again', async () => {
-    const calls = answerWith((_url, method) =>
+    const laptop = stubLaptopAnswering((_url, method) =>
       method === 'GET' ? { items: [] } : { itemId: 'item-neu' },
     )
     const items = useAdminItemsStore()
@@ -327,13 +302,13 @@ describe('the recipe of an article', () => {
     const result = await items.setIngredientAmount('item-neu', 'ingredient-mehl', 1500)
 
     expect(result).toEqual({ kind: 'ok', value: null })
-    expect(calls).toEqual([
+    expect(laptop.calls).toEqual([
       {
         url: '/api/admin/items/item-neu/ingredients/ingredient-mehl',
         method: 'PUT',
         body: { amount: 1500 },
       },
-      { url: '/api/admin/items', method: 'GET', body: null },
+      { url: '/api/admin/items', method: 'GET', body: undefined },
     ])
   })
 

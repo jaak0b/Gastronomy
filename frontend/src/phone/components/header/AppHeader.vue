@@ -29,31 +29,34 @@ const currentDestination = computed<Destination>(() => {
 </script>
 
 <template>
-  <v-app-bar class="app-header" height="72">
+  <v-app-bar class="app-header" data-test="app-header" height="72">
     <div class="destinations d-flex flex-grow-1">
       <v-btn
         class="catalog-link flex-grow-1"
+        data-test="catalog-link"
         variant="text"
         stacked
         :class="currentDestination === 'catalog' ? 'text-primary' : 'text-medium-emphasis'"
         @click="navigate('/')"
       >
         <v-icon icon="mdi-clipboard-text-outline" />
-        <span class="label">{{ t('phone.catalog.title') }}</span>
+        <span class="label" data-test="label">{{ t('phone.catalog.title') }}</span>
       </v-btn>
       <v-btn
         class="open-items-link flex-grow-1"
+        data-test="open-items-link"
         variant="text"
         stacked
         :class="currentDestination === 'openItems' ? 'text-primary' : 'text-medium-emphasis'"
         @click="navigate('/open-items')"
       >
         <v-icon icon="mdi-cash-register" />
-        <span class="label">{{ t('phone.header.actions.openItems') }}</span>
+        <span class="label" data-test="label">{{ t('phone.header.actions.openItems') }}</span>
       </v-btn>
     </div>
     <v-btn
       class="settings"
+      data-test="settings"
       icon="mdi-cog"
       variant="text"
       @click="settingsAreOpen = true"

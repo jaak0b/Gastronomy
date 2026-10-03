@@ -50,18 +50,21 @@ function save(): void {
     <v-text-field
       v-model="name"
       class="festival-name-field mb-4"
+      data-test="festival-name-field"
       maxlength="80"
       :label="t('admin.festivals.labels.name')"
     />
     <v-text-field
       v-model="startsAt"
       class="festival-start-field mb-4"
+      data-test="festival-start-field"
       type="datetime-local"
       :label="t('admin.festivals.labels.start')"
     />
     <v-text-field
       v-model="endsAt"
       class="festival-end-field"
+      data-test="festival-end-field"
       type="datetime-local"
       :label="t('admin.festivals.labels.end')"
     />

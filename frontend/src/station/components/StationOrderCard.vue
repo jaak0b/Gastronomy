@@ -47,25 +47,31 @@ function isSelected(orderItemId: string): boolean {
 </script>
 
 <template>
-  <BaseStationCard class="station-order mb-4 bg-surface" :delivery-mode-colour="deliveryModeColour">
+  <BaseStationCard
+    class="station-order mb-4 bg-surface"
+    data-test="station-order"
+    :data-test-id="stationOrder.stationOrderId"
+    :delivery-mode-colour="deliveryModeColour"
+  >
     <div class="station-order-head d-flex flex-wrap align-baseline ga-2">
-      <span class="table-name text-h5">
+      <span class="table-name text-h5" data-test="table-name">
         {{ t('common.labels.table', { name: stationOrder.tableName }) }}
       </span>
-      <span class="station-order-heading text-body-2 text-medium-emphasis">
+      <span class="station-order-heading text-body-2 text-medium-emphasis" data-test="station-order-heading">
         {{ orderReference }}
       </span>
-      <span class="taken-by text-body-2 text-medium-emphasis">
+      <span class="taken-by text-body-2 text-medium-emphasis" data-test="taken-by">
         {{ takenByText }}
       </span>
-      <span class="done-counter text-body-2 ms-auto">{{ doneCounter }}</span>
+      <span class="done-counter text-body-2 ms-auto" data-test="done-counter">{{ doneCounter }}</span>
     </div>
     <div class="station-order-mode-row d-flex flex-wrap align-center ga-2 mb-1">
-      <span class="delivery-mode text-body-1 font-weight-medium" :style="{ color: deliveryModeColour }">
+      <span class="delivery-mode text-body-1 font-weight-medium" data-test="delivery-mode" :style="{ color: deliveryModeColour }">
         {{ deliveryText }}
       </span>
       <v-btn
         class="grouped-toggle ms-auto"
+        data-test="grouped-toggle"
         variant="outlined"
         color="primary"
         :prepend-icon="viewToggleIcon"
@@ -80,6 +86,8 @@ function isSelected(orderItemId: string): boolean {
         v-for="item in openItems"
         :key="item.orderItemId"
         class="station-item"
+        data-test="station-item"
+        :data-test-id="item.orderItemId"
         :class="{ selected: isSelected(item.orderItemId) }"
         variant="tonal"
         block
@@ -87,23 +95,24 @@ function isSelected(orderItemId: string): boolean {
         @click="emit('toggleItem', item.orderItemId)"
       >
         <span class="item-text">
-          <span class="item-name">{{ item.itemName }}</span>
-          <span v-if="item.note !== null" class="item-note text-body-2">
-            <v-icon class="item-note-icon" icon="mdi-note-text-outline" size="small" />
+          <span class="item-name" data-test="item-name">{{ item.itemName }}</span>
+          <span v-if="item.note !== null" class="item-note text-body-2" data-test="item-note">
+            <v-icon class="item-note-icon" data-test="item-note-icon" icon="mdi-note-text-outline" size="small" />
             {{ t('common.labels.note', { note: item.note }) }}
           </span>
         </span>
-        <v-icon v-if="isSelected(item.orderItemId)" class="selected-tick ms-auto" icon="mdi-check" />
+        <v-icon v-if="isSelected(item.orderItemId)" class="selected-tick ms-auto" data-test="selected-tick" icon="mdi-check" />
       </v-btn>
     </template>
     <div v-else class="grouped-items">
-      <p v-for="line in groupedLines" :key="line.key" class="grouped-line text-body-1 mb-0">
+      <p v-for="line in groupedLines" :key="line.key" class="grouped-line text-body-1 mb-0" data-test="grouped-line">
         {{ itemLineText(line, t) }}
       </p>
     </div>
-    <div v-if="!isGrouped" class="card-actions d-flex mt-3">
+    <div v-if="!isGrouped" class="card-actions d-flex mt-3" data-test="card-actions">
       <v-btn
         class="fulfill"
+        data-test="fulfill"
         color="primary"
         variant="flat"
         size="large"
@@ -115,6 +124,7 @@ function isSelected(orderItemId: string): boolean {
       <v-btn
         v-if="showHide"
         class="hide"
+        data-test="hide"
         variant="outlined"
         size="large"
         :disabled="isWorking"

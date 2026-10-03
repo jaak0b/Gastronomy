@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { nextTick } from 'vue'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -41,7 +42,7 @@ describe('the app puts a device behind the door as soon as its screen is on disp
     useSessionStore().deviceToken = 'a-token'
 
     const app = await (await import('../../support/mountApp')).mountApp()
-    await vi.waitFor(() => expect(app.find('.station-page').exists()).toBe(true))
+    await vi.waitFor(() => expect(app.find('[data-test="station-page"]').exists()).toBe(true))
 
     const { navigate } = await import('../../../src/shared/router/router')
     const { BACK_BUTTON_TRAP_RETURN_PATH_KEY } = await import('../../../src/shared/router/backButtonTrap')
@@ -59,9 +60,9 @@ describe('the app puts a device behind the door as soon as its screen is on disp
     useSessionStore().deviceToken = 'a-token'
 
     const app = await (await import('../../support/mountApp')).mountApp()
-    await app.vm.$nextTick()
+    await nextTick()
 
-    expect(app.find('.door-gate').exists()).toBe(true)
-    expect(app.find('.station-page').exists()).toBe(false)
+    expect(app.find('[data-test="door-gate"]').exists()).toBe(true)
+    expect(app.find('[data-test="station-page"]').exists()).toBe(false)
   })
 })

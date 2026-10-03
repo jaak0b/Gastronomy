@@ -1,21 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { onUnauthorisedAnswer, request, requestAction } from '../../../src/shared/api/client'
+import { stubLaptop, answer, refusal, neverAnswers } from '../../support/laptop'
 
 const okAnswerSchema = z.object({ ok: z.boolean() })
 
 function laptopThatNeverAnswers(): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(
-      (_path: string, init: RequestInit) =>
-        new Promise<Response>((_resolve, reject) => {
-          init.signal?.addEventListener('abort', () => {
-            reject(new DOMException('The request was aborted', 'AbortError'))
-          })
-        }),
-    ),
-  )
+  stubLaptop().answersEverythingElse(neverAnswers())
 }
 
 function laptopThatAnswersAtOnce(): void {

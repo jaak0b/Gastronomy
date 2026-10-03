@@ -1,26 +1,7 @@
-import { expect, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import de from '../../src/shared/i18n/de.json'
 import en from '../../src/shared/i18n/en.json'
 
 export function testPlugins(locale: 'de' | 'en' = 'de') {
   return [createI18n({ legacy: false, locale, messages: { de, en } })]
-}
-
-export function openDialog(): Element | null {
-  return document.querySelector('[data-test="confirm-dialog"]')
-}
-
-export async function waitForDialog(): Promise<void> {
-  await vi.waitFor(() => expect(openDialog()).not.toBeNull())
-}
-
-export function dialogText(selector: string): string {
-  return document.querySelector(selector)?.textContent ?? ''
-}
-
-export async function pressInDialog(selector: string): Promise<void> {
-  await waitForDialog()
-  ;(document.querySelector(selector) as HTMLElement).click()
-  await vi.waitFor(() => expect(true).toBe(true))
 }

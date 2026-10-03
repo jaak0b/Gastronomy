@@ -52,10 +52,15 @@ function leaveTheField(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <div class="ingredient-edit-line d-flex align-center flex-wrap ga-2 py-1">
+  <div
+    class="ingredient-edit-line d-flex align-center flex-wrap ga-2 py-1"
+    data-test="ingredient-edit-line"
+    :data-test-id="ingredient.ingredientId"
+  >
     <v-text-field
       v-model="name"
       class="ingredient-name-field flex-grow-1"
+      data-test="ingredient-name-field"
       maxlength="200"
       density="compact"
       hide-details
@@ -66,24 +71,26 @@ function leaveTheField(event: KeyboardEvent): void {
     <v-select
       v-model="unit"
       class="ingredient-unit-field"
+      data-test="ingredient-unit-field"
       density="compact"
       hide-details
       :label="t('admin.ingredients.labels.unit')"
       :items="unitChoices"
       @update:model-value="saveTheUnit"
     />
-    <v-chip v-if="!ingredient.isActive" class="deactivated" size="small" color="grey">
+    <v-chip v-if="!ingredient.isActive" class="deactivated" data-test="deactivated" size="small" color="grey">
       {{ t('admin.common.labels.deactivated') }}
     </v-chip>
     <v-btn
       v-if="ingredient.isActive"
       class="deactivate-ingredient"
+      data-test="deactivate-ingredient"
       icon="mdi-eye-off"
       variant="text"
       color="error"
       @click="emit('deactivate')"
     />
-    <v-btn v-else class="activate-ingredient" variant="text" @click="emit('activate')">
+    <v-btn v-else class="activate-ingredient" data-test="activate-ingredient" variant="text" @click="emit('activate')">
       {{ t('admin.ingredients.actions.activate') }}
     </v-btn>
   </div>

@@ -80,7 +80,7 @@ function backToItems(): void {
       variant="tonal"
     >
       <p class="may-have-arrived">{{ t('phone.review.messages.sendStillUnknown') }}</p>
-      <p class="instruction mb-0">{{ t('phone.review.messages.writeItDown') }}</p>
+      <p class="instruction mb-0" data-test="instruction">{{ t('phone.review.messages.writeItDown') }}</p>
     </v-alert>
     <SendFailurePanel
       v-else-if="order.sendHasFailed && order.failure !== null"

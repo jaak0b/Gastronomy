@@ -62,7 +62,7 @@ function toggle(stationId: string): void {
         </v-list-item>
       </v-list>
     </v-menu>
-    <p v-if="errorText !== null" class="station-select-error text-error text-body-2 mt-1">
+    <p v-if="errorText !== null" class="station-select-error text-error text-body-2 mt-1" data-test="station-select-error">
       {{ errorText }}
     </p>
   </div>

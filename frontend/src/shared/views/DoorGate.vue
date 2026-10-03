@@ -7,7 +7,7 @@ const theIcon = '/favicon.svg'
 </script>
 
 <template>
-  <v-container class="door-gate" fluid>
+  <v-container class="door-gate" data-test="door-gate" fluid>
     <div class="door-gate-panel text-center">
       <img class="door-gate-icon" :src="theIcon" alt="" />
       <p class="door-gate-hint text-body-1 mb-6">{{ t('shared.startup.messages.tapOpen') }}</p>

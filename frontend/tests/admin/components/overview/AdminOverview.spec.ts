@@ -1,39 +1,21 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AdminOverview from '../../../../src/admin/components/overview/AdminOverview.vue'
 import { testPlugins } from '../../../support/plugins'
+import { stubLaptop, answer, type StubbedLaptop } from '../../../support/laptop'
+import { aFestival } from '../../../support/wireViews'
 
-const SUMMER = {
-  festivalId: 'fest-1',
-  name: 'Sommerfest',
-  startsAtUtc: '2026-07-18T10:00:00Z',
-  endsAtUtc: '2026-07-19T02:00:00Z',
-  isHidden: false,
-  isRunning: true,
-  stationCount: 1,
-  menuItemCount: 1,
-  orderCount: 0,
+const SUMMER = aFestival()
+
+function overviewLaptop(festivals: unknown[], rest: Record<string, unknown> = {}): StubbedLaptop {
+  return stubLaptop()
+    .answersEverythingElse(answer({ categories: rest.categories ?? [] }))
+    .answers('GET', '/api/admin/items', answer({ items: rest.items ?? [] }))
+    .answers('GET', '/api/admin/stations', answer({ stations: rest.stations ?? [] }))
+    .answers('GET', '/api/admin/festivals', answer({ festivals }))
 }
 
-function stubLaptop(festivals: unknown[], rest: Record<string, unknown> = {}): string[] {
-  const urls: string[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string) => {
-      urls.push(url)
-      const body = url.startsWith('/api/admin/festivals')
-        ? { festivals }
-        : url.startsWith('/api/admin/stations')
-          ? { stations: rest.stations ?? [] }
-          : url.startsWith('/api/admin/items')
-            ? { items: rest.items ?? [] }
-            : { categories: rest.categories ?? [] }
-      return new Response(JSON.stringify(body), { status: 200 })
-    }),
-  )
-  return urls
-}
 
 function mountOverview(locale: 'de' | 'en' = 'de') {
   return mount(AdminOverview, { global: { plugins: testPlugins(locale) } })
@@ -46,13 +28,13 @@ describe('the overview while no festival exists at all', () => {
   })
 
   it('asks for a festival and lists nothing else', async () => {
-    stubLaptop([])
+    overviewLaptop([])
 
     const overview = mountOverview()
     await flushPromises()
 
-    expect(overview.get('.missing-festival').text()).toBe('Legen Sie zuerst ein Fest an.')
-    expect(overview.findAll('.readiness-row')).toHaveLength(0)
+    expect(overview.get('[data-test="missing-festival"]').text()).toBe('Legen Sie zuerst ein Fest an.')
+    expect(overview.findAll('[data-test="readiness-row"]')).toHaveLength(0)
   })
 })
 
@@ -63,33 +45,33 @@ describe('the overview while no festival is running', () => {
   })
 
   it('says so and lists nothing else', async () => {
-    stubLaptop([{ ...SUMMER, isRunning: false }])
+    overviewLaptop([{ ...SUMMER, isRunning: false }])
 
     const overview = mountOverview()
     await flushPromises()
 
-    expect(overview.get('.not-running').text()).toBe(
+    expect(overview.get('[data-test="not-running"]').text()).toBe(
       'Zurzeit ist kein Fest aktiv. Sehen Sie unter "Feste" nach.',
     )
-    expect(overview.findAll('.readiness-row')).toHaveLength(0)
+    expect(overview.findAll('[data-test="readiness-row"]')).toHaveLength(0)
   })
 
   it('says it in English too', async () => {
-    stubLaptop([{ ...SUMMER, isRunning: false }])
+    overviewLaptop([{ ...SUMMER, isRunning: false }])
 
     const overview = mountOverview('en')
     await flushPromises()
 
-    expect(overview.get('.not-running').text()).toBe('No festival is active right now. Look under "Festivals".')
+    expect(overview.get('[data-test="not-running"]').text()).toBe('No festival is active right now. Look under "Festivals".')
   })
 
   it('asks the laptop for nothing that belongs to a festival', async () => {
-    const urls = stubLaptop([{ ...SUMMER, isRunning: false }])
+    const laptop = overviewLaptop([{ ...SUMMER, isRunning: false }])
 
     mountOverview()
     await flushPromises()
 
-    expect(urls.some((url) => url.includes('festivalId='))).toBe(false)
+    expect(laptop.urls().some((url) => url.includes('festivalId='))).toBe(false)
   })
 })
 
@@ -100,37 +82,37 @@ describe('the overview of the festival that is running', () => {
   })
 
   it('names that festival', async () => {
-    stubLaptop([SUMMER])
+    overviewLaptop([SUMMER])
 
     const overview = mountOverview()
     await flushPromises()
 
-    expect(overview.get('.running-festival').text()).toBe('Sommerfest')
+    expect(overview.get('[data-test="running-festival"]').text()).toBe('Sommerfest')
   })
 
   it('reads the stations and the items of that festival', async () => {
-    const urls = stubLaptop([SUMMER])
+    const laptop = overviewLaptop([SUMMER])
 
     mountOverview()
     await flushPromises()
 
-    expect(urls).toContain('/api/admin/stations?festivalId=fest-1')
-    expect(urls).toContain('/api/admin/items?festivalId=fest-1')
+    expect(laptop.urls()).toContain('/api/admin/stations?festivalId=fest-1')
+    expect(laptop.urls()).toContain('/api/admin/items?festivalId=fest-1')
   })
 
   it('asks for a station while that festival has none', async () => {
-    stubLaptop([SUMMER])
+    overviewLaptop([SUMMER])
 
     const overview = mountOverview()
     await flushPromises()
 
-    expect(overview.findAll('.readiness-row').map((row) => row.text())).toContain(
+    expect(overview.findAll('[data-test="readiness-row"]').map((row) => row.text())).toContain(
       'Fügen Sie diesem Fest eine Ausgabestelle hinzu, zum Beispiel Küche und Theke.',
     )
   })
 
   it('asks for the tablet of a station that has none yet', async () => {
-    stubLaptop([SUMMER], {
+    overviewLaptop([SUMMER], {
       stations: [
         {
           stationId: 'station-kueche',
@@ -146,13 +128,13 @@ describe('the overview of the festival that is running', () => {
     const overview = mountOverview()
     await flushPromises()
 
-    expect(overview.findAll('.readiness-row').map((row) => row.text())).toContain(
+    expect(overview.findAll('[data-test="readiness-row"]').map((row) => row.text())).toContain(
       'Richten Sie das Tablet für Küche ein. Ohne Tablet sieht diese Ausgabestelle ihre Bestellungen nicht.',
     )
   })
 
   it('says nothing about a station whose tablet is already set up', async () => {
-    stubLaptop([SUMMER], {
+    overviewLaptop([SUMMER], {
       stations: [
         {
           stationId: 'station-kueche',
@@ -168,24 +150,24 @@ describe('the overview of the festival that is running', () => {
     const overview = mountOverview()
     await flushPromises()
 
-    expect(overview.findAll('.readiness-row').map((row) => row.text())).not.toContain(
+    expect(overview.findAll('[data-test="readiness-row"]').map((row) => row.text())).not.toContain(
       'Richten Sie das Tablet für Küche ein. Ohne Tablet sieht diese Ausgabestelle ihre Bestellungen nicht.',
     )
   })
 
   it('asks for a category while the laptop holds none', async () => {
-    stubLaptop([SUMMER])
+    overviewLaptop([SUMMER])
 
     const overview = mountOverview()
     await flushPromises()
 
-    expect(overview.findAll('.readiness-row').map((row) => row.text())).toContain(
+    expect(overview.findAll('[data-test="readiness-row"]').map((row) => row.text())).toContain(
       'Legen Sie eine Kategorie an, zum Beispiel Speisen und Getränke.',
     )
   })
 
   it('says nothing about categories once one exists', async () => {
-    stubLaptop([SUMMER], {
+    overviewLaptop([SUMMER], {
       categories: [
         {
           categoryId: 'category-drinks',
@@ -200,13 +182,13 @@ describe('the overview of the festival that is running', () => {
     const overview = mountOverview()
     await flushPromises()
 
-    expect(overview.findAll('.readiness-row').map((row) => row.text())).not.toContain(
+    expect(overview.findAll('[data-test="readiness-row"]').map((row) => row.text())).not.toContain(
       'Legen Sie eine Kategorie an, zum Beispiel Speisen und Getränke.',
     )
   })
 
   it('shows no QR code, because the only enrolment path is the one on the waiters page', async () => {
-    stubLaptop([SUMMER])
+    overviewLaptop([SUMMER])
 
     const overview = mountOverview()
     await flushPromises()

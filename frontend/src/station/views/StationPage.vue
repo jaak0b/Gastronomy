@@ -49,16 +49,16 @@ function closeOverview(): void {
 </script>
 
 <template>
-  <v-container fluid class="station-page">
+  <v-container fluid class="station-page" data-test="station-page">
     <header class="station-header d-flex align-center ga-3 mb-4">
-      <h1 class="station-name text-h5">{{ stationName }}</h1>
+      <h1 class="station-name text-h5" data-test="station-name">{{ stationName }}</h1>
       <v-spacer />
       <LanguageSwitch :language="session.language" @select="session.setLanguage" />
       <template v-if="!isShowingOverview && !station.isShowingFulfilled">
-        <v-btn class="show-overview" variant="outlined" size="large" @click="openOverview">
+        <v-btn class="show-overview" data-test="show-overview" variant="outlined" size="large" @click="openOverview">
           {{ t('station.board.actions.overview') }}
         </v-btn>
-        <v-btn class="show-done" variant="outlined" size="large" @click="station.openFulfilled">
+        <v-btn class="show-done" data-test="show-done" variant="outlined" size="large" @click="station.openFulfilled">
           {{ t('station.board.actions.showDone') }}
         </v-btn>
       </template>
@@ -67,6 +67,7 @@ function closeOverview(): void {
     <v-alert
       v-if="!isShowingOverview && station.loadFailed"
       class="load-failed mb-4"
+      data-test="load-failed"
       type="warning"
       variant="tonal"
     >
@@ -75,6 +76,7 @@ function closeOverview(): void {
     <v-alert
       v-if="!isShowingOverview && station.failureKey !== null"
       class="action-failed mb-4"
+      data-test="action-failed"
       type="warning"
       variant="tonal"
     >
@@ -92,9 +94,10 @@ function closeOverview(): void {
 
     <template v-else-if="station.isShowingFulfilled">
       <div class="done-head d-flex align-center ga-3 mb-4">
-        <h2 class="done-heading text-h5 flex-grow-1">{{ t('station.done.title') }}</h2>
+        <h2 class="done-heading text-h5 flex-grow-1" data-test="done-heading">{{ t('station.done.title') }}</h2>
         <v-btn
           class="back-to-orders"
+          data-test="back-to-orders"
           variant="outlined"
           size="large"
           @click="station.closeFulfilled"
@@ -105,12 +108,13 @@ function closeOverview(): void {
       <v-alert
         v-if="station.fulfilledLoadFailed"
         class="load-failed mb-4"
+        data-test="load-failed"
         type="warning"
         variant="tonal"
       >
         {{ t('station.board.errors.loadFailed') }}
       </v-alert>
-      <v-alert v-if="station.hasNothingDone" class="nothing-done mb-4" type="info" variant="tonal">
+      <v-alert v-if="station.hasNothingDone" class="nothing-done mb-4" data-test="nothing-done" type="info" variant="tonal">
         {{ t('station.done.messages.nothingDone') }}
       </v-alert>
       <StationFulfilledCard
@@ -124,8 +128,8 @@ function closeOverview(): void {
 
     <template v-else>
       <v-row>
-        <v-col cols="12" md="6" class="orders-column">
-          <h2 class="orders-heading text-h6 mb-2">{{ t('station.board.labels.ordersHeading') }}</h2>
+        <v-col cols="12" md="6" class="orders-column" data-test="orders-column">
+          <h2 class="orders-heading text-h6 mb-2" data-test="orders-heading">{{ t('station.board.labels.ordersHeading') }}</h2>
           <StationOrderCard
             v-for="stationOrder in station.orders"
             :key="stationOrder.stationOrderId"
@@ -138,7 +142,7 @@ function closeOverview(): void {
             @hide="station.hide"
           />
         </v-col>
-        <v-col cols="12" md="6" class="as-it-comes-column">
+        <v-col cols="12" md="6" class="as-it-comes-column" data-test="as-it-comes-column">
           <h2 class="as-it-comes-heading text-h6 mb-2">
             {{ t('station.board.labels.asItComesHeading') }}
           </h2>

@@ -94,6 +94,7 @@ onUnmounted(() => {
       <v-checkbox
         v-model="showsDeactivated"
         class="show-deactivated"
+        data-test="show-deactivated"
         density="compact"
         hide-details
         :label="t('admin.common.actions.showDeactivated')"
@@ -111,6 +112,7 @@ onUnmounted(() => {
     <v-alert
       v-if="refusalText !== null && renamingStaffMember === null"
       class="refusal mb-4"
+      data-test="refusal"
       type="warning"
       variant="tonal"
     >
@@ -120,20 +122,21 @@ onUnmounted(() => {
       {{ t('admin.common.errors.loadFailed') }}
     </v-alert>
 
-    <v-card v-for="staffMember in shown" :key="staffMember.staffMemberId" class="staff-row mb-3">
-      <v-card-actions class="staff-row-line">
-        <span class="name text-h6 ms-2 me-2">{{ staffMember.name }}</span>
-        <v-chip v-if="!staffMember.isActive" class="deactivated me-2" size="small" color="grey">
+    <v-card v-for="staffMember in shown" :key="staffMember.staffMemberId" class="staff-row mb-3" data-test="staff-row">
+      <v-card-actions class="staff-row-line" data-test="staff-row-line">
+        <span class="name text-h6 ms-2 me-2" data-test="name">{{ staffMember.name }}</span>
+        <v-chip v-if="!staffMember.isActive" class="deactivated me-2" data-test="deactivated" size="small" color="grey">
           {{ t('admin.common.labels.deactivated') }}
         </v-chip>
-        <v-chip v-if="!staffMember.hasDevice" class="no-phone me-2" size="small" color="warning">
+        <v-chip v-if="!staffMember.hasDevice" class="no-phone me-2" data-test="no-phone" size="small" color="warning">
           {{ t('admin.staff.labels.noPhone') }}
         </v-chip>
-        <v-btn class="new-code" variant="text" @click="inviteStaffMember(staffMember.staffMemberId)">
+        <v-btn class="new-code" data-test="new-code" variant="text" @click="inviteStaffMember(staffMember.staffMemberId)">
           {{ t('admin.staff.actions.newCode') }}
         </v-btn>
         <v-btn
           class="rename"
+          data-test="rename"
           variant="text"
           @click="startRenaming(staffMember)"
         >
@@ -143,6 +146,7 @@ onUnmounted(() => {
         <v-btn
           v-if="staffMember.isActive"
           class="deactivate"
+          data-test="deactivate"
           icon="mdi-delete"
           variant="text"
           color="error"
@@ -151,6 +155,7 @@ onUnmounted(() => {
         <v-btn
           v-else
           class="reactivate"
+          data-test="reactivate"
           variant="text"
           @click="reactivate(staffMember.staffMemberId)"
         >
@@ -168,7 +173,7 @@ onUnmounted(() => {
       </v-expand-transition>
     </v-card>
 
-    <v-btn class="new-staff-member mt-6" color="primary" @click="inviteSomebodyNew">
+    <v-btn class="new-staff-member mt-6" data-test="new-staff-member" color="primary" @click="inviteSomebodyNew">
       {{ t('admin.staff.actions.new') }}
     </v-btn>
 

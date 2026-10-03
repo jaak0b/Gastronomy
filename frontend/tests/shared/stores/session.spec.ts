@@ -8,6 +8,7 @@ import {
 } from '../../../src/phone/core/draftCart'
 import { useOrderStore } from '../../../src/phone/stores/order'
 import { request } from '../../../src/shared/api/client'
+import { stubLaptop, answer } from '../../support/laptop'
 
 function withBrowserLanguage(language: string): void {
   vi.stubGlobal('navigator', { language, userAgent: 'test' })
@@ -148,7 +149,7 @@ describe('a phone the laptop does not know any more', () => {
   })
 
   function aLaptopThatRefusesTheToken(): void {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 401 })))
+    stubLaptop().answersEverythingElse(answer({}, 401))
   }
 
   async function anOrderRefusedBecauseTheTokenIsUnknown() {
@@ -227,7 +228,7 @@ describe('a phone that is signed out while a reason stands on the order screen',
     const order = useOrderStore()
     const session = useSessionStore()
     session.watchForBeingSignedOut()
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 401 })))
+    stubLaptop().answersEverythingElse(answer({}, 401))
 
     await request('/api/orders', { method: 'POST', body: {}, token: session.deviceToken })
     return order

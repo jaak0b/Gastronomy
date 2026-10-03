@@ -121,10 +121,10 @@ async function remove(): Promise<void> {
 </script>
 
 <template>
-  <section class="festival-stations mb-4">
+  <section class="festival-stations mb-4" data-test="festival-stations">
     <v-card variant="outlined">
       <div class="pa-4">
-        <h2 class="section-heading text-h6 mb-3">{{ t('admin.stations.title') }}</h2>
+        <h2 class="section-heading text-h6 mb-3" data-test="section-heading">{{ t('admin.stations.title') }}</h2>
 
         <div class="rows mb-3">
           <div
@@ -142,15 +142,16 @@ async function remove(): Promise<void> {
               >
                 {{ station.name }}
               </span>
-              <v-chip v-if="!station.isActive" class="deactivated" size="small" color="grey">
+              <v-chip v-if="!station.isActive" class="deactivated" data-test="deactivated" size="small" color="grey">
                 {{ t('admin.common.labels.deactivated') }}
               </v-chip>
               <v-spacer />
-              <v-btn class="edit-station" variant="text" @click="startEditing(station)">
+              <v-btn class="edit-station" data-test="edit-station" variant="text" @click="startEditing(station)">
                 {{ t('admin.common.actions.edit') }}
               </v-btn>
               <v-btn
                 class="remove-station"
+                data-test="remove-station"
                 icon="mdi-delete"
                 variant="text"
                 color="error"
@@ -160,6 +161,7 @@ async function remove(): Promise<void> {
             <v-alert
               v-if="refusalText !== null && refusedStationId === station.stationId"
               class="refusal mb-2"
+              data-test="refusal"
               type="warning"
               variant="tonal"
             >
@@ -167,7 +169,7 @@ async function remove(): Promise<void> {
             </v-alert>
           </div>
 
-          <div v-if="atTheFestival.length === 0" class="festival-station-placeholder">
+          <div v-if="atTheFestival.length === 0" class="festival-station-placeholder" data-test="festival-station-placeholder">
             <div class="row-line d-flex align-center flex-wrap ga-3 py-2 px-3">
               <span class="text-body-1">&nbsp;</span>
             </div>
@@ -189,6 +191,7 @@ async function remove(): Promise<void> {
           />
           <v-btn
             class="add-station"
+            data-test="add-station"
             color="primary"
             variant="tonal"
             :disabled="chosenStationId === null"
@@ -196,13 +199,14 @@ async function remove(): Promise<void> {
           >
             {{ t('admin.festivals.actions.addStation') }}
           </v-btn>
-          <v-btn class="new-station" variant="text" @click="startCreating">
+          <v-btn class="new-station" data-test="new-station" variant="text" @click="startCreating">
             {{ t('admin.stations.actions.new') }}
           </v-btn>
         </div>
         <v-alert
           v-if="refusalText !== null && refusedStationId === null && !isCreating"
           class="refusal mt-3"
+          data-test="refusal"
           type="warning"
           variant="tonal"
         >

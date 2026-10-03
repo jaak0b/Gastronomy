@@ -9,25 +9,26 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <v-dialog class="station-done-dialog" model-value persistent fullscreen>
-    <v-card class="card d-flex flex-column">
+  <v-dialog class="station-done-dialog" data-test="station-done-dialog" model-value persistent fullscreen>
+    <v-card class="card d-flex flex-column" data-test="card">
       <v-card-title class="title">{{ t('station.board.labels.confirmDoneTitle') }}</v-card-title>
       <v-card-text class="body flex-grow-1">
-        <div class="row row-table">
-          <span class="label">{{ t('common.labels.table', { name: tableName }) }}</span>
+        <div class="row row-table" data-test="row-table">
+          <span class="label" data-test="label">{{ t('common.labels.table', { name: tableName }) }}</span>
         </div>
         <ul class="units">
-          <li v-for="line in lines" :key="line.key" class="unit">
+          <li v-for="line in lines" :key="line.key" class="unit" data-test="unit">
             {{ itemLineText(line, t) }}
           </li>
         </ul>
       </v-card-text>
-      <v-card-actions class="actions justify-end">
-        <v-btn class="cancel" variant="outlined" size="large" @click="emit('cancelled')">
+      <v-card-actions class="actions justify-end" data-test="actions">
+        <v-btn class="cancel" data-test="cancel" variant="outlined" size="large" @click="emit('cancelled')">
           {{ t('common.actions.cancel') }}
         </v-btn>
         <v-btn
           class="confirm"
+          data-test="confirm"
           color="primary"
           variant="flat"
           size="large"

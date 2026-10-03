@@ -31,6 +31,7 @@ const connectionKey = computed<string | null>(() => {
   <v-alert
     v-if="hasArrived"
     class="sent"
+    data-test="sent"
     type="success"
     variant="tonal"
     rounded="0"
@@ -42,6 +43,7 @@ const connectionKey = computed<string | null>(() => {
   <v-alert
     v-if="order.draftWasLost"
     class="draft-lost"
+    data-test="draft-lost"
     type="warning"
     variant="tonal"
     rounded="0"
@@ -54,6 +56,7 @@ const connectionKey = computed<string | null>(() => {
   <v-alert
     v-if="connectionKey !== null"
     class="connection"
+    data-test="connection"
     type="info"
     variant="tonal"
     rounded="0"

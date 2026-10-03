@@ -122,7 +122,7 @@ onMounted(async () => {
 <template>
   <v-app>
     <AppHeader v-if="showsTheAppBar" />
-    <v-main>
+    <v-main data-test="main">
     <AppNotices v-if="isAWaiterScreen" />
     <DoorGate v-if="screen === 'doorGate'" />
     <EnrolQr v-else-if="screen === 'enrolQr'" />

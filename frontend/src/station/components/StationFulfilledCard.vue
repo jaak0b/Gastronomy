@@ -21,42 +21,45 @@ const unitSummary = computed(() =>
 </script>
 
 <template>
-  <BaseStationCard class="station-fulfilled mb-4 bg-surface" :delivery-mode-colour="deliveryModeColour">
+  <BaseStationCard class="station-fulfilled mb-4 bg-surface" data-test="station-fulfilled" :delivery-mode-colour="deliveryModeColour">
     <div class="station-order-head d-flex flex-wrap align-baseline ga-2">
-      <span class="table-name text-h5">
+      <span class="table-name text-h5" data-test="table-name">
         {{ t('common.labels.table', { name: stationOrder.tableName }) }}
       </span>
-      <span class="station-order-heading text-body-2 text-medium-emphasis">
+      <span class="station-order-heading text-body-2 text-medium-emphasis" data-test="station-order-heading">
         {{ orderReference }}
       </span>
-      <span class="taken-by text-body-2 text-medium-emphasis">
+      <span class="taken-by text-body-2 text-medium-emphasis" data-test="taken-by">
         {{ takenByText }}
       </span>
-      <span class="done-counter text-body-2 ms-auto">{{ doneCounter }}</span>
+      <span class="done-counter text-body-2 ms-auto" data-test="done-counter">{{ doneCounter }}</span>
     </div>
     <div class="station-order-mode-row d-flex flex-wrap align-baseline ga-2 mb-1">
-      <span class="delivery-mode text-body-1 font-weight-medium" :style="{ color: deliveryModeColour }">
+      <span class="delivery-mode text-body-1 font-weight-medium" data-test="delivery-mode" :style="{ color: deliveryModeColour }">
         {{ deliveryText }}
       </span>
-      <span v-if="unitSummary !== ''" class="unit-summary text-body-1">{{ unitSummary }}</span>
+      <span v-if="unitSummary !== ''" class="unit-summary text-body-1" data-test="unit-summary">{{ unitSummary }}</span>
     </div>
     <v-divider class="my-2" />
     <div
       v-for="item in stationOrder.items"
       :key="item.orderItemId"
       class="station-item d-flex align-center ga-3"
+      data-test="station-item"
+      :data-test-id="item.orderItemId"
       :class="{ fulfilled: isFulfilled(item) }"
     >
-      <v-icon v-if="isFulfilled(item)" class="item-tick" icon="mdi-check" />
+      <v-icon v-if="isFulfilled(item)" class="item-tick" data-test="item-tick" icon="mdi-check" />
       <div class="item-text flex-grow-1">
-        <div class="item-name text-body-1">{{ item.itemName }}</div>
-        <div v-if="item.note !== null" class="item-note text-body-2">
+        <div class="item-name text-body-1" data-test="item-name">{{ item.itemName }}</div>
+        <div v-if="item.note !== null" class="item-note text-body-2" data-test="item-note">
           {{ t('common.labels.note', { note: item.note }) }}
         </div>
       </div>
       <v-btn
         v-if="isFulfilled(item)"
         class="put-back"
+        data-test="put-back"
         variant="outlined"
         size="large"
         :disabled="isWorking"

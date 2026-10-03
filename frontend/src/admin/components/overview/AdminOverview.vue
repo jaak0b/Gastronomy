@@ -73,19 +73,20 @@ onMounted(async () => {
 <template>
   <v-container class="admin-overview">
     <h1 class="text-h5 mb-4">{{ t('admin.overview.title') }}</h1>
-    <v-alert v-if="noFestivalExists" class="missing-festival mb-4" type="warning" variant="tonal">
+    <v-alert v-if="noFestivalExists" class="missing-festival mb-4" data-test="missing-festival" type="warning" variant="tonal">
       {{ t('admin.overview.messages.missingFestival') }}
     </v-alert>
     <v-alert
       v-else-if="runningFestival === null"
       class="not-running mb-4"
+      data-test="not-running"
       type="info"
       variant="tonal"
     >
       {{ t('admin.overview.messages.noFestivalIsRunning') }}
     </v-alert>
     <template v-else>
-      <h2 class="running-festival text-h6 mb-2">{{ runningFestival.name }}</h2>
+      <h2 class="running-festival text-h6 mb-2" data-test="running-festival">{{ runningFestival.name }}</h2>
       <v-alert v-if="rows.length === 0" class="ready mb-4" type="success" variant="tonal">
         {{ t('admin.overview.messages.ready') }}
       </v-alert>
@@ -93,6 +94,7 @@ onMounted(async () => {
         v-for="(row, index) in rows"
         :key="index"
         class="readiness-row mb-2"
+        data-test="readiness-row"
         type="warning"
         variant="tonal"
       >

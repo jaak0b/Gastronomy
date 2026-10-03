@@ -8,7 +8,7 @@ const session = useSessionStore()
 </script>
 
 <template>
-  <v-container class="welcome">
+  <v-container class="welcome" data-test="welcome">
     <LanguageSwitch :language="session.language" @select="session.setLanguage" />
     <h1 class="text-h4 mt-4">{{ t('shared.startup.messages.deviceNotSetUp') }}</h1>
   </v-container>

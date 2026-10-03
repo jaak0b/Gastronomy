@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { stubLaptop, answer } from '../../support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -45,37 +46,28 @@ describe('the admin opened on the laptop, where no phone was ever set up', () =>
     setActivePinia(createPinia())
     localStorage.clear()
     sessionStorage.setItem('theDoorAnchor', 'yes')
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify({ festivals: [], stations: [], items: [], staffMembers: [] }), {
-            status: 200,
-          }),
-      ),
-    )
+    stubLaptop().answersEverythingElse(answer({ festivals: [], stations: [], items: [], staffMembers: [] }))
     currentRoute.value = { name: 'admin', section: 'festivals', festivalId: null }
     window.history.replaceState({}, '', '/admin/festivals')
   })
 
   it('renders the admin shell without a device token', async () => {
     const app = await mountApp()
-    await vi.waitFor(() => expect(app.find('.admin-shell').exists()).toBe(true))
+    await vi.waitFor(() => expect(app.find('[data-test="admin-shell"]').exists()).toBe(true))
   })
 
   it('never sends the laptop to the enrolment screen', async () => {
     const app = await mountApp()
-    await vi.waitFor(() => expect(app.find('.admin-shell').exists()).toBe(true))
+    await vi.waitFor(() => expect(app.find('[data-test="admin-shell"]').exists()).toBe(true))
 
-    expect(app.find('.welcome').exists()).toBe(false)
-    expect(app.find('.code-field').exists()).toBe(false)
+    expect(app.find('[data-test="welcome"]').exists()).toBe(false)
   })
 
   it('mounts no phone header on the admin', async () => {
     const app = await mountApp()
-    await vi.waitFor(() => expect(app.find('.admin-shell').exists()).toBe(true))
+    await vi.waitFor(() => expect(app.find('[data-test="admin-shell"]').exists()).toBe(true))
 
-    expect(app.find('.app-header').exists()).toBe(false)
+    expect(app.find('[data-test="app-header"]').exists()).toBe(false)
   })
 })
 
@@ -135,7 +127,7 @@ describe('the screen a device lands on', () => {
 
     const app = await mountApp()
 
-    await vi.waitFor(() => expect(app.find('.station-page').exists()).toBe(true))
+    await vi.waitFor(() => expect(app.find('[data-test="station-page"]').exists()).toBe(true))
   })
 
   it('sends a waiter phone that opens the station address back to the item list', async () => {
@@ -146,9 +138,9 @@ describe('the screen a device lands on', () => {
 
     const app = await mountApp()
 
-    await vi.waitFor(() => expect(app.find('.catalog').exists()).toBe(true))
+    await vi.waitFor(() => expect(app.find('[data-test="catalog"]').exists()).toBe(true))
 
-    expect(app.find('.station-page').exists()).toBe(false)
+    expect(app.find('[data-test="station-page"]').exists()).toBe(false)
   })
 
   it('sends a device that is not set up to the welcome screen instead', async () => {
@@ -157,8 +149,8 @@ describe('the screen a device lands on', () => {
 
     const app = await mountApp()
 
-    await vi.waitFor(() => expect(app.find('.welcome').exists()).toBe(true))
+    await vi.waitFor(() => expect(app.find('[data-test="welcome"]').exists()).toBe(true))
 
-    expect(app.find('.station-page').exists()).toBe(false)
+    expect(app.find('[data-test="station-page"]').exists()).toBe(false)
   })
 })

@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import FestivalsList from '../../../../src/admin/components/festivals/FestivalsList.vue'
-import { pressInDialog, testPlugins, waitForDialog } from '../../../support/plugins'
+import { testPlugins } from '../../../support/plugins'
+import { pressInDialog, waitForDialog, typeInto, onScreen } from '../../../support/dom'
+import { stubLaptop, answer, type StubbedLaptop, refusal } from '../../../support/laptop'
 
 const RUNNING = {
   festivalId: 'fest-1',
@@ -31,26 +33,8 @@ const HIDDEN = {
   isHidden: true,
 }
 
-interface Call {
-  url: string
-  method: string
-  body: unknown
-}
-
-function stubLaptop(festivals: unknown[]): Call[] {
-  const calls: Call[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string, init?: RequestInit) => {
-      calls.push({
-        url,
-        method: init?.method ?? 'GET',
-        body: init?.body === undefined ? null : JSON.parse(String(init.body)),
-      })
-      return new Response(JSON.stringify({ festivals }), { status: 200 })
-    }),
-  )
-  return calls
+function festivalsLaptop(festivals: unknown[]): StubbedLaptop {
+  return stubLaptop().answersEverythingElse(answer({ festivals }))
 }
 
 function mountList() {
@@ -69,130 +53,125 @@ describe('the list of festivals', () => {
   })
 
   it('names the festival that is running now', async () => {
-    stubLaptop([RUNNING])
+    festivalsLaptop([RUNNING])
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.festival-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="festival-row"]').exists()).toBe(true))
 
-    expect(list.get('.festival-row .name').text()).toBe('Sommerfest')
-    expect(list.get('.festival-row .running').text()).toBe('Aktiv')
+    expect(list.get('[data-test="festival-row"] [data-test="name"]').text()).toBe('Sommerfest')
+    expect(list.get('[data-test="festival-row"] [data-test="running"]').text()).toBe('Aktiv')
   })
 
   it('counts the stations, the items and the orders of each festival', async () => {
-    stubLaptop([RUNNING])
+    festivalsLaptop([RUNNING])
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.festival-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="festival-row"]').exists()).toBe(true))
 
-    expect(list.get('.station-count').text()).toBe('2 Ausgabestellen')
-    expect(list.get('.menu-item-count').text()).toBe('8 Artikel')
-    expect(list.get('.order-count').text()).toBe('1 Bestellung')
+    expect(list.get('[data-test="station-count"]').text()).toBe('2 Ausgabestellen')
+    expect(list.get('[data-test="menu-item-count"]').text()).toBe('8 Artikel')
+    expect(list.get('[data-test="order-count"]').text()).toBe('1 Bestellung')
   })
 
   it('leaves the hidden ones out until the admin asks to see them', async () => {
-    stubLaptop([RUNNING, HIDDEN])
+    festivalsLaptop([RUNNING, HIDDEN])
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.festival-row').exists()).toBe(true))
-    expect(list.findAll('.festival-row')).toHaveLength(1)
+    await vi.waitFor(() => expect(list.find('[data-test="festival-row"]').exists()).toBe(true))
+    expect(list.findAll('[data-test="festival-row"]')).toHaveLength(1)
 
-    await list.get('.show-hidden input').setValue(true)
+    await list.get('[data-test="show-hidden"] input').setValue(true)
 
-    expect(list.findAll('.festival-row')).toHaveLength(2)
+    expect(list.findAll('[data-test="festival-row"]')).toHaveLength(2)
   })
 
   it('says how to start when the laptop knows no festival at all', async () => {
-    stubLaptop([])
+    festivalsLaptop([])
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.none-yet').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="none-yet"]').exists()).toBe(true))
 
-    expect(list.get('.none-yet').text()).toBe(
+    expect(list.get('[data-test="none-yet"]').text()).toBe(
       'Es ist noch kein Fest angelegt. Klicken Sie auf "Neues Fest".',
     )
   })
 
   it("keeps every row's buttons in one shared group so they line up", async () => {
-    stubLaptop([RUNNING, OVER])
+    festivalsLaptop([RUNNING, OVER])
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.findAll('.festival-row')).toHaveLength(2))
+    await vi.waitFor(() => expect(list.findAll('[data-test="festival-row"]')).toHaveLength(2))
 
-    const rows = list.findAll('.festival-row')
-    expect(rows[0].find('.actions .open').exists()).toBe(true)
-    expect(rows[0].find('.actions .copy').exists()).toBe(true)
-    expect(rows[1].find('.actions .hide').exists()).toBe(true)
+    const rows = list.findAll('[data-test="festival-row"]')
+    expect(rows[0].find('[data-test="actions"] [data-test="open"]').exists()).toBe(true)
+    expect(rows[0].find('[data-test="actions"] [data-test="copy"]').exists()).toBe(true)
+    expect(rows[1].find('[data-test="actions"] [data-test="hide"]').exists()).toBe(true)
 
-    const reserved = rows[0].get('.conditional-action .action-measure')
+    const reserved = rows[0].get('[data-test="conditional-action"] [data-test="action-measure"]')
     expect(reserved.text()).toContain('Ausblenden')
     expect(reserved.text()).toContain('Einblenden')
   })
 
   it('offers no way to hide the festival that is running', async () => {
-    stubLaptop([RUNNING, OVER])
+    festivalsLaptop([RUNNING, OVER])
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.festival-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="festival-row"]').exists()).toBe(true))
 
-    const rows = list.findAll('.festival-row')
-    expect(rows[0].find('.hide').exists()).toBe(false)
-    expect(rows[1].find('.hide').exists()).toBe(true)
+    const rows = list.findAll('[data-test="festival-row"]')
+    expect(rows[0].find('[data-test="hide"]').exists()).toBe(false)
+    expect(rows[1].find('[data-test="hide"]').exists()).toBe(true)
   })
 
   it('opens the page of that festival, which is where its stations and its menu live', async () => {
-    stubLaptop([RUNNING])
+    festivalsLaptop([RUNNING])
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.open').exists()).toBe(true))
-    expect(list.get('.open').text()).toBe('Fest bearbeiten')
+    await vi.waitFor(() => expect(list.find('[data-test="open"]').exists()).toBe(true))
+    expect(list.get('[data-test="open"]').text()).toBe('Fest bearbeiten')
 
-    await list.get('.open').trigger('click')
+    await list.get('[data-test="open"]').trigger('click')
 
     expect(window.location.pathname).toBe('/admin/festivals/fest-1')
   })
 
   it('asks before a festival is hidden and hides it once the answer is yes', async () => {
-    const calls = stubLaptop([OVER])
+    const laptop = festivalsLaptop([OVER])
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.hide').exists()).toBe(true))
-    await list.get('.hide').trigger('click')
+    await vi.waitFor(() => expect(list.find('[data-test="hide"]').exists()).toBe(true))
+    await list.get('[data-test="hide"]').trigger('click')
     await waitForDialog()
-    expect(calls.some((call) => call.method === 'POST')).toBe(false)
+    expect(laptop.calls.some((call) => call.method === 'POST')).toBe(false)
 
-    await pressInDialog('.confirm')
+    await pressInDialog('[data-test="confirm"]')
 
     await vi.waitFor(() =>
-      expect(calls.find((call) => call.method === 'POST')?.url).toBe(
+      expect(laptop.calls.find((call) => call.method === 'POST')?.url).toBe(
         '/api/admin/festivals/fest-2/hide',
       ),
     )
   })
 
   it('sends a new festival with the moments the admin typed, in UTC', async () => {
-    const calls = stubLaptop([])
+    const laptop = festivalsLaptop([])
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.new-festival').exists()).toBe(true))
-    await list.get('.new-festival').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).not.toBeNull())
+    await vi.waitFor(() => expect(list.find('[data-test="new-festival"]').exists()).toBe(true))
+    await list.get('[data-test="new-festival"]').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).not.toBeNull())
 
-    const form = document.querySelector('.form-dialog') as HTMLElement
-    const fill = (selector: string, value: string): void => {
-      const field = form.querySelector(selector) as HTMLInputElement
-      field.value = value
-      field.dispatchEvent(new Event('input'))
-    }
-    fill('.festival-name-field input', 'Herbstfest')
-    fill('.festival-start-field input', '2026-10-03T12:00')
-    fill('.festival-end-field input', '2026-10-04T15:00')
+    const form = document.querySelector('[data-test="form-dialog"]') as HTMLElement
+    typeInto(form.querySelector<HTMLElement>('[data-test="festival-name-field"] input') as HTMLElement, 'Herbstfest')
+    typeInto(form.querySelector<HTMLElement>('[data-test="festival-start-field"] input') as HTMLElement, '2026-10-03T12:00')
+    typeInto(form.querySelector<HTMLElement>('[data-test="festival-end-field"] input') as HTMLElement, '2026-10-04T15:00')
     await vi.waitFor(() =>
-      expect((form.querySelector('.form-save') as HTMLButtonElement).disabled).toBe(false),
+      expect((form.querySelector('[data-test="form-save"]') as HTMLButtonElement).disabled).toBe(false),
     )
-    ;(form.querySelector('.form-save') as HTMLElement).click()
+    ;(form.querySelector('[data-test="form-save"]') as HTMLElement).click()
 
     await vi.waitFor(() => {
-      const sent = calls.find((call) => call.method === 'POST')
+      const sent = laptop.calls.find((call) => call.method === 'POST')
       expect(sent?.url).toBe('/api/admin/festivals')
       expect(sent?.body).toEqual({
         name: 'Herbstfest',
@@ -203,57 +182,40 @@ describe('the list of festivals', () => {
   })
 
   it('copies a festival under a name and a period typed fresh', async () => {
-    const calls = stubLaptop([RUNNING])
+    const laptop = festivalsLaptop([RUNNING])
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.copy').exists()).toBe(true))
-    await list.get('.copy').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).not.toBeNull())
+    await vi.waitFor(() => expect(list.find('[data-test="copy"]').exists()).toBe(true))
+    await list.get('[data-test="copy"]').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).not.toBeNull())
 
-    const form = document.querySelector('.form-dialog') as HTMLElement
-    expect((form.querySelector('.festival-name-field input') as HTMLInputElement).value).toBe('')
-    expect(calls.some((call) => call.method === 'POST')).toBe(false)
+    const form = document.querySelector('[data-test="form-dialog"]') as HTMLElement
+    expect((form.querySelector('[data-test="festival-name-field"] input') as HTMLInputElement).value).toBe('')
+    expect(laptop.calls.some((call) => call.method === 'POST')).toBe(false)
   })
 
   it('shows a refusal inside the dialog, not behind it as well', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
-        if ((init?.method ?? 'GET') === 'POST') {
-          return new Response(
-            JSON.stringify({
-              code: 'ValidationFailed',
-              messageKey: 'errors.admin.actionFailed',
-              parameters: {},
-              details: null,
-            }),
-            { status: 400 },
-          )
-        }
-        return new Response(JSON.stringify({ festivals: [] }), { status: 200 })
-      }),
+    festivalsLaptop([]).answers(
+      'POST',
+      /./,
+      refusal('errors.admin.actionFailed', { status: 400, code: 'ValidationFailed' }),
     )
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.new-festival').exists()).toBe(true))
-    await list.get('.new-festival').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).not.toBeNull())
+    await vi.waitFor(() => expect(list.find('[data-test="new-festival"]').exists()).toBe(true))
+    await list.get('[data-test="new-festival"]').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).not.toBeNull())
 
-    const form = document.querySelector('.form-dialog') as HTMLElement
-    const fill = (selector: string, value: string): void => {
-      const field = form.querySelector(selector) as HTMLInputElement
-      field.value = value
-      field.dispatchEvent(new Event('input'))
-    }
-    fill('.festival-name-field input', 'Herbstfest')
-    fill('.festival-start-field input', '2026-10-03T12:00')
-    fill('.festival-end-field input', '2026-10-04T15:00')
+    const form = document.querySelector('[data-test="form-dialog"]') as HTMLElement
+    typeInto(onScreen('[data-test="festival-name-field"] input', form), 'Herbstfest')
+    typeInto(onScreen('[data-test="festival-start-field"] input', form), '2026-10-03T12:00')
+    typeInto(onScreen('[data-test="festival-end-field"] input', form), '2026-10-04T15:00')
     await vi.waitFor(() =>
-      expect((form.querySelector('.form-save') as HTMLButtonElement).disabled).toBe(false),
+      expect((form.querySelector('[data-test="form-save"]') as HTMLButtonElement).disabled).toBe(false),
     )
-    ;(form.querySelector('.form-save') as HTMLElement).click()
+    ;(form.querySelector('[data-test="form-save"]') as HTMLElement).click()
 
-    await vi.waitFor(() => expect(document.querySelector('.form-dialog .refusal')).not.toBeNull())
-    expect(list.find('.refusal').exists()).toBe(false)
+    await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"] [data-test="refusal"]')).not.toBeNull())
+    expect(list.find('[data-test="refusal"]').exists()).toBe(false)
   })
 })

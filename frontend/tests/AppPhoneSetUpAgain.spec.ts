@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { stubLaptop, answer } from './support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('./support/hubConnection')).signalrModuleFake())
 
@@ -108,7 +109,7 @@ describe('a waiter who sends an order from a phone that was set up again while t
     await order.send('leaveOpen')
     await flushPromises()
 
-    expect(phone?.find('.welcome').exists()).toBe(true)
+    expect(phone?.find('[data-test="welcome"]').exists()).toBe(true)
   })
 
   it('still has the order on the phone, so it comes back once the new code is scanned', async () => {
@@ -134,16 +135,13 @@ describe('a waiter who sends an order from a phone that was set up again while t
 describe('a phone whose waiter was set up again while the phone was switched off', () => {
   it('asks to be set up again as soon as the laptop refuses the check the app makes at the start', async () => {
     localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.the-laptop-forgot')
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response('{}', { status: 401 })),
-    )
+    stubLaptop().answersEverythingElse(answer({}, 401))
     navigate('/')
 
     phone = mount(App, { global: { plugins: testPlugins() }, attachTo: document.body })
     await flushPromises()
 
-    expect(phone.find('.welcome').exists()).toBe(true)
+    expect(phone.find('[data-test="welcome"]').exists()).toBe(true)
   })
 })
 
@@ -161,13 +159,13 @@ describe('a phone that is set up again after the laptop refused the order it was
   it('puts the waiter back on the order they had started', async () => {
     await aPhoneBackOnItsOrderAfterANewCodeWasScanned()
 
-    expect(phone?.find('.line-name').text()).toBe('1 x Wasser')
+    expect(phone?.find('[data-test="line-name"]').text()).toBe('1 x Wasser')
   })
 
   it('says nothing about a laptop that was not reached, because that is not what happened', async () => {
     await aPhoneBackOnItsOrderAfterANewCodeWasScanned()
 
-    expect(phone?.find('.send-failure').exists()).toBe(false)
+    expect(phone?.find('[data-test="send-failure"]').exists()).toBe(false)
   })
 })
 
@@ -220,7 +218,7 @@ describe('a waiter whose order was already frozen when the phone was set up agai
   it('is asked to set the phone up again, the same as any other waiter', async () => {
     await aFrozenOrderTheLaptopRefusesBecauseItForgotThePhone()
 
-    expect(phone?.find('.welcome').exists()).toBe(true)
+    expect(phone?.find('[data-test="welcome"]').exists()).toBe(true)
   })
 
   it('reads the same sentence as before on the summary once the new code is scanned', async () => {
@@ -229,7 +227,7 @@ describe('a waiter whose order was already frozen when the phone was set up agai
     await useSessionStore().redeem({ code: '123456' })
     await flushPromises()
 
-    expect(phone?.find('.send-failure .failure-message').text()).toBe(
+    expect(phone?.find('[data-test="send-failure"] [data-test="failure-message"]').text()).toBe(
       'Es ist nicht klar, ob die Bestellung angekommen ist. Tippen Sie auf "Erneut senden".',
     )
   })
@@ -240,6 +238,6 @@ describe('a waiter whose order was already frozen when the phone was set up agai
     await useSessionStore().redeem({ code: '123456' })
     await flushPromises()
 
-    expect(phone?.find('.send-again').exists()).toBe(true)
+    expect(phone?.find('[data-test="send-again"]').exists()).toBe(true)
   })
 })

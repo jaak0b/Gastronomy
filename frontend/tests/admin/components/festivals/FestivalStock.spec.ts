@@ -6,6 +6,8 @@ import FestivalStock from '../../../../src/admin/components/festivals/FestivalSt
 import { useAdminFestivalStockStore } from '../../../../src/admin/stores/festivalStock'
 import type { AdminFestivalIngredientView } from '../../../../src/shared/api/generatedSchemas'
 import { testPlugins } from '../../../support/plugins'
+import { stubLaptop, answer, type StubbedLaptop } from '../../../support/laptop'
+import { typeInto, leave, inputOf } from '../../../support/dom'
 
 const FESTIVAL_ID = 'festival-sommerfest'
 
@@ -35,24 +37,10 @@ interface Call {
   body: unknown
 }
 
-function stubLaptop(ingredients: AdminFestivalIngredientView[]): Call[] {
-  const calls: Call[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string, init?: RequestInit) => {
-      const method = init?.method ?? 'GET'
-      calls.push({
-        url,
-        method,
-        body: init?.body === undefined ? null : JSON.parse(String(init.body)),
-      })
-      if (method !== 'GET') {
-        return new Response(JSON.stringify({}), { status: 200 })
-      }
-      return new Response(JSON.stringify({ ingredients }), { status: 200 })
-    }),
-  )
-  return calls
+function stockLaptop(ingredients: AdminFestivalIngredientView[]): StubbedLaptop {
+  return stubLaptop()
+    .answersEverythingElse(answer({}))
+    .answers('GET', /./, answer({ ingredients }))
 }
 
 async function mountStock(locale: 'de' | 'en' = 'de'): Promise<VueWrapper> {
@@ -69,20 +57,7 @@ function allTexts(selector: string): string[] {
 }
 
 function amountInputs(): HTMLInputElement[] {
-  return [...document.querySelectorAll<HTMLInputElement>('.festival-ingredient-row [data-test="amount-input"] input')]
-}
-
-function typeInto(input: HTMLInputElement, value: string): void {
-  input.value = value
-  input.dispatchEvent(new Event('input'))
-}
-
-function leave(input: HTMLInputElement): void {
-  input.dispatchEvent(new FocusEvent('blur'))
-}
-
-function written(calls: Call[]): Call[] {
-  return calls.filter((call) => call.method !== 'GET')
+  return [...document.querySelectorAll<HTMLInputElement>('[data-test="festival-ingredient-row"] [data-test="amount-input"] input')]
 }
 
 beforeEach(() => {
@@ -96,46 +71,46 @@ afterEach(() => {
 
 describe('the stock of a festival', () => {
   it('shows each ingredient with its amount, what was used and when it runs out in German', async () => {
-    stubLaptop([FLOUR, BUN])
+    stockLaptop([FLOUR, BUN])
 
     await mountStock()
 
-    expect(allTexts('.festival-ingredient-row .name')).toEqual(['Mehl', 'Brötchen'])
+    expect(allTexts('[data-test="festival-ingredient-row"] [data-test="ingredient-name"]')).toEqual(['Mehl', 'Brötchen'])
     expect(amountInputs().map((input) => input.value)).toEqual(['1500', ''])
-    expect(allTexts('.festival-ingredient-row [data-test="amount-unit"]')).toEqual(['Stück'])
-    expect(allTexts('.used-amount')).toEqual(['Verbraucht: 250 g', 'Verbraucht: 3 Stück'])
-    expect(allTexts('.runs-out')).toEqual(['Reicht voraussichtlich bis 12.07., 18:30', ''])
+    expect(allTexts('[data-test="festival-ingredient-row"] [data-test="amount-unit"]')).toEqual(['Stück'])
+    expect(allTexts('[data-test="used-amount"]')).toEqual(['Verbraucht: 250 g', 'Verbraucht: 3 Stück'])
+    expect(allTexts('[data-test="runs-out"]')).toEqual(['Reicht voraussichtlich bis 12.07., 18:30', ''])
   })
 
   it('shows what was used and when it runs out in English', async () => {
-    stubLaptop([FLOUR, BUN])
+    stockLaptop([FLOUR, BUN])
 
     await mountStock('en')
 
     expect(amountInputs().map((input) => input.value)).toEqual(['1500', ''])
-    expect(allTexts('.festival-ingredient-row [data-test="amount-unit"]')).toEqual(['pieces'])
-    expect(allTexts('.used-amount')).toEqual(['Used: 250 g', 'Used: 3 pieces'])
-    expect(allTexts('.runs-out')).toEqual(['Expected to last until 07/12, 06:30 PM', ''])
+    expect(allTexts('[data-test="festival-ingredient-row"] [data-test="amount-unit"]')).toEqual(['pieces'])
+    expect(allTexts('[data-test="used-amount"]')).toEqual(['Used: 250 g', 'Used: 3 pieces'])
+    expect(allTexts('[data-test="runs-out"]')).toEqual(['Expected to last until 07/12, 06:30 PM', ''])
   })
 
   it('is hidden when the festival has no ingredients', async () => {
-    stubLaptop([])
+    stockLaptop([])
 
     await mountStock()
 
-    expect(document.querySelector('.festival-stock')).toBeNull()
+    expect(document.querySelector('[data-test="festival-stock"]')).toBeNull()
   })
 
   it('sends an entered amount in grams', async () => {
-    const calls = stubLaptop([FLOUR, BUN])
+    const laptop = stockLaptop([FLOUR, BUN])
     await mountStock()
-    const flourAmount = amountInputs()[0]
+    const flourAmount = inputOf('[data-test="festival-ingredient-row"][data-test-id="ingredient-mehl"] [data-test="amount-input"]')
 
     typeInto(flourAmount, '2000,5')
     leave(flourAmount)
 
     await vi.waitFor(() =>
-      expect(written(calls)).toEqual([
+      expect(laptop.writes()).toEqual([
         {
           url: '/api/admin/festivals/festival-sommerfest/ingredients/ingredient-mehl',
           method: 'PUT',
@@ -146,15 +121,15 @@ describe('the stock of a festival', () => {
   })
 
   it('sends no limit when the admin clears the field', async () => {
-    const calls = stubLaptop([FLOUR, BUN])
+    const laptop = stockLaptop([FLOUR, BUN])
     await mountStock()
-    const flourAmount = amountInputs()[0]
+    const flourAmount = inputOf('[data-test="festival-ingredient-row"][data-test-id="ingredient-mehl"] [data-test="amount-input"]')
 
     typeInto(flourAmount, '')
     leave(flourAmount)
 
     await vi.waitFor(() =>
-      expect(written(calls)).toEqual([
+      expect(laptop.writes()).toEqual([
         {
           url: '/api/admin/festivals/festival-sommerfest/ingredients/ingredient-mehl',
           method: 'PUT',
@@ -165,7 +140,7 @@ describe('the stock of a festival', () => {
   })
 
   it('offers grams and kilograms for a gram ingredient and shows a saved 1500 grams in grams', async () => {
-    stubLaptop([FLOUR, BUN])
+    stockLaptop([FLOUR, BUN])
 
     const stock = await mountStock()
 
@@ -176,20 +151,20 @@ describe('the stock of a festival', () => {
       { value: 'kilogram', title: 'kg' },
     ])
     expect(selects[0].props('modelValue')).toBe('gram')
-    expect(amountInputs()[0].value).toBe('1500')
+    expect(inputOf('[data-test="festival-ingredient-row"][data-test-id="ingredient-mehl"] [data-test="amount-input"]').value).toBe('1500')
   })
 
   it('sends 2 kilograms as 2000 grams', async () => {
-    const calls = stubLaptop([FLOUR, BUN])
+    const laptop = stockLaptop([FLOUR, BUN])
     const stock = await mountStock()
     await stock.getComponent(VSelect).setValue('kilogram')
-    const flourAmount = amountInputs()[0]
+    const flourAmount = inputOf('[data-test="festival-ingredient-row"][data-test-id="ingredient-mehl"] [data-test="amount-input"]')
 
     typeInto(flourAmount, '2')
     leave(flourAmount)
 
     await vi.waitFor(() =>
-      expect(written(calls)).toEqual([
+      expect(laptop.writes()).toEqual([
         {
           url: '/api/admin/festivals/festival-sommerfest/ingredients/ingredient-mehl',
           method: 'PUT',

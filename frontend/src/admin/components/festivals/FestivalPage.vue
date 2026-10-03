@@ -138,6 +138,7 @@ onUnmounted(() => {
   <v-container class="admin-festival">
     <v-btn
       class="back-to-festivals mb-2"
+      data-test="back-to-festivals"
       variant="text"
       prepend-icon="mdi-arrow-left"
       @click="navigate('/admin/festivals')"
@@ -157,8 +158,8 @@ onUnmounted(() => {
       <v-card class="festival-fields mb-4" variant="outlined">
         <div class="pa-4">
           <div class="festival-heading d-flex align-center flex-wrap ga-3 mb-4">
-            <h1 class="festival-name text-h5">{{ festival.name }}</h1>
-            <v-chip v-if="festival.isRunning" class="running" size="small" color="success">
+            <h1 class="festival-name text-h5" data-test="festival-name">{{ festival.name }}</h1>
+            <v-chip v-if="festival.isRunning" class="running" data-test="running" size="small" color="success">
               {{ t('admin.festivals.labels.running') }}
             </v-chip>
           </div>
@@ -167,6 +168,7 @@ onUnmounted(() => {
             <v-text-field
               v-model="festivalName.edited"
               class="festival-name-field flex-grow-1"
+              data-test="festival-name-field"
               maxlength="80"
               density="compact"
               hide-details="auto"
@@ -180,6 +182,7 @@ onUnmounted(() => {
             <v-text-field
               v-model="startsAt.edited"
               class="festival-start-field"
+              data-test="festival-start-field"
               type="datetime-local"
               density="compact"
               hide-details
@@ -190,6 +193,7 @@ onUnmounted(() => {
             <v-text-field
               v-model="endsAt.edited"
               class="festival-end-field"
+              data-test="festival-end-field"
               type="datetime-local"
               density="compact"
               hide-details
@@ -201,7 +205,7 @@ onUnmounted(() => {
           <p v-if="refusedField === 'period'" class="period-refusal text-error text-body-2 mt-2">
             {{ t('errors.admin.festivals.periodInvalid') }}
           </p>
-          <v-alert v-if="refusalText !== null" class="refusal mt-3" type="warning" variant="tonal">
+          <v-alert v-if="refusalText !== null" class="refusal mt-3" data-test="refusal" type="warning" variant="tonal">
             {{ refusalText }}
           </v-alert>
         </div>

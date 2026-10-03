@@ -68,10 +68,10 @@ function runOutText(runsOutAtUtc: string | null): string {
 </script>
 
 <template>
-  <section v-if="stock.ingredients.length > 0" class="festival-stock mb-4">
+  <section v-if="stock.ingredients.length > 0" class="festival-stock mb-4" data-test="festival-stock">
     <v-card variant="outlined">
       <div class="pa-4">
-        <h2 class="section-heading text-h6 mb-3">{{ t('admin.ingredients.title') }}</h2>
+        <h2 class="section-heading text-h6 mb-3" data-test="section-heading">{{ t('admin.ingredients.title') }}</h2>
         <div
           v-for="(ingredient, position) in stock.ingredients"
           :key="ingredient.ingredientId"
@@ -103,11 +103,12 @@ function runOutText(runsOutAtUtc: string | null): string {
                 })
               }}
             </span>
-            <span class="runs-out text-body-2">{{ runOutText(ingredient.runsOutAtUtc) }}</span>
+            <span class="runs-out text-body-2" data-test="runs-out">{{ runOutText(ingredient.runsOutAtUtc) }}</span>
           </div>
           <v-alert
             v-if="refusalText !== null && refusedIngredientId === ingredient.ingredientId"
             class="refusal mb-2"
+            data-test="refusal"
             type="warning"
             variant="tonal"
           >

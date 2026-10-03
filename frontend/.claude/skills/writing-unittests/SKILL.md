@@ -5,92 +5,202 @@ description: Use when adding or changing a Vitest unit test under tests/**, when
 
 # Writing unit tests
 
-The project has one test tier. Unit tests (Vitest, `tests/**`) are the internal correctness net
-for whoever touches the code: they keep the engine math honest against synthetic ground truth.
-This skill governs them.
+The frontend has one test tier. Vitest specs under `tests/` are the correctness net for whoever
+touches the code next: the phone's order flow, the station board, the admin screens and the plain
+TypeScript in every `core/` folder. This skill says how such a test is written. It follows Yoni
+Goldberg's JavaScript testing best practices where they apply to a Vue app that talks to a stubbed
+laptop, and it keeps the rules this project already learned the hard way.
 
-## The two questions every test must pass
+## The golden rule
 
-A unit test earns its place by answering yes to both (Khorikov's four pillars, Beck's test
-desiderata, the Google Testing Blog agree on the core):
+A test is not production code. It is short, flat and boring, and a reader understands it in one
+pass without opening another file. Read top to bottom, it tells a small story: a waiter has a
+table with two open items, taps the amount button, types 2,00 and a reason, and the laptop is sent
+exactly that.
 
-1. **Would it fail on a real bug?** (regression protection)
-2. **Would it stay green through a behavior-preserving refactor?** (refactoring resistance)
+That is why a test holds no logic. There is no `if`, no loop over outcomes, no `try`, and no
+expected value worked out at run time. When a test needs a branch, it is two tests. A table of
+cases with `it.each` is fine, because each row is still a plain statement.
 
-Plus fast feedback and maintainability. Test observable behavior through the public interface of
-the module under test; never assert internal steps, private helpers, or call sequences. Test
-state, not interactions: an interaction test checks how a result was reached, and only the result
-matters. A test that fails both questions is a change detector, and a change detector is worse
-than no test, because it trains people to update expectations on sight.
+## Expected values are literals
 
-## HARD RULE: no math in tests
+An expected value is never calculated inside the test: no formula, no conversion, and no call to
+a production helper to build the expectation. Write the literal you worked out by hand, such as
+`'3,50 €'` or `{ paidPriceCents: 200 }`. A test that recomputes its expectation with the code it
+checks shares every bug of that code and can never catch one.
 
-Owner-mandated and non-negotiable. An expected value is NEVER calculated inside a test: no
-formulas, no unit conversions, no reuse of production helpers to derive the expectation. The
-pipelines are deterministic, so every expected result is a hardcoded literal with an independent
-provenance: hand-calculated once outside the test, taken from a spec or standard, or the known
-ground truth a synthetic fixture was generated from. A test that recomputes the expected value
-with the same formula as production is tautological: it shares any bug with the code under test
-and can never catch the bug it mirrors (this exact failure shipped a sign-inversion bug once).
+## Naming a test
 
-**Clarification, not an exception:** the render-recovery pattern
-(`tests/helpers/paRender.ts`, `emRender.ts`, `isRender.ts`, and `TestData_2solid.png`)
-generates the INPUT image from known parameters and asserts the pipeline recovers those hardcoded
-parameters within tolerance. That is the gold-standard pattern in this repo, because the truth is
-the seed literal, not a computed expectation. CLAUDE.md rule 1 makes these tests the gate on any
-measurement-math change: they must stay green, unweakened.
+A test name has three parts: the unit under test, the scenario, and the outcome. In this project
+the unit lives in the `describe` text and the scenario and outcome in the `it` text, written as
+behaviour a person can see, not as a method name. `describe('an order the laptop did not
+confirm')` with `it('offers no way to take the sold-out line off, because the laptop may hold the
+order as it was')` reads as one sentence and tells a reviewer what broke when it goes red.
 
-Tolerances on float assertions come from the method's physical or numerical noise floor and are
-justified where chosen, never a convenient round number, and never widened to make a failure pass.
+Name a `describe` block after a situation, never after a function. "sending the order from the
+review screen" and "a refusal the admin has walked away from" are scenarios; "send()" and
+"handleRefusal" are not. Nest a second `describe` only when a scenario really splits in two.
 
-## Banned smells
+## Arrange, act, assert
 
-Full catalogue with examples in [references/smells.md](references/smells.md). The headline list
-(Meszaros's xUnit Test Patterns, Google Testing Blog):
+Every test has three visible blocks separated by a blank line: setting the scene, the one thing
+that happens, and what is checked afterwards.
 
-- **Tautological test**: expected value derived by the production formula (see hard rule above).
-- **Change detector**: fails on any implementation change; unread snapshot dumps.
-- **Over-mocking**: `expect(mock).toHaveBeenCalledWith(...)` mirroring the calling code tests
-  "did I write this code". Mock only true boundaries (IO, network, clock). This repo injects a
-  real `cv` instance and uses real fixtures (the classicist style); keep it that way.
-- **Obscure test / mystery guest**: the expected behavior is unreadable without opening the
-  implementation or an unseen shared fixture.
-- **Assertion roulette**: many unlabeled asserts in one test.
-- **Conditional logic in tests**: no if/loops branching on outcomes; parametrized case tables are
-  fine.
-- **Shared mutable fixtures**: prefer local builders per test.
-- **DRY over DAMP**: duplication is acceptable when it keeps a test verifiable by inspection.
+```ts
+it('sends the smaller amount together with the typed reason', async () => {
+  const laptop = openItemsLaptop()
+  const screen = await mountScreen()
+  await openTheAmountDialog(screen)
+
+  await typeIn('[data-test="amount-field"]', '2,00')
+  await typeIn('[data-test="reason-field"]', 'Stammgast')
+  await pressConfirm()
+
+  expect(laptop.writtenBodies()[0]).toEqual({ ... })
+})
+```
+
+The act block is short. If it needs ten steps, most of them belong to the arrange block or to a
+named scenario helper such as `reviewAfterAFailedSend(order)`.
+
+## Test from the outside
+
+Test what a person does and sees, and what the laptop is asked and answers. A component spec
+mounts the component, taps and types through the DOM, and checks the rendered text and the
+requests the stubbed laptop recorded. A store spec calls the store's public actions and reads its
+public state. A `core/` spec calls the exported function.
+
+Never reach into a component through `wrapper.vm`, never spy on a private function, and never
+assert that one internal method called another. Do not drive a child component with
+`findComponent(X).vm.$emit(...)`: open the dialog, fill it and press its button, which the
+helpers in `tests/support/formDialogs.ts` do. Wait for a re-render with `nextTick()` from `vue`
+or `flushPromises()`, not with `wrapper.vm.$nextTick()`.
+
+The test should survive a refactor that keeps the behaviour. If renaming a private function or
+splitting a component turns it red, it was a change detector, and a change detector trains people
+to update expectations on sight.
+
+Mock only the real boundary: the laptop (through the stubbed `fetch`), the SignalR hub (through
+`tests/support/hubConnection.ts`) and the clock. Everything else runs for real, Pinia included.
+
+## Data
+
+Every test builds its own data. Use the factories in `tests/support/wireViews.ts` and override
+only what the test is about: `anAdminItem({ name: 'Bier', atTheFestival: null })` says more than
+twelve copied lines in which one field differs. Use realistic values from the festival, such as
+Bratwurst, Tisch 4 and 3,50 €, not `foo` and `test1`, because a wrong German plural or a wrong
+price format shows up only with real words and real numbers.
+
+Never share mutable state between tests. A module-level array that tests push into, a `let`
+reassigned halfway through a test to change what the laptop answers next, or a fixture one test
+edits and the next one reads, all make the result depend on the order the tests run in. When the
+laptop has to answer differently the second time, say so with `inTurn(firstReply, secondReply)`.
+
+Constants that never change, like `const KITCHEN_ID = 'station-kueche'`, are fine at module level.
+
+## One concern per test
+
+A test checks one behaviour, usually with one to three assertions about the same outcome. When
+one test checks the dialog closing, the request body and the notice text, split it; the name of
+each part then says what failed. Several `expect` lines that all describe one result, such as the
+request's url and its body, are still one concern.
+
+## Errors are expected, not caught
+
+A test that expects a failure says so with `await expect(promise).rejects.toThrow(...)` or
+`expect(() => run()).toThrow(...)`. It never wraps the call in `try` and asserts in the `catch`,
+because a call that suddenly stops failing then passes silently. A refusal that reaches the screen
+is checked as the text the person reads.
+
+## Waiting
+
+Never sleep. There is no `setTimeout` in a test and no fixed wait. Await the observable outcome
+with `waitUntil(() => expect(...))` from `tests/support/dom.ts` or `vi.waitFor`, or settle pending
+promises with `flushPromises()`. Where the code itself waits, such as the ten second send timeout
+or a debounced lookup, use fake timers and `vi.advanceTimersByTimeAsync` with the constant the
+code exports.
+
+## Finding elements
+
+Find an element by its `data-test` attribute or by its visible text, nothing else. A template
+carries `data-test="festival-item-row"`, and when a list holds several rows the row also carries
+`data-test-id` with its id, so a test reads
+`[data-test="festival-item-row"][data-test-id="item-bier"]`. Add the attribute to the template
+when it is missing; that is the one change in `src/` a test may bring with it.
+
+Never select by position (`[0]`, `.at(-1)`, `:nth-child`) or by a styling class. A class is there
+for the look and changes with it. A few cases are fine and should be recognisable as such:
+counting how many elements match, asserting the display order of all matches, indexing the
+test's own data arrays, Vuetify internals that have nothing of ours to tag, and a state class read
+as the assertion itself, such as `expect(row.classes()).toContain('tinted-row')`.
+
+Never select by an accessibility attribute; the frontend has none.
+
+## The support module
+
+`tests/support/` is the one home for what more than one spec needs. A spec never declares its own
+copy of anything listed here.
+
+- `laptop.ts` stubs `fetch` with a readable laptop. `stubLaptop()` returns a `StubbedLaptop` that
+  records every call (`calls`, `writes()`, `writtenBodies()`, `urls()`, `callsTo(method, path)`)
+  and answers routes registered with `answers(method, path, reply)`, the latest registration
+  winning, plus `answersEverythingElse(reply)`. Replies are built with `answer(body, status)`,
+  `emptyAnswer(status)`, `refusal(messageKey, { status, code, parameters })`, `noConnection()`,
+  `neverAnswers()`, `inTurn(...)` and `heldUntil(promise, reply)`. `stubLaptopAt(repliesByUrl)` and
+  `stubLaptopAnswering(payloadFor)` cover the two common table shapes.
+- `dom.ts` finds and drives elements: `onScreen`, `allOnScreen`, `isOnScreen`, `textOnScreen`,
+  `inputOf`, `typeInto`, `typeIn`, `leave`, `clickOn`, `waitUntil`, and the confirmation dialog helpers
+  `openDialog`, `waitForDialog`, `dialogText` and `pressInDialog`.
+- `formDialogs.ts` fills and saves or cancels the admin form dialogs.
+- `wireViews.ts` holds the factories for the wire views used most: `anAdminItem`, `aFestival`,
+  `anAdminStation`, `anOpenItem`, `anOpenItemsTable`, `aQueuedItem` and `aStationOrder`.
+- `plugins.ts` gives `testPlugins(locale)` for mounting, `mountApp.ts` mounts the whole app,
+  `hubConnection.ts` fakes the SignalR hub, and `sourceFiles.ts` lists source files for the specs
+  that scan the source tree.
+
+A spec may still have helpers of its own when they name a scenario of that spec, such as
+`festivalLaptop(scenario)` or `reviewAfterAFailedSend(order)`. They are built on the support
+module, never beside it. When a second spec needs the same helper, it moves into `tests/support/`.
+
+## Size of a spec file
+
+A spec file stays readable at one sitting. Once it grows past about 400 lines, split it by
+scenario into files named for the scenario, such as `order.sending.spec.ts`, `order.retry.spec.ts`
+and `FestivalPage.stock.spec.ts`. What the parts share (constants, the laptop scenario, the mount
+helper) goes into a fixture module beside them, such as `festivalPageFixture.ts`, which is not a
+spec and holds no tests. A test that breaks only because it moved to another file was depending
+on another test, and that dependency is fixed in the test setup.
 
 ## Proving a test works
 
-Details and recipes in [references/techniques.md](references/techniques.md).
+A bug fix starts with a test that goes red on the assertion it was written for, as the root
+`CLAUDE.md` rule on test-first fixes describes. A test never seen red is unverified. When in doubt
+about a test's strength, break the code on purpose, watch the test fail for the intended reason,
+and undo the break.
 
-- **Watch it fail first.** When writing a test for a bug, run it against the broken code (or
-  temporarily re-break it) and see red. A test never seen red is unverified.
-- **Mutation testing is deliberately not adopted** in this repository. Do not add Stryker, do not
-  quote a mutation score, and do not treat its absence as a gap to fill. The red-proof rule above is
-  the mechanism that keeps tests honest here.
-- **Property-based tests** (fast-check) fit pure geometry and math stages: assert invariants over
-  generated inputs.
-- **Metamorphic tests** when no oracle exists: transform the input (rotate, mirror, scale) and
-  assert the recovered measurement transforms consistently. The quarter-turn axis-leak tests in
-  `emAnalyzer.spec.ts` are this pattern; keep and extend it.
+Mutation testing is deliberately not adopted. Do not add Stryker, do not quote a mutation score,
+and do not treat its absence as a gap.
 
-## Structure rules
+## Running tests
 
-- One behavior per test; the name states the behavior ("returns aligned false when the marker is
-  missing"), not the method name.
-- Arrange-act-assert visibly separated.
-- Expected literals visible in the test body, not hidden behind helpers or constants files.
+Run only the spec files that cover the change, by path, with `npx vitest run <paths>`. Never the
+whole suite and never a whole folder for comfort; the owner's machine is slow. Name the files you
+ran and why they cover the change.
 
 ## Review checklist
 
-Use [references/review-checklist.md](references/review-checklist.md) when reviewing new or
-existing unit tests.
+Read each new or changed test with the implementation closed and check:
 
-## Environmental failures are not an excuse
-
-A handful of real-scan fixture tests fail on machines that lack the large fixtures
-(`cardGoldenScale`, `pa/realScan`, `em/realScan`, `backgroundPolarity`, the `cardEdgeMeasurer`
-real-scan cases). That is a fixture-availability fact, never a reason to weaken an assertion,
-widen a tolerance, or skip a test in committed code.
+1. The name says unit, scenario and outcome in behaviour wording, and the `describe` names a
+   situation.
+2. Arrange, act and assert are visible blocks, and the act block is short.
+3. The test holds no `if`, loop, `try` or calculated expectation.
+4. It observes the screen, the store's public state or the laptop's recorded requests, never
+   `wrapper.vm`, a spy on an internal function or a child's `$emit`.
+5. Its data is built in the test or by a factory, and nothing it touches is shared with another
+   test.
+6. Elements are found by `data-test` or visible text only, apart from the listed exceptions.
+7. It waits on an observable outcome, never a sleep.
+8. It uses `tests/support/` instead of a private copy of a stub or a DOM helper.
+9. Its file stays under about 400 lines, or the file is split by scenario.
+10. For a bug fix, the red run was seen and quoted.

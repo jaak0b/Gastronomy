@@ -4,6 +4,7 @@ import { fireHubEvent, forgetHubEvents } from '../../support/hubConnection'
 import { useEstimatesStore } from '../../../src/phone/stores/estimates'
 import { useSessionStore } from '../../../src/shared/stores/session'
 import { useConnectionStore } from '../../../src/shared/stores/connection'
+import { stubLaptop, answer } from '../../support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -34,16 +35,7 @@ describe('the waiting times the phone asks the laptop for', () => {
   })
 
   it('keeps the time of every article and station the laptop named', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(
-            JSON.stringify([BRATWURST_IN_THE_KITCHEN]),
-            { status: 200 },
-          ),
-      ),
-    )
+    stubLaptop().answersEverythingElse(answer([BRATWURST_IN_THE_KITCHEN]))
     enrolledPhone()
     const estimates = useEstimatesStore()
 

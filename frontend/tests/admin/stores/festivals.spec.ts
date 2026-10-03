@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useConnectionStore } from '../../../src/shared/stores/connection'
 import { useAdminFestivalsStore } from '../../../src/admin/stores/festivals'
 import { fireHubEvent, forgetHubEvents } from '../../support/hubConnection'
+import { stubLaptop, noConnection, answer, type StubbedLaptop } from '../../support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -27,37 +28,14 @@ const LAST_YEAR = {
   orderCount: 412,
 }
 
-interface Call {
-  url: string
-  method: string
-  body: unknown
-}
-
-function laptopLists(festivals: unknown[]): Call[] {
-  const calls: Call[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string, init?: RequestInit) => {
-      calls.push({
-        url,
-        method: init?.method ?? 'GET',
-        body: init?.body === undefined ? undefined : JSON.parse(String(init.body)),
-      })
-      return new Response(JSON.stringify({ festivals }), { status: 200 })
-    }),
-  )
-  return calls
+function laptopLists(festivals: unknown[]): StubbedLaptop {
+  return stubLaptop().answersEverythingElse(answer({ festivals }))
 }
 
 function laptopRefuses(status: number, body: unknown): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (_url: string, init?: RequestInit) =>
-      (init?.method ?? 'GET') === 'GET'
-        ? new Response(JSON.stringify({ festivals: [] }), { status: 200 })
-        : new Response(JSON.stringify(body), { status }),
-    ),
-  )
+  stubLaptop()
+    .answersEverythingElse(answer(body, status))
+    .answers('GET', /./, answer({ festivals: [] }))
 }
 
 describe('the festivals the laptop knows about', () => {
@@ -91,12 +69,7 @@ describe('the festivals the laptop knows about', () => {
   })
 
   it('say the list could not be loaded when the laptop cannot be reached', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => {
-        throw new TypeError('Failed to fetch')
-      }),
-    )
+    stubLaptop().answersEverythingElse(noConnection())
     const festivals = useAdminFestivalsStore()
 
     await festivals.load()
@@ -118,7 +91,7 @@ describe('setting a festival up', () => {
   })
 
   it('sends the name and both moments as the admin typed them', async () => {
-    const calls = laptopLists([SUMMER])
+    const laptop = laptopLists([SUMMER])
     const festivals = useAdminFestivalsStore()
 
     await festivals.create({
@@ -127,7 +100,7 @@ describe('setting a festival up', () => {
       endsAtUtc: '2026-07-19T02:00:00.000Z',
     })
 
-    const sent = calls.find((call) => call.method === 'POST')
+    const sent = laptop.calls.find((call) => call.method === 'POST')
     expect(sent?.url).toBe('/api/admin/festivals')
     expect(sent?.body).toEqual({
       name: 'Sommerfest',
@@ -137,7 +110,7 @@ describe('setting a festival up', () => {
   })
 
   it('copies one festival into a new one under its own name', async () => {
-    const calls = laptopLists([SUMMER])
+    const laptop = laptopLists([SUMMER])
     const festivals = useAdminFestivalsStore()
 
     await festivals.copy('fest-1', {
@@ -146,19 +119,19 @@ describe('setting a festival up', () => {
       endsAtUtc: '2026-10-04T02:00:00.000Z',
     })
 
-    expect(calls.find((call) => call.method === 'POST')?.url).toBe(
+    expect(laptop.calls.find((call) => call.method === 'POST')?.url).toBe(
       '/api/admin/festivals/fest-1/copy',
     )
   })
 
   it('hides and shows one festival on its own address', async () => {
-    const calls = laptopLists([SUMMER])
+    const laptop = laptopLists([SUMMER])
     const festivals = useAdminFestivalsStore()
 
     await festivals.hide('fest-1')
     await festivals.show('fest-1')
 
-    const posts = calls.filter((call) => call.method === 'POST').map((call) => call.url)
+    const posts = laptop.calls.filter((call) => call.method === 'POST').map((call) => call.url)
     expect(posts).toEqual(['/api/admin/festivals/fest-1/hide', '/api/admin/festivals/fest-1/show'])
   })
 
@@ -217,25 +190,26 @@ describe('the running festival on the hub', () => {
   })
 
   it('is read again when the laptop says the festival changed', async () => {
-    const calls = laptopLists([SUMMER])
+    const laptop = laptopLists([SUMMER])
     const festivals = useAdminFestivalsStore()
     festivals.listen()
     await useConnectionStore().connect({})
-    calls.length = 0
+    laptop.calls.length = 0
 
     fireHubEvent('ConfigurationChanged')
 
-    await vi.waitFor(() => expect(calls.map((call) => call.url)).toEqual(['/api/admin/festivals']))
+    await vi.waitFor(() => expect(laptop.calls.map((call) => call.url)).toEqual(['/api/admin/festivals']))
   })
+
   it('is read again when the laptop says an order changed, because it shows how many orders a festival has', async () => {
-    const calls = laptopLists([SUMMER])
+    const laptop = laptopLists([SUMMER])
     const festivals = useAdminFestivalsStore()
     festivals.listen()
     await useConnectionStore().connect({})
-    calls.length = 0
+    laptop.calls.length = 0
 
     fireHubEvent('OrdersChanged')
 
-    await vi.waitFor(() => expect(calls.map((call) => call.url)).toEqual(['/api/admin/festivals']))
+    await vi.waitFor(() => expect(laptop.calls.map((call) => call.url)).toEqual(['/api/admin/festivals']))
   })
 })

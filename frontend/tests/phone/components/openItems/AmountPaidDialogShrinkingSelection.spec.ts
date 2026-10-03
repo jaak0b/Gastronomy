@@ -14,11 +14,11 @@ function mountDialog(selectedTotalCents: number) {
 }
 
 function amountField(): HTMLInputElement {
-  return document.querySelector('.amount-paid-dialog .amount-field input') as HTMLInputElement
+  return document.querySelector('[data-test="amount-paid-dialog"] [data-test="amount-field"] input') as HTMLInputElement
 }
 
 function confirmButton(): HTMLButtonElement {
-  return document.querySelector('.amount-paid-dialog .confirm-in-cash') as HTMLButtonElement
+  return document.querySelector('[data-test="amount-paid-dialog"] [data-test="confirm-in-cash"]') as HTMLButtonElement
 }
 
 describe('the amount dialog when another phone settles part of the selection', () => {

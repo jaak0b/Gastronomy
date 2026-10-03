@@ -179,8 +179,10 @@ async function add(): Promise<void> {
         v-for="line in recipeLines"
         :key="line.ingredient.ingredientId"
         class="recipe-line d-flex align-center flex-wrap ga-2 py-1"
+        data-test="recipe-line"
+        :data-test-id="line.ingredient.ingredientId"
       >
-        <span class="recipe-ingredient-name text-body-1 flex-grow-1">{{ line.ingredient.name }}</span>
+        <span class="recipe-ingredient-name text-body-1 flex-grow-1" data-test="recipe-ingredient-name">{{ line.ingredient.name }}</span>
         <IngredientAmountField
           :entry-units="[line.ingredient.unit]"
           :saved-amount="line.amount"
@@ -189,6 +191,7 @@ async function add(): Promise<void> {
         />
         <v-btn
           class="remove-recipe-line"
+          data-test="remove-recipe-line"
           icon="mdi-delete"
           variant="text"
           color="error"
@@ -197,7 +200,7 @@ async function add(): Promise<void> {
       </div>
     </div>
 
-    <div class="add-recipe-line d-flex align-start flex-wrap ga-2">
+    <div class="add-recipe-line d-flex align-start flex-wrap ga-2" data-test="add-recipe-line">
       <v-combobox
         v-model="chosenIngredient"
         class="added-ingredient flex-grow-1"
@@ -218,6 +221,7 @@ async function add(): Promise<void> {
       />
       <v-btn
         class="add-to-recipe"
+        data-test="add-to-recipe"
         color="primary"
         :disabled="!addIsPossible || isAdding"
         @click="add"

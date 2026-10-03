@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { stubLaptop, answer, noConnection } from './support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('./support/hubConnection')).signalrModuleFake())
 
@@ -67,12 +68,7 @@ function aLaptopThatKnowsThisDeviceAs(owner: 'staffMember' | 'station'): string[
 }
 
 function aLaptopThatCannotBeReached(): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => {
-      throw new TypeError('Failed to fetch')
-    }),
-  )
+  stubLaptop().answersEverythingElse(noConnection())
 }
 
 function aDeviceThatWasSetUpEarlier() {
@@ -102,7 +98,7 @@ describe('a device that starts while the laptop has not said yet whose device it
 
     const tablet = aDeviceThatWasSetUpEarlier()
 
-    expect(tablet.find('.starting-up').exists()).toBe(true)
+    expect(tablet.find('[data-test="starting-up"]').exists()).toBe(true)
   })
 
   it('shows the spinner alone while the laptop has not answered yet', () => {
@@ -110,8 +106,8 @@ describe('a device that starts while the laptop has not said yet whose device it
 
     const tablet = aDeviceThatWasSetUpEarlier()
 
-    expect(tablet.find('.starting-up-spinner').exists()).toBe(true)
-    expect(tablet.find('.starting-up-message').exists()).toBe(false)
+    expect(tablet.find('[data-test="starting-up-spinner"]').exists()).toBe(true)
+    expect(tablet.find('[data-test="starting-up-message"]').exists()).toBe(false)
   })
 
   it('does not put a station tablet in front of the waiter menu while it waits', () => {
@@ -119,7 +115,7 @@ describe('a device that starts while the laptop has not said yet whose device it
 
     const tablet = aDeviceThatWasSetUpEarlier()
 
-    expect(tablet.find('.catalog').exists()).toBe(false)
+    expect(tablet.find('[data-test="catalog"]').exists()).toBe(false)
   })
 
   it('carries the app name in the browser tab until the laptop says whose device it is', () => {
@@ -139,7 +135,7 @@ describe('a device once the laptop has said whose device it is', () => {
     const tablet = aDeviceThatWasSetUpEarlier()
     await flushPromises()
 
-    expect(tablet.find('.station-page').exists()).toBe(true)
+    expect(tablet.find('[data-test="station-page"]').exists()).toBe(true)
   })
 
   it('puts a waiter phone in the menu', async () => {
@@ -148,7 +144,7 @@ describe('a device once the laptop has said whose device it is', () => {
     const phone = aDeviceThatWasSetUpEarlier()
     await flushPromises()
 
-    expect(phone.find('.category-button').text()).toBe('Essen')
+    expect(phone.find('[data-test="category-button"]').text()).toBe('Essen')
   })
 
   it('never asks for the ordering menu on a station tablet, which works off its own list', async () => {
@@ -191,7 +187,7 @@ describe('a device that cannot reach the laptop while it starts', () => {
     const tablet = aDeviceThatWasSetUpEarlier()
     await flushPromises()
 
-    expect(tablet.find('.starting-up-message').text()).toBe(
+    expect(tablet.find('[data-test="starting-up-message"]').text()).toBe(
       'Der Rechner antwortet nicht. Versuchen Sie es noch einmal.',
     )
   })
@@ -202,24 +198,21 @@ describe('a device that cannot reach the laptop while it starts', () => {
     await flushPromises()
 
     aLaptopThatKnowsThisDeviceAs('station')
-    await tablet.find('.starting-up-try-again').trigger('click')
+    await tablet.find('[data-test="starting-up-try-again"]').trigger('click')
     await flushPromises()
 
-    expect(tablet.find('.station-page').exists()).toBe(true)
+    expect(tablet.find('[data-test="station-page"]').exists()).toBe(true)
   })
 })
 
 describe('a device the laptop cannot answer for while it starts', () => {
   it('says the device could not start and names the one thing the volunteer can do', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response('{}', { status: 500 })),
-    )
+    stubLaptop().answersEverythingElse(answer({}, 500))
 
     const tablet = aDeviceThatWasSetUpEarlier()
     await flushPromises()
 
-    expect(tablet.find('.starting-up-message').text()).toBe(
+    expect(tablet.find('[data-test="starting-up-message"]').text()).toBe(
       'Der Rechner hat nicht richtig geantwortet. Versuchen Sie es noch einmal.',
     )
   })

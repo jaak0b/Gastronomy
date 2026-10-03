@@ -34,6 +34,7 @@ function save(): void {
     <v-text-field
       v-model="name"
       class="station-name-field"
+      data-test="station-name-field"
       maxlength="40"
       :label="t('admin.stations.title')"
     />

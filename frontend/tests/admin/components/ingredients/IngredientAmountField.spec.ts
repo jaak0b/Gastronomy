@@ -18,7 +18,7 @@ function mountField(
 }
 
 function amountInput(field: VueWrapper): HTMLInputElement {
-  return field.get('.amount-input input').element as HTMLInputElement
+  return field.get('[data-test="amount-input"] input').element as HTMLInputElement
 }
 
 beforeEach(() => {
@@ -49,7 +49,7 @@ describe('the unit beside an amount', () => {
     const field = mountField(['piece'], 2)
 
     expect(field.findComponent(VSelect).exists()).toBe(false)
-    expect(field.get('.amount-unit').text()).toBe('Stück')
+    expect(field.get('[data-test="amount-unit"]').text()).toBe('Stück')
     expect(amountInput(field).value).toBe('2')
   })
 })
@@ -57,7 +57,7 @@ describe('the unit beside an amount', () => {
 describe('switching the unit', () => {
   it('writes 1,5 kilograms as 1500 grams and commits nothing', async () => {
     const field = mountField(['kilogram', 'gram'], null)
-    await field.get('.amount-input input').setValue('1,5')
+    await field.get('[data-test="amount-input"] input').setValue('1,5')
 
     await field.getComponent(VSelect).setValue('gram')
 
@@ -67,7 +67,7 @@ describe('switching the unit', () => {
 
   it('keeps unreadable text exactly as typed', async () => {
     const field = mountField(['gram', 'kilogram'], null)
-    await field.get('.amount-input input').setValue('viel')
+    await field.get('[data-test="amount-input"] input').setValue('viel')
 
     await field.getComponent(VSelect).setValue('kilogram')
 
@@ -78,7 +78,7 @@ describe('switching the unit', () => {
   it('keeps the typed number when the offered units change to another kind', async () => {
     const field = mountField(['piece', 'gram', 'kilogram', 'millilitre', 'litre'], null)
     await field.getComponent(VSelect).setValue('kilogram')
-    await field.get('.amount-input input').setValue('2')
+    await field.get('[data-test="amount-input"] input').setValue('2')
 
     await field.setProps({ entryUnits: ['millilitre', 'litre'] })
 
@@ -94,9 +94,9 @@ describe('leaving the field', () => {
   it('commits an amount typed in kilograms in grams', async () => {
     const field = mountField(['gram', 'kilogram'], null)
     await field.getComponent(VSelect).setValue('kilogram')
-    await field.get('.amount-input input').setValue('0,25')
+    await field.get('[data-test="amount-input"] input').setValue('0,25')
 
-    await field.get('.amount-input input').trigger('blur')
+    await field.get('[data-test="amount-input"] input').trigger('blur')
 
     expect(field.emitted('amountChanged')).toEqual([[{ kind: 'amount', baseAmount: 250 }]])
   })
@@ -104,7 +104,7 @@ describe('leaving the field', () => {
   it('commits nothing when the saved amount is unchanged', async () => {
     const field = mountField(['gram'], 250)
 
-    await field.get('.amount-input input').trigger('blur')
+    await field.get('[data-test="amount-input"] input').trigger('blur')
 
     expect(field.emitted('amountChanged')).toBeUndefined()
   })

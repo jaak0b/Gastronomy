@@ -41,24 +41,25 @@ onMounted(async () => {
 </script>
 
 <template>
-  <v-container v-if="asksForAName" class="enrolment">
+  <v-container v-if="asksForAName" class="enrolment" data-test="enrolment">
     <LanguageSwitch :language="session.language" @select="session.setLanguage" />
     <h1 class="text-h4 mt-4">{{ t('shared.enrolment.title') }}</h1>
     <NameField v-model="name" class="mt-4" />
-    <v-btn class="continue mt-4" color="primary" block :disabled="!canContinue" @click="submit">
+    <v-btn class="continue mt-4" data-test="continue" color="primary" block :disabled="!canContinue" @click="submit">
       {{ t('common.actions.continue') }}
     </v-btn>
-    <v-alert v-if="session.redeemErrorKey !== null" class="error mt-4" type="error" variant="tonal">
+    <v-alert v-if="session.redeemErrorKey !== null" class="error mt-4" data-test="redeem-error" type="error" variant="tonal">
       {{ t(session.redeemErrorKey) }}
     </v-alert>
   </v-container>
   <v-container v-else-if="failureMessage !== null" class="redeem-failure">
-    <v-alert class="failure-notice" type="info" variant="tonal">
+    <v-alert class="failure-notice" data-test="failure-notice" type="info" variant="tonal">
       {{ failureMessage }}
     </v-alert>
     <v-btn
       v-if="session.isEnrolled"
       class="carry-on mt-4"
+      data-test="carry-on"
       color="primary"
       block
       @click="navigate('/')"

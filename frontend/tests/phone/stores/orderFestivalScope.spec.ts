@@ -4,6 +4,7 @@ import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useOrderStore } from '../../../src/phone/stores/order'
 import { TOKEN_STORAGE_KEY } from '../../../src/shared/stores/session'
 import { DRAFT_STORAGE_KEY, restoreDraft } from '../../../src/phone/core/draftCart'
+import { stubLaptop, answer, noConnection } from '../../support/laptop'
 
 const BRATWURST = {
   id: 'item-bratwurst',
@@ -29,31 +30,15 @@ function catalogOf(festivalId: string | null) {
 }
 
 function laptopAnswers(payload: unknown): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response(JSON.stringify(payload), { status: 200 })),
-  )
+  stubLaptop().answersEverythingElse(answer(payload))
 }
 
 function laptopCannotBeReached(): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => {
-      throw new TypeError('the laptop is not there')
-    }),
-  )
+  stubLaptop().answersEverythingElse(noConnection())
 }
 
 function laptopRefuses(): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(
-      async () =>
-        new Response(JSON.stringify({ code: 'ValidationFailed', messageKey: 'x' }), {
-          status: 400,
-        }),
-    ),
-  )
+  stubLaptop().answersEverythingElse(answer({ code: 'ValidationFailed', messageKey: 'x' }, 400))
 }
 
 function addABratwurst(order: ReturnType<typeof useOrderStore>): void {

@@ -33,9 +33,9 @@ describe('the language the admin screens are written in', () => {
     stubFetchWithLanguage('de')
 
     const { shell } = mountShell()
-    await vi.waitFor(() => expect(shell.find('.admin-tabs').exists()).toBe(true))
+    await vi.waitFor(() => expect(shell.find('[data-test="admin-tabs"]').exists()).toBe(true))
 
-    expect(shell.find('.language-switch').exists()).toBe(false)
+    expect(shell.find('[data-test="language-switch"]').exists()).toBe(false)
   })
 
   it('follows the language chosen on the laptop', async () => {
@@ -51,7 +51,7 @@ describe('the language the admin screens are written in', () => {
 
     const { shell } = mountShell()
 
-    await vi.waitFor(() => expect(shell.get('.admin-tabs .v-tab').text()).toBe('Overview'))
+    await vi.waitFor(() => expect(shell.get('[data-test="admin-tabs"] [data-test="admin-tab"]').text()).toBe('Overview'))
   })
 
   it('stays in German when the laptop is set to German', async () => {
@@ -59,6 +59,6 @@ describe('the language the admin screens are written in', () => {
 
     const { shell } = mountShell()
 
-    await vi.waitFor(() => expect(shell.get('.admin-tabs .v-tab').text()).toBe('Übersicht'))
+    await vi.waitFor(() => expect(shell.get('[data-test="admin-tabs"] [data-test="admin-tab"]').text()).toBe('Übersicht'))
   })
 })
