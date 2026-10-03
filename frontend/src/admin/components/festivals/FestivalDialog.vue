@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AdminFestivalView } from '../../../shared/api/generatedSchemas'
-import { localInputToUtcIso, utcIsoToLocalInput } from '../../core/festivalTimes'
+import { localInputToUtcIso, utcIsoToLocalInput } from '../../../shared/core/moments'
 import type { FestivalDraft } from '../../stores/festivals'
 import BaseFormDialog from '../../../shared/components/BaseFormDialog.vue'
 

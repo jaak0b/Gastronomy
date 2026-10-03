@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import InvitationPanel from '../../../../src/admin/components/enrolment/InvitationPanel.vue'
-import type { InvitationQr } from '../../../../src/admin/core/invitationQr'
+import type { InvitationQr } from '../../../../src/admin/core/invitationQrView'
 import { InvitationView } from '../../../../src/shared/api/generatedSchemas'
 import { testPlugins } from '../../../support/plugins'
 

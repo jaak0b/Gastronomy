@@ -9,7 +9,8 @@ import { countedName } from '../../core/countedName'
 import { withEstimate } from '../../core/estimateWording'
 import { deliveryModeKey } from '../../../shared/core/stationBoard'
 import { stationDeliveries, type StationDelivery } from '../../core/stationDeliveries'
-import { formatPrice, collapsedTotalCents } from '../../core/totals'
+import { collapsedTotalCents } from '../../core/totals'
+import { formatPrice } from '../../../shared/core/money'
 
 interface StationPart extends StationDelivery {
   entries: CollapsedLine<BasketLineView>[]

@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { OpenTableView } from '../../../shared/api/generatedSchemas'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { itemIdsAtTable, selectionStateOf } from '../../core/openItems'
-import { formatPrice } from '../../core/totals'
+import { formatPrice } from '../../../shared/core/money'
 import OpenPositionRow from './OpenPositionRow.vue'
 
 const props = defineProps<{

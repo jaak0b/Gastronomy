@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
-import { formatPrice } from '../../core/totals'
+import { formatPrice } from '../../../shared/core/money'
 
 const props = defineProps<{ itemCount: number; totalCents: number; language: AppLanguage }>()
 defineEmits<{ review: [] }>()

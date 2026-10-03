@@ -1,6 +1,6 @@
 import { OpenOrderItemView, OpenTableView, type PaymentMethod, SettleLineRequest, SettlementView, TableOrderRecordItemView, TableOrderRecordView, TableOrderReportView } from '../../shared/api/generatedSchemas'
 import type { AppLanguage } from '../../shared/core/deviceLanguage'
-import { formatPrice } from './totals'
+import { formatPrice } from '../../shared/core/money'
 
 export type SettleOutcome = 'accepted' | 'refused' | 'answerNeverCame'
 

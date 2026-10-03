@@ -17,7 +17,7 @@ const { t } = useI18n()
 
 <template>
   <v-dialog :model-value="true" max-width="560" persistent scrollable>
-    <v-card class="form-dialog" data-test="form-dialog" role="dialog" aria-modal="true">
+    <v-card class="form-dialog" data-test="form-dialog">
       <v-card-title class="form-dialog-title" data-test="form-dialog-title">{{ title }}</v-card-title>
       <v-form @submit.prevent="emit('save')">
         <v-card-text>

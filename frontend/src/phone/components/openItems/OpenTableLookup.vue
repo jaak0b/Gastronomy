@@ -8,7 +8,7 @@ import {
 } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
-import { formatFestivalMoment } from '../../../shared/core/festivalTimes'
+import { formatFestivalMoment } from '../../../shared/core/moments'
 import {
   itemIdsAtTable,
   positionStateOf,
@@ -18,7 +18,7 @@ import {
   unsettledItemIdsInOrder,
   type ShareState,
 } from '../../core/openItems'
-import { formatPrice } from '../../core/totals'
+import { formatPrice } from '../../../shared/core/money'
 import OpenPositionRow from './OpenPositionRow.vue'
 
 const props = defineProps<{

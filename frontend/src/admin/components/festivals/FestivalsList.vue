@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { navigate } from '../../../shared/router/router'
 import { AdminFestivalView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
-import { formatFestivalMoment } from '../../../shared/core/festivalTimes'
+import { formatFestivalMoment } from '../../../shared/core/moments'
 import { useAdminFestivalsStore, type FestivalDraft } from '../../stores/festivals'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
@@ -192,7 +192,7 @@ onUnmounted(() => {
             >
               {{ t('admin.festivals.actions.show') }}
             </v-btn>
-            <v-btn class="action-measure" variant="text" tabindex="-1" aria-hidden="true">
+            <v-btn class="action-measure" variant="text" tabindex="-1">
               <span class="measure-labels">
                 <span>{{ t('admin.festivals.actions.hide') }}</span>
                 <span>{{ t('admin.festivals.actions.show') }}</span>

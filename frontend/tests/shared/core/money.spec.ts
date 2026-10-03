@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { canBeTypedIntoAEuroField, formatEuroInput, parseEuroInput } from '../../../src/shared/core/money'
+import {
+  canBeTypedIntoAEuroField,
+  formatEuroInput,
+  formatPrice,
+  parseEuroInput,
+} from '../../../src/shared/core/money'
 
 describe('parseEuroInput, what an admin types', () => {
   it('reads a German price with a comma', () => {
@@ -168,5 +173,49 @@ describe('canBeTypedIntoAEuroField, what the amount field lets a waiter type', (
 
   it('refuses a separator before the first digit, because that amount can never be read', () => {
     expect(canBeTypedIntoAEuroField(',50')).toBe(false)
+  })
+})
+
+describe('formatPrice', () => {
+  it('writes ten euros fifty with a comma and a trailing euro sign in German', () => {
+    const formatted = formatPrice(1050, 'de')
+
+    expect(formatted).toBe('10,50 €')
+  })
+
+  it('writes ten euros fifty with a point and a leading euro sign in English', () => {
+    const formatted = formatPrice(1050, 'en')
+
+    expect(formatted).toBe('€10.50')
+  })
+
+  it('keeps both decimals on a whole euro amount in German', () => {
+    const formatted = formatPrice(400, 'de')
+
+    expect(formatted).toBe('4,00 €')
+  })
+
+  it('keeps both decimals on a whole euro amount in English', () => {
+    const formatted = formatPrice(400, 'en')
+
+    expect(formatted).toBe('€4.00')
+  })
+
+  it('groups a sum above a thousand euros with a point in German', () => {
+    const formatted = formatPrice(123456, 'de')
+
+    expect(formatted).toBe('1.234,56 €')
+  })
+
+  it('groups a sum above a thousand euros with a comma in English', () => {
+    const formatted = formatPrice(123456, 'en')
+
+    expect(formatted).toBe('€1,234.56')
+  })
+
+  it('writes nothing owed as zero in German', () => {
+    const formatted = formatPrice(0, 'de')
+
+    expect(formatted).toBe('0,00 €')
   })
 })

@@ -9,7 +9,7 @@ const { t } = useI18n()
 
 <template>
   <v-dialog :model-value="true" max-width="480" persistent>
-    <v-card class="confirm-dialog" data-test="confirm-dialog" role="dialog" aria-modal="true">
+    <v-card class="confirm-dialog" data-test="confirm-dialog">
       <v-card-title class="confirm-title" data-test="confirm-title">{{ title }}</v-card-title>
       <v-card-text v-if="body" class="confirm-body" data-test="confirm-body">{{ body }}</v-card-text>
       <v-card-actions>

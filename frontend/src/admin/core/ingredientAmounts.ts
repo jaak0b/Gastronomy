@@ -1,6 +1,7 @@
 import type { IngredientUnit } from '../../shared/api/generatedSchemas'
 import type { AppLanguage } from '../../shared/core/deviceLanguage'
 import { assertNever } from '../../shared/core/assertNever'
+import { formatNumber } from '../../shared/core/numberText'
 
 export type AmountEntryUnit = 'piece' | 'gram' | 'kilogram' | 'millilitre' | 'litre'
 
@@ -169,7 +170,7 @@ export function displayedAmountFor(
   const count = inEntryUnit(baseAmount, entryUnit)
   return {
     count,
-    formattedCount: new Intl.NumberFormat(language, { maximumFractionDigits: 3 }).format(count),
+    formattedCount: formatNumber(count, language, 3),
     entryUnit,
   }
 }

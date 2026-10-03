@@ -2,7 +2,7 @@
 import { computed, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { isTableNameValid } from '../core/tableName'
-import { formatPrice } from '../core/totals'
+import { formatPrice } from '../../shared/core/money'
 import { quoteLinesFor } from '../core/estimates'
 import { withEstimate } from '../core/estimateWording'
 import {

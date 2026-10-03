@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminErrorMessageForKey } from '../../core/adminErrorMessage'
-import { formatRunOutMoment } from '../../core/festivalTimes'
+import { formatRunOutMoment } from '../../../shared/core/moments'
 import { entryUnitsFor, type ParsedAmountInput } from '../../core/ingredientAmounts'
 import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminFestivalStockStore } from '../../stores/festivalStock'

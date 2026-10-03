@@ -433,11 +433,11 @@ describe('marking selected items as done from a card', () => {
     const line = page.findAll('.orders-column .station-order')[0].findAll('.station-item')[0]
 
     await line.trigger('click')
-    expect(line.attributes('aria-pressed')).toBe('true')
+    expect(line.classes()).toContain('selected')
     expect(line.find('.selected-tick').exists()).toBe(true)
 
     await line.trigger('click')
-    expect(line.attributes('aria-pressed')).toBe('false')
+    expect(line.classes()).not.toContain('selected')
     expect(line.find('.selected-tick').exists()).toBe(false)
   })
 
@@ -493,7 +493,7 @@ describe('marking selected items as done from a card', () => {
     await flushPromises()
 
     expect(document.querySelector('.station-done-dialog')).toBeNull()
-    expect(card.findAll('.station-item')[0].attributes('aria-pressed')).toBe('true')
+    expect(card.findAll('.station-item')[0].classes()).toContain('selected')
     expect(card.get('.fulfill').attributes('disabled')).toBeUndefined()
   })
 

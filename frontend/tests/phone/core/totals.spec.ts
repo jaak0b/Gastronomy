@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { collapsedTotalCents, formatPrice, orderTotalCents } from '../../../src/phone/core/totals'
+import { collapsedTotalCents, orderTotalCents } from '../../../src/phone/core/totals'
 import type { BasketLineView } from '../../../src/phone/core/basket'
 
 function basketLine(unitPriceCents: number | null): BasketLineView {
@@ -54,49 +54,5 @@ describe('orderTotalCents', () => {
     const total = orderTotalCents([])
 
     expect(total).toBe(0)
-  })
-})
-
-describe('formatPrice', () => {
-  it('writes ten euros fifty with a comma and a trailing euro sign in German', () => {
-    const formatted = formatPrice(1050, 'de')
-
-    expect(formatted).toBe('10,50 €')
-  })
-
-  it('writes ten euros fifty with a point and a leading euro sign in English', () => {
-    const formatted = formatPrice(1050, 'en')
-
-    expect(formatted).toBe('€10.50')
-  })
-
-  it('keeps both decimals on a whole euro amount in German', () => {
-    const formatted = formatPrice(400, 'de')
-
-    expect(formatted).toBe('4,00 €')
-  })
-
-  it('keeps both decimals on a whole euro amount in English', () => {
-    const formatted = formatPrice(400, 'en')
-
-    expect(formatted).toBe('€4.00')
-  })
-
-  it('groups a sum above a thousand euros with a point in German', () => {
-    const formatted = formatPrice(123456, 'de')
-
-    expect(formatted).toBe('1.234,56 €')
-  })
-
-  it('groups a sum above a thousand euros with a comma in English', () => {
-    const formatted = formatPrice(123456, 'en')
-
-    expect(formatted).toBe('€1,234.56')
-  })
-
-  it('writes nothing owed as zero in German', () => {
-    const formatted = formatPrice(0, 'de')
-
-    expect(formatted).toBe('0,00 €')
   })
 })

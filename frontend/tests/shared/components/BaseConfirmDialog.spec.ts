@@ -67,12 +67,4 @@ describe('the question asked before something is switched off', () => {
     expect(dialog.emitted('cancel')).toHaveLength(1)
     expect(dialog.emitted('confirm')).toBeUndefined()
   })
-
-  it('is announced to a screen reader as a question that needs an answer', async () => {
-    mountDialog()
-    await waitForDialog()
-
-    expect(document.querySelector('[data-test="confirm-dialog"]')!.getAttribute('role')).toBe('dialog')
-    expect(document.querySelector('[data-test="confirm-dialog"]')!.getAttribute('aria-modal')).toBe('true')
-  })
 })

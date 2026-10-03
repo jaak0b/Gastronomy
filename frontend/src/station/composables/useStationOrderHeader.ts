@@ -1,7 +1,7 @@
 import { computed, toValue, type ComputedRef, type MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { StationOrderQueueView } from '../../shared/api/generatedSchemas'
-import { formatFestivalMoment } from '../../shared/core/festivalTimes'
+import { formatFestivalMoment } from '../../shared/core/moments'
 import { deliveryModeColourToken, deliveryModeKey } from '../../shared/core/stationBoard'
 
 export interface StationOrderHeader {

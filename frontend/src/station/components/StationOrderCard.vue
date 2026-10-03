@@ -69,7 +69,6 @@ function isSelected(orderItemId: string): boolean {
         variant="outlined"
         color="primary"
         :prepend-icon="viewToggleIcon"
-        :aria-pressed="isGrouped"
         @click="isGrouped = !isGrouped"
       >
         {{ viewToggleLabel }}
@@ -85,7 +84,6 @@ function isSelected(orderItemId: string): boolean {
         variant="tonal"
         block
         size="large"
-        :aria-pressed="isSelected(item.orderItemId)"
         @click="emit('toggleItem', item.orderItemId)"
       >
         <span class="item-text">

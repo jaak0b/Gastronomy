@@ -1,6 +1,6 @@
 import { adminErrorMessage } from '../core/adminErrorMessage'
 import { isApiErrorBody } from '../../shared/api/apiError'
-import type { InvitationQr } from '../core/invitationQr'
+import type { InvitationQr } from '../core/invitationQrView'
 
 export function invitationQrPath(invitationId: string): string {
   return `/api/admin/enrolment/invitations/${invitationId}/qr.svg`

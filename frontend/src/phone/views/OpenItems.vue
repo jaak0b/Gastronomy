@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { isAPaymentMethodNeeded, TABLE_LOOKUP_DEBOUNCE_MS } from '../core/openItems'
-import { formatPrice } from '../core/totals'
+import { formatPrice } from '../../shared/core/money'
 import { useOpenItemsStore } from '../stores/openItems'
 import { useSessionStore } from '../../shared/stores/session'
 import { useDebounced } from '../../shared/composables/useDebounced'

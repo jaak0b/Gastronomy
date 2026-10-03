@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { fetchInvitationQr, invitationQrPath } from '../../../src/admin/api/invitationQr'
+import { fetchInvitationQr, invitationQrPath } from '../../../src/admin/api/invitationQrRequests'
 import { useAdminEnrolmentStore } from '../../../src/admin/stores/enrolment'
 
 const INVITATION_ID = '44444444-4444-4444-4444-444444444444'
