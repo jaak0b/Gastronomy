@@ -193,7 +193,7 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton(options.Language);
 
-    services.AddRateLimiter(limiterOptions => new RateLimitPolicies().Configure(limiterOptions));
+    services.AddRateLimiter(limiterOptions => new RateLimitPolicies(options.RateLimits).Configure(limiterOptions));
 
     services.AddAuthentication(Names.AuthenticationSchemes.Device).AddScheme<DeviceAuthenticationSchemeOptions, DeviceAuthenticationHandler>(Names.AuthenticationSchemes.Device, null);
 

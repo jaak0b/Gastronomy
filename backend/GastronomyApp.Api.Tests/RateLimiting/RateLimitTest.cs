@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
+using GastronomyApp.Api.Values;
 using GastronomyApp.Core.Ports;
 using Microsoft.Extensions.DependencyInjection;
 using GastronomyApp.Infrastructure.Persistence;
@@ -14,7 +15,7 @@ public sealed class RateLimitTest
   [SetUp]
   public async Task SetUp()
   {
-    _factory = await new ApiTestFactoryBuilder().StartAsync();
+    _factory = await new ApiTestFactoryBuilder().WithRateLimits(SmallLimits).StartAsync();
 
     SeededWorld world;
     await using (var context = _factory.CreateContext())
@@ -35,8 +36,7 @@ public sealed class RateLimitTest
     await _factory.DisposeAsync();
   }
 
-  private const int DeviceRequestsPerMinute = 600;
-  private const int AddressRequestsPerMinute = 20;
+  private static readonly RateLimitOptions SmallLimits = new() { DeviceRequestsPerMinute = 12, AddressRequestsPerMinute = 5 };
 
   private ApiTestFactory _factory = null!;
   private string _deviceToken = null!;
@@ -44,7 +44,7 @@ public sealed class RateLimitTest
   [Test]
   public async Task DeviceScopedEndpoint_OneRequestPastTheMinuteLimit_IsRefusedAsTooManyRequests()
   {
-    IReadOnlyList<HttpResponseMessage> responses = await SendConcurrentlyAsync(DeviceRequestsPerMinute + 1);
+    IReadOnlyList<HttpResponseMessage> responses = await SendConcurrentlyAsync(SmallLimits.DeviceRequestsPerMinute + 1);
 
     var allowed = responses.Count(response => response.StatusCode == HttpStatusCode.OK);
     var refused = responses.Count(response => response.StatusCode == HttpStatusCode.TooManyRequests);
@@ -60,7 +60,7 @@ public sealed class RateLimitTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(allowed, Is.EqualTo(DeviceRequestsPerMinute), "The window grants exactly its permit count.");
+                      Assert.That(allowed, Is.EqualTo(SmallLimits.DeviceRequestsPerMinute), "The window grants exactly its permit count.");
                       Assert.That(refused, Is.EqualTo(1));
                       Assert.That(JsonDocument.Parse(refusalBody).RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.session.tooManyRequests"));
                     });
@@ -81,7 +81,7 @@ public sealed class RateLimitTest
   [Test]
   public async Task EnrolmentRedeem_OneRequestPastTheMinuteLimit_IsRefusedAsTooManyRequests()
   {
-    for (var request = 0; request < AddressRequestsPerMinute; request++)
+    for (var request = 0; request < SmallLimits.AddressRequestsPerMinute; request++)
     {
       using var allowed = await SendRedeemRequestAsync();
 

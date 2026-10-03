@@ -1,23 +1,22 @@
 ﻿using System.Globalization;
 using System.Text.Json;
 using System.Threading.RateLimiting;
+using GastronomyApp.Api.Values;
 using GastronomyApp.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace GastronomyApp.Api.RateLimiting;
 
-public sealed class RateLimitPolicies
+public sealed class RateLimitPolicies(RateLimitOptions limits)
 {
-  private const int DeviceRequestsPerMinute = 600;
-  private const int AddressRequestsPerMinute = 20;
   private const string UnknownPartitionKey = "unknown";
 
   public void Configure(RateLimiterOptions options)
   {
-    options.AddPolicy(Names.RateLimitPolicies.PerDevice, httpContext => Partition(DevicePartitionKeyFor(httpContext), DeviceRequestsPerMinute));
+    options.AddPolicy(Names.RateLimitPolicies.PerDevice, httpContext => Partition(DevicePartitionKeyFor(httpContext), limits.DeviceRequestsPerMinute));
 
-    options.AddPolicy(Names.RateLimitPolicies.PerAddress, httpContext => Partition(AddressPartitionKeyFor(httpContext), AddressRequestsPerMinute));
+    options.AddPolicy(Names.RateLimitPolicies.PerAddress, httpContext => Partition(AddressPartitionKeyFor(httpContext), limits.AddressRequestsPerMinute));
 
     options.OnRejected = async (context, cancellationToken) =>
                          {

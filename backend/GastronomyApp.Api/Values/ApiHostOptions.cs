@@ -11,4 +11,6 @@ public sealed record ApiHostOptions
   public required string BindAddress { get; init; }
 
   public AppLanguage Language { get; init; } = new();
+
+  public RateLimitOptions RateLimits { get; init; } = new();
 }

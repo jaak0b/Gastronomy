@@ -2,6 +2,7 @@
 using System.Text.Json;
 using ErrorOr;
 using GastronomyApp.Contracts.Validation;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Refusals;
 
 namespace GastronomyApp.Api.Tests.ErrorHandling;
@@ -101,6 +102,12 @@ public sealed class RefusalTest
 
     if (parameterType == typeof(double))
       return 900d;
+
+    if (parameterType == typeof(IngredientUnit?))
+      return IngredientUnit.Gram;
+
+    if (parameterType == typeof(PaymentMethod))
+      return PaymentMethod.Cash;
 
     if (parameterType == typeof(DateTime))
       return DateTime.UnixEpoch;
