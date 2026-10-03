@@ -187,9 +187,9 @@ describe('the item list', () => {
     stubLaptop({ items: THREE_ITEMS })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="item-row"]').exists()).toBe(true))
 
-    expect(list.findAll('.category-name').map((element) => element.text())).toEqual([
+    expect(list.findAll('[data-test="category-name"]').map((element) => element.text())).toEqual([
       'Speisen',
       'Getränke',
     ])
@@ -199,9 +199,9 @@ describe('the item list', () => {
     stubLaptop({ items: THREE_ITEMS })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="item-row"]').exists()).toBe(true))
 
-    expect(list.findAll('.item-row .name').map((element) => element.text())).toEqual([
+    expect(list.findAll('[data-test="item-row"] [data-test="item-name"]').map((element) => element.text())).toEqual([
       'Schnitzel',
       'Bier',
       'Wasser',
@@ -212,9 +212,9 @@ describe('the item list', () => {
     stubLaptop({ items: THREE_ITEMS })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="item-row"]').exists()).toBe(true))
 
-    const headings = list.findAll('.category-name')
+    const headings = list.findAll('[data-test="category-name"]')
 
     expect(headings[0].attributes('style')).toContain('background-color: rgb(255, 235, 59)')
     expect(headings[0].attributes('style')).toContain('color: rgb(0, 0, 0)')
@@ -225,9 +225,9 @@ describe('the item list', () => {
     stubLaptop({ items: { items: [] } })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.category-heading').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
 
-    expect(list.findAll('.category-name').map((element) => element.text())).toEqual([
+    expect(list.findAll('[data-test="category-name"]').map((element) => element.text())).toEqual([
       'Speisen',
       'Getränke',
     ])
@@ -237,22 +237,22 @@ describe('the item list', () => {
     stubLaptop()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="item-row"]').exists()).toBe(true))
 
-    const line = list.get('.item-row .item-line')
+    const line = list.get('[data-test="item-row"] [data-test="item-line"]')
 
-    expect(line.find('.name').exists()).toBe(true)
-    expect(line.find('.edit').exists()).toBe(true)
-    expect(line.find('.deactivate').exists()).toBe(true)
+    expect(line.find('[data-test="item-name"]').exists()).toBe(true)
+    expect(line.find('[data-test="edit-item"]').exists()).toBe(true)
+    expect(line.find('[data-test="deactivate-item"]').exists()).toBe(true)
   })
 
   it('says the list could not be loaded when the festivals request fails', async () => {
     stubLaptop({ festivals: { notTheFestivals: [] } })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.admin-items .error').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="admin-items"] [data-test="load-failed"]').exists()).toBe(true))
 
-    expect(list.get('.admin-items .error').text()).toContain(
+    expect(list.get('[data-test="admin-items"] [data-test="load-failed"]').text()).toContain(
       'Laden Sie die Seite neu. Die Daten konnten nicht geladen werden.',
     )
   })
@@ -273,22 +273,22 @@ describe('the controls beside a category name', () => {
     stubLaptop()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.category-heading').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
 
-    const heading = list.get('.category-heading')
+    const heading = list.get('[data-test="category-section"]')
 
-    expect(heading.find('.rename-category').exists()).toBe(true)
-    expect(heading.find('.move-category-up').exists()).toBe(true)
-    expect(heading.find('.move-category-down').exists()).toBe(true)
-    expect(heading.find('.deactivate-category').exists()).toBe(true)
+    expect(heading.find('[data-test="rename-category"]').exists()).toBe(true)
+    expect(heading.find('[data-test="move-category-up"]').exists()).toBe(true)
+    expect(heading.find('[data-test="move-category-down"]').exists()).toBe(true)
+    expect(heading.find('[data-test="deactivate-category"]').exists()).toBe(true)
   })
 
   it('move the category up at its own address', async () => {
     const calls = stubLaptop()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.category-heading').exists()).toBe(true))
-    await list.get('.move-category-up').trigger('click')
+    await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
+    await list.get('[data-test="move-category-up"]').trigger('click')
 
     await vi.waitFor(() =>
       expect(calls).toContainEqual({
@@ -303,8 +303,8 @@ describe('the controls beside a category name', () => {
     const calls = stubLaptop()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.category-heading').exists()).toBe(true))
-    await list.get('.move-category-down').trigger('click')
+    await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
+    await list.get('[data-test="move-category-down"]').trigger('click')
 
     await vi.waitFor(() =>
       expect(calls).toContainEqual({
@@ -319,8 +319,8 @@ describe('the controls beside a category name', () => {
     const calls = stubLaptop()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.category-heading').exists()).toBe(true))
-    await list.get('.rename-category').trigger('click')
+    await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
+    await list.get('[data-test="rename-category"]').trigger('click')
 
     await list
       .findComponent(CategoryDialog)
@@ -339,8 +339,8 @@ describe('the controls beside a category name', () => {
     const calls = stubLaptop()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.category-heading').exists()).toBe(true))
-    await list.get('.deactivate-category').trigger('click')
+    await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
+    await list.get('[data-test="deactivate-category"]').trigger('click')
 
     await waitForDialog()
 
@@ -351,9 +351,9 @@ describe('the controls beside a category name', () => {
     const calls = stubLaptop()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.category-heading').exists()).toBe(true))
-    await list.get('.deactivate-category').trigger('click')
-    await pressInDialog('.confirm')
+    await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
+    await list.get('[data-test="deactivate-category"]').trigger('click')
+    await pressInDialog('[data-test="confirm"]')
 
     await vi.waitFor(() =>
       expect(urlsOf(calls)).toContain(`/api/admin/categories/${FOOD_ID}/deactivate`),
@@ -374,9 +374,9 @@ describe('the controls beside a category name', () => {
     })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.category-heading').exists()).toBe(true))
-    await list.get('.deactivate-category').trigger('click')
-    await pressInDialog('.confirm')
+    await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
+    await list.get('[data-test="deactivate-category"]').trigger('click')
+    await pressInDialog('[data-test="confirm"]')
 
     await vi.waitFor(() =>
       expect(list.get('[data-test="category-refusal"]').text()).toContain(
@@ -404,10 +404,10 @@ describe('a category that is switched off', () => {
     })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.category-heading').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
 
-    expect(list.get('.category-name').text()).toBe('Speisen')
-    expect(list.get('.category-heading .deactivated').text()).toBe('Deaktiviert')
+    expect(list.get('[data-test="category-name"]').text()).toBe('Speisen')
+    expect(list.get('[data-test="category-section"] [data-test="category-deactivated"]').text()).toBe('Deaktiviert')
   })
 
   it('offers to switch it on again without asking a question first', async () => {
@@ -417,8 +417,8 @@ describe('a category that is switched off', () => {
     })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.category-heading').exists()).toBe(true))
-    await list.get('.activate-category').trigger('click')
+    await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
+    await list.get('[data-test="activate-category"]').trigger('click')
 
     await vi.waitFor(() =>
       expect(urlsOf(calls)).toContain(`/api/admin/categories/${FOOD_ID}/activate`),
@@ -441,21 +441,21 @@ describe('adding a category from the item list', () => {
     stubLaptop()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.new-category').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="new-category"]').exists()).toBe(true))
 
-    expect(document.querySelector('.form-dialog')).toBeNull()
+    expect(document.querySelector('[data-test="form-dialog"]')).toBeNull()
 
-    await list.get('.new-category').trigger('click')
+    await list.get('[data-test="new-category"]').trigger('click')
 
-    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).not.toBeNull())
   })
 
   it('sends the name and the colour that were entered', async () => {
     const calls = stubLaptop()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.new-category').exists()).toBe(true))
-    await list.get('.new-category').trigger('click')
+    await vi.waitFor(() => expect(list.find('[data-test="new-category"]').exists()).toBe(true))
+    await list.get('[data-test="new-category"]').trigger('click')
     await list
       .findComponent(CategoryDialog)
       .vm.$emit('save', { name: 'Nachtisch', colourHex: '#6D4C41' })
@@ -473,13 +473,13 @@ describe('adding a category from the item list', () => {
     stubLaptop()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.new-category').exists()).toBe(true))
-    await list.get('.new-category').trigger('click')
+    await vi.waitFor(() => expect(list.find('[data-test="new-category"]').exists()).toBe(true))
+    await list.get('[data-test="new-category"]').trigger('click')
     await list
       .findComponent(CategoryDialog)
       .vm.$emit('save', { name: 'Nachtisch', colourHex: '#6D4C41' })
 
-    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).toBeNull())
   })
 
   it('keeps the dialog open and says why when the laptop refuses the name', async () => {
@@ -496,8 +496,8 @@ describe('adding a category from the item list', () => {
     })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.new-category').exists()).toBe(true))
-    await list.get('.new-category').trigger('click')
+    await vi.waitFor(() => expect(list.find('[data-test="new-category"]').exists()).toBe(true))
+    await list.get('[data-test="new-category"]').trigger('click')
     await list
       .findComponent(CategoryDialog)
       .vm.$emit('save', { name: 'Speisen', colourHex: '#6D4C41' })
@@ -525,8 +525,8 @@ describe('deactivating an item', () => {
     const calls = stubLaptop()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
-    await list.get('.deactivate').trigger('click')
+    await vi.waitFor(() => expect(list.find('[data-test="item-row"]').exists()).toBe(true))
+    await list.get('[data-test="deactivate-item"]').trigger('click')
 
     await waitForDialog()
 
@@ -537,9 +537,9 @@ describe('deactivating an item', () => {
     const calls = stubLaptop()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
-    await list.get('.deactivate').trigger('click')
-    await pressInDialog('.confirm')
+    await vi.waitFor(() => expect(list.find('[data-test="item-row"]').exists()).toBe(true))
+    await list.get('[data-test="deactivate-item"]').trigger('click')
+    await pressInDialog('[data-test="confirm"]')
 
     await vi.waitFor(() => expect(urlsOf(calls)).toContain(`/api/admin/items/${ITEM_ID}/deactivate`))
   })
@@ -561,29 +561,30 @@ describe('deactivating an item', () => {
     })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.findAll('.deactivate').length).toBe(2))
+    await vi.waitFor(() => expect(list.findAll('[data-test="deactivate-item"]').length).toBe(2))
 
-    const buttons = list.findAll('.deactivate')
-    const onTheMenu = buttons[0].element as HTMLButtonElement
-    const elsewhere = buttons[1].element as HTMLButtonElement
+    const onTheMenuRow = list.get(`[data-test="item-row"][data-test-id="${ITEM_ID}"]`)
+    const elsewhereRow = list.get('[data-test="item-row"][data-test-id="aaaa1111-2222-4333-8444-555566667777"]')
+    const onTheMenu = onTheMenuRow.get('[data-test="deactivate-item"]').element as HTMLButtonElement
+    const elsewhere = elsewhereRow.get('[data-test="deactivate-item"]').element as HTMLButtonElement
     expect(onTheMenu.disabled).toBe(true)
     expect(elsewhere.disabled).toBe(false)
 
-    const wrapper = list.findAll('.deactivate-wrapper')[0]
+    const wrapper = onTheMenuRow.get('[data-test="deactivate-wrapper"]')
     const tooltip = wrapper.findComponent({ name: 'VTooltip' })
     expect(tooltip.exists()).toBe(true)
     expect(tooltip.props('disabled')).toBe(false)
 
     await wrapper.trigger('mouseenter')
-    await vi.waitFor(() => expect(document.querySelector('.v-overlay--active')).not.toBeNull())
-    expect(document.querySelector('.v-overlay__content')?.textContent).toContain(
+    await vi.waitFor(() => expect(document.querySelector('[data-test="festival-menu-tooltip"]')).not.toBeNull())
+    expect(document.querySelector('[data-test="festival-menu-tooltip"]')?.textContent).toContain(
       'Ein Artikel auf der Karte eines aktiven Festes kann nicht abgeschaltet werden.',
     )
 
     onTheMenu.click()
     await list.vm.$nextTick()
 
-    expect(document.querySelector('.confirm-dialog')).toBeNull()
+    expect(document.querySelector('[data-test="confirm-dialog"]')).toBeNull()
     expect(urlsOf(calls).some((url) => url.endsWith('/deactivate'))).toBe(false)
   })
 })
@@ -666,18 +667,18 @@ describe('an item that is deactivated', () => {
     stubLaptop({ items: DEACTIVATED_ITEM })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.show-deactivated').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="show-deactivated"]').exists()).toBe(true))
 
-    expect(list.find('.item-row').exists()).toBe(false)
+    expect(list.find('[data-test="item-row"]').exists()).toBe(false)
   })
 
   it('offers to activate it again without asking a question first', async () => {
     const calls = stubLaptop({ items: DEACTIVATED_ITEM })
 
     const list = mountList()
-    await list.get('.show-deactivated input').setValue(true)
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
-    await list.get('.reactivate').trigger('click')
+    await list.get('[data-test="show-deactivated"] input').setValue(true)
+    await vi.waitFor(() => expect(list.find('[data-test="item-row"]').exists()).toBe(true))
+    await list.get('[data-test="reactivate-item"]').trigger('click')
 
     await vi.waitFor(() => expect(urlsOf(calls)).toContain(`/api/admin/items/${ITEM_ID}/activate`))
   })
@@ -698,13 +699,13 @@ describe('adding an item', () => {
     stubLaptop()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.new-item').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="new-item"]').exists()).toBe(true))
 
-    expect(document.querySelector('.form-dialog')).toBeNull()
+    expect(document.querySelector('[data-test="form-dialog"]')).toBeNull()
 
-    await list.get('.new-item').trigger('click')
+    await list.get('[data-test="new-item"]').trigger('click')
 
-    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).not.toBeNull())
   })
 
   it('drops the refusal to switch a category off once the admin writes a new item', async () => {
@@ -721,15 +722,15 @@ describe('adding an item', () => {
     })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.category-heading').exists()).toBe(true))
-    await list.get('.deactivate-category').trigger('click')
-    await pressInDialog('.confirm')
+    await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
+    await list.get('[data-test="deactivate-category"]').trigger('click')
+    await pressInDialog('[data-test="confirm"]')
     await vi.waitFor(() => expect(list.find('[data-test="category-refusal"]').exists()).toBe(true))
 
-    await list.get('.new-item').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).not.toBeNull())
+    await list.get('[data-test="new-item"]').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).not.toBeNull())
     await list.findComponent(ItemDialog).vm.$emit('cancel')
-    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).toBeNull())
 
     expect(list.find('[data-test="category-refusal"]').exists()).toBe(false)
   })
@@ -760,11 +761,11 @@ describe('a refusal beside an open item form', () => {
     })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
-    await list.get('.edit').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.item-name-field')).not.toBeNull())
+    await vi.waitFor(() => expect(list.find('[data-test="item-row"]').exists()).toBe(true))
+    await list.get('[data-test="edit-item"]').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="item-name-field"]')).not.toBeNull())
 
-    await list.get('.move-category-up').trigger('click')
+    await list.get('[data-test="move-category-up"]').trigger('click')
 
     await vi.waitFor(() =>
       expect(list.get('[data-test="category-refusal"]').text()).toContain(
@@ -787,9 +788,9 @@ describe('a refusal beside an open item form', () => {
     })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
-    await list.get('.deactivate').trigger('click')
-    await pressInDialog('.confirm')
+    await vi.waitFor(() => expect(list.find('[data-test="item-row"]').exists()).toBe(true))
+    await list.get('[data-test="deactivate-item"]').trigger('click')
+    await pressInDialog('[data-test="confirm"]')
 
     await vi.waitFor(() =>
       expect(list.get('[data-test="item-refusal"]').text()).toContain('Die Aktion ist fehlgeschlagen.'),
@@ -810,9 +811,9 @@ describe('a refusal beside an open item form', () => {
     })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
-    await list.get('.edit').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.item-name-field')).not.toBeNull())
+    await vi.waitFor(() => expect(list.find('[data-test="item-row"]').exists()).toBe(true))
+    await list.get('[data-test="edit-item"]').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="item-name-field"]')).not.toBeNull())
 
     await list.findComponent(ItemDialog).vm.$emit('save', {
       itemId: ITEM_ID,
@@ -879,17 +880,17 @@ describe('a refusal the admin has walked away from', () => {
     stubTheLaptop()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
-    await list.get('.deactivate').trigger('click')
-    await pressInDialog('.confirm')
+    await vi.waitFor(() => expect(list.find('[data-test="item-row"]').exists()).toBe(true))
+    await list.get('[data-test="deactivate-item"]').trigger('click')
+    await pressInDialog('[data-test="confirm"]')
     await vi.waitFor(() => expect(list.find('[data-test="item-refusal"]').exists()).toBe(true))
     list.unmount()
 
     await useAdminStationsStore().load()
     const festival = mountFestivalItems()
-    await vi.waitFor(() => expect(festival.find('.festival-item-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(festival.find('[data-test="festival-item-row"]').exists()).toBe(true))
 
-    expect(festival.find('.festival-items .refusal').exists()).toBe(false)
+    expect(festival.find('[data-test="festival-items"] [data-test="refusal"]').exists()).toBe(false)
   })
 
   it('does not follow the admin from a festival to the item list', async () => {
@@ -897,8 +898,8 @@ describe('a refusal the admin has walked away from', () => {
 
     await useAdminStationsStore().load()
     const festival = mountFestivalItems()
-    await vi.waitFor(() => expect(festival.find('.new-item').exists()).toBe(true))
-    await festival.get('.new-item').trigger('click')
+    await vi.waitFor(() => expect(festival.find('[data-test="new-item"]').exists()).toBe(true))
+    await festival.get('[data-test="new-item"]').trigger('click')
     await vi.waitFor(() => expect(festival.findComponent({ name: 'ItemDialog' }).exists()).toBe(true))
     festival.findComponent({ name: 'ItemDialog' }).vm.$emit('save', {
       name: 'Pommes',
@@ -912,7 +913,7 @@ describe('a refusal the admin has walked away from', () => {
     festival.unmount()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="item-row"]').exists()).toBe(true))
 
     expect(list.find('[data-test="item-refusal"]').exists()).toBe(false)
   })
@@ -933,12 +934,12 @@ describe('the ingredients button on an article', () => {
     stubLaptop()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.edit-ingredients').exists()).toBe(true))
-    expect(list.get('.edit-ingredients').text()).toBe('Zutaten bearbeiten')
-    await list.get('.edit-ingredients').trigger('click')
+    await vi.waitFor(() => expect(list.find('[data-test="edit-ingredients"]').exists()).toBe(true))
+    expect(list.get('[data-test="edit-ingredients"]').text()).toBe('Zutaten bearbeiten')
+    await list.get('[data-test="edit-ingredients"]').trigger('click')
 
     await vi.waitFor(() =>
-      expect(document.querySelector('.form-dialog-title')?.textContent).toBe(
+      expect(document.querySelector('[data-test="form-dialog-title"]')?.textContent).toBe(
         'Zutaten für Bratwurst',
       ),
     )
@@ -951,23 +952,23 @@ describe('the ingredients button on an article', () => {
       global: { plugins: testPlugins('en') },
       attachTo: document.body,
     })
-    await vi.waitFor(() => expect(list.find('.edit-ingredients').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="edit-ingredients"]').exists()).toBe(true))
 
-    expect(list.get('.edit-ingredients').text()).toBe('Edit ingredients')
+    expect(list.get('[data-test="edit-ingredients"]').text()).toBe('Edit ingredients')
   })
 
   it('closes the recipe when the admin presses close', async () => {
     stubLaptop()
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.edit-ingredients').exists()).toBe(true))
-    await list.get('.edit-ingredients').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.form-cancel')).not.toBeNull())
-    const close = document.querySelector('.form-cancel') as HTMLElement
+    await vi.waitFor(() => expect(list.find('[data-test="edit-ingredients"]').exists()).toBe(true))
+    await list.get('[data-test="edit-ingredients"]').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="form-cancel"]')).not.toBeNull())
+    const close = document.querySelector('[data-test="form-cancel"]') as HTMLElement
 
     expect(close.textContent?.trim()).toBe('Schließen')
     close.click()
 
-    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).toBeNull())
   })
 })
 
@@ -985,13 +986,13 @@ describe('the manage ingredients button', () => {
   it('opens the ingredient management in German', async () => {
     stubLaptop()
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.manage-ingredients').exists()).toBe(true))
-    expect(list.get('.manage-ingredients').text()).toBe('Zutaten verwalten')
+    await vi.waitFor(() => expect(list.find('[data-test="manage-ingredients"]').exists()).toBe(true))
+    expect(list.get('[data-test="manage-ingredients"]').text()).toBe('Zutaten verwalten')
 
-    await list.get('.manage-ingredients').trigger('click')
+    await list.get('[data-test="manage-ingredients"]').trigger('click')
 
     await vi.waitFor(() =>
-      expect(document.querySelector('.form-dialog-title')?.textContent).toBe('Zutaten'),
+      expect(document.querySelector('[data-test="form-dialog-title"]')?.textContent).toBe('Zutaten'),
     )
   })
 
@@ -1002,20 +1003,20 @@ describe('the manage ingredients button', () => {
       global: { plugins: testPlugins('en') },
       attachTo: document.body,
     })
-    await vi.waitFor(() => expect(list.find('.manage-ingredients').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="manage-ingredients"]').exists()).toBe(true))
 
-    expect(list.get('.manage-ingredients').text()).toBe('Manage ingredients')
+    expect(list.get('[data-test="manage-ingredients"]').text()).toBe('Manage ingredients')
   })
 
   it('closes the management when the admin presses close', async () => {
     stubLaptop()
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.manage-ingredients').exists()).toBe(true))
-    await list.get('.manage-ingredients').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.form-cancel')).not.toBeNull())
+    await vi.waitFor(() => expect(list.find('[data-test="manage-ingredients"]').exists()).toBe(true))
+    await list.get('[data-test="manage-ingredients"]').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="form-cancel"]')).not.toBeNull())
 
-    ;(document.querySelector('.form-cancel') as HTMLElement).click()
+    ;(document.querySelector('[data-test="form-cancel"]') as HTMLElement).click()
 
-    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).toBeNull())
   })
 })

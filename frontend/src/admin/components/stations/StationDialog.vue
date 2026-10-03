@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AdminStationView } from '../../../shared/api/generatedSchemas'
-import BaseFormDialog from '../BaseFormDialog.vue'
+import BaseFormDialog from '../../../shared/components/BaseFormDialog.vue'
 
 const props = defineProps<{ station: AdminStationView | null; errorText: string | null }>()
 const emit = defineEmits<{

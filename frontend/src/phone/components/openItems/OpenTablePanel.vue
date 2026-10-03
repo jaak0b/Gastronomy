@@ -50,13 +50,15 @@ function setWholeTable(): void {
 <template>
   <v-expansion-panel
     class="open-table"
+    data-test="open-table"
+    :data-test-id="table.tableName"
     :value="table.tableName"
     :disabled="isHeldBackByAnotherTable"
   >
-    <v-expansion-panel-title>
-      <span class="table-name text-h6">{{ t('common.labels.table', { name: table.tableName }) }}</span>
+    <v-expansion-panel-title data-test="open-table-title">
+      <span class="table-name text-h6" data-test="table-name">{{ t('common.labels.table', { name: table.tableName }) }}</span>
       <v-spacer />
-      <span class="open-amount text-body-1">
+      <span class="open-amount text-body-1" data-test="open-amount">
         {{ t('phone.openItems.labels.tableOpen', { amount: priceTextFor(table.openAmountCents) }) }}
       </span>
     </v-expansion-panel-title>
@@ -64,6 +66,7 @@ function setWholeTable(): void {
       <template v-if="table.items.length > 0">
         <v-checkbox
           class="whole-table"
+          data-test="whole-table"
           density="comfortable"
           hide-details
           :disabled="isHeldBackByAnotherTable"

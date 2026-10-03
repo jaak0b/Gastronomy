@@ -3,7 +3,8 @@
     "actions": {
       "back": "Back",
       "cancel": "Cancel",
-      "continue": "Continue"
+      "continue": "Continue",
+      "save": "Save"
     },
     "appTitle": {
       "admin": "Administration",

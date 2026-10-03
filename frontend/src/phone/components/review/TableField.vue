@@ -20,9 +20,10 @@ defineExpose({ focus })
 </script>
 
 <template>
-  <div ref="input" class="table-field my-4" :class="{ 'is-missing': isMissing }">
+  <div ref="input" class="table-field my-4" data-test="table-field" :class="{ 'is-missing': isMissing }">
     <v-combobox
       class="table-input"
+      data-test="table-input"
       maxlength="40"
       :label="t('phone.review.labels.tableName')"
       :placeholder="t('phone.review.labels.tablePlaceholder')"

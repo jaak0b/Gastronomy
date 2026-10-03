@@ -2,10 +2,8 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AdminCategoryView, AdminItemView } from '../../../shared/api/generatedSchemas'
-import { assertNever } from '../../../shared/core/assertNever'
 import { combineReleases } from '../../../shared/core/combineReleases'
 import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
-import { letteringColourOn } from '../../../shared/core/letteringColour'
 import {
   useAdminCategoriesStore,
   type AdminCategoryDraft,
@@ -14,10 +12,11 @@ import {
 import { useAdminFestivalsStore } from '../../stores/festivals'
 import { useAdminIngredientsStore } from '../../stores/ingredients'
 import { useAdminItemsStore, type AdminItemDraft } from '../../stores/items'
+import { useEditSession } from '../../composables/useEditSession'
 import CategoryDialog from '../categories/CategoryDialog.vue'
-import BaseConfirmDialog from '../BaseConfirmDialog.vue'
-import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
+import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
 import ItemDialog from './ItemDialog.vue'
+import ItemsListCategorySection from './ItemsListCategorySection.vue'
 import IngredientsManageDialog from '../ingredients/IngredientsManageDialog.vue'
 import ItemIngredientsDialog from './ItemIngredientsDialog.vue'
 
@@ -28,23 +27,29 @@ const festivals = useAdminFestivalsStore()
 const ingredients = useAdminIngredientsStore()
 const recipeItemId = ref<string | null>(null)
 const managesIngredients = ref(false)
-const editingItem = ref<AdminItemView | null>(null)
-const isCreating = ref(false)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
 const askingAboutCategoryId = ref<string | null>(null)
-const renamedCategory = ref<AdminCategoryView | null>(null)
-const isCreatingCategory = ref(false)
+const itemSession = useEditSession<AdminItemView, AdminItemDraft>({
+  saveThrough: (draft) => items.save(draft),
+})
+const categorySession = useEditSession<AdminCategoryView, AdminCategoryDraft, unknown>({
+  saveThrough: (draft, category) =>
+    category === null
+      ? categories.create(draft)
+      : categories.save({ categoryId: category.categoryId, ...draft }),
+  afterSaving: forgetRefusals,
+})
 const {
-  refusal: itemRefusal,
+  isOpen: isItemDialogOpen,
+  edited: editedItem,
   refusalText: itemRefusalText,
-  showRefusalOf: showItemRefusalOf,
-} = useRefusalDisplay()
+} = itemSession
 const {
-  refusal: categoryRefusal,
+  isOpen: isCategoryDialogOpen,
+  edited: editedCategory,
   refusalText: categoryRefusalText,
-  showRefusalOf: showCategoryRefusalOf,
-} = useRefusalDisplay()
+} = categorySession
 let stopListening: (() => void) | null = null
 
 const shownItems = computed(() =>
@@ -61,131 +66,80 @@ const groups = computed(() =>
   ),
 )
 
-const isCategoryDialogOpen = computed(
-  () => isCreatingCategory.value || renamedCategory.value !== null,
-)
 const recipeItem = computed(
   () => items.items.find((item) => item.itemId === recipeItemId.value) ?? null,
 )
-const isItemDialogOpen = computed(() => isCreating.value || editingItem.value !== null)
-
-function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
-  return festivals.runningFestival !== null && item.atTheFestival !== null
-}
 
 function readItemsForTheRunningFestival(): Promise<void> {
   const festivalId = festivals.runningFestival?.festivalId ?? null
   return festivalId === null ? items.load() : items.loadAtTheFestival(festivalId)
 }
 
-async function save(item: AdminItemDraft): Promise<void> {
-  itemRefusal.value = null
-  const saved = await items.save(item)
-  switch (saved.kind) {
-    case 'ok':
-      editingItem.value = null
-      isCreating.value = false
-      return
-    case 'failed':
-      itemRefusal.value = saved.message
-      return
-    default:
-      assertNever(saved)
-  }
-}
-
 function forgetRefusals(): void {
-  itemRefusal.value = null
-  categoryRefusal.value = null
+  itemSession.forgetRefusal()
+  categorySession.forgetRefusal()
 }
 
-function startEditing(item: AdminItemView): void {
-  editingItem.value = item
-  forgetRefusals()
+function startEditingItem(item: AdminItemView): void {
+  categorySession.forgetRefusal()
+  itemSession.openForEdit(item)
 }
 
-function stopEditing(): void {
-  editingItem.value = null
-  forgetRefusals()
+function startCreatingItem(): void {
+  categorySession.forgetRefusal()
+  itemSession.openForCreate()
 }
 
-function startCreating(): void {
-  isCreating.value = true
+function stopEditingItem(): void {
   forgetRefusals()
-}
-
-function stopCreating(): void {
-  isCreating.value = false
-  forgetRefusals()
+  itemSession.close()
 }
 
 async function deactivate(): Promise<void> {
   const itemId = askingAboutId.value
   askingAboutId.value = null
   if (itemId !== null) {
-    itemRefusal.value = null
-    showItemRefusalOf(await items.setActive(itemId, false))
+    itemSession.forgetRefusal()
+    itemSession.showRefusalOf(await items.setActive(itemId, false))
   }
 }
 
 async function reactivate(itemId: string): Promise<void> {
-  itemRefusal.value = null
-  showItemRefusalOf(await items.setActive(itemId, true))
+  itemSession.forgetRefusal()
+  itemSession.showRefusalOf(await items.setActive(itemId, true))
 }
 
 async function moveCategory(categoryId: string, direction: CategoryMoveDirection): Promise<void> {
-  categoryRefusal.value = null
-  showCategoryRefusalOf(await categories.move(categoryId, direction))
+  categorySession.forgetRefusal()
+  categorySession.showRefusalOf(await categories.move(categoryId, direction))
 }
 
 function startCreatingCategory(): void {
-  forgetRefusals()
-  renamedCategory.value = null
-  isCreatingCategory.value = true
+  itemSession.forgetRefusal()
+  categorySession.openForCreate()
 }
 
 function startRenamingCategory(category: AdminCategoryView): void {
-  forgetRefusals()
-  isCreatingCategory.value = false
-  renamedCategory.value = category
+  itemSession.forgetRefusal()
+  categorySession.openForEdit(category)
 }
 
 function stopEditingCategory(): void {
   forgetRefusals()
-  isCreatingCategory.value = false
-  renamedCategory.value = null
-}
-
-async function saveCategory(draft: AdminCategoryDraft): Promise<void> {
-  categoryRefusal.value = null
-  const category = renamedCategory.value
-  const saved =
-    category === null
-      ? await categories.create(draft)
-      : await categories.save({ categoryId: category.categoryId, ...draft })
-  switch (saved.kind) {
-    case 'ok':
-      stopEditingCategory()
-      return
-    case 'failed':
-      categoryRefusal.value = saved.message
-      return
-    default:
-      assertNever(saved)
-  }
+  categorySession.close()
 }
 
 async function activateCategory(categoryId: string): Promise<void> {
-  categoryRefusal.value = null
-  showCategoryRefusalOf(await categories.setActive(categoryId, true))
+  categorySession.forgetRefusal()
+  categorySession.showRefusalOf(await categories.setActive(categoryId, true))
 }
 
 async function deactivateCategory(): Promise<void> {
   const categoryId = askingAboutCategoryId.value
   askingAboutCategoryId.value = null
   if (categoryId !== null) {
-    categoryRefusal.value = null
-    showCategoryRefusalOf(await categories.setActive(categoryId, false))
+    categorySession.forgetRefusal()
+    categorySession.showRefusalOf(await categories.setActive(categoryId, false))
   }
 }
 
@@ -216,12 +170,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <v-container class="admin-items">
+  <v-container class="admin-items" data-test="admin-items">
     <div class="admin-heading d-flex align-center flex-wrap justify-space-between ga-2 mb-4">
       <h1 class="text-h5">{{ t('admin.items.title') }}</h1>
       <v-checkbox
         v-model="showsDeactivated"
         class="show-deactivated"
+        data-test="show-deactivated"
         density="compact"
         hide-details
         :label="t('admin.common.actions.showDeactivated')"
@@ -251,113 +206,39 @@ onUnmounted(() => {
         items.loadFailed || categories.loadFailed || festivals.loadFailed || ingredients.loadFailed
       "
       class="error"
+      data-test="load-failed"
       type="error"
       variant="tonal"
     >
       {{ t('admin.common.errors.loadFailed') }}
     </v-alert>
 
-    <section v-for="group in groups" :key="group.category.categoryId" class="category-section">
-      <div class="category-heading d-flex align-center ga-2 py-2">
-        <h2
-          class="category-name text-subtitle-1 font-weight-bold px-3 py-1 rounded"
-          :style="{
-            backgroundColor: group.category.colourHex,
-            color: letteringColourOn(group.category.colourHex),
-          }"
-        >
-          {{ group.category.name }}
-        </h2>
-        <v-chip v-if="!group.category.isActive" class="deactivated" size="small" color="grey">
-          {{ t('admin.common.labels.deactivated') }}
-        </v-chip>
-        <v-spacer />
-        <v-btn
-          class="rename-category"
-          icon="mdi-pencil"
-          variant="text"
-          @click="startRenamingCategory(group.category)"
-        />
-        <v-btn
-          class="move-category-up"
-          icon="mdi-arrow-up"
-          variant="text"
-          @click="moveCategory(group.category.categoryId, 'up')"
-        />
-        <v-btn
-          class="move-category-down"
-          icon="mdi-arrow-down"
-          variant="text"
-          @click="moveCategory(group.category.categoryId, 'down')"
-        />
-        <v-btn
-          v-if="group.category.isActive"
-          class="deactivate-category"
-          icon="mdi-eye-off"
-          variant="text"
-          color="error"
-          @click="askingAboutCategoryId = group.category.categoryId"
-        />
-        <v-btn
-          v-else
-          class="activate-category"
-          variant="text"
-          @click="activateCategory(group.category.categoryId)"
-        >
-          {{ t('admin.categories.actions.activate') }}
-        </v-btn>
-      </div>
-      <v-card v-for="item in group.items" :key="item.itemId" class="item-row mb-2">
-        <div class="item-line d-flex align-center flex-wrap ga-2 px-4 py-2">
-          <span class="name text-body-1">{{ item.name }}</span>
-          <v-chip v-if="!item.isActive" class="deactivated" size="small" color="grey">
-            {{ t('admin.common.labels.deactivated') }}
-          </v-chip>
-          <v-spacer />
-          <v-btn class="edit-ingredients" variant="text" @click="recipeItemId = item.itemId">
-            {{ t('admin.ingredients.actions.edit') }}
-          </v-btn>
-          <v-btn class="edit" variant="text" @click="startEditing(item)">
-            {{ t('admin.common.actions.edit') }}
-          </v-btn>
-          <span v-if="item.isActive" class="deactivate-wrapper">
-            <v-btn
-              class="deactivate"
-              icon="mdi-delete"
-              variant="text"
-              color="error"
-              :disabled="isOnTheRunningFestivalsMenu(item)"
-              @click="askingAboutId = item.itemId"
-            />
-            <v-tooltip
-              activator="parent"
-              location="top"
-              :disabled="!isOnTheRunningFestivalsMenu(item)"
-            >
-              {{ t('errors.admin.items.isOnTheRunningFestivalsMenu') }}
-            </v-tooltip>
-          </span>
-          <v-btn
-            v-else
-            class="reactivate"
-            variant="text"
-            @click="reactivate(item.itemId)"
-          >
-            {{ t('admin.items.actions.activate') }}
-          </v-btn>
-        </div>
-      </v-card>
-    </section>
+    <ItemsListCategorySection
+      v-for="group in groups"
+      :key="group.category.categoryId"
+      :category="group.category"
+      :items="group.items"
+      :is-a-festival-running="festivals.runningFestival !== null"
+      @rename-category="startRenamingCategory(group.category)"
+      @move-category="(direction) => moveCategory(group.category.categoryId, direction)"
+      @deactivate-category="askingAboutCategoryId = group.category.categoryId"
+      @activate-category="activateCategory(group.category.categoryId)"
+      @edit-ingredients="(item) => (recipeItemId = item.itemId)"
+      @edit-item="startEditingItem"
+      @deactivate-item="(item) => (askingAboutId = item.itemId)"
+      @reactivate-item="(item) => reactivate(item.itemId)"
+    />
 
     <div class="d-flex ga-2 mt-6">
-      <v-btn class="new-item" color="primary" @click="startCreating">
+      <v-btn class="new-item" data-test="new-item" color="primary" @click="startCreatingItem">
         {{ t('admin.items.actions.new') }}
       </v-btn>
-      <v-btn class="new-category" color="primary" variant="tonal" @click="startCreatingCategory">
+      <v-btn class="new-category" data-test="new-category" color="primary" variant="tonal" @click="startCreatingCategory">
         {{ t('admin.categories.actions.new') }}
       </v-btn>
       <v-btn
         class="manage-ingredients"
+        data-test="manage-ingredients"
         color="primary"
         variant="tonal"
         @click="managesIngredients = true"
@@ -367,18 +248,11 @@ onUnmounted(() => {
     </div>
 
     <ItemDialog
-      v-if="editingItem !== null"
-      :item="editingItem"
+      v-if="isItemDialogOpen"
+      :item="editedItem"
       :error-text="itemRefusalText"
-      @save="save"
-      @cancel="stopEditing"
-    />
-    <ItemDialog
-      v-if="isCreating"
-      :item="null"
-      :error-text="itemRefusalText"
-      @save="save"
-      @cancel="stopCreating"
+      @save="itemSession.save"
+      @cancel="stopEditingItem"
     />
     <ItemIngredientsDialog
       v-if="recipeItem !== null"
@@ -388,10 +262,10 @@ onUnmounted(() => {
     <IngredientsManageDialog v-if="managesIngredients" @close="managesIngredients = false" />
     <CategoryDialog
       v-if="isCategoryDialogOpen"
-      :key="renamedCategory?.categoryId ?? 'new'"
-      :category="renamedCategory"
+      :key="editedCategory?.categoryId ?? 'new'"
+      :category="editedCategory"
       :error-text="categoryRefusalText"
-      @save="saveCategory"
+      @save="categorySession.save"
       @cancel="stopEditingCategory"
     />
     <BaseConfirmDialog
@@ -410,9 +284,3 @@ onUnmounted(() => {
     />
   </v-container>
 </template>
-
-<style scoped>
-.deactivate-wrapper {
-  display: inline-flex;
-}
-</style>

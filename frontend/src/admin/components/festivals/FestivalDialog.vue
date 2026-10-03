@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { AdminFestivalView } from '../../../shared/api/generatedSchemas'
 import { localInputToUtcIso, utcIsoToLocalInput } from '../../core/festivalTimes'
 import type { FestivalDraft } from '../../stores/festivals'
-import BaseFormDialog from '../BaseFormDialog.vue'
+import BaseFormDialog from '../../../shared/components/BaseFormDialog.vue'
 
 const props = defineProps<{
   festival: AdminFestivalView | null

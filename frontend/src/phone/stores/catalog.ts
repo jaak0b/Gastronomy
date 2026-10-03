@@ -6,7 +6,6 @@ import { findCatalogStation } from '../core/basket'
 import { groupByCategorySortingItemsByName, type CategoryGroup } from '../../shared/core/grouping'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { useConnectionStore } from '../../shared/stores/connection'
-import { useOrderStore } from './order'
 import { useSessionStore } from '../../shared/stores/session'
 
 const EMPTY_CATALOG: CatalogView = {
@@ -54,7 +53,6 @@ export const useCatalogStore = defineStore('catalog', () => {
     }
     catalog.value = result.data
     hasLoaded.value = true
-    useOrderStore().dropTheDraftIfTheFestivalChanged()
   }
 
   function listen(): () => void {

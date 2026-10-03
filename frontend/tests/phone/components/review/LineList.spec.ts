@@ -68,30 +68,31 @@ describe('the part of the order each station will receive', () => {
       }),
     ])
 
-    const cards = list.findAll('.station-part')
+    const cards = list.findAll('[data-test="station-part"]')
 
-    expect(cards).toHaveLength(2)
-    expect(cards[0].get('.station-name').text()).toBe('Geht an Küche')
-    expect(cards[1].get('.station-name').text()).toBe('Geht an Theke innen')
+    expect(cards.map((card) => card.get('[data-test="station-name"]').text())).toEqual([
+      'Geht an Küche',
+      'Geht an Theke innen',
+    ])
   })
 
   it('writes a line with its count, its name and its price', () => {
     const list = mountList([line(), line()])
 
-    expect(list.get('.line .line-name').text()).toBe('2 x Bratwurst')
-    expect(list.get('.line .price').text()).toBe('7,00 €')
+    expect(list.get('[data-test="line"] [data-test="line-name"]').text()).toBe('2 x Bratwurst')
+    expect(list.get('[data-test="line"] [data-test="price"]').text()).toBe('7,00 €')
   })
 
   it('puts a note under the line it belongs to', () => {
     const list = mountList([line({ note: 'ohne Zwiebeln' })])
 
-    expect(list.get('.line .line-note').text()).toBe('ohne Zwiebeln')
+    expect(list.get('[data-test="line"] [data-test="line-note"]').text()).toBe('ohne Zwiebeln')
   })
 
   it('shows no note line on an item nobody wrote a note for', () => {
     const list = mountList([line()])
 
-    expect(list.find('.line-note').exists()).toBe(false)
+    expect(list.find('[data-test="line-note"]').exists()).toBe(false)
   })
 
   it('sorts the lines by item name', () => {
@@ -100,7 +101,7 @@ describe('the part of the order each station will receive', () => {
       line({ catalogItemId: 'item-bier', name: 'Bier' }),
     ])
 
-    expect(list.findAll('.line .line-name').map((element) => element.text())).toEqual([
+    expect(list.findAll('[data-test="line"] [data-test="line-name"]').map((element) => element.text())).toEqual([
       '1 x Bier',
       '1 x Wasser',
     ])
@@ -113,23 +114,25 @@ describe('the part of the order each station will receive', () => {
       line({ catalogItemId: 'item-wasser', name: 'Wasser' }),
     ])
 
-    expect(list.findAll('.line .line-name').map((element) => element.text())).toEqual([
+    expect(list.findAll('[data-test="line"] [data-test="line-name"]').map((element) => element.text())).toEqual([
       '2 x Wasser',
       '1 x Wasser',
     ])
-    expect(list.findAll('.line')[1].get('.line-note').text()).toBe('mit Zitrone')
+    expect(list.findAll('[data-test="line-note"]').map((element) => element.text())).toEqual(['mit Zitrone'])
   })
 
   it('keeps a line on the element it was already drawn on when another line leaves the order', async () => {
     const bier = line({ catalogItemId: 'item-bier', name: 'Bier' })
     const wasser = line({ catalogItemId: 'item-wasser', name: 'Wasser' })
     const list = mountList([bier, wasser])
-    const elementOfWasser = list.findAll('.line')[1].element
+    const elementOfWasser = list
+      .findAll('[data-test="line"]')
+      .find((candidate) => candidate.get('[data-test="line-name"]').text() === '1 x Wasser')?.element
 
     await list.setProps({ lines: [wasser] })
 
-    expect(list.findAll('.line')).toHaveLength(1)
-    expect(list.get('.line').element).toBe(elementOfWasser)
+    expect(list.findAll('[data-test="line"]')).toHaveLength(1)
+    expect(list.get('[data-test="line"]').element).toBe(elementOfWasser)
   })
 })
 
@@ -144,40 +147,40 @@ describe('choosing how a station hands its part of the order out', () => {
       }),
     ])
 
-    expect(list.findAll('.delivery-modes')).toHaveLength(2)
+    expect(list.findAll('[data-test="delivery-modes"]')).toHaveLength(2)
   })
 
   it('names both ways the station can hand its part out', () => {
     const list = mountList([line()])
 
-    expect(list.get('.delivery-together').text()).toBe('Gemeinsam')
-    expect(list.get('.delivery-as-it-comes').text()).toBe('Einzeln')
+    expect(list.get('[data-test="delivery-together"]').text()).toBe('Gemeinsam')
+    expect(list.get('[data-test="delivery-as-it-comes"]').text()).toBe('Einzeln')
   })
 
   it('names both ways in English', () => {
     const list = mountList([line()], { language: 'en' })
 
-    expect(list.get('.delivery-together').text()).toBe('Combined')
-    expect(list.get('.delivery-as-it-comes').text()).toBe('Individual')
+    expect(list.get('[data-test="delivery-together"]').text()).toBe('Combined')
+    expect(list.get('[data-test="delivery-as-it-comes"]').text()).toBe('Individual')
   })
 
   it('holds the choice shut once the order has been sent and the send failed', () => {
     const list = mountList([line()], { changesAreRefused: true })
 
-    expect(list.get('.delivery-together').attributes('disabled')).toBeDefined()
-    expect(list.get('.delivery-as-it-comes').attributes('disabled')).toBeDefined()
+    expect(list.get('[data-test="delivery-together"]').attributes('disabled')).toBeDefined()
+    expect(list.get('[data-test="delivery-as-it-comes"]').attributes('disabled')).toBeDefined()
   })
 
   it('leaves the choice open while the order has not been sent', () => {
     const list = mountList([line()])
 
-    expect(list.get('.delivery-together').attributes('disabled')).toBeUndefined()
+    expect(list.get('[data-test="delivery-together"]').attributes('disabled')).toBeUndefined()
   })
 
   it('starts on handing everything out together', () => {
     const list = mountList([line()])
 
-    expect(list.get('.delivery-together').classes()).toContain('v-btn--active')
+    expect(list.get('[data-test="delivery-together"]').classes()).toContain('v-btn--active')
   })
 
   it('shows the choice the server already made', () => {
@@ -185,13 +188,13 @@ describe('choosing how a station hands its part of the order out', () => {
       deliveryModes: { 'station-kueche': 'asItComes' },
     })
 
-    expect(list.get('.delivery-as-it-comes').classes()).toContain('v-btn--active')
+    expect(list.get('[data-test="delivery-as-it-comes"]').classes()).toContain('v-btn--active')
   })
 
   it('reports the station and the mode when the server taps the other choice', async () => {
     const list = mountList([line()])
 
-    await list.get('.delivery-as-it-comes').trigger('click')
+    await list.get('[data-test="delivery-as-it-comes"]').trigger('click')
 
     expect(list.emitted('chooseDeliveryMode')).toEqual([['station-kueche', 'asItComes']])
   })
@@ -206,7 +209,10 @@ describe('choosing how a station hands its part of the order out', () => {
       }),
     ])
 
-    await list.findAll('.station-part')[1].get('.delivery-as-it-comes').trigger('click')
+    const thekeInnen = list
+      .findAll('[data-test="station-part"]')
+      .find((card) => card.get('[data-test="station-name"]').text() === 'Geht an Theke innen')
+    await thekeInnen?.get('[data-test="delivery-as-it-comes"]').trigger('click')
 
     expect(list.emitted('chooseDeliveryMode')).toEqual([['station-theke-innen', 'asItComes']])
   })
@@ -216,7 +222,7 @@ describe('choosing how a station hands its part of the order out', () => {
       line({ candidateStationIds: ['station-kueche', 'station-theke-innen'] }),
     ])
 
-    expect(list.find('.delivery-modes').exists()).toBe(false)
+    expect(list.find('[data-test="delivery-modes"]').exists()).toBe(false)
   })
 })
 
@@ -226,7 +232,7 @@ describe('how long the station will take for its part of the order', () => {
       quotedStations: [{ stationId: 'station-kueche', readyInMinutes: 152 }],
     })
 
-    expect(list.get('.station-name').text()).toBe('Geht an Küche (~152 Min.)')
+    expect(list.get('[data-test="station-name"]').text()).toBe('Geht an Küche (~152 Min.)')
   })
 
   it('writes the same header in English', () => {
@@ -235,7 +241,7 @@ describe('how long the station will take for its part of the order', () => {
       language: 'en',
     })
 
-    expect(list.get('.station-name').text()).toBe('Goes to Küche (~152 min)')
+    expect(list.get('[data-test="station-name"]').text()).toBe('Goes to Küche (~152 min)')
   })
 
   it('keeps the header time while each item comes out on its own', () => {
@@ -244,7 +250,7 @@ describe('how long the station will take for its part of the order', () => {
       deliveryModes: { 'station-kueche': 'asItComes' },
     })
 
-    expect(list.get('.station-name').text()).toBe('Geht an Küche (~20 Min.)')
+    expect(list.get('[data-test="station-name"]').text()).toBe('Geht an Küche (~20 Min.)')
   })
 
   it('leaves the time off the header when the laptop could not calculate one', () => {
@@ -252,6 +258,6 @@ describe('how long the station will take for its part of the order', () => {
       quotedStations: [{ stationId: 'station-kueche', readyInMinutes: null }],
     })
 
-    expect(list.get('.station-name').text()).toBe('Geht an Küche')
+    expect(list.get('[data-test="station-name"]').text()).toBe('Geht an Küche')
   })
 })

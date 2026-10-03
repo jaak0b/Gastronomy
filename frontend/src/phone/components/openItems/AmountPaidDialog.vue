@@ -42,11 +42,11 @@ function confirm(paymentMethod: SettlementPaymentMethod): void {
 </script>
 
 <template>
-  <v-dialog class="amount-paid-dialog" model-value persistent fullscreen>
+  <v-dialog class="amount-paid-dialog" data-test="amount-paid-dialog" model-value persistent fullscreen>
     <v-card class="card d-flex flex-column" :style="{ paddingBottom: `${keyboardInset}px` }">
       <v-card-title class="title">{{ t('phone.openItems.labels.amountPaidTitle') }}</v-card-title>
       <v-card-text class="body flex-grow-1">
-        <p class="selected-total mb-4">
+        <p class="selected-total mb-4" data-test="selected-total">
           {{ t('phone.openItems.labels.selected', { amount: selectedTotal }) }}
         </p>
         <AmountPaidFields
@@ -60,6 +60,7 @@ function confirm(paymentMethod: SettlementPaymentMethod): void {
         <template v-if="offersCashAndCard">
           <v-btn
             class="confirm-in-cash"
+            data-test="confirm-in-cash"
             color="primary"
             variant="flat"
             size="large"
@@ -70,6 +71,7 @@ function confirm(paymentMethod: SettlementPaymentMethod): void {
           </v-btn>
           <v-btn
             class="confirm-by-card"
+            data-test="confirm-by-card"
             color="primary"
             variant="flat"
             size="large"
@@ -82,6 +84,7 @@ function confirm(paymentMethod: SettlementPaymentMethod): void {
         <v-btn
           v-else
           class="confirm-nothing-paid"
+          data-test="confirm-nothing-paid"
           color="primary"
           variant="flat"
           size="large"
@@ -92,6 +95,7 @@ function confirm(paymentMethod: SettlementPaymentMethod): void {
         </v-btn>
         <v-btn
           class="cancel"
+          data-test="cancel"
           variant="outlined"
           size="large"
           :disabled="isSettling"

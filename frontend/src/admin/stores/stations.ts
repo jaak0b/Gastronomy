@@ -1,16 +1,12 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { request, requestAction } from '../../shared/api/client'
+import { requestAction } from '../../shared/api/client'
 import { AdminStationListView, AdminStationView } from '../../shared/api/generatedSchemas'
-import { adminFailed, adminOk, type AdminActionResult } from '../core/adminActionResult'
-import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
-import { loadAdminList } from '../core/adminList'
-import { createPendingCreatedEntities } from '../core/pendingCreatedEntities'
-import { assertNever } from '../../shared/core/assertNever'
-import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
+import type { AdminActionResult } from '../core/adminActionResult'
+import { reloadOrFailureOf } from '../core/adminMutation'
 import { useConnectionStore } from '../../shared/stores/connection'
 import { combineReleases } from '../../shared/core/combineReleases'
 import { useAdminEnrolmentStore } from './enrolment'
+import { defineFestivalScopedList } from './festivalScopedList'
 
 export interface StationDraft {
   stationId?: string
@@ -19,92 +15,24 @@ export interface StationDraft {
 }
 
 export const useAdminStationsStore = defineStore('adminStations', () => {
-  const stations = ref<AdminStationView[]>([])
-  const loadFailed = ref(false)
-  const festivalInView = ref<string | null>(null)
-
-  const stationsGate = createLatestRequestGate()
-  const pendingCreatedStations = createPendingCreatedEntities<AdminStationView>(
-    (station) => station.stationId,
-  )
-
-  async function loadStationsFrom(path: string): Promise<void> {
-    await loadAdminList({
-      path,
-      schema: AdminStationListView,
-      gate: stationsGate,
-      itemsOf: (response) => response.stations,
-      showItems: (loaded) => {
-        stations.value = pendingCreatedStations.mergeInto(loaded)
-      },
-      setLoadFailed: (failed) => {
-        loadFailed.value = failed
-      },
-    })
-  }
-
-  async function load(): Promise<void> {
-    if (festivalInView.value !== null) {
-      pendingCreatedStations.clear()
-    }
-    festivalInView.value = null
-    await loadStationsFrom('/api/admin/stations')
-  }
-
-  async function loadAtTheFestival(festivalId: string): Promise<void> {
-    if (festivalInView.value !== festivalId) {
-      pendingCreatedStations.clear()
-    }
-    festivalInView.value = festivalId
-    await loadStationsFrom(`/api/admin/stations?festivalId=${festivalId}`)
-  }
-
-  async function reload(): Promise<void> {
-    const festivalId = festivalInView.value
-    if (festivalId === null) {
-      await load()
-      return
-    }
-    await loadAtTheFestival(festivalId)
-  }
-
-  async function create(draft: StationDraft): Promise<AdminActionResult<AdminStationView>> {
-    const scopeAtStart = festivalInView.value
-    const result = await request('/api/admin/stations', {
-      method: 'POST',
-      body: { name: draft.name, sortOrder: draft.sortOrder },
-      schema: AdminStationView,
-    })
-    if (result.kind !== 'ok') {
-      return adminFailureFrom(result)
-    }
-    if (scopeAtStart === festivalInView.value) {
-      pendingCreatedStations.remember(result.data)
-      stations.value = pendingCreatedStations.mergeInto(stations.value)
-    }
-    return adminOk(result.data)
-  }
-
-  async function save(station: StationDraft): Promise<AdminActionResult<null>> {
-    if (station.stationId === undefined) {
-      const created = await create(station)
-      switch (created.kind) {
-        case 'ok':
-          return adminOk(null)
-        case 'failed':
-          return adminFailed(created.message)
-        default:
-          return assertNever(created)
-      }
-    }
-    return await reloadOrFailureOf(
-      await requestAction(`/api/admin/stations/${station.stationId}`, {
-        method: 'PUT',
-        body: { name: station.name, sortOrder: station.sortOrder },
-      }),
-      reload,
-    )
-  }
+  const {
+    entries: stations,
+    loadFailed,
+    load,
+    loadAtTheFestival,
+    reload,
+    create,
+    save,
+    setActive,
+  } = defineFestivalScopedList({
+    path: '/api/admin/stations',
+    listSchema: AdminStationListView,
+    entrySchema: AdminStationView,
+    entriesOf: (response) => response.stations,
+    idOf: (station) => station.stationId,
+    draftIdOf: (station: StationDraft) => station.stationId,
+    requestBodyOf: (station) => ({ name: station.name, sortOrder: station.sortOrder }),
+  })
 
   async function addToTheFestival(
     festivalId: string,
@@ -126,19 +54,6 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
       await requestAction(`/api/admin/festivals/${festivalId}/stations/${stationId}`, {
         method: 'DELETE',
       }),
-      reload,
-    )
-  }
-
-  async function setActive(id: string, isActive: boolean): Promise<AdminActionResult<null>> {
-    if (isActive) {
-      return await reloadOrFailureOf(
-        await requestAction(`/api/admin/stations/${id}/activate`, { method: 'POST' }),
-        reload,
-      )
-    }
-    return await reloadOrFailureOf(
-      await requestAction(`/api/admin/stations/${id}/deactivate`, { method: 'POST' }),
       reload,
     )
   }

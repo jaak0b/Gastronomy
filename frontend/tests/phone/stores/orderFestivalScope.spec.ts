@@ -153,6 +153,23 @@ describe('the order on the phone and the festival that is running', () => {
     expect(order.draft.lines).toHaveLength(1)
   })
 
+  it('is thrown away when the phone opens the order only after a catalog of another festival arrived', async () => {
+    laptopAnswers(catalogOf('fest-1'))
+    await useCatalogStore().load()
+    addABratwurst(useOrderStore())
+    expect(restoreDraft().draft.lines).toHaveLength(1)
+    setActivePinia(createPinia())
+
+    laptopAnswers(catalogOf('fest-2'))
+    await useCatalogStore().load()
+    const order = useOrderStore()
+
+    expect({ lines: order.draft.lines, festivalId: order.draft.festivalId }).toEqual({
+      lines: [],
+      festivalId: 'fest-2',
+    })
+  })
+
   it('stays on the screen while it is frozen, even once another festival runs', async () => {
     laptopAnswers(catalogOf('fest-1'))
     const catalog = useCatalogStore()

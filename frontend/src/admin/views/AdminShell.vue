@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ADMIN_SECTIONS, currentRoute, navigate, type AdminSection } from '../../shared/router/router'
 import { assertNever } from '../../shared/core/assertNever'
-import { requestAction } from '../../shared/api/client'
 import AdminOverview from '../components/overview/AdminOverview.vue'
 import FestivalsList from '../components/festivals/FestivalsList.vue'
 import FestivalPage from '../components/festivals/FestivalPage.vue'
@@ -13,9 +12,11 @@ import StaffList from '../components/staff/StaffList.vue'
 import NotOnLaptop from '../components/NotOnLaptop.vue'
 import { useLocaleBinding } from '../../shared/composables/useLocaleBinding'
 import { useAppLanguageStore } from '../stores/appLanguage'
+import { useLaptopProbe } from '../composables/useLaptopProbe'
 
 const { t } = useI18n()
 const appLanguage = useAppLanguageStore()
+const { isThisTheLaptop } = useLaptopProbe()
 const isReachable = ref(true)
 
 useLocaleBinding(() => appLanguage.language)
@@ -50,8 +51,8 @@ function titleFor(value: AdminSection): string {
   }
 }
 
-void requestAction('/api/admin/festivals').then((result) => {
-  isReachable.value = !(result.kind === 'error' && result.status === 404)
+void isThisTheLaptop().then((isLaptop) => {
+  isReachable.value = isLaptop
 })
 </script>
 
@@ -59,12 +60,13 @@ void requestAction('/api/admin/festivals').then((result) => {
   <NotOnLaptop v-if="!isReachable" />
   <div v-else class="admin-shell">
     <v-toolbar class="admin-nav" density="comfortable" color="surface">
-      <v-tabs :model-value="section" class="admin-tabs">
+      <v-tabs :model-value="section" class="admin-tabs" data-test="admin-tabs">
         <v-tab
           v-for="value in sections"
           :key="value"
           :value="value"
-          :class="{ 'is-selected': value === section }"
+          :data-selected="value === section"
+          data-test="admin-tab"
           @click="navigate(`/admin/${value}`)"
         >
           {{ titleFor(value) }}

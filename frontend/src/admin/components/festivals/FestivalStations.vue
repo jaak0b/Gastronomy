@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { AdminStationView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminStationsStore, type StationDraft } from '../../stores/stations'
-import BaseConfirmDialog from '../BaseConfirmDialog.vue'
+import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import StationDialog from '../stations/StationDialog.vue'
 

@@ -10,7 +10,7 @@ import { estimateRangeText } from '../../core/estimateWording'
 import { formatPrice } from '../../core/totals'
 import { buildItemPositionsView, type ItemPosition, type PositionGroup } from '../../core/itemPositions'
 import { needsStationChoice } from '../../core/routingPreview'
-import { useKeyboardInset } from '../../composables/useKeyboardInset'
+import ItemNoteDialog from './ItemNoteDialog.vue'
 
 const props = defineProps<{
   item: CatalogItemView
@@ -30,7 +30,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const keyboardInset = useKeyboardInset()
 
 const isAsking = ref(false)
 const typedNote = ref('')
@@ -74,8 +73,6 @@ const defaultStationName = computed(() => {
   return stationId === undefined ? null : props.stationNameFor(stationId)
 })
 
-const canConfirm = computed(() => typedNote.value.trim().length > 0)
-
 function askForANote(): void {
   if (needsStationChoice(props.item)) {
     emit('addWithANoteAtAStation')
@@ -116,25 +113,26 @@ function stationNameForRow(group: PositionGroup): string | null {
 </script>
 
 <template>
-  <div class="item-row" :class="{ 'is-sold-out': isSoldOut }">
+  <div class="item-row" data-test="item-row" :class="{ 'is-sold-out': isSoldOut }">
     <div class="item-line d-flex align-start">
       <div class="item-body flex-grow-1">
-        <div class="item-head d-flex align-start">
-          <v-btn class="add flex-grow-1" variant="text" :disabled="isSoldOut" @click="emit('add')">
+        <div class="item-head d-flex align-start" data-test="item-head">
+          <v-btn class="add flex-grow-1" data-test="add" variant="text" :disabled="isSoldOut" @click="emit('add')">
             <span class="name-line">
-              <span class="name text-body-1">{{ item.name }}</span>
-              <span class="unit-price text-body-2 text-medium-emphasis">
+              <span class="name text-body-1" data-test="name">{{ item.name }}</span>
+              <span class="unit-price text-body-2 text-medium-emphasis" data-test="unit-price">
                 {{ unitPriceText }}
               </span>
             </span>
-            <span class="facts text-body-2 text-medium-emphasis">
-              <span v-if="estimate !== null" class="estimate">{{ estimate }}</span>
-              <span v-if="isSoldOut" class="sold-out">{{ t('common.labels.soldOut') }}</span>
+            <span class="facts text-body-2 text-medium-emphasis" data-test="facts">
+              <span v-if="estimate !== null" class="estimate" data-test="estimate">{{ estimate }}</span>
+              <span v-if="isSoldOut" class="sold-out" data-test="sold-out">{{ t('common.labels.soldOut') }}</span>
             </span>
           </v-btn>
-          <span v-if="view.totalCount > 0" class="article-total text-body-1">{{ articleTotal }}</span>
+          <span v-if="view.totalCount > 0" class="article-total text-body-1" data-test="article-total">{{ articleTotal }}</span>
           <v-btn
             class="add-note add-note-in-header"
+            data-test="add-note"
             variant="text"
             :disabled="isSoldOut"
             @click="askForANote"
@@ -149,17 +147,19 @@ function stationNameForRow(group: PositionGroup): string | null {
       v-for="group in view.rows"
       :key="group.indexes[0]"
       class="note-group d-flex align-center ga-2"
+      data-test="note-group"
     >
-      <span class="group-count">{{ group.indexes.length }}</span>
-      <div class="group-label text-body-2 text-start flex-grow-1 d-flex align-center">
+      <span class="group-count" data-test="group-count">{{ group.indexes.length }}</span>
+      <div class="group-label text-body-2 text-start flex-grow-1 d-flex align-center" data-test="group-label">
         <button
           v-if="group.stationName !== null"
           class="group-station"
+          data-test="group-station"
           @click="emit('changeStation', group.indexes)"
         >
           {{ group.stationName }}
         </button>
-        <span v-else-if="stationNameForRow(group) !== null" class="group-station-fixed">
+        <span v-else-if="stationNameForRow(group) !== null" class="group-station-fixed" data-test="group-station-fixed">
           {{ stationNameForRow(group) }}
         </span>
         <span v-if="group.note !== null && stationNameForRow(group) !== null" class="group-separator">
@@ -168,6 +168,7 @@ function stationNameForRow(group: PositionGroup): string | null {
         <button
           v-if="group.note !== null"
           class="group-note text-medium-emphasis"
+          data-test="group-note"
           @click="correctTheNoteFor(group)"
         >
           {{ group.note }}
@@ -175,12 +176,14 @@ function stationNameForRow(group: PositionGroup): string | null {
       </div>
       <v-btn
         class="group-remove stepper"
+        data-test="group-remove"
         icon="mdi-minus"
         variant="text"
         @click="emit('removeOne', mostRecentIndexIn(group))"
       />
       <v-btn
         class="group-add stepper"
+        data-test="group-add"
         icon="mdi-plus"
         variant="text"
         :disabled="isSoldOut"
@@ -188,32 +191,13 @@ function stationNameForRow(group: PositionGroup): string | null {
       />
     </div>
 
-    <v-dialog v-model="isAsking" max-width="480" :style="{ height: `calc(100% - ${keyboardInset}px)`, bottom: 'auto' }">
-      <v-card class="note-dialog">
-        <v-card-title class="title">{{ t('phone.catalog.labels.noteTitle', { name: item.name }) }}</v-card-title>
-        <v-card-text>
-          <v-text-field
-            v-model="typedNote"
-            class="note-input"
-            maxlength="200"
-            autofocus
-            :label="t('phone.catalog.labels.itemNote')"
-            :placeholder="t('phone.catalog.labels.lineNotePlaceholder')"
-            persistent-placeholder
-            @keyup.enter="canConfirm && confirm()"
-          />
-        </v-card-text>
-        <v-card-actions>
-          <v-btn class="note-cancel" variant="text" @click="isAsking = false">
-            {{ t('common.actions.cancel') }}
-          </v-btn>
-          <v-spacer />
-          <v-btn class="note-confirm" color="primary" variant="tonal" :disabled="!canConfirm" @click="confirm">
-            {{ groupBeingCorrected === null ? t('phone.catalog.actions.noteAdd') : t('phone.catalog.actions.noteSave') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <ItemNoteDialog
+      v-model:is-open="isAsking"
+      v-model:note="typedNote"
+      :item-name="item.name"
+      :is-correcting="groupBeingCorrected !== null"
+      @confirm="confirm"
+    />
   </div>
 </template>
 

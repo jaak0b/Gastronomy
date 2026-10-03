@@ -37,14 +37,15 @@ function choose(stationId: string): void {
 </script>
 
 <template>
-  <v-dialog :model-value="true" max-width="480" persistent scrollable :style="{ height: `calc(100% - ${keyboardInset}px)`, bottom: 'auto' }">
-    <v-card class="line-station-sheet">
-      <v-card-title class="station-where-title">{{ t('phone.catalog.labels.stationForItem', { item: item.name }) }}</v-card-title>
+  <v-dialog data-test="line-station-overlay" :model-value="true" max-width="480" persistent scrollable :style="{ height: `calc(100% - ${keyboardInset}px)`, bottom: 'auto' }">
+    <v-card class="line-station-sheet" data-test="line-station-sheet">
+      <v-card-title class="station-where-title" data-test="station-where-title">{{ t('phone.catalog.labels.stationForItem', { item: item.name }) }}</v-card-title>
       <v-card-text v-if="withNote">
         <v-text-field
           ref="noteInput"
           v-model="typedNote"
           class="station-note-input"
+          data-test="station-note-input"
           maxlength="200"
           :label="t('phone.catalog.labels.itemNote')"
           :placeholder="t('phone.catalog.labels.lineNotePlaceholder')"
@@ -56,6 +57,7 @@ function choose(stationId: string): void {
           v-for="stationId in choices"
           :key="stationId"
           class="station-choice mb-2"
+          data-test="station-choice"
           variant="tonal"
           block
           @click="choose(stationId)"
@@ -65,7 +67,7 @@ function choose(stationId: string): void {
             {{ t('phone.catalog.labels.currentStation') }}
           </span>
         </v-btn>
-        <v-btn class="cancel-station-choice" variant="text" block @click="emit('cancel')">
+        <v-btn class="cancel-station-choice" data-test="cancel-station-choice" variant="text" block @click="emit('cancel')">
           {{ t('common.actions.cancel') }}
         </v-btn>
       </v-card-actions>

@@ -55,6 +55,7 @@ defineExpose({ amountPaidCents, settlement })
   <div class="amount-paid-fields">
     <v-text-field
       class="amount-field"
+      data-test="amount-field"
       inputmode="decimal"
       :label="t('phone.openItems.labels.amountPaidField')"
       :model-value="shownAmount"
@@ -65,6 +66,7 @@ defineExpose({ amountPaidCents, settlement })
       v-if="reasonIsNeeded"
       v-model="reason"
       class="reason-field"
+      data-test="reason-field"
       maxlength="200"
       :label="t('phone.openItems.labels.amountPaidReason')"
       :placeholder="t('phone.openItems.labels.reasonPlaceholder')"

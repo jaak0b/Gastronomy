@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
-import BaseConfirmDialog from '../../../src/admin/components/BaseConfirmDialog.vue'
+import BaseConfirmDialog from '../../../src/shared/components/BaseConfirmDialog.vue'
 import { dialogText, testPlugins, waitForDialog } from '../../support/plugins'
 
 function mountDialog() {
@@ -24,35 +24,35 @@ describe('the question asked before something is switched off', () => {
     mountDialog()
     await waitForDialog()
 
-    expect(dialogText('.confirm-title')).toBe('Ausgabestelle abschalten?')
+    expect(dialogText('[data-test="confirm-title"]')).toBe('Ausgabestelle abschalten?')
   })
 
   it('says what it means for the data that is already there', async () => {
     mountDialog()
     await waitForDialog()
 
-    expect(dialogText('.confirm-body')).toBe('Die bisherigen Bestellungen bleiben gespeichert.')
+    expect(dialogText('[data-test="confirm-body"]')).toBe('Die bisherigen Bestellungen bleiben gespeichert.')
   })
 
   it('names the action on the button that carries it out', async () => {
     mountDialog()
     await waitForDialog()
 
-    expect(dialogText('.confirm')).toBe('Ausgabestelle abschalten')
+    expect(dialogText('[data-test="confirm"]')).toBe('Ausgabestelle abschalten')
   })
 
   it('offers a way out that is not the action', async () => {
     mountDialog()
     await waitForDialog()
 
-    expect(dialogText('.cancel')).toBe('Abbrechen')
+    expect(dialogText('[data-test="cancel"]')).toBe('Abbrechen')
   })
 
   it('reports the confirmation only when the action button is pressed', async () => {
     const dialog = mountDialog()
     await waitForDialog()
 
-    ;(document.querySelector('.confirm') as HTMLElement).click()
+    ;(document.querySelector('[data-test="confirm"]') as HTMLElement).click()
 
     expect(dialog.emitted('confirm')).toHaveLength(1)
     expect(dialog.emitted('cancel')).toBeUndefined()
@@ -62,7 +62,7 @@ describe('the question asked before something is switched off', () => {
     const dialog = mountDialog()
     await waitForDialog()
 
-    ;(document.querySelector('.cancel') as HTMLElement).click()
+    ;(document.querySelector('[data-test="cancel"]') as HTMLElement).click()
 
     expect(dialog.emitted('cancel')).toHaveLength(1)
     expect(dialog.emitted('confirm')).toBeUndefined()
@@ -72,7 +72,7 @@ describe('the question asked before something is switched off', () => {
     mountDialog()
     await waitForDialog()
 
-    expect(document.querySelector('.confirm-dialog')!.getAttribute('role')).toBe('dialog')
-    expect(document.querySelector('.confirm-dialog')!.getAttribute('aria-modal')).toBe('true')
+    expect(document.querySelector('[data-test="confirm-dialog"]')!.getAttribute('role')).toBe('dialog')
+    expect(document.querySelector('[data-test="confirm-dialog"]')!.getAttribute('aria-modal')).toBe('true')
   })
 })

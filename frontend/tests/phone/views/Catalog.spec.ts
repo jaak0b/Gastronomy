@@ -59,15 +59,45 @@ function mountCatalog() {
 type MountedCatalog = ReturnType<typeof mountCatalog>
 
 function categoryButtons(view: MountedCatalog): string[] {
-  return view.findAll('.category-button').map((element) => element.text())
+  return view.findAll('[data-test="category-button"]').map((element) => element.text())
 }
 
-async function openCategory(view: MountedCatalog, index: number): Promise<void> {
-  await view.findAll('.category-button')[index].trigger('click')
+async function openCategory(view: MountedCatalog, name: string): Promise<void> {
+  const button = view
+    .findAll('[data-test="category-button"]')
+    .find((candidate) => candidate.text().endsWith(name))
+  if (button === undefined) {
+    throw new Error(`No category button names ${name}.`)
+  }
+  await button.trigger('click')
+}
+
+function itemRowNamed(view: MountedCatalog, name: string) {
+  const row = view
+    .findAll('[data-test="item-row"]')
+    .find((candidate) => candidate.get('[data-test="name"]').text() === name)
+  if (row === undefined) {
+    throw new Error(`No item row names ${name}.`)
+  }
+  return row
+}
+
+async function tapToAdd(view: MountedCatalog, name: string): Promise<void> {
+  await itemRowNamed(view, name).get('[data-test="add"]').trigger('click')
+}
+
+function stationChoiceNamed(name: string): HTMLElement {
+  const choice = [...document.querySelectorAll<HTMLElement>('[data-test="station-choice"]')].find(
+    (candidate) => candidate.textContent?.trim().startsWith(name),
+  )
+  if (choice === undefined) {
+    throw new Error(`No station choice names ${name}.`)
+  }
+  return choice
 }
 
 async function goBackToTheCategories(view: MountedCatalog): Promise<void> {
-  await view.get('.back-to-categories').trigger('click')
+  await view.get('[data-test="back-to-categories"]').trigger('click')
 }
 
 describe('the categories on the ordering screen', () => {
@@ -82,9 +112,9 @@ describe('the categories on the ordering screen', () => {
   it('lays the category buttons out in a grid of their own', () => {
     const view = mountCatalog()
 
-    const grid = view.get('.category-grid')
-    expect(grid.findAll('.category-button')).toHaveLength(2)
-    view.findAll('.category-button').forEach((button) => {
+    const grid = view.get('[data-test="category-grid"]')
+    expect(grid.findAll('[data-test="category-button"]')).toHaveLength(2)
+    view.findAll('[data-test="category-button"]').forEach((button) => {
       expect(button.element.parentElement).toBe(grid.element)
     })
   })
@@ -98,22 +128,21 @@ describe('the categories on the ordering screen', () => {
   it('shows no item at all until the waiter has picked a category', () => {
     const view = mountCatalog()
 
-    expect(view.findAll('.item-row')).toHaveLength(0)
+    expect(view.findAll('[data-test="item-row"]')).toHaveLength(0)
   })
 
   it('docks the basket bar at the bottom, so a long list of categories never hides it', () => {
     const view = mountCatalog()
 
-    expect(view.get('.to-review').element.closest('.docked-strip')).not.toBeNull()
+    expect(view.get('[data-test="to-review"]').element.closest('[data-test="docked-strip"]')).not.toBeNull()
   })
 
   it('keeps the table and the summary together in one tray at the bottom', () => {
     const view = mountCatalog()
 
-    const tray = view.get('.order-tray')
-    expect(tray.classes()).toContain('docked-strip')
-    expect(tray.find('.table-field').exists()).toBe(true)
-    expect(tray.find('.to-review').exists()).toBe(true)
+    const tray = view.get('[data-test="docked-strip"]')
+    expect(tray.find('[data-test="table-field"]').exists()).toBe(true)
+    expect(tray.find('[data-test="to-review"]').exists()).toBe(true)
   })
 
   it('keeps the order the laptop gives the categories in', () => {
@@ -128,7 +157,7 @@ describe('the categories on the ordering screen', () => {
     const view = mountCatalog()
 
     const painted = view
-      .findAll('.category-button')
+      .findAll('[data-test="category-button"]')
       .map((element) => (element.element as HTMLElement).style.backgroundColor)
 
     expect(painted).toEqual(['rgb(255, 235, 59)', 'rgb(198, 40, 40)'])
@@ -138,7 +167,7 @@ describe('the categories on the ordering screen', () => {
     const view = mountCatalog()
 
     const lettering = view
-      .findAll('.category-button')
+      .findAll('[data-test="category-button"]')
       .map((element) => (element.element as HTMLElement).style.color)
 
     expect(lettering).toEqual(['rgb(0, 0, 0)', 'rgb(255, 255, 255)'])
@@ -149,8 +178,8 @@ describe('the categories on the ordering screen', () => {
     catalog.catalog = { ...CATALOG, categories: [], items: [] }
     const view = mount(CatalogPage, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    expect(view.findAll('.category-button')).toHaveLength(0)
-    expect(view.findAll('.item-row')).toHaveLength(0)
+    expect(view.findAll('[data-test="category-button"]')).toHaveLength(0)
+    expect(view.findAll('[data-test="item-row"]')).toHaveLength(0)
   })
 })
 
@@ -166,61 +195,61 @@ describe('the items of one category on the ordering screen', () => {
   it('shows that category and its items once its button is tapped', async () => {
     const view = mountCatalog()
 
-    await openCategory(view, 1)
+    await openCategory(view, 'Getränke')
 
-    expect(view.get('.open-category-name').text()).toBe('Getränke')
-    expect(view.findAll('.item-row .name').map((element) => element.text())).toEqual(['Wasser'])
-    expect(view.find('.back-to-categories').exists()).toBe(true)
+    expect(view.get('[data-test="open-category-name"]').text()).toBe('Getränke')
+    expect(view.findAll('[data-test="item-row"] [data-test="name"]').map((element) => element.text())).toEqual(['Wasser'])
+    expect(view.find('[data-test="back-to-categories"]').exists()).toBe(true)
   })
 
   it('puts the basket bar away while the waiter is inside a category', async () => {
     const view = mountCatalog()
 
-    await openCategory(view, 0)
+    await openCategory(view, 'Essen')
 
-    expect(view.find('.basket-bar').exists()).toBe(false)
+    expect(view.find('[data-test="basket-bar"]').exists()).toBe(false)
   })
 
   it('docks the way back at the bottom, so a long list of items never hides it', async () => {
     const view = mountCatalog()
 
-    await openCategory(view, 0)
+    await openCategory(view, 'Essen')
 
-    expect(view.get('.back-to-categories').element.closest('.docked-strip')).not.toBeNull()
+    expect(view.get('[data-test="back-to-categories"]').element.closest('[data-test="docked-strip"]')).not.toBeNull()
   })
 
   it('returns to the categories, with the order intact, when the way back is tapped', async () => {
     const view = mountCatalog()
     const order = useOrderStore()
-    await openCategory(view, 0)
-    await view.findAll('.item-row .add')[0].trigger('click')
+    await openCategory(view, 'Essen')
+    await tapToAdd(view, 'Bratwurst')
 
     await goBackToTheCategories(view)
 
     expect(order.draft.lines).toHaveLength(1)
     expect(categoryButtons(view)).toEqual(['1 x Essen', 'Getränke'])
-    expect(view.findAll('.item-row')).toHaveLength(0)
+    expect(view.findAll('[data-test="item-row"]')).toHaveLength(0)
   })
 
   it('keeps the portions already ordered while the waiter looks at another category', async () => {
     const view = mountCatalog()
     const order = useOrderStore()
-    await openCategory(view, 0)
-    await view.findAll('.item-row .add')[0].trigger('click')
+    await openCategory(view, 'Essen')
+    await tapToAdd(view, 'Bratwurst')
     await goBackToTheCategories(view)
 
-    await openCategory(view, 1)
+    await openCategory(view, 'Getränke')
     await goBackToTheCategories(view)
-    await openCategory(view, 0)
+    await openCategory(view, 'Essen')
 
     expect(order.draft.lines).toHaveLength(1)
-    expect(view.get('.item-row .note-group .group-count').text()).toBe('1')
+    expect(view.get('[data-test="item-row"] [data-test="note-group"] [data-test="group-count"]').text()).toBe('1')
   })
 
   it('sends the waiter back to the categories when the open one leaves the menu', async () => {
     const view = mountCatalog()
     const catalog = useCatalogStore()
-    await openCategory(view, 0)
+    await openCategory(view, 'Essen')
 
     catalog.catalog = {
       ...CATALOG,
@@ -229,7 +258,7 @@ describe('the items of one category on the ordering screen', () => {
     }
     await view.vm.$nextTick()
 
-    expect(view.findAll('.item-row')).toHaveLength(0)
+    expect(view.findAll('[data-test="item-row"]')).toHaveLength(0)
     expect(categoryButtons(view)).toEqual(['Getränke'])
   })
 })
@@ -245,10 +274,10 @@ describe('the portions written on a category button', () => {
 
   it('writes how many portions of that category are on the order', async () => {
     const view = mountCatalog()
-    await openCategory(view, 0)
+    await openCategory(view, 'Essen')
 
-    await view.findAll('.item-row .add')[0].trigger('click')
-    await view.findAll('.item-row .add')[0].trigger('click')
+    await tapToAdd(view, 'Bratwurst')
+    await tapToAdd(view, 'Bratwurst')
     await goBackToTheCategories(view)
 
     expect(categoryButtons(view)).toEqual(['2 x Essen', 'Getränke'])
@@ -262,10 +291,10 @@ describe('the portions written on a category button', () => {
 
   it('writes the name on its own again once the last portion is taken off', async () => {
     const view = mountCatalog()
-    await openCategory(view, 0)
-    await view.findAll('.item-row .add')[0].trigger('click')
+    await openCategory(view, 'Essen')
+    await tapToAdd(view, 'Bratwurst')
 
-    await view.get('.item-row .note-group .group-remove').trigger('click')
+    await view.get('[data-test="item-row"] [data-test="note-group"] [data-test="group-remove"]').trigger('click')
     await goBackToTheCategories(view)
 
     expect(categoryButtons(view)).toEqual(['Essen', 'Getränke'])
@@ -273,12 +302,12 @@ describe('the portions written on a category button', () => {
 
   it('keeps counting the portions of the category the waiter is not looking at', async () => {
     const view = mountCatalog()
-    await openCategory(view, 0)
-    await view.findAll('.item-row .add')[0].trigger('click')
+    await openCategory(view, 'Essen')
+    await tapToAdd(view, 'Bratwurst')
     await goBackToTheCategories(view)
 
-    await openCategory(view, 1)
-    await view.findAll('.item-row .add')[0].trigger('click')
+    await openCategory(view, 'Getränke')
+    await tapToAdd(view, 'Wasser')
     await goBackToTheCategories(view)
 
     expect(categoryButtons(view)).toEqual(['1 x Essen', '1 x Getränke'])
@@ -297,44 +326,52 @@ describe('building the order on the ordering screen', () => {
   it('puts one portion on the order when an item is tapped', async () => {
     const view = mountCatalog()
     const order = useOrderStore()
-    await openCategory(view, 0)
+    await openCategory(view, 'Essen')
 
-    await view.findAll('.item-row .add')[0].trigger('click')
-    await view.findAll('.item-row .add')[0].trigger('click')
+    await tapToAdd(view, 'Bratwurst')
+    await tapToAdd(view, 'Bratwurst')
 
     expect(order.draft.lines).toHaveLength(2)
-    expect(view.get('.item-row .note-group .group-count').text()).toBe('2')
+    expect(view.get('[data-test="item-row"] [data-test="note-group"] [data-test="group-count"]').text()).toBe('2')
   })
 
   it('puts a portion carrying the typed note on a line of its own', async () => {
     const view = mountCatalog()
     const order = useOrderStore()
-    await openCategory(view, 0)
+    await openCategory(view, 'Essen')
 
-    await view.findAll('.item-row .add')[0].trigger('click')
-    await view.findAll('.item-row .add-note')[0].trigger('click')
-    const field = document.querySelector('.note-dialog .note-input input') as HTMLInputElement
+    await tapToAdd(view, 'Bratwurst')
+    await itemRowNamed(view, 'Bratwurst').get('[data-test="add-note"]').trigger('click')
+    const field = document.querySelector('[data-test="note-dialog"] [data-test="note-input"] input') as HTMLInputElement
     field.value = 'ohne Eis'
     field.dispatchEvent(new Event('input'))
     await view.vm.$nextTick()
-    ;(document.querySelector('.note-dialog .note-confirm') as HTMLElement).click()
+    ;(document.querySelector('[data-test="note-dialog"] [data-test="note-confirm"]') as HTMLElement).click()
     await view.vm.$nextTick()
 
     expect(order.draft.lines.map((line) => line.note)).toEqual([null, 'ohne Eis'])
-    const groups = view.findAll('.item-row .note-group')
+    const groups = view.findAll('[data-test="item-row"] [data-test="note-group"]')
     expect(groups).toHaveLength(2)
-    expect(groups[0].get('.group-count').text()).toBe('1')
-    expect(groups[1].get('.group-note').text()).toBe('ohne Eis')
+    expect(
+      groups
+        .filter((group) => !group.find('[data-test="group-note"]').exists())
+        .map((group) => group.get('[data-test="group-count"]').text()),
+    ).toEqual(['1'])
+    expect(
+      groups
+        .filter((group) => group.find('[data-test="group-note"]').exists())
+        .map((group) => group.get('[data-test="group-note"]').text()),
+    ).toEqual(['ohne Eis'])
   })
 
   it('takes the most recently added portion off again', async () => {
     const view = mountCatalog()
     const order = useOrderStore()
-    await openCategory(view, 0)
+    await openCategory(view, 'Essen')
 
-    await view.findAll('.item-row .add')[0].trigger('click')
-    await view.findAll('.item-row .add')[0].trigger('click')
-    await view.get('.item-row .note-group .group-remove').trigger('click')
+    await tapToAdd(view, 'Bratwurst')
+    await tapToAdd(view, 'Bratwurst')
+    await view.get('[data-test="item-row"] [data-test="note-group"] [data-test="group-remove"]').trigger('click')
 
     expect(order.draft.lines).toHaveLength(1)
   })
@@ -351,8 +388,8 @@ describe('the way from the ordering screen to the summary', () => {
 
   async function catalogWithOnePortion() {
     const view = mountCatalog()
-    await openCategory(view, 0)
-    await view.findAll('.item-row .add')[0].trigger('click')
+    await openCategory(view, 'Essen')
+    await tapToAdd(view, 'Bratwurst')
     await goBackToTheCategories(view)
     return view
   }
@@ -360,40 +397,40 @@ describe('the way from the ordering screen to the summary', () => {
   it('keeps the way to the summary open while the table is empty, so tapping it can say so', async () => {
     const view = await catalogWithOnePortion()
 
-    expect(view.get('.to-review').attributes('disabled')).toBeUndefined()
+    expect(view.get('[data-test="to-review"]').attributes('disabled')).toBeUndefined()
   })
 
   it('marks the table field instead of moving on when no table was entered', async () => {
     const view = await catalogWithOnePortion()
 
-    await view.get('.to-review').trigger('click')
+    await view.get('[data-test="to-review"]').trigger('click')
 
     expect(currentRoute.value).toEqual({ name: 'home' })
-    expect(view.get('.table-field').classes()).toContain('is-missing')
+    expect(view.get('[data-test="table-field"]').classes()).toContain('is-missing')
   })
 
   it('puts the cursor in the table field so the keyboard opens on the thing that is missing', async () => {
     const view = await catalogWithOnePortion()
 
-    await view.get('.to-review').trigger('click')
+    await view.get('[data-test="to-review"]').trigger('click')
 
-    expect(document.activeElement).toBe(view.get('.table-field input').element)
+    expect(document.activeElement).toBe(view.get('[data-test="table-field"] input').element)
   })
 
   it('takes the mark off again as soon as a table is typed', async () => {
     const view = await catalogWithOnePortion()
-    await view.get('.to-review').trigger('click')
+    await view.get('[data-test="to-review"]').trigger('click')
 
-    await view.get('.table-field input').setValue('Tisch 12')
+    await view.get('[data-test="table-field"] input').setValue('Tisch 12')
 
-    expect(view.get('.table-field').classes()).not.toContain('is-missing')
+    expect(view.get('[data-test="table-field"]').classes()).not.toContain('is-missing')
   })
 
   it('moves on to the summary once a table is there', async () => {
     const view = await catalogWithOnePortion()
-    await view.get('.table-field input').setValue('Tisch 12')
+    await view.get('[data-test="table-field"] input').setValue('Tisch 12')
 
-    await view.get('.to-review').trigger('click')
+    await view.get('[data-test="to-review"]').trigger('click')
 
     expect(currentRoute.value).toEqual({ name: 'review' })
   })
@@ -411,7 +448,7 @@ describe('the length of what a waiter types on the ordering screen', () => {
   it('stops the table name after forty characters', () => {
     const view = mountCatalog()
 
-    expect(view.get('.table-input input').attributes('maxlength')).toBe('40')
+    expect(view.get('[data-test="table-input"] input').attributes('maxlength')).toBe('40')
   })
 })
 
@@ -453,9 +490,9 @@ describe('the question about which station is to make an item', () => {
   }
 
   async function askWhereTheCoffeeIsMade(view: MountedCatalog): Promise<void> {
-    await openCategory(view, 0)
-    await view.findAll('.item-row .add')[1].trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
+    await openCategory(view, 'Essen')
+    await tapToAdd(view, 'Kaffee')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="line-station-sheet"]')).not.toBeNull())
   }
 
   it('forgets the unanswered question when the waiter leaves the category', async () => {
@@ -464,11 +501,11 @@ describe('the question about which station is to make an item', () => {
     await askWhereTheCoffeeIsMade(view)
 
     await goBackToTheCategories(view)
-    await openCategory(view, 1)
+    await openCategory(view, 'Getränke')
     await view.vm.$nextTick()
     await view.vm.$nextTick()
 
-    expect(document.querySelector('.line-station-sheet')).toBeNull()
+    expect(document.querySelector('[data-test="line-station-sheet"]')).toBeNull()
     expect(order.draft.lines).toHaveLength(0)
   })
 
@@ -477,35 +514,35 @@ describe('the question about which station is to make an item', () => {
     const order = useOrderStore()
     await askWhereTheCoffeeIsMade(view)
 
-    document.querySelector<HTMLElement>('.cancel-station-choice')?.click()
+    document.querySelector<HTMLElement>('[data-test="cancel-station-choice"]')?.click()
     await view.vm.$nextTick()
 
-    expect(document.querySelector('.line-station-sheet')).toBeNull()
+    expect(document.querySelector('[data-test="line-station-sheet"]')).toBeNull()
     expect(order.draft.lines).toHaveLength(0)
-    expect(view.findAll('.item-row').length).toBeGreaterThan(0)
+    expect(view.findAll('[data-test="item-row"]').length).toBeGreaterThan(0)
   })
 
   it('takes the note in the station sheet and puts both on the line', async () => {
     const view = mountCatalogWithAStationChoice()
     const order = useOrderStore()
-    await openCategory(view, 0)
+    await openCategory(view, 'Essen')
 
-    await view.findAll('.item-row .add-note')[1].trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
-    expect(document.querySelector('.line-station-sheet .station-note-input')).not.toBeNull()
+    await itemRowNamed(view, 'Kaffee').get('[data-test="add-note"]').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="line-station-sheet"]')).not.toBeNull())
+    expect(document.querySelector('[data-test="line-station-sheet"] [data-test="station-note-input"]')).not.toBeNull()
     expect(
-      document.querySelector('.line-station-sheet .station-where-title')?.textContent?.trim(),
+      document.querySelector('[data-test="line-station-sheet"] [data-test="station-where-title"]')?.textContent?.trim(),
     ).toBe('Ausgabestelle für Kaffee')
 
     const field = document.querySelector(
-      '.line-station-sheet .station-note-input input',
+      '[data-test="line-station-sheet"] [data-test="station-note-input"] input',
     ) as HTMLInputElement
     expect(document.activeElement).toBe(field)
     field.value = 'ohne Zucker'
     field.dispatchEvent(new Event('input'))
     await view.vm.$nextTick()
-    document.querySelector<HTMLElement>('.station-choice')?.click()
-    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).toBeNull())
+    stationChoiceNamed('Küche').click()
+    await vi.waitFor(() => expect(document.querySelector('[data-test="line-station-sheet"]')).toBeNull())
 
     expect(order.draft.lines).toHaveLength(1)
     expect(order.draft.lines[0].note).toBe('ohne Zucker')
@@ -528,8 +565,8 @@ describe('the question about which station is to make an item', () => {
       name: 'Kaffee',
     })
 
-    await openCategory(view, 0)
-    await view.findAll('.item-row')[1].get('.group-add').trigger('click')
+    await openCategory(view, 'Essen')
+    await itemRowNamed(view, 'Kaffee').get('[data-test="group-add"]').trigger('click')
 
     expect(order.draft.lines).toHaveLength(3)
     expect(order.draft.lines[2].stationId).toBe('station-bar')
@@ -546,14 +583,14 @@ describe('the question about which station is to make an item', () => {
       name: 'Kaffee',
     })
 
-    await openCategory(view, 0)
-    await view.findAll('.item-row')[1].get('.group-station').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
+    await openCategory(view, 'Essen')
+    await itemRowNamed(view, 'Kaffee').get('[data-test="group-station"]').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="line-station-sheet"]')).not.toBeNull())
 
-    expect(document.querySelector('.line-station-sheet .station-note-input')).toBeNull()
+    expect(document.querySelector('[data-test="line-station-sheet"] [data-test="station-note-input"]')).toBeNull()
 
-    document.querySelectorAll<HTMLElement>('.station-choice')[0]?.click()
-    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).toBeNull())
+    stationChoiceNamed('Küche').click()
+    await vi.waitFor(() => expect(document.querySelector('[data-test="line-station-sheet"]')).toBeNull())
 
     expect(order.draft.lines).toHaveLength(1)
     expect(order.draft.lines[0].note).toBe('ohne Zucker')
@@ -572,7 +609,7 @@ describe('the question about which station is to make an item', () => {
 
     await askWhereTheCoffeeIsMade(view)
 
-    const overlay = document.querySelector('.v-overlay--active') as HTMLElement
+    const overlay = document.querySelector('[data-test="line-station-overlay"]') as HTMLElement
     expect(overlay.style.height).toBe('calc(100% - 400px)')
     expect(overlay.style.bottom).toBe('auto')
     expect(overlay.classList).toContain('v-dialog--scrollable')
@@ -623,13 +660,13 @@ describe('the waiting time on the ordering screen', () => {
   it('writes one time on an item only one station makes', async () => {
     const view = mountCatalogWithEstimates()
 
-    await openCategory(view, 0)
+    await openCategory(view, 'Essen')
 
-    expect(view.findAll('.item-row .name').map((element) => element.text())).toEqual([
+    expect(view.findAll('[data-test="item-row"] [data-test="name"]').map((element) => element.text())).toEqual([
       'Bratwurst',
       'Kaffee',
     ])
-    expect(view.findAll('.item-row .estimate').map((element) => element.text())).toEqual([
+    expect(view.findAll('[data-test="item-row"] [data-test="estimate"]').map((element) => element.text())).toEqual([
       '~10 Min.',
       '~10 - 60 Min.',
     ])
@@ -656,13 +693,13 @@ describe('the waiting time on the ordering screen', () => {
   }
 
   async function askWhereTheKaffeeGoes(view: MountedCatalog): Promise<void> {
-    await openCategory(view, 0)
-    await view.findAll('.item-row .add')[1].trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
+    await openCategory(view, 'Essen')
+    await tapToAdd(view, 'Kaffee')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="line-station-sheet"]')).not.toBeNull())
   }
 
   function stationChoices(): (string | undefined)[] {
-    return [...document.querySelectorAll('.station-choice')].map((element) =>
+    return [...document.querySelectorAll('[data-test="station-choice"]')].map((element) =>
       element.textContent?.trim(),
     )
   }
@@ -674,60 +711,6 @@ describe('the waiting time on the ordering screen', () => {
     await askWhereTheKaffeeGoes(view)
 
     await vi.waitFor(() => expect(stationChoices()).toEqual(['Küche (~25 Min.)', 'Bar (~70 Min.)']))
-  })
-
-  it('writes no time on a button while the laptop has not answered yet', async () => {
-    useSessionStore().deviceToken = 'token-here'
-    vi.stubGlobal(
-      'fetch',
-      vi.fn((url: string) =>
-        url === '/api/estimates/quote'
-          ? new Promise<Response>(() => {})
-          : Promise.resolve(new Response('[]', { status: 200 })),
-      ),
-    )
-    const view = mountCatalogWithEstimates()
-
-    await askWhereTheKaffeeGoes(view)
-
-    expect(stationChoices()).toEqual(['Küche', 'Bar'])
-  })
-
-  it('writes no time on the button of a station the laptop quoted no time for', async () => {
-    answerEachQuoteWith({ 'station-kueche': 25, 'station-bar': null })
-    const view = mountCatalogWithEstimates()
-
-    await askWhereTheKaffeeGoes(view)
-
-    await vi.waitFor(() => expect(stationChoices()).toEqual(['Küche (~25 Min.)', 'Bar']))
-  })
-
-  it('writes no time on the station buttons when the item has just sold out', async () => {
-    const catalogWithASoldOutKaffee: CatalogView = {
-      ...CATALOG_WITH_TIMED_ITEMS,
-      items: CATALOG_WITH_TIMED_ITEMS.items.map((item) =>
-        item.id === 'item-kaffee' ? { ...item, isAvailable: false } : item,
-      ),
-    }
-    const catalog = useCatalogStore()
-    catalog.catalog = catalogWithASoldOutKaffee
-    useEstimatesStore().items = TIMED_ESTIMATES
-    useOrderStore().addItem({
-      catalogItemId: 'item-kaffee',
-      note: null,
-      stationId: 'station-bar',
-      name: 'Kaffee',
-    })
-    const view = mount(CatalogPage, { global: { plugins: testPlugins() }, attachTo: document.body })
-
-    await openCategory(view, 0)
-    await view.findAll('.item-row')[1].get('.group-station').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
-
-    const choices = [...document.querySelectorAll('.station-choice')].map((element) =>
-      element.textContent?.trim(),
-    )
-    expect(choices).toEqual(['Küche', 'Bar Aktuell'])
   })
 })
 
@@ -847,7 +830,7 @@ describe('the ordering screen on a phone whose keyboard covers the lower screen'
     const view = mountCatalog()
     await view.vm.$nextTick()
 
-    expect((view.get('.catalog').element as HTMLElement).style.paddingBottom).toBe('400px')
+    expect((view.get('[data-test="catalog"]').element as HTMLElement).style.paddingBottom).toBe('400px')
   })
 
   it('leaves the tray where it is while the waiter is zoomed in', async () => {
@@ -860,6 +843,6 @@ describe('the ordering screen on a phone whose keyboard covers the lower screen'
     const view = mountCatalog()
     await view.vm.$nextTick()
 
-    expect((view.get('.catalog').element as HTMLElement).style.paddingBottom).toBe('0px')
+    expect((view.get('[data-test="catalog"]').element as HTMLElement).style.paddingBottom).toBe('0px')
   })
 })

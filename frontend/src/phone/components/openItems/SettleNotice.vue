@@ -18,6 +18,7 @@ const wording = computed(() =>
 <template>
   <v-alert
     class="settle-notice"
+    data-test="settle-notice"
     type="warning"
     variant="tonal"
     :closable="closable"

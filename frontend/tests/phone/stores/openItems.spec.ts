@@ -858,3 +858,34 @@ describe('taking a whole order while the plain list of tables is shown', () => {
     expect(openItems.selectedItemIds).toEqual(['item-1'])
   })
 })
+
+describe('the reload a waiter asks for on the open items screen', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('fetches the whole list again while no table is looked up', async () => {
+    const { openItems, calls } = await storeWithTheOpenList([jsonOf(OPEN_LIST)])
+
+    await openItems.reloadTheActiveView()
+
+    expect(calls.map((call) => call.url)).toEqual(['/api/open-items', '/api/open-items'])
+  })
+
+  it('fetches only the looked up table again while one is looked up', async () => {
+    const { openItems, calls } = await storeWithTheOpenList([jsonOf(TABLE_REPORT)])
+    openItems.openLookup('Tisch 12')
+
+    await openItems.reloadTheActiveView()
+
+    expect(calls.map((call) => call.url)).toEqual([
+      '/api/open-items',
+      '/api/open-items/table?tableName=Tisch%2012',
+    ])
+  })
+})

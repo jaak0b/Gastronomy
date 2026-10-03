@@ -21,10 +21,10 @@ const summary = computed(() =>
 </script>
 
 <template>
-  <div class="basket-bar d-flex align-center py-3">
+  <div class="basket-bar d-flex align-center py-3" data-test="basket-bar">
     <span class="summary text-body-1">{{ summary }}</span>
     <v-spacer />
-    <v-btn class="to-review" color="primary" :disabled="itemCount === 0" @click="$emit('review')">
+    <v-btn class="to-review" data-test="to-review" color="primary" :disabled="itemCount === 0" @click="$emit('review')">
       {{ t('phone.catalog.actions.toReview') }}
     </v-btn>
   </div>

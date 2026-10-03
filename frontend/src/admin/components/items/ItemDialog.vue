@@ -11,7 +11,7 @@ import {
 } from '../../stores/categories'
 import type { AdminItemDraft } from '../../stores/items'
 import CategoryDialog from '../categories/CategoryDialog.vue'
-import BaseFormDialog from '../BaseFormDialog.vue'
+import BaseFormDialog from '../../../shared/components/BaseFormDialog.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 
 const props = defineProps<{
@@ -110,6 +110,7 @@ function commitThePreparationTime(event: KeyboardEvent): void {
     <v-text-field
       v-model="name"
       class="item-name-field mb-4"
+      data-test="item-name-field"
       maxlength="200"
       :label="t('admin.items.title')"
     />
@@ -117,6 +118,7 @@ function commitThePreparationTime(event: KeyboardEvent): void {
       <v-select
         v-model="categoryId"
         class="category-field flex-grow-1"
+        data-test="category-field"
         :label="t('admin.items.labels.category')"
         :items="offeredCategories"
         item-title="name"
@@ -125,13 +127,14 @@ function commitThePreparationTime(event: KeyboardEvent): void {
         :error="categoryIsMissing"
         :error-messages="categoryIsMissing ? [t('errors.admin.items.categoryUnknown')] : []"
       />
-      <v-btn class="new-category" variant="text" @click="startCreatingCategory">
+      <v-btn class="new-category" data-test="new-category" variant="text" @click="startCreatingCategory">
         {{ t('admin.categories.actions.new') }}
       </v-btn>
     </div>
     <v-number-input
       v-model="productionMinutes"
       class="production-minutes-field mb-2"
+      data-test="production-minutes-field"
       :label="t('admin.items.labels.productionMinutes')"
       :min="0"
       :max="LONGEST_PRODUCTION_MINUTES"
@@ -144,6 +147,7 @@ function commitThePreparationTime(event: KeyboardEvent): void {
     <v-checkbox
       v-model="isQueueIndependent"
       class="queue-independent-checkbox"
+      data-test="queue-independent-checkbox"
       :label="t('admin.items.labels.prepareIndependently')"
     />
   </BaseFormDialog>

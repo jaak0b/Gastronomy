@@ -6,7 +6,7 @@ const { t } = useI18n()
 
 <template>
   <v-container>
-    <v-alert class="not-on-laptop" type="info" variant="tonal">
+    <v-alert class="not-on-laptop" data-test="not-on-laptop" type="info" variant="tonal">
       {{ t('admin.common.messages.notOnLaptop') }}
     </v-alert>
   </v-container>

@@ -37,8 +37,8 @@ describe('the admin shell', () => {
 
     const shell = mountShellAt('/admin/festivals')
 
-    await vi.waitFor(() => expect(shell.find('.not-on-laptop').exists()).toBe(true))
-    expect(shell.find('.admin-tabs').exists()).toBe(false)
+    await vi.waitFor(() => expect(shell.find('[data-test="not-on-laptop"]').exists()).toBe(true))
+    expect(shell.find('[data-test="admin-tabs"]').exists()).toBe(false)
   })
 
   it('says the admin pages only open on the laptop when the staff screen is refused', async () => {
@@ -46,8 +46,8 @@ describe('the admin shell', () => {
 
     const shell = mountShellAt('/admin/staff')
 
-    await vi.waitFor(() => expect(shell.find('.not-on-laptop').exists()).toBe(true))
-    expect(shell.find('.admin-tabs').exists()).toBe(false)
+    await vi.waitFor(() => expect(shell.find('[data-test="not-on-laptop"]').exists()).toBe(true))
+    expect(shell.find('[data-test="admin-tabs"]').exists()).toBe(false)
   })
 
   it('shows the admin tabs when the laptop answers', async () => {
@@ -56,7 +56,7 @@ describe('the admin shell', () => {
     const shell = mountShellAt('/admin/staff')
     await flushPromises()
 
-    expect(shell.find('.admin-tabs .is-selected').text()).toBe('Kellner')
-    expect(shell.find('.not-on-laptop').exists()).toBe(false)
+    expect(shell.find('[data-test="admin-tabs"] [data-test="admin-tab"][data-selected="true"]').text()).toBe('Kellner')
+    expect(shell.find('[data-test="not-on-laptop"]').exists()).toBe(false)
   })
 })

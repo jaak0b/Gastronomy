@@ -2,17 +2,11 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CatalogCategoryView, CatalogItemView } from '../../shared/api/generatedSchemas'
-import { itemState } from '../core/catalogItemState'
 import { countCategoryPortions } from '../core/categoryPortions'
 import { positionsForItem, type ItemPosition } from '../core/itemPositions'
-import {
-  estimateRangeForItem,
-  quotedMinutesAt,
-  quoteLinesForStationChoice,
-  type EstimateRange,
-} from '../core/estimates'
+import { estimateRangeForItem, type EstimateRange } from '../core/estimates'
 import { letteringColourOn } from '../../shared/core/letteringColour'
-import { candidateStations, needsStationChoice } from '../core/routingPreview'
+import { needsStationChoice } from '../core/routingPreview'
 import { isTableNameValid } from '../core/tableName'
 import { useCatalogStore } from '../stores/catalog'
 import { useEstimatesStore } from '../stores/estimates'
@@ -21,6 +15,7 @@ import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../../shared/stores/session'
 import { closeOpenStep, navigate, registerOpenStepCloser } from '../../shared/router/router'
 import { useKeyboardInset } from '../composables/useKeyboardInset'
+import { useStationChoiceQuotes } from '../composables/useStationChoiceQuotes'
 import DockedStrip from '../components/DockedStrip.vue'
 import ItemGrid from '../components/catalog/ItemGrid.vue'
 import LineStationSheet from '../components/catalog/LineStationSheet.vue'
@@ -42,20 +37,16 @@ const itemAwaitingStation = ref<CatalogItemView | null>(null)
 const linesAwaitingStation = ref<number[]>([])
 const focusTheNoteField = ref(false)
 
-onMounted(() => {
+onMounted(async () => {
   if (order.changesAreRefused) {
     navigate('/review')
   }
-})
-
-onMounted(async () => {
   await openItems.loadTableNames()
   await estimates.load()
 })
 
 onUnmounted(() => {
   closeOpenStep()
-  estimates.stopQuotingStationChoices()
 })
 
 const openCategory = computed<CatalogCategoryView | null>(
@@ -121,6 +112,11 @@ const itemBehindTheStationChoice = computed(() => {
   return catalog.catalog.items.find((item) => item.id === line?.catalogItemId) ?? null
 })
 
+const { estimateForTheStationChoice } = useStationChoiceQuotes(
+  itemBehindTheStationChoice,
+  linesAwaitingStation,
+)
+
 function portionsIn(categoryId: string): number {
   return countCategoryPortions(order.draft, catalog.catalog.items, categoryId)
 }
@@ -150,36 +146,6 @@ const currentStationId = computed(() => {
 function estimateRangeFor(itemId: string): EstimateRange | null {
   return estimateRangeForItem(estimates.items, itemId)
 }
-
-function estimateForTheStationChoice(stationId: string): number | null {
-  const item = itemBehindTheStationChoice.value
-  if (item === null || itemState(item) === 'soldOut') {
-    return null
-  }
-  return quotedMinutesAt(estimates.stationChoiceQuotes[stationId] ?? [], stationId)
-}
-
-watch(itemBehindTheStationChoice, (item) => {
-  estimates.stopQuotingStationChoices()
-  if (item === null) {
-    return
-  }
-  const unitsAwaitingStation = {
-    catalogItemId: item.id,
-    units: linesAwaitingStation.value.length > 0 ? linesAwaitingStation.value.length : 1,
-  }
-  for (const stationId of candidateStations(item)) {
-    void estimates.quoteStationChoice(
-      stationId,
-      quoteLinesForStationChoice(
-        order.basketLines,
-        linesAwaitingStation.value,
-        unitsAwaitingStation,
-        stationId,
-      ),
-    )
-  }
-})
 
 function place(item: CatalogItemView, note: string | null, stationId: string | null): void {
   order.addItem({
@@ -233,13 +199,14 @@ function chooseStation(stationId: string, note: string | null): void {
 </script>
 
 <template>
-  <v-container class="catalog" :style="{ paddingBottom: `${keyboardInset}px` }">
+  <v-container class="catalog" data-test="catalog" :style="{ paddingBottom: `${keyboardInset}px` }">
     <template v-if="openCategory === null">
-      <div class="category-grid my-2">
+      <div class="category-grid my-2" data-test="category-grid">
         <v-btn
           v-for="category in catalog.catalog.categories"
           :key="category.categoryId"
           class="category-button"
+          data-test="category-button"
           size="x-large"
           variant="flat"
           :style="paintedIn(category.colourHex)"
@@ -266,6 +233,7 @@ function chooseStation(stationId: string, note: string | null): void {
     <template v-else>
       <h2
         class="open-category-name text-h6 px-3 py-2 rounded"
+        data-test="open-category-name"
         :style="paintedIn(openCategory.colourHex)"
       >
         {{ openCategory.name }}
@@ -301,6 +269,7 @@ function chooseStation(stationId: string, note: string | null): void {
         <div class="py-3">
           <v-btn
             class="back-to-categories"
+            data-test="back-to-categories"
             block
             size="x-large"
             variant="outlined"

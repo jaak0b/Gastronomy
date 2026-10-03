@@ -6,7 +6,7 @@ import { AdminFestivalView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { formatFestivalMoment } from '../../../shared/core/festivalTimes'
 import { useAdminFestivalsStore, type FestivalDraft } from '../../stores/festivals'
-import BaseConfirmDialog from '../BaseConfirmDialog.vue'
+import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import FestivalDialog from './FestivalDialog.vue'
 

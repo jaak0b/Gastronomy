@@ -6,18 +6,16 @@ import { formatPrice } from '../core/totals'
 import { quoteLinesFor } from '../core/estimates'
 import { withEstimate } from '../core/estimateWording'
 import {
-
   deliveriesWithAStation,
   stationDeliveries,
   type StationDeliveryWithStation,
 } from '../core/stationDeliveries'
 import { deliveryModeKey } from '../../shared/core/stationBoard'
-import { assertNever } from '../../shared/core/assertNever'
 import { useEstimatesStore } from '../stores/estimates'
-import { useOpenItemsStore } from '../stores/openItems'
-import { useOrderStore, type SettlingIntent } from '../stores/order'
+import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../../shared/stores/session'
 import { navigate } from '../../shared/router/router'
+import { useSendAndLeave } from '../composables/useSendAndLeave'
 import DockedStrip from '../components/DockedStrip.vue'
 import LineList from '../components/review/LineList.vue'
 import SendFailurePanel from '../components/review/SendFailurePanel.vue'
@@ -26,8 +24,7 @@ const { t } = useI18n()
 const estimates = useEstimatesStore()
 const order = useOrderStore()
 const session = useSessionStore()
-const openItems = useOpenItemsStore()
-let reviewIsShown = true
+const { send, sendAgain } = useSendAndLeave()
 
 const quoteLines = computed(() => quoteLinesFor(order.basketLines))
 
@@ -40,7 +37,6 @@ watch(
 )
 
 onUnmounted(() => {
-  reviewIsShown = false
   estimates.stopQuoting()
 })
 
@@ -63,38 +59,6 @@ function deliveryTextFor(station: StationDeliveryWithStation): string {
   return withEstimate(t(deliveryModeKey(station.deliveryMode)), station.minutes, t, session.language)
 }
 
-function pageAfterSending(intent: SettlingIntent): string {
-  switch (intent) {
-    case 'leaveOpen':
-      return '/'
-    case 'settleRightAway':
-      return '/open-items'
-    default:
-      return assertNever(intent)
-  }
-}
-
-function leaveIfTheLaptopAccepted(): void {
-  if (!reviewIsShown || order.sendState !== 'accepted') {
-    return
-  }
-  const acceptedForSettling = order.takeTheOrderAcceptedForSettling()
-  if (acceptedForSettling !== null) {
-    openItems.openTableAndSelectItemsOnceLoaded(acceptedForSettling.tableName, acceptedForSettling.itemIds)
-  }
-  navigate(pageAfterSending(order.settlingIntent))
-}
-
-async function send(intent: SettlingIntent): Promise<void> {
-  await order.send(intent)
-  leaveIfTheLaptopAccepted()
-}
-
-async function sendAgain(): Promise<void> {
-  await order.sendAgain()
-  leaveIfTheLaptopAccepted()
-}
-
 function startTheNextOrder(): void {
   order.startNextOrderAfterWritingItDown()
   navigate('/')
@@ -107,10 +71,11 @@ function backToItems(): void {
 </script>
 
 <template>
-  <v-container class="review">
+  <v-container class="review" data-test="review">
     <v-alert
       v-if="order.onlyWritingItDownIsLeft"
       class="write-it-down my-4"
+      data-test="write-it-down"
       type="warning"
       variant="tonal"
     >
@@ -121,11 +86,11 @@ function backToItems(): void {
       v-else-if="order.sendHasFailed && order.failure !== null"
       :failure="order.failure"
     />
-    <div class="review-heading d-flex align-center mb-2">
-      <h1 class="table-name text-subtitle-1 text-medium-emphasis">
+    <div class="review-heading d-flex align-center mb-2" data-test="review-heading">
+      <h1 class="table-name text-subtitle-1 text-medium-emphasis" data-test="table-name">
         {{ t('phone.review.labels.table', { name: order.draft.tableName }) }}
       </h1>
-      <span class="order-total text-h5">{{ total }}</span>
+      <span class="order-total text-h5" data-test="order-total">{{ total }}</span>
     </div>
     <LineList
       :lines="order.basketLines"
@@ -141,6 +106,7 @@ function backToItems(): void {
           <v-btn
             v-if="order.onlyWritingItDownIsLeft"
             class="written-down mt-2"
+            data-test="written-down"
             color="primary"
             block
             size="x-large"
@@ -150,6 +116,7 @@ function backToItems(): void {
           </v-btn>
           <v-btn
             class="send-again mt-2"
+            data-test="send-again"
             color="primary"
             variant="outlined"
             block
@@ -163,6 +130,7 @@ function backToItems(): void {
         <v-btn
           v-else-if="order.hasLinesThatCannotBeOrdered"
           class="drop-lines-that-cannot-be-ordered mt-2"
+          data-test="drop-lines-that-cannot-be-ordered"
           color="primary"
           variant="outlined"
           block
@@ -177,13 +145,14 @@ function backToItems(): void {
             :key="station.stationId"
             class="station-delivery"
           >
-            <span class="station-delivery-name">
+            <span class="station-delivery-name" data-test="station-delivery-name">
               {{ t('phone.review.labels.stationDelivery', { name: station.stationName }) }}
             </span>
-            <span class="station-delivery-mode">{{ deliveryTextFor(station) }}</span>
+            <span class="station-delivery-mode" data-test="station-delivery-mode">{{ deliveryTextFor(station) }}</span>
           </div>
           <v-btn
             class="send-and-settle send-button mt-3"
+            data-test="send-and-settle"
             color="primary"
             variant="flat"
             block
@@ -195,6 +164,7 @@ function backToItems(): void {
           </v-btn>
           <v-btn
             class="send-and-settle-later send-button mt-2"
+            data-test="send-and-settle-later"
             color="primary"
             variant="outlined"
             block
@@ -208,6 +178,7 @@ function backToItems(): void {
         <v-btn
           v-if="!order.changesAreRefused"
           class="back mt-2"
+          data-test="back"
           variant="text"
           block
           @click="backToItems"

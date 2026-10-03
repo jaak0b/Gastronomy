@@ -3,8 +3,8 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminIngredientsStore, type IngredientDraft } from '../../stores/ingredients'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
-import BaseConfirmDialog from '../BaseConfirmDialog.vue'
-import BaseFormDialog from '../BaseFormDialog.vue'
+import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
+import BaseFormDialog from '../../../shared/components/BaseFormDialog.vue'
 import IngredientEditLine from './IngredientEditLine.vue'
 
 const emit = defineEmits<{ close: [] }>()

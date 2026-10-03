@@ -9,15 +9,15 @@ const { t } = useI18n()
 
 <template>
   <v-dialog :model-value="true" max-width="480" persistent>
-    <v-card class="confirm-dialog" role="dialog" aria-modal="true">
-      <v-card-title class="confirm-title">{{ title }}</v-card-title>
-      <v-card-text v-if="body" class="confirm-body">{{ body }}</v-card-text>
+    <v-card class="confirm-dialog" data-test="confirm-dialog" role="dialog" aria-modal="true">
+      <v-card-title class="confirm-title" data-test="confirm-title">{{ title }}</v-card-title>
+      <v-card-text v-if="body" class="confirm-body" data-test="confirm-body">{{ body }}</v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn class="cancel" variant="text" @click="emit('cancel')">
+        <v-btn class="cancel" data-test="cancel" variant="text" @click="emit('cancel')">
           {{ t('common.actions.cancel') }}
         </v-btn>
-        <v-btn class="confirm" color="error" @click="emit('confirm')">
+        <v-btn class="confirm" data-test="confirm" color="error" @click="emit('confirm')">
           {{ confirmLabel }}
         </v-btn>
       </v-card-actions>

@@ -14,7 +14,7 @@ import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminIngredientsStore } from '../../stores/ingredients'
 import { useAdminItemsStore } from '../../stores/items'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
-import BaseFormDialog from '../BaseFormDialog.vue'
+import BaseFormDialog from '../../../shared/components/BaseFormDialog.vue'
 import IngredientAmountField from '../ingredients/IngredientAmountField.vue'
 
 interface RecipeLine {

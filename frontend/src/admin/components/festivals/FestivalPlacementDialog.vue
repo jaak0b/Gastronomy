@@ -6,7 +6,7 @@ import { assertNever } from '../../../shared/core/assertNever'
 import { appLanguageOf } from '../../../shared/core/deviceLanguage'
 import { formatEuroInput, parseEuroInput } from '../../../shared/core/money'
 import { useAdminItemsStore } from '../../stores/items'
-import BaseFormDialog from '../BaseFormDialog.vue'
+import BaseFormDialog from '../../../shared/components/BaseFormDialog.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import StationSelect from './StationSelect.vue'
 
@@ -80,6 +80,7 @@ async function place(): Promise<void> {
   >
     <v-text-field
       class="price-field"
+      data-test="price-field"
       density="compact"
       inputmode="decimal"
       hide-details="auto"

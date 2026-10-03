@@ -8,6 +8,7 @@ const { beginPressTracking, trackPressMovement, suppressTapIfItWasAScrollRelease
 <template>
   <v-sheet
     class="docked-strip"
+    data-test="docked-strip"
     color="background"
     @pointerdown="beginPressTracking"
     @pointermove="trackPressMovement"

@@ -200,18 +200,35 @@ function stubTheLaptop(): { bodies: unknown[] } {
 }
 
 async function openEveryTable(screen: Awaited<ReturnType<typeof mountScreen>>): Promise<void> {
-  for (const title of screen.findAll('.open-table .v-expansion-panel-title')) {
+  for (const title of screen.findAll('[data-test="open-table-title"]')) {
     await title.trigger('click')
   }
   await flushPromises()
 }
 
-function lineOf(
-  screen: Awaited<ReturnType<typeof mountScreen>>,
-  tablePosition: number,
-  linePosition: number,
-) {
-  return screen.findAll('.open-table')[tablePosition].findAll('.open-line')[linePosition]
+type MountedScreen = Awaited<ReturnType<typeof mountScreen>>
+type ScreenPart = ReturnType<MountedScreen['get']>
+
+function lineNamed(container: MountedScreen | ScreenPart, itemName: string): ScreenPart {
+  const line = container
+    .findAll('[data-test="open-line"]')
+    .find((candidate) => candidate.get('[data-test="line-name"]').text() === itemName)
+  if (line === undefined) {
+    throw new Error(`No open line names ${itemName}.`)
+  }
+  return line
+}
+
+function lineOf(screen: MountedScreen, tableName: string, itemName: string): ScreenPart {
+  return lineNamed(screen.get(`[data-test="open-table"][data-test-id="${tableName}"]`), itemName)
+}
+
+function lookupCard(screen: MountedScreen, orderNumber: number): ScreenPart {
+  return screen.get(`[data-test="lookup-card"][data-test-id="${orderNumber}"]`)
+}
+
+function isHalfTaken(part: MountedScreen | ScreenPart, selector: string): boolean {
+  return part.findComponent(selector).props('indeterminate') === true
 }
 
 async function mountScreen() {
@@ -242,14 +259,14 @@ describe('the screen that shows what the tables still owe', () => {
   it('names every table with something open and what it still owes', async () => {
     const screen = await mountScreen()
 
-    expect(screen.get('.open-table .table-name').text()).toBe('Tisch 12')
-    expect(screen.get('.open-table .open-amount').text()).toBe('Offen: 7,00 €')
+    expect(screen.get('[data-test="open-table"] [data-test="table-name"]').text()).toBe('Tisch 12')
+    expect(screen.get('[data-test="open-table"] [data-test="open-amount"]').text()).toBe('Offen: 7,00 €')
   })
 
   it('offers no settling action while the waiter has ticked nothing', async () => {
     const screen = await mountScreen()
 
-    expect(screen.find('.settle-footer').exists()).toBe(false)
+    expect(screen.find('[data-test="settle-footer"]').exists()).toBe(false)
   })
 
   it('shows what has been ticked once the waiter takes a whole table', async () => {
@@ -259,21 +276,21 @@ describe('the screen that shows what the tables still owe', () => {
     openItems.setWholeTable(openItems.tables[0], true)
     await screen.vm.$nextTick()
 
-    expect(screen.get('.selected-total').text()).toBe('Ausgewählt: 7,00 €')
+    expect(screen.get('[data-test="selected-total"]').text()).toBe('Ausgewählt: 7,00 €')
   })
 
   it('keeps a table folded up until the waiter opens it, so the list stays readable', async () => {
     const screen = await mountScreen()
 
-    expect(screen.findAll('.open-line')).toHaveLength(0)
+    expect(screen.findAll('[data-test="open-line"]')).toHaveLength(0)
   })
 
   it('ticks an item when the waiter taps its row, so the whole row is the target', async () => {
     const screen = await mountScreen()
 
-    await screen.get('.open-table .v-expansion-panel-title').trigger('click')
+    await screen.get('[data-test="open-table-title"]').trigger('click')
     await flushPromises()
-    await screen.findAll('.open-line')[0].trigger('click')
+    await lineOf(screen, '12', 'Bratwurst').trigger('click')
 
     expect(useOpenItemsStore().selectedItemIds).toEqual(['item-1'])
   })
@@ -286,7 +303,7 @@ describe('the screen that shows what the tables still owe', () => {
     openItems.toggleItem('item-1')
     await screen.vm.$nextTick()
 
-    await lineOf(screen, 1, 0).trigger('click')
+    await lineOf(screen, '123', 'Bier').trigger('click')
 
     expect(openItems.selectedItemIds).toEqual(['item-1'])
   })
@@ -298,8 +315,8 @@ describe('the screen that shows what the tables still owe', () => {
     useOpenItemsStore().toggleItem('item-1')
     await screen.vm.$nextTick()
 
-    expect(lineOf(screen, 0, 0).classes()).not.toContain('v-list-item--disabled')
-    expect(lineOf(screen, 1, 0).classes()).toContain('v-list-item--disabled')
+    expect(lineOf(screen, '12', 'Bratwurst').classes()).not.toContain('v-list-item--disabled')
+    expect(lineOf(screen, '123', 'Bier').classes()).toContain('v-list-item--disabled')
   })
 
   it('takes a tick from any table again once nothing is ticked', async () => {
@@ -312,7 +329,7 @@ describe('the screen that shows what the tables still owe', () => {
     openItems.toggleItem('item-1')
     await screen.vm.$nextTick()
 
-    await lineOf(screen, 1, 0).trigger('click')
+    await lineOf(screen, '123', 'Bier').trigger('click')
 
     expect(openItems.selectedItemIds).toEqual(['item-7'])
   })
@@ -324,14 +341,14 @@ describe('the screen that shows what the tables still owe', () => {
     openItems.toggleItem('item-1')
     await screen.vm.$nextTick()
 
-    await screen.get('.settle-in-cash').trigger('click')
+    await screen.get('[data-test="settle-in-cash"]').trigger('click')
     await flushPromises()
 
     expect(bodies[0]).toEqual({
       lines: [{ orderItemId: 'item-1', paidPriceCents: 350, paymentNotice: null }],
       paymentMethod: 'cash',
     })
-    expect(document.querySelector('.amount-paid-dialog')).toBeNull()
+    expect(document.querySelector('[data-test="amount-paid-dialog"]')).toBeNull()
   })
 
   it('fetches the list again when the waiter asks for it, which is what the notices name', async () => {
@@ -346,7 +363,7 @@ describe('the screen that shows what the tables still owe', () => {
     const screen = await mountScreen()
     const afterMounting = fetched
 
-    await screen.get('.reload').trigger('click')
+    await screen.get('[data-test="reload"]').trigger('click')
     await flushPromises()
 
     expect(fetched).toBe(afterMounting + 1)
@@ -364,7 +381,7 @@ describe('the screen that shows what the tables still owe', () => {
     )
     const screen = await mountScreen()
 
-    expect(screen.get('.empty').text()).toContain('Es ist nichts offen.')
+    expect(screen.get('[data-test="empty"]').text()).toContain('Es ist nichts offen.')
   })
 
   it('claims nothing about the tables before the first list has arrived', async () => {
@@ -377,7 +394,7 @@ describe('the screen that shows what the tables still owe', () => {
     const screen = mount(OpenItems, { global: { plugins: testPlugins() }, attachTo: document.body })
     await screen.vm.$nextTick()
 
-    expect(screen.find('.empty').exists()).toBe(false)
+    expect(screen.find('[data-test="empty"]').exists()).toBe(false)
   })
 
   it('says that the list is short of items the laptop cannot trace back to an order', async () => {
@@ -392,7 +409,7 @@ describe('the screen that shows what the tables still owe', () => {
     )
     const screen = await mountScreen()
 
-    expect(screen.get('.list-incomplete').text()).toBe(
+    expect(screen.get('[data-test="list-incomplete"]').text()).toBe(
       'Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt 2 Positionen nicht, weil der Rechner die Bestellungen dazu nicht mehr findet.',
     )
   })
@@ -415,10 +432,10 @@ describe('the screen that shows what the tables still owe', () => {
     openItems.setWholeTable(openItems.tables[0], true)
     await screen.vm.$nextTick()
 
-    await screen.get('.settle-in-cash').trigger('click')
+    await screen.get('[data-test="settle-in-cash"]').trigger('click')
     await flushPromises()
 
-    expect(screen.get('.settle-notice').text()).toBe(
+    expect(screen.get('[data-test="settle-notice"]').text()).toBe(
       'Jemand anderes hatte 1 Position aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast 3,50 € zurück.',
     )
   })
@@ -440,12 +457,12 @@ describe('settling what the table actually handed over', () => {
     const openItems = useOpenItemsStore()
     openItems.toggleItem('item-1')
     await screen.vm.$nextTick()
-    await screen.get('.settle-amount-paid').trigger('click')
+    await screen.get('[data-test="settle-amount-paid"]').trigger('click')
     await flushPromises()
   }
 
   function fieldIn(selector: string): HTMLInputElement {
-    return document.querySelector(`.amount-paid-dialog ${selector} input`) as HTMLInputElement
+    return document.querySelector(`[data-test="amount-paid-dialog"] ${selector} input`) as HTMLInputElement
   }
 
   async function typeIn(selector: string, typed: string): Promise<void> {
@@ -455,8 +472,8 @@ describe('settling what the table actually handed over', () => {
     await flushPromises()
   }
 
-  async function pressConfirm(button = '.confirm-in-cash'): Promise<void> {
-    ;(document.querySelector(`.amount-paid-dialog ${button}`) as HTMLElement).click()
+  async function pressConfirm(button = '[data-test="confirm-in-cash"]'): Promise<void> {
+    ;(document.querySelector(`[data-test="amount-paid-dialog"] ${button}`) as HTMLElement).click()
     await flushPromises()
   }
 
@@ -465,10 +482,10 @@ describe('settling what the table actually handed over', () => {
 
     await openTheAmountDialog(screen)
 
-    expect(document.querySelector('.amount-paid-dialog .selected-total')?.textContent).toContain(
+    expect(document.querySelector('[data-test="amount-paid-dialog"] [data-test="selected-total"]')?.textContent).toContain(
       'Ausgewählt: 3,50 €',
     )
-    expect(fieldIn('.amount-field').value).toBe('3,50')
+    expect(fieldIn('[data-test="amount-field"]').value).toBe('3,50')
   })
 
   it('sends the smaller amount together with the typed reason', async () => {
@@ -476,8 +493,8 @@ describe('settling what the table actually handed over', () => {
     const screen = await mountScreen()
     await openTheAmountDialog(screen)
 
-    await typeIn('.amount-field', '2,00')
-    await typeIn('.reason-field', 'Stammgast')
+    await typeIn('[data-test="amount-field"]', '2,00')
+    await typeIn('[data-test="reason-field"]', 'Stammgast')
     await pressConfirm()
 
     expect(bodies[0]).toEqual({
@@ -491,12 +508,12 @@ describe('settling what the table actually handed over', () => {
     const screen = await mountScreen()
     await openTheAmountDialog(screen)
 
-    await typeIn('.amount-field', '2,00')
+    await typeIn('[data-test="amount-field"]', '2,00')
     await pressConfirm()
 
-    expect(document.querySelector('.amount-paid-dialog .reason-field')).not.toBeNull()
+    expect(document.querySelector('[data-test="amount-paid-dialog"] [data-test="reason-field"]')).not.toBeNull()
     expect(
-      document.querySelector('.amount-paid-dialog .confirm-in-cash')?.hasAttribute('disabled'),
+      document.querySelector('[data-test="amount-paid-dialog"] [data-test="confirm-in-cash"]')?.hasAttribute('disabled'),
     ).toBe(true)
     expect(bodies).toEqual([])
   })
@@ -506,9 +523,9 @@ describe('settling what the table actually handed over', () => {
     const screen = await mountScreen()
     await openTheAmountDialog(screen)
 
-    await typeIn('.amount-field', '0')
-    await typeIn('.reason-field', 'Essen fuer die Kapelle')
-    await pressConfirm('.confirm-nothing-paid')
+    await typeIn('[data-test="amount-field"]', '0')
+    await typeIn('[data-test="reason-field"]', 'Essen fuer die Kapelle')
+    await pressConfirm('[data-test="confirm-nothing-paid"]')
 
     expect(bodies[0]).toEqual({
       lines: [{ orderItemId: 'item-1', paidPriceCents: 0, paymentNotice: 'Essen fuer die Kapelle' }],
@@ -523,7 +540,7 @@ describe('settling what the table actually handed over', () => {
 
     await pressConfirm()
 
-    expect(document.querySelector('.amount-paid-dialog .reason-field')).toBeNull()
+    expect(document.querySelector('[data-test="amount-paid-dialog"] [data-test="reason-field"]')).toBeNull()
     expect(bodies[0]).toEqual({
       lines: [{ orderItemId: 'item-1', paidPriceCents: 350, paymentNotice: null }],
       paymentMethod: 'cash',
@@ -535,7 +552,7 @@ describe('settling what the table actually handed over', () => {
     const screen = await mountScreen()
     await openTheAmountDialog(screen)
 
-    await typeIn('.amount-field', '5,00')
+    await typeIn('[data-test="amount-field"]', '5,00')
     await pressConfirm()
 
     expect(bodies[0]).toEqual({
@@ -549,21 +566,21 @@ describe('settling what the table actually handed over', () => {
     const screen = await mountScreen()
     await openTheAmountDialog(screen)
 
-    await typeIn('.amount-field', '2,00')
-    ;(document.querySelector('.amount-paid-dialog .cancel') as HTMLElement).click()
+    await typeIn('[data-test="amount-field"]', '2,00')
+    ;(document.querySelector('[data-test="amount-paid-dialog"] [data-test="cancel"]') as HTMLElement).click()
     await flushPromises()
 
     expect(bodies).toEqual([])
-    expect(document.querySelector('.amount-paid-dialog')).toBeNull()
+    expect(document.querySelector('[data-test="amount-paid-dialog"]')).toBeNull()
   })
 
   it('stops the reason where the laptop stops storing it', async () => {
     const screen = await mountScreen()
     await openTheAmountDialog(screen)
 
-    await typeIn('.amount-field', '2,00')
+    await typeIn('[data-test="amount-field"]', '2,00')
 
-    expect(fieldIn('.reason-field').getAttribute('maxlength')).toBe('200')
+    expect(fieldIn('[data-test="reason-field"]').getAttribute('maxlength')).toBe('200')
   })
 
   it('goes back to the list when the answer never came, because the list is where the reload is', async () => {
@@ -573,12 +590,12 @@ describe('settling what the table actually handed over', () => {
     })
     await openTheAmountDialog(screen)
 
-    await typeIn('.amount-field', '2,00')
-    await typeIn('.reason-field', 'Stammgast')
+    await typeIn('[data-test="amount-field"]', '2,00')
+    await typeIn('[data-test="reason-field"]', 'Stammgast')
     await pressConfirm()
 
-    expect(document.querySelector('.amount-paid-dialog')).toBeNull()
-    expect(screen.get('.settle-notice').text()).toBe(
+    expect(document.querySelector('[data-test="amount-paid-dialog"]')).toBeNull()
+    expect(screen.get('[data-test="settle-notice"]').text()).toBe(
       'Es ist nicht klar, ob die Abrechnung angekommen ist. Laden Sie die Liste neu und schauen Sie nach, ob die Positionen noch offen sind.',
     )
     expect(useOpenItemsStore().selectedItemIds).toEqual(['item-1'])
@@ -601,13 +618,13 @@ describe('settling what the table actually handed over', () => {
     )
     await openTheAmountDialog(screen)
 
-    await typeIn('.amount-field', '2,00')
-    await typeIn('.reason-field', 'Stammgast')
+    await typeIn('[data-test="amount-field"]', '2,00')
+    await typeIn('[data-test="reason-field"]', 'Stammgast')
     await pressConfirm()
 
-    expect(fieldIn('.amount-field').value).toBe('2,00')
-    expect(fieldIn('.reason-field').value).toBe('Stammgast')
-    expect(document.querySelector('.amount-paid-dialog')?.textContent).toContain(
+    expect(fieldIn('[data-test="amount-field"]').value).toBe('2,00')
+    expect(fieldIn('[data-test="reason-field"]').value).toBe('Stammgast')
+    expect(document.querySelector('[data-test="amount-paid-dialog"]')?.textContent).toContain(
       'Versuchen Sie es noch einmal. Das Abrechnen ist fehlgeschlagen.',
     )
   })
@@ -648,7 +665,7 @@ describe('looking up one table from the screen that shows what is open', () => {
     screen: Awaited<ReturnType<typeof mountTheScreenWithALookup>>['screen'],
     name: string,
   ): Promise<void> {
-    await screen.get('.table-field input').setValue(name)
+    await screen.get('[data-test="table-field"] input').setValue(name)
     await vi.advanceTimersByTimeAsync(TABLE_LOOKUP_DEBOUNCE_MS)
     await screen.vm.$nextTick()
   }
@@ -668,23 +685,22 @@ describe('looking up one table from the screen that shows what is open', () => {
     return screen
   }
 
-  function tickOf(screen: Awaited<ReturnType<typeof mountTheScreenWithALookup>>['screen'], orderPosition: number) {
-    return screen
-      .findAll('.lookup-card')
-      [orderPosition].findAll('.line-tick input')
+  function tickOf(screen: Awaited<ReturnType<typeof mountTheScreenWithALookup>>['screen'], orderNumber: number) {
+    return lookupCard(screen, orderNumber)
+      .findAll('[data-test="line-tick"] input')
       .map((tick) => (tick.element as HTMLInputElement).checked)
   }
 
   it('shows the table of the order just sent in the search field', async () => {
     const screen = await arriveFromAnOrderSentToBeSettled(['item-half', 'item-waiting', 'item-settled'])
 
-    expect((screen.get('.table-field input').element as HTMLInputElement).value).toBe('Tisch 12')
+    expect((screen.get('[data-test="table-field"] input').element as HTMLInputElement).value).toBe('Tisch 12')
   })
 
   it('ticks the open items of the order just sent and leaves the older order of the table unticked', async () => {
     const screen = await arriveFromAnOrderSentToBeSettled(['item-half', 'item-waiting', 'item-settled'])
 
-    expect({ older: tickOf(screen, 0), justSent: tickOf(screen, 1) }).toEqual({
+    expect({ older: tickOf(screen, 137), justSent: tickOf(screen, 138) }).toEqual({
       older: [false],
       justSent: [true, true],
     })
@@ -698,7 +714,7 @@ describe('looking up one table from the screen that shows what is open', () => {
     await flushPromises()
 
     expect({
-      typed: (again.get('.table-field input').element as HTMLInputElement).value,
+      typed: (again.get('[data-test="table-field"] input').element as HTMLInputElement).value,
       ticked: useOpenItemsStore().selectedItemIds,
     }).toEqual({ typed: '', ticked: [] })
   })
@@ -709,27 +725,27 @@ describe('looking up one table from the screen that shows what is open', () => {
       tables: [],
       itemsWithoutAnOrderCount: 2,
     })
-    expect(screen.find('.empty').exists()).toBe(true)
-    expect(screen.find('.list-incomplete').exists()).toBe(true)
+    expect(screen.find('[data-test="empty"]').exists()).toBe(true)
+    expect(screen.find('[data-test="list-incomplete"]').exists()).toBe(true)
 
     await typeTheTableName(screen, 'Tisch 12')
 
-    expect(screen.find('.empty').exists()).toBe(false)
-    expect(screen.find('.list-incomplete').exists()).toBe(false)
-    expect(screen.find('.open-table').exists()).toBe(false)
-    expect(screen.findAll('.lookup-card')).toHaveLength(3)
+    expect(screen.find('[data-test="empty"]').exists()).toBe(false)
+    expect(screen.find('[data-test="list-incomplete"]').exists()).toBe(false)
+    expect(screen.find('[data-test="open-table"]').exists()).toBe(false)
+    expect(screen.findAll('[data-test="lookup-card"]')).toHaveLength(3)
   })
 
   it('brings the list back when the waiter clears the table name', async () => {
     const { screen } = await mountTheScreenWithALookup()
     await typeTheTableName(screen, 'Tisch 12')
-    expect(screen.findAll('.lookup-card')).toHaveLength(3)
+    expect(screen.findAll('[data-test="lookup-card"]')).toHaveLength(3)
 
-    await screen.get('.table-field input').setValue('')
+    await screen.get('[data-test="table-field"] input').setValue('')
     await screen.vm.$nextTick()
 
-    expect(screen.findAll('.lookup-card')).toHaveLength(0)
-    expect(screen.find('.open-table').exists()).toBe(true)
+    expect(screen.findAll('[data-test="lookup-card"]')).toHaveLength(0)
+    expect(screen.find('[data-test="open-table"]').exists()).toBe(true)
   })
 
   it('colours each order by how far its positions have been produced', async () => {
@@ -737,10 +753,11 @@ describe('looking up one table from the screen that shows what is open', () => {
 
     await typeTheTableName(screen, 'Tisch 12')
 
-    const cards = screen.findAll('.lookup-card')
-    expect(cards[0].classes()).toContain('state-none')
-    expect(cards[1].classes()).toContain('state-some')
-    expect(cards[2].classes()).toContain('state-all')
+    expect([137, 138, 139].map((orderNumber) => lookupCard(screen, orderNumber).attributes('data-state'))).toEqual([
+      'none',
+      'some',
+      'all',
+    ])
   })
 
   it('marks each position as produced or not, with an icon beside the state', async () => {
@@ -748,13 +765,13 @@ describe('looking up one table from the screen that shows what is open', () => {
 
     await typeTheTableName(screen, 'Tisch 12')
 
-    const notProduced = screen.findAll('.lookup-card')[0].get('.open-line')
+    const notProduced = lineNamed(lookupCard(screen, 137), 'Bratwurst')
     expect(notProduced.classes()).toContain('is-not-produced')
-    expect(notProduced.get('.line-state').classes()).toContain('mdi-clock-outline')
+    expect(notProduced.get('[data-test="line-state"]').classes()).toContain('mdi-clock-outline')
 
-    const produced = screen.findAll('.lookup-card')[2].get('.open-line')
+    const produced = lineNamed(lookupCard(screen, 139), 'Kuchen')
     expect(produced.classes()).toContain('is-produced')
-    expect(produced.get('.line-state').classes()).toContain('mdi-check')
+    expect(produced.get('[data-test="line-state"]').classes()).toContain('mdi-check')
   })
 
   it('writes the word for paid on a settled position and leaves out its tick box', async () => {
@@ -762,20 +779,20 @@ describe('looking up one table from the screen that shows what is open', () => {
 
     await typeTheTableName(screen, 'Tisch 12')
 
-    const settled = screen.findAll('.lookup-card')[1].findAll('.open-line')[2]
-    expect(settled.get('.line-paid').text()).toBe('Bezahlt')
-    expect(settled.find('.line-tick').exists()).toBe(false)
+    const settled = lineNamed(lookupCard(screen, 138), 'Wasser')
+    expect(settled.get('[data-test="line-paid"]').text()).toBe('Bezahlt')
+    expect(settled.find('[data-test="line-tick"]').exists()).toBe(false)
   })
 
   it('settles a ticked position through the same footer as the list', async () => {
     const { screen, bodies } = await mountTheScreenWithALookup()
 
     await typeTheTableName(screen, 'Tisch 12')
-    await screen.findAll('.lookup-card')[0].get('.open-line').trigger('click')
+    await lineNamed(lookupCard(screen, 137), 'Bratwurst').trigger('click')
     await screen.vm.$nextTick()
-    expect(screen.get('.selected-total').text()).toBe('Ausgewählt: 3,50 €')
+    expect(screen.get('[data-test="selected-total"]').text()).toBe('Ausgewählt: 3,50 €')
 
-    await screen.get('.settle-in-cash').trigger('click')
+    await screen.get('[data-test="settle-in-cash"]').trigger('click')
     await vi.advanceTimersByTimeAsync(0)
 
     expect(bodies[0]).toEqual({
@@ -788,30 +805,30 @@ describe('looking up one table from the screen that shows what is open', () => {
     const { screen } = await mountTheScreenWithALookup()
 
     await typeTheTableName(screen, 'Tisch 12')
-    await screen.get('.whole-table input').trigger('click')
+    await screen.get('[data-test="whole-table"] input').trigger('click')
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(screen.get('.selected-total').text()).toBe('Ausgewählt: 12,00 €')
+    expect(screen.get('[data-test="selected-total"]').text()).toBe('Ausgewählt: 12,00 €')
   })
 
   it('shows the whole table as half taken while only some of its items are ticked', async () => {
     const { screen } = await mountTheScreenWithALookup()
 
     await typeTheTableName(screen, 'Tisch 12')
-    await screen.findAll('.lookup-card')[0].get('.open-line').trigger('click')
+    await lineNamed(lookupCard(screen, 137), 'Bratwurst').trigger('click')
     await screen.vm.$nextTick()
 
-    expect(screen.find('.whole-table .mdi-minus-box').exists()).toBe(true)
+    expect(isHalfTaken(screen, '[data-test="whole-table"]')).toBe(true)
   })
 
   it('ticks every open item of one order from its header and leaves the other orders alone', async () => {
     const { screen } = await mountTheScreenWithALookup()
 
     await typeTheTableName(screen, 'Tisch 12')
-    await screen.findAll('.lookup-card')[1].get('.whole-order input').trigger('click')
+    await lookupCard(screen, 138).get('[data-test="whole-order"] input').trigger('click')
     await screen.vm.$nextTick()
 
-    expect({ first: tickOf(screen, 0), second: tickOf(screen, 1), third: tickOf(screen, 2) }).toEqual({
+    expect({ first: tickOf(screen, 137), second: tickOf(screen, 138), third: tickOf(screen, 139) }).toEqual({
       first: [false],
       second: [true, true],
       third: [false],
@@ -821,26 +838,26 @@ describe('looking up one table from the screen that shows what is open', () => {
   it('shows an order as half taken after one of its items is unticked again', async () => {
     const { screen } = await mountTheScreenWithALookup()
     await typeTheTableName(screen, 'Tisch 12')
-    const card = screen.findAll('.lookup-card')[1]
-    await card.get('.whole-order input').trigger('click')
+    const card = lookupCard(screen, 138)
+    await card.get('[data-test="whole-order"] input').trigger('click')
     await screen.vm.$nextTick()
 
-    await card.findAll('.open-line')[0].trigger('click')
+    await lineNamed(card, 'Bier').trigger('click')
     await screen.vm.$nextTick()
 
-    expect(card.find('.whole-order .mdi-minus-box').exists()).toBe(true)
+    expect(isHalfTaken(card, '[data-test="whole-order"]')).toBe(true)
   })
 
   it('ticks the rest of a half taken order when its header is tapped', async () => {
     const { screen } = await mountTheScreenWithALookup()
     await typeTheTableName(screen, 'Tisch 12')
-    await screen.findAll('.lookup-card')[1].findAll('.open-line')[0].trigger('click')
+    await lineNamed(lookupCard(screen, 138), 'Bier').trigger('click')
     await screen.vm.$nextTick()
 
-    await screen.findAll('.lookup-card')[1].get('.whole-order input').trigger('click')
+    await lookupCard(screen, 138).get('[data-test="whole-order"] input').trigger('click')
     await screen.vm.$nextTick()
 
-    expect(tickOf(screen, 1)).toEqual([true, true])
+    expect(tickOf(screen, 138)).toEqual([true, true])
   })
 
   it('offers no header tick on an order whose items are all settled', async () => {
@@ -855,10 +872,10 @@ describe('looking up one table from the screen that shows what is open', () => {
 
     await typeTheTableName(screen, 'Tisch 12')
 
-    const cards = screen.findAll('.lookup-card')
+    const cards = screen.findAll('[data-test="lookup-card"]')
     expect({
-      open: cards[0].find('.whole-order').exists(),
-      paid: cards[1].find('.whole-order').exists(),
+      open: cards[0].find('[data-test="whole-order"]').exists(),
+      paid: cards[1].find('[data-test="whole-order"]').exists(),
     }).toEqual({ open: true, paid: false })
   })
 
@@ -871,10 +888,10 @@ describe('looking up one table from the screen that shows what is open', () => {
 
     await typeTheTableName(screen, 'Tisch 99')
 
-    expect(screen.get('.lookup-empty').text()).toBe(
+    expect(screen.get('[data-test="lookup-empty"]').text()).toBe(
       'Für diesen Tisch gibt es keine Bestellungen.',
     )
-    expect(screen.find('.open-table').exists()).toBe(false)
+    expect(screen.find('[data-test="open-table"]').exists()).toBe(false)
   })
 
   it('says the laptop could not be reached and loads the lookup again from the reload button', async () => {
@@ -905,12 +922,12 @@ describe('looking up one table from the screen that shows what is open', () => {
 
     await typeTheTableName(screen, 'Tisch 12')
 
-    expect(screen.get('.load-failed').text()).toBe(
+    expect(screen.get('[data-test="load-failed"]').text()).toBe(
       'Tippen Sie auf "Liste neu laden". Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein.',
     )
-    expect(screen.find('.open-table').exists()).toBe(false)
+    expect(screen.find('[data-test="open-table"]').exists()).toBe(false)
 
-    await screen.get('.reload').trigger('click')
+    await screen.get('[data-test="reload"]').trigger('click')
     await vi.advanceTimersByTimeAsync(0)
 
     expect(lookups).toBe(2)
@@ -1010,10 +1027,10 @@ describe('an order sent to be settled whose answer arrives while the waiter alre
     const sending = order.send('settleRightAway')
     const screen = mount(OpenItems, { global: { plugins: testPlugins() }, attachTo: document.body })
     await flushPromises()
-    await screen.get('.table-field input').setValue('Tisch 3')
+    await screen.get('[data-test="table-field"] input').setValue('Tisch 3')
     await new Promise((resolve) => setTimeout(resolve, TABLE_LOOKUP_DEBOUNCE_MS))
     await flushPromises()
-    await screen.findAll('.lookup-card')[0].get('.open-line').trigger('click')
+    await lineNamed(lookupCard(screen, 137), 'Bratwurst').trigger('click')
 
     answerTheOrder()
     await sending
@@ -1022,7 +1039,7 @@ describe('an order sent to be settled whose answer arrives while the waiter alre
     const openItems = useOpenItemsStore()
     expect({
       lookup: openItems.lookupName,
-      field: (screen.get('.table-field input').element as HTMLInputElement).value,
+      field: (screen.get('[data-test="table-field"] input').element as HTMLInputElement).value,
       ticked: openItems.selectedItemIds,
     }).toEqual({ lookup: 'Tisch 3', field: 'Tisch 3', ticked: ['item-plain'] })
   })
@@ -1074,7 +1091,7 @@ describe('saying how the table paid with the button that settles', () => {
   }
 
   function footerButtons(screen: Awaited<ReturnType<typeof mountScreen>>): string[] {
-    return screen.get('.settle-footer').findAll('button').map((button) => button.text())
+    return screen.get('[data-test="settle-footer"]').findAll('button').map((button) => button.text())
   }
 
   it('offers cash, card and another amount once something with a price is ticked', async () => {
@@ -1109,7 +1126,7 @@ describe('saying how the table paid with the button that settles', () => {
     useOpenItemsStore().toggleItem('item-1')
     await screen.vm.$nextTick()
 
-    await screen.get('.settle-by-card').trigger('click')
+    await screen.get('[data-test="settle-by-card"]').trigger('click')
     await flushPromises()
 
     expect(bodies).toEqual([
@@ -1130,7 +1147,7 @@ describe('saying how the table paid with the button that settles', () => {
     await screen.vm.$nextTick()
 
     expect(footerButtons(screen)).toEqual(['Abrechnen', 'Anderen Betrag abrechnen'])
-    await screen.get('.settle-nothing-paid').trigger('click')
+    await screen.get('[data-test="settle-nothing-paid"]').trigger('click')
     await flushPromises()
 
     expect(bodies).toEqual([
@@ -1148,11 +1165,11 @@ describe('saying how the table paid with the button that settles', () => {
     useOpenItemsStore().toggleItem('item-1')
     await screen.vm.$nextTick()
 
-    await screen.get('.settle-in-cash').trigger('click')
+    await screen.get('[data-test="settle-in-cash"]').trigger('click')
     await screen.vm.$nextTick()
 
     const shut = screen
-      .get('.settle-footer')
+      .get('[data-test="settle-footer"]')
       .findAll('button')
       .map((button) => button.attributes('disabled'))
     expect(shut).toEqual(['', '', ''])
@@ -1163,10 +1180,10 @@ describe('saying how the table paid with the button that settles', () => {
     const screen = await mountScreenIn('de')
     useOpenItemsStore().toggleItem('item-1')
     await screen.vm.$nextTick()
-    await screen.get('.settle-amount-paid').trigger('click')
+    await screen.get('[data-test="settle-amount-paid"]').trigger('click')
     await flushPromises()
 
-    ;(document.querySelector('.amount-paid-dialog .confirm-by-card') as HTMLElement).click()
+    ;(document.querySelector('[data-test="amount-paid-dialog"] [data-test="confirm-by-card"]') as HTMLElement).click()
     await flushPromises()
 
     expect(bodies).toEqual([

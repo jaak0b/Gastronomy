@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AdminStaffMemberView } from '../../../shared/api/generatedSchemas'
-import BaseFormDialog from '../BaseFormDialog.vue'
+import BaseFormDialog from '../../../shared/components/BaseFormDialog.vue'
 
 const props = defineProps<{ staffMember: AdminStaffMemberView; errorText: string | null }>()
 const emit = defineEmits<{ save: [name: string]; cancel: [] }>()

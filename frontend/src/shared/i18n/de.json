@@ -3,7 +3,8 @@
     "actions": {
       "back": "Zurück",
       "cancel": "Abbrechen",
-      "continue": "Weiter"
+      "continue": "Weiter",
+      "save": "Speichern"
     },
     "appTitle": {
       "admin": "Verwaltung",

@@ -173,6 +173,14 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     await loadTableReport(tableName)
   }
 
+  async function reloadTheActiveView(): Promise<void> {
+    if (isLookingUp.value) {
+      await refreshLookup()
+      return
+    }
+    await load()
+  }
+
   function listen(): () => void {
     return useConnectionStore().listenToTheLaptop(['ConfigurationChanged', 'OrdersChanged'], load)
   }
@@ -288,5 +296,6 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     closeLookup,
     loadTableReport,
     refreshLookup,
+    reloadTheActiveView,
   }
 })

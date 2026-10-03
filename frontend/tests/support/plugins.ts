@@ -8,7 +8,7 @@ export function testPlugins(locale: 'de' | 'en' = 'de') {
 }
 
 export function openDialog(): Element | null {
-  return document.querySelector('.confirm-dialog')
+  return document.querySelector('[data-test="confirm-dialog"]')
 }
 
 export async function waitForDialog(): Promise<void> {

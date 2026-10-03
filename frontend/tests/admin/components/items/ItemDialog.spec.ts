@@ -55,12 +55,12 @@ function typeInto(selector: string, value: string): void {
 }
 
 async function pressSave(dialog: VueWrapper): Promise<void> {
-  ;(document.querySelector('.form-save') as HTMLElement).click()
+  ;(document.querySelector('[data-test="form-save"]') as HTMLElement).click()
   await dialog.vm.$nextTick()
 }
 
 function pressEnterInTheMinutes(dialog: VueWrapper): void {
-  field('.production-minutes-field').dispatchEvent(
+  field('[data-test="production-minutes-field"]').dispatchEvent(
     new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
   )
 }
@@ -96,7 +96,7 @@ describe('the item dialog', () => {
     mountDialog()
 
     await vi.waitFor(() =>
-      expect(document.querySelector('.form-dialog-title')?.textContent).toContain('Neuer Artikel'),
+      expect(document.querySelector('[data-test="form-dialog-title"]')?.textContent).toContain('Neuer Artikel'),
     )
   })
 
@@ -104,7 +104,7 @@ describe('the item dialog', () => {
     mountDialog(BRATWURST)
 
     await vi.waitFor(() =>
-      expect(document.querySelector('.form-dialog-title')?.textContent).toContain(
+      expect(document.querySelector('[data-test="form-dialog-title"]')?.textContent).toContain(
         'Artikel bearbeiten',
       ),
     )
@@ -113,15 +113,15 @@ describe('the item dialog', () => {
   it('starts with the name the item already has', async () => {
     mountDialog(BRATWURST)
 
-    await vi.waitFor(() => expect(document.querySelector('.item-name-field')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="item-name-field"]')).not.toBeNull())
 
-    expect(field('.item-name-field').value).toBe('Bratwurst')
+    expect(field('[data-test="item-name-field"]').value).toBe('Bratwurst')
   })
 
   it('sends the whole item as the admin sees it', async () => {
     const dialog = mountDialog(BRATWURST)
 
-    await vi.waitFor(() => expect(document.querySelector('.form-save')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="form-save"]')).not.toBeNull())
     await pressSave(dialog)
 
     expect(dialog.emitted('save')?.[0]?.[0]).toEqual({
@@ -137,8 +137,8 @@ describe('the item dialog', () => {
   it('leaves the item alone when the admin cancels', async () => {
     const dialog = mountDialog(BRATWURST)
 
-    await vi.waitFor(() => expect(document.querySelector('.form-cancel')).not.toBeNull())
-    ;(document.querySelector('.form-cancel') as HTMLElement).click()
+    await vi.waitFor(() => expect(document.querySelector('[data-test="form-cancel"]')).not.toBeNull())
+    ;(document.querySelector('[data-test="form-cancel"]') as HTMLElement).click()
     await dialog.vm.$nextTick()
 
     expect(dialog.emitted('cancel')).toHaveLength(1)
@@ -158,10 +158,10 @@ describe('the preparation time field', () => {
     mountDialog()
 
     await vi.waitFor(() =>
-      expect(document.querySelector('.production-minutes-field label')).not.toBeNull(),
+      expect(document.querySelector('[data-test="production-minutes-field"] label')).not.toBeNull(),
     )
 
-    expect(document.querySelector('.production-minutes-field label')?.textContent).toBe(
+    expect(document.querySelector('[data-test="production-minutes-field"] label')?.textContent).toBe(
       'Zubereitungszeit in Minuten',
     )
   })
@@ -169,40 +169,40 @@ describe('the preparation time field', () => {
   it('shows the minutes of an item that already has them', async () => {
     mountDialog(BRATWURST)
 
-    await vi.waitFor(() => expect(document.querySelector('.production-minutes-field')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="production-minutes-field"]')).not.toBeNull())
 
-    expect(field('.production-minutes-field').value).toBe('15')
+    expect(field('[data-test="production-minutes-field"]').value).toBe('15')
   })
 
   it('shows half a minute the way German writes it', async () => {
     mountDialog({ ...BRATWURST, productionMinutes: 1.5 })
 
-    await vi.waitFor(() => expect(document.querySelector('.production-minutes-field')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="production-minutes-field"]')).not.toBeNull())
 
-    expect(field('.production-minutes-field').value).toBe('1,5')
+    expect(field('[data-test="production-minutes-field"]').value).toBe('1,5')
   })
 
   it('shows half a minute the way English writes it', async () => {
     mountDialog({ ...BRATWURST, productionMinutes: 1.5 }, 'en')
 
-    await vi.waitFor(() => expect(document.querySelector('.production-minutes-field')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="production-minutes-field"]')).not.toBeNull())
 
-    expect(field('.production-minutes-field').value).toBe('1.5')
+    expect(field('[data-test="production-minutes-field"]').value).toBe('1.5')
   })
 
   it('stays empty for an item that is handed over right away', async () => {
     mountDialog({ ...BRATWURST, productionMinutes: null })
 
-    await vi.waitFor(() => expect(document.querySelector('.production-minutes-field')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="production-minutes-field"]')).not.toBeNull())
 
-    expect(field('.production-minutes-field').value).toBe('')
+    expect(field('[data-test="production-minutes-field"]').value).toBe('')
   })
 
   it('sends the minutes that were typed', async () => {
     const dialog = mountDialog(BRATWURST)
 
-    await vi.waitFor(() => expect(document.querySelector('.production-minutes-field')).not.toBeNull())
-    typeInto('.production-minutes-field', '20')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="production-minutes-field"]')).not.toBeNull())
+    typeInto('[data-test="production-minutes-field"]', '20')
     await dialog.vm.$nextTick()
     await pressSave(dialog)
 
@@ -212,8 +212,8 @@ describe('the preparation time field', () => {
   it('sends half a minute written with a comma, the way German writes it', async () => {
     const dialog = mountDialog(BRATWURST)
 
-    await vi.waitFor(() => expect(document.querySelector('.production-minutes-field')).not.toBeNull())
-    typeInto('.production-minutes-field', '1,5')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="production-minutes-field"]')).not.toBeNull())
+    typeInto('[data-test="production-minutes-field"]', '1,5')
     await dialog.vm.$nextTick()
     await pressSave(dialog)
 
@@ -223,8 +223,8 @@ describe('the preparation time field', () => {
   it('sends half a minute written with a dot, the way English writes it', async () => {
     const dialog = mountDialog(BRATWURST, 'en')
 
-    await vi.waitFor(() => expect(document.querySelector('.production-minutes-field')).not.toBeNull())
-    typeInto('.production-minutes-field', '1.5')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="production-minutes-field"]')).not.toBeNull())
+    typeInto('[data-test="production-minutes-field"]', '1.5')
     await dialog.vm.$nextTick()
     await pressSave(dialog)
 
@@ -234,8 +234,8 @@ describe('the preparation time field', () => {
   it('sends no preparation time when the field is left empty', async () => {
     const dialog = mountDialog(BRATWURST)
 
-    await vi.waitFor(() => expect(document.querySelector('.production-minutes-field')).not.toBeNull())
-    typeInto('.production-minutes-field', '')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="production-minutes-field"]')).not.toBeNull())
+    typeInto('[data-test="production-minutes-field"]', '')
     await dialog.vm.$nextTick()
     await pressSave(dialog)
 
@@ -245,10 +245,10 @@ describe('the preparation time field', () => {
   it('saves the highest allowed time when more is typed and Enter is pressed', async () => {
     const dialog = mountDialog(BRATWURST)
 
-    await vi.waitFor(() => expect(document.querySelector('.production-minutes-field')).not.toBeNull())
-    const input = field('.production-minutes-field')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="production-minutes-field"]')).not.toBeNull())
+    const input = field('[data-test="production-minutes-field"]')
     input.focus()
-    typeInto('.production-minutes-field', '601')
+    typeInto('[data-test="production-minutes-field"]', '601')
     await dialog.vm.$nextTick()
     pressEnterInTheMinutes(dialog)
     await dialog.vm.$nextTick()
@@ -259,12 +259,12 @@ describe('the preparation time field', () => {
   it('does not save on Enter while the name is missing', async () => {
     const dialog = mountDialog(BRATWURST)
 
-    await vi.waitFor(() => expect(document.querySelector('.production-minutes-field')).not.toBeNull())
-    field('.production-minutes-field').focus()
+    await vi.waitFor(() => expect(document.querySelector('[data-test="production-minutes-field"]')).not.toBeNull())
+    field('[data-test="production-minutes-field"]').focus()
 
-    typeInto('.item-name-field', '')
+    typeInto('[data-test="item-name-field"]', '')
     await dialog.vm.$nextTick()
-    typeInto('.production-minutes-field', '10')
+    typeInto('[data-test="production-minutes-field"]', '10')
     await dialog.vm.$nextTick()
     pressEnterInTheMinutes(dialog)
     await dialog.vm.$nextTick()
@@ -285,10 +285,10 @@ describe('the independent preparation choice', () => {
     const dialog = mountDialog({ ...BRATWURST, isQueueIndependent: true })
 
     await vi.waitFor(() =>
-      expect(document.querySelector('.queue-independent-checkbox')).not.toBeNull(),
+      expect(document.querySelector('[data-test="queue-independent-checkbox"]')).not.toBeNull(),
     )
 
-    expect(field('.queue-independent-checkbox').checked).toBe(true)
+    expect(field('[data-test="queue-independent-checkbox"]').checked).toBe(true)
 
     await pressSave(dialog)
 
@@ -307,7 +307,7 @@ describe('the category field', () => {
   it('offers the categories of the laptop in the order they were given', async () => {
     const dialog = mountDialog()
 
-    await vi.waitFor(() => expect(document.querySelector('.category-field')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="category-field"]')).not.toBeNull())
 
     expect(
       dialog.getComponent(VSelect).props('items').map((category: AdminCategoryView) => category.name),
@@ -317,7 +317,7 @@ describe('the category field', () => {
   it('starts on the category the item already belongs to', async () => {
     const dialog = mountDialog(BRATWURST)
 
-    await vi.waitFor(() => expect(document.querySelector('.category-field')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="category-field"]')).not.toBeNull())
 
     expect(dialog.getComponent(VSelect).props('modelValue')).toBe(FOOD_ID)
   })
@@ -325,7 +325,7 @@ describe('the category field', () => {
   it('sends the category that was picked', async () => {
     const dialog = mountDialog(BRATWURST)
 
-    await vi.waitFor(() => expect(document.querySelector('.category-field')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="category-field"]')).not.toBeNull())
     dialog.getComponent(VSelect).vm.$emit('update:modelValue', DRINKS_ID)
     await dialog.vm.$nextTick()
     await pressSave(dialog)
@@ -337,9 +337,9 @@ describe('the category field', () => {
     useAdminCategoriesStore().categories = []
     mountDialog()
 
-    await vi.waitFor(() => expect(document.querySelector('.category-field')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="category-field"]')).not.toBeNull())
 
-    ;(document.querySelector('.category-field .v-field') as HTMLElement).dispatchEvent(
+    ;(document.querySelector('[data-test="category-field"] .v-field') as HTMLElement).dispatchEvent(
       new MouseEvent('mousedown', { bubbles: true }),
     )
 
@@ -353,12 +353,12 @@ describe('the category field', () => {
   it('asks for a category rather than saving an item without one', async () => {
     const dialog = mountDialog()
 
-    await vi.waitFor(() => expect(document.querySelector('.item-name-field')).not.toBeNull())
-    typeInto('.item-name-field', 'Pommes')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="item-name-field"]')).not.toBeNull())
+    typeInto('[data-test="item-name-field"]', 'Pommes')
     await dialog.vm.$nextTick()
     await pressSave(dialog)
 
-    expect(document.querySelector('.category-field .v-messages')?.textContent).toBe(
+    expect(document.querySelector('[data-test="category-field"] .v-messages')?.textContent).toBe(
       'Wählen Sie eine Kategorie aus, bevor Sie speichern.',
     )
     expect(dialog.emitted('save')).toBeUndefined()
@@ -367,15 +367,15 @@ describe('the category field', () => {
   it('drops the question as soon as the admin picks a category', async () => {
     const dialog = mountDialog()
 
-    await vi.waitFor(() => expect(document.querySelector('.item-name-field')).not.toBeNull())
-    typeInto('.item-name-field', 'Pommes')
+    await vi.waitFor(() => expect(document.querySelector('[data-test="item-name-field"]')).not.toBeNull())
+    typeInto('[data-test="item-name-field"]', 'Pommes')
     await dialog.vm.$nextTick()
     await pressSave(dialog)
 
     dialog.getComponent(VSelect).vm.$emit('update:modelValue', DRINKS_ID)
     await dialog.vm.$nextTick()
 
-    expect(document.querySelector('.category-field .v-messages')?.textContent).toBe('')
+    expect(document.querySelector('[data-test="category-field"] .v-messages')?.textContent).toBe('')
   })
 })
 
@@ -390,11 +390,11 @@ describe('creating a category while an item is being written', () => {
   it('opens the same dialog the item list uses', async () => {
     const dialog = mountDialog(BRATWURST)
 
-    await vi.waitFor(() => expect(document.querySelector('.new-category')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="new-category"]')).not.toBeNull())
 
     expect(dialog.findComponent(CategoryDialog).exists()).toBe(false)
 
-    ;(document.querySelector('.new-category') as HTMLElement).click()
+    ;(document.querySelector('[data-test="new-category"]') as HTMLElement).click()
     await dialog.vm.$nextTick()
 
     expect(dialog.findComponent(CategoryDialog).exists()).toBe(true)
@@ -403,8 +403,8 @@ describe('creating a category while an item is being written', () => {
   it('picks the category the laptop created, so the item lands in it', async () => {
     const dialog = mountDialog(BRATWURST)
 
-    await vi.waitFor(() => expect(document.querySelector('.new-category')).not.toBeNull())
-    ;(document.querySelector('.new-category') as HTMLElement).click()
+    await vi.waitFor(() => expect(document.querySelector('[data-test="new-category"]')).not.toBeNull())
+    ;(document.querySelector('[data-test="new-category"]') as HTMLElement).click()
     await dialog.vm.$nextTick()
     dialog
       .findComponent(CategoryDialog)
@@ -418,8 +418,8 @@ describe('creating a category while an item is being written', () => {
   it('closes the dialog once the category is created', async () => {
     const dialog = mountDialog(BRATWURST)
 
-    await vi.waitFor(() => expect(document.querySelector('.new-category')).not.toBeNull())
-    ;(document.querySelector('.new-category') as HTMLElement).click()
+    await vi.waitFor(() => expect(document.querySelector('[data-test="new-category"]')).not.toBeNull())
+    ;(document.querySelector('[data-test="new-category"]') as HTMLElement).click()
     await dialog.vm.$nextTick()
     dialog
       .findComponent(CategoryDialog)
@@ -440,8 +440,8 @@ describe('the length of an article name', () => {
   it('stops where the laptop stops storing it', async () => {
     mountDialog()
 
-    await vi.waitFor(() => expect(document.querySelector('.item-name-field')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-test="item-name-field"]')).not.toBeNull())
 
-    expect(field('.item-name-field').getAttribute('maxlength')).toBe('200')
+    expect(field('[data-test="item-name-field"]').getAttribute('maxlength')).toBe('200')
   })
 })

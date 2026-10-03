@@ -1,28 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { OpenTableView, TableOrderRecordView } from '../../shared/api/generatedSchemas'
-import { assertNever } from '../../shared/core/assertNever'
-import { formatFestivalMoment } from '../../shared/core/festivalTimes'
-import {
-  isAPaymentMethodNeeded,
-  isHeldBackByAnotherTable,
-  itemIdsAtTable,
-  positionStateOf,
-  producedCountIn,
-  productionStateOf,
-  unsettledItemIdsInOrder,
-  selectionStateOf,
-  TABLE_LOOKUP_DEBOUNCE_MS,
-  type ShareState,
-  type SettleOutcome,
-  type SettlementPaymentMethod,
-} from '../core/openItems'
+import { isAPaymentMethodNeeded, TABLE_LOOKUP_DEBOUNCE_MS } from '../core/openItems'
 import { formatPrice } from '../core/totals'
 import { useOpenItemsStore } from '../stores/openItems'
 import { useSessionStore } from '../../shared/stores/session'
-import OpenTablePanel from '../components/openItems/OpenTablePanel.vue'
-import OpenPositionRow from '../components/openItems/OpenPositionRow.vue'
+import { useDebounced } from '../../shared/composables/useDebounced'
+import { useSettleDialog } from '../composables/useSettleDialog'
+import OpenTablesList from '../components/openItems/OpenTablesList.vue'
+import OpenTableLookup from '../components/openItems/OpenTableLookup.vue'
 import AmountPaidDialog from '../components/openItems/AmountPaidDialog.vue'
 import SettleNotice from '../components/openItems/SettleNotice.vue'
 import TableField from '../components/review/TableField.vue'
@@ -30,12 +16,14 @@ import TableField from '../components/review/TableField.vue'
 const { t } = useI18n()
 const openItems = useOpenItemsStore()
 const session = useSessionStore()
+const { amountPaidIsOpen, settleAtFullPrice, settleTheAmountPaid } = useSettleDialog()
+const tableReportLookup = useDebounced((tableName: string) => {
+  void openItems.loadTableReport(tableName)
+}, TABLE_LOOKUP_DEBOUNCE_MS)
 
-const amountPaidIsOpen = ref(false)
 const openedTables = ref<string[]>([])
 const typedTableName = ref('')
 let stopListening: (() => void) | null = null
-let lookupTimer: ReturnType<typeof setTimeout> | null = null
 
 const selectedTotal = computed(() =>
   formatPrice(openItems.selectedTotalCents, session.language),
@@ -50,18 +38,6 @@ const theActiveViewFailed = computed(() =>
   openItems.isLookingUp ? openItems.lookupFailed : openItems.loadFailed,
 )
 
-const ordersInTheLookup = computed(() => openItems.lookupReport?.orders ?? [])
-
-const lookupFoundNothing = computed(
-  () => openItems.lookupReport !== null && ordersInTheLookup.value.length === 0,
-)
-
-const lookupWholeTableSelection = computed<ShareState>(() =>
-  openItems.lookupTable === null
-    ? 'none'
-    : selectionStateOf(itemIdsAtTable(openItems.lookupTable), openItems.selectedItemIds),
-)
-
 onMounted(async () => {
   typedTableName.value = openItems.lookupName ?? ''
   stopListening = openItems.listen()
@@ -70,133 +46,28 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  stopTheLookupTimer()
   openItems.closeLookup()
   stopListening?.()
   stopListening = null
 })
 
 watch(typedTableName, (typed) => {
-  stopTheLookupTimer()
+  tableReportLookup.cancel()
   const tableName = typed.trim()
   if (tableName.length === 0) {
     openItems.closeLookup()
     return
   }
   openItems.openLookup(tableName)
-  lookupTimer = setTimeout(() => {
-    lookupTimer = null
-    void openItems.loadTableReport(tableName)
-  }, TABLE_LOOKUP_DEBOUNCE_MS)
+  tableReportLookup.callAfterTheDelay(tableName)
 })
-
-function stopTheLookupTimer(): void {
-  if (lookupTimer !== null) {
-    clearTimeout(lookupTimer)
-    lookupTimer = null
-  }
-}
-
-function reloadTheActiveView(): void {
-  if (openItems.isLookingUp) {
-    void openItems.refreshLookup()
-    return
-  }
-  void openItems.load()
-}
-
-async function settleAtFullPrice(paymentMethod: SettlementPaymentMethod): Promise<void> {
-  await openItems.settle(openItems.selectedTotalCents, null, paymentMethod)
-}
-
-async function settleTheAmountPaid(
-  amountPaidCents: number,
-  paymentNotice: string | null,
-  paymentMethod: SettlementPaymentMethod,
-): Promise<void> {
-  closeTheAmountAskedForUnlessTheLaptopRefused(
-    await openItems.settle(amountPaidCents, paymentNotice, paymentMethod),
-  )
-}
-
-function closeTheAmountAskedForUnlessTheLaptopRefused(outcome: SettleOutcome): void {
-  switch (outcome) {
-    case 'accepted':
-    case 'answerNeverCame':
-      amountPaidIsOpen.value = false
-      return
-    case 'refused':
-      return
-    default:
-      return assertNever(outcome)
-  }
-}
-
-function setWholeTable(table: OpenTableView, isWanted: boolean): void {
-  openItems.setWholeTable(table, isWanted)
-}
-
-function setTheLookupWholeTable(): void {
-  const table = openItems.lookupTable
-  if (table !== null) {
-    openItems.setWholeTable(table, lookupWholeTableSelection.value !== 'all')
-  }
-}
-
-function orderSelectionOf(order: TableOrderRecordView): ShareState {
-  return selectionStateOf(unsettledItemIdsInOrder(order), openItems.selectedItemIds)
-}
-
-function setWholeOrder(order: TableOrderRecordView): void {
-  const report = openItems.lookupReport
-  if (report === null) {
-    return
-  }
-  openItems.setWholeOrder(report.tableName, order, orderSelectionOf(order) !== 'all')
-}
-
-function isHeldBack(table: OpenTableView): boolean {
-  return isHeldBackByAnotherTable(openItems.tables, openItems.selectedItemIds, table.tableName)
-}
-
-function priceTextFor(cents: number): string {
-  return formatPrice(cents, session.language)
-}
-
-function stateClassFor(order: TableOrderRecordView): string {
-  const state = productionStateOf(order)
-  switch (state) {
-    case 'none':
-      return 'state-none'
-    case 'some':
-      return 'state-some'
-    case 'all':
-      return 'state-all'
-    default:
-      return assertNever(state)
-  }
-}
-
-function takenByTextFor(order: TableOrderRecordView): string {
-  return t('common.labels.takenBy', {
-    time: formatFestivalMoment(order.createdAtUtc, session.language),
-    name: order.staffMemberName,
-  })
-}
-
-function doneCounterTextFor(order: TableOrderRecordView): string {
-  return t('common.labels.doneCounter', {
-    fulfilled: producedCountIn(order),
-    total: order.items.length,
-  })
-}
 </script>
 
 <template>
   <v-container class="open-items">
     <div class="head d-flex align-center ga-3 mb-2">
       <h1 class="text-h5 flex-grow-1">{{ t('phone.openItems.title') }}</h1>
-      <v-btn class="reload" variant="outlined" size="large" @click="reloadTheActiveView">
+      <v-btn class="reload" data-test="reload" variant="outlined" size="large" @click="openItems.reloadTheActiveView()">
         {{ t('phone.openItems.actions.reload') }}
       </v-btn>
     </div>
@@ -205,7 +76,7 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
       :is-missing="false"
       :known-table-names="openItems.knownTableNames"
     />
-    <v-alert v-if="theActiveViewFailed" class="load-failed mb-2" type="warning" variant="tonal">
+    <v-alert v-if="theActiveViewFailed" class="load-failed mb-2" data-test="load-failed" type="warning" variant="tonal">
       {{ t('phone.openItems.errors.loadFailed') }}
     </v-alert>
     <SettleNotice
@@ -215,101 +86,35 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
       closable
       @dismiss="openItems.dismissNotice"
     />
-    <template v-if="!openItems.isLookingUp">
-      <v-alert
-        v-if="openItems.itemsWithoutAnOrderCount > 0"
-        class="list-incomplete mb-2"
-        type="warning"
-        variant="tonal"
-      >
-        {{
-          t(
-            'phone.openItems.messages.listIncomplete',
-            { count: openItems.itemsWithoutAnOrderCount },
-            openItems.itemsWithoutAnOrderCount,
-          )
-        }}
-      </v-alert>
-      <v-alert v-if="everythingIsSettled" class="empty" type="info" variant="tonal">
-        {{ t('phone.openItems.messages.empty') }}
-      </v-alert>
-      <v-expansion-panels v-model="openedTables" class="tables" multiple>
-        <OpenTablePanel
-          v-for="table in openItems.tables"
-          :key="table.tableName"
-          :table="table"
-          :selected-item-ids="openItems.selectedItemIds"
-          :language="session.language"
-          :is-held-back-by-another-table="isHeldBack(table)"
-          @toggle-item="openItems.toggleItem"
-          @set-whole-table="setWholeTable(table, $event)"
-        />
-      </v-expansion-panels>
-    </template>
-    <template v-else>
-      <v-checkbox
-        v-if="openItems.lookupTable !== null && openItems.lookupTable.items.length > 0"
-        class="whole-table"
-        density="comfortable"
-        hide-details
-        :label="t('phone.openItems.actions.wholeTable')"
-        :model-value="lookupWholeTableSelection === 'all'"
-        :indeterminate="lookupWholeTableSelection === 'some'"
-        @update:model-value="setTheLookupWholeTable"
-      />
-      <v-card
-        v-for="order in ordersInTheLookup"
-        :key="order.orderId"
-        class="lookup-card mb-3"
-        :class="stateClassFor(order)"
-      >
-        <v-card-text class="lookup-body">
-          <div class="lookup-card-head d-flex flex-wrap align-baseline ga-2">
-            <span class="order-number text-h6">
-              {{ t('phone.openItems.labels.order', { order: order.globalOrderNumber }) }}
-            </span>
-            <span class="taken-by text-body-2 text-medium-emphasis">
-              {{ takenByTextFor(order) }}
-            </span>
-          </div>
-          <div class="lookup-card-tally d-flex align-center ga-2">
-            <v-checkbox-btn
-              v-if="unsettledItemIdsInOrder(order).length > 0"
-              class="whole-order flex-grow-0"
-                    :model-value="orderSelectionOf(order) === 'all'"
-              :indeterminate="orderSelectionOf(order) === 'some'"
-              @update:model-value="setWholeOrder(order)"
-            />
-            <span class="done-counter text-body-2 ms-auto">{{ doneCounterTextFor(order) }}</span>
-          </div>
-          <v-list class="lookup-lines" lines="three">
-            <OpenPositionRow
-              v-for="item in order.items"
-              :key="item.orderItemId"
-              :item-name="item.itemName"
-              :note="item.note"
-              :order-label="null"
-              :price-text="priceTextFor(item.unitPriceCents)"
-              :is-selected="openItems.selectedItemIds.includes(item.orderItemId)"
-              :is-disabled="item.settledAtUtc !== null"
-              :is-settled="item.settledAtUtc !== null"
-              :production-state="positionStateOf(item)"
-              @toggle="openItems.toggleItem(item.orderItemId)"
-            />
-          </v-list>
-        </v-card-text>
-      </v-card>
-      <v-alert v-if="lookupFoundNothing" class="lookup-empty" type="info" variant="tonal">
-        {{ t('phone.openItems.messages.noOrdersForTable') }}
-      </v-alert>
-    </template>
-    <v-sheet v-if="somethingIsSelected" class="settle-footer pt-3 pb-4" color="background">
-      <p class="selected-total text-h6 mb-2">
+    <OpenTablesList
+      v-if="!openItems.isLookingUp"
+      v-model:opened-tables="openedTables"
+      :tables="openItems.tables"
+      :selected-item-ids="openItems.selectedItemIds"
+      :language="session.language"
+      :items-without-an-order-count="openItems.itemsWithoutAnOrderCount"
+      :everything-is-settled="everythingIsSettled"
+      @toggle-item="openItems.toggleItem"
+      @set-whole-table="openItems.setWholeTable"
+    />
+    <OpenTableLookup
+      v-else
+      :report="openItems.lookupReport"
+      :table="openItems.lookupTable"
+      :selected-item-ids="openItems.selectedItemIds"
+      :language="session.language"
+      @toggle-item="openItems.toggleItem"
+      @set-whole-table="openItems.setWholeTable"
+      @set-whole-order="openItems.setWholeOrder"
+    />
+    <v-sheet v-if="somethingIsSelected" class="settle-footer pt-3 pb-4" data-test="settle-footer" color="background">
+      <p class="selected-total text-h6 mb-2" data-test="selected-total">
         {{ t('phone.openItems.labels.selected', { amount: selectedTotal }) }}
       </p>
       <template v-if="isAPaymentMethodNeeded(openItems.selectedTotalCents)">
         <v-btn
           class="settle-in-cash"
+          data-test="settle-in-cash"
           color="primary"
           block
           size="x-large"
@@ -320,6 +125,7 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
         </v-btn>
         <v-btn
           class="settle-by-card mt-2"
+          data-test="settle-by-card"
           color="primary"
           block
           size="x-large"
@@ -332,6 +138,7 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
       <v-btn
         v-else
         class="settle-nothing-paid"
+        data-test="settle-nothing-paid"
         color="primary"
         block
         size="x-large"
@@ -342,6 +149,7 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
       </v-btn>
       <v-btn
         class="settle-amount-paid mt-2"
+        data-test="settle-amount-paid"
         color="primary"
         variant="outlined"
         block
@@ -374,42 +182,5 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
   bottom: 0;
   z-index: 2;
   border-top: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
-}
-
-.lookup-card {
-  background: rgb(var(--v-theme-surface));
-}
-
-.lookup-card.state-none {
-  background: color-mix(in srgb, rgb(var(--v-theme-error)) 30%, rgb(var(--v-theme-surface)));
-  border-inline-start: 0.375rem solid rgb(var(--v-theme-error));
-}
-
-.lookup-card.state-some {
-  background: color-mix(in srgb, rgb(var(--v-theme-warning)) 30%, rgb(var(--v-theme-surface)));
-  border-inline-start: 0.375rem solid rgb(var(--v-theme-warning));
-}
-
-.lookup-card.state-all {
-  background: color-mix(in srgb, rgb(var(--v-theme-success)) 30%, rgb(var(--v-theme-surface)));
-  border-inline-start: 0.375rem solid rgb(var(--v-theme-success));
-}
-
-.lookup-body {
-  padding: 0;
-}
-
-.lookup-card-head {
-  padding: 0.75rem 1rem 0;
-}
-
-.lookup-card-tally {
-  min-height: 3rem;
-  padding: 0 1rem;
-}
-
-.lookup-lines {
-  background: transparent;
-  padding: 0;
 }
 </style>

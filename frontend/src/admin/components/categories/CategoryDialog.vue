@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AdminCategoryView } from '../../../shared/api/generatedSchemas'
 import type { AdminCategoryDraft } from '../../stores/categories'
-import BaseFormDialog from '../BaseFormDialog.vue'
+import BaseFormDialog from '../../../shared/components/BaseFormDialog.vue'
 
 const COLOUR_OF_A_NEW_CATEGORY = '#607D8B'
 

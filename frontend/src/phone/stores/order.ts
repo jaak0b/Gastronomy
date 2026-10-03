@@ -1,10 +1,9 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { answerIsABusinessRefusal, answerSaysTheDeviceIsNoLongerSetUp, request } from '../../shared/api/client'
 import type { DraftLine, DraftOrder } from '../core/draftCart'
 import { DeliveryMode, PlaceOrderRequest, PlacedOrderView } from '../../shared/api/generatedSchemas'
 import {
-
   addLine,
   clearDraft,
   draftIsForAnotherFestival,
@@ -19,7 +18,6 @@ import {
   stampFestival,
 } from '../core/draftCart'
 import {
-
   changesAreRefusedFor,
   writingItDownIsTheOnlyWayLeft,
   progressAfterALoad,
@@ -33,7 +31,6 @@ import { assertNever } from '../../shared/core/assertNever'
 import { buildSubmitRequest, withClientOrderIdIfMissing } from '../core/submission'
 import { buildStationDeliveryModes, buildStationOrders, deliveryModeChosenOrDefault } from '../core/stationOrders'
 import {
-
   buildBasketView,
   basketItemCount,
   lineCannotBeOrdered,
@@ -216,6 +213,16 @@ export const useOrderStore = defineStore('order', () => {
     startNextOrder()
   }
 
+  watch(
+    [() => catalogStore.catalog, () => catalogStore.hasLoaded],
+    () => {
+      if (catalogStore.hasLoaded) {
+        dropTheDraftIfTheFestivalChanged()
+      }
+    },
+    { flush: 'sync', immediate: true },
+  )
+
   function startNextOrderAfterWritingItDown(): void {
     failure.value = null
     attemptsMade.value = 0
@@ -374,7 +381,6 @@ export const useOrderStore = defineStore('order', () => {
     chooseDeliveryMode,
     dismissConfirmation,
     dismissDraftLoss,
-    dropTheDraftIfTheFestivalChanged,
     startNextOrderAfterWritingItDown,
     send,
     sendAgain,

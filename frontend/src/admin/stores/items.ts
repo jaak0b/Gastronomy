@@ -1,14 +1,10 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { request, requestAction } from '../../shared/api/client'
+import { requestAction } from '../../shared/api/client'
 import { AdminItemListView, AdminItemView } from '../../shared/api/generatedSchemas'
-import { adminFailed, adminOk, type AdminActionResult } from '../core/adminActionResult'
-import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
-import { loadAdminList } from '../core/adminList'
-import { createPendingCreatedEntities } from '../core/pendingCreatedEntities'
-import { assertNever } from '../../shared/core/assertNever'
-import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
+import type { AdminActionResult } from '../core/adminActionResult'
+import { reloadOrFailureOf } from '../core/adminMutation'
 import { useConnectionStore } from '../../shared/stores/connection'
+import { defineFestivalScopedList } from './festivalScopedList'
 
 export interface AdminItemDraft {
   itemId?: string
@@ -25,100 +21,30 @@ export interface FestivalPlacement {
 }
 
 export const useAdminItemsStore = defineStore('adminItems', () => {
-  const items = ref<AdminItemView[]>([])
-  const loadFailed = ref(false)
-  const festivalInView = ref<string | null>(null)
-
-  const itemsGate = createLatestRequestGate()
-  const pendingCreatedItems = createPendingCreatedEntities<AdminItemView>((item) => item.itemId)
-
-  async function loadItemsFrom(path: string): Promise<void> {
-    await loadAdminList({
-      path,
-      schema: AdminItemListView,
-      gate: itemsGate,
-      itemsOf: (response) => response.items,
-      showItems: (loaded) => {
-        items.value = pendingCreatedItems.mergeInto(loaded)
-      },
-      setLoadFailed: (failed) => {
-        loadFailed.value = failed
-      },
-    })
-  }
-
-  async function load(): Promise<void> {
-    if (festivalInView.value !== null) {
-      pendingCreatedItems.clear()
-    }
-    festivalInView.value = null
-    await loadItemsFrom('/api/admin/items')
-  }
-
-  async function loadAtTheFestival(festivalId: string): Promise<void> {
-    if (festivalInView.value !== festivalId) {
-      pendingCreatedItems.clear()
-    }
-    festivalInView.value = festivalId
-    await loadItemsFrom(`/api/admin/items?festivalId=${festivalId}`)
-  }
-
-  async function reload(): Promise<void> {
-    const festivalId = festivalInView.value
-    if (festivalId === null) {
-      await load()
-      return
-    }
-    await loadAtTheFestival(festivalId)
-  }
-
-  function buildItemRequestBody(item: AdminItemDraft): Record<string, unknown> {
-    return {
+  const {
+    entries: items,
+    loadFailed,
+    load,
+    loadAtTheFestival,
+    reload,
+    create,
+    save,
+    setActive,
+  } = defineFestivalScopedList({
+    path: '/api/admin/items',
+    listSchema: AdminItemListView,
+    entrySchema: AdminItemView,
+    entriesOf: (response) => response.items,
+    idOf: (item) => item.itemId,
+    draftIdOf: (item: AdminItemDraft) => item.itemId,
+    requestBodyOf: (item) => ({
       name: item.name.trim(),
       categoryId: item.categoryId,
       sortOrder: item.sortOrder,
       productionMinutes: item.productionMinutes,
       isQueueIndependent: item.isQueueIndependent,
-    }
-  }
-
-  async function create(item: AdminItemDraft): Promise<AdminActionResult<AdminItemView>> {
-    const scopeAtStart = festivalInView.value
-    const result = await request('/api/admin/items', {
-      method: 'POST',
-      body: buildItemRequestBody(item),
-      schema: AdminItemView,
-    })
-    if (result.kind !== 'ok') {
-      return adminFailureFrom(result)
-    }
-    if (scopeAtStart === festivalInView.value) {
-      pendingCreatedItems.remember(result.data)
-      items.value = pendingCreatedItems.mergeInto(items.value)
-    }
-    return adminOk(result.data)
-  }
-
-  async function save(item: AdminItemDraft): Promise<AdminActionResult<null>> {
-    if (item.itemId === undefined) {
-      const created = await create(item)
-      switch (created.kind) {
-        case 'ok':
-          return adminOk(null)
-        case 'failed':
-          return adminFailed(created.message)
-        default:
-          return assertNever(created)
-      }
-    }
-    return await reloadOrFailureOf(
-      await requestAction(`/api/admin/items/${item.itemId}`, {
-        method: 'PUT',
-        body: buildItemRequestBody(item),
-      }),
-      reload,
-    )
-  }
+    }),
+  })
 
   async function putAtTheFestival(
     festivalId: string,
@@ -156,19 +82,6 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
         method: 'POST',
         body: { isAvailable },
       }),
-      reload,
-    )
-  }
-
-  async function setActive(itemId: string, isActive: boolean): Promise<AdminActionResult<null>> {
-    if (isActive) {
-      return await reloadOrFailureOf(
-        await requestAction(`/api/admin/items/${itemId}/activate`, { method: 'POST' }),
-        reload,
-      )
-    }
-    return await reloadOrFailureOf(
-      await requestAction(`/api/admin/items/${itemId}/deactivate`, { method: 'POST' }),
       reload,
     )
   }
