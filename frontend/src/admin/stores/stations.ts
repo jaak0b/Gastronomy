@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 import { requestAction } from '../../shared/api/client'
-import { AdminStationListView, AdminStationView } from '../../shared/api/generatedSchemas'
+import {
+  AdminStationListView,
+  AdminStationView,
+  type SaveStationRequest,
+} from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
 import { reloadOrFailureOf } from '../core/adminMutation'
 import { useConnectionStore } from '../../shared/stores/connection'
@@ -31,7 +35,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
     entriesOf: (response) => response.stations,
     idOf: (station) => station.stationId,
     draftIdOf: (station: StationDraft) => station.stationId,
-    requestBodyOf: (station) => ({ name: station.name, sortOrder: station.sortOrder }),
+    requestBodyOf: (station): SaveStationRequest => ({ name: station.name, sortOrder: station.sortOrder }),
   })
 
   async function addToTheFestival(

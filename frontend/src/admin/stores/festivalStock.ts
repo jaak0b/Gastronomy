@@ -7,7 +7,7 @@ import {
 } from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
 import { reloadOrFailureOf } from '../core/adminMutation'
-import { loadAdminList } from '../core/adminList'
+import { loadAdminList } from '../core/listLoading'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { useConnectionStore } from '../../shared/stores/connection'
 

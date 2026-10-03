@@ -43,7 +43,7 @@ describe('the waiter list of the admin', () => {
     const laptop = listsLaptop()
     useAdminStaffStore().listen()
     await useConnectionStore().connect({})
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('ConfigurationChanged')
 
@@ -84,7 +84,7 @@ describe('the station list of the admin', () => {
     const laptop = listsLaptop()
     useAdminStationsStore().listen()
     await useConnectionStore().connect({})
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('ConfigurationChanged')
 
@@ -125,7 +125,7 @@ describe('the category list of the admin', () => {
     const laptop = listsLaptop()
     useAdminCategoriesStore().listen()
     await useConnectionStore().connect({})
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('ConfigurationChanged')
 
@@ -167,7 +167,7 @@ describe('the item list of the admin', () => {
     const items = useAdminItemsStore()
     items.listen()
     await items.loadAtTheFestival('fest-1')
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     await useConnectionStore().refetchAll()
 
@@ -178,7 +178,7 @@ describe('the item list of the admin', () => {
     const laptop = listsLaptop()
     useAdminItemsStore().listen()
     await useConnectionStore().connect({})
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('ConfigurationChanged')
 
@@ -219,7 +219,7 @@ describe('the ingredient list of the admin', () => {
     const laptop = listsLaptop()
     useAdminIngredientsStore().listen()
     await useConnectionStore().connect({})
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('ConfigurationChanged')
 
@@ -252,7 +252,7 @@ describe('the stock of the festival whose page is open', () => {
     const stock = useAdminFestivalStockStore()
     const stop = stock.listen()
     await stock.loadForFestival('fest-1')
-    laptop.calls.length = 0
+    laptop.forgetCalls()
     return { laptop, stop }
   }
 
@@ -267,7 +267,7 @@ describe('the stock of the festival whose page is open', () => {
   it('is read again when the laptop says the configuration changed', async () => {
     const { laptop } = await listenOnTheFestivalPage()
     await useConnectionStore().connect({})
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('ConfigurationChanged')
 
@@ -277,7 +277,7 @@ describe('the stock of the festival whose page is open', () => {
   it('is read again when the laptop says the orders changed, because orders use up the stock', async () => {
     const { laptop } = await listenOnTheFestivalPage()
     await useConnectionStore().connect({})
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('OrdersChanged')
 

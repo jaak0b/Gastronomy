@@ -26,6 +26,13 @@ const currentDestination = computed<Destination>(() => {
       return assertNever(route)
   }
 })
+
+const catalogLinkEmphasis = computed(() =>
+  currentDestination.value === 'catalog' ? 'text-primary' : 'text-medium-emphasis',
+)
+const openItemsLinkEmphasis = computed(() =>
+  currentDestination.value === 'openItems' ? 'text-primary' : 'text-medium-emphasis',
+)
 </script>
 
 <template>
@@ -36,10 +43,10 @@ const currentDestination = computed<Destination>(() => {
         data-test="catalog-link"
         variant="text"
         stacked
-        :class="currentDestination === 'catalog' ? 'text-primary' : 'text-medium-emphasis'"
+        :class="catalogLinkEmphasis"
         @click="navigate('/')"
       >
-        <v-icon icon="mdi-clipboard-text-outline" />
+        <v-icon data-test="destination-icon" icon="mdi-clipboard-text-outline" />
         <span class="label" data-test="label">{{ t('phone.catalog.title') }}</span>
       </v-btn>
       <v-btn
@@ -47,10 +54,10 @@ const currentDestination = computed<Destination>(() => {
         data-test="open-items-link"
         variant="text"
         stacked
-        :class="currentDestination === 'openItems' ? 'text-primary' : 'text-medium-emphasis'"
+        :class="openItemsLinkEmphasis"
         @click="navigate('/open-items')"
       >
-        <v-icon icon="mdi-cash-register" />
+        <v-icon data-test="destination-icon" icon="mdi-cash-register" />
         <span class="label" data-test="label">{{ t('phone.header.actions.openItems') }}</span>
       </v-btn>
     </div>

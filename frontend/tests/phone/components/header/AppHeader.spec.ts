@@ -55,8 +55,8 @@ describe('the row of destinations', () => {
   it('carries an icon on every destination, so the row fits without hiding a word', () => {
     const header = mountHeader()
 
-    expect(header.find('[data-test="catalog-link"] .v-icon').exists()).toBe(true)
-    expect(header.find('[data-test="open-items-link"] .v-icon').exists()).toBe(true)
+    expect(header.find('[data-test="catalog-link"] [data-test="destination-icon"]').exists()).toBe(true)
+    expect(header.find('[data-test="open-items-link"] [data-test="destination-icon"]').exists()).toBe(true)
   })
 })
 

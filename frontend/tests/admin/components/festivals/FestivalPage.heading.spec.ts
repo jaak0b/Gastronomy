@@ -115,7 +115,7 @@ describe('the name and the dates at the top of the page', () => {
 
     const page = mountPage()
     await vi.waitFor(() => expect(page.find('[data-test="festival-name"]').exists()).toBe(true))
-    laptop.calls.length = 0
+    laptop.forgetCalls()
     await useConnectionStore().refetchAll()
 
     expect(laptop.calls.map((call) => call.url)).toContain(

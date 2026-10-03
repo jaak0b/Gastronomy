@@ -90,7 +90,7 @@ describe('the catalog a phone follows while it is open', () => {
     const laptop = stubLaptop().answersEverythingElse(answer(FULL_CATALOG))
     useCatalogStore().listen()
     await useConnectionStore().connect({ deviceToken: 'token-here' })
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('ConfigurationChanged')
 

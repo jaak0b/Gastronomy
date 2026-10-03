@@ -95,7 +95,7 @@ describe('the open list a phone follows', () => {
     const laptop = stubLaptop().answersEverythingElse(answer(EMPTY_LIST))
     useOpenItemsStore().listen()
     await useConnectionStore().connect({ deviceToken: 'token-here' })
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('ConfigurationChanged')
 
@@ -111,7 +111,7 @@ describe('the open list a phone follows', () => {
     openItems.openLookup('Tisch 12')
     await openItems.loadTableReport('Tisch 12')
     await useConnectionStore().connect({ deviceToken: 'token-here' })
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('OrdersChanged')
 

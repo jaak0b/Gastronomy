@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { onUnauthorisedAnswer, request, requestAction } from '../../../src/shared/api/client'
-import { stubLaptop, answer, neverAnswers } from '../../support/laptop'
+import { stubLaptop, answer, neverAnswers, type StubbedLaptop } from '../../support/laptop'
 
 const okAnswerSchema = z.object({ ok: z.boolean() })
 
@@ -9,8 +9,8 @@ function laptopThatNeverAnswers(): void {
   stubLaptop().answersEverythingElse(neverAnswers())
 }
 
-function laptopThatAnswersAtOnce(): void {
-  vi.stubGlobal('fetch', vi.fn(async () => new Response('{"ok":true}', { status: 200 })))
+function laptopThatAnswersAtOnce(): StubbedLaptop {
+  return stubLaptop().answersEverythingElse(answer({ ok: true }))
 }
 
 describe('a request the caller gave no time limit', () => {
@@ -19,11 +19,11 @@ describe('a request the caller gave no time limit', () => {
   })
 
   it('waits for the laptop as long as the phone itself waits', async () => {
-    laptopThatAnswersAtOnce()
+    const laptop = laptopThatAnswersAtOnce()
 
     await request('/api/anything', { schema: okAnswerSchema })
 
-    expect((vi.mocked(fetch).mock.calls[0][1] as RequestInit).signal).toBeUndefined()
+    expect(laptop.calls.map((call) => call.signal)).toEqual([undefined])
   })
 })
 

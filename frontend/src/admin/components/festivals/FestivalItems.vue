@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AdminCategoryView, AdminItemView } from '../../../shared/api/generatedSchemas'
+import type { AdminCategoryView, AdminItemView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
 import { letteringColourOn } from '../../../shared/core/letteringColour'
@@ -43,7 +43,7 @@ const itemSession = useEditSession<AdminItemView, AdminItemDraft, AdminItemView 
     }
   },
 })
-const categorySession = useEditSession<AdminCategoryView, AdminCategoryDraft, unknown>({
+const categorySession = useEditSession<AdminCategoryView, AdminCategoryDraft, AdminCategoryView | null>({
   saveThrough: (draft, category) =>
     category === null
       ? categories.create(draft)
@@ -94,9 +94,21 @@ const stillToAdd = computed(() =>
     .sort((left, right) => left.name.localeCompare(right.name)),
 )
 
+const listsFailedToLoad = computed(() => items.loadFailed || categories.loadFailed)
+
+const showsItemRefusal = computed(() => itemRefusalText.value !== null && !isItemDialogOpen.value)
+
 const chosenItem = computed(
   () => items.items.find((item) => item.itemId === chosenItemId.value) ?? null,
 )
+
+function priceMessagesOf(itemId: string): string[] {
+  return priceIsUnreadable(itemId) ? [t('admin.items.errors.priceInvalid')] : []
+}
+
+async function changeSoldOut(item: AdminItemView, switchedOn: boolean | null): Promise<void> {
+  await setSoldOut(item, switchedOn === true)
+}
 
 function startPlacing(item: AdminItemView): void {
   itemToPlace.value = item
@@ -132,7 +144,7 @@ async function remove(): Promise<void> {
         <h2 class="section-heading text-h6 mb-3" data-test="section-heading">{{ t('admin.items.title') }}</h2>
 
         <v-alert
-          v-if="items.loadFailed || categories.loadFailed"
+          v-if="listsFailedToLoad"
           class="error mb-3"
           data-test="load-failed"
           type="error"
@@ -202,9 +214,7 @@ async function remove(): Promise<void> {
                   :model-value="rowShownFor(item.itemId).price.edited"
                   :label="t('admin.items.labels.price')"
                   :error="priceIsUnreadable(item.itemId)"
-                  :error-messages="
-                    priceIsUnreadable(item.itemId) ? [t('admin.items.errors.priceInvalid')] : []
-                  "
+                  :error-messages="priceMessagesOf(item.itemId)"
                   @update:model-value="(typed: string) => typePrice(item.itemId, typed)"
                   @blur="save(item.itemId)"
                   @keyup.enter="save(item.itemId)"
@@ -225,7 +235,7 @@ async function remove(): Promise<void> {
                   hide-details
                   :model-value="!item.atTheFestival.isAvailable"
                   :label="t('common.labels.soldOut')"
-                  @update:model-value="(value: boolean | null) => setSoldOut(item, value === true)"
+                  @update:model-value="(switchedOn: boolean | null) => changeSoldOut(item, switchedOn)"
                 />
                 <v-btn class="edit-item" data-test="edit-item" variant="text" @click="itemSession.openForEdit(item)">
                   {{ t('admin.common.actions.edit') }}
@@ -290,7 +300,7 @@ async function remove(): Promise<void> {
             </v-btn>
           </div>
           <v-alert
-            v-if="itemRefusalText !== null && !isItemDialogOpen"
+            v-if="showsItemRefusal"
             class="refusal mt-3"
             data-test="refusal"
             type="warning"

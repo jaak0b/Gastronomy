@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { requestAction } from '../../shared/api/client'
-import { AdminItemListView, AdminItemView } from '../../shared/api/generatedSchemas'
+import { AdminItemListView, AdminItemView, type SaveItemRequest } from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
 import { reloadOrFailureOf } from '../core/adminMutation'
 import { useConnectionStore } from '../../shared/stores/connection'
@@ -37,7 +37,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     entriesOf: (response) => response.items,
     idOf: (item) => item.itemId,
     draftIdOf: (item: AdminItemDraft) => item.itemId,
-    requestBodyOf: (item) => ({
+    requestBodyOf: (item): SaveItemRequest => ({
       name: item.name.trim(),
       categoryId: item.categoryId,
       sortOrder: item.sortOrder,

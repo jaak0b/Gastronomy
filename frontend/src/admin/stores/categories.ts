@@ -1,13 +1,14 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { request, requestAction } from '../../shared/api/client'
-import { AdminCategoryListView, AdminCategoryView } from '../../shared/api/generatedSchemas'
+import { request } from '../../shared/api/client'
+import {
+  AdminCategoryListView,
+  AdminCategoryView,
+  type SaveCategoryRequest,
+} from '../../shared/api/generatedSchemas'
 import { adminOk, type AdminActionResult } from '../core/adminActionResult'
-import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
-import { loadAdminList } from '../core/adminList'
-import { createPendingCreatedEntities } from '../core/pendingCreatedEntities'
-import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
+import { adminFailureFrom } from '../core/adminMutation'
 import { useConnectionStore } from '../../shared/stores/connection'
+import { defineAdminList } from './adminList'
 
 export interface AdminCategoryDraft {
   name: string
@@ -17,54 +18,28 @@ export interface AdminCategoryDraft {
 export type CategoryMoveDirection = 'up' | 'down'
 
 export const useAdminCategoriesStore = defineStore('adminCategories', () => {
-  const categories = ref<AdminCategoryView[]>([])
-  const loadFailed = ref(false)
-
-  const categoriesGate = createLatestRequestGate()
-  const pendingCreatedCategories = createPendingCreatedEntities<AdminCategoryView>(
-    (category) => category.categoryId,
-  )
+  const {
+    entries: categories,
+    loadFailed,
+    entriesGate: categoriesGate,
+    load,
+    create,
+    update,
+    setActive,
+  } = defineAdminList({
+    path: '/api/admin/categories',
+    listSchema: AdminCategoryListView,
+    entrySchema: AdminCategoryView,
+    entriesOf: (response) => response.categories,
+    idOf: (category) => category.categoryId,
+    requestBodyOf: (draft: AdminCategoryDraft): SaveCategoryRequest => ({ name: draft.name, colourHex: draft.colourHex }),
+  })
   let latestMove: Promise<AdminActionResult<null>> = Promise.resolve(adminOk(null))
-
-  async function load(): Promise<void> {
-    await loadAdminList({
-      path: '/api/admin/categories',
-      schema: AdminCategoryListView,
-      gate: categoriesGate,
-      itemsOf: (response) => response.categories,
-      showItems: (loaded) => {
-        categories.value = pendingCreatedCategories.mergeInto(loaded)
-      },
-      setLoadFailed: (failed) => {
-        loadFailed.value = failed
-      },
-    })
-  }
-
-  async function create(draft: AdminCategoryDraft): Promise<AdminActionResult<AdminCategoryView>> {
-    const result = await request('/api/admin/categories', {
-      method: 'POST',
-      body: { name: draft.name, colourHex: draft.colourHex },
-      schema: AdminCategoryView,
-    })
-    if (result.kind !== 'ok') {
-      return adminFailureFrom(result)
-    }
-    pendingCreatedCategories.remember(result.data)
-    categories.value = pendingCreatedCategories.mergeInto(categories.value)
-    return adminOk(result.data)
-  }
 
   async function save(
     category: AdminCategoryDraft & { categoryId: string },
   ): Promise<AdminActionResult<null>> {
-    return await reloadOrFailureOf(
-      await requestAction(`/api/admin/categories/${category.categoryId}`, {
-        method: 'PUT',
-        body: { name: category.name, colourHex: category.colourHex },
-      }),
-      load,
-    )
+    return await update(category.categoryId, category)
   }
 
   async function move(
@@ -98,17 +73,6 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     }
     await load()
     return adminOk(null)
-  }
-
-  async function setActive(
-    categoryId: string,
-    isActive: boolean,
-  ): Promise<AdminActionResult<null>> {
-    const action = isActive ? 'activate' : 'deactivate'
-    return await reloadOrFailureOf(
-      await requestAction(`/api/admin/categories/${categoryId}/${action}`, { method: 'POST' }),
-      load,
-    )
   }
 
   function listen(): () => void {

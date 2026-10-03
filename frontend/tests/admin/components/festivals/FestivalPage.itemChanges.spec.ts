@@ -5,6 +5,7 @@ import { pressInDialog, onScreen, typeInto } from '../../../support/dom'
 import { FESTIVAL_ID, KITCHEN_ID, SAUSAGE_ID, FOOD_ID, SUMMER, SAUSAGE, BEER, mountPage, openPlacementDialog, stationBox, openDialogStations, festivalLaptop } from './festivalPageFixture'
 import { nextTick } from 'vue'
 import { saveTheItemDialog } from '../../../support/formDialogs'
+import { aHold, answer, heldUntil } from '../../../support/laptop'
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -222,17 +223,12 @@ describe('the items of this festival', () => {
   })
 
   it('will not let the admin cancel a placement while the laptop is still answering', async () => {
-    let releaseTheAnswer = (): void => {}
-    const theAnswer = new Promise<void>((carryOn) => {
-      releaseTheAnswer = carryOn
-    })
-    festivalLaptop({
-      waitBeforeAnswering: async (call) => {
-        if (call.method === 'PUT') {
-          await theAnswer
-        }
-      },
-    })
+    const theAnswer = aHold()
+    festivalLaptop().answers(
+      'PUT',
+      `/api/admin/festivals/${FESTIVAL_ID}/items`,
+      heldUntil(theAnswer.released, answer({})),
+    )
 
     const page = mountPage()
     await vi.waitFor(() => expect(page.find('[data-test="item-search"]').exists()).toBe(true))
@@ -246,7 +242,7 @@ describe('the items of this festival', () => {
       expect((onScreen('[data-test="form-dialog"] [data-test="form-cancel"]') as HTMLButtonElement).disabled).toBe(true),
     )
 
-    releaseTheAnswer()
+    theAnswer.release()
     await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).toBeNull())
   })
 

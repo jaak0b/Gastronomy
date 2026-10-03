@@ -4,9 +4,10 @@ export interface LaptopCall {
   url: string
   method: string
   body: unknown
+  signal?: AbortSignal
 }
 
-export type LaptopReply = (call: LaptopCall, signal?: AbortSignal) => Response | Promise<Response>
+export type LaptopReply = (call: LaptopCall) => Response | Promise<Response>
 
 export type RequestMatch = string | RegExp | ((call: LaptopCall) => boolean)
 
@@ -19,7 +20,8 @@ interface Route {
 }
 
 export interface StubbedLaptop {
-  readonly calls: LaptopCall[]
+  readonly calls: readonly LaptopCall[]
+  forgetCalls(): void
   answers(method: HttpMethod, match: RequestMatch, reply: LaptopReply): StubbedLaptop
   answersEverythingElse(reply: LaptopReply): StubbedLaptop
   writes(): LaptopCall[]
@@ -42,6 +44,9 @@ export function stubLaptop(): StubbedLaptop {
       fallback = reply
       return laptop
     },
+    forgetCalls() {
+      calls.splice(0)
+    },
     writes() {
       return calls.filter((call) => call.method !== 'GET')
     },
@@ -58,7 +63,12 @@ export function stubLaptop(): StubbedLaptop {
   vi.stubGlobal(
     'fetch',
     vi.fn((url: string, init?: RequestInit): Promise<Response> => {
-      const call: LaptopCall = { url, method: init?.method ?? 'GET', body: bodyOf(init) }
+      const call: LaptopCall = {
+        url,
+        method: init?.method ?? 'GET',
+        body: bodyOf(init),
+        signal: init?.signal ?? undefined,
+      }
       calls.push(call)
       const route = routes.find((candidate) => isMatching(candidate, call))
       const reply = route?.reply ?? fallback
@@ -67,7 +77,7 @@ export function stubLaptop(): StubbedLaptop {
           new TypeError(`the stubbed laptop has no answer for ${call.method} ${call.url}`),
         )
       }
-      return Promise.resolve(reply(call, init?.signal ?? undefined))
+      return Promise.resolve(reply(call))
     }),
   )
   return laptop
@@ -90,10 +100,10 @@ export function refusal(
 
 export function inTurn(...replies: LaptopReply[]): LaptopReply {
   let position = 0
-  return (call, signal) => {
+  return (call) => {
     const reply = replies[Math.min(position, replies.length - 1)]
     position += 1
-    return reply(call, signal)
+    return reply(call)
   }
 }
 
@@ -102,9 +112,9 @@ export function noConnection(): LaptopReply {
 }
 
 export function heldUntil(released: Promise<unknown>, reply: LaptopReply): LaptopReply {
-  return async (call, signal) => {
+  return async (call) => {
     await released
-    return reply(call, signal)
+    return reply(call)
   }
 }
 
@@ -122,9 +132,9 @@ export function aHold(): Hold {
 }
 
 export function neverAnswers(): LaptopReply {
-  return (_call, signal) =>
+  return (call) =>
     new Promise<Response>((_resolve, reject) => {
-      signal?.addEventListener('abort', () => {
+      call.signal?.addEventListener('abort', () => {
         reject(new DOMException('The request was aborted', 'AbortError'))
       })
     })

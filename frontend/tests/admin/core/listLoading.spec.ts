@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
-import { loadAdminList } from '../../../src/admin/core/adminList'
+import { loadAdminList } from '../../../src/admin/core/listLoading'
 import { createLatestRequestGate, type LatestRequestGate } from '../../../src/shared/core/latestRequestGate'
 import { aHold, answer, heldUntil, stubLaptop } from '../../support/laptop'
 

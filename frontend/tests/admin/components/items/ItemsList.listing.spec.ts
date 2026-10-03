@@ -123,7 +123,7 @@ describe('the item list while the running festival changes', () => {
         },
       ],
     }
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     await useAdminFestivalsStore().load()
 
@@ -144,7 +144,7 @@ describe('the item list while the running festival changes', () => {
     )
 
     scenario.festivals = { festivals: [{ ...ONE_FESTIVAL.festivals[0], isRunning: false }] }
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     await useAdminFestivalsStore().load()
 

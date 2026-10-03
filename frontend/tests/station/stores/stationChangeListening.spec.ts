@@ -47,7 +47,7 @@ describe('a production location the admin renamed or switched off', () => {
     const laptop = stationLaptop()
     useCatalogStore().listen()
     await useConnectionStore().connect({ deviceToken: 'token-here' })
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('ConfigurationChanged')
     await letTheReloadFinish()
@@ -59,7 +59,7 @@ describe('a production location the admin renamed or switched off', () => {
     const laptop = stationLaptop()
     useStationStore().listen()
     await useConnectionStore().connect({ deviceToken: 'token-here' })
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('ConfigurationChanged')
     await letTheReloadFinish()
@@ -72,7 +72,7 @@ describe('a production location the admin renamed or switched off', () => {
     const stopListening = useStationStore().listen()
     await useConnectionStore().connect({ deviceToken: 'token-here' })
     stopListening()
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('ConfigurationChanged')
     await letTheReloadFinish()
@@ -96,7 +96,7 @@ describe('a change to the orders at a station', () => {
     const laptop = stationLaptop()
     useStationStore().listen()
     await useConnectionStore().connect({ deviceToken: 'token-here' })
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('OrdersChanged')
     await letTheReloadFinish()
@@ -110,7 +110,7 @@ describe('a change to the orders at a station', () => {
     station.listen()
     await useConnectionStore().connect({ deviceToken: 'token-here' })
     await station.openFulfilled()
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('OrdersChanged')
     await letTheReloadFinish()
@@ -122,7 +122,7 @@ describe('a change to the orders at a station', () => {
     const laptop = stationLaptop()
     useStationStore().listen()
     await useConnectionStore().connect({ deviceToken: 'token-here' })
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('OrdersChanged')
     await letTheReloadFinish()

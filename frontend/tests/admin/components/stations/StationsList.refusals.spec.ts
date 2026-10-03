@@ -105,7 +105,7 @@ describe('the station screen the admin has left', () => {
     const list = mountList()
     await vi.waitFor(() => expect(list.find('[data-test="station-row"]').exists()).toBe(true))
     list.unmount()
-    laptop.calls.length = 0
+    laptop.forgetCalls()
     await useConnectionStore().refetchAll()
 
     expect(laptop.urls()).toEqual([])

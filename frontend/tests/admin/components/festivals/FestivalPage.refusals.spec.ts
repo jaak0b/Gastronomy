@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { AdminItemView } from '../../../../src/shared/api/generatedSchemas'
+import type { AdminItemView } from '../../../../src/shared/api/generatedSchemas'
 import { useConnectionStore } from '../../../../src/shared/stores/connection'
 import { FESTIVAL_ID, KITCHEN_ID, BAR_ID, SAUSAGE_ID, BEER_ID, KITCHEN, BAR, SAUSAGE, BEER, mountPage, openPlacementDialog, itemRow, stationBox, openRowStations, openDialogStations, festivalLaptop } from './festivalPageFixture'
 import { onScreen, typeInto } from '../../../support/dom'
+import { aHold, answer, heldUntil, inTurn } from '../../../support/laptop'
 import { nextTick } from 'vue'
 
 beforeEach(() => {
@@ -93,20 +94,12 @@ describe('an item change the laptop refuses', () => {
   })
 
   it('sends a second change to the same row only once the first one is answered', async () => {
-    let releaseTheFirstAnswer = (): void => {}
-    const theFirstAnswer = new Promise<void>((carryOn) => {
-      releaseTheFirstAnswer = carryOn
-    })
-    let held = false
-    const laptop = festivalLaptop({
-      stations: [KITCHEN, { ...BAR, isAtAnyFestival: true }],
-      waitBeforeAnswering: async (call) => {
-        if (call.method === 'PUT' && !held) {
-          held = true
-          await theFirstAnswer
-        }
-      },
-    })
+    const theFirstAnswer = aHold()
+    const laptop = festivalLaptop({ stations: [KITCHEN, { ...BAR, isAtAnyFestival: true }] }).answers(
+      'PUT',
+      `/api/admin/festivals/${FESTIVAL_ID}/items`,
+      inTurn(heldUntil(theFirstAnswer.released, answer({})), answer({})),
+    )
 
     const page = mountPage()
     await vi.waitFor(() =>
@@ -118,7 +111,7 @@ describe('an item change the laptop refuses', () => {
 
     expect(laptop.writes().length).toBe(1)
 
-    releaseTheFirstAnswer()
+    theFirstAnswer.release()
     await vi.waitFor(() => expect(laptop.writes().length).toBe(2))
     await new Promise((carryOn) => setTimeout(carryOn, 20))
 
@@ -165,10 +158,7 @@ describe('an item change the laptop refuses', () => {
   })
 
   it('keeps a refusal on the row whose save the laptop refused while a later row saves at the same time', async () => {
-    let releaseTheRefusedAnswer = (): void => {}
-    const theRefusedAnswer = new Promise<void>((carryOn) => {
-      releaseTheRefusedAnswer = carryOn
-    })
+    const theRefusedAnswer = aHold()
     const listed: AdminItemView[] = [
       {
         ...SAUSAGE,
@@ -181,14 +171,7 @@ describe('an item change the laptop refuses', () => {
     ]
     const laptop = festivalLaptop({
       items: listed,
-      refuses: (call) =>
-        call.method === 'PUT' && call.url.endsWith(`/items/${BEER_ID}`)
-          ? { status: REFUSED_PUT.status, body: REFUSED_PUT.body }
-          : null,
       waitBeforeAnswering: async (call) => {
-        if (call.method === 'PUT' && call.url.endsWith(`/items/${BEER_ID}`)) {
-          await theRefusedAnswer
-        }
         if (call.method === 'PUT' && call.url.endsWith(`/items/${SAUSAGE_ID}`)) {
           const body = call.body as { priceCents: number }
           listed[0].atTheFestival = {
@@ -198,7 +181,11 @@ describe('an item change the laptop refuses', () => {
           }
         }
       },
-    })
+    }).answers(
+      'PUT',
+      `/api/admin/festivals/${FESTIVAL_ID}/items/${BEER_ID}`,
+      heldUntil(theRefusedAnswer.released, answer(REFUSED_PUT.body, REFUSED_PUT.status)),
+    )
 
     const page = mountPage()
     await vi.waitFor(() => expect(page.findAll('[data-test="festival-item-row"]').length).toBe(2))
@@ -209,7 +196,7 @@ describe('an item change the laptop refuses', () => {
     await itemRow(page, SAUSAGE_ID).get('[data-test="price-field"] input').trigger('blur')
     await vi.waitFor(() => expect(laptop.writes().length).toBe(2))
 
-    releaseTheRefusedAnswer()
+    theRefusedAnswer.release()
     await vi.waitFor(() => expect(page.findAll('[data-test="festival-item-row"] [data-test="refusal"]').length).toBe(1))
 
     expect(itemRow(page, BEER_ID).get('[data-test="refusal"]').text()).toBe(REFUSAL_TEXT)

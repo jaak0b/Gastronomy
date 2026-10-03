@@ -1,21 +1,17 @@
 import { ref, type Ref } from 'vue'
 import type { z } from 'zod'
-import { request, requestAction } from '../../shared/api/client'
 import { assertNever } from '../../shared/core/assertNever'
-import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { adminFailed, adminOk, type AdminActionResult } from '../core/adminActionResult'
-import { loadAdminList } from '../core/adminList'
-import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
-import { createPendingCreatedEntities } from '../core/pendingCreatedEntities'
+import { defineAdminList } from './adminList'
 
-export interface FestivalScopedListDefinition<TEntry, TListResponse, TDraft> {
+export interface FestivalScopedListDefinition<TEntry, TListResponse, TDraft, TBody> {
   path: string
   listSchema: z.ZodType<TListResponse>
   entrySchema: z.ZodType<TEntry>
   entriesOf: (response: TListResponse) => TEntry[]
   idOf: (entry: TEntry) => string
   draftIdOf: (draft: TDraft) => string | undefined
-  requestBodyOf: (draft: TDraft) => Record<string, unknown>
+  requestBodyOf: (draft: TDraft) => TBody
 }
 
 export interface FestivalScopedList<TEntry, TDraft> {
@@ -29,45 +25,36 @@ export interface FestivalScopedList<TEntry, TDraft> {
   setActive: (id: string, isActive: boolean) => Promise<AdminActionResult<null>>
 }
 
-export function defineFestivalScopedList<TEntry, TListResponse, TDraft>(
-  definition: FestivalScopedListDefinition<TEntry, TListResponse, TDraft>,
+export function defineFestivalScopedList<TEntry, TListResponse, TDraft, TBody>(
+  definition: FestivalScopedListDefinition<TEntry, TListResponse, TDraft, TBody>,
 ): FestivalScopedList<TEntry, TDraft> {
-  const entries = ref<TEntry[]>([]) as Ref<TEntry[]>
-  const loadFailed = ref(false)
   const festivalInView = ref<string | null>(null)
-
-  const entriesGate = createLatestRequestGate()
-  const pendingCreatedEntries = createPendingCreatedEntities<TEntry>(definition.idOf)
-
-  async function loadEntriesFrom(path: string): Promise<void> {
-    await loadAdminList({
-      path,
-      schema: definition.listSchema,
-      gate: entriesGate,
-      itemsOf: definition.entriesOf,
-      showItems: (loaded) => {
-        entries.value = pendingCreatedEntries.mergeInto(loaded)
-      },
-      setLoadFailed: (failed) => {
-        loadFailed.value = failed
-      },
+  const { entries, loadFailed, loadFrom, forgetCreatedEntries, create, update, setActive } =
+    defineAdminList({
+      path: definition.path,
+      listSchema: definition.listSchema,
+      entrySchema: definition.entrySchema,
+      entriesOf: definition.entriesOf,
+      idOf: definition.idOf,
+      requestBodyOf: definition.requestBodyOf,
+      reloadAfterWriting: reload,
+      currentView: () => festivalInView.value,
     })
-  }
 
   async function load(): Promise<void> {
     if (festivalInView.value !== null) {
-      pendingCreatedEntries.clear()
+      forgetCreatedEntries()
     }
     festivalInView.value = null
-    await loadEntriesFrom(definition.path)
+    await loadFrom(definition.path)
   }
 
   async function loadAtTheFestival(festivalId: string): Promise<void> {
     if (festivalInView.value !== festivalId) {
-      pendingCreatedEntries.clear()
+      forgetCreatedEntries()
     }
     festivalInView.value = festivalId
-    await loadEntriesFrom(`${definition.path}?festivalId=${festivalId}`)
+    await loadFrom(`${definition.path}?festivalId=${festivalId}`)
   }
 
   async function reload(): Promise<void> {
@@ -77,23 +64,6 @@ export function defineFestivalScopedList<TEntry, TListResponse, TDraft>(
       return
     }
     await loadAtTheFestival(festivalId)
-  }
-
-  async function create(draft: TDraft): Promise<AdminActionResult<TEntry>> {
-    const scopeAtStart = festivalInView.value
-    const result = await request(definition.path, {
-      method: 'POST',
-      body: definition.requestBodyOf(draft),
-      schema: definition.entrySchema,
-    })
-    if (result.kind !== 'ok') {
-      return adminFailureFrom(result)
-    }
-    if (scopeAtStart === festivalInView.value) {
-      pendingCreatedEntries.remember(result.data)
-      entries.value = pendingCreatedEntries.mergeInto(entries.value)
-    }
-    return adminOk(result.data)
   }
 
   async function save(draft: TDraft): Promise<AdminActionResult<null>> {
@@ -109,26 +79,7 @@ export function defineFestivalScopedList<TEntry, TListResponse, TDraft>(
           return assertNever(created)
       }
     }
-    return await reloadOrFailureOf(
-      await requestAction(`${definition.path}/${id}`, {
-        method: 'PUT',
-        body: definition.requestBodyOf(draft),
-      }),
-      reload,
-    )
-  }
-
-  async function setActive(id: string, isActive: boolean): Promise<AdminActionResult<null>> {
-    if (isActive) {
-      return await reloadOrFailureOf(
-        await requestAction(`${definition.path}/${id}/activate`, { method: 'POST' }),
-        reload,
-      )
-    }
-    return await reloadOrFailureOf(
-      await requestAction(`${definition.path}/${id}/deactivate`, { method: 'POST' }),
-      reload,
-    )
+    return await update(id, draft)
   }
 
   return { entries, loadFailed, load, loadAtTheFestival, reload, create, save, setActive }

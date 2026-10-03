@@ -109,7 +109,7 @@ describe('the waiting times a phone follows while it takes orders', () => {
     const laptop = laptopWithNoWaitingTimes()
     useEstimatesStore().listen()
     await useConnectionStore().connect({ deviceToken: 'token-here' })
-    laptop.calls.length = 0
+    laptop.forgetCalls()
     return laptop
   }
 
@@ -144,7 +144,7 @@ describe('the waiting times a phone follows while it takes orders', () => {
     const stopListening = useEstimatesStore().listen()
     await useConnectionStore().connect({ deviceToken: 'token-here' })
     stopListening()
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('ConfigurationChanged')
     await flushPromises()
@@ -226,7 +226,7 @@ describe('the waiting time the laptop calculates for the order on the screen', (
     estimates.listen()
     await useConnectionStore().connect({ deviceToken: 'token-here' })
     await estimates.quote(TWO_BRATWURST)
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('OrdersChanged')
     await flushPromises()
@@ -241,7 +241,7 @@ describe('the waiting time the laptop calculates for the order on the screen', (
     await useConnectionStore().connect({ deviceToken: 'token-here' })
     await estimates.quote(TWO_BRATWURST)
     estimates.stopQuoting()
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('OrdersChanged')
     await flushPromises()

@@ -1,12 +1,15 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { requestAction } from '../../shared/api/client'
-import { AdminFestivalListView, AdminFestivalView } from '../../shared/api/generatedSchemas'
+import {
+  AdminFestivalListView,
+  AdminFestivalView,
+  type SaveFestivalRequest,
+} from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
 import { reloadOrFailureOf } from '../core/adminMutation'
-import { loadAdminList } from '../core/adminList'
-import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { useConnectionStore } from '../../shared/stores/connection'
+import { defineAdminList } from './adminList'
 
 export interface FestivalDraft {
   name: string
@@ -14,11 +17,25 @@ export interface FestivalDraft {
   endsAtUtc: string
 }
 
-export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
-  const festivals = ref<AdminFestivalView[]>([])
-  const loadFailed = ref(false)
+function buildFestivalRequestBody(draft: FestivalDraft): SaveFestivalRequest {
+  return { name: draft.name, startsAtUtc: draft.startsAtUtc, endsAtUtc: draft.endsAtUtc }
+}
 
-  const festivalsGate = createLatestRequestGate()
+export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
+  const {
+    entries: festivals,
+    loadFailed,
+    load,
+    createThenReload: create,
+    update,
+  } = defineAdminList({
+    path: '/api/admin/festivals',
+    listSchema: AdminFestivalListView,
+    entrySchema: AdminFestivalView,
+    entriesOf: (response) => response.festivals,
+    idOf: (festival) => festival.festivalId,
+    requestBodyOf: buildFestivalRequestBody,
+  })
 
   const shownFestivals = computed(() => festivals.value.filter((festival) => !festival.isHidden))
   const runningFestival = computed<AdminFestivalView | null>(
@@ -29,39 +46,8 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     return festivals.value.find((festival) => festival.festivalId === festivalId) ?? null
   }
 
-  async function load(): Promise<void> {
-    await loadAdminList({
-      path: '/api/admin/festivals',
-      schema: AdminFestivalListView,
-      gate: festivalsGate,
-      itemsOf: (response) => response.festivals,
-      showItems: (loaded) => {
-        festivals.value = loaded
-      },
-      setLoadFailed: (failed) => {
-        loadFailed.value = failed
-      },
-    })
-  }
-
-  function buildFestivalRequestBody(draft: FestivalDraft): FestivalDraft {
-    return { name: draft.name, startsAtUtc: draft.startsAtUtc, endsAtUtc: draft.endsAtUtc }
-  }
-
-  async function create(draft: FestivalDraft): Promise<AdminActionResult<null>> {
-    const result = await requestAction('/api/admin/festivals', {
-      method: 'POST',
-      body: buildFestivalRequestBody(draft),
-    })
-    return await reloadOrFailureOf(result, load)
-  }
-
   async function save(festivalId: string, draft: FestivalDraft): Promise<AdminActionResult<null>> {
-    const result = await requestAction(`/api/admin/festivals/${festivalId}`, {
-      method: 'PUT',
-      body: buildFestivalRequestBody(draft),
-    })
-    return await reloadOrFailureOf(result, load)
+    return await update(festivalId, draft)
   }
 
   async function copy(festivalId: string, draft: FestivalDraft): Promise<AdminActionResult<null>> {

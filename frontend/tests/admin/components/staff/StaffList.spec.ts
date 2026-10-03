@@ -293,7 +293,7 @@ describe('the waiter screen the admin has left', () => {
     await firstStaffMember(list)
 
     list.unmount()
-    laptop.calls.length = 0
+    laptop.forgetCalls()
     await useConnectionStore().refetchAll()
 
     expect(laptop.urls()).toEqual([])

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AdminCategoryView, AdminItemView } from '../../../shared/api/generatedSchemas'
+import type { AdminCategoryView, AdminItemView } from '../../../shared/api/generatedSchemas'
 import { combineReleases } from '../../../shared/core/combineReleases'
 import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
 import {
@@ -33,7 +33,7 @@ const askingAboutCategoryId = ref<string | null>(null)
 const itemSession = useEditSession<AdminItemView, AdminItemDraft>({
   saveThrough: (draft) => items.save(draft),
 })
-const categorySession = useEditSession<AdminCategoryView, AdminCategoryDraft, unknown>({
+const categorySession = useEditSession<AdminCategoryView, AdminCategoryDraft, AdminCategoryView | null>({
   saveThrough: (draft, category) =>
     category === null
       ? categories.create(draft)
@@ -64,6 +64,17 @@ const groups = computed(() =>
     (item) => item.categoryId,
     (item) => item.name,
   ),
+)
+
+const showsItemRefusal = computed(() => itemRefusalText.value !== null && !isItemDialogOpen.value)
+
+const showsCategoryRefusal = computed(
+  () => categoryRefusalText.value !== null && !isCategoryDialogOpen.value,
+)
+
+const listsFailedToLoad = computed(
+  () =>
+    items.loadFailed || categories.loadFailed || festivals.loadFailed || ingredients.loadFailed,
 )
 
 const recipeItem = computed(
@@ -184,7 +195,7 @@ onUnmounted(() => {
     </div>
 
     <v-alert
-      v-if="itemRefusalText !== null && !isItemDialogOpen"
+      v-if="showsItemRefusal"
       class="refusal mb-4"
       data-test="item-refusal"
       type="warning"
@@ -193,7 +204,7 @@ onUnmounted(() => {
       {{ itemRefusalText }}
     </v-alert>
     <v-alert
-      v-if="categoryRefusalText !== null && !isCategoryDialogOpen"
+      v-if="showsCategoryRefusal"
       class="refusal mb-4"
       data-test="category-refusal"
       type="warning"
@@ -202,9 +213,7 @@ onUnmounted(() => {
       {{ categoryRefusalText }}
     </v-alert>
     <v-alert
-      v-if="
-        items.loadFailed || categories.loadFailed || festivals.loadFailed || ingredients.loadFailed
-      "
+      v-if="listsFailedToLoad"
       class="error"
       data-test="load-failed"
       type="error"

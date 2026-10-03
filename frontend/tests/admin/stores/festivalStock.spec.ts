@@ -96,7 +96,7 @@ describe('setting the available amount', () => {
     const laptop = stockLaptop(200, { ingredientId: 'ingredient-mehl' })
     const stock = useAdminFestivalStockStore()
     await stock.loadForFestival('fest-1')
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     const result = await stock.setAvailableAmount('fest-1', 'ingredient-mehl', 5000)
 

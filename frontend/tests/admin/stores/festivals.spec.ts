@@ -194,7 +194,7 @@ describe('the running festival on the hub', () => {
     const festivals = useAdminFestivalsStore()
     festivals.listen()
     await useConnectionStore().connect({})
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('ConfigurationChanged')
 
@@ -206,7 +206,7 @@ describe('the running festival on the hub', () => {
     const festivals = useAdminFestivalsStore()
     festivals.listen()
     await useConnectionStore().connect({})
-    laptop.calls.length = 0
+    laptop.forgetCalls()
 
     fireHubEvent('OrdersChanged')
 
