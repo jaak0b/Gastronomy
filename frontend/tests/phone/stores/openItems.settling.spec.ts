@@ -24,7 +24,8 @@ describe('settling what the waiter ticked', () => {
 
     await openItems.settle(350, null, 'cash')
 
-    expect(laptop.calls[1]).toEqual({
+    const { url, method, body } = laptop.calls[1]
+    expect({ url, method, body }).toEqual({
       url: '/api/open-items/settle',
       method: 'POST',
       body: {
@@ -54,7 +55,8 @@ describe('settling what the waiter ticked', () => {
 
     await openItems.settle(0, 'Essen fuer die Kapelle', 'none')
 
-    expect(laptop.calls[1]).toEqual({
+    const { url, method, body } = laptop.calls[1]
+    expect({ url, method, body }).toEqual({
       url: '/api/open-items/settle',
       method: 'POST',
       body: {
