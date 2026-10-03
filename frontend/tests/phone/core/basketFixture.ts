@@ -1,8 +1,9 @@
 import type { DraftOrder } from '../../../src/phone/core/draftCart'
-import { CatalogView } from '../../../src/shared/api/generatedSchemas'
+import type { CatalogView } from '../../../src/shared/api/generatedSchemas'
 
 export function catalog(): CatalogView {
   return {
+    festival: null,
     categories: [
       { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },
     ],
@@ -15,6 +16,7 @@ export function catalog(): CatalogView {
         sortOrder: 1,
         isAvailable: true,
         stationIds: ['station-kueche'],
+        productionMinutes: 8,
         isQueueIndependent: false,
       },
       {
@@ -25,6 +27,7 @@ export function catalog(): CatalogView {
         sortOrder: 2,
         isAvailable: false,
         stationIds: ['station-theke-innen', 'station-theke-aussen'],
+        productionMinutes: null,
         isQueueIndependent: false,
       },
     ],
@@ -37,5 +40,5 @@ export function catalog(): CatalogView {
 }
 
 export function draftWith(lines: DraftOrder['lines']): DraftOrder {
-  return { tableName: '', lines, clientOrderId: null }
+  return { festivalId: null, tableName: '', lines, clientOrderId: null, deliveryModes: {} }
 }

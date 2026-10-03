@@ -18,6 +18,7 @@ export const WASSER = {
 export function prepareOrder() {
   const catalog = useCatalogStore()
   catalog.catalog = {
+    festival: null,
     categories: [
       { categoryId: 'category-getraenke', name: 'Getränke', colourHex: '#C62828', sortOrder: 1 },
     ],

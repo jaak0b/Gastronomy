@@ -108,6 +108,19 @@ export function heldUntil(released: Promise<unknown>, reply: LaptopReply): Lapto
   }
 }
 
+export interface Hold {
+  released: Promise<void>
+  release: () => void
+}
+
+export function aHold(): Hold {
+  const hold: Hold = { released: Promise.resolve(), release: () => undefined }
+  hold.released = new Promise<void>((resolve) => {
+    hold.release = resolve
+  })
+  return hold
+}
+
 export function neverAnswers(): LaptopReply {
   return (_call, signal) =>
     new Promise<Response>((_resolve, reject) => {

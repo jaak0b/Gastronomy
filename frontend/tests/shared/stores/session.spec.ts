@@ -8,7 +8,8 @@ import {
 } from '../../../src/phone/core/draftCart'
 import { useOrderStore } from '../../../src/phone/stores/order'
 import { request } from '../../../src/shared/api/client'
-import { stubLaptop, answer } from '../../support/laptop'
+import { PlacedOrderView } from '../../../src/shared/api/generatedSchemas'
+import { stubLaptop, answer, type StubbedLaptop } from '../../support/laptop'
 
 function withBrowserLanguage(language: string): void {
   vi.stubGlobal('navigator', { language, userAgent: 'test' })
@@ -61,25 +62,17 @@ describe('setting a phone up for a waiter who is not on the list yet', () => {
   })
 
   it('sends the name the waiter typed along with the code', async () => {
-    const bodies: unknown[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, options?: RequestInit) => {
-        bodies.push(JSON.parse(String(options?.body ?? 'null')))
-        return new Response(
-          JSON.stringify({
-            deviceToken: 'token-1',
-            staffMember: { id: 'staff-1', name: 'Bernd' },
-            language: 'de',
-          }),
-          { status: 200 },
-        )
+    const laptop = stubLaptop().answersEverythingElse(
+      answer({
+        deviceToken: 'token-1',
+        staffMember: { id: 'staff-1', name: 'Bernd' },
+        language: 'de',
       }),
     )
 
     await useSessionStore().redeem({ code: 'abc123', name: 'Bernd' })
 
-    expect(bodies).toEqual([
+    expect(laptop.writtenBodies()).toEqual([
       {
         code: 'abc123',
         name: 'Bernd',
@@ -100,34 +93,25 @@ describe('the token a browser gives up when it redeems a code', () => {
     vi.unstubAllGlobals()
   })
 
-  function aLaptopThatTakesTheCode(): unknown[] {
-    const bodies: unknown[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, options?: RequestInit) => {
-        bodies.push(JSON.parse(String(options?.body ?? 'null')))
-        return new Response(
-          JSON.stringify({
-            deviceId: 'device-of-the-phone',
-            deviceToken: 'token-of-the-phone',
-            staffMember: { id: 'staff-1', name: 'Anna' },
-            station: null,
-            language: 'de',
-          }),
-          { status: 200 },
-        )
+  function aLaptopThatTakesTheCode(): StubbedLaptop {
+    return stubLaptop().answersEverythingElse(
+      answer({
+        deviceId: 'device-of-the-phone',
+        deviceToken: 'token-of-the-phone',
+        staffMember: { id: 'staff-1', name: 'Anna' },
+        station: null,
+        language: 'de',
       }),
     )
-    return bodies
   }
 
   it('is the one in the browser storage, so the laptop can retire it', async () => {
     localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.of-the-tablet')
-    const bodies = aLaptopThatTakesTheCode()
+    const laptop = aLaptopThatTakesTheCode()
 
     await useSessionStore().redeem({ code: 'abc123' })
 
-    expect(bodies).toEqual([
+    expect(laptop.writtenBodies()).toEqual([
       {
         code: 'abc123',
         name: null,
@@ -165,7 +149,12 @@ describe('a phone the laptop does not know any more', () => {
     session.watchForBeingSignedOut()
     aLaptopThatRefusesTheToken()
 
-    await request('/api/orders', { method: 'POST', body: {}, token: session.deviceToken })
+    await request('/api/orders', {
+      method: 'POST',
+      body: {},
+      token: session.deviceToken,
+      schema: PlacedOrderView,
+    })
     return session
   }
 
@@ -230,7 +219,12 @@ describe('a phone that is signed out while a reason stands on the order screen',
     session.watchForBeingSignedOut()
     stubLaptop().answersEverythingElse(answer({}, 401))
 
-    await request('/api/orders', { method: 'POST', body: {}, token: session.deviceToken })
+    await request('/api/orders', {
+      method: 'POST',
+      body: {},
+      token: session.deviceToken,
+      schema: PlacedOrderView,
+    })
     return order
   }
 

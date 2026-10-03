@@ -4,6 +4,7 @@ import { CatalogView } from '../../../src/shared/api/generatedSchemas'
 import { saveDraft } from '../../../src/phone/core/draftCart'
 import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useOrderStore } from '../../../src/phone/stores/order'
+import { answer, inTurn, noConnection, stubLaptop, type StubbedLaptop } from '../../support/laptop'
 
 const BRATWURST_ID = 'bratwurst'
 const BIER_ID = 'bier'
@@ -79,33 +80,22 @@ interface SubmittedItem {
 }
 
 describe('a retry after the article left the menu', () => {
-  let submittedItems: SubmittedItem[][]
+  let laptop: StubbedLaptop
 
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
-    submittedItems = []
-    let attempt = 0
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_input: unknown, init?: RequestInit) => {
-        attempt += 1
-        const body = JSON.parse(String(init?.body)) as { items: SubmittedItem[] }
-        submittedItems.push(body.items)
-        if (attempt === 1) {
-          throw new TypeError('Failed to fetch')
-        }
-        return new Response(
-          JSON.stringify({
-            orderId: 'order-1',
-            globalOrderNumber: 7,
-            totalCents: 0,
-            createdAtUtc: '2026-09-05T18:00:00Z',
-            stationOrders: [],
-          }),
-          { status: 200 },
-        )
-      }),
+    laptop = stubLaptop().answersEverythingElse(
+      inTurn(
+        noConnection(),
+        answer({
+          orderId: 'order-1',
+          globalOrderNumber: 7,
+          totalCents: 0,
+          createdAtUtc: '2026-09-05T18:00:00Z',
+          stationOrders: [],
+        }),
+      ),
     )
   })
 
@@ -126,34 +116,26 @@ describe('a retry after the article left the menu', () => {
 
     await order.sendAgain()
 
-    expect(submittedItems).toHaveLength(2)
-    expect((submittedItems[1] ?? []).map((item) => item.unitPriceCents)).toEqual([
+    expect(laptop.writtenBodies()).toHaveLength(2)
+    expect((laptop.writtenBodies()[1] as { items: SubmittedItem[] }).items.map((item) => item.unitPriceCents)).toEqual([
       250, 250, 250, 300, 300,
     ])
   })
 })
 
 describe('a send after the article left the menu while the send sheet was open', () => {
-  let submittedItems: SubmittedItem[][]
+  let laptop: StubbedLaptop
 
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
-    submittedItems = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_input: unknown, init?: RequestInit) => {
-        submittedItems.push((JSON.parse(String(init?.body)) as { items: SubmittedItem[] }).items)
-        return new Response(
-          JSON.stringify({
-            orderId: 'order-1',
-            globalOrderNumber: 7,
-            totalCents: 0,
-            createdAtUtc: '2026-09-05T18:00:00Z',
-            stationOrders: [],
-          }),
-          { status: 200 },
-        )
+    laptop = stubLaptop().answersEverythingElse(
+      answer({
+      orderId: 'order-1',
+      globalOrderNumber: 7,
+      totalCents: 0,
+      createdAtUtc: '2026-09-05T18:00:00Z',
+      stationOrders: [],
       }),
     )
   })
@@ -171,7 +153,7 @@ describe('a send after the article left the menu while the send sheet was open',
     catalog.catalog = menuAfterSpeisenWasSwitchedOff()
     await order.send('leaveOpen')
 
-    expect(submittedItems).toEqual([])
+    expect(laptop.writtenBodies()).toEqual([])
     expect(order.hasLinesThatCannotBeOrdered).toBe(true)
     expect(order.draft.lines).toHaveLength(5)
   })

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminIngredientsStore } from '../../../src/admin/stores/ingredients'
-import { stubLaptop, answer, type StubbedLaptop } from '../../support/laptop'
+import { aHold, answer, heldUntil, inTurn, stubLaptop, type StubbedLaptop } from '../../support/laptop'
 
 const FLOUR = { ingredientId: 'ingredient-mehl', name: 'Mehl', unit: 'gram', isActive: true }
 const BUN = { ingredientId: 'ingredient-broetchen', name: 'Brötchen', unit: 'piece', isActive: true }
@@ -49,27 +49,18 @@ describe('the ingredient list of the admin', () => {
   })
 
   it('keeps the newer answer when an older read arrives later', async () => {
-    let answerTheFirstRead: (response: Response) => void = () => undefined
-    let reads = 0
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => {
-        reads += 1
-        if (reads === 1) {
-          return new Promise<Response>((resolve) => {
-            answerTheFirstRead = resolve
-          })
-        }
-        return Promise.resolve(
-          new Response(JSON.stringify({ ingredients: [BUN, FLOUR] }), { status: 200 }),
-        )
-      }),
+    const theFirstRead = aHold()
+    stubLaptop().answersEverythingElse(
+      inTurn(
+        heldUntil(theFirstRead.released, answer({ ingredients: [] })),
+        answer({ ingredients: [BUN, FLOUR] }),
+      ),
     )
     const ingredients = useAdminIngredientsStore()
 
     const firstRead = ingredients.load()
     await ingredients.load()
-    answerTheFirstRead(new Response(JSON.stringify({ ingredients: [] }), { status: 200 }))
+    theFirstRead.release()
     await firstRead
 
     expect(ingredients.ingredients).toEqual([BUN, FLOUR])

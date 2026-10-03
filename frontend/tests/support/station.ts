@@ -1,6 +1,6 @@
-import { StationOrderQueueView, StationQueueItemView } from '../../../src/shared/api/generatedSchemas'
-import { useSessionStore } from '../../../src/shared/stores/session'
-import { answer, type LaptopReply } from '../../support/laptop'
+import type { StationOrderQueueView, StationQueueItemView } from '../../src/shared/api/generatedSchemas'
+import { useSessionStore } from '../../src/shared/stores/session'
+import { answer, type LaptopReply } from './laptop'
 
 export const KITCHEN = { id: 'station-kueche', name: 'Küche' }
 

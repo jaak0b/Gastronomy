@@ -35,6 +35,7 @@ export const BRATWURST: AdminItemView = {
   productionMinutes: 15,
   isQueueIndependent: false,
   atTheFestival: { priceCents: 350, isAvailable: true, stationIds: ['station-kueche'] },
+  ingredients: [],
 }
 
 export function mountDialog(item: AdminItemView | null = null, locale: 'de' | 'en' = 'de'): VueWrapper {
@@ -45,12 +46,12 @@ export function mountDialog(item: AdminItemView | null = null, locale: 'de' | 'e
   })
 }
 
-export async function pressSave(dialog: VueWrapper): Promise<void> {
+export async function pressSave(): Promise<void> {
   ;(document.querySelector('[data-test="form-save"]') as HTMLElement).click()
   await nextTick()
 }
 
-export function pressEnterInTheMinutes(dialog: VueWrapper): void {
+export function pressEnterInTheMinutes(): void {
   inputOf('[data-test="production-minutes-field"]').dispatchEvent(
     new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
   )

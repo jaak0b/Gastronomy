@@ -148,12 +148,16 @@ copy of anything listed here.
   `emptyAnswer(status)`, `refusal(messageKey, { status, code, parameters })`, `noConnection()`,
   `neverAnswers()`, `inTurn(...)` and `heldUntil(promise, reply)`. `stubLaptopAt(repliesByUrl)` and
   `stubLaptopAnswering(payloadFor)` cover the two common table shapes.
+  `aHold()` gives a reply gate for `heldUntil`: pass its `released` promise and call `release()` when
+  the test wants the laptop to answer.
 - `dom.ts` finds and drives elements: `onScreen`, `allOnScreen`, `isOnScreen`, `textOnScreen`,
   `inputOf`, `typeInto`, `typeIn`, `leave`, `clickOn`, `waitUntil`, and the confirmation dialog helpers
   `openDialog`, `waitForDialog`, `dialogText` and `pressInDialog`.
 - `formDialogs.ts` fills and saves or cancels the admin form dialogs.
 - `wireViews.ts` holds the factories for the wire views used most: `anAdminItem`, `aFestival`,
   `anAdminStation`, `anOpenItem`, `anOpenItemsTable`, `aQueuedItem` and `aStationOrder`.
+- `station.ts` holds the station tablet scenario: `KITCHEN`, `item`, `stationOrder`, `aQueue` and
+  `enrolledStationTablet()`.
 - `plugins.ts` gives `testPlugins(locale)` for mounting, `mountApp.ts` mounts the whole app,
   `hubConnection.ts` fakes the SignalR hub, and `sourceFiles.ts` lists source files for the specs
   that scan the source tree.

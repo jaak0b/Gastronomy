@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { stubLaptop, answer } from './support/laptop'
+import { stubLaptop, stubLaptopAt, answer } from './support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('./support/hubConnection')).signalrModuleFake())
 
@@ -44,29 +44,12 @@ const CATALOG = {
 let phone: ReturnType<typeof mount> | null = null
 
 function aLaptopThatForgotThisPhoneAfterItStarted(): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string) => {
-      if (url === '/api/orders') {
-        return new Response('{}', { status: 401 })
-      }
-      if (url === '/api/catalog') {
-        return new Response(JSON.stringify(CATALOG), { status: 200 })
-      }
-      if (url === '/api/session') {
-        return new Response(JSON.stringify(SESSION), { status: 200 })
-      }
-      if (url === '/api/enrolment/redeem') {
-        return new Response(
-          JSON.stringify({ ...SESSION, deviceToken: 'token-from-the-fresh-code' }),
-          { status: 200 },
-        )
-      }
-      return new Response(JSON.stringify({ stations: [], tableNames: [] }), {
-        status: 200,
-      })
-    }),
-  )
+  stubLaptopAt({
+    '/api/orders': answer({}, 401),
+    '/api/catalog': answer(CATALOG),
+    '/api/session': answer(SESSION),
+    '/api/enrolment/redeem': answer({ ...SESSION, deviceToken: 'token-from-the-fresh-code' }),
+  }).answersEverythingElse(answer({ stations: [], tableNames: [] }))
 }
 
 async function aPhoneOnTheSummaryWithAnOrderOnIt() {

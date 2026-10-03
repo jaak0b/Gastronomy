@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import Review from '../../../src/phone/views/Review.vue'
@@ -99,7 +99,7 @@ describe('an order holding something that cannot be ordered', () => {
     const review = mountReview()
 
     expect(review.find('[data-test="send-and-settle-later"]').exists()).toBe(false)
-    expect(review.get('[data-test="drop-lines-that-cannot-be-ordered"]').exists()).toBe(true)
+    expect(review.find('[data-test="drop-lines-that-cannot-be-ordered"]').exists()).toBe(true)
   })
 
   it('offers only the way to take the vanished item off, not a way to send', () => {
@@ -107,7 +107,7 @@ describe('an order holding something that cannot be ordered', () => {
     const review = mountReview()
 
     expect(review.find('[data-test="send-and-settle-later"]').exists()).toBe(false)
-    expect(review.get('[data-test="drop-lines-that-cannot-be-ordered"]').exists()).toBe(true)
+    expect(review.find('[data-test="drop-lines-that-cannot-be-ordered"]').exists()).toBe(true)
   })
 
   it('leaves the way to send open while the whole order can be ordered', () => {
@@ -177,7 +177,7 @@ describe('an order holding a line the admin moved to another station', () => {
     const review = mountReview()
 
     expect(review.find('[data-test="send-and-settle-later"]').exists()).toBe(false)
-    expect(review.get('[data-test="drop-lines-that-cannot-be-ordered"]').exists()).toBe(true)
+    expect(review.find('[data-test="drop-lines-that-cannot-be-ordered"]').exists()).toBe(true)
   })
 
   it('marks the line as sold out on the card of the station that no longer prepares it', () => {

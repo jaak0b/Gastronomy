@@ -8,7 +8,7 @@ import { navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
 import { stubLaptop, answer } from '../../support/laptop'
 import { nextTick } from 'vue'
-import { mountCatalog, MountedCatalog, openCategory, itemRowNamed, tapToAdd, stationChoiceNamed, goBackToTheCategories, CATALOG_WITH_A_STATION_CHOICE } from './catalogFixture'
+import { mountCatalog, type MountedCatalog, openCategory, itemRowNamed, tapToAdd, stationChoiceNamed, goBackToTheCategories, CATALOG_WITH_A_STATION_CHOICE } from './catalogFixture'
 
 enableAutoUnmount(afterEach)
 

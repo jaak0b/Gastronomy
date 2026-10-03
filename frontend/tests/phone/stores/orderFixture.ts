@@ -3,6 +3,7 @@ import { CatalogView } from '../../../src/shared/api/generatedSchemas'
 
 export function menuWithWaterAtTheBar(): CatalogView {
   return {
+    festival: null,
     categories: [],
     items: [
       {

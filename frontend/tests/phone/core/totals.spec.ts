@@ -9,21 +9,23 @@ function basketLine(unitPriceCents: number | null): BasketLineView {
     unitPriceCents,
     note: null,
     stationId: null,
+    stationName: '',
     candidateStationIds: ['station-1'],
     isSoldOut: false,
     isNoLongerOnTheMenu: false,
+    isNoLongerPreparedAtItsStation: false,
   }
 }
 
 describe('collapsedTotalCents', () => {
   it('charges three of an item at three times its price', () => {
-    const total = collapsedTotalCents({ line: basketLine(350), quantity: 3 })
+    const total = collapsedTotalCents({ key: 'Bratwurst', line: basketLine(350), quantity: 3 })
 
     expect(total).toBe(1050)
   })
 
   it('charges one of an item at its price', () => {
-    const total = collapsedTotalCents({ line: basketLine(350), quantity: 1 })
+    const total = collapsedTotalCents({ key: 'Bratwurst', line: basketLine(350), quantity: 1 })
 
     expect(total).toBe(350)
   })
@@ -31,7 +33,7 @@ describe('collapsedTotalCents', () => {
 
 describe('a line whose item has left the menu', () => {
   it('has no price of its own to put beside it', () => {
-    const total = collapsedTotalCents({ line: basketLine(null), quantity: 2 })
+    const total = collapsedTotalCents({ key: 'Bratwurst', line: basketLine(null), quantity: 2 })
 
     expect(total).toBeNull()
   })

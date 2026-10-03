@@ -3,16 +3,11 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AdminShell from '../../../src/admin/views/AdminShell.vue'
 import { testPlugins } from '../../support/plugins'
+import { stubLaptopAnswering } from '../../support/laptop'
 
 function stubFetchWithLanguage(language: string) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string) => {
-      const payload = url.startsWith('/api/language')
-        ? { language }
-        : { festivals: [], stations: [], items: [] }
-      return new Response(JSON.stringify(payload), { status: 200 })
-    }),
+  stubLaptopAnswering((url) =>
+    url.startsWith('/api/language') ? { language } : { festivals: [], stations: [], items: [] },
   )
 }
 

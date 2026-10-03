@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import ItemDialog from '../../../../src/admin/components/items/ItemDialog.vue'
 import { pressInDialog, waitForDialog } from '../../../support/dom'
 import { ITEM_ID, ONE_FESTIVAL, ONE_ITEM, DEACTIVATED_ITEM, mountList, itemsListLaptop } from './itemsListFixture'
 import { nextTick } from 'vue'

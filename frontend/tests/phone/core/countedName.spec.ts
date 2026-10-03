@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { countedName } from '../../../src/phone/core/countedName'
+import type { Translate } from '../../../src/shared/core/translation'
 
-const asked = (key: string, values: { count: number; item: string }): string =>
-  `${key} count=${values.count} item=${values.item}`
+const asked: Translate = (key, values = {}) => `${key} count=${values.count} item=${values.item}`
 
 describe('countedName', () => {
   it('asks for the wording that carries the count in front of the name', () => {

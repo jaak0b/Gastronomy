@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { answer, refusal } from '../../support/laptop'
+import { refusal } from '../../support/laptop'
 import { TOGETHER_STATION_ORDER, AS_IT_COMES_STATION_ORDER, NOTED_STATION_ORDER, queue, stationLaptop, mountPage, cardInTheQueue, itemOnCard, textsOf } from './stationPageFixture'
 
 describe('marking selected items as done from a card', () => {

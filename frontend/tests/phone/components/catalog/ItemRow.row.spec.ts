@@ -4,7 +4,7 @@ import { testPlugins } from '../../../support/plugins'
 import ItemRow from '../../../../src/phone/components/catalog/ItemRow.vue'
 import { CatalogItemView } from '../../../../src/shared/api/generatedSchemas'
 import type { ItemPosition } from '../../../../src/phone/core/itemPositions'
-import { item, plain, noted, stationNameFor, mountRow, schnitzel, at } from './itemRowFixture'
+import { plain, noted, stationNameFor, mountRow, schnitzel, at } from './itemRowFixture'
 
 enableAutoUnmount(afterEach)
 
@@ -98,6 +98,7 @@ describe('the default station shown on a plain row', () => {
       sortOrder: 1,
       isAvailable: true,
       stationIds: ['station-bar'],
+      productionMinutes: null,
       isQueueIndependent: false,
     }
   }

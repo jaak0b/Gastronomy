@@ -1,7 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminCategoriesStore } from '../../../src/admin/stores/categories'
-import { stubLaptop, answer, noConnection, stubLaptopAnswering } from '../../support/laptop'
+import {
+  aHold,
+  answer,
+  heldUntil,
+  inTurn,
+  noConnection,
+  stubLaptop,
+  stubLaptopAnswering,
+} from '../../support/laptop'
+
+const EVERY_ADDRESS = /^\/api\//
 import { DRINKS, FOOD } from './categoriesFixture'
 
 describe('renaming and recolouring a category', () => {
@@ -97,34 +107,25 @@ describe('moving a category', () => {
   })
 
   it('takes the order from a fresh read when a list read overtook the move', async () => {
-    let releaseTheMove = (): void => {}
-    const theMove = new Promise<Response>((carryOn) => {
-      releaseTheMove = () =>
-        carryOn(new Response(JSON.stringify({ categories: [FOOD, DRINKS] }), { status: 200 }))
-    })
-    let reads = 0
-    let posts = 0
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) => {
-        if ((init?.method ?? 'GET') === 'POST') {
-          posts += 1
-          return await theMove
-        }
-        reads += 1
-        return new Response(
-          JSON.stringify({ categories: reads >= 3 ? [FOOD, DRINKS] : [DRINKS, FOOD] }),
-          { status: 200 },
-        )
-      }),
-    )
+    const theMove = aHold()
+    const laptop = stubLaptop()
+      .answers(
+        'GET',
+        EVERY_ADDRESS,
+        inTurn(
+          answer({ categories: [DRINKS, FOOD] }),
+          answer({ categories: [DRINKS, FOOD] }),
+          answer({ categories: [FOOD, DRINKS] }),
+        ),
+      )
+      .answers('POST', EVERY_ADDRESS, heldUntil(theMove.released, answer({ categories: [FOOD, DRINKS] })))
     const categories = useAdminCategoriesStore()
     await categories.load()
 
     const moved = categories.move(FOOD.categoryId, 'up')
-    await vi.waitFor(() => expect(posts).toBe(1))
+    await vi.waitFor(() => expect(laptop.writes()).toHaveLength(1))
     await categories.load()
-    releaseTheMove()
+    theMove.release()
     await moved
 
     expect(categories.categories.map((category) => category.name)).toEqual([
@@ -146,34 +147,36 @@ describe('moving a category', () => {
   })
 
   it('waits for one move to be answered before it sends the next', async () => {
-    const directions: string[] = []
-    const answers: (() => void)[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) => {
-        if ((init?.method ?? 'GET') !== 'POST') {
-          return new Response(JSON.stringify({ categories: [DRINKS, FOOD] }), { status: 200 })
-        }
-        directions.push(JSON.parse(init?.body as string).direction)
-        await new Promise<void>((answer) => answers.push(answer))
-        return new Response(JSON.stringify({ categories: [FOOD, DRINKS] }), { status: 200 })
-      }),
-    )
+    const firstAnswer = aHold()
+    const secondAnswer = aHold()
+    const laptop = stubLaptop()
+      .answersEverythingElse(answer({ categories: [DRINKS, FOOD] }))
+      .answers(
+        'POST',
+        EVERY_ADDRESS,
+        inTurn(
+          heldUntil(firstAnswer.released, answer({ categories: [FOOD, DRINKS] })),
+          heldUntil(secondAnswer.released, answer({ categories: [FOOD, DRINKS] })),
+        ),
+      )
     const categories = useAdminCategoriesStore()
 
     const firstMove = categories.move(FOOD.categoryId, 'up')
     const secondMove = categories.move(FOOD.categoryId, 'down')
-    await vi.waitFor(() => expect(answers).toHaveLength(1))
+    await vi.waitFor(() => expect(laptop.writes()).toHaveLength(1))
 
-    expect(directions).toEqual(['up'])
+    expect(laptop.writtenBodies()).toEqual([expect.objectContaining({ direction: 'up' })])
 
-    answers[0]()
-    await vi.waitFor(() => expect(answers).toHaveLength(2))
-    answers[1]()
+    firstAnswer.release()
+    await vi.waitFor(() => expect(laptop.writes()).toHaveLength(2))
+    secondAnswer.release()
     await firstMove
     await secondMove
 
-    expect(directions).toEqual(['up', 'down'])
+    expect(laptop.writtenBodies()).toEqual([
+      expect.objectContaining({ direction: 'up' }),
+      expect.objectContaining({ direction: 'down' }),
+    ])
   })
 })
 

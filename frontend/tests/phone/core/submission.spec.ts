@@ -91,6 +91,7 @@ describe('buildSubmitRequest', () => {
 
   function catalog(priceCents = 350): CatalogView {
     return {
+      festival: null,
       categories: [
         { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },
       ],
@@ -117,6 +118,7 @@ describe('buildSubmitRequest', () => {
       note,
       stationId,
       name: 'Bratwurst',
+      stationName: stationId === null ? '' : 'Kueche',
     })
     return withClientOrderIdIfMissing(setTableName(withLine, 'Tisch 12'))
   }
@@ -156,7 +158,7 @@ describe('buildSubmitRequest', () => {
 
     const request = buildSubmitRequest(ready, catalog(420), [])
 
-    expect(request.items[0].unitPriceCents).toBe(420)
+    expect(request.items?.[0].unitPriceCents).toBe(420)
   })
 
   it('sends the delivery choice the server made for each station', () => {
@@ -176,7 +178,7 @@ describe('buildSubmitRequest', () => {
 
     const request = buildSubmitRequest(ready, catalog(), [])
 
-    expect(Object.keys(request.items[0]).sort()).toEqual([
+    expect(Object.keys(request.items?.[0] ?? {}).sort()).toEqual([
       'catalogItemId',
       'note',
       'stationId',

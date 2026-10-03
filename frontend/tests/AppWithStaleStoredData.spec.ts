@@ -10,6 +10,7 @@ const { testPlugins } = await import('./support/plugins')
 const { DRAFT_STORAGE_KEY, SEND_PROGRESS_STORAGE_KEY } = await import('../src/phone/core/draftCart')
 const { LANGUAGE_STORAGE_KEY, TOKEN_STORAGE_KEY } = await import('../src/shared/stores/session')
 const { useOrderStore } = await import('../src/phone/stores/order')
+const { stubLaptop } = await import('./support/laptop')
 
 let device: ReturnType<typeof mount> | null = null
 
@@ -29,7 +30,6 @@ afterEach(() => {
 
 describe('a phone carrying values an older build left in its storage', () => {
   it('shows the enrolment screen, starts on an empty order and asks the laptop nothing', async () => {
-    const requests: string[] = []
     localStorage.setItem(DRAFT_STORAGE_KEY, '{"tableName":"Tisch 12","lines":[]}')
     localStorage.setItem(
       SEND_PROGRESS_STORAGE_KEY,
@@ -44,13 +44,7 @@ describe('a phone carrying values an older build left in its storage', () => {
     localStorage.setItem(TOKEN_STORAGE_KEY, '{"deviceToken":"from-an-old-build"}')
     localStorage.setItem(LANGUAGE_STORAGE_KEY, 'fr')
     sessionStorage.setItem('theDoorTarget', '{"route":"/review"}')
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        requests.push(url)
-        throw new TypeError('the phone must not ask the laptop anything')
-      }),
-    )
+    const laptop = stubLaptop()
 
     const order = useOrderStore()
     navigate('/')
@@ -62,6 +56,6 @@ describe('a phone carrying values an older build left in its storage', () => {
     expect(order.draft.lines).toEqual([])
     expect(order.sendState).toBe('idle')
     expect(order.changesAreRefused).toBe(false)
-    expect(requests).toEqual([])
+    expect(laptop.urls()).toEqual([])
   })
 })

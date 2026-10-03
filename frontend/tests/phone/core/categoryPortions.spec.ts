@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { countCategoryPortions } from '../../../src/phone/core/categoryPortions'
 import type { DraftLine, DraftOrder } from '../../../src/phone/core/draftCart'
-import { CatalogItemView } from '../../../src/shared/api/generatedSchemas'
+import type { CatalogItemView } from '../../../src/shared/api/generatedSchemas'
 
 const MAIN_COURSE = 'category-hauptspeise'
 const DRINKS = 'category-getraenke'
@@ -27,11 +27,11 @@ const ITEMS: CatalogItemView[] = [
 ]
 
 function line(catalogItemId: string, note: string | null = null): DraftLine {
-  return { catalogItemId, note, stationId: 'station-1', name: '' }
+  return { catalogItemId, note, stationId: 'station-1', name: '', stationName: 'Bar innen' }
 }
 
 function draftWith(lines: DraftLine[]): DraftOrder {
-  return { tableName: '', lines, clientOrderId: null, deliveryModes: {} }
+  return { festivalId: null, tableName: '', lines, clientOrderId: null, deliveryModes: {} }
 }
 
 describe('countCategoryPortions', () => {

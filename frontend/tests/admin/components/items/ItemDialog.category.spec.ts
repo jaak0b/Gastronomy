@@ -23,7 +23,7 @@ describe('the category field', () => {
     await vi.waitFor(() => expect(document.querySelector('[data-test="category-field"]')).not.toBeNull())
 
     expect(
-      dialog.getComponent(VSelect).props('items').map((category: AdminCategoryView) => category.name),
+      dialog.getComponent(VSelect).props('items')?.map((category: AdminCategoryView) => category.name),
     ).toEqual(['Speisen', 'Getränke'])
   })
 
@@ -41,7 +41,7 @@ describe('the category field', () => {
     await vi.waitFor(() => expect(document.querySelector('[data-test="category-field"]')).not.toBeNull())
     await dialog.getComponent(VSelect).setValue(DRINKS_ID)
     await nextTick()
-    await pressSave(dialog)
+    await pressSave()
 
     expect(dialog.emitted('save')?.[0]?.[0]).toMatchObject({ categoryId: DRINKS_ID })
   })
@@ -69,7 +69,7 @@ describe('the category field', () => {
     await vi.waitFor(() => expect(document.querySelector('[data-test="item-name-field"]')).not.toBeNull())
     typeInto('[data-test="item-name-field"]', 'Pommes')
     await nextTick()
-    await pressSave(dialog)
+    await pressSave()
 
     expect(document.querySelector('[data-test="category-field"] .v-messages')?.textContent).toBe(
       'Wählen Sie eine Kategorie aus, bevor Sie speichern.',
@@ -83,7 +83,7 @@ describe('the category field', () => {
     await vi.waitFor(() => expect(document.querySelector('[data-test="item-name-field"]')).not.toBeNull())
     typeInto('[data-test="item-name-field"]', 'Pommes')
     await nextTick()
-    await pressSave(dialog)
+    await pressSave()
 
     await dialog.getComponent(VSelect).setValue(DRINKS_ID)
     await nextTick()

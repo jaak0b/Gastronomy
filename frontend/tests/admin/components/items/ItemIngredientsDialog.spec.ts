@@ -30,12 +30,6 @@ const PANCAKE: AdminItemView = {
   ],
 }
 
-interface Call {
-  url: string
-  method: string
-  body: unknown
-}
-
 function recipeLaptop(refuses: (call: LaptopCall) => LaptopReply | null = () => null): StubbedLaptop {
   let eggWasCreated = false
   return stubLaptop()

@@ -87,20 +87,13 @@ describe('the catalog a phone follows while it is open', () => {
   })
 
   it('loads again when the festival starts or stops', async () => {
-    const urls: string[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        urls.push(url)
-        return new Response(JSON.stringify(FULL_CATALOG), { status: 200 })
-      }),
-    )
+    const laptop = stubLaptop().answersEverythingElse(answer(FULL_CATALOG))
     useCatalogStore().listen()
     await useConnectionStore().connect({ deviceToken: 'token-here' })
-    urls.length = 0
+    laptop.calls.length = 0
 
     fireHubEvent('ConfigurationChanged')
 
-    await vi.waitFor(() => expect(urls).toEqual(['/api/catalog']))
+    await vi.waitFor(() => expect(laptop.urls()).toEqual(['/api/catalog']))
   })
 })

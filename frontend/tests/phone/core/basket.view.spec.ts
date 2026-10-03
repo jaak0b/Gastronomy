@@ -12,6 +12,7 @@ describe('buildBasketView', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
+        stationName: '',
       },
     ])
 
@@ -40,6 +41,7 @@ describe('buildBasketView', () => {
         note: null,
         stationId: null,
         name: 'Bier',
+        stationName: '',
       },
     ])
 
@@ -57,18 +59,21 @@ describe('basketItemCount', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
+        stationName: '',
       },
       {
         catalogItemId: 'item-bratwurst',
         note: null,
         stationId: null,
         name: 'Bratwurst',
+        stationName: '',
       },
       {
         catalogItemId: 'item-bier',
         note: null,
         stationId: null,
         name: 'Bier',
+        stationName: '',
       },
     ])
 
@@ -84,6 +89,7 @@ describe('basketItemCount', () => {
         note: null,
         stationId: null,
         name: 'Currywurst',
+        stationName: '',
       },
     ])
 

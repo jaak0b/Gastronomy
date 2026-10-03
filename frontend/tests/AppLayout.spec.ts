@@ -88,6 +88,6 @@ describe('where the app bar stands', () => {
     await nextTick()
 
     expect(app.find('[data-test="app-header"]').exists()).toBe(false)
-    expect(app.get('[data-test="connection"]').exists()).toBe(true)
+    expect(app.find('[data-test="connection"]').exists()).toBe(true)
   })
 })

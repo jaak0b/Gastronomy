@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
+import { stubLaptopAnswering } from '../../support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -13,11 +14,9 @@ describe('the app puts a device behind the door as soon as its screen is on disp
     sessionStorage.setItem('theDoorAnchor', 'yes')
     window.history.replaceState({}, '', '/the-page-the-device-came-from')
     window.history.pushState({}, '', '/stations')
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        const payload = url.startsWith('/api/session')
-          ? {
+    stubLaptopAnswering((url) =>
+      url.startsWith('/api/session')
+        ? {
               deviceId: 'device-1',
               staffMember: null,
               station: { id: 's-1', name: 'Küche' },
@@ -31,9 +30,7 @@ describe('the app puts a device behind the door as soon as its screen is on disp
               asItComes: [],
               items: [],
               station: { id: 's-1', name: 'Küche' },
-            }
-        return new Response(JSON.stringify(payload), { status: 200 })
-      }),
+            },
     )
   })
 

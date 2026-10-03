@@ -99,7 +99,7 @@ describe('settling the same items again after the answer never came', () => {
   })
 
   it('does not tell the waiter to hand back the twelve euros they correctly collected', async () => {
-    const laptop = laptopAnsweringInTurn([
+    laptopAnsweringInTurn([
       answer(OPEN_LIST),
       noConnection(),
       answer(OWN_SETTLEMENT_APPLIED_AGAIN),
@@ -114,7 +114,7 @@ describe('settling the same items again after the answer never came', () => {
   })
 
   it('names the amount this phone sent for the lines somebody else had already taken', async () => {
-    const laptop = laptopAnsweringInTurn([
+    laptopAnsweringInTurn([
       answer(OPEN_LIST),
       answer(SOMEBODY_ELSE_HAD_ITEM_ONE),
       answer(LIST_AFTER_THE_SETTLEMENT),

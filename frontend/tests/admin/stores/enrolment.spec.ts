@@ -2,7 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { fetchInvitationQr, invitationQrPath } from '../../../src/admin/api/invitationQrRequests'
 import { useAdminEnrolmentStore } from '../../../src/admin/stores/enrolment'
-import { stubLaptop, refusal, noConnection, answer, type LaptopReply, type StubbedLaptop } from '../../support/laptop'
+import {
+  answer,
+  inTurn,
+  noConnection,
+  refusal,
+  stubLaptop,
+  type LaptopReply,
+  type StubbedLaptop,
+} from '../../support/laptop'
 
 const INVITATION_ID = '44444444-4444-4444-4444-444444444444'
 const STAFF_MEMBER_ID = '33333333-3333-3333-3333-333333333333'
@@ -160,37 +168,25 @@ describe('creating an invitation from the admin screen', () => {
   })
 
   it('takes the previous code off the screen when the laptop would not create a new one', async () => {
-    let wasAskedBefore = false
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        if (url.endsWith('/qr.svg')) {
-          return renderedQr()
-        }
-        if (url.endsWith('/invitations') && wasAskedBefore) {
-          return new Response(
-            JSON.stringify({
-              code: 'Conflict',
-              messageKey: 'errors.admin.actionFailed',
-              parameters: {},
-              details: null,
-            }),
-            { status: 409 },
-          )
-        }
-        wasAskedBefore = true
-        return new Response(
-          JSON.stringify({
-            invitationId: INVITATION_ID,
-            qrUrl: 'http://192.168.1.20:5000/j/CODE',
-            expiresAtUtc: '2026-08-27T20:00:00Z',
-            staffMember: null,
-            station: null,
-          }),
-          { status: 201 },
-        )
-      }),
-    )
+    stubLaptop()
+      .answers(
+        'ANY',
+        /\/invitations$/,
+        inTurn(
+          answer(
+            {
+              invitationId: INVITATION_ID,
+              qrUrl: 'http://192.168.1.20:5000/j/CODE',
+              expiresAtUtc: '2026-08-27T20:00:00Z',
+              staffMember: null,
+              station: null,
+            },
+            201,
+          ),
+          refusal('errors.admin.actionFailed'),
+        ),
+      )
+      .answers('ANY', /\/qr\.svg$/, () => renderedQr())
     const enrolment = useAdminEnrolmentStore()
     await enrolment.createInvitation({ kind: 'staffMember', staffMemberId: STAFF_MEMBER_ID })
 

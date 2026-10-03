@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminFestivalsStore } from '../../../../src/admin/stores/festivals'
-import { FESTIVAL_ID, ONE_FESTIVAL, THREE_ITEMS, mountList, itemsListLaptop, ItemsListScenario } from './itemsListFixture'
+import { FESTIVAL_ID, ONE_FESTIVAL, THREE_ITEMS, mountList, itemsListLaptop, type ItemsListScenario } from './itemsListFixture'
 
 describe('the item list', () => {
   beforeEach(() => {

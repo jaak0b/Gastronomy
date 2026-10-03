@@ -42,7 +42,7 @@ describe('the item dialog', () => {
     const dialog = mountDialog(BRATWURST)
 
     await vi.waitFor(() => expect(document.querySelector('[data-test="form-save"]')).not.toBeNull())
-    await pressSave(dialog)
+    await pressSave()
 
     expect(dialog.emitted('save')?.[0]?.[0]).toEqual({
       itemId: 'item-1',
@@ -124,7 +124,7 @@ describe('the preparation time field', () => {
     await vi.waitFor(() => expect(document.querySelector('[data-test="production-minutes-field"]')).not.toBeNull())
     typeInto('[data-test="production-minutes-field"]', '20')
     await nextTick()
-    await pressSave(dialog)
+    await pressSave()
 
     expect(dialog.emitted('save')?.[0]?.[0]).toMatchObject({ productionMinutes: 20 })
   })
@@ -135,7 +135,7 @@ describe('the preparation time field', () => {
     await vi.waitFor(() => expect(document.querySelector('[data-test="production-minutes-field"]')).not.toBeNull())
     typeInto('[data-test="production-minutes-field"]', '1,5')
     await nextTick()
-    await pressSave(dialog)
+    await pressSave()
 
     expect(dialog.emitted('save')?.[0]?.[0]).toMatchObject({ productionMinutes: 1.5 })
   })
@@ -146,7 +146,7 @@ describe('the preparation time field', () => {
     await vi.waitFor(() => expect(document.querySelector('[data-test="production-minutes-field"]')).not.toBeNull())
     typeInto('[data-test="production-minutes-field"]', '1.5')
     await nextTick()
-    await pressSave(dialog)
+    await pressSave()
 
     expect(dialog.emitted('save')?.[0]?.[0]).toMatchObject({ productionMinutes: 1.5 })
   })
@@ -157,7 +157,7 @@ describe('the preparation time field', () => {
     await vi.waitFor(() => expect(document.querySelector('[data-test="production-minutes-field"]')).not.toBeNull())
     typeInto('[data-test="production-minutes-field"]', '')
     await nextTick()
-    await pressSave(dialog)
+    await pressSave()
 
     expect(dialog.emitted('save')?.[0]?.[0]).toMatchObject({ productionMinutes: null })
   })
@@ -170,7 +170,7 @@ describe('the preparation time field', () => {
     input.focus()
     typeInto('[data-test="production-minutes-field"]', '601')
     await nextTick()
-    pressEnterInTheMinutes(dialog)
+    pressEnterInTheMinutes()
     await nextTick()
 
     expect(dialog.emitted('save')?.[0]?.[0]).toMatchObject({ productionMinutes: 600 })
@@ -186,7 +186,7 @@ describe('the preparation time field', () => {
     await nextTick()
     typeInto('[data-test="production-minutes-field"]', '10')
     await nextTick()
-    pressEnterInTheMinutes(dialog)
+    pressEnterInTheMinutes()
     await nextTick()
 
     expect(dialog.emitted('save')).toBeUndefined()
@@ -210,7 +210,7 @@ describe('the independent preparation choice', () => {
 
     expect(inputOf('[data-test="queue-independent-checkbox"]').checked).toBe(true)
 
-    await pressSave(dialog)
+    await pressSave()
 
     expect(dialog.emitted('save')?.[0]?.[0]).toMatchObject({ isQueueIndependent: true })
   })

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ItemNoteDialog from '../../../../src/phone/components/catalog/ItemNoteDialog.vue'
-import { item, plain, noted, mountRow, mountRowForAnItemAtSeveralStations, dialogField, enterTheNote, confirmDialog, theKeyboard, mountRowWithEstimate, at } from './itemRowFixture'
+import { plain, noted, mountRow, mountRowForAnItemAtSeveralStations, dialogField, enterTheNote, confirmDialog, theKeyboard, mountRowWithEstimate } from './itemRowFixture'
 
 enableAutoUnmount(afterEach)
 

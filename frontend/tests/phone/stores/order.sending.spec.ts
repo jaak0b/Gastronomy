@@ -271,6 +271,7 @@ describe('the station name a line is given when it is added', () => {
   function twoBarsAndTheDrinksTheyPour() {
     const catalog = useCatalogStore()
     catalog.catalog = {
+      festival: null,
       categories: [],
       items: [
         {

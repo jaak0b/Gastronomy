@@ -62,6 +62,7 @@ describe('an order sent to be settled whose answer arrives while the waiter alre
 
   function anOrderForTableTwelve() {
     useCatalogStore().catalog = {
+      festival: null,
       categories: [
         { categoryId: 'category-getraenke', name: 'Getränke', colourHex: '#C62828', sortOrder: 1 },
       ],

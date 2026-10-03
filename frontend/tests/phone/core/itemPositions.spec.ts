@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { groupPositions, countItemPortions, buildItemPositionsView, positionsForItem } from '../../../src/phone/core/itemPositions'
 import type { ItemPosition } from '../../../src/phone/core/itemPositions'
 import type { DraftLine, DraftOrder } from '../../../src/phone/core/draftCart'
-import { CatalogItemView } from '../../../src/shared/api/generatedSchemas'
+import type { CatalogItemView } from '../../../src/shared/api/generatedSchemas'
 
 function item(stationIds: string[]): CatalogItemView {
   return {
@@ -13,16 +13,23 @@ function item(stationIds: string[]): CatalogItemView {
     sortOrder: 0,
     isAvailable: true,
     stationIds,
+    productionMinutes: null,
     isQueueIndependent: false,
   }
 }
 
 function line(catalogItemId: string, note: string | null, stationId: string | null): DraftLine {
-  return { catalogItemId, note, stationId, name: 'Bier' }
+  return {
+    catalogItemId,
+    note,
+    stationId,
+    name: 'Bier',
+    stationName: stationId === null ? '' : stationNameOf(stationId),
+  }
 }
 
 function draftWith(lines: DraftLine[]): DraftOrder {
-  return { tableName: '', lines, clientOrderId: null }
+  return { festivalId: null, tableName: '', lines, clientOrderId: null, deliveryModes: {} }
 }
 
 const stationNameOf = (stationId: string): string =>

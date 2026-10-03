@@ -1,7 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminStationsStore } from '../../../src/admin/stores/stations'
-import { stubLaptopAnswering, answer, stubLaptop, type StubbedLaptop } from '../../support/laptop'
+import {
+  aHold,
+  answer,
+  heldUntil,
+  noConnection,
+  stubLaptop,
+  stubLaptopAnswering,
+  type StubbedLaptop,
+} from '../../support/laptop'
+
+const EVERY_ADDRESS = /^\/api\//
 
 const BACKEND_STATION = {
   stationId: '11111111-1111-1111-1111-111111111111',
@@ -89,15 +99,9 @@ describe('a new station', () => {
   })
 
   it('stays in the list even when the list cannot be read again afterwards', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) => {
-        if ((init?.method ?? 'GET') === 'POST') {
-          return new Response(JSON.stringify(ZELT), { status: 201 })
-        }
-        throw new TypeError('Failed to fetch')
-      }),
-    )
+    stubLaptop()
+      .answersEverythingElse(noConnection())
+      .answers('POST', EVERY_ADDRESS, answer(ZELT, 201))
     const stations = useAdminStationsStore()
 
     await stations.create({ name: 'Zelt', sortOrder: 2 })
@@ -141,23 +145,21 @@ describe('a station the laptop would not save', () => {
   })
 
   function refuseTheSave() {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
-        if (init?.method === 'PUT') {
-          return new Response(
-            JSON.stringify({
-              code: 'ValidationFailed',
-              messageKey: 'errors.admin.stations.nameMissing',
-              parameters: {},
-              details: null,
-            }),
-            { status: 400 },
-          )
-        }
-        return new Response(JSON.stringify({ stations: [BACKEND_STATION] }), { status: 200 })
-      }),
-    )
+    stubLaptop()
+      .answersEverythingElse(answer({ stations: [BACKEND_STATION] }))
+      .answers(
+        'PUT',
+        EVERY_ADDRESS,
+        answer(
+          {
+            code: 'ValidationFailed',
+            messageKey: 'errors.admin.stations.nameMissing',
+            parameters: {},
+            details: null,
+          },
+          400,
+        ),
+      )
   }
 
   it('reports that the change did not happen', async () => {
@@ -209,47 +211,31 @@ describe('a station created while a list read is on the way', () => {
   })
 
   it('stays in the list when the slower read answers first', async () => {
-    let releaseThePost = (): void => {}
-    const thePost = new Promise<Response>((carryOn) => {
-      releaseThePost = () => carryOn(new Response(JSON.stringify(CREATED_STATION), { status: 201 }))
-    })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) =>
-        (init?.method ?? 'GET') === 'POST'
-          ? await thePost
-          : new Response(JSON.stringify({ stations: [] }), { status: 200 }),
-      ),
-    )
+    const thePost = aHold()
+    stubLaptop()
+      .answersEverythingElse(answer({ stations: [] }))
+      .answers('POST', EVERY_ADDRESS, heldUntil(thePost.released, answer(CREATED_STATION, 201)))
     const stations = useAdminStationsStore()
 
     const created = stations.create({ name: 'Zelt', sortOrder: 2 })
     await stations.load()
-    releaseThePost()
+    thePost.release()
     await created
 
     expect(stations.stations.map((station) => station.stationId)).toEqual(['station-neu'])
   })
 
   it('does not show the created station in a list of another festival', async () => {
-    let releaseThePost = (): void => {}
-    const thePost = new Promise<Response>((carryOn) => {
-      releaseThePost = () => carryOn(new Response(JSON.stringify(CREATED_STATION), { status: 201 }))
-    })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) =>
-        (init?.method ?? 'GET') === 'POST'
-          ? await thePost
-          : new Response(JSON.stringify({ stations: [] }), { status: 200 }),
-      ),
-    )
+    const thePost = aHold()
+    stubLaptop()
+      .answersEverythingElse(answer({ stations: [] }))
+      .answers('POST', EVERY_ADDRESS, heldUntil(thePost.released, answer(CREATED_STATION, 201)))
     const stations = useAdminStationsStore()
 
     await stations.loadAtTheFestival('fest-1')
     const created = stations.create({ name: 'Zelt', sortOrder: 2 })
     await stations.loadAtTheFestival('fest-2')
-    releaseThePost()
+    thePost.release()
     await created
 
     expect(stations.stations).toEqual([])

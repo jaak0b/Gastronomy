@@ -31,12 +31,6 @@ const BUN: AdminFestivalIngredientView = {
   runsOutAtUtc: null,
 }
 
-interface Call {
-  url: string
-  method: string
-  body: unknown
-}
-
 function stockLaptop(ingredients: AdminFestivalIngredientView[]): StubbedLaptop {
   return stubLaptop()
     .answersEverythingElse(answer({}))

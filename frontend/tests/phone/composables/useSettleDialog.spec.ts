@@ -5,18 +5,14 @@ import { defineComponent, h } from 'vue'
 import { useSettleDialog } from '../../../src/phone/composables/useSettleDialog'
 import { useSessionStore } from '../../../src/shared/stores/session'
 import { testPlugins } from '../../support/plugins'
+import { answer, noConnection, refusal, stubLaptop, type LaptopReply } from '../../support/laptop'
 
 const SETTLED = { settledOrderItemIds: [], reappliedOrderItemIds: [], alreadySettledByOthersOrderItemIds: [] }
 
-function settleAnswers(answer: () => Response | Promise<Response>): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string) =>
-      url === '/api/open-items/settle'
-        ? answer()
-        : new Response(JSON.stringify({ tables: [], itemsWithoutAnOrderCount: 0 }), { status: 200 }),
-    ),
-  )
+function settleAnswers(settleReply: LaptopReply): void {
+  stubLaptop()
+    .answersEverythingElse(answer({ tables: [], itemsWithoutAnOrderCount: 0 }))
+    .answers('ANY', (call) => call.url === '/api/open-items/settle', settleReply)
 }
 
 function mountWithTheAmountDialogOpen() {
@@ -49,7 +45,7 @@ describe('the amount dialog after the waiter settled through it', () => {
   })
 
   it('closes once the laptop accepted the settlement', async () => {
-    settleAnswers(() => new Response(JSON.stringify(SETTLED), { status: 200 }))
+    settleAnswers(answer(SETTLED))
     const settling = mountWithTheAmountDialogOpen()
 
     await settling.settleTheAmountPaid(300, 'Rest geschenkt', 'cash')
@@ -58,18 +54,7 @@ describe('the amount dialog after the waiter settled through it', () => {
   })
 
   it('stays open when the laptop refused, so what was typed is still there', async () => {
-    settleAnswers(
-      () =>
-        new Response(
-          JSON.stringify({
-            code: 'ValidationFailed',
-            messageKey: 'errors.openItems.settleFailed',
-            parameters: {},
-            details: null,
-          }),
-          { status: 400 },
-        ),
-    )
+    settleAnswers(refusal('errors.openItems.settleFailed', { status: 400, code: 'ValidationFailed' }))
     const settling = mountWithTheAmountDialogOpen()
 
     await settling.settleTheAmountPaid(300, 'Rest geschenkt', 'cash')
@@ -78,9 +63,7 @@ describe('the amount dialog after the waiter settled through it', () => {
   })
 
   it('closes when the answer never came, because the reload is on the list', async () => {
-    settleAnswers(() => {
-      throw new TypeError('the laptop cannot be reached')
-    })
+    settleAnswers(noConnection())
     const settling = mountWithTheAmountDialogOpen()
 
     await settling.settleTheAmountPaid(300, 'Rest geschenkt', 'cash')

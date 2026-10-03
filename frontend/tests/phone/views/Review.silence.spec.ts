@@ -7,7 +7,7 @@ import { useOrderStore } from '../../../src/phone/stores/order'
 import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
 import { WASSER, prepareOrder, sendAndSettleLater } from './reviewFixture'
-import { stubLaptop, answer, neverAnswers, noConnection } from '../../support/laptop'
+import { stubLaptop, neverAnswers, noConnection } from '../../support/laptop'
 import { nextTick } from 'vue'
 
 describe('an order the laptop did not confirm', () => {
@@ -55,7 +55,7 @@ describe('an order the laptop did not confirm', () => {
     await nextTick()
 
     expect(review.find('[data-test="drop-lines-that-cannot-be-ordered"]').exists()).toBe(false)
-    expect(review.get('[data-test="send-again"]').exists()).toBe(true)
+    expect(review.find('[data-test="send-again"]').exists()).toBe(true)
   })
 
   it('hides the way back to the items, because everything there would change the order', async () => {
@@ -171,7 +171,7 @@ describe('an order the laptop did not confirm', () => {
         'Schreiben Sie die Bestellung auf einen Zettel',
       ),
     )
-    expect(review.get('[data-test="written-down"]').exists()).toBe(true)
+    expect(review.find('[data-test="written-down"]').exists()).toBe(true)
     expect(review.get('[data-test="line-name"]').text()).toBe('1 x Wasser')
   })
 })

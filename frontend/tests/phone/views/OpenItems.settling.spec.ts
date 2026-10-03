@@ -3,7 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { OPEN_LIST, mountScreen, openItemsLaptop } from './openItemsFixture'
-import { answer, noConnection, refusal } from '../../support/laptop'
+import { noConnection, refusal } from '../../support/laptop'
 import { inputOf, typeIn, clickOn } from '../../support/dom'
 import { nextTick } from 'vue'
 

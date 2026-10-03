@@ -4,8 +4,9 @@ import {
   estimateText,
   withEstimate,
 } from '../../../src/phone/core/estimateWording'
+import type { Translate } from '../../../src/shared/core/translation'
 
-function wording(key: string, values: Record<string, string | number>): string {
+const wording: Translate = (key, values = {}) => {
   if (key === 'common.estimates.inMinutes') {
     return `~${values.count} Min.`
   }

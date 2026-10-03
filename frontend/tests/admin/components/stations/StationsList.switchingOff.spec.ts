@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { pressInDialog, waitForDialog } from '../../../support/dom'
-import { stubLaptop, answer, refusal } from '../../../support/laptop'
+import { stubLaptop, answer } from '../../../support/laptop'
 import { STATION_ID, ONE_STATION, refuseDeactivationWith, mountList, deactivateFirstStation, ONE_STATION_SWITCHED_OFF } from './stationsListFixture'
 
 describe('switching a station off', () => {

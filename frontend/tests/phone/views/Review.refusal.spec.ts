@@ -87,7 +87,7 @@ describe('an order the laptop refused with a reason', () => {
   it('leaves the way to send in the strip, because this is not a retry into the dark', async () => {
     const review = await reviewAfterARefusal(prepareOrder())
 
-    expect(review.get('[data-test="docked-strip"] [data-test="send-and-settle-later"]').exists()).toBe(true)
+    expect(review.find('[data-test="docked-strip"] [data-test="send-and-settle-later"]').exists()).toBe(true)
     expect(review.find('[data-test="send-again"]').exists()).toBe(false)
   })
 
@@ -119,7 +119,7 @@ describe('an order the laptop answered but could not save', () => {
   it('leaves the way to send in the strip, because the answer said no order was created', async () => {
     const review = await reviewAfterTheAnswer()
 
-    expect(review.get('[data-test="docked-strip"] [data-test="send-and-settle-later"]').exists()).toBe(true)
+    expect(review.find('[data-test="docked-strip"] [data-test="send-and-settle-later"]').exists()).toBe(true)
     expect(review.find('[data-test="send-again"]').exists()).toBe(false)
   })
 
@@ -176,6 +176,7 @@ describe('an order the laptop refused after an attempt it never answered', () =>
     })
     const catalog = useCatalogStore()
     catalog.catalog = {
+      festival: null,
       categories: [
         { categoryId: 'category-getraenke', name: 'Getränke', colourHex: '#C62828', sortOrder: 1 },
       ],

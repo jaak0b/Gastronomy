@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useStationStore } from '../../../src/station/stores/station'
 import { stubLaptopAt, refusal, inTurn } from '../../support/laptop'
-import { KITCHEN, item, stationOrder, aQueue, enrolledStationTablet } from './stationFixture'
+import { KITCHEN, item, stationOrder, aQueue, enrolledStationTablet } from '../../support/station'
 
 describe('the orders a station tablet is showing', () => {
   beforeEach(() => {

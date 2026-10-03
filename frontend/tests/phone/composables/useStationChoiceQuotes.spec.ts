@@ -7,6 +7,7 @@ import { useEstimatesStore } from '../../../src/phone/stores/estimates'
 import { useSessionStore } from '../../../src/shared/stores/session'
 import { CatalogItemView } from '../../../src/shared/api/generatedSchemas'
 import { testPlugins } from '../../support/plugins'
+import { answer, neverAnswers, stubLaptop } from '../../support/laptop'
 
 const KAFFEE: CatalogItemView = {
   id: 'item-kaffee',
@@ -21,22 +22,13 @@ const KAFFEE: CatalogItemView = {
 }
 
 function answerEachQuoteWith(minutesAt: Record<string, number | null>): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string, init?: RequestInit) => {
-      if (url !== '/api/estimates/quote') {
-        return new Response('[]', { status: 200 })
-      }
-      const { lines } = JSON.parse(String(init?.body)) as {
-        lines: { catalogItemId: string; stationId: string }[]
-      }
+  stubLaptop()
+    .answersEverythingElse(answer([]))
+    .answers('ANY', (call) => call.url === '/api/estimates/quote', (call) => {
+      const { lines } = call.body as { lines: { catalogItemId: string; stationId: string }[] }
       const stationId = lines.find((line) => line.catalogItemId === 'item-kaffee')?.stationId ?? ''
-      return new Response(
-        JSON.stringify({ stations: [{ stationId, readyInMinutes: minutesAt[stationId] ?? null }] }),
-        { status: 200 },
-      )
-    }),
-  )
+      return answer({ stations: [{ stationId, readyInMinutes: minutesAt[stationId] ?? null }] })(call)
+    })
 }
 
 function mountTheStationQuestion() {
@@ -77,14 +69,9 @@ describe('the waiting times offered in the question about the station', () => {
   })
 
   it('gives no time while the laptop has not answered yet', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn((url: string) =>
-        url === '/api/estimates/quote'
-          ? new Promise<Response>(() => {})
-          : Promise.resolve(new Response('[]', { status: 200 })),
-      ),
-    )
+    stubLaptop()
+      .answersEverythingElse(answer([]))
+      .answers('ANY', (call) => call.url === '/api/estimates/quote', neverAnswers())
     const question = mountTheStationQuestion()
 
     question.itemBehindTheQuestion.value = KAFFEE

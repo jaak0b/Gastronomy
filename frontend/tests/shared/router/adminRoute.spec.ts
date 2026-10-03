@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { stubLaptop, answer } from '../../support/laptop'
+import { stubLaptop, stubLaptopAnswering, answer } from '../../support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -76,11 +76,9 @@ describe('the screen a device lands on', () => {
     setActivePinia(createPinia())
     localStorage.clear()
     sessionStorage.setItem('theDoorAnchor', 'yes')
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        const payload = url.startsWith('/api/session')
-          ? {
+    stubLaptopAnswering((url) =>
+      url.startsWith('/api/session')
+        ? {
               deviceId: 'device-1',
               staffMember: { id: 'staff-member-1', name: 'Anna' },
               station: null,
@@ -93,19 +91,15 @@ describe('the screen a device lands on', () => {
               orders: [],
               items: [],
               station: { id: 's-1', name: 'Küche' },
-            }
-        return new Response(JSON.stringify(payload), { status: 200 })
-      }),
+            },
     )
     currentRoute.value = { name: 'stations' }
   })
 
   it('keeps a station tablet on the station screen', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        const payload = url.startsWith('/api/session')
-          ? {
+    stubLaptopAnswering((url) =>
+      url.startsWith('/api/session')
+        ? {
               deviceId: 'device-1',
               staffMember: null,
               station: { id: 's-1', name: 'Küche' },
@@ -118,9 +112,7 @@ describe('the screen a device lands on', () => {
               orders: [],
               items: [],
               station: { id: 's-1', name: 'Küche' },
-            }
-        return new Response(JSON.stringify(payload), { status: 200 })
-      }),
+            },
     )
     const { useSessionStore } = await import('../../../src/shared/stores/session')
     useSessionStore().deviceToken = 'a-token'

@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import type { VCheckboxBtn } from 'vuetify/components'
 import OpenItems from '../../../src/phone/views/OpenItems.vue'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
 import { testPlugins } from '../../support/plugins'
@@ -195,7 +196,7 @@ export function lookupCard(screen: MountedScreen, orderNumber: number): ScreenPa
 }
 
 export function isHalfTaken(part: MountedScreen | ScreenPart, selector: string): boolean {
-  return part.findComponent(selector).props('indeterminate') === true
+  return part.findComponent<typeof VCheckboxBtn>(selector).props('indeterminate') === true
 }
 
 export async function mountScreen() {

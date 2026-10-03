@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { defineComponent, h } from 'vue'
@@ -9,6 +9,7 @@ import { useOrderStore } from '../../../src/phone/stores/order'
 import { useSessionStore } from '../../../src/shared/stores/session'
 import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
+import { answer, inTurn, noConnection, stubLaptop } from '../../support/laptop'
 
 const WASSER = {
   id: 'item-wasser',
@@ -68,6 +69,7 @@ const TABLE_THREE_WITH_THE_SENT_ITEM = {
 
 function prepareOrder() {
   useCatalogStore().catalog = {
+    festival: null,
     categories: [
       { categoryId: 'category-getraenke', name: 'Getränke', colourHex: '#C62828', sortOrder: 1 },
     ],
@@ -82,23 +84,11 @@ function prepareOrder() {
 
 function theLaptopPlacesTheOrderToSettleAfter(failedAttempts: number): void {
   useSessionStore().deviceToken = 'token-here'
-  let orderAttempts = 0
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string) => {
-      if (url.startsWith('/api/open-items/table?')) {
-        return new Response(JSON.stringify(TABLE_THREE_WITH_THE_SENT_ITEM), { status: 200 })
-      }
-      if (url !== '/api/orders') {
-        return new Response(JSON.stringify({ stations: [] }), { status: 200 })
-      }
-      orderAttempts += 1
-      if (orderAttempts <= failedAttempts) {
-        throw new TypeError('the laptop cannot be reached')
-      }
-      return new Response(JSON.stringify(PLACED_ORDER_TO_SETTLE), { status: 200 })
-    }),
-  )
+  const failedAnswers = Array.from({ length: failedAttempts }, () => noConnection())
+  stubLaptop()
+    .answersEverythingElse(answer({ stations: [] }))
+    .answers('ANY', (call) => call.url.startsWith('/api/open-items/table?'), answer(TABLE_THREE_WITH_THE_SENT_ITEM))
+    .answers('ANY', (call) => call.url === '/api/orders', inTurn(...failedAnswers, answer(PLACED_ORDER_TO_SETTLE)))
 }
 
 function mountTheSendingScreen() {

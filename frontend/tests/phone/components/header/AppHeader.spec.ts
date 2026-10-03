@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AppHeader from '../../../../src/phone/components/header/AppHeader.vue'
@@ -55,8 +55,8 @@ describe('the row of destinations', () => {
   it('carries an icon on every destination, so the row fits without hiding a word', () => {
     const header = mountHeader()
 
-    expect(header.get('[data-test="catalog-link"] .v-icon').exists()).toBe(true)
-    expect(header.get('[data-test="open-items-link"] .v-icon').exists()).toBe(true)
+    expect(header.find('[data-test="catalog-link"] .v-icon').exists()).toBe(true)
+    expect(header.find('[data-test="open-items-link"] .v-icon').exists()).toBe(true)
   })
 })
 

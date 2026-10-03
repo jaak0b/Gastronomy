@@ -1,7 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminFestivalStockStore } from '../../../src/admin/stores/festivalStock'
-import { stubLaptop, answer, neverAnswers, type StubbedLaptop } from '../../support/laptop'
+import {
+  aHold,
+  answer,
+  heldUntil,
+  inTurn,
+  neverAnswers,
+  stubLaptop,
+  type StubbedLaptop,
+} from '../../support/laptop'
 
 const FLOUR_STOCK = {
   ingredientId: 'ingredient-mehl',
@@ -61,34 +69,22 @@ describe('the stock of a festival', () => {
   })
 
   it('keeps the answer to a save when an older read arrives later', async () => {
-    let answerTheFirstRead: (response: Response) => void = () => undefined
-    let reads = 0
-    vi.stubGlobal(
-      'fetch',
-      vi.fn((_url: string, init?: RequestInit) => {
-        if ((init?.method ?? 'GET') !== 'GET') {
-          return Promise.resolve(new Response('{}', { status: 200 }))
-        }
-        reads += 1
-        if (reads === 1) {
-          return new Promise<Response>((resolve) => {
-            answerTheFirstRead = resolve
-          })
-        }
-        return Promise.resolve(
-          new Response(JSON.stringify({ ingredients: [FLOUR_STOCK] }), { status: 200 }),
-        )
-      }),
-    )
+    const theFirstRead = aHold()
+    stubLaptop()
+      .answersEverythingElse(answer({}))
+      .answers(
+        'GET',
+        /^\/api\//,
+        inTurn(
+          heldUntil(theFirstRead.released, answer({ ingredients: [{ ...FLOUR_STOCK, availableAmount: null }] })),
+          answer({ ingredients: [FLOUR_STOCK] }),
+        ),
+      )
     const stock = useAdminFestivalStockStore()
 
     const olderRead = stock.loadForFestival('fest-1')
     await stock.setAvailableAmount('fest-1', 'ingredient-mehl', 5000)
-    answerTheFirstRead(
-      new Response(JSON.stringify({ ingredients: [{ ...FLOUR_STOCK, availableAmount: null }] }), {
-        status: 200,
-      }),
-    )
+    theFirstRead.release()
     await olderRead
 
     expect(stock.ingredients).toEqual([FLOUR_STOCK])

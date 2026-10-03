@@ -13,6 +13,7 @@ describe('a line whose item was taken off the menu while the basket was open', (
         note: 'ohne Zwiebeln',
         stationId: null,
         name: 'Currywurst',
+        stationName: '',
       },
     ])
   }
@@ -60,6 +61,7 @@ describe('a line whose item was taken off the menu while the basket was open', (
         note: null,
         stationId: null,
         name: '',
+        stationName: '',
       },
     ])
 
@@ -82,12 +84,14 @@ describe('withoutLinesThatCannotBeOrdered', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
+        stationName: '',
       },
       {
         catalogItemId: 'item-gone',
         note: 'ohne Zwiebeln',
         stationId: null,
         name: 'Currywurst',
+        stationName: '',
       },
     ])
   }
@@ -105,12 +109,14 @@ describe('withoutLinesThatCannotBeOrdered', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
+        stationName: '',
       },
       {
         catalogItemId: 'item-bier',
         note: null,
         stationId: null,
         name: 'Bier',
+        stationName: '',
       },
     ])
 
@@ -138,6 +144,7 @@ describe('withoutLinesThatCannotBeOrdered', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
+        stationName: '',
       },
     ])
   })
@@ -149,6 +156,7 @@ describe('withoutLinesThatCannotBeOrdered', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
+        stationName: '',
       },
     ])
 
@@ -161,7 +169,7 @@ describe('withoutLinesThatCannotBeOrdered', () => {
 describe('lineCannotBeOrdered', () => {
   function shownLineOf(catalogItemId: string, name: string) {
     return buildBasketView(
-      draftWith([{ catalogItemId, note: null, stationId: null, name }]),
+      draftWith([{ catalogItemId, note: null, stationId: null, name, stationName: '' }]),
       catalog(),
     )[0]
   }
@@ -187,6 +195,7 @@ describe('a line whose station no longer prepares its item', () => {
         note: null,
         stationId: 'station-theke-innen',
         name: 'Bratwurst',
+        stationName: 'Theke innen',
       },
     ])
   }
@@ -216,6 +225,7 @@ describe('a line whose station no longer prepares its item', () => {
         note: null,
         stationId: 'station-kueche',
         name: 'Bratwurst',
+        stationName: 'Kueche',
       },
     ])
 
@@ -229,6 +239,7 @@ describe('a line whose station no longer prepares its item', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
+        stationName: '',
       },
     ])
 
@@ -242,6 +253,7 @@ describe('a line whose station no longer prepares its item', () => {
         note: null,
         stationId: 'station-kueche',
         name: 'Currywurst',
+        stationName: 'Kueche',
       },
     ])
 

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useLaptopProbe } from '../../../src/admin/composables/useLaptopProbe'
-import { stubLaptop, answer } from '../../support/laptop'
+import { answer, emptyAnswer, stubLaptop } from '../../support/laptop'
 
 describe('asking whether this device is the laptop', () => {
   afterEach(() => {
@@ -8,7 +8,7 @@ describe('asking whether this device is the laptop', () => {
   })
 
   it('says no when the laptop answers the festivals with not found', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 404 })))
+    stubLaptop().answersEverythingElse(emptyAnswer(404))
 
     expect(await useLaptopProbe().isThisTheLaptop()).toBe(false)
   })
@@ -20,7 +20,7 @@ describe('asking whether this device is the laptop', () => {
   })
 
   it('says yes when the laptop fails for another reason, because only a missing page means another device', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 500 })))
+    stubLaptop().answersEverythingElse(emptyAnswer(500))
 
     expect(await useLaptopProbe().isThisTheLaptop()).toBe(true)
   })

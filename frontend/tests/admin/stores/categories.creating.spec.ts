@@ -1,7 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminCategoriesStore } from '../../../src/admin/stores/categories'
-import { stubLaptop, answer, noConnection, stubLaptopAnswering } from '../../support/laptop'
+import {
+  aHold,
+  answer,
+  heldUntil,
+  noConnection,
+  stubLaptop,
+  stubLaptopAnswering,
+} from '../../support/laptop'
+
+const EVERY_ADDRESS = /^\/api\//
 import { DRINKS, FOOD, CREATED_CATEGORY, theTwoCategories } from './categoriesFixture'
 
 describe('the category list of the laptop', () => {
@@ -122,15 +131,9 @@ describe('a new category', () => {
   })
 
   it('stays in the list even when the list cannot be read again afterwards', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) => {
-        if ((init?.method ?? 'GET') === 'POST') {
-          return new Response(JSON.stringify(DRINKS), { status: 201 })
-        }
-        throw new TypeError('Failed to fetch')
-      }),
-    )
+    stubLaptop()
+      .answersEverythingElse(noConnection())
+      .answers('POST', EVERY_ADDRESS, answer(DRINKS, 201))
     const categories = useAdminCategoriesStore()
 
     await categories.create({ name: 'Getränke', colourHex: '#C62828' })
@@ -149,24 +152,15 @@ describe('a category created while a list read is on the way', () => {
   })
 
   it('stays in the list when the slower read answers first', async () => {
-    let releaseThePost = (): void => {}
-    const thePost = new Promise<Response>((carryOn) => {
-      releaseThePost = () =>
-        carryOn(new Response(JSON.stringify(CREATED_CATEGORY), { status: 201 }))
-    })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) =>
-        (init?.method ?? 'GET') === 'POST'
-          ? await thePost
-          : new Response(JSON.stringify({ categories: [] }), { status: 200 }),
-      ),
-    )
+    const thePost = aHold()
+    stubLaptop()
+      .answersEverythingElse(answer({ categories: [] }))
+      .answers('POST', EVERY_ADDRESS, heldUntil(thePost.released, answer(CREATED_CATEGORY, 201)))
     const categories = useAdminCategoriesStore()
 
     const created = categories.create({ name: 'Getränke', colourHex: '#C62828' })
     await categories.load()
-    releaseThePost()
+    thePost.release()
     await created
 
     expect(categories.categories.map((category) => category.categoryId)).toEqual(['category-neu'])

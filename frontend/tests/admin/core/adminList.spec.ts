@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { loadAdminList } from '../../../src/admin/core/adminList'
 import { createLatestRequestGate, type LatestRequestGate } from '../../../src/shared/core/latestRequestGate'
-import { stubLaptop, answer } from '../../support/laptop'
+import { aHold, answer, heldUntil, stubLaptop } from '../../support/laptop'
 
 const SCHEMA = z.object({ items: z.array(z.string()) })
 
@@ -76,46 +76,30 @@ describe('loading a list for an admin screen', () => {
   })
 
   it('leaves a late answer off the screen once a newer load has started', async () => {
-    let answerTheRequest: () => void = () => undefined
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => {
-        await new Promise<void>((resume) => {
-          answerTheRequest = resume
-        })
-        return new Response(JSON.stringify({ items: ['Bratwurst'] }), { status: 200 })
-      }),
-    )
+    const theAnswer = aHold()
+    stubLaptop().answersEverythingElse(heldUntil(theAnswer.released, answer({ items: ['Bratwurst'] })))
     const gate = createLatestRequestGate()
     const seen = watched()
 
     const late = loadAdminList(listLoad(gate, seen))
     await nextTurn()
     gate.startRequest()
-    answerTheRequest()
+    theAnswer.release()
     await late
 
     expect(seen.shown).toEqual([])
   })
 
   it('leaves the failure of a late load off the screen once a newer load has started', async () => {
-    let answerTheRequest: () => void = () => undefined
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => {
-        await new Promise<void>((resume) => {
-          answerTheRequest = resume
-        })
-        return new Response(JSON.stringify({}), { status: 500 })
-      }),
-    )
+    const theAnswer = aHold()
+    stubLaptop().answersEverythingElse(heldUntil(theAnswer.released, answer({}, 500)))
     const gate = createLatestRequestGate()
     const seen = watched()
 
     const late = loadAdminList(listLoad(gate, seen))
     await nextTurn()
     gate.startRequest()
-    answerTheRequest()
+    theAnswer.release()
     await late
 
     expect(seen.loadFailed).toEqual([false])

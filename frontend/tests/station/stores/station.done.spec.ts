@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useStationStore } from '../../../src/station/stores/station'
 import { stubLaptopAt, answer, refusal, inTurn } from '../../support/laptop'
-import { item, stationOrder, aQueue, enrolledStationTablet } from './stationFixture'
+import { item, stationOrder, aQueue, enrolledStationTablet } from '../../support/station'
 
 describe('marking selected items as done', () => {
   const HALF_DONE = stationOrder({

@@ -45,7 +45,7 @@ describe('the language switch before a phone is set up', () => {
   it('is on the screen, because nothing has stored a language yet', () => {
     const welcome = mountWelcome()
 
-    expect(welcome.get('[data-test="language-switch"]').exists()).toBe(true)
+    expect(welcome.find('[data-test="language-switch"]').exists()).toBe(true)
   })
 
   it('remembers the choice on the device itself', async () => {

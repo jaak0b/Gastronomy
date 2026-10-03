@@ -152,6 +152,7 @@ describe('what an order costs while the item list changes underneath it', () => 
   function waterOnTheMenu() {
     const catalog = useCatalogStore()
     catalog.catalog = {
+      festival: null,
       categories: [],
       items: [
         {

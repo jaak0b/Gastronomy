@@ -146,13 +146,13 @@ export function ingredientRow(page: VueWrapper, ingredientId: string) {
   return page.get(`[data-test="festival-ingredient-row"][data-test-id="${ingredientId}"]`)
 }
 
-export function stationBox(stations: VueWrapper, stationId: string): VueWrapper {
+export function stationBox(stations: Pick<VueWrapper, 'getComponent'>, stationId: string) {
   return stations.getComponent<typeof VCheckbox>(
     `[data-test="station-checkbox"][data-test-id="${stationId}"]`,
   )
 }
 
-export async function openRowStations(page: VueWrapper, itemId = SAUSAGE_ID): Promise<VueWrapper> {
+export async function openRowStations(page: VueWrapper, itemId = SAUSAGE_ID) {
   const row = itemRow(page, itemId)
   await row.get('[data-test="station-select"]').trigger('click')
   const select = row.getComponent(StationSelect)
@@ -162,7 +162,7 @@ export async function openRowStations(page: VueWrapper, itemId = SAUSAGE_ID): Pr
   return select
 }
 
-export async function openDialogStations(page: VueWrapper): Promise<VueWrapper> {
+export async function openDialogStations(page: VueWrapper) {
   onScreen('[data-test="form-dialog"] [data-test="station-select"]').click()
   const select = page.findComponent(FestivalPlacementDialog).findComponent(StationSelect)
   await vi.waitFor(() =>

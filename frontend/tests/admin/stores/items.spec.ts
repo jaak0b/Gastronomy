@@ -1,7 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminItemsStore } from '../../../src/admin/stores/items'
-import { stubLaptopAnswering, answer } from '../../support/laptop'
+import {
+  aHold,
+  answer,
+  emptyAnswer,
+  heldUntil,
+  noConnection,
+  stubLaptop,
+  stubLaptopAnswering,
+  type LaptopReply,
+} from '../../support/laptop'
 
 const AN_ITEM = {
   name: 'Bratwurst',
@@ -23,27 +32,20 @@ const CREATED_ITEM = {
   atTheFestival: null,
 }
 
+const EVERY_ADDRESS = /^\/api\//
+
+function laptopWithNoItemsAnsweringWritesWith(writeReply: LaptopReply) {
+  return stubLaptop()
+    .answersEverythingElse(writeReply)
+    .answers('GET', EVERY_ADDRESS, answer({ items: [] }))
+}
+
 function refuseWith(status: number, body: unknown) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (_url: string, init?: RequestInit) =>
-      (init?.method ?? 'GET') === 'GET'
-        ? new Response(JSON.stringify({ items: [] }), { status: 200 })
-        : new Response(JSON.stringify(body), { status }),
-    ),
-  )
+  return laptopWithNoItemsAnsweringWritesWith(answer(body, status))
 }
 
 function dropTheConnection() {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (_url: string, init?: RequestInit) => {
-      if ((init?.method ?? 'GET') !== 'GET') {
-        throw new TypeError('Failed to fetch')
-      }
-      return new Response(JSON.stringify({ items: [] }), { status: 200 })
-    }),
-  )
+  return laptopWithNoItemsAnsweringWritesWith(noConnection())
 }
 
 describe('an item the laptop would not save', () => {
@@ -158,47 +160,27 @@ describe('an article created while a list read is on the way', () => {
   })
 
   it('stays in the list when the slower read answers first', async () => {
-    let releaseThePost = (): void => {}
-    const thePost = new Promise<Response>((carryOn) => {
-      releaseThePost = () => carryOn(new Response(JSON.stringify(CREATED_ITEM), { status: 201 }))
-    })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) =>
-        (init?.method ?? 'GET') === 'POST'
-          ? await thePost
-          : new Response(JSON.stringify({ items: [] }), { status: 200 }),
-      ),
-    )
+    const thePost = aHold()
+    laptopWithNoItemsAnsweringWritesWith(heldUntil(thePost.released, answer(CREATED_ITEM, 201)))
     const items = useAdminItemsStore()
 
     const created = items.create(AN_ITEM)
     await items.load()
-    releaseThePost()
+    thePost.release()
     await created
 
     expect(items.items.map((item) => item.itemId)).toEqual(['item-neu'])
   })
 
   it('does not show the created article in a list of another festival', async () => {
-    let releaseThePost = (): void => {}
-    const thePost = new Promise<Response>((carryOn) => {
-      releaseThePost = () => carryOn(new Response(JSON.stringify(CREATED_ITEM), { status: 201 }))
-    })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) =>
-        (init?.method ?? 'GET') === 'POST'
-          ? await thePost
-          : new Response(JSON.stringify({ items: [] }), { status: 200 }),
-      ),
-    )
+    const thePost = aHold()
+    laptopWithNoItemsAnsweringWritesWith(heldUntil(thePost.released, answer(CREATED_ITEM, 201)))
     const items = useAdminItemsStore()
 
     await items.loadAtTheFestival('fest-1')
     const created = items.create(AN_ITEM)
     await items.loadAtTheFestival('fest-2')
-    releaseThePost()
+    thePost.release()
     await created
 
     expect(items.items).toEqual([])
@@ -246,15 +228,9 @@ describe('a new item the laptop creates', () => {
   })
 
   it('keeps the created article in the list even when the list cannot be read afterwards', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) => {
-        if ((init?.method ?? 'GET') === 'POST') {
-          return new Response(JSON.stringify(CREATED_ITEM), { status: 201 })
-        }
-        throw new TypeError('Failed to fetch')
-      }),
-    )
+    stubLaptop()
+      .answersEverythingElse(noConnection())
+      .answers('POST', EVERY_ADDRESS, answer(CREATED_ITEM, 201))
     const items = useAdminItemsStore()
 
     await items.create(AN_ITEM)
@@ -313,23 +289,15 @@ describe('the recipe of an article', () => {
   })
 
   it('removes an ingredient from the recipe and reads the articles again', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) =>
-        (init?.method ?? 'GET') === 'GET'
-          ? new Response(JSON.stringify({ items: [] }), { status: 200 })
-          : new Response(null, { status: 204 }),
-      ),
-    )
+    const laptop = laptopWithNoItemsAnsweringWritesWith(emptyAnswer(204))
     const items = useAdminItemsStore()
 
     const result = await items.removeIngredient('item-neu', 'ingredient-mehl')
 
     expect(result).toEqual({ kind: 'ok', value: null })
-    const fetched = vi.mocked(fetch).mock.calls.map(([url, init]) => `${init?.method ?? 'GET'} ${url}`)
-    expect(fetched).toEqual([
-      'DELETE /api/admin/items/item-neu/ingredients/ingredient-mehl',
-      'GET /api/admin/items',
+    expect(laptop.calls).toEqual([
+      { url: '/api/admin/items/item-neu/ingredients/ingredient-mehl', method: 'DELETE', body: undefined },
+      { url: '/api/admin/items', method: 'GET', body: undefined },
     ])
   })
 

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { stubLaptop, answer, noConnection } from './support/laptop'
+import { stubLaptop, stubLaptopAt, answer, noConnection, type StubbedLaptop } from './support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('./support/hubConnection')).signalrModuleFake())
 
@@ -41,30 +41,16 @@ const STATION_ORDERS = {
 
 let device: ReturnType<typeof mount> | null = null
 
-function aLaptopThatKnowsThisDeviceAs(owner: 'staffMember' | 'station'): string[] {
-  const urls: string[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string) => {
-      urls.push(url)
-      if (url === '/api/session') {
-        return new Response(
-          JSON.stringify({
-            deviceId: 'device-1',
-            staffMember: owner === 'staffMember' ? { id: 'staff-1', name: 'Anna' } : null,
-            station: owner === 'station' ? { id: 'station-kueche', name: 'Küche' } : null,
-            language: 'de',
-          }),
-          { status: 200 },
-        )
-      }
-      if (url === '/api/catalog') {
-        return new Response(JSON.stringify(CATALOG), { status: 200 })
-      }
-      return new Response(JSON.stringify(STATION_ORDERS), { status: 200 })
+function aLaptopThatKnowsThisDeviceAs(owner: 'staffMember' | 'station'): StubbedLaptop {
+  return stubLaptopAt({
+    '/api/session': answer({
+      deviceId: 'device-1',
+      staffMember: owner === 'staffMember' ? { id: 'staff-1', name: 'Anna' } : null,
+      station: owner === 'station' ? { id: 'station-kueche', name: 'Küche' } : null,
+      language: 'de',
     }),
-  )
-  return urls
+    '/api/catalog': answer(CATALOG),
+  }).answersEverythingElse(answer(STATION_ORDERS))
 }
 
 function aLaptopThatCannotBeReached(): void {
@@ -148,12 +134,12 @@ describe('a device once the laptop has said whose device it is', () => {
   })
 
   it('never asks for the ordering menu on a station tablet, which works off its own list', async () => {
-    const urls = aLaptopThatKnowsThisDeviceAs('station')
+    const laptop = aLaptopThatKnowsThisDeviceAs('station')
 
     aDeviceThatWasSetUpEarlier()
     await flushPromises()
 
-    expect(urls).not.toContain('/api/catalog')
+    expect(laptop.urls()).not.toContain('/api/catalog')
   })
 
   it('names the tab after the station the tablet works at', async () => {

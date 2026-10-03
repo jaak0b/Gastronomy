@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isLineFlaggedSoldOut, itemState } from '../../../src/phone/core/catalogItemState'
-import { CatalogItemView, CatalogView } from '../../../src/shared/api/generatedSchemas'
+import type { CatalogItemView, CatalogView } from '../../../src/shared/api/generatedSchemas'
 import type { BasketLineView } from '../../../src/phone/core/basket'
 
 function item(id: string, isAvailable: boolean): CatalogItemView {
@@ -12,12 +12,14 @@ function item(id: string, isAvailable: boolean): CatalogItemView {
     sortOrder: 1,
     isAvailable,
     stationIds: ['station-kueche'],
+    productionMinutes: 8,
     isQueueIndependent: false,
   }
 }
 
 function catalogWith(items: CatalogItemView[]): CatalogView {
   return {
+    festival: null,
     categories: [
       { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },
     ],
@@ -31,12 +33,13 @@ function line(catalogItemId: string): BasketLineView {
     catalogItemId,
     name: 'Bratwurst',
     unitPriceCents: 350,
-    quantity: 1,
     note: null,
     stationId: null,
+    stationName: '',
     candidateStationIds: ['station-kueche'],
     isSoldOut: false,
     isNoLongerOnTheMenu: false,
+    isNoLongerPreparedAtItsStation: false,
   }
 }
 

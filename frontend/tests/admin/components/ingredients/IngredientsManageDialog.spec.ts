@@ -17,12 +17,6 @@ const OLD_MILK = {
   isActive: false,
 }
 
-interface Call {
-  url: string
-  method: string
-  body: unknown
-}
-
 function ingredientsLaptop(): StubbedLaptop {
   return stubLaptop()
     .answersEverythingElse(emptyAnswer(204))

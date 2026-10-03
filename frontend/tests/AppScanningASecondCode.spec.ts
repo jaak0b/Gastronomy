@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { fireHubEvent, forgetHubEvents } from './support/hubConnection'
+import { answer, stubLaptopAt, type StubbedLaptop } from './support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('./support/hubConnection')).signalrModuleFake())
 vi.mock('../src/shared/router/router', async (importOriginal) => ({
@@ -31,43 +32,31 @@ const THE_PHONE = {
 
 let device: ReturnType<typeof mount> | null = null
 
-function aLaptopThatTurnsTheTabletIntoAPhone(): unknown[] {
-  const bodies: unknown[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string, options?: RequestInit) => {
-      if (url === '/api/enrolment/redeem') {
-        bodies.push(JSON.parse(String(options?.body ?? 'null')))
-        return new Response(JSON.stringify(THE_PHONE), { status: 200 })
-      }
-      if (url === '/api/session') {
-        return new Response(JSON.stringify(THE_TABLET), { status: 200 })
-      }
-      return new Response(
-        JSON.stringify({
-          festival: null,
-          categories: [],
-          items: [],
-          stations: [],
-          station: THE_TABLET.station,
-          orders: [],
-          asItComes: [],
-        }),
-        { status: 200 },
-      )
+function aLaptopThatTurnsTheTabletIntoAPhone(): StubbedLaptop {
+  return stubLaptopAt({
+    '/api/enrolment/redeem': answer(THE_PHONE),
+    '/api/session': answer(THE_TABLET),
+  }).answersEverythingElse(
+    answer({
+      festival: null,
+      categories: [],
+      items: [],
+      stations: [],
+      station: THE_TABLET.station,
+      orders: [],
+      asItComes: [],
     }),
   )
-  return bodies
 }
 
 async function aTabletThatScansAWaiterCode() {
   localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.of-the-tablet')
-  const bodies = aLaptopThatTurnsTheTabletIntoAPhone()
+  const laptop = aLaptopThatTurnsTheTabletIntoAPhone()
   navigate('/j/CODE')
   device = mount(App, { global: { plugins: testPlugins() }, attachTo: document.body })
   await flushPromises()
   await flushPromises()
-  return bodies
+  return laptop
 }
 
 beforeEach(() => {
@@ -96,9 +85,9 @@ describe('a browser that is already set up and scans a second QR code', () => {
   })
 
   it('hands the laptop the token it was using, so the laptop can retire that device', async () => {
-    const bodies = await aTabletThatScansAWaiterCode()
+    const laptop = await aTabletThatScansAWaiterCode()
 
-    expect(bodies).toEqual([
+    expect(laptop.writtenBodies()).toEqual([
       {
         code: 'CODE',
         name: null,

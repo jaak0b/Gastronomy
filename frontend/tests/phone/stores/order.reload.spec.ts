@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useOrderStore } from '../../../src/phone/stores/order'
 import { DRAFT_STORAGE_KEY, saveSendProgress } from '../../../src/phone/core/draftCart'
 import { answerWith } from './orderFixture'
-import { stubLaptop, answer, neverAnswers, noConnection } from '../../support/laptop'
+import { stubLaptop, noConnection } from '../../support/laptop'
 
 describe('an order in progress that could not be read back', () => {
   beforeEach(() => {

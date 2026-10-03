@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { onUnauthorisedAnswer, request, requestAction } from '../../../src/shared/api/client'
-import { stubLaptop, answer, refusal, neverAnswers } from '../../support/laptop'
+import { stubLaptop, answer, neverAnswers } from '../../support/laptop'
 
 const okAnswerSchema = z.object({ ok: z.boolean() })
 
@@ -93,7 +93,7 @@ describe('an answer that says the laptop does not know this device', () => {
   })
 
   function laptopThatAnswers(status: number): void {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status })))
+    stubLaptop().answersEverythingElse(answer({}, status))
   }
 
   it('is reported, whichever call it came back from, so the phone can be set up again', async () => {
@@ -150,7 +150,7 @@ describe('an answer body the phone has to read', () => {
   })
 
   function laptopThatAnswers(body: string | null, status = 200): void {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(body, { status })))
+    stubLaptop().answersEverythingElse(() => new Response(body, { status }))
   }
 
   it('accepts an answer that carries every field the app reads', async () => {

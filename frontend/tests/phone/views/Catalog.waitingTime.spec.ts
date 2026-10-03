@@ -8,7 +8,7 @@ import { useSessionStore } from '../../../src/shared/stores/session'
 import { navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
 import { stubLaptop, answer } from '../../support/laptop'
-import { MountedCatalog, openCategory, tapToAdd, CATALOG_WITH_TIMED_ITEMS, TIMED_ESTIMATES } from './catalogFixture'
+import { type MountedCatalog, openCategory, tapToAdd, CATALOG_WITH_TIMED_ITEMS, TIMED_ESTIMATES } from './catalogFixture'
 
 enableAutoUnmount(afterEach)
 
@@ -45,22 +45,13 @@ describe('the waiting time on the ordering screen', () => {
 
   function answerEachQuoteWith(minutesAt: Record<string, number | null>): void {
     useSessionStore().deviceToken = 'token-here'
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
-        if (url !== '/api/estimates/quote') {
-          return new Response('[]', { status: 200 })
-        }
-        const { lines } = JSON.parse(String(init?.body)) as {
-          lines: { catalogItemId: string; stationId: string }[]
-        }
+    stubLaptop()
+      .answersEverythingElse(answer([]))
+      .answers('ANY', (call) => call.url === '/api/estimates/quote', (call) => {
+        const { lines } = call.body as { lines: { catalogItemId: string; stationId: string }[] }
         const stationId = lines.find((quoteLine) => quoteLine.catalogItemId === 'item-kaffee')?.stationId ?? ''
-        return new Response(
-          JSON.stringify({ stations: [{ stationId, readyInMinutes: minutesAt[stationId] ?? null }] }),
-          { status: 200 },
-        )
-      }),
-    )
+        return answer({ stations: [{ stationId, readyInMinutes: minutesAt[stationId] ?? null }] })(call)
+      })
   }
 
   async function askWhereTheKaffeeGoes(view: MountedCatalog): Promise<void> {

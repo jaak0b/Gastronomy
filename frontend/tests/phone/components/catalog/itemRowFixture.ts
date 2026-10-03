@@ -18,6 +18,7 @@ export function item(isAvailable: boolean): CatalogItemView {
     sortOrder: 1,
     isAvailable,
     stationIds: ['station-bar'],
+    productionMinutes: null,
     isQueueIndependent: false,
   }
 }
@@ -149,6 +150,7 @@ export function schnitzel(): CatalogItemView {
     sortOrder: 1,
     isAvailable: true,
     stationIds: ['station-schank', 'station-kueche'],
+    productionMinutes: null,
     isQueueIndependent: false,
   }
 }

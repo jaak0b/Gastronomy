@@ -5,6 +5,7 @@ import { CatalogView, ItemEstimateView } from '../../../src/shared/api/generated
 import { testPlugins } from '../../support/plugins'
 
 export const CATALOG: CatalogView = {
+  festival: null,
   categories: [
     { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },
     { categoryId: 'category-getraenke', name: 'Getränke', colourHex: '#C62828', sortOrder: 2 },

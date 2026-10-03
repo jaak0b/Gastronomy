@@ -4,10 +4,10 @@ import { fireHubEvent, forgetHubEvents } from '../../support/hubConnection'
 import { useConnectionStore } from '../../../src/shared/stores/connection'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
+import { answer, inTurn, stubLaptop } from '../../support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
-const STATION_ID = '0f6f2c3a-1c3e-4a0b-9f5a-2c9d1b7e4a11'
 
 const TISCH_SIEBEN_BEFORE = {
   tables: [
@@ -73,20 +73,8 @@ describe('the open list on a phone while another phone places an order', () => {
   })
 
   it('shows the two Bratwurst the other waiter sent for Tisch 7', async () => {
-    let answered = 0
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => {
-        answered += 1
-        return new Response(
-          JSON.stringify(
-            answered === 1
-              ? TISCH_SIEBEN_BEFORE
-              : TISCH_SIEBEN_AFTER_THE_SECOND_WAITER_SENT_TWO_BRATWURST,
-          ),
-          { status: 200 },
-        )
-      }),
+    stubLaptop().answersEverythingElse(
+      inTurn(answer(TISCH_SIEBEN_BEFORE), answer(TISCH_SIEBEN_AFTER_THE_SECOND_WAITER_SENT_TWO_BRATWURST)),
     )
     localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
     useSessionStore().deviceToken = 'token-here'

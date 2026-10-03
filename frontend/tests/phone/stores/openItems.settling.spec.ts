@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { SEND_TIMEOUT_MS } from '../../../src/phone/core/sendTimeout'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
-import { stubLaptop, answer, refusal, neverAnswers } from '../../support/laptop'
+import { stubLaptop, answer, neverAnswers } from '../../support/laptop'
 import { OPEN_LIST, EMPTY_LIST, SETTLED, storeWithTheOpenList } from './openItemsFixture'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())

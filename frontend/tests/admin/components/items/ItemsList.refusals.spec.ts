@@ -6,7 +6,7 @@ import FestivalItems from '../../../../src/admin/components/festivals/FestivalIt
 import { useAdminStationsStore } from '../../../../src/admin/stores/stations'
 import { testPlugins } from '../../../support/plugins'
 import { pressInDialog } from '../../../support/dom'
-import { ITEM_ID, FOOD_ID, TWO_CATEGORIES, FESTIVAL_ID, ONE_ITEM, ONE_STATION, itemsListLaptop, mountList } from './itemsListFixture'
+import { FOOD_ID, TWO_CATEGORIES, FESTIVAL_ID, ONE_ITEM, ONE_STATION, itemsListLaptop, mountList } from './itemsListFixture'
 import { stubLaptop, answer, refusal } from '../../../support/laptop'
 import { saveTheItemDialog } from '../../../support/formDialogs'
 
