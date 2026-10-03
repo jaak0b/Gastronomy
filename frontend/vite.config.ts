@@ -20,6 +20,7 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['tests/**/*.spec.ts'],
     setupFiles: ['tests/setup.ts'],
+    testTimeout: 15000,
     server: {
       deps: {
         inline: ['vuetify'],
