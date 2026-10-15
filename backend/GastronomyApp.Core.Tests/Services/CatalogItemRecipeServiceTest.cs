@@ -88,6 +88,46 @@ public sealed class CatalogItemRecipeServiceTest
     A.CallTo(() => _repository.AddAsync(A<CatalogItemIngredient>._, A<CancellationToken>._)).MustNotHaveHappened();
   }
 
+  [Test]
+  public async Task SetAmountAsync_ADeactivatedIngredientWithoutALineYet_IsRefusedWithoutAddingIt()
+  {
+    GivenTheIngredientIsDeactivated();
+
+    ErrorOr<CatalogItemIngredient> saved = await _service.SetAmountAsync(_itemId, _ingredientId, 12.5, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(saved.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(saved.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
+                      Assert.That(saved.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("DeactivatedIngredientCannotJoinRecipe"));
+                    });
+    A.CallTo(() => _repository.AddAsync(A<CatalogItemIngredient>._, A<CancellationToken>._)).MustNotHaveHappened();
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  [Test]
+  public async Task SetAmountAsync_ADeactivatedIngredientWhoseLineExists_ChangesTheAmount()
+  {
+    GivenTheIngredientIsDeactivated();
+    CatalogItemIngredient existing = new()
+    {
+      Id = Guid.NewGuid(),
+      CatalogItemId = _itemId,
+      IngredientId = _ingredientId,
+      Amount = 10
+    };
+    A.CallTo(() => _repository.FindAsync(_itemId, _ingredientId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItemIngredient?>(existing));
+
+    ErrorOr<CatalogItemIngredient> saved = await _service.SetAmountAsync(_itemId, _ingredientId, 15, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(saved.IsError, Is.False);
+                      Assert.That(existing.Amount, Is.EqualTo(15));
+                    });
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
   [TestCase(0d)]
   [TestCase(-1d)]
   [TestCase(double.NaN)]
@@ -154,5 +194,17 @@ public sealed class CatalogItemRecipeServiceTest
     ErrorOr<CatalogItemIngredient> removed = await _service.RemoveAsync(_itemId, _ingredientId, CancellationToken.None);
 
     Assert.That(removed.FirstError.NumericType, Is.EqualTo(RefusalType.NotFound));
+  }
+
+  private void GivenTheIngredientIsDeactivated()
+  {
+    A.CallTo(() => _ingredientRepository.FindByIdAsync(_ingredientId, A<CancellationToken>._))
+     .Returns(Task.FromResult<Ingredient?>(new()
+                                           {
+                                             Id = _ingredientId,
+                                             Name = "Zwiebeln",
+                                             Unit = IngredientUnit.Gram,
+                                             IsActive = false
+                                           }));
   }
 }

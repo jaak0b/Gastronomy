@@ -36,25 +36,42 @@ public sealed class IngredientStockRepositoryTest
   }
 
   [Test]
-  public async Task FindUsedOnTheMenuAsync_OneIngredientUsedOnTheMenuAndOneNot_ListsOnlyTheUsedOnesByName()
+  public async Task FindActiveUsedOnTheMenuAsync_OneIngredientUsedOnTheMenuAndOneNot_ListsOnlyTheUsedOnesByName()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var mustard = await AddIngredientAsync(fixture.DbContext, "Senf", true, seeded.FestivalId, null);
-    var bun = await AddIngredientAsync(fixture.DbContext, "Brötchen", false, seeded.FestivalId, 40);
+    var bun = await AddIngredientAsync(fixture.DbContext, "Brötchen", true, seeded.FestivalId, 40);
     await AddIngredientAsync(fixture.DbContext, "Zwiebeln", true, seeded.FestivalId, null);
     await AddRecipeLineAsync(fixture.DbContext, seeded.SausageItemId, mustard.Id, 20);
     await AddRecipeLineAsync(fixture.DbContext, seeded.SausageItemId, bun.Id, 1);
 
     IngredientStockRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<FestivalIngredient> stock = await repository.FindUsedOnTheMenuAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<FestivalIngredient> stock = await repository.FindActiveUsedOnTheMenuAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(stock.Select(row => row.Ingredient.Name), Is.EqualTo(new[] { "Brötchen", "Senf" }));
                       Assert.That(stock[0].AvailableAmount, Is.EqualTo(40));
                     });
+  }
+
+  [Test]
+  public async Task FindActiveUsedOnTheMenuAsync_ADeactivatedIngredientInARecipeOnTheMenu_LeavesItOut()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var mustard = await AddIngredientAsync(fixture.DbContext, "Senf", true, seeded.FestivalId, null);
+    var onions = await AddIngredientAsync(fixture.DbContext, "Zwiebeln", false, seeded.FestivalId, 500);
+    await AddRecipeLineAsync(fixture.DbContext, seeded.SausageItemId, mustard.Id, 20);
+    await AddRecipeLineAsync(fixture.DbContext, seeded.SausageItemId, onions.Id, 15);
+
+    IngredientStockRepository repository = new(fixture.DbContext);
+
+    IReadOnlyList<FestivalIngredient> stock = await repository.FindActiveUsedOnTheMenuAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(stock.Select(row => row.Ingredient.Name), Is.EqualTo(new[] { "Senf" }));
   }
 
   [Test]

@@ -28,9 +28,11 @@ public sealed class IngredientAdministrationServiceTest
     A.CallTo(() => _repository.FindAllOrderedByNameAsync(A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult<IReadOnlyList<Ingredient>>([_mustard]));
     A.CallTo(() => _repository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Ingredient?>(null));
     A.CallTo(() => _repository.FindByIdAsync(_mustard.Id, A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult<Ingredient?>(_mustard));
+    A.CallTo(() => _repository.FindWithRecipeLinesAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Ingredient?>(null));
+    A.CallTo(() => _repository.FindWithRecipeLinesAsync(_mustard.Id, A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult<Ingredient?>(_mustard));
     A.CallTo(() => _festivalRepository.FindAllAsync(A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Festival>>([BuildFestival(_summerFestivalId), BuildFestival(_autumnFestivalId)]));
 
-    _service = new(_repository, _festivalRepository);
+    _service = new(_repository, _festivalRepository, new IngredientService());
   }
 
   private readonly Guid _summerFestivalId = Guid.NewGuid();
@@ -68,6 +70,23 @@ public sealed class IngredientAdministrationServiceTest
                       Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.ingredients.nameTaken"));
                       Assert.That(created.FirstError.NumericType, Is.EqualTo(RefusalType.BadRequest));
                       Assert.That(created.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("ValidationFailed"));
+                    });
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  [Test]
+  public async Task CreateAsync_TheNameOfADeactivatedIngredientInOtherCase_IsRefusedNamingThatIngredient()
+  {
+    _mustard.IsActive = false;
+
+    ErrorOr<Ingredient> created = await _service.CreateAsync("SENF", IngredientUnit.Gram, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.ingredients.nameBelongsToDeactivatedIngredient"));
+                      Assert.That(created.FirstError.NumericType, Is.EqualTo(RefusalType.BadRequest));
+                      Assert.That(created.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("ValidationFailed"));
+                      Assert.That(created.RefusalMetadata(Refusal.MetadataKeys.Name), Is.EqualTo("Senf"));
                     });
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
   }
@@ -116,6 +135,29 @@ public sealed class IngredientAdministrationServiceTest
   }
 
   [Test]
+  public async Task UpdateAsync_TheNameOfADeactivatedIngredient_IsRefusedNamingThatIngredient()
+  {
+    _mustard.IsActive = false;
+    Ingredient ketchup = new()
+    {
+      Id = Guid.NewGuid(),
+      Name = "Ketchup",
+      Unit = IngredientUnit.Millilitre,
+      IsActive = true
+    };
+    A.CallTo(() => _repository.FindByIdAsync(ketchup.Id, A<CancellationToken>._)).Returns(Task.FromResult<Ingredient?>(ketchup));
+
+    ErrorOr<Ingredient> updated = await _service.UpdateAsync(ketchup.Id, "senf", IngredientUnit.Millilitre, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(updated.RefusalMessageKey(), Is.EqualTo("errors.admin.ingredients.nameBelongsToDeactivatedIngredient"));
+                      Assert.That(updated.RefusalMetadata(Refusal.MetadataKeys.Name), Is.EqualTo("Senf"));
+                      Assert.That(ketchup.Name, Is.EqualTo("Ketchup"));
+                    });
+  }
+
+  [Test]
   public async Task UpdateAsync_AnUnknownIngredient_IsRefusedAsNotFound()
   {
     ErrorOr<Ingredient> updated = await _service.UpdateAsync(Guid.NewGuid(), "Zwiebeln", IngredientUnit.Gram, CancellationToken.None);
@@ -130,6 +172,42 @@ public sealed class IngredientAdministrationServiceTest
 
     Assert.That(deactivated.Value.IsActive, Is.False);
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task DeactivateAsync_AnIngredientInTheRecipeOfAnActiveArticle_IsRefusedAndStaysSwitchedOn()
+  {
+    _mustard.CatalogItems.Add(BuildRecipeLine("Bratwurst", true));
+
+    ErrorOr<Ingredient> deactivated = await _service.DeactivateAsync(_mustard.Id, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(deactivated.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(deactivated.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
+                      Assert.That(deactivated.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("IngredientUsedByActiveItems"));
+                      Assert.That(_mustard.IsActive, Is.True);
+                    });
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  [Test]
+  public async Task DeactivateAsync_AnIngredientOnlyInTheRecipeOfASwitchedOffArticle_SwitchesItOff()
+  {
+    _mustard.CatalogItems.Add(BuildRecipeLine("Currywurst", false));
+
+    ErrorOr<Ingredient> deactivated = await _service.DeactivateAsync(_mustard.Id, CancellationToken.None);
+
+    Assert.That(deactivated.Value.IsActive, Is.False);
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task DeactivateAsync_AnUnknownIngredient_IsRefusedAsNotFound()
+  {
+    ErrorOr<Ingredient> deactivated = await _service.DeactivateAsync(Guid.NewGuid(), CancellationToken.None);
+
+    Assert.That(deactivated.FirstError.NumericType, Is.EqualTo(RefusalType.NotFound));
   }
 
   [Test]
@@ -148,6 +226,28 @@ public sealed class IngredientAdministrationServiceTest
     ErrorOr<Ingredient> activated = await _service.ActivateAsync(Guid.NewGuid(), CancellationToken.None);
 
     Assert.That(activated.FirstError.NumericType, Is.EqualTo(RefusalType.NotFound));
+  }
+
+  private CatalogItemIngredient BuildRecipeLine(string itemName, bool isTheItemActive)
+  {
+    CatalogItem item = new()
+    {
+      Id = Guid.NewGuid(),
+      Name = itemName,
+      CategoryId = Guid.NewGuid(),
+      SortOrder = 1,
+      IsActive = isTheItemActive
+    };
+
+    return new()
+    {
+      Id = Guid.NewGuid(),
+      CatalogItemId = item.Id,
+      IngredientId = _mustard.Id,
+      Amount = 20,
+      CatalogItem = item,
+      Ingredient = _mustard
+    };
   }
 
   private Festival BuildFestival(Guid festivalId)

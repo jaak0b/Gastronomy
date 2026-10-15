@@ -14,7 +14,7 @@ export type IngredientUnit = __TypedOpenapi.Schemas.IngredientUnit;
 export const IngredientUnit = z.enum(["piece", "gram", "millilitre"]);
 
 export type AdminFestivalIngredientView = __TypedOpenapi.Schemas.AdminFestivalIngredientView;
-export const AdminFestivalIngredientView = z.strictObject({ ingredientId: z.string(), name: z.string(), unit: IngredientUnit, isActive: z.boolean(), availableAmount: z.number().nullable(), usedAmount: z.number(), runsOutAtUtc: z.string().nullable() });
+export const AdminFestivalIngredientView = z.strictObject({ ingredientId: z.string(), name: z.string(), unit: IngredientUnit, availableAmount: z.number().nullable(), usedAmount: z.number(), runsOutAtUtc: z.string().nullable() });
 
 export type AdminFestivalIngredientListView = __TypedOpenapi.Schemas.AdminFestivalIngredientListView;
 export const AdminFestivalIngredientListView = z.strictObject({ ingredients: z.array(AdminFestivalIngredientView) });
@@ -26,7 +26,7 @@ export type AdminFestivalListView = __TypedOpenapi.Schemas.AdminFestivalListView
 export const AdminFestivalListView = z.strictObject({ festivals: z.array(AdminFestivalView) });
 
 export type AdminIngredientView = __TypedOpenapi.Schemas.AdminIngredientView;
-export const AdminIngredientView = z.strictObject({ ingredientId: z.string(), name: z.string(), unit: IngredientUnit, isActive: z.boolean() });
+export const AdminIngredientView = z.strictObject({ ingredientId: z.string(), name: z.string(), unit: IngredientUnit, isActive: z.boolean(), activeItemNames: z.array(z.string()) });
 
 export type AdminIngredientListView = __TypedOpenapi.Schemas.AdminIngredientListView;
 export const AdminIngredientListView = z.strictObject({ ingredients: z.array(AdminIngredientView) });

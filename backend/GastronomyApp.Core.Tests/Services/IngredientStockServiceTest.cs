@@ -47,7 +47,7 @@ public sealed class IngredientStockServiceTest
 
     A.CallTo(() => _festivalRepository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
     A.CallTo(() => _festivalRepository.FindByIdAsync(_festival.Id, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(_festival));
-    A.CallTo(() => _repository.FindUsedOnTheMenuAsync(_festival.Id, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<FestivalIngredient>>([_mustardStock]));
+    A.CallTo(() => _repository.FindActiveUsedOnTheMenuAsync(_festival.Id, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<FestivalIngredient>>([_mustardStock]));
     A.CallTo(() => _repository.SumConsumedAmountsAsync(_festival.Id, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyDictionary<Guid, double>>(new Dictionary<Guid, double> { [_mustardStock.IngredientId] = 300 }));
     A.CallTo(() => _repository.FindAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<FestivalIngredient?>(null));
     A.CallTo(() => _repository.FindAsync(_festival.Id, _mustardStock.IngredientId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalIngredient?>(_mustardStock));

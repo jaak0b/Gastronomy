@@ -6,6 +6,8 @@ public interface ICatalogItemRepository
 {
   public Task<CatalogItem?> FindByIdAsync(Guid catalogItemId, CancellationToken cancellationToken);
 
+  public Task<CatalogItem?> FindWithRecipeAsync(Guid catalogItemId, CancellationToken cancellationToken);
+
   public Task<IReadOnlyList<CatalogItem>> FindByIdsAsync(IReadOnlyCollection<Guid> catalogItemIds, CancellationToken cancellationToken);
 
   public Task<IReadOnlyList<CatalogItem>> FindAllOrderedAsync(Guid? festivalId, CancellationToken cancellationToken);

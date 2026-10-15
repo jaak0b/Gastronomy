@@ -10,6 +10,8 @@ public static class RefusalMessageKeys
 
   public const string AdminIngredientAmountInvalid = "errors.admin.ingredients.amountInvalid";
 
+  public const string AdminIngredientNameBelongsToDeactivatedIngredient = "errors.admin.ingredients.nameBelongsToDeactivatedIngredient";
+
   public const string AdminIngredientNameMissing = "errors.admin.ingredients.nameMissing";
 
   public const string AdminIngredientNameTaken = "errors.admin.ingredients.nameTaken";

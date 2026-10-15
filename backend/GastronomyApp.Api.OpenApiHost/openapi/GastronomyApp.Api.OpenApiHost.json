@@ -1835,7 +1835,6 @@
           "ingredientId",
           "name",
           "unit",
-          "isActive",
           "availableAmount",
           "usedAmount",
           "runsOutAtUtc"
@@ -1851,9 +1850,6 @@
           },
           "unit": {
             "$ref": "#/components/schemas/IngredientUnit"
-          },
-          "isActive": {
-            "type": "boolean"
           },
           "availableAmount": {
             "type": [
@@ -1957,7 +1953,8 @@
           "ingredientId",
           "name",
           "unit",
-          "isActive"
+          "isActive",
+          "activeItemNames"
         ],
         "type": "object",
         "properties": {
@@ -1973,6 +1970,12 @@
           },
           "isActive": {
             "type": "boolean"
+          },
+          "activeItemNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

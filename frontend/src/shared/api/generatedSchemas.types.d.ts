@@ -4,11 +4,11 @@
   export type AdminCategoryView = { categoryId: string, name: string, colourHex: string, sortOrder: number, isActive: boolean }
 export type AdminCategoryListView = { categories: Array<AdminCategoryView> }
 export type IngredientUnit = ("piece" | "gram" | "millilitre")
-export type AdminFestivalIngredientView = { ingredientId: string, name: string, unit: IngredientUnit, isActive: boolean, availableAmount: (null | number), usedAmount: number, runsOutAtUtc: (null | string) }
+export type AdminFestivalIngredientView = { ingredientId: string, name: string, unit: IngredientUnit, availableAmount: (null | number), usedAmount: number, runsOutAtUtc: (null | string) }
 export type AdminFestivalIngredientListView = { ingredients: Array<AdminFestivalIngredientView> }
 export type AdminFestivalView = { festivalId: string, name: string, startsAtUtc: string, endsAtUtc: string, isHidden: boolean, isRunning: boolean, stationCount: number, menuItemCount: number, orderCount: number }
 export type AdminFestivalListView = { festivals: Array<AdminFestivalView> }
-export type AdminIngredientView = { ingredientId: string, name: string, unit: IngredientUnit, isActive: boolean }
+export type AdminIngredientView = { ingredientId: string, name: string, unit: IngredientUnit, isActive: boolean, activeItemNames: Array<string> }
 export type AdminIngredientListView = { ingredients: Array<AdminIngredientView> }
 export type AdminItemAtFestivalView = { priceCents: number, isAvailable: boolean, stationIds: Array<string> }
 export type AdminItemIngredientView = { ingredientId: string, amount: number }

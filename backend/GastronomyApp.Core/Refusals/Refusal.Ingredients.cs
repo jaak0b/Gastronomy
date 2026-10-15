@@ -48,6 +48,17 @@ public static partial class Refusal
                         });
     }
 
+    public static Error NameBelongsToDeactivatedIngredient(string deactivatedIngredientName)
+    {
+      return BadRequest(RefusalMessageKeys.AdminIngredientNameBelongsToDeactivatedIngredient,
+                        $"The deactivated ingredient {deactivatedIngredientName} already carries the name, compared without regard to case.",
+                        new Dictionary<string, object>
+                        {
+                          [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed,
+                          [MetadataKeys.Name] = deactivatedIngredientName
+                        });
+    }
+
     public static Error AmountInvalid(double amount)
     {
       return BadRequest(RefusalMessageKeys.AdminIngredientAmountInvalid,
@@ -66,6 +77,26 @@ public static partial class Refusal
                         {
                           [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed
                         });
+    }
+
+    public static Error UsedByActiveItems(Guid ingredientId, IReadOnlyList<string> activeItemNames)
+    {
+      return Conflict("errors.admin.actionFailed",
+                      $"The ingredient {ingredientId} stays switched on because the active articles {string.Join(", ", activeItemNames)} still use it in their recipes. The ingredients page disables the delete control while an active article uses the ingredient, so this call did not come from that screen.",
+                      new Dictionary<string, object>
+                      {
+                        [MetadataKeys.ProblemCode] = "IngredientUsedByActiveItems"
+                      });
+    }
+
+    public static Error DeactivatedIngredientCannotJoinRecipe(Guid itemId, Guid ingredientId)
+    {
+      return Conflict("errors.admin.actionFailed",
+                      $"The ingredient {ingredientId} is deactivated, so it was not added to the recipe of the article {itemId}. The recipe dialog never sends a deactivated ingredient, so this call did not come from that screen.",
+                      new Dictionary<string, object>
+                      {
+                        [MetadataKeys.ProblemCode] = "DeactivatedIngredientCannotJoinRecipe"
+                      });
     }
 
     public static Error UnitUndefined(IngredientUnit? unit)

@@ -4,7 +4,7 @@ namespace GastronomyApp.Core.Ports;
 
 public interface IIngredientStockRepository
 {
-  public Task<IReadOnlyList<FestivalIngredient>> FindUsedOnTheMenuAsync(Guid festivalId, CancellationToken cancellationToken);
+  public Task<IReadOnlyList<FestivalIngredient>> FindActiveUsedOnTheMenuAsync(Guid festivalId, CancellationToken cancellationToken);
 
   public Task<FestivalIngredient?> FindAsync(Guid festivalId, Guid ingredientId, CancellationToken cancellationToken);
 

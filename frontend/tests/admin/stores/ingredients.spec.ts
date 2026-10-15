@@ -3,8 +3,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useAdminIngredientsStore } from '../../../src/admin/stores/ingredients'
 import { aHold, answer, heldUntil, inTurn, stubLaptop, type StubbedLaptop } from '../../support/laptop'
 
-const FLOUR = { ingredientId: 'ingredient-mehl', name: 'Mehl', unit: 'gram', isActive: true }
-const BUN = { ingredientId: 'ingredient-broetchen', name: 'Brötchen', unit: 'piece', isActive: true }
+const FLOUR = { ingredientId: 'ingredient-mehl', name: 'Mehl', unit: 'gram', isActive: true, activeItemNames: [] }
+const BUN = { ingredientId: 'ingredient-broetchen', name: 'Brötchen', unit: 'piece', isActive: true, activeItemNames: [] }
 
 
 interface IngredientsScenario {

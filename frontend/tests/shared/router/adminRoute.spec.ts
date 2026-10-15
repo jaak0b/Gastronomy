@@ -24,6 +24,14 @@ describe('resolveRoute', () => {
     })
   })
 
+  it('reads the ingredients path as the ingredients tab', () => {
+    expect(resolveRoute('/admin/ingredients')).toEqual({
+      name: 'admin',
+      section: 'ingredients',
+      festivalId: null,
+    })
+  })
+
   it('reads the address of one festival as that festival page', () => {
     expect(resolveRoute('/admin/festivals/fest-1')).toEqual({
       name: 'admin',

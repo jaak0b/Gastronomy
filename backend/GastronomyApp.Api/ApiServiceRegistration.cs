@@ -92,6 +92,7 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton<OrderRoutingResolver>();
     services.AddSingleton<OrderService>();
+    services.AddSingleton<IngredientService>();
     services.AddSingleton<StationOrderService>();
     services.AddSingleton<StationService>();
     services.AddSingleton<FestivalService>();

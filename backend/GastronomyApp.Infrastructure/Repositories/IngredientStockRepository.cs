@@ -14,10 +14,10 @@ public sealed class IngredientStockRepository : IIngredientStockRepository
     _dbContext = dbContext;
   }
 
-  public async Task<IReadOnlyList<FestivalIngredient>> FindUsedOnTheMenuAsync(Guid festivalId, CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<FestivalIngredient>> FindActiveUsedOnTheMenuAsync(Guid festivalId, CancellationToken cancellationToken)
   {
     return await _dbContext.FestivalIngredients.AsNoTracking()
-                           .Where(stock => stock.FestivalId == festivalId && _dbContext.CatalogItemIngredients.Any(recipeLine => recipeLine.IngredientId == stock.IngredientId && _dbContext.FestivalCatalogItems.Any(menuRow => menuRow.FestivalId == festivalId && menuRow.CatalogItemId == recipeLine.CatalogItemId)))
+                           .Where(stock => stock.FestivalId == festivalId && stock.Ingredient.IsActive && _dbContext.CatalogItemIngredients.Any(recipeLine => recipeLine.IngredientId == stock.IngredientId && _dbContext.FestivalCatalogItems.Any(menuRow => menuRow.FestivalId == festivalId && menuRow.CatalogItemId == recipeLine.CatalogItemId)))
                            .Include(stock => stock.Ingredient)
                            .OrderBy(stock => stock.Ingredient.Name)
                            .ToListAsync(cancellationToken);

@@ -28,7 +28,7 @@ public sealed class IngredientStockService
     if (festival is null)
       return Refusal.Ingredients.FestivalNotFound(festivalId);
 
-    IReadOnlyList<FestivalIngredient> stock = await _repository.FindUsedOnTheMenuAsync(festivalId, cancellationToken);
+    IReadOnlyList<FestivalIngredient> stock = await _repository.FindActiveUsedOnTheMenuAsync(festivalId, cancellationToken);
     IReadOnlyDictionary<Guid, double> consumedByIngredientId = await _repository.SumConsumedAmountsAsync(festivalId, cancellationToken);
 
     List<IngredientStockLevel> levels = stock.Select(row => new IngredientStockLevel(row, consumedByIngredientId.GetValueOrDefault(row.IngredientId), RunsOutAtUtc(festival, row.AvailableAmount, consumedByIngredientId.GetValueOrDefault(row.IngredientId)))).ToList();

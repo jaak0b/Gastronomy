@@ -9,17 +9,19 @@ namespace GastronomyApp.Core.Services;
 public sealed class IngredientAdministrationService
 {
   private readonly IFestivalRepository _festivalRepository;
+  private readonly IngredientService _ingredientService;
   private readonly IIngredientRepository _repository;
 
-  public IngredientAdministrationService(IIngredientRepository repository, IFestivalRepository festivalRepository)
+  public IngredientAdministrationService(IIngredientRepository repository, IFestivalRepository festivalRepository, IngredientService ingredientService)
   {
     _repository = repository;
     _festivalRepository = festivalRepository;
+    _ingredientService = ingredientService;
   }
 
   public Task<IReadOnlyList<Ingredient>> ListAsync(CancellationToken cancellationToken)
   {
-    return _repository.FindAllOrderedByNameAsync(cancellationToken);
+    return _repository.FindAllWithRecipeLinesOrderedByNameAsync(cancellationToken);
   }
 
   public async Task<ErrorOr<Ingredient>> CreateAsync(string? name, IngredientUnit? unit, CancellationToken cancellationToken)
@@ -28,8 +30,12 @@ public sealed class IngredientAdministrationService
       return Refusal.Ingredients.UnitUndefined(unit);
 
     IReadOnlyList<Ingredient> ingredients = await _repository.FindAllOrderedByNameAsync(cancellationToken);
+    var namesake = ingredients.FirstOrDefault(ingredient => string.Equals(ingredient.Name, name, StringComparison.OrdinalIgnoreCase));
 
-    if (ingredients.Any(ingredient => string.Equals(ingredient.Name, name, StringComparison.OrdinalIgnoreCase)))
+    if (namesake is { IsActive: false })
+      return Refusal.Ingredients.NameBelongsToDeactivatedIngredient(namesake.Name);
+
+    if (namesake is not null)
       return Refusal.Ingredients.NameTaken(name!);
 
     Ingredient created = new()
@@ -68,8 +74,12 @@ public sealed class IngredientAdministrationService
       return Refusal.Ingredients.UnitUndefined(unit);
 
     IReadOnlyList<Ingredient> ingredients = await _repository.FindAllOrderedByNameAsync(cancellationToken);
+    var namesake = ingredients.FirstOrDefault(other => other.Id != ingredientId && string.Equals(other.Name, name, StringComparison.OrdinalIgnoreCase));
 
-    if (ingredients.Any(other => other.Id != ingredientId && string.Equals(other.Name, name, StringComparison.OrdinalIgnoreCase)))
+    if (namesake is { IsActive: false })
+      return Refusal.Ingredients.NameBelongsToDeactivatedIngredient(namesake.Name);
+
+    if (namesake is not null)
       return Refusal.Ingredients.NameTaken(name!);
 
     ingredient.Name = name!;
@@ -94,10 +104,15 @@ public sealed class IngredientAdministrationService
 
   public async Task<ErrorOr<Ingredient>> DeactivateAsync(Guid ingredientId, CancellationToken cancellationToken)
   {
-    var ingredient = await _repository.FindByIdAsync(ingredientId, cancellationToken);
+    var ingredient = await _repository.FindWithRecipeLinesAsync(ingredientId, cancellationToken);
 
     if (ingredient is null)
       return Refusal.Ingredients.IngredientNotFound(ingredientId);
+
+    IReadOnlyList<string> activeItemNames = _ingredientService.ActiveItemNamesOf(ingredient);
+
+    if (activeItemNames.Count > 0)
+      return Refusal.Ingredients.UsedByActiveItems(ingredientId, activeItemNames);
 
     ingredient.IsActive = false;
     await _repository.SaveChangesAsync(cancellationToken);

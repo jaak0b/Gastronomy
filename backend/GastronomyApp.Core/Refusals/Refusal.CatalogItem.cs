@@ -58,6 +58,17 @@ public static partial class Refusal
                                  });
     }
 
+    public static Error RecipeHoldsDeactivatedIngredient(Guid itemId, string ingredientName)
+    {
+      return UnprocessableEntity("errors.admin.items.ingredientIsDeactivated",
+                                 $"The recipe of the article {itemId} holds the deactivated ingredient {ingredientName}, so the article cannot be switched on.",
+                                 new Dictionary<string, object>
+                                 {
+                                   [MetadataKeys.ProblemCode] = ProblemCodes.UnprocessableEntity,
+                                   [MetadataKeys.Name] = ingredientName
+                                 });
+    }
+
     public static Error ItemIsOnTheRunningFestivalsMenu(Guid itemId)
     {
       return Conflict("errors.admin.items.isOnTheRunningFestivalsMenu",

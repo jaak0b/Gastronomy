@@ -15,7 +15,6 @@ const FLOUR_STOCK = {
   ingredientId: 'ingredient-mehl',
   name: 'Mehl',
   unit: 'gram',
-  isActive: true,
   availableAmount: 5000,
   usedAmount: 1200,
   runsOutAtUtc: '2026-07-18T20:30:00Z',

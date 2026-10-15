@@ -319,19 +319,20 @@
         "used": "Verbraucht: {amount}",
         "runsOutAt": "Reicht voraussichtlich bis {moment}",
         "pieceCount": "{amount} Stück | {amount} Stück",
-        "deactivateTitle": "Zutat deaktivieren?"
+        "deactivateTitle": "Zutat deaktivieren?",
+        "editTitle": "Zutat bearbeiten"
       },
       "actions": {
         "edit": "Zutaten bearbeiten",
         "close": "Schließen",
         "activate": "Zutat aktivieren",
         "deactivateConfirm": "Zutat deaktivieren",
-        "manage": "Zutaten verwalten",
+        "new": "Neue Zutat",
         "addToRecipe": "Hinzufügen"
       },
       "messages": {
-        "deactivateCost": "Eine deaktivierte Zutat begrenzt den Verkauf nicht mehr.",
-        "noneYet": "Es gibt noch keine Zutaten."
+        "noneYet": "Es gibt noch keine Zutaten. Klicken Sie auf \"Neue Zutat\".",
+        "usedByActiveItems": "Diese Zutat wird noch bei {items} verwendet. Nehmen Sie sie dort zuerst heraus, unter \"Artikel\"."
       },
       "units": {
         "piece": "Stück",
@@ -427,12 +428,14 @@
       "ingredients": {
         "nameMissing": "Geben Sie einen Namen für die Zutat an.",
         "nameTaken": "Eine Zutat mit diesem Namen gibt es schon.",
+        "nameBelongsToDeactivatedIngredient": "Die Zutat {name} gibt es schon, sie ist aber deaktiviert. Aktivieren Sie sie unter \"Zutaten\".",
         "amountInvalid": "Geben Sie eine Menge größer als null an.",
         "stockInvalid": "Geben Sie null oder mehr an, oder lassen Sie das Feld leer."
       },
       "items": {
         "categoryIsOff": "Diese Kategorie ist abgeschaltet. Schalten Sie zuerst die Kategorie ein.",
         "categoryUnknown": "Wählen Sie eine Kategorie aus, bevor Sie speichern.",
+        "ingredientIsDeactivated": "Die Zutat {name} ist deaktiviert. Aktivieren Sie sie zuerst unter \"Zutaten\".",
         "isOnTheRunningFestivalsMenu": "Ein Artikel auf der Karte eines aktiven Festes kann nicht abgeschaltet werden.",
         "nameMissing": "Geben Sie dem Artikel einen Namen, bevor Sie ihn speichern.",
         "nameTaken": "Dieser Name ist schon vergeben. Wählen Sie einen anderen Namen.",

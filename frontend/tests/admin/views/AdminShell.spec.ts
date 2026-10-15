@@ -54,4 +54,21 @@ describe('the admin shell', () => {
     expect(shell.find('[data-test="admin-tabs"] [data-test="admin-tab"][data-selected="true"]').text()).toBe('Kellner')
     expect(shell.find('[data-test="not-on-laptop"]').exists()).toBe(false)
   })
+
+  it('places the ingredients tab between the items and the waiters', async () => {
+    shellLaptop(200)
+
+    const shell = mountShellAt('/admin/ingredients')
+    await flushPromises()
+
+    expect(shell.findAll('[data-test="admin-tabs"] [data-test="admin-tab"]').map((tab) => tab.text())).toEqual([
+      'Übersicht',
+      'Feste',
+      'Ausgabestellen',
+      'Artikel',
+      'Zutaten',
+      'Kellner',
+    ])
+    expect(shell.find('[data-test="admin-tabs"] [data-test="admin-tab"][data-selected="true"]').text()).toBe('Zutaten')
+  })
 })

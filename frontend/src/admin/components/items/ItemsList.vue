@@ -17,7 +17,6 @@ import CategoryDialog from '../categories/CategoryDialog.vue'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
 import ItemDialog from './ItemDialog.vue'
 import ItemsListCategorySection from './ItemsListCategorySection.vue'
-import IngredientsManageDialog from '../ingredients/IngredientsManageDialog.vue'
 import ItemIngredientsDialog from './ItemIngredientsDialog.vue'
 
 const { t } = useI18n()
@@ -26,7 +25,6 @@ const categories = useAdminCategoriesStore()
 const festivals = useAdminFestivalsStore()
 const ingredients = useAdminIngredientsStore()
 const recipeItemId = ref<string | null>(null)
-const managesIngredients = ref(false)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
 const askingAboutCategoryId = ref<string | null>(null)
@@ -245,15 +243,6 @@ onUnmounted(() => {
       <v-btn class="new-category" data-test="new-category" color="primary" variant="tonal" @click="startCreatingCategory">
         {{ t('admin.categories.actions.new') }}
       </v-btn>
-      <v-btn
-        class="manage-ingredients"
-        data-test="manage-ingredients"
-        color="primary"
-        variant="tonal"
-        @click="managesIngredients = true"
-      >
-        {{ t('admin.ingredients.actions.manage') }}
-      </v-btn>
     </div>
 
     <ItemDialog
@@ -268,7 +257,6 @@ onUnmounted(() => {
       :item="recipeItem"
       @close="recipeItemId = null"
     />
-    <IngredientsManageDialog v-if="managesIngredients" @close="managesIngredients = false" />
     <CategoryDialog
       v-if="isCategoryDialogOpen"
       :key="editedCategory?.categoryId ?? 'new'"

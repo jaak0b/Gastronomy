@@ -46,7 +46,6 @@ public sealed class AdminFestivalIngredientEndpointsTest
                       Assert.That(mustard.GetProperty("ingredientId").GetGuid(), Is.EqualTo(mustardId));
                       Assert.That(mustard.GetProperty("name").GetString(), Is.EqualTo("Senf"));
                       Assert.That(mustard.GetProperty("unit").GetString(), Is.EqualTo("gram"));
-                      Assert.That(mustard.GetProperty("isActive").GetBoolean(), Is.True);
                       Assert.That(mustard.GetProperty("availableAmount").GetDouble(), Is.EqualTo(1000));
                       Assert.That(mustard.GetProperty("usedAmount").GetDouble(), Is.EqualTo(40));
                       Assert.That(mustard.GetProperty("runsOutAtUtc").GetString(), Does.EndWith("Z"));
@@ -68,6 +67,25 @@ public sealed class AdminFestivalIngredientEndpointsTest
                       Assert.That(mustard.GetProperty("usedAmount").GetDouble(), Is.Zero);
                       Assert.That(mustard.GetProperty("runsOutAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
                     });
+  }
+
+  [Test]
+  public async Task GetFestivalIngredients_ADeactivatedIngredientInTheRecipe_LeavesItOut()
+  {
+    var mustardId = await CreateIngredientAsync("Senf");
+    var onionsId = await CreateIngredientAsync("Zwiebeln");
+    await PutRecipeLineAsync(mustardId, 20);
+    await PutRecipeLineAsync(onionsId, 15);
+    await SwitchTheBratwurstOffAsync();
+    using (var deactivated = await _context.Client.PostAsync($"/api/admin/ingredients/{onionsId}/deactivate", null))
+    {
+      Assert.That(deactivated.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    var ingredients = JsonDocument.Parse(await _context.Client.GetStringAsync($"/api/admin/festivals/{_context.World.FestivalId}/ingredients")).RootElement.GetProperty("ingredients");
+    List<string?> names = ingredients.EnumerateArray().Select(ingredient => ingredient.GetProperty("name").GetString()).ToList();
+
+    Assert.That(names, Is.EqualTo(new[] { "Senf" }));
   }
 
   [Test]
@@ -191,6 +209,14 @@ public sealed class AdminFestivalIngredientEndpointsTest
     using var response = await _context.Client.PutAsJsonAsync($"/api/admin/items/{_context.World.BratwurstItemId}/ingredients/{ingredientId}", new { amount });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), await response.Content.ReadAsStringAsync());
+  }
+
+  private async Task SwitchTheBratwurstOffAsync()
+  {
+    await using var database = _context.Factory.CreateContext();
+    var bratwurst = await database.CatalogItems.FirstAsync(item => item.Id == _context.World.BratwurstItemId);
+    bratwurst.IsActive = false;
+    await database.SaveChangesAsync();
   }
 
   private async Task SetAvailableAmountAsync(Guid ingredientId, double availableAmount)

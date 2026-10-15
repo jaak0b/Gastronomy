@@ -10,10 +10,11 @@ import { stubLaptop, answer, emptyAnswer, refusal, type LaptopCall, type LaptopR
 import { onScreen, allOnScreen, typeInto, leave, inputOf } from '../../../support/dom'
 import { nextTick } from 'vue'
 
-const FLOUR = { ingredientId: 'ingredient-mehl', name: 'Mehl', unit: 'gram', isActive: true }
-const MILK = { ingredientId: 'ingredient-milch', name: 'Milch', unit: 'millilitre', isActive: true }
-const BUN = { ingredientId: 'ingredient-broetchen', name: 'Brötchen', unit: 'piece', isActive: true }
-const CREATED_EGG = { ingredientId: 'ingredient-ei', name: 'Ei', unit: 'piece', isActive: true }
+const FLOUR = { ingredientId: 'ingredient-mehl', name: 'Mehl', unit: 'gram', isActive: true, activeItemNames: ['Pfannkuchen'] }
+const MILK = { ingredientId: 'ingredient-milch', name: 'Milch', unit: 'millilitre', isActive: true, activeItemNames: [] }
+const BUN = { ingredientId: 'ingredient-broetchen', name: 'Brötchen', unit: 'piece', isActive: true, activeItemNames: ['Pfannkuchen'] }
+const CREATED_EGG = { ingredientId: 'ingredient-ei', name: 'Ei', unit: 'piece', isActive: true, activeItemNames: [] }
+const OLD_HONEY = { ingredientId: 'ingredient-honig', name: 'Honig', unit: 'gram', isActive: false, activeItemNames: [] }
 
 const PANCAKE: AdminItemView = {
   itemId: 'item-pfannkuchen',
@@ -38,7 +39,7 @@ function recipeLaptop(refuses: (call: LaptopCall) => LaptopReply | null = () => 
     .answers('DELETE', /./, emptyAnswer(204))
     .answers('GET', (call) => call.url === '/api/admin/ingredients', (call) =>
       answer({
-        ingredients: eggWasCreated ? [BUN, CREATED_EGG, FLOUR, MILK] : [BUN, FLOUR, MILK],
+        ingredients: eggWasCreated ? [BUN, CREATED_EGG, OLD_HONEY, FLOUR, MILK] : [BUN, OLD_HONEY, FLOUR, MILK],
       })(call),
     )
     .answers('POST', (call) => call.url === '/api/admin/ingredients', (call) => {
@@ -309,6 +310,31 @@ describe('adding an ingredient to the recipe', () => {
     await nextTick()
 
     expect(addButtonIsDisabled()).toBe(true)
+  })
+
+  it('sends a name typed for a deactivated ingredient and shows the laptop naming that ingredient', async () => {
+    const laptop = recipeLaptop((call) =>
+      call.method === 'POST'
+        ? refusal('errors.admin.ingredients.nameBelongsToDeactivatedIngredient', {
+            status: 400,
+            code: 'ValidationFailed',
+            parameters: { name: 'Honig' },
+          })
+        : null,
+    )
+    const dialog = await mountDialog()
+
+    await dialog.findComponent(VCombobox).setValue('honig')
+    typeInto(addedAmountInput(), '20')
+    await vi.waitFor(() => expect(addButtonIsDisabled()).toBe(false))
+    onScreen('[data-test="add-to-recipe"]').click()
+
+    await vi.waitFor(() =>
+      expect(onScreen('[data-test="form-dialog"] [data-test="refusal"]').textContent?.trim()).toBe(
+        'Die Zutat Honig gibt es schon, sie ist aber deaktiviert. Aktivieren Sie sie unter "Zutaten".',
+      ),
+    )
+    expect(laptop.writes().map((call) => `${call.method} ${call.url}`)).toEqual(['POST /api/admin/ingredients'])
   })
 
   it('shows the reason in German when the laptop refuses the new name, and keeps everything typed', async () => {

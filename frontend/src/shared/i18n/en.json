@@ -319,19 +319,20 @@
         "used": "Used: {amount}",
         "runsOutAt": "Expected to last until {moment}",
         "pieceCount": "{amount} piece | {amount} pieces",
-        "deactivateTitle": "Deactivate this ingredient?"
+        "deactivateTitle": "Deactivate this ingredient?",
+        "editTitle": "Edit the ingredient"
       },
       "actions": {
         "edit": "Edit ingredients",
         "close": "Close",
         "activate": "Activate the ingredient",
         "deactivateConfirm": "Deactivate the ingredient",
-        "manage": "Manage ingredients",
+        "new": "New ingredient",
         "addToRecipe": "Add"
       },
       "messages": {
-        "deactivateCost": "A deactivated ingredient no longer limits what can be sold.",
-        "noneYet": "There are no ingredients yet."
+        "noneYet": "There are no ingredients yet. Click \"New ingredient\".",
+        "usedByActiveItems": "This ingredient is still used in {items}. Take it out of those items first, under \"Items\"."
       },
       "units": {
         "piece": "pieces",
@@ -427,12 +428,14 @@
       "ingredients": {
         "nameMissing": "Enter a name for the ingredient.",
         "nameTaken": "An ingredient with this name already exists.",
+        "nameBelongsToDeactivatedIngredient": "The ingredient {name} already exists but is deactivated. Activate it under \"Ingredients\".",
         "amountInvalid": "Enter an amount above zero.",
         "stockInvalid": "Enter zero or more, or leave the field empty."
       },
       "items": {
         "categoryIsOff": "This category is switched off. Switch the category on first.",
         "categoryUnknown": "Choose a category before you save.",
+        "ingredientIsDeactivated": "The ingredient {name} is deactivated. Activate it under \"Ingredients\" first.",
         "isOnTheRunningFestivalsMenu": "An item on an active festival's menu cannot be switched off.",
         "nameMissing": "Give the item a name before you save it.",
         "nameTaken": "There is already an item with this name. Choose a different one.",

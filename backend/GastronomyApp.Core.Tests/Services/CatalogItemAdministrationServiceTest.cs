@@ -1,7 +1,9 @@
 ﻿using ErrorOr;
 using FakeItEasy;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
 using Microsoft.Extensions.Time.Testing;
@@ -26,6 +28,7 @@ public sealed class CatalogItemAdministrationServiceTest
     A.CallTo(() => _itemRepository.FindMenuRowAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<FestivalCatalogItem?>(null));
     A.CallTo(() => _categoryRepository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<CatalogCategory?>(null));
     A.CallTo(() => _itemRepository.FindByIdAsync(_bratwurstId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItem?>(BuildItem(_bratwurstId, "Bratwurst", _foodCategoryId, true)));
+    A.CallTo(() => _itemRepository.FindWithRecipeAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItem?>(null));
     A.CallTo(() => _categoryRepository.FindByIdAsync(_foodCategoryId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogCategory?>(BuildCategory(_foodCategoryId, true)));
     A.CallTo(() => _categoryRepository.FindByIdAsync(_switchedOffCategoryId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogCategory?>(BuildCategory(_switchedOffCategoryId, false)));
 
@@ -169,11 +172,50 @@ public sealed class CatalogItemAdministrationServiceTest
   public async Task ActivateAsync_ItemWhoseCategoryIsSwitchedOff_FailsBecauseTheCategoryIsSwitchedOff()
   {
     var itemId = Guid.NewGuid();
-    A.CallTo(() => _itemRepository.FindByIdAsync(itemId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItem?>(BuildItem(itemId, "Pommes", _switchedOffCategoryId, false)));
+    A.CallTo(() => _itemRepository.FindWithRecipeAsync(itemId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItem?>(BuildItem(itemId, "Pommes", _switchedOffCategoryId, false)));
 
     ErrorOr<CatalogItem> switchedOn = await _service.ActivateAsync(itemId, CancellationToken.None);
 
     Assert.That(switchedOn.RefusalMessageKey(), Is.EqualTo("errors.admin.items.categoryIsOff"));
+  }
+
+  [Test]
+  public async Task ActivateAsync_TwoDeactivatedIngredientsInTheRecipe_FailsOncePerIngredientOrderedByName()
+  {
+    var currywurst = GivenASwitchedOffArticleWithTheRecipe(_foodCategoryId, BuildIngredient("Zwiebeln", false), BuildIngredient("Senf", true), BuildIngredient("Brötchen", false));
+
+    ErrorOr<CatalogItem> switchedOn = await _service.ActivateAsync(currywurst.Id, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(switchedOn.RefusedLines().Select(line => line.Code), Is.EqualTo(new[] { "errors.admin.items.ingredientIsDeactivated", "errors.admin.items.ingredientIsDeactivated" }));
+                      Assert.That(switchedOn.RefusedLines().Select(line => line.Metadata![Refusal.MetadataKeys.Name]), Is.EqualTo(new[] { "Brötchen", "Zwiebeln" }));
+                      Assert.That(switchedOn.FirstError.NumericType, Is.EqualTo(RefusalType.UnprocessableEntity));
+                      Assert.That(switchedOn.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("UnprocessableEntity"));
+                      Assert.That(currywurst.IsActive, Is.False);
+                    });
+    A.CallTo(() => _itemRepository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  [Test]
+  public async Task ActivateAsync_ASwitchedOffCategoryAndADeactivatedIngredient_FailsBecauseOfTheCategoryFirst()
+  {
+    var currywurst = GivenASwitchedOffArticleWithTheRecipe(_switchedOffCategoryId, BuildIngredient("Zwiebeln", false));
+
+    ErrorOr<CatalogItem> switchedOn = await _service.ActivateAsync(currywurst.Id, CancellationToken.None);
+
+    Assert.That(switchedOn.RefusalMessageKey(), Is.EqualTo("errors.admin.items.categoryIsOff"));
+  }
+
+  [Test]
+  public async Task ActivateAsync_ARecipeOfActiveIngredients_SwitchesTheArticleOn()
+  {
+    var currywurst = GivenASwitchedOffArticleWithTheRecipe(_foodCategoryId, BuildIngredient("Senf", true));
+
+    ErrorOr<CatalogItem> switchedOn = await _service.ActivateAsync(currywurst.Id, CancellationToken.None);
+
+    Assert.That(switchedOn.Value.IsActive, Is.True);
+    A.CallTo(() => _itemRepository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
@@ -238,6 +280,37 @@ public sealed class CatalogItemAdministrationServiceTest
       Name = name,
       CategoryId = categoryId,
       SortOrder = 1,
+      IsActive = isActive
+    };
+  }
+
+  private CatalogItem GivenASwitchedOffArticleWithTheRecipe(Guid categoryId, params Ingredient[] ingredients)
+  {
+    var currywurst = BuildItem(Guid.NewGuid(), "Currywurst", categoryId, false);
+
+    foreach (var ingredient in ingredients)
+      currywurst.Ingredients.Add(new()
+                                 {
+                                   Id = Guid.NewGuid(),
+                                   CatalogItemId = currywurst.Id,
+                                   IngredientId = ingredient.Id,
+                                   Amount = 1,
+                                   CatalogItem = currywurst,
+                                   Ingredient = ingredient
+                                 });
+
+    A.CallTo(() => _itemRepository.FindWithRecipeAsync(currywurst.Id, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItem?>(currywurst));
+
+    return currywurst;
+  }
+
+  private Ingredient BuildIngredient(string name, bool isActive)
+  {
+    return new()
+    {
+      Id = Guid.NewGuid(),
+      Name = name,
+      Unit = IngredientUnit.Gram,
       IsActive = isActive
     };
   }

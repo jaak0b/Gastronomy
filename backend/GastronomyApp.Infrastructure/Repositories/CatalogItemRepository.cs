@@ -19,6 +19,11 @@ public sealed class CatalogItemRepository : ICatalogItemRepository
     return await _dbContext.CatalogItems.FirstOrDefaultAsync(item => item.Id == catalogItemId, cancellationToken);
   }
 
+  public async Task<CatalogItem?> FindWithRecipeAsync(Guid catalogItemId, CancellationToken cancellationToken)
+  {
+    return await _dbContext.CatalogItems.Include(item => item.Ingredients).ThenInclude(recipeLine => recipeLine.Ingredient).FirstOrDefaultAsync(item => item.Id == catalogItemId, cancellationToken);
+  }
+
   public async Task<IReadOnlyList<CatalogItem>> FindByIdsAsync(IReadOnlyCollection<Guid> catalogItemIds, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(catalogItemIds);

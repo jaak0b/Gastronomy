@@ -85,13 +85,21 @@ public sealed class CatalogItemAdministrationService
 
   public async Task<ErrorOr<CatalogItem>> ActivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
-    var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
+    var item = await _itemRepository.FindWithRecipeAsync(itemId, cancellationToken);
 
     if (item is null)
       return Refusal.CatalogItem.ItemNotFound(itemId);
 
     if (await CategoryRefusalAsync(item.CategoryId, true, cancellationToken) is { } categoryRefusal)
       return categoryRefusal;
+
+    List<Error> deactivatedIngredientRefusals = item.Ingredients.Where(recipeLine => !recipeLine.Ingredient.IsActive)
+                                                    .OrderBy(recipeLine => recipeLine.Ingredient.Name, StringComparer.Ordinal)
+                                                    .Select(recipeLine => Refusal.CatalogItem.RecipeHoldsDeactivatedIngredient(itemId, recipeLine.Ingredient.Name))
+                                                    .ToList();
+
+    if (deactivatedIngredientRefusals.Count > 0)
+      return deactivatedIngredientRefusals;
 
     item.IsActive = true;
     await _itemRepository.SaveChangesAsync(cancellationToken);

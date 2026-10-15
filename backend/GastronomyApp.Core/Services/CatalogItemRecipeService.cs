@@ -23,7 +23,9 @@ public sealed class CatalogItemRecipeService
     if (await _itemRepository.FindByIdAsync(itemId, cancellationToken) is null)
       return Refusal.Ingredients.ItemNotFound(itemId);
 
-    if (await _ingredientRepository.FindByIdAsync(ingredientId, cancellationToken) is null)
+    var ingredient = await _ingredientRepository.FindByIdAsync(ingredientId, cancellationToken);
+
+    if (ingredient is null)
       return Refusal.Ingredients.IngredientNotFound(ingredientId);
 
     if (amount is not { } usedPerUnit || !double.IsFinite(usedPerUnit) || usedPerUnit <= 0)
@@ -33,6 +35,9 @@ public sealed class CatalogItemRecipeService
 
     if (recipeLine is null)
     {
+      if (!ingredient.IsActive)
+        return Refusal.Ingredients.DeactivatedIngredientCannotJoinRecipe(itemId, ingredientId);
+
       recipeLine = new()
       {
         Id = Guid.NewGuid(),

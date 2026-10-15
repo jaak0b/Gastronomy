@@ -1,3 +1,4 @@
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -64,6 +65,37 @@ public sealed class CatalogItemRepositoryTest
   }
 
   [Test]
+  public async Task FindWithRecipeAsync_AnArticleWithTwoIngredients_CarriesEveryRecipeLineWithItsIngredient()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    AddIngredientToTheRecipe(fixture, seeded.SausageItemId, "Senf", true);
+    AddIngredientToTheRecipe(fixture, seeded.SausageItemId, "Zwiebeln", false);
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    fixture.DbContext.ChangeTracker.Clear();
+    CatalogItemRepository repository = new(fixture.DbContext);
+
+    var found = await repository.FindWithRecipeAsync(seeded.SausageItemId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(found!.Ingredients.Select(recipeLine => recipeLine.Ingredient.Name), Is.EquivalentTo(new[] { "Senf", "Zwiebeln" }));
+                      Assert.That(found.Ingredients.Single(recipeLine => recipeLine.Ingredient.Name == "Zwiebeln").Ingredient.IsActive, Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task FindWithRecipeAsync_AnUnknownArticle_FindsNothing()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    CatalogItemRepository repository = new(fixture.DbContext);
+
+    var found = await repository.FindWithRecipeAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(found, Is.Null);
+  }
+
+  [Test]
   public async Task IsNameTakenAsync_TheNameOfAnotherItem_AnswersTrue()
   {
     using SqliteInMemoryFixture fixture = new();
@@ -114,5 +146,24 @@ public sealed class CatalogItemRepositoryTest
                       Assert.That(sausage.FestivalCatalogItems, Is.Empty);
                       Assert.That(sausage.StationAssignments, Is.Empty);
                     });
+  }
+
+  private void AddIngredientToTheRecipe(SqliteInMemoryFixture fixture, Guid catalogItemId, string name, bool isActive)
+  {
+    Ingredient ingredient = new()
+    {
+      Id = Guid.NewGuid(),
+      Name = name,
+      Unit = IngredientUnit.Gram,
+      IsActive = isActive
+    };
+    fixture.DbContext.Ingredients.Add(ingredient);
+    fixture.DbContext.CatalogItemIngredients.Add(new()
+                                                 {
+                                                   Id = Guid.NewGuid(),
+                                                   CatalogItemId = catalogItemId,
+                                                   IngredientId = ingredient.Id,
+                                                   Amount = 1
+                                                 });
   }
 }
