@@ -68,7 +68,10 @@ export function adminErrorMessageForKey(
   return adminErrorMessage({ code: '', messageKey, parameters, details: null })
 }
 
-export function adminErrorMessageText(translate: Translate, message: AdminErrorMessage): string {
+export function adminErrorMessageText(translate: Translate, message: AdminErrorMessage | null): string | null {
+  if (message === null) {
+    return null
+  }
   return message.count === null
     ? translate(message.key, message.parameters)
     : translate(message.key, message.parameters, message.count)

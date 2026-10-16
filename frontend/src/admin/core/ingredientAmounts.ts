@@ -25,14 +25,6 @@ const AMOUNT_INPUT = /^\d+(?:[.,]\d+)?$/
 
 const THOUSAND = 1000
 
-export const ALL_ENTRY_UNITS: readonly AmountEntryUnit[] = [
-  'piece',
-  'gram',
-  'kilogram',
-  'millilitre',
-  'litre',
-]
-
 export const INGREDIENT_UNITS: readonly IngredientUnit[] = ['piece', 'gram', 'millilitre']
 
 export function entryUnitsFor(unit: IngredientUnit): readonly AmountEntryUnit[] {
@@ -48,7 +40,7 @@ export function entryUnitsFor(unit: IngredientUnit): readonly AmountEntryUnit[] 
   }
 }
 
-export function ingredientUnitOf(entryUnit: AmountEntryUnit): IngredientUnit {
+function ingredientUnitOf(entryUnit: AmountEntryUnit): IngredientUnit {
   switch (entryUnit) {
     case 'piece':
       return 'piece'

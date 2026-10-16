@@ -3,30 +3,18 @@ import IngredientsList from '../../../../src/admin/components/ingredients/Ingred
 import type { AdminIngredientView } from '../../../../src/shared/api/generatedSchemas'
 import { testPlugins } from '../../../support/plugins'
 import { answer, emptyAnswer, stubLaptop, type LaptopReply, type StubbedLaptop } from '../../../support/laptop'
+import { anAdminIngredient } from '../../../support/wireViews'
 
-export const MUSTARD: AdminIngredientView = {
-  ingredientId: 'ingredient-senf',
-  name: 'Senf',
-  unit: 'gram',
-  isActive: true,
-  activeItemNames: [],
-}
+export const MUSTARD = anAdminIngredient({ ingredientId: 'ingredient-senf', name: 'Senf', unit: 'gram' })
 
-export const BUN: AdminIngredientView = {
-  ingredientId: 'ingredient-broetchen',
-  name: 'Brötchen',
-  unit: 'piece',
-  isActive: true,
-  activeItemNames: [],
-}
+export const BUN = anAdminIngredient()
 
-export const OLD_MILK: AdminIngredientView = {
+export const OLD_MILK = anAdminIngredient({
   ingredientId: 'ingredient-milch',
   name: 'Milch',
   unit: 'millilitre',
   isActive: false,
-  activeItemNames: [],
-}
+})
 
 export interface IngredientsListScenario {
   ingredients?: AdminIngredientView[]

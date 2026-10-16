@@ -9,6 +9,7 @@ defineProps<{
   saveDisabled?: boolean
   busy?: boolean
   closeOnly?: boolean
+  wide?: boolean
 }>()
 const emit = defineEmits<{ save: []; cancel: [] }>()
 
@@ -16,7 +17,7 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <v-dialog :model-value="true" max-width="560" persistent scrollable>
+  <v-dialog :model-value="true" :max-width="wide ? 880 : 560" persistent scrollable>
     <v-card class="form-dialog" data-test="form-dialog">
       <v-card-title class="form-dialog-title" data-test="form-dialog-title">{{ title }}</v-card-title>
       <v-form @submit.prevent="emit('save')">

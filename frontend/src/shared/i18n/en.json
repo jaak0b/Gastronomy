@@ -320,7 +320,8 @@
         "runsOutAt": "Expected to last until {moment}",
         "pieceCount": "{amount} piece | {amount} pieces",
         "deactivateTitle": "Deactivate this ingredient?",
-        "editTitle": "Edit the ingredient"
+        "editTitle": "Edit the ingredient",
+        "removeFromRecipeTitle": "Remove the ingredient"
       },
       "actions": {
         "edit": "Edit ingredients",
@@ -328,10 +329,13 @@
         "activate": "Activate the ingredient",
         "deactivateConfirm": "Deactivate the ingredient",
         "new": "New ingredient",
-        "addToRecipe": "Add"
+        "addToRecipe": "Add the ingredient",
+        "removeFromRecipe": "Remove"
       },
       "messages": {
         "noneYet": "There are no ingredients yet. Click \"New ingredient\".",
+        "noIngredientsToAdd": "There is no other ingredient to add. Click \"New ingredient\".",
+        "removeFromRecipeBody": "The ingredient is removed from {item} only.",
         "usedByActiveItems": "This ingredient is still used in {items}. Take it out of those items first, under \"Items\"."
       },
       "units": {

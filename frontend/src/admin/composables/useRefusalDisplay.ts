@@ -10,9 +10,7 @@ export function useRefusalDisplay(): {
 } {
   const { t } = useI18n()
   const refusal = ref<AdminErrorMessage | null>(null)
-  const refusalText = computed(() =>
-    refusal.value === null ? null : adminErrorMessageText(t, refusal.value),
-  )
+  const refusalText = computed(() => adminErrorMessageText(t, refusal.value))
 
   function showRefusalOf(result: AdminActionResult<unknown>): boolean {
     refusal.value = refusalFrom(result)

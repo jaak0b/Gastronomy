@@ -3,7 +3,6 @@ import {
   amountInputFor,
   amountInputSwitchedTo,
   entryUnitsFor,
-  ingredientUnitOf,
   parseAmountInput,
   displayedAmountFor,
 } from '../../../src/admin/core/ingredientAmounts'
@@ -124,20 +123,6 @@ describe('an amount written on the screen', () => {
       formattedCount: '12.000',
       entryUnit: 'piece',
     })
-  })
-})
-
-describe('the unit a new ingredient is kept in', () => {
-  it('is grams when the amount was typed in kilograms', () => {
-    expect(ingredientUnitOf('kilogram')).toBe('gram')
-  })
-
-  it('is millilitres when the amount was typed in litres', () => {
-    expect(ingredientUnitOf('litre')).toBe('millilitre')
-  })
-
-  it('is pieces when the amount was typed in pieces', () => {
-    expect(ingredientUnitOf('piece')).toBe('piece')
   })
 })
 

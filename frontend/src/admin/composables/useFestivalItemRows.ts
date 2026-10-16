@@ -4,13 +4,6 @@ import { AdminItemView } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
 import { appLanguageOf } from '../../shared/core/deviceLanguage'
 import { formatEuroInput, parseEuroInput } from '../../shared/core/money'
-import { refusalFrom, type AdminActionResult } from '../core/adminActionResult'
-import {
-
-  adminErrorMessageForKey,
-  adminErrorMessageText,
-  type AdminErrorMessage,
-} from '../core/adminErrorMessage'
 import {
 
   laptopConfirmedField,
@@ -18,6 +11,7 @@ import {
   type LaptopConfirmedField,
 } from '../core/laptopConfirmedField'
 import { useAdminItemsStore } from '../stores/items'
+import { useRowRefusals } from './useRowRefusals'
 
 export type PlacedItem = AdminItemView & { atTheFestival: NonNullable<AdminItemView['atTheFestival']> }
 
@@ -31,7 +25,6 @@ export interface FestivalItemRow {
   stations: LaptopConfirmedField<string[]>
   onItsWay: Placement | null
   soldOutSwitchRenderKey: number
-  refusal: AdminErrorMessage | null
 }
 
 export interface FestivalItemRows {
@@ -56,13 +49,13 @@ function emptyFestivalItemRow(): FestivalItemRow {
     stations: laptopConfirmedField<string[]>([], []),
     onItsWay: null,
     soldOutSwitchRenderKey: 0,
-    refusal: null,
   }
 }
 
 export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
-  const { t, locale } = useI18n()
+  const { locale } = useI18n()
   const items = useAdminItemsStore()
+  const refusals = useRowRefusals()
   const rows = ref(new Map<string, FestivalItemRow>())
 
   const itemsAtTheFestival = computed(() =>
@@ -87,8 +80,8 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
     )
   }
 
-  function isBeingEdited(row: FestivalItemRow): boolean {
-    return row.onItsWay !== null || row.refusal !== null || awaitsTheLaptop(row)
+  function isBeingEdited(itemId: string, row: FestivalItemRow): boolean {
+    return row.onItsWay !== null || refusals.isRefused(itemId) || awaitsTheLaptop(row)
   }
 
   watch(
@@ -97,10 +90,12 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
       const next = new Map<string, FestivalItemRow>()
       for (const item of listed) {
         const known = rows.value.get(item.itemId)
-        next.set(
-          item.itemId,
-          known !== undefined && isBeingEdited(known) ? known : rowForPlacedItem(item),
-        )
+        if (known !== undefined && isBeingEdited(item.itemId, known)) {
+          next.set(item.itemId, known)
+        } else {
+          refusals.forgetRefusalOf(item.itemId)
+          next.set(item.itemId, rowForPlacedItem(item))
+        }
       }
       rows.value = next
     },
@@ -126,37 +121,11 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
     return items.items.find((item) => item.itemId === itemId)?.name ?? ''
   }
 
-  function refuse(
-    itemId: string,
-    messageKey: string,
-    parameters: Record<string, string | number> = {},
-  ): void {
-    const row = rows.value.get(itemId)
-    if (row !== undefined) {
-      row.refusal = adminErrorMessageForKey(messageKey, parameters)
-    }
-  }
-
-  function showRowRefusal(itemId: string, result: AdminActionResult<unknown>): void {
-    const message = refusalFrom(result)
-    if (message === null) {
-      return
-    }
-    const row = rows.value.get(itemId)
-    if (row !== undefined) {
-      row.refusal = message
-    }
-  }
-
-  function rowRefusalText(itemId: string): string | null {
-    const message = rowShownFor(itemId).refusal
-    return message === null ? null : adminErrorMessageText(t, message)
-  }
-
   function typePrice(itemId: string, typed: string): void {
     const row = rows.value.get(itemId)
     if (row !== undefined) {
       row.price.edited = typed
+      refusals.forgetRefusalOf(itemId)
     }
   }
 
@@ -168,11 +137,11 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
   function priceTheLaptopCanTake(itemId: string, row: FestivalItemRow): number | null {
     const priceCents = parseEuroInput(row.price.edited)
     if (priceCents === null) {
-      refuse(itemId, 'errors.admin.festivals.itemPriceOutOfRange')
+      refusals.refuse(itemId, 'errors.admin.festivals.itemPriceOutOfRange')
       return null
     }
     if (row.stations.edited.length === 0) {
-      refuse(itemId, 'admin.festivals.errors.namedItemNeedsAStation', { item: itemNameFor(itemId) })
+      refusals.refuse(itemId, 'admin.festivals.errors.namedItemNeedsAStation', { item: itemNameFor(itemId) })
       return null
     }
     return priceCents
@@ -192,7 +161,7 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
     if (priceTheLaptopCanTake(itemId, row) === null) {
       return
     }
-    row.refusal = null
+    refusals.forgetRefusalOf(itemId)
     if (row.onItsWay !== null) {
       return
     }
@@ -210,7 +179,7 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
         stationIds: [...row.stations.edited],
       }
       row.onItsWay = onItsWay
-      row.refusal = null
+      refusals.forgetRefusalOf(itemId)
       const placed = await items.putAtTheFestival(festivalId.value, itemId, {
         priceCents,
         stationIds: [...onItsWay.stationIds],
@@ -221,10 +190,10 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
           row.price.confirmedByTheLaptop = onItsWay.priceText
           row.stations.confirmedByTheLaptop = [...onItsWay.stationIds]
           row.onItsWay = null
-          row.refusal = null
+          refusals.forgetRefusalOf(itemId)
           break
         case 'failed':
-          row.refusal = placed.message
+          refusals.showRefusalOf(itemId, placed)
           row.price.edited = row.price.confirmedByTheLaptop
           row.stations.edited = [...row.stations.confirmedByTheLaptop]
           row.onItsWay = null
@@ -241,11 +210,11 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
       return
     }
     if (priceIsUnreadable(itemId)) {
-      refuse(itemId, 'errors.admin.festivals.itemPriceOutOfRange')
+      refusals.refuse(itemId, 'errors.admin.festivals.itemPriceOutOfRange')
       return
     }
     if (stationIds.length === 0) {
-      refuse(itemId, 'admin.festivals.errors.namedItemNeedsAStation', { item: itemNameFor(itemId) })
+      refusals.refuse(itemId, 'admin.festivals.errors.namedItemNeedsAStation', { item: itemNameFor(itemId) })
       return
     }
     row.stations.edited = [...stationIds]
@@ -253,31 +222,25 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
   }
 
   async function setSoldOut(item: AdminItemView, isSoldOut: boolean): Promise<void> {
-    const started = rows.value.get(item.itemId)
-    if (started !== undefined) {
-      started.refusal = null
-    }
+    refusals.forgetRefusalOf(item.itemId)
     const accepted = await items.setAvailability(festivalId.value, item.itemId, !isSoldOut)
     const row = rows.value.get(item.itemId)
     if (row !== undefined) {
       row.soldOutSwitchRenderKey += 1
     }
-    showRowRefusal(item.itemId, accepted)
+    refusals.showRefusalOf(item.itemId, accepted)
   }
 
   async function removeFromTheFestival(item: AdminItemView): Promise<void> {
-    const row = rows.value.get(item.itemId)
-    if (row !== undefined) {
-      row.refusal = null
-    }
+    refusals.forgetRefusalOf(item.itemId)
     const accepted = await items.removeFromTheFestival(festivalId.value, item.itemId)
-    showRowRefusal(item.itemId, accepted)
+    refusals.showRefusalOf(item.itemId, accepted)
   }
 
   return {
     itemsAtTheFestival,
     rowShownFor,
-    rowRefusalText,
+    rowRefusalText: refusals.refusalTextOf,
     priceIsUnreadable,
     typePrice,
     save,

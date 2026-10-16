@@ -320,7 +320,8 @@
         "runsOutAt": "Reicht voraussichtlich bis {moment}",
         "pieceCount": "{amount} Stück | {amount} Stück",
         "deactivateTitle": "Zutat deaktivieren?",
-        "editTitle": "Zutat bearbeiten"
+        "editTitle": "Zutat bearbeiten",
+        "removeFromRecipeTitle": "Zutat entfernen"
       },
       "actions": {
         "edit": "Zutaten bearbeiten",
@@ -328,10 +329,13 @@
         "activate": "Zutat aktivieren",
         "deactivateConfirm": "Zutat deaktivieren",
         "new": "Neue Zutat",
-        "addToRecipe": "Hinzufügen"
+        "addToRecipe": "Zutat hinzufügen",
+        "removeFromRecipe": "Entfernen"
       },
       "messages": {
         "noneYet": "Es gibt noch keine Zutaten. Klicken Sie auf \"Neue Zutat\".",
+        "noIngredientsToAdd": "Es gibt keine weitere Zutat zum Hinzufügen. Klicken Sie auf \"Neue Zutat\".",
+        "removeFromRecipeBody": "Die Zutat wird nur bei {item} entfernt.",
         "usedByActiveItems": "Diese Zutat wird noch bei {items} verwendet. Nehmen Sie sie dort zuerst heraus, unter \"Artikel\"."
       },
       "units": {

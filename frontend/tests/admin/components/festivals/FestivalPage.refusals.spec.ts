@@ -241,3 +241,18 @@ describe('an item change the laptop refuses', () => {
     expect(document.querySelector('[data-test="form-dialog"]')).not.toBeNull()
   })
 })
+
+describe('a refusal on an item row the admin edits again', () => {
+  it('goes away as soon as the admin types the price the laptop holds', async () => {
+    festivalLaptop()
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="price-field"] input').exists()).toBe(true))
+    await page.get('[data-test="price-field"] input').setValue('')
+    await page.get('[data-test="price-field"] input').trigger('blur')
+    await vi.waitFor(() => expect(itemRow(page, SAUSAGE_ID).find('[data-test="refusal"]').exists()).toBe(true))
+
+    await page.get('[data-test="price-field"] input').setValue('3,50')
+
+    await vi.waitFor(() => expect(itemRow(page, SAUSAGE_ID).find('[data-test="refusal"]').exists()).toBe(false))
+  })
+})

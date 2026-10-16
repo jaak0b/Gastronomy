@@ -1,0 +1,36 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mount } from '@vue/test-utils'
+import BaseFormDialog from '../../../src/shared/components/BaseFormDialog.vue'
+import { testPlugins } from '../../support/plugins'
+import { isOnScreen, onScreen, waitUntil } from '../../support/dom'
+
+async function openFormDialog(wide?: boolean): Promise<void> {
+  mount(BaseFormDialog, {
+    props: { title: 'Neue Zutat', errorText: null, wide },
+    global: { plugins: testPlugins() },
+    attachTo: document.body,
+  })
+  await waitUntil(() => expect(isOnScreen('[data-test="form-dialog"]')).toBe(true))
+}
+
+function widthOfTheDialog(): string | undefined {
+  return onScreen('[data-test="form-dialog"]').closest<HTMLElement>('.v-overlay__content')?.style.maxWidth
+}
+
+beforeEach(() => {
+  document.body.innerHTML = ''
+})
+
+describe('the width of a form dialog', () => {
+  it('is the width of an ordinary form when nothing asks for more', async () => {
+    await openFormDialog()
+
+    expect(widthOfTheDialog()).toBe('560px')
+  })
+
+  it('is wider when the form asks to be wide', async () => {
+    await openFormDialog(true)
+
+    expect(widthOfTheDialog()).toBe('880px')
+  })
+})
