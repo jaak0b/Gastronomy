@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   formatFestivalMoment,
-  formatRunOutMoment,
+  formatTimeOfDay,
+  formatTimeTick,
   localInputToUtcIso,
+  spansMoreThanOneDay,
   utcIsoToLocalInput,
 } from '../../../src/shared/core/moments'
 
@@ -59,28 +61,55 @@ describe('the moment the admin types', () => {
 })
 
 
-describe('the moment the stock of an ingredient is expected to run out', () => {
-  const NOW = new Date(2026, 6, 18, 18, 0)
+describe('a time of day in the stock section', () => {
+  const SATURDAY_EVENING = new Date(2026, 6, 18, 21, 30)
 
-  it('is written as the time of day in German when it is today', () => {
-    const today = new Date(2026, 6, 18, 21, 30).toISOString()
-
-    expect(formatRunOutMoment(today, 'de', NOW)).toBe('21:30')
+  it('is the hour and minute in German', () => {
+    expect(formatTimeOfDay(SATURDAY_EVENING, 'de', false)).toBe('21:30')
   })
 
-  it('is written as the time of day in English when it is today', () => {
-    const today = new Date(2026, 6, 18, 21, 30).toISOString()
-
-    expect(formatRunOutMoment(today, 'en', NOW)).toBe('09:30 PM')
+  it('is the hour and minute in English', () => {
+    expect(formatTimeOfDay(SATURDAY_EVENING, 'en', false)).toBe('09:30 PM')
   })
 
-  it('carries the date when it is another day', () => {
-    const tomorrow = new Date(2026, 6, 19, 1, 15).toISOString()
+  it('names the weekday in German when asked to', () => {
+    expect(formatTimeOfDay(SATURDAY_EVENING, 'de', true)).toBe('Sa., 21:30')
+  })
 
-    expect(formatRunOutMoment(tomorrow, 'de', NOW)).toBe('19.07., 01:15')
+  it('names the weekday in English when asked to', () => {
+    expect(formatTimeOfDay(SATURDAY_EVENING, 'en', true)).toBe('Sat 09:30 PM')
   })
 
   it('is blank when the laptop sent something unreadable', () => {
-    expect(formatRunOutMoment('not a moment', 'de', NOW)).toBe('')
+    expect(formatTimeOfDay(new Date('not a moment'), 'de', false)).toBe('')
+  })
+})
+
+describe('a label on the time axis of a chart', () => {
+  const SATURDAY_EVENING = new Date(2026, 6, 18, 21, 30)
+
+  it.each([
+    { form: 'timeOfDay', language: 'de', text: '21:30' },
+    { form: 'timeOfDay', language: 'en', text: '09:30 PM' },
+    { form: 'weekdayAndTime', language: 'de', text: 'Sa., 21:30' },
+    { form: 'weekdayAndTime', language: 'en', text: 'Sat 09:30 PM' },
+    { form: 'date', language: 'de', text: '18.07.' },
+    { form: 'date', language: 'en', text: '07/18' },
+  ] as const)('is written as $text for the form $form in $language', ({ form, language, text }) => {
+    expect(formatTimeTick(SATURDAY_EVENING, language, form)).toBe(text)
+  })
+
+  it('is blank for a date when the laptop sent something unreadable', () => {
+    expect(formatTimeTick(new Date('not a moment'), 'de', 'date')).toBe('')
+  })
+})
+
+describe('a festival period', () => {
+  it('spans one day when it starts and ends on the same local day', () => {
+    expect(spansMoreThanOneDay('2026-07-18T08:00:00Z', '2026-07-18T20:00:00Z')).toBe(false)
+  })
+
+  it('spans more than one day when it runs past local midnight', () => {
+    expect(spansMoreThanOneDay('2026-07-18T16:00:00Z', '2026-07-18T23:00:00Z')).toBe(true)
   })
 })

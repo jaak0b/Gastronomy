@@ -17,7 +17,9 @@ public sealed class IngredientStockRepository : IIngredientStockRepository
   public async Task<IReadOnlyList<FestivalIngredient>> FindActiveUsedOnTheMenuAsync(Guid festivalId, CancellationToken cancellationToken)
   {
     return await _dbContext.FestivalIngredients.AsNoTracking()
-                           .Where(stock => stock.FestivalId == festivalId && stock.Ingredient.IsActive && _dbContext.CatalogItemIngredients.Any(recipeLine => recipeLine.IngredientId == stock.IngredientId && _dbContext.FestivalCatalogItems.Any(menuRow => menuRow.FestivalId == festivalId && menuRow.CatalogItemId == recipeLine.CatalogItemId)))
+                           .Where(stock => stock.FestivalId == festivalId
+                                           && stock.Ingredient.IsActive
+                                           && _dbContext.CatalogItemIngredients.Any(recipeLine => recipeLine.IngredientId == stock.IngredientId && _dbContext.FestivalCatalogItems.Any(menuRow => menuRow.FestivalId == festivalId && menuRow.CatalogItemId == recipeLine.CatalogItemId)))
                            .Include(stock => stock.Ingredient)
                            .OrderBy(stock => stock.Ingredient.Name)
                            .ToListAsync(cancellationToken);
@@ -42,10 +44,7 @@ public sealed class IngredientStockRepository : IIngredientStockRepository
   {
     return await _dbContext.OrderItems.AsNoTracking()
                            .Where(orderItem => orderItem.StationOrder.Order.FestivalId == festivalId)
-                           .Join(_dbContext.CatalogItemIngredients,
-                                 orderItem => orderItem.CatalogItemId,
-                                 recipeLine => recipeLine.CatalogItemId,
-                                 (orderItem, recipeLine) => recipeLine)
+                           .Join(_dbContext.CatalogItemIngredients, orderItem => orderItem.CatalogItemId, recipeLine => recipeLine.CatalogItemId, (orderItem, recipeLine) => recipeLine)
                            .GroupBy(recipeLine => recipeLine.IngredientId)
                            .Select(group => new
                                             {
@@ -53,6 +52,35 @@ public sealed class IngredientStockRepository : IIngredientStockRepository
                                               ConsumedAmount = group.Sum(recipeLine => recipeLine.Amount)
                                             })
                            .ToDictionaryAsync(consumption => consumption.IngredientId, consumption => consumption.ConsumedAmount, cancellationToken);
+  }
+
+  public async Task<IReadOnlyDictionary<Guid, IReadOnlyDictionary<DateTime, double>>> SumConsumedAmountsByOrderTimeAsync(Guid festivalId, CancellationToken cancellationToken)
+  {
+    var consumption = await _dbContext.OrderItems.AsNoTracking()
+                                      .Where(orderItem => orderItem.StationOrder.Order.FestivalId == festivalId)
+                                      .Join(_dbContext.CatalogItemIngredients,
+                                            orderItem => orderItem.CatalogItemId,
+                                            recipeLine => recipeLine.CatalogItemId,
+                                            (orderItem, recipeLine) => new
+                                                                       {
+                                                                         recipeLine.IngredientId,
+                                                                         OrderedAtUtc = orderItem.StationOrder.Order.CreatedAtUtc,
+                                                                         recipeLine.Amount
+                                                                       })
+                                      .GroupBy(consumed => new
+                                                           {
+                                                             consumed.IngredientId,
+                                                             consumed.OrderedAtUtc
+                                                           })
+                                      .Select(group => new
+                                                       {
+                                                         group.Key.IngredientId,
+                                                         group.Key.OrderedAtUtc,
+                                                         ConsumedAmount = group.Sum(consumed => consumed.Amount)
+                                                       })
+                                      .ToListAsync(cancellationToken);
+
+    return consumption.GroupBy(consumed => consumed.IngredientId).ToDictionary(ingredient => ingredient.Key, ingredient => (IReadOnlyDictionary<DateTime, double>)ingredient.ToDictionary(consumed => DateTime.SpecifyKind(consumed.OrderedAtUtc, DateTimeKind.Utc), consumed => consumed.ConsumedAmount));
   }
 
   public async Task SaveChangesAsync(CancellationToken cancellationToken)

@@ -4,7 +4,9 @@
   export type AdminCategoryView = { categoryId: string, name: string, colourHex: string, sortOrder: number, isActive: boolean }
 export type AdminCategoryListView = { categories: Array<AdminCategoryView> }
 export type IngredientUnit = ("piece" | "gram" | "millilitre")
-export type AdminFestivalIngredientView = { ingredientId: string, name: string, unit: IngredientUnit, availableAmount: (null | number), usedAmount: number, runsOutAtUtc: (null | string) }
+export type IngredientUsagePoint = { atUtc: string, usedAmount: number }
+export type StockWarning = ("none" | "runsOutSoon" | "usedUp")
+export type AdminFestivalIngredientView = { ingredientId: string, name: string, unit: IngredientUnit, availableAmount: (null | number), usedAmount: number, usage: Array<IngredientUsagePoint>, runsOutAtUtcSinceStart: (null | string), runsOutAtUtcFromLastTwoHours: (null | string), stockWarning: StockWarning, runsOutSoonAtUtc: (null | string) }
 export type AdminFestivalIngredientListView = { ingredients: Array<AdminFestivalIngredientView> }
 export type AdminFestivalView = { festivalId: string, name: string, startsAtUtc: string, endsAtUtc: string, isHidden: boolean, isRunning: boolean, stationCount: number, menuItemCount: number, orderCount: number }
 export type AdminFestivalListView = { festivals: Array<AdminFestivalView> }

@@ -213,7 +213,7 @@ onUnmounted(() => {
 
       <FestivalStations :festival-id="festivalId" />
       <FestivalItems :festival-id="festivalId" :is-running="festival?.isRunning === true" />
-      <FestivalStock :festival-id="festivalId" />
+      <FestivalStock :festival="festival" />
     </template>
   </v-container>
 </template>

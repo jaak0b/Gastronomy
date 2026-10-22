@@ -21,7 +21,7 @@ public sealed class StockSoldOutMarkerTest
     A.CallTo(() => _repository.SumConsumedAmountsAsync(_festivalId, A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult<IReadOnlyDictionary<Guid, double>>(_consumed));
     A.CallTo(() => _repository.FindAvailableMenuRowsWithRecipesAsync(_festivalId, A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult<IReadOnlyList<FestivalCatalogItem>>(_menuRows.Where(menuRow => menuRow.IsAvailable).ToList()));
 
-    _marker = new(_repository, NullLogger<StockSoldOutMarker>.Instance);
+    _marker = new(_repository, new(), NullLogger<StockSoldOutMarker>.Instance);
   }
 
   private readonly Guid _festivalId = Guid.NewGuid();
@@ -64,6 +64,19 @@ public sealed class StockSoldOutMarkerTest
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
   }
 
+  [TestCase(33d, 32.67, 0.33)]
+  [TestCase(5d, 4.9, 0.1)]
+  public async Task MarkItemsWithoutEnoughStockSoldOutAsync_OnePortionLeftAfterFractionalPortions_KeepsTheArticleOn(double availableAmount, double consumedAmount, double portionAmount)
+  {
+    GivenStock(_mustardId, availableAmount);
+    _consumed[_mustardId] = consumedAmount;
+    var bratwurst = GivenMenuRow(new Dictionary<Guid, double> { [_mustardId] = portionAmount });
+
+    await _marker.MarkItemsWithoutEnoughStockSoldOutAsync(_festivalId, CancellationToken.None);
+
+    Assert.That(bratwurst.IsAvailable, Is.True);
+  }
+
   [Test]
   public async Task MarkItemsWithoutEnoughStockSoldOutAsync_MoreConsumedThanWasAvailable_SwitchesTheArticleOffWithoutFailing()
   {
@@ -83,7 +96,11 @@ public sealed class StockSoldOutMarkerTest
     GivenStock(_bunId, 50);
     _consumed[_mustardId] = 99;
     _consumed[_bunId] = 10;
-    var bratwurst = GivenMenuRow(new Dictionary<Guid, double> { [_mustardId] = 20, [_bunId] = 1 });
+    var bratwurst = GivenMenuRow(new Dictionary<Guid, double>
+                                 {
+                                   [_mustardId] = 20,
+                                   [_bunId] = 1
+                                 });
     var plainBun = GivenMenuRow(new Dictionary<Guid, double> { [_bunId] = 1 });
 
     await _marker.MarkItemsWithoutEnoughStockSoldOutAsync(_festivalId, CancellationToken.None);
@@ -138,21 +155,21 @@ public sealed class StockSoldOutMarkerTest
   {
     var itemId = Guid.NewGuid();
     FestivalCatalogItem menuRow = new()
-    {
-      Id = Guid.NewGuid(),
-      FestivalId = _festivalId,
-      CatalogItemId = itemId,
-      PriceCents = 350,
-      IsAvailable = true,
-      CatalogItem = new()
-      {
-        Id = itemId,
-        Name = "Artikel",
-        CategoryId = Guid.NewGuid(),
-        SortOrder = 1,
-        IsActive = true
-      }
-    };
+                                  {
+                                    Id = Guid.NewGuid(),
+                                    FestivalId = _festivalId,
+                                    CatalogItemId = itemId,
+                                    PriceCents = 350,
+                                    IsAvailable = true,
+                                    CatalogItem = new()
+                                                  {
+                                                    Id = itemId,
+                                                    Name = "Artikel",
+                                                    CategoryId = Guid.NewGuid(),
+                                                    SortOrder = 1,
+                                                    IsActive = true
+                                                  }
+                                  };
 
     foreach (var line in recipe)
       menuRow.CatalogItem.Ingredients.Add(new()

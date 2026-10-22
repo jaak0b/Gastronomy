@@ -6,12 +6,14 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class StockSoldOutMarker
 {
+  private readonly IngredientAmountComparison _amountComparison;
   private readonly ILogger<StockSoldOutMarker> _logger;
   private readonly IIngredientStockRepository _repository;
 
-  public StockSoldOutMarker(IIngredientStockRepository repository, ILogger<StockSoldOutMarker> logger)
+  public StockSoldOutMarker(IIngredientStockRepository repository, IngredientAmountComparison amountComparison, ILogger<StockSoldOutMarker> logger)
   {
     _repository = repository;
+    _amountComparison = amountComparison;
     _logger = logger;
   }
 
@@ -23,11 +25,14 @@ public sealed class StockSoldOutMarker
       return [];
 
     IReadOnlyDictionary<Guid, double> consumedByIngredientId = await _repository.SumConsumedAmountsAsync(festivalId, cancellationToken);
-    Dictionary<Guid, double> remainingByIngredientId = limitedStock.ToDictionary(stock => stock.IngredientId, stock => stock.AvailableAmount!.Value - consumedByIngredientId.GetValueOrDefault(stock.IngredientId));
+    Dictionary<Guid, double> availableByIngredientId = limitedStock.ToDictionary(stock => stock.IngredientId, stock => stock.AvailableAmount!.Value);
 
     IReadOnlyList<FestivalCatalogItem> availableMenuRows = await _repository.FindAvailableMenuRowsWithRecipesAsync(festivalId, cancellationToken);
 
-    List<FestivalCatalogItem> soldOut = availableMenuRows.Where(menuRow => menuRow.CatalogItem.Ingredients.Any(recipeLine => remainingByIngredientId.TryGetValue(recipeLine.IngredientId, out var remaining) && remaining < recipeLine.Amount)).ToList();
+    List<FestivalCatalogItem> soldOut = availableMenuRows
+                                       .Where(menuRow => menuRow.CatalogItem.Ingredients.Any(recipeLine => availableByIngredientId.TryGetValue(recipeLine.IngredientId, out var available)
+                                                                                                           && !_amountComparison.IsAtLeast(available, consumedByIngredientId.GetValueOrDefault(recipeLine.IngredientId) + recipeLine.Amount)))
+                                       .ToList();
 
     if (soldOut.Count == 0)
       return [];

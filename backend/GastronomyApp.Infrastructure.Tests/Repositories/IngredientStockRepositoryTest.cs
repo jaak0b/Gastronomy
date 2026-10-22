@@ -36,6 +36,39 @@ public sealed class IngredientStockRepositoryTest
   }
 
   [Test]
+  public async Task SumConsumedAmountsByOrderTimeAsync_TwoOrdersOneWithSeveralItems_SumsEachOrderIntoOneUtcMomentOfThatFestivalOnly()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var mustard = await AddIngredientAsync(fixture.DbContext, "Senf", true, seeded.FestivalId, null);
+    await AddRecipeLineAsync(fixture.DbContext, seeded.SausageItemId, mustard.Id, 20);
+    await AddRecipeLineAsync(fixture.DbContext, seeded.LemonadeItemId, mustard.Id, 1.5);
+    var acceptance = new OrderAcceptanceComposition().Create(fixture.DbContext);
+    await acceptance.AcceptAsync(RequestFor(seeded.SausageItemId, seeded.SausageItemId, seeded.LemonadeItemId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    await acceptance.AcceptAsync(RequestFor(seeded.SausageItemId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    List<DateTime> orderTimes = await fixture.DbContext.Orders.OrderBy(order => order.GlobalOrderNumber).Select(order => order.CreatedAtUtc).ToListAsync(TestContext.CurrentContext.CancellationToken);
+
+    IngredientStockRepository repository = new(fixture.DbContext);
+
+    IReadOnlyDictionary<Guid, IReadOnlyDictionary<DateTime, double>> atTheFestival = await repository.SumConsumedAmountsByOrderTimeAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyDictionary<Guid, IReadOnlyDictionary<DateTime, double>> elsewhere = await repository.SumConsumedAmountsByOrderTimeAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken);
+    List<KeyValuePair<DateTime, double>> mustardMoments = atTheFestival[mustard.Id].OrderBy(moment => moment.Key).ToList();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(mustardMoments.Select(moment => moment.Key), Is.EqualTo(orderTimes));
+                      Assert.That(mustardMoments.Select(moment => moment.Value),
+                                  Is.EqualTo(new[]
+                                             {
+                                               41.5,
+                                               20
+                                             }));
+                      Assert.That(mustardMoments.Select(moment => moment.Key.Kind), Is.All.EqualTo(DateTimeKind.Utc));
+                      Assert.That(elsewhere, Is.Empty);
+                    });
+  }
+
+  [Test]
   public async Task FindActiveUsedOnTheMenuAsync_OneIngredientUsedOnTheMenuAndOneNot_ListsOnlyTheUsedOnesByName()
   {
     using SqliteInMemoryFixture fixture = new();
@@ -52,7 +85,12 @@ public sealed class IngredientStockRepositoryTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(stock.Select(row => row.Ingredient.Name), Is.EqualTo(new[] { "Brötchen", "Senf" }));
+                      Assert.That(stock.Select(row => row.Ingredient.Name),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Brötchen",
+                                               "Senf"
+                                             }));
                       Assert.That(stock[0].AvailableAmount, Is.EqualTo(40));
                     });
   }
@@ -134,12 +172,12 @@ public sealed class IngredientStockRepositoryTest
   private async Task<Ingredient> AddIngredientAsync(GastronomyAppDbContext dbContext, string name, bool isActive, Guid festivalId, double? availableAmount)
   {
     Ingredient ingredient = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = name,
-      Unit = IngredientUnit.Gram,
-      IsActive = isActive
-    };
+                            {
+                              Id = Guid.NewGuid(),
+                              Name = name,
+                              Unit = IngredientUnit.Gram,
+                              IsActive = isActive
+                            };
     ingredient.FestivalIngredients.Add(new()
                                        {
                                          Id = Guid.NewGuid(),
@@ -168,16 +206,16 @@ public sealed class IngredientStockRepositoryTest
   private PlaceOrderRequest RequestFor(params Guid[] catalogItemIds)
   {
     return new()
-    {
-      ClientOrderId = Guid.NewGuid(),
-      TableName = "Tisch 3",
-      Items = catalogItemIds.Select(catalogItemId => new OrderItemRequest
-                                                     {
-                                                       CatalogItemId = catalogItemId,
-                                                       Note = null,
-                                                       UnitPriceCents = 350
-                                                     })
-                            .ToList()
-    };
+           {
+             ClientOrderId = Guid.NewGuid(),
+             TableName = "Tisch 3",
+             Items = catalogItemIds.Select(catalogItemId => new OrderItemRequest
+                                                            {
+                                                              CatalogItemId = catalogItemId,
+                                                              Note = null,
+                                                              UnitPriceCents = 350
+                                                            })
+                                   .ToList()
+           };
   }
 }

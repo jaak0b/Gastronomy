@@ -4,7 +4,8 @@ import {
   amountInputSwitchedTo,
   entryUnitsFor,
   parseAmountInput,
-  displayedAmountFor,
+  displayedAmountIn,
+  shownEntryUnitFor,
 } from '../../../src/admin/core/ingredientAmounts'
 
 describe('the units an amount can be typed in', () => {
@@ -50,6 +51,13 @@ describe('an amount the admin typed', () => {
     })
   })
 
+  it('travels in grams when a tiny amount is typed in kilograms', () => {
+    expect(parseAmountInput({ typed: '0,0000001', entryUnit: 'kilogram' })).toEqual({
+      kind: 'amount',
+      baseAmount: 0.0001,
+    })
+  })
+
   it('keeps a decimal number of pieces as typed', () => {
     expect(parseAmountInput({ typed: '0,5', entryUnit: 'piece' })).toEqual({
       kind: 'amount',
@@ -87,41 +95,41 @@ describe('a saved amount shown back in its field', () => {
     expect(amountInputFor(0.5, 'piece', 'de')).toEqual({ typed: '0,5', entryUnit: 'piece' })
   })
 
+  it('writes a tiny amount in kilograms as the digits the admin typed', () => {
+    expect(amountInputFor(0.0001, 'kilogram', 'de')).toEqual({ typed: '0,0000001', entryUnit: 'kilogram' })
+  })
+
   it('is an empty field when there is no amount', () => {
     expect(amountInputFor(null, 'millilitre', 'de')).toEqual({ typed: '', entryUnit: 'millilitre' })
   })
 })
 
-describe('an amount written on the screen', () => {
-  it('is counted in kilograms from 1000 grams on, in German', () => {
-    expect(displayedAmountFor(1500, 'gram', 'de')).toEqual({
-      count: 1.5,
-      formattedCount: '1,5',
+describe('the unit an amount is shown in', () => {
+  it.each([
+    { baseAmount: 999, unit: 'gram', entryUnit: 'gram' },
+    { baseAmount: 1000, unit: 'gram', entryUnit: 'kilogram' },
+    { baseAmount: 1000, unit: 'millilitre', entryUnit: 'litre' },
+    { baseAmount: 999.9996, unit: 'millilitre', entryUnit: 'litre' },
+    { baseAmount: 5000, unit: 'piece', entryUnit: 'piece' },
+  ] as const)('is $entryUnit for $baseAmount in $unit', ({ baseAmount, unit, entryUnit }) => {
+    expect(shownEntryUnitFor(baseAmount, unit)).toBe(entryUnit)
+  })
+})
+
+describe('an amount written in a unit chosen beforehand', () => {
+  it('writes 250 grams as a quarter kilogram', () => {
+    expect(displayedAmountIn(250, 'kilogram', 'de')).toEqual({
+      count: 0.25,
+      formattedCount: '0,25',
       entryUnit: 'kilogram',
     })
   })
 
-  it('is counted in grams below 1000', () => {
-    expect(displayedAmountFor(999, 'gram', 'en')).toEqual({
-      count: 999,
-      formattedCount: '999',
+  it('writes 1500 grams in grams when grams were chosen', () => {
+    expect(displayedAmountIn(1500, 'gram', 'en')).toEqual({
+      count: 1500,
+      formattedCount: '1,500',
       entryUnit: 'gram',
-    })
-  })
-
-  it('is counted in litres from 1000 millilitres on, in English', () => {
-    expect(displayedAmountFor(1250, 'millilitre', 'en')).toEqual({
-      count: 1.25,
-      formattedCount: '1.25',
-      entryUnit: 'litre',
-    })
-  })
-
-  it('stays in pieces with the number written in the device language', () => {
-    expect(displayedAmountFor(12000, 'piece', 'de')).toEqual({
-      count: 12000,
-      formattedCount: '12.000',
-      entryUnit: 'piece',
     })
   })
 })

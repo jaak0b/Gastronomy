@@ -126,6 +126,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<CatalogItemRecipeService>();
     services.AddScoped<IngredientStockService>();
     services.AddScoped<StockSoldOutMarker>();
+    services.AddSingleton<IngredientAmountComparison>();
 
     services.AddScoped<IDeviceOwnerStore, DeviceOwnerStore>();
     services.AddScoped<IDeviceTokenStore, DeviceTokenStore>();

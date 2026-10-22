@@ -19,9 +19,9 @@ public sealed class AdminIngredientMapping : IMappingRegistration
   {
     ArgumentNullException.ThrowIfNull(config);
 
-    config.NewConfig<Ingredient, AdminIngredientView>()
-          .Map(view => view.IngredientId, ingredient => ingredient.Id)
-          .Map(view => view.ActiveItemNames, ingredient => _ingredientService.ActiveItemNamesOf(ingredient));
+    config.NewConfig<Ingredient, AdminIngredientView>().Map(view => view.IngredientId, ingredient => ingredient.Id).Map(view => view.ActiveItemNames, ingredient => _ingredientService.ActiveItemNamesOf(ingredient));
+
+    config.NewConfig<IngredientUsagePointResult, IngredientUsagePoint>();
 
     config.NewConfig<IngredientStockLevel, AdminFestivalIngredientView>()
           .Map(view => view.IngredientId, level => level.Stock.IngredientId)
@@ -29,6 +29,10 @@ public sealed class AdminIngredientMapping : IMappingRegistration
           .Map(view => view.Unit, level => level.Stock.Ingredient.Unit)
           .Map(view => view.AvailableAmount, level => level.Stock.AvailableAmount)
           .Map(view => view.UsedAmount, level => level.UsedAmount)
-          .Map(view => view.RunsOutAtUtc, level => level.RunsOutAtUtc);
+          .Map(view => view.Usage, level => level.Usage)
+          .Map(view => view.RunsOutAtUtcSinceStart, level => level.RunsOutAtUtcSinceStart)
+          .Map(view => view.RunsOutAtUtcFromLastTwoHours, level => level.RunsOutAtUtcFromLastTwoHours)
+          .Map(view => view.StockWarning, level => level.StockWarning)
+          .Map(view => view.RunsOutSoonAtUtc, level => level.RunsOutSoonAtUtc);
   }
 }

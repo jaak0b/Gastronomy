@@ -318,6 +318,7 @@
         "available": "Verfügbar",
         "used": "Verbraucht: {amount}",
         "runsOutAt": "Reicht voraussichtlich bis {moment}",
+        "usedUp": "Die Zutat ist aufgebraucht.",
         "pieceCount": "{amount} Stück | {amount} Stück",
         "deactivateTitle": "Zutat deaktivieren?",
         "editTitle": "Zutat bearbeiten",
@@ -330,7 +331,8 @@
         "deactivateConfirm": "Zutat deaktivieren",
         "new": "Neue Zutat",
         "addToRecipe": "Zutat hinzufügen",
-        "removeFromRecipe": "Entfernen"
+        "removeFromRecipe": "Entfernen",
+        "history": "Verlauf"
       },
       "messages": {
         "noneYet": "Es gibt noch keine Zutaten. Klicken Sie auf \"Neue Zutat\".",
@@ -344,6 +346,15 @@
         "kilogram": "kg",
         "millilitre": "ml",
         "litre": "l"
+      },
+      "history": {
+        "used": "Verbraucht",
+        "forecastFromLastTwoHours": "Vorhersage aus den letzten 2 Stunden",
+        "forecastSinceStart": "Vorhersage seit Festbeginn",
+        "now": "Jetzt",
+        "usedBy": "Bis {moment} verbraucht: {amount}",
+        "nothingUsedYet": "Bisher wurde nichts verbraucht.",
+        "runsOutBeyondTheChart": "→ {moment}"
       }
     },
     "items": {

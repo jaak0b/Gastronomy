@@ -6,6 +6,11 @@ describe('the palette the whole app inherits', () => {
     expect(appTheme.defaultTheme).toBe('system')
   })
 
+  it('darkens warning text in the light theme so it can be read on white, and keeps it in the dark theme', () => {
+    expect(appTheme.themes.light.colors?.['warning-text']).toBe('#9a6700')
+    expect(appTheme.themes.dark.colors?.['warning-text']).toBe('#ffd54f')
+  })
+
   it('offers a light and a dark theme', () => {
     expect(Object.keys(appTheme.themes)).toEqual(['light', 'dark'])
     expect(appTheme.themes.light.dark).toBe(false)

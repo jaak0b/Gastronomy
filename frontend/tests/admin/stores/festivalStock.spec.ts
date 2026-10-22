@@ -10,15 +10,21 @@ import {
   stubLaptop,
   type StubbedLaptop,
 } from '../../support/laptop'
+import { anAdminFestivalIngredient } from '../../support/wireViews'
 
-const FLOUR_STOCK = {
-  ingredientId: 'ingredient-mehl',
-  name: 'Mehl',
-  unit: 'gram',
+const FLOUR_STOCK = anAdminFestivalIngredient({
   availableAmount: 5000,
   usedAmount: 1200,
-  runsOutAtUtc: '2026-07-18T20:30:00Z',
-}
+  usage: [
+    { atUtc: '2026-07-18T10:00:00Z', usedAmount: 0 },
+    { atUtc: '2026-07-18T15:00:00Z', usedAmount: 1200 },
+    { atUtc: '2026-07-18T18:00:00Z', usedAmount: 1200 },
+  ],
+  runsOutAtUtcSinceStart: '2026-07-18T20:30:00Z',
+  runsOutAtUtcFromLastTwoHours: '2026-07-18T19:30:00Z',
+  stockWarning: 'runsOutSoon',
+  runsOutSoonAtUtc: '2026-07-18T19:30:00Z',
+})
 
 
 function stockLaptop(writeStatus = 200, writeAnswer: unknown = {}): StubbedLaptop {

@@ -1,4 +1,5 @@
 import type {
+  AdminFestivalIngredientView,
   AdminFestivalView,
   AdminIngredientView,
   AdminItemView,
@@ -31,6 +32,28 @@ export function anAdminIngredient(overrides: Partial<AdminIngredientView> = {}):
     unit: 'piece',
     isActive: true,
     activeItemNames: [],
+    ...overrides,
+  }
+}
+
+export function anAdminFestivalIngredient(
+  overrides: Partial<AdminFestivalIngredientView> = {},
+): AdminFestivalIngredientView {
+  return {
+    ingredientId: 'ingredient-mehl',
+    name: 'Mehl',
+    unit: 'gram',
+    availableAmount: 25000,
+    usedAmount: 1250,
+    usage: [
+      { atUtc: '2026-07-18T10:00:00Z', usedAmount: 0 },
+      { atUtc: '2026-07-18T15:00:00Z', usedAmount: 1250 },
+      { atUtc: '2026-07-18T18:00:00Z', usedAmount: 1250 },
+    ],
+    runsOutAtUtcSinceStart: null,
+    runsOutAtUtcFromLastTwoHours: null,
+    stockWarning: 'none',
+    runsOutSoonAtUtc: null,
     ...overrides,
   }
 }

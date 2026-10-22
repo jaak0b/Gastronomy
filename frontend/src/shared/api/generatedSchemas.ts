@@ -13,8 +13,14 @@ export const AdminCategoryListView = z.strictObject({ categories: z.array(AdminC
 export type IngredientUnit = __TypedOpenapi.Schemas.IngredientUnit;
 export const IngredientUnit = z.enum(["piece", "gram", "millilitre"]);
 
+export type IngredientUsagePoint = __TypedOpenapi.Schemas.IngredientUsagePoint;
+export const IngredientUsagePoint = z.strictObject({ atUtc: z.string(), usedAmount: z.number() });
+
+export type StockWarning = __TypedOpenapi.Schemas.StockWarning;
+export const StockWarning = z.enum(["none", "runsOutSoon", "usedUp"]);
+
 export type AdminFestivalIngredientView = __TypedOpenapi.Schemas.AdminFestivalIngredientView;
-export const AdminFestivalIngredientView = z.strictObject({ ingredientId: z.string(), name: z.string(), unit: IngredientUnit, availableAmount: z.number().nullable(), usedAmount: z.number(), runsOutAtUtc: z.string().nullable() });
+export const AdminFestivalIngredientView = z.strictObject({ ingredientId: z.string(), name: z.string(), unit: IngredientUnit, availableAmount: z.number().nullable(), usedAmount: z.number(), usage: z.array(IngredientUsagePoint), runsOutAtUtcSinceStart: z.string().nullable(), runsOutAtUtcFromLastTwoHours: z.string().nullable(), stockWarning: StockWarning, runsOutSoonAtUtc: z.string().nullable() });
 
 export type AdminFestivalIngredientListView = __TypedOpenapi.Schemas.AdminFestivalIngredientListView;
 export const AdminFestivalIngredientListView = z.strictObject({ ingredients: z.array(AdminFestivalIngredientView) });

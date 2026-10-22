@@ -5,7 +5,18 @@ import 'vuetify/styles'
 import './shared/styles/controls.css'
 import '@mdi/font/css/materialdesignicons.css'
 import { createVuetify } from 'vuetify'
+import { registerTheme, use } from 'echarts/core'
+import { LineChart } from 'echarts/charts'
+import {
+  GridComponent,
+  LegendComponent,
+  MarkLineComponent,
+  MarkPointComponent,
+  TooltipComponent,
+} from 'echarts/components'
+import { SVGRenderer } from 'echarts/renderers'
 import App from './App.vue'
+import { CHART_THEMES } from './admin/core/chartTheme'
 import de from './shared/i18n/de.json'
 import en from './shared/i18n/en.json'
 import { startRouter } from './shared/router/router'
@@ -29,6 +40,20 @@ export const vuetify = createVuetify({
     VCheckbox: { density: 'comfortable', hideDetails: 'auto' },
   },
 })
+
+use([
+  LineChart,
+  GridComponent,
+  LegendComponent,
+  MarkLineComponent,
+  MarkPointComponent,
+  TooltipComponent,
+  SVGRenderer,
+])
+
+for (const chartTheme of CHART_THEMES) {
+  registerTheme(chartTheme.name, chartTheme.theme)
+}
 
 startRouter()
 

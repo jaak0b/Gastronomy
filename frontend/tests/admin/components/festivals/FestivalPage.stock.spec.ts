@@ -3,7 +3,10 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { VSelect } from 'vuetify/components'
 import FestivalPage from '../../../../src/admin/components/festivals/FestivalPage.vue'
+import BaseChart from '../../../../src/admin/components/BaseChart.vue'
 import { testPlugins } from '../../../support/plugins'
+import { anAdminFestivalIngredient } from '../../../support/wireViews'
+import { useAdminFestivalStockStore } from '../../../../src/admin/stores/festivalStock'
 import { FESTIVAL_ID, mountPage, ingredientRow, festivalLaptop } from './festivalPageFixture'
 
 beforeEach(() => {
@@ -17,28 +20,31 @@ afterEach(() => {
 })
 
 describe('the ingredient stock of the festival', () => {
-  const FLOUR_STOCK = {
+  const FLOUR_STOCK = anAdminFestivalIngredient({
     ingredientId: 'ingredient-mehl',
     name: 'Mehl',
     unit: 'gram',
     availableAmount: 25000,
     usedAmount: 1250,
-    runsOutAtUtc: null,
-  }
-  const BUN_STOCK = {
+  })
+  const BUN_STOCK = anAdminFestivalIngredient({
     ingredientId: 'ingredient-broetchen',
     name: 'Brötchen',
     unit: 'piece',
     availableAmount: null,
     usedAmount: 40,
-    runsOutAtUtc: null,
-  }
+    usage: [
+      { atUtc: '2026-07-18T10:00:00Z', usedAmount: 0 },
+      { atUtc: '2026-07-18T15:00:00Z', usedAmount: 40 },
+      { atUtc: '2026-07-18T18:00:00Z', usedAmount: 40 },
+    ],
+  })
 
   async function mountWithStock(stock: unknown[], locale: 'de' | 'en' = 'de') {
     const laptop = festivalLaptop({ stock })
     const page = mount(FestivalPage, {
       props: { festivalId: FESTIVAL_ID },
-      global: { plugins: testPlugins(locale) },
+      global: { plugins: testPlugins(locale), stubs: { BaseChart: true } },
       attachTo: document.body,
     })
     await vi.waitFor(() => expect(page.find('[data-test="festival-ingredient-row"]').exists()).toBe(true))
@@ -77,26 +83,66 @@ describe('the ingredient stock of the festival', () => {
     ])
   })
 
-  it('names the time of day the stock is expected to run out today', async () => {
-    const runsOutAtUtc = new Date(new Date().setHours(21, 30, 0, 0)).toISOString()
+  it('names the weekday and the time the stock runs out when the laptop warns that it runs out soon', async () => {
+    const { page } = await mountWithStock([
+      {
+        ...FLOUR_STOCK,
+        runsOutAtUtcFromLastTwoHours: '2026-07-18T19:30:00Z',
+        stockWarning: 'runsOutSoon',
+        runsOutSoonAtUtc: '2026-07-18T19:30:00Z',
+      },
+    ])
 
-    const { page } = await mountWithStock([{ ...FLOUR_STOCK, runsOutAtUtc }])
-
-    expect(page.get('[data-test="runs-out"]').text()).toBe('Reicht voraussichtlich bis 21:30')
+    expect(ingredientRow(page, 'ingredient-mehl').get('[data-test="stock-warning"]').text()).toBe(
+      'Reicht voraussichtlich bis Sa., 21:30',
+    )
   })
 
-  it('adds the date when the stock is expected to run out on another day', async () => {
-    const later = new Date(2030, 6, 19, 1, 15).toISOString()
+  it('says in English that an ingredient is used up', async () => {
+    const { page } = await mountWithStock([{ ...FLOUR_STOCK, usedAmount: 25000, stockWarning: 'usedUp' }], 'en')
 
-    const { page } = await mountWithStock([{ ...FLOUR_STOCK, runsOutAtUtc: later }], 'en')
-
-    expect(page.get('[data-test="runs-out"]').text()).toBe('Expected to last until 07/19, 01:15 AM')
+    expect(ingredientRow(page, 'ingredient-mehl').get('[data-test="stock-warning"]').text()).toBe(
+      'This ingredient is used up.',
+    )
   })
 
-  it('leaves the run out label blank when the laptop predicts nothing', async () => {
+  it('says nothing beside an ingredient while its stock lasts', async () => {
     const { page } = await mountWithStock([FLOUR_STOCK])
 
-    expect(page.get('[data-test="runs-out"]').text()).toBe('')
+    expect(ingredientRow(page, 'ingredient-mehl').get('[data-test="stock-warning"]').text()).toBe('')
+  })
+
+  it('opens the history of an ingredient under its row with the lines the laptop sent', async () => {
+    const { page } = await mountWithStock([FLOUR_STOCK, BUN_STOCK])
+
+    await ingredientRow(page, 'ingredient-mehl').get('[data-test="history-toggle"]').trigger('click')
+
+    expect(ingredientRow(page, 'ingredient-mehl').getComponent(BaseChart).props('option')).toMatchObject({
+      series: [{ name: 'Verbraucht' }, { name: 'Verfügbar' }],
+    })
+    expect(ingredientRow(page, 'ingredient-broetchen').findComponent(BaseChart).exists()).toBe(false)
+  })
+
+  it('closes the history again on a second press', async () => {
+    const { page } = await mountWithStock([FLOUR_STOCK])
+    await ingredientRow(page, 'ingredient-mehl').get('[data-test="history-toggle"]').trigger('click')
+
+    await ingredientRow(page, 'ingredient-mehl').get('[data-test="history-toggle"]').trigger('click')
+
+    expect(ingredientRow(page, 'ingredient-mehl').find('[data-test="stock-chart"]').exists()).toBe(false)
+  })
+
+  it('keeps the history open while the laptop announces new orders', async () => {
+    const { page } = await mountWithStock([FLOUR_STOCK])
+    await ingredientRow(page, 'ingredient-mehl').get('[data-test="history-toggle"]').trigger('click')
+    festivalLaptop({ stock: [{ ...FLOUR_STOCK, usedAmount: 1500 }] })
+
+    await useAdminFestivalStockStore().loadForFestival(FESTIVAL_ID)
+
+    await vi.waitFor(() =>
+      expect(ingredientRow(page, 'ingredient-mehl').get('[data-test="used-amount"]').text()).toBe('Verbraucht: 1,5 kg'),
+    )
+    expect(ingredientRow(page, 'ingredient-mehl').find('[data-test="stock-chart"]').exists()).toBe(true)
   })
 
   it('sends an amount typed in kilograms as grams', async () => {

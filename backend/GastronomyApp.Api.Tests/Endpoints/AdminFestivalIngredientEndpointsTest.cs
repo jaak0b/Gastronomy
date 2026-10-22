@@ -24,7 +24,7 @@ public sealed class AdminFestivalIngredientEndpointsTest
   private OrderTestContext _context = null!;
 
   [Test]
-  public async Task GetFestivalIngredients_OneIngredientInARecipeAndOneNot_ListsOnlyTheUsedOneWithWhatTheOrdersUsed()
+  public async Task GetFestivalIngredients_OneIngredientInARecipeAndOneNot_ListsOnlyTheUsedOneWithWhatTheOrdersUsedAndWhen()
   {
     var mustardId = await CreateIngredientAsync("Senf");
     await CreateIngredientAsync("Zwiebeln");
@@ -35,9 +35,13 @@ public sealed class AdminFestivalIngredientEndpointsTest
       Assert.That(ordered.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
 
+    await using var database = _context.Factory.CreateContext();
+    var festival = await database.Festivals.SingleAsync(candidate => candidate.Id == _context.World.FestivalId);
+
     using var response = await _context.Client.GetAsync($"/api/admin/festivals/{_context.World.FestivalId}/ingredients");
     var ingredients = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("ingredients");
     var mustard = ingredients[0];
+    var usage = mustard.GetProperty("usage");
 
     Assert.Multiple(() =>
                     {
@@ -48,13 +52,26 @@ public sealed class AdminFestivalIngredientEndpointsTest
                       Assert.That(mustard.GetProperty("unit").GetString(), Is.EqualTo("gram"));
                       Assert.That(mustard.GetProperty("availableAmount").GetDouble(), Is.EqualTo(1000));
                       Assert.That(mustard.GetProperty("usedAmount").GetDouble(), Is.EqualTo(40));
-                      Assert.That(mustard.GetProperty("runsOutAtUtc").GetString(), Does.EndWith("Z"));
-                      Assert.That(mustard.GetProperty("runsOutAtUtc").GetDateTime(), Is.GreaterThan(DateTime.UtcNow));
+                      Assert.That(usage.EnumerateArray().Select(point => point.GetProperty("usedAmount").GetDouble()),
+                                  Is.EqualTo(new[]
+                                             {
+                                               0d,
+                                               40,
+                                               40
+                                             }));
+                      Assert.That(usage[0].GetProperty("atUtc").GetDateTime(), Is.EqualTo(festival.StartsAtUtc));
+                      Assert.That(usage.EnumerateArray().Select(point => point.GetProperty("atUtc").GetString()), Has.All.EndWith("Z"));
+                      Assert.That(mustard.GetProperty("runsOutAtUtcSinceStart").GetString(), Does.EndWith("Z"));
+                      Assert.That(mustard.GetProperty("runsOutAtUtcSinceStart").GetDateTime(), Is.GreaterThan(DateTime.UtcNow));
+                      Assert.That(mustard.GetProperty("runsOutAtUtcFromLastTwoHours").GetString(), Does.EndWith("Z"));
+                      Assert.That(mustard.GetProperty("runsOutAtUtcFromLastTwoHours").GetDateTime(), Is.GreaterThan(DateTime.UtcNow));
+                      Assert.That(mustard.GetProperty("stockWarning").GetString(), Is.EqualTo("none"));
+                      Assert.That(mustard.GetProperty("runsOutSoonAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
                     });
   }
 
   [Test]
-  public async Task GetFestivalIngredients_NoLimitSet_AnswersNoAvailableAmountAndNoTime()
+  public async Task GetFestivalIngredients_NoLimitSet_AnswersNoAvailableAmountNoTimeAndNoWarning()
   {
     var mustardId = await CreateIngredientAsync("Senf");
     await PutRecipeLineAsync(mustardId, 20);
@@ -65,7 +82,82 @@ public sealed class AdminFestivalIngredientEndpointsTest
                     {
                       Assert.That(mustard.GetProperty("availableAmount").ValueKind, Is.EqualTo(JsonValueKind.Null));
                       Assert.That(mustard.GetProperty("usedAmount").GetDouble(), Is.Zero);
-                      Assert.That(mustard.GetProperty("runsOutAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
+                      Assert.That(mustard.GetProperty("usage").EnumerateArray().Select(point => point.GetProperty("usedAmount").GetDouble()),
+                                  Is.EqualTo(new[]
+                                             {
+                                               0d,
+                                               0
+                                             }));
+                      Assert.That(mustard.GetProperty("runsOutAtUtcSinceStart").ValueKind, Is.EqualTo(JsonValueKind.Null));
+                      Assert.That(mustard.GetProperty("runsOutAtUtcFromLastTwoHours").ValueKind, Is.EqualTo(JsonValueKind.Null));
+                      Assert.That(mustard.GetProperty("stockWarning").GetString(), Is.EqualTo("none"));
+                      Assert.That(mustard.GetProperty("runsOutSoonAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
+                    });
+  }
+
+  [Test]
+  public async Task GetFestivalIngredients_StockThatRunsOutWithinTwoHours_AnswersRunsOutSoonWithTheMoment()
+  {
+    var mustardId = await CreateIngredientAsync("Senf");
+    await PutRecipeLineAsync(mustardId, 20);
+    await SetAvailableAmountAsync(mustardId, 50);
+    using (var ordered = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
+    {
+      Assert.That(ordered.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    var mustard = JsonDocument.Parse(await _context.Client.GetStringAsync($"/api/admin/festivals/{_context.World.FestivalId}/ingredients")).RootElement.GetProperty("ingredients")[0];
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(mustard.GetProperty("stockWarning").GetString(), Is.EqualTo("runsOutSoon"));
+                      Assert.That(mustard.GetProperty("runsOutSoonAtUtc").GetString(), Does.EndWith("Z"));
+                      Assert.That(mustard.GetProperty("runsOutSoonAtUtc").GetString(), Is.EqualTo(mustard.GetProperty("runsOutAtUtcFromLastTwoHours").GetString()));
+                    });
+  }
+
+  [Test]
+  public async Task GetFestivalIngredients_AnAmountThatWouldLastBeyondTheLastRepresentableDate_AnswersTheListWithoutThatForecast()
+  {
+    var mustardId = await CreateIngredientAsync("Senf");
+    await PutRecipeLineAsync(mustardId, 5);
+    await SetAvailableAmountAsync(mustardId, 99_999_999);
+    using (var ordered = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
+    {
+      Assert.That(ordered.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    using var response = await _context.Client.GetAsync($"/api/admin/festivals/{_context.World.FestivalId}/ingredients");
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    var mustard = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("ingredients")[0];
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(mustard.GetProperty("usedAmount").GetDouble(), Is.EqualTo(10));
+                      Assert.That(mustard.GetProperty("runsOutAtUtcSinceStart").ValueKind, Is.EqualTo(JsonValueKind.Null));
+                      Assert.That(mustard.GetProperty("runsOutAtUtcFromLastTwoHours").GetDateTime(), Is.GreaterThan(DateTime.UtcNow));
+                      Assert.That(mustard.GetProperty("stockWarning").GetString(), Is.EqualTo("none"));
+                      Assert.That(mustard.GetProperty("runsOutSoonAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
+                    });
+  }
+
+  [Test]
+  public async Task GetFestivalIngredients_EverythingAvailableUsed_AnswersUsedUpWithoutAMoment()
+  {
+    var mustardId = await CreateIngredientAsync("Senf");
+    await PutRecipeLineAsync(mustardId, 20);
+    await SetAvailableAmountAsync(mustardId, 40);
+    using (var ordered = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
+    {
+      Assert.That(ordered.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    var mustard = JsonDocument.Parse(await _context.Client.GetStringAsync($"/api/admin/festivals/{_context.World.FestivalId}/ingredients")).RootElement.GetProperty("ingredients")[0];
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(mustard.GetProperty("stockWarning").GetString(), Is.EqualTo("usedUp"));
+                      Assert.That(mustard.GetProperty("runsOutSoonAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
                     });
   }
 

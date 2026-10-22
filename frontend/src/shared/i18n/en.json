@@ -318,6 +318,7 @@
         "available": "Available",
         "used": "Used: {amount}",
         "runsOutAt": "Expected to last until {moment}",
+        "usedUp": "This ingredient is used up.",
         "pieceCount": "{amount} piece | {amount} pieces",
         "deactivateTitle": "Deactivate this ingredient?",
         "editTitle": "Edit the ingredient",
@@ -330,7 +331,8 @@
         "deactivateConfirm": "Deactivate the ingredient",
         "new": "New ingredient",
         "addToRecipe": "Add the ingredient",
-        "removeFromRecipe": "Remove"
+        "removeFromRecipe": "Remove",
+        "history": "History"
       },
       "messages": {
         "noneYet": "There are no ingredients yet. Click \"New ingredient\".",
@@ -344,6 +346,15 @@
         "kilogram": "kg",
         "millilitre": "ml",
         "litre": "l"
+      },
+      "history": {
+        "used": "Used",
+        "forecastFromLastTwoHours": "Forecast from the last 2 hours",
+        "forecastSinceStart": "Forecast since the festival started",
+        "now": "Now",
+        "usedBy": "Used by {moment}: {amount}",
+        "nothingUsedYet": "Nothing has been used yet.",
+        "runsOutBeyondTheChart": "→ {moment}"
       }
     },
     "items": {

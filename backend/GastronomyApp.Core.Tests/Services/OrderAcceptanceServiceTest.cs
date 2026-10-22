@@ -43,12 +43,7 @@ public sealed class OrderAcceptanceServiceTest
 
     RunningFestivalLookup runningFestival = new(_festivalRepository, new(), _clock);
 
-    _service = new(_orderRepository,
-                   runningFestival,
-                   _numberAllocator,
-                   new(_catalogItemRepository, _stationRepository, new()),
-                   new(_stockRepository, A.Fake<ILogger<StockSoldOutMarker>>()),
-                   _clock);
+    _service = new(_orderRepository, runningFestival, _numberAllocator, new(_catalogItemRepository, _stationRepository, new()), new(_stockRepository, new(), A.Fake<ILogger<StockSoldOutMarker>>()), _clock);
   }
 
   private readonly Guid _eventSessionId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
@@ -77,37 +72,37 @@ public sealed class OrderAcceptanceServiceTest
   private Festival RunningFestival()
   {
     return new()
-    {
-      Id = _festivalId,
-      Name = "Sommerfest",
-      StartsAtUtc = _now.AddHours(-5),
-      EndsAtUtc = _now.AddHours(10),
-      NextOrderNumber = 1,
-      IsHidden = false
-    };
+           {
+             Id = _festivalId,
+             Name = "Sommerfest",
+             StartsAtUtc = _now.AddHours(-5),
+             EndsAtUtc = _now.AddHours(10),
+             NextOrderNumber = 1,
+             IsHidden = false
+           };
   }
 
   private Station BuildStation(Guid id, string name, int sortOrder)
   {
     return new()
-    {
-      Id = id,
-      Name = name,
-      SortOrder = sortOrder,
-      IsActive = true
-    };
+           {
+             Id = id,
+             Name = name,
+             SortOrder = sortOrder,
+             IsActive = true
+           };
   }
 
   private void GivenCatalogItem(Guid id, string name, IReadOnlyCollection<Guid> stationIds)
   {
     CatalogItem item = new()
-    {
-      Id = id,
-      Name = name,
-      CategoryId = Guid.NewGuid(),
-      SortOrder = 1,
-      IsActive = true
-    };
+                       {
+                         Id = id,
+                         Name = name,
+                         CategoryId = Guid.NewGuid(),
+                         SortOrder = 1,
+                         IsActive = true
+                       };
 
     A.CallTo(() => _catalogItemRepository.FindByIdAsync(id, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItem?>(item));
     GivenAssignments(id, stationIds);
@@ -116,12 +111,12 @@ public sealed class OrderAcceptanceServiceTest
   private void GivenAssignments(Guid catalogItemId, IReadOnlyCollection<Guid> stationIds)
   {
     List<ItemStationAssignment> assignments = stationIds.Select(stationId => new ItemStationAssignment
-    {
-      Id = Guid.NewGuid(),
-      FestivalId = _festivalId,
-      CatalogItemId = catalogItemId,
-      StationId = stationId
-    })
+                                                                             {
+                                                                               Id = Guid.NewGuid(),
+                                                                               FestivalId = _festivalId,
+                                                                               CatalogItemId = catalogItemId,
+                                                                               StationId = stationId
+                                                                             })
                                                         .ToList();
 
     A.CallTo(() => _catalogItemRepository.FindAssignmentsAsync(A<Guid>._, catalogItemId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<ItemStationAssignment>>(assignments));
@@ -130,23 +125,23 @@ public sealed class OrderAcceptanceServiceTest
   private PlaceOrderRequest RequestWith(IReadOnlyList<OrderItemRequest> items, string tableName = "Tisch 12", IReadOnlyList<OrderDeliveryModeRequest>? deliveryModes = null)
   {
     return new()
-    {
-      ClientOrderId = _clientOrderId,
-      TableName = tableName,
-      Items = items,
-      DeliveryModes = deliveryModes ?? []
-    };
+           {
+             ClientOrderId = _clientOrderId,
+             TableName = tableName,
+             Items = items,
+             DeliveryModes = deliveryModes ?? []
+           };
   }
 
   private OrderItemRequest ItemFor(Guid catalogItemId, Guid? stationId = null, int unitPriceCents = 350)
   {
     return new()
-    {
-      CatalogItemId = catalogItemId,
-      UnitPriceCents = unitPriceCents,
-      Note = null,
-      StationId = stationId
-    };
+           {
+             CatalogItemId = catalogItemId,
+             UnitPriceCents = unitPriceCents,
+             Note = null,
+             StationId = stationId
+           };
   }
 
   private static List<OrderItem> ReadOrderItems(Order order)
@@ -258,15 +253,15 @@ public sealed class OrderAcceptanceServiceTest
   public async Task AcceptAsync_KnownClientOrderId_ReturnsTheExistingOrderAndAllocatesNothing()
   {
     Order existing = new()
-    {
-      Id = Guid.NewGuid(),
-      ClientOrderId = _clientOrderId,
-      FestivalId = _festivalId,
-      GlobalOrderNumber = 12,
-      StaffMemberId = _staffMemberId,
-      TableName = "Tisch 12",
-      CreatedAtUtc = _now
-    };
+                     {
+                       Id = Guid.NewGuid(),
+                       ClientOrderId = _clientOrderId,
+                       FestivalId = _festivalId,
+                       GlobalOrderNumber = 12,
+                       StaffMemberId = _staffMemberId,
+                       TableName = "Tisch 12",
+                       CreatedAtUtc = _now
+                     };
     A.CallTo(() => _orderRepository.FindByClientOrderIdAsync(_clientOrderId, A<CancellationToken>._)).Returns(Task.FromResult<Order?>(existing));
     Remember(existing);
 
@@ -427,16 +422,16 @@ public sealed class OrderAcceptanceServiceTest
   private async Task<ErrorOr<Order>> RefusalProducedByAsync(string scenario)
   {
     var request = scenario switch
-    {
-      "UnknownCatalogItemId" => RequestWith([ItemFor(UnknownItemId())]),
-      "StationRequired" => RequestWith([ItemFor(AmbiguouslyRoutedItemId())]),
-      "StationNotAssignedToItem" => RequestWith([ItemFor(_bratwurstId, _barIndoorId)]),
-      "ItemHasNoStation" => RequestWith([ItemFor(ItemWithNoActiveStationId())]),
-      "ItemNotAvailable" => RequestWith([ItemFor(SoldOutItemId())]),
-      "ChosenStationNoLongerPreparesTheItem" => RequestWith([ItemFor(ItemWithAStaleStationChoiceId(), _barOutdoorId)]),
-      "NoRunningFestival" => RequestWhileNoFestivalRuns(),
-      _ => throw new InvalidOperationException($"No scenario covers {scenario}")
-    };
+                  {
+                    "UnknownCatalogItemId" => RequestWith([ItemFor(UnknownItemId())]),
+                    "StationRequired" => RequestWith([ItemFor(AmbiguouslyRoutedItemId())]),
+                    "StationNotAssignedToItem" => RequestWith([ItemFor(_bratwurstId, _barIndoorId)]),
+                    "ItemHasNoStation" => RequestWith([ItemFor(ItemWithNoActiveStationId())]),
+                    "ItemNotAvailable" => RequestWith([ItemFor(SoldOutItemId())]),
+                    "ChosenStationNoLongerPreparesTheItem" => RequestWith([ItemFor(ItemWithAStaleStationChoiceId(), _barOutdoorId)]),
+                    "NoRunningFestival" => RequestWhileNoFestivalRuns(),
+                    _ => throw new InvalidOperationException($"No scenario covers {scenario}")
+                  };
 
     ErrorOr<Order> result = await _service.AcceptAsync(request, _staffMemberId, CancellationToken.None);
 
@@ -500,13 +495,13 @@ public sealed class OrderAcceptanceServiceTest
   {
     A.CallTo(() => _catalogItemRepository.FindMenuRowAsync(_festivalId, _bratwurstId, A<CancellationToken>._))
    .Returns(Task.FromResult<FestivalCatalogItem?>(new()
-   {
-     Id = Guid.NewGuid(),
-     FestivalId = _festivalId,
-     CatalogItemId = _bratwurstId,
-     PriceCents = 350,
-     IsAvailable = false
-   }));
+                                                  {
+                                                    Id = Guid.NewGuid(),
+                                                    FestivalId = _festivalId,
+                                                    CatalogItemId = _bratwurstId,
+                                                    PriceCents = 350,
+                                                    IsAvailable = false
+                                                  }));
 
     return _bratwurstId;
   }
@@ -535,21 +530,21 @@ public sealed class OrderAcceptanceServiceTest
   {
     var mustardId = Guid.NewGuid();
     FestivalCatalogItem bratwurstOnTheMenu = new()
-    {
-      Id = Guid.NewGuid(),
-      FestivalId = _festivalId,
-      CatalogItemId = _bratwurstId,
-      PriceCents = 350,
-      IsAvailable = true,
-      CatalogItem = new()
-      {
-        Id = _bratwurstId,
-        Name = "Bratwurst",
-        CategoryId = Guid.NewGuid(),
-        SortOrder = 1,
-        IsActive = true
-      }
-    };
+                                             {
+                                               Id = Guid.NewGuid(),
+                                               FestivalId = _festivalId,
+                                               CatalogItemId = _bratwurstId,
+                                               PriceCents = 350,
+                                               IsAvailable = true,
+                                               CatalogItem = new()
+                                                             {
+                                                               Id = _bratwurstId,
+                                                               Name = "Bratwurst",
+                                                               CategoryId = Guid.NewGuid(),
+                                                               SortOrder = 1,
+                                                               IsActive = true
+                                                             }
+                                             };
     bratwurstOnTheMenu.CatalogItem.Ingredients.Add(new()
                                                    {
                                                      Id = Guid.NewGuid(),
@@ -558,15 +553,15 @@ public sealed class OrderAcceptanceServiceTest
                                                      Amount = 20
                                                    });
     A.CallTo(() => _stockRepository.FindActiveWithAvailableAmountAsync(_festivalId, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<FestivalIngredient>>([
-                                                                   new()
-                                                                   {
-                                                                     Id = Guid.NewGuid(),
-                                                                     FestivalId = _festivalId,
-                                                                     IngredientId = mustardId,
-                                                                     AvailableAmount = 50
-                                                                   }
-                                                                 ]));
+   .Returns(Task.FromResult<IReadOnlyList<FestivalIngredient>>([
+                                                                 new()
+                                                                 {
+                                                                   Id = Guid.NewGuid(),
+                                                                   FestivalId = _festivalId,
+                                                                   IngredientId = mustardId,
+                                                                   AvailableAmount = 50
+                                                                 }
+                                                               ]));
     A.CallTo(() => _stockRepository.SumConsumedAmountsAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyDictionary<Guid, double>>(new Dictionary<Guid, double> { [mustardId] = 40 }));
     A.CallTo(() => _stockRepository.FindAvailableMenuRowsWithRecipesAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<FestivalCatalogItem>>([bratwurstOnTheMenu]));
 

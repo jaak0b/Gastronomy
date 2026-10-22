@@ -14,5 +14,7 @@ public interface IIngredientStockRepository
 
   public Task<IReadOnlyDictionary<Guid, double>> SumConsumedAmountsAsync(Guid festivalId, CancellationToken cancellationToken);
 
+  public Task<IReadOnlyDictionary<Guid, IReadOnlyDictionary<DateTime, double>>> SumConsumedAmountsByOrderTimeAsync(Guid festivalId, CancellationToken cancellationToken);
+
   public Task SaveChangesAsync(CancellationToken cancellationToken);
 }

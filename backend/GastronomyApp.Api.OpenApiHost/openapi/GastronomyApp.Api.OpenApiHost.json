@@ -1837,7 +1837,11 @@
           "unit",
           "availableAmount",
           "usedAmount",
-          "runsOutAtUtc"
+          "usage",
+          "runsOutAtUtcSinceStart",
+          "runsOutAtUtcFromLastTwoHours",
+          "stockWarning",
+          "runsOutSoonAtUtc"
         ],
         "type": "object",
         "properties": {
@@ -1862,7 +1866,30 @@
             "type": "number",
             "format": "double"
           },
-          "runsOutAtUtc": {
+          "usage": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IngredientUsagePoint"
+            }
+          },
+          "runsOutAtUtcSinceStart": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "runsOutAtUtcFromLastTwoHours": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "stockWarning": {
+            "$ref": "#/components/schemas/StockWarning"
+          },
+          "runsOutSoonAtUtc": {
             "type": [
               "null",
               "string"
@@ -2452,6 +2479,23 @@
           "gram",
           "millilitre"
         ]
+      },
+      "IngredientUsagePoint": {
+        "required": [
+          "atUtc",
+          "usedAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "atUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "usedAmount": {
+            "type": "number",
+            "format": "double"
+          }
+        }
       },
       "InvitationView": {
         "required": [
@@ -3500,6 +3544,13 @@
             "type": "string"
           }
         }
+      },
+      "StockWarning": {
+        "enum": [
+          "none",
+          "runsOutSoon",
+          "usedUp"
+        ]
       },
       "TableNamesView": {
         "required": [

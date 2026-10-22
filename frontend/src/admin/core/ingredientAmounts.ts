@@ -25,6 +25,10 @@ const AMOUNT_INPUT = /^\d+(?:[.,]\d+)?$/
 
 const THOUSAND = 1000
 
+const SIGNIFICANT_DIGITS_A_NUMBER_HOLDS = 15
+
+const SHOWN_FRACTION_DIGITS = 3
+
 export const INGREDIENT_UNITS: readonly IngredientUnit[] = ['piece', 'gram', 'millilitre']
 
 export function entryUnitsFor(unit: IngredientUnit): readonly AmountEntryUnit[] {
@@ -82,12 +86,16 @@ function largerEntryUnitOf(unit: IngredientUnit): AmountEntryUnit | null {
   }
 }
 
+function withoutBinaryNoise(amount: number): number {
+  return Number(amount.toPrecision(SIGNIFICANT_DIGITS_A_NUMBER_HOLDS))
+}
+
 function thousandths(amount: number): number {
-  return Number(`${amount}e-3`)
+  return withoutBinaryNoise(amount / THOUSAND)
 }
 
 function thousandfold(amount: number): number {
-  return Number(`${amount}e3`)
+  return withoutBinaryNoise(amount * THOUSAND)
 }
 
 export function parseAmountInput(input: AmountInput): ParsedAmountInput {
@@ -106,14 +114,10 @@ export function parseAmountInput(input: AmountInput): ParsedAmountInput {
 }
 
 function writtenIn(amount: number, language: AppLanguage): string {
-  switch (language) {
-    case 'de':
-      return String(amount).replace('.', ',')
-    case 'en':
-      return String(amount)
-    default:
-      return assertNever(language)
-  }
+  return amount.toLocaleString(language, {
+    useGrouping: false,
+    maximumSignificantDigits: SIGNIFICANT_DIGITS_A_NUMBER_HOLDS,
+  })
 }
 
 function inEntryUnit(baseAmount: number, entryUnit: AmountEntryUnit): number {
@@ -151,18 +155,24 @@ export function amountInputSwitchedTo(
   }
 }
 
-export function displayedAmountFor(
+function roundedAsShown(amount: number): number {
+  return Math.round(amount * 10 ** SHOWN_FRACTION_DIGITS) / 10 ** SHOWN_FRACTION_DIGITS
+}
+
+export function shownEntryUnitFor(baseAmount: number, unit: IngredientUnit): AmountEntryUnit {
+  const largerEntryUnit = largerEntryUnitOf(unit)
+  return largerEntryUnit !== null && roundedAsShown(baseAmount) >= THOUSAND ? largerEntryUnit : unit
+}
+
+export function displayedAmountIn(
   baseAmount: number,
-  unit: IngredientUnit,
+  entryUnit: AmountEntryUnit,
   language: AppLanguage,
 ): ShownAmount {
-  const largerEntryUnit = largerEntryUnitOf(unit)
-  const entryUnit =
-    largerEntryUnit !== null && baseAmount >= THOUSAND ? largerEntryUnit : unit
   const count = inEntryUnit(baseAmount, entryUnit)
   return {
     count,
-    formattedCount: formatNumber(count, language, 3),
+    formattedCount: formatNumber(count, language, SHOWN_FRACTION_DIGITS),
     entryUnit,
   }
 }
