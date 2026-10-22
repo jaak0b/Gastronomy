@@ -29,6 +29,17 @@ Full rules: [references/naming.md](references/naming.md)
 - **Do not** introduce generic type names such as `Element`, `Node`, `Log` or `Message`; qualify them.
 - **Do** use `value` for the implicit parameter of a setter and `sender` and `e` for event handler parameters.
 
+**Code names and screen words.** Two concepts deliberately carry a different name in code than on
+screen; never "correct" either one into the other. These names bind the TypeScript code too.
+
+| Code | German screen | English screen | Why |
+|---|---|---|---|
+| `StaffMember` | Kellner | Waiter | In code, "server" is ambiguous, because the laptop runs the server; the old name `ServerPerson` only existed to tell the two apart. The entity is named for the person, because it may later cover cooks too, and the screen names today's role. No role field exists until something behaves differently for a cook. |
+| `Station` | Ausgabestelle | Station | The code said Station everywhere already. "Ausgabe" was rejected because its plural reads as expenses, the same flaw that ruled out "Bedienungen". |
+
+A screen word is chosen for the person holding the phone at the festival, and its plural has to read
+correctly at a glance next to the other navigation tabs.
+
 ## Structure
 
 Full rules: [references/structure.md](references/structure.md)
@@ -170,12 +181,20 @@ and do not apply to this application.
 
 Inside the backend, data travels as EF entities. Wire records live in `GastronomyApp.Contracts`:
 requests are consumed by `Core`, responses are produced only by `Api`, mapped from entities with
-Mapster. A record outside `Contracts` exists only when the alternative is a tuple or more than about
-five parameters, and only after trying the entity or its id first. An EF entity carries properties
-only, never a method: a fact derived from an entity is a method on that entity type's service
-(`OrderService.StatusOf(order)`), and a transaction across entities is a method on the use-case
-service. A private helper that only reshapes data, and a local function standing in for one, is
-banned: write the LINQ inline at the call site.
+Mapster. A record outside `Contracts` and `Api` exists only when the alternative is a tuple or more
+than about five parameters, only after trying the entity or its id first. Two jobs are never mixed:
+
+- **Mapping** copies fields from one shape into another. It always happens in the `Api`, with
+  Mapster, and nowhere else; no code copies fields by hand.
+- **Computing** produces values no entity holds, such as a sum over orders or a prediction. It
+  happens in a `Core` service. When the result needs more than the entity, the service returns a
+  record that carries the entity itself plus the computed values, never copies of the entity's
+  fields: `IngredientStockLevel` holds the `FestivalIngredient` and the amounts computed for it.
+
+An EF entity carries properties only, never a method: a fact derived from an
+entity is a method on that entity type's service (`OrderService.StatusOf(order)`), and a transaction
+across entities is a method on the use-case service. A private helper that only reshapes data, and a
+local function standing in for one, is banned: write the LINQ inline at the call site.
 Names shared across call sites are constants in one static class. A rule that refuses returns
 `ErrorOr<T>`, never a nullable value standing for a refusal; the refusal is an `Error` from a factory
 in `Core/Refusals`, and its numeric type is its HTTP status, declared once in `RefusalType`. A handler

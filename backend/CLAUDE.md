@@ -118,7 +118,8 @@ Core, no EF Core.
 
 0. **Read the `csharp-design-guidelines` skill before touching any C# file.** This comes before the
    first edit, before a rename, before a new test, and before a review, and it binds the main agent
-   and every subagent without exception: a subagent prompt that concerns C# must say so. The skill
+   and every subagent without exception: the prompt or agent definition of a subagent that touches
+   C# must say so. The skill
    lives at `backend/.claude/skills/csharp-design-guidelines/SKILL.md` and is the checklist of the
    official .NET design guidelines; its reference files hold the full rules. Code written without
    reading it is handed back, and a name, type or member that fails a checklist item is a review
@@ -169,11 +170,11 @@ Core, no EF Core.
 
 10. **Every touched C# file is run through the ReSharper cleanup before hand-back.** Line width,
     wrapping, alignment, initializer layout and braces are settings in the repository
-    `.editorconfig`; nobody wraps or formats by hand, and a diff that only a formatter could have
-    made is a review finding. The cleanup is `mcp__resharper__format_file` in `cleanup` mode
-    (Rider's Code Cleanup on the same profile), run on every file an agent created or edited, in
-    the same turn as the edit. This binds the main agent and every subagent, and it binds
-    `desktop/` as well.
+    `.editorconfig`, and every formatting setting lives there, never only in an IDE's own settings.
+    Nobody wraps or formats by hand, and a diff that only a formatter could have made is a review
+    finding. The cleanup runs on every C# file an agent created or edited, in the same turn as the
+    edit; the `how-to` skill's page `format-csharp.md` holds the commands. This binds the main agent
+    and every subagent, and it binds `desktop/` as well.
 
 ## Code style
 
@@ -245,13 +246,11 @@ that holds its counter, so adding the station back computes the next number from
 `StationOrderNumber` already used at that festival, and its numbering continues instead of
 repeating.
 
-## Intended project structure
-
-Planned, not yet built. Update this table as it lands.
+## Project structure
 
 | Project | Role |
 |---|---|
-| `GastronomyApp.Contracts` | The wire records the API receives and sends, grouped into folders by area (`Admin/Catalog`, `Admin/Festivals`, `Admin/Ingredients`, `Admin/Staff`, `Admin/Stations`, `Enrolment`, `Orders`, `OpenItems`, `Catalog`, `Stations`, `Events`, `Validation`), each folder its own sub-namespace under `GastronomyApp.Contracts`. `ApiError`, `ProblemDescription` and `Enums/` stay at the root, and `Validation/` holds the shared refusal message keys and the `RequiredText` attribute. References nothing; every other project references it. Core takes its request records as input; only Api produces its response records, mapped from entities with Mapster. |
+| `GastronomyApp.Contracts` | The wire records the API receives and sends, grouped into folders by area (`Admin/Catalog`, `Admin/Festivals`, `Admin/Ingredients`, `Admin/Staff`, `Admin/Stations`, `Enrolment`, `Orders`, `OpenItems`, `Catalog`, `Session`, `Stations`, `Events`, `Validation`), each folder its own sub-namespace under `GastronomyApp.Contracts`. `ApiError`, `ProblemDescription` and `Enums/` stay at the root, and `Validation/` holds the shared refusal message keys and the `RequiredText` attribute. References nothing; every other project references it. Core takes its request records as input; only Api produces its response records, mapped from entities with Mapster. |
 | `GastronomyApp.Core` | Domain models, ports, use cases. No framework dependencies. |
 | `GastronomyApp.Infrastructure` | EF Core SQLite, device token store, enrolment invitations. |
 | `GastronomyApp.Api` | Class library: REST endpoints, SignalR hub, static frontend, composition root. Names shared across the Api (authentication schemes, device claim types, hub events, hub groups, rate limit policies) are `public const string` members of nested static classes inside `GastronomyApp.Api.Names`, never injected instances. Hosted by `GastronomyApp.Desktop`. |
@@ -273,6 +272,6 @@ per production class, one file per fixture. Never a catch-all fixture name.
 ```powershell
 dotnet build GastronomyApp.slnx
 dotnet run --project desktop/GastronomyApp.Desktop
-dotnet test GastronomyApp.slnx --filter "FullyQualifiedName~MethodName"
+dotnet test backend/<TestProject>/<TestProject>.csproj --filter "FullyQualifiedName~<Fixture>"
 dotnet ef migrations add <Name> --project backend/GastronomyApp.Infrastructure
 ```

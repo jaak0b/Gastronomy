@@ -32,12 +32,6 @@ npm-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Playwright
-playwright-report/
-test-results/
-blob-report/
-.playwright/
-
 # Python (pi-agent, deferred)
 __pycache__/
 *.py[cod]

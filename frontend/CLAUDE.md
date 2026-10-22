@@ -31,7 +31,7 @@ in `src/shared/core/deviceLanguage.ts`, `DraftLine` and `DraftOrder` in `src/pho
 
 ## Hard rules
 
-0. **Read the `typescript-vue-design-guidelines` skill before touching any `.ts` or `.vue` file.** This comes before the first edit, before a rename, before a new test, and before a review, and it binds the main agent and every subagent without exception: a subagent prompt that concerns TypeScript or Vue must say so. The skill lives at `frontend/.claude/skills/typescript-vue-design-guidelines/SKILL.md` and is the checklist of the Google TypeScript Style Guide, the TypeScript declaration Do's and Don'ts and the official Vue style guide; its reference files hold the full rules. Code written without reading it is handed back, and a name, type, function or component that fails a checklist item is a review finding.
+0. **Read the `typescript-vue-design-guidelines` skill before touching any `.ts` or `.vue` file.** This comes before the first edit, before a rename, before a new test, and before a review, and it binds the main agent and every subagent without exception: the prompt or agent definition of a subagent that touches TypeScript or Vue must say so. The skill lives at `frontend/.claude/skills/typescript-vue-design-guidelines/SKILL.md` and is the checklist of the Google TypeScript Style Guide, the TypeScript declaration Do's and Don'ts and the official Vue style guide; its reference files hold the full rules. Code written without reading it is handed back, and a name, type, function or component that fails a checklist item is a review finding.
 
 1. **Keep the core framework-agnostic and modular.** Code in any `core/` folder, under `src/shared/`
    or under a surface, must not import Vue or Pinia and must not touch the document. Browser storage
@@ -100,7 +100,12 @@ in `src/shared/core/deviceLanguage.ts`, `DraftLine` and `DraftOrder` in `src/pho
    - `together` blue and `individual` orange: the two delivery modes, on card borders, mode words and
      chips.
    - `success` green, `warning` yellow and `error` red: status only. A healthy server, an item that is
-     sold out, a refusal. Never an action and never a delivery mode.
+     sold out, a refusal. Never an action and never a delivery mode. Inside a chart, `warning` marks
+     only a point that is itself a warning, such as a run-out time inside the warning window.
+   - `chartData` teal: measured data in a chart, its line, the area under it and the forecast drawn
+     from it. Only charts use it, never a control or a status. Reference lines in a chart (an
+     available amount, a second forecast, the current moment) stay neutral. A chart that needs a
+     second data series adds its own token here first.
    Colour never carries meaning alone: the word or the icon is always there. A new control takes a
    token from this list; it never invents a hue and never borrows a status colour for an action.
 
@@ -151,6 +156,29 @@ in `src/shared/core/deviceLanguage.ts`, `DraftLine` and `DraftOrder` in `src/pho
   chain carries the page's last-modified stamp so a cached door from an older build can never be
   used.
 - **No feature may require a service worker**, a secure context, or an installed PWA.
+- **The phone's category buttons sit in two columns.**
+
+## The admin screens
+
+The admin runs on the laptop, in a single column; there is no phone layout for it. Its theme follows
+the device, light or dark, both palettes soft (`src/shared/theme.ts`).
+
+- **One festival page** at `/admin/festivals/{id}` manages a festival end to end: name and dates,
+  then its stations, articles and ingredient stock, each in an outlined card. It works the same for
+  past, running, future and hidden festivals; nothing on it is read-only.
+- **The festival page has no save button of its own.** Its fields (name, dates, an article's price
+  and stations, an ingredient's available amount) save the moment the admin leaves them, and a field
+  the laptop refuses says so on its row. The forms it opens, to create or edit a station, an article
+  or a category and to place an article with its price and stations, have their own save button.
+- **Adding to a festival is inline:** a type-to-search field, an add button, and a "Neu…" button
+  beside them that opens the create form. A new station is then chosen for adding; a new article
+  goes straight to the form for its price and stations.
+- **The global tabs are plain lists** with no festival controls, in the order Übersicht, Feste,
+  Ausgabestellen, Artikel, Zutaten, Kellner; the Artikel tab groups its articles under their
+  categories. Übersicht reports on the running festival, and an unknown festival id silently returns
+  to it.
+- **Words:** the festival page says "Artikel", never "Karte", a running festival is "Aktiv" /
+  "Active", and no screen uses the word "Tempo".
 
 ## Testing
 
