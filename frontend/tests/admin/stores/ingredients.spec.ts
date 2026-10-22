@@ -2,9 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminIngredientsStore } from '../../../src/admin/stores/ingredients'
 import { aHold, answer, heldUntil, inTurn, stubLaptop, type StubbedLaptop } from '../../support/laptop'
+import { anAdminIngredient } from '../../support/wireViews'
 
-const FLOUR = { ingredientId: 'ingredient-mehl', name: 'Mehl', unit: 'gram', isActive: true, activeItemNames: [] }
-const BUN = { ingredientId: 'ingredient-broetchen', name: 'Brötchen', unit: 'piece', isActive: true, activeItemNames: [] }
+const FLOUR = anAdminIngredient({ ingredientId: 'ingredient-mehl', name: 'Mehl', unit: 'gram' })
+const BUN = anAdminIngredient()
 
 
 interface IngredientsScenario {

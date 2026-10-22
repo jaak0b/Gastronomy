@@ -161,6 +161,59 @@ describe('the ingredient stock of the festival', () => {
     expect((page.get('[data-test="amount-input"] input').element as HTMLInputElement).value).toBe('0')
   })
 
+  it('says in German that an unreadable amount cannot be used', async () => {
+    const { page } = await mountWithStock([FLOUR_STOCK])
+
+    await page.get('[data-test="amount-input"] input').setValue('viel')
+    await page.get('[data-test="amount-input"] input').trigger('blur')
+
+    await vi.waitFor(() =>
+      expect(ingredientRow(page, 'ingredient-mehl').get('[data-test="refusal"]').text()).toBe(
+        'Geben Sie null oder mehr an, oder lassen Sie das Feld leer.',
+      ),
+    )
+  })
+
+  it('shows the warning under the refused row only', async () => {
+    const { page } = await mountWithStock([FLOUR_STOCK, BUN_STOCK])
+
+    await ingredientRow(page, 'ingredient-mehl').get('[data-test="amount-input"] input').setValue('viel')
+    await ingredientRow(page, 'ingredient-mehl').get('[data-test="amount-input"] input').trigger('blur')
+
+    await vi.waitFor(() =>
+      expect(ingredientRow(page, 'ingredient-mehl').find('[data-test="refusal"]').exists()).toBe(true),
+    )
+    expect(ingredientRow(page, 'ingredient-broetchen').find('[data-test="refusal"]').exists()).toBe(false)
+  })
+
+  it('keeps the warning on a row while the admin types in another row', async () => {
+    const { page } = await mountWithStock([FLOUR_STOCK, BUN_STOCK])
+    await ingredientRow(page, 'ingredient-mehl').get('[data-test="amount-input"] input').setValue('viel')
+    await ingredientRow(page, 'ingredient-mehl').get('[data-test="amount-input"] input').trigger('blur')
+    await vi.waitFor(() =>
+      expect(ingredientRow(page, 'ingredient-mehl').find('[data-test="refusal"]').exists()).toBe(true),
+    )
+
+    await ingredientRow(page, 'ingredient-broetchen').get('[data-test="amount-input"] input').setValue('120')
+
+    expect(ingredientRow(page, 'ingredient-mehl').find('[data-test="refusal"]').exists()).toBe(true)
+  })
+
+  it('takes the warning away as soon as the admin types in that row again', async () => {
+    const { page } = await mountWithStock([FLOUR_STOCK])
+    await page.get('[data-test="amount-input"] input').setValue('viel')
+    await page.get('[data-test="amount-input"] input').trigger('blur')
+    await vi.waitFor(() =>
+      expect(ingredientRow(page, 'ingredient-mehl').find('[data-test="refusal"]').exists()).toBe(true),
+    )
+
+    await page.get('[data-test="amount-input"] input').setValue('25000')
+
+    await vi.waitFor(() =>
+      expect(ingredientRow(page, 'ingredient-mehl').find('[data-test="refusal"]').exists()).toBe(false),
+    )
+  })
+
   it('is hidden while no article on the menu uses an ingredient', async () => {
     festivalLaptop({ stock: [] })
 

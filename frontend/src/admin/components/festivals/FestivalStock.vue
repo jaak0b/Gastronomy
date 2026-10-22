@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { adminErrorMessageForKey } from '../../core/adminErrorMessage'
 import { formatRunOutMoment } from '../../../shared/core/moments'
 import { entryUnitsFor, type ParsedAmountInput } from '../../core/ingredientAmounts'
 import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminFestivalStockStore } from '../../stores/festivalStock'
 import { useIngredientAmountText } from '../../composables/useIngredientAmountText'
-import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
+import { useRowRefusals } from '../../composables/useRowRefusals'
 import IngredientAmountField from '../ingredients/IngredientAmountField.vue'
 
 const STOCK_INVALID_KEY = 'errors.admin.ingredients.stockInvalid'
@@ -17,31 +15,23 @@ const props = defineProps<{ festivalId: string }>()
 const { t, locale } = useI18n()
 const stock = useAdminFestivalStockStore()
 const amountText = useIngredientAmountText()
-const refusedIngredientId = ref<string | null>(null)
-const { refusal, refusalText } = useRefusalDisplay()
+const ingredientRefusals = useRowRefusals()
 
 async function saveAvailableAmount(
   ingredientId: string,
   availableAmount: number | null,
 ): Promise<void> {
-  const saved = await stock.setAvailableAmount(props.festivalId, ingredientId, availableAmount)
-  switch (saved.kind) {
-    case 'ok':
-      return
-    case 'failed':
-      refusal.value = saved.message
-      return
-    default:
-      assertNever(saved)
-  }
+  ingredientRefusals.showRefusalOf(
+    ingredientId,
+    await stock.setAvailableAmount(props.festivalId, ingredientId, availableAmount),
+  )
 }
 
 async function changeAvailableAmount(
   ingredientId: string,
   parsed: ParsedAmountInput,
 ): Promise<void> {
-  refusedIngredientId.value = ingredientId
-  refusal.value = null
+  ingredientRefusals.forgetRefusalOf(ingredientId)
   switch (parsed.kind) {
     case 'amount':
       await saveAvailableAmount(ingredientId, parsed.baseAmount)
@@ -50,7 +40,7 @@ async function changeAvailableAmount(
       await saveAvailableAmount(ingredientId, null)
       return
     case 'unreadable':
-      refusal.value = adminErrorMessageForKey(STOCK_INVALID_KEY)
+      ingredientRefusals.refuse(ingredientId, STOCK_INVALID_KEY)
       return
     default:
       assertNever(parsed)
@@ -91,6 +81,7 @@ function runOutText(runsOutAtUtc: string | null): string {
               :entry-units="entryUnitsFor(ingredient.unit)"
               :saved-amount="ingredient.availableAmount"
               :label="t('admin.ingredients.labels.available')"
+              @amount-typed="ingredientRefusals.forgetRefusalOf(ingredient.ingredientId)"
               @amount-changed="changeAvailableAmount(ingredient.ingredientId, $event)"
             />
             <span
@@ -106,13 +97,13 @@ function runOutText(runsOutAtUtc: string | null): string {
             <span class="runs-out text-body-2" data-test="runs-out">{{ runOutText(ingredient.runsOutAtUtc) }}</span>
           </div>
           <v-alert
-            v-if="refusalText !== null && refusedIngredientId === ingredient.ingredientId"
+            v-if="ingredientRefusals.refusalTextOf(ingredient.ingredientId) !== null"
             class="refusal mb-2"
             data-test="refusal"
             type="warning"
             variant="tonal"
           >
-            {{ refusalText }}
+            {{ ingredientRefusals.refusalTextOf(ingredient.ingredientId) }}
           </v-alert>
         </div>
       </div>
