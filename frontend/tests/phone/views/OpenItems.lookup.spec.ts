@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import OpenItems from '../../../src/phone/views/OpenItems.vue'
 import { TABLE_LOOKUP_DEBOUNCE_MS } from '../../../src/phone/core/openItems'
@@ -9,6 +9,8 @@ import { testPlugins } from '../../support/plugins'
 import { OPEN_LIST, TABLE_REPORT, lineNamed, lookupCard, isHalfTaken, laptopWithALookup } from './openItemsFixture'
 import { stubLaptop, answer } from '../../support/laptop'
 import { nextTick } from 'vue'
+
+enableAutoUnmount(afterEach)
 
 describe('looking up one table from the screen that shows what is open', () => {
   beforeEach(() => {

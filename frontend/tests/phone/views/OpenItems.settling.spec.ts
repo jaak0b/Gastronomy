@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { OPEN_LIST, mountScreen, openItemsLaptop } from './openItemsFixture'
 import { noConnection, refusal } from '../../support/laptop'
 import { inputOf, typeIn, clickOn } from '../../support/dom'
 import { nextTick } from 'vue'
+
+enableAutoUnmount(afterEach)
 
 describe('settling what the table actually handed over', () => {
   beforeEach(() => {

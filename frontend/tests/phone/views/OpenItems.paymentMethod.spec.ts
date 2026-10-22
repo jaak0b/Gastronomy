@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import OpenItems from '../../../src/phone/views/OpenItems.vue'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
@@ -8,6 +8,8 @@ import { testPlugins } from '../../support/plugins'
 import { OPEN_LIST, SETTLED, mountScreen, openItemsLaptop } from './openItemsFixture'
 import { answer, stubLaptop, neverAnswers } from '../../support/laptop'
 import { nextTick } from 'vue'
+
+enableAutoUnmount(afterEach)
 
 describe('saying how the table paid with the button that settles', () => {
   const ONE_FREE_ITEM = {

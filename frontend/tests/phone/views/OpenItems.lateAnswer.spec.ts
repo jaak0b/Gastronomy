@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import OpenItems from '../../../src/phone/views/OpenItems.vue'
 import { TABLE_LOOKUP_DEBOUNCE_MS } from '../../../src/phone/core/openItems'
@@ -10,6 +10,8 @@ import { useOrderStore } from '../../../src/phone/stores/order'
 import { testPlugins } from '../../support/plugins'
 import { OPEN_LIST, TABLE_REPORT, lineNamed, lookupCard } from './openItemsFixture'
 import { answer, stubLaptop, heldUntil } from '../../support/laptop'
+
+enableAutoUnmount(afterEach)
 
 describe('an order sent to be settled whose answer arrives while the waiter already looks up another table', () => {
   beforeEach(() => {

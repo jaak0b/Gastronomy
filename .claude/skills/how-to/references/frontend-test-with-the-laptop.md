@@ -43,6 +43,9 @@ changes on the wire is fixed in the factory once.
 - `tests/setup.ts` installs Vuetify for every spec; `testPlugins('de' | 'en')` gives the locale. A
   component spec calls `setActivePinia(createPinia())` and empties `document.body` in `beforeEach`,
   and mounts with `attachTo: document.body` because Vuetify dialogs render outside the component.
+  A spec that mounts a screen calls `enableAutoUnmount(afterEach)` at the top of the file, because a
+  screen left mounted keeps its timers running into the next test, and a store action such a timer
+  starts makes the earlier test's Pinia active again, so `useXStore()` returns the old store.
 - `tests/support/dom.ts` finds and drives the page: `onScreen`, `allOnScreen`, `isOnScreen`,
   `textOnScreen`, `inputOf`, `typeIn`, `clickOn`, `waitUntil`, and `testIdSelector(testId, id)`.
   `formDialogs.ts` fills and saves the admin form dialogs, and `hubConnection.ts` fakes SignalR
