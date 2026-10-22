@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { useAdminIngredientsStore } from '../../../../src/admin/stores/ingredients'
 import { refusal } from '../../../support/laptop'
 import {
   allOnScreen,
@@ -15,7 +16,14 @@ import {
   waitForDialog,
   waitUntil,
 } from '../../../support/dom'
-import { BUN_LINE, FLOUR_LINE, loadIngredientsAndMountDialog, recipeLaptop } from './itemIngredientsDialogFixture'
+import {
+  BUN_LINE,
+  FLOUR_LINE,
+  loadIngredientsAndMountDialog,
+  mountDialog,
+  recipeLaptop,
+  recipeLaptopWithoutTheIngredientList,
+} from './itemIngredientsDialogFixture'
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -80,6 +88,49 @@ describe('the recipe lines of an article', () => {
           method: 'PUT',
           body: { amount: 2250.5 },
         },
+      ]),
+    )
+  })
+})
+
+describe('the recipe lines of an article while the ingredient list is missing', () => {
+  it('show every line with its name before the ingredient list has loaded', async () => {
+    recipeLaptop()
+
+    mountDialog()
+
+    await waitUntil(() =>
+      expect(allOnScreen('[data-test="recipe-ingredient-name"]').map((name) => name.textContent)).toEqual([
+        'Mehl',
+        'Brötchen',
+      ]),
+    )
+  })
+
+  it('show every line with its name when the ingredient list failed to load', async () => {
+    recipeLaptopWithoutTheIngredientList()
+    await useAdminIngredientsStore().load()
+
+    mountDialog()
+
+    await waitUntil(() =>
+      expect(allOnScreen('[data-test="recipe-ingredient-name"]').map((name) => name.textContent)).toEqual([
+        'Mehl',
+        'Brötchen',
+      ]),
+    )
+  })
+
+  it('show the unit of every line when the ingredient list failed to load', async () => {
+    recipeLaptopWithoutTheIngredientList()
+    await useAdminIngredientsStore().load()
+
+    mountDialog()
+
+    await waitUntil(() =>
+      expect(allOnScreen('[data-test="recipe-line"] [data-test="amount-unit"]').map((unit) => unit.textContent)).toEqual([
+        'g',
+        'Stück',
       ]),
     )
   })

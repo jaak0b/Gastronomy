@@ -2033,6 +2033,8 @@
       "AdminItemIngredientView": {
         "required": [
           "ingredientId",
+          "name",
+          "unit",
           "amount"
         ],
         "type": "object",
@@ -2040,6 +2042,12 @@
           "ingredientId": {
             "type": "string",
             "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/IngredientUnit"
           },
           "amount": {
             "type": "number",

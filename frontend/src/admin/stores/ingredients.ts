@@ -38,12 +38,6 @@ export const useAdminIngredientsStore = defineStore('adminIngredients', () => {
     return await update(ingredientId, draft)
   }
 
-  function findIngredientWithId(ingredientId: string): AdminIngredientView | null {
-    return (
-      ingredients.value.find((ingredient) => ingredient.ingredientId === ingredientId) ?? null
-    )
-  }
-
   function listen(): () => void {
     return useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], load)
   }
@@ -55,7 +49,6 @@ export const useAdminIngredientsStore = defineStore('adminIngredients', () => {
     create,
     save,
     setActive,
-    findIngredientWithId,
     listen,
   }
 })

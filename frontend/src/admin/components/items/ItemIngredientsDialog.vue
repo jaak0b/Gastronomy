@@ -2,7 +2,11 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { entryUnitsFor, type ParsedAmountInput } from '../../core/ingredientAmounts'
-import type { AdminIngredientView, AdminItemView } from '../../../shared/api/generatedSchemas'
+import type {
+  AdminIngredientView,
+  AdminItemIngredientView,
+  AdminItemView,
+} from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminIngredientsStore, type IngredientDraft } from '../../stores/ingredients'
 import { useAdminItemsStore } from '../../stores/items'
@@ -14,9 +18,7 @@ import BaseFormDialog from '../../../shared/components/BaseFormDialog.vue'
 import IngredientAmountField from '../ingredients/IngredientAmountField.vue'
 import IngredientDialog from '../ingredients/IngredientDialog.vue'
 
-interface RecipeLine {
-  ingredient: AdminIngredientView
-  amount: number
+interface RecipeLine extends AdminItemIngredientView {
   refusalText: string | null
 }
 
@@ -47,12 +49,10 @@ const ingredientSession = useEditSession<AdminIngredientView, IngredientDraft, A
 const { isOpen: isIngredientDialogOpen, refusalText: ingredientRefusalText } = ingredientSession
 
 const recipeLines = computed<RecipeLine[]>(() =>
-  props.item.ingredients.flatMap((line) => {
-    const ingredient = ingredients.findIngredientWithId(line.ingredientId)
-    return ingredient === null
-      ? []
-      : [{ ingredient, amount: line.amount, refusalText: lineRefusals.refusalTextOf(line.ingredientId) }]
-  }),
+  props.item.ingredients.map((line) => ({
+    ...line,
+    refusalText: lineRefusals.refusalTextOf(line.ingredientId),
+  })),
 )
 
 const offeredIngredients = computed(() => {
@@ -144,19 +144,19 @@ async function add(): Promise<void> {
     <div class="recipe-lines mb-4">
       <div
         v-for="line in recipeLines"
-        :key="line.ingredient.ingredientId"
+        :key="line.ingredientId"
         class="recipe-line"
         data-test="recipe-line"
-        :data-test-id="line.ingredient.ingredientId"
+        :data-test-id="line.ingredientId"
       >
         <div class="d-flex align-center flex-wrap ga-2 py-1">
-          <span class="recipe-ingredient-name text-body-1 flex-grow-1" data-test="recipe-ingredient-name">{{ line.ingredient.name }}</span>
+          <span class="recipe-ingredient-name text-body-1 flex-grow-1" data-test="recipe-ingredient-name">{{ line.name }}</span>
           <IngredientAmountField
-            :entry-units="[line.ingredient.unit]"
+            :entry-units="[line.unit]"
             :saved-amount="line.amount"
             :label="t('admin.ingredients.labels.amount')"
-            @amount-typed="lineRefusals.forgetRefusalOf(line.ingredient.ingredientId)"
-            @amount-changed="changeAmount(line.ingredient.ingredientId, $event)"
+            @amount-typed="lineRefusals.forgetRefusalOf(line.ingredientId)"
+            @amount-changed="changeAmount(line.ingredientId, $event)"
           />
           <v-btn
             class="remove-recipe-line"
@@ -164,7 +164,7 @@ async function add(): Promise<void> {
             icon="mdi-delete"
             variant="text"
             color="error"
-            @click="ingredientIdOfLineToRemove = line.ingredient.ingredientId"
+            @click="ingredientIdOfLineToRemove = line.ingredientId"
           />
         </div>
         <v-alert

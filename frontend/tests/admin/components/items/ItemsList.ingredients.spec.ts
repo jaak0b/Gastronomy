@@ -1,18 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount, type VueWrapper } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { VAutocomplete } from 'vuetify/components'
 import ItemsList from '../../../../src/admin/components/items/ItemsList.vue'
 import { testPlugins } from '../../../support/plugins'
 import { answer, type StubbedLaptop } from '../../../support/laptop'
 import { inputOf, onScreen, textOnScreen, typeInto } from '../../../support/dom'
-import { anAdminIngredient } from '../../../support/wireViews'
-import { mountList, itemsListLaptop, ITEM_ID, ONE_ITEM } from './itemsListFixture'
+import { anAdminIngredient, anAdminItemIngredient } from '../../../support/wireViews'
+import { mountList, itemsListLaptop, openTheRecipe, ITEM_ID, ONE_ITEM } from './itemsListFixture'
 
 const MUSTARD = anAdminIngredient({ ingredientId: 'ingredient-senf', name: 'Senf', unit: 'gram' })
 
 const BRATWURST_WITH_MUSTARD = {
-  items: [{ ...ONE_ITEM.items[0], ingredients: [{ ingredientId: 'ingredient-senf', amount: 20 }] }],
+  items: [
+    {
+      ...ONE_ITEM.items[0],
+      ingredients: [anAdminItemIngredient({ ingredientId: 'ingredient-senf', name: 'Senf', unit: 'gram', amount: 20 })],
+    },
+  ],
 }
 
 const MUSTARD_LINE = '[data-test="recipe-line"][data-test-id="ingredient-senf"]'
@@ -24,12 +29,6 @@ function laptopThatKeepsTheAddedLine(): StubbedLaptop {
     (call) => call.url === '/api/admin/items',
     (call) => answer(laptop.callsTo('PUT', /\/ingredients\//).length === 0 ? ONE_ITEM : BRATWURST_WITH_MUSTARD)(call),
   )
-}
-
-async function openTheRecipe(list: VueWrapper): Promise<void> {
-  await vi.waitFor(() => expect(list.find('[data-test="edit-ingredients"]').exists()).toBe(true))
-  await list.get('[data-test="edit-ingredients"]').trigger('click')
-  await vi.waitFor(() => expect(document.querySelector('[data-test="ingredient-search"]')).not.toBeNull())
 }
 
 beforeEach(() => {

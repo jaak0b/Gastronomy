@@ -41,7 +41,7 @@ export type AdminItemAtFestivalView = __TypedOpenapi.Schemas.AdminItemAtFestival
 export const AdminItemAtFestivalView = z.strictObject({ priceCents: z.number().int(), isAvailable: z.boolean(), stationIds: z.array(z.string()) });
 
 export type AdminItemIngredientView = __TypedOpenapi.Schemas.AdminItemIngredientView;
-export const AdminItemIngredientView = z.strictObject({ ingredientId: z.string(), amount: z.number() });
+export const AdminItemIngredientView = z.strictObject({ ingredientId: z.string(), name: z.string(), unit: IngredientUnit, amount: z.number() });
 
 export type AdminItemView = __TypedOpenapi.Schemas.AdminItemView;
 export const AdminItemView = z.strictObject({ itemId: z.string(), name: z.string(), categoryId: z.string(), sortOrder: z.number().int(), isActive: z.boolean(), productionMinutes: z.number().nullable(), isQueueIndependent: z.boolean(), atTheFestival: AdminItemAtFestivalView.nullable(), ingredients: z.array(AdminItemIngredientView) });

@@ -27,8 +27,10 @@ Backend, under `backend/`:
   `AdminItemRecipeHandler.cs` beside them.
 - Wire records: `GastronomyApp.Contracts/Admin/Ingredients` (`SaveIngredientRequest`,
   `AdminIngredientView`, `AdminIngredientListView`, `SavedIngredientView`) and `Admin/Catalog`
-  (`SaveItemIngredientRequest`, `AdminItemIngredientView`, carried in `AdminItemView.Ingredients`).
-  Mapping: `GastronomyApp.Api/Mapping/AdminIngredientMapping.cs` and `AdminItemMapping.cs`.
+  (`SaveItemIngredientRequest`, `AdminItemIngredientView`, carried in `AdminItemView.Ingredients`
+  ordered by ingredient name). A recipe line carries the ingredient's current name and unit beside
+  its id and amount. Mapping: `GastronomyApp.Api/Mapping/AdminIngredientMapping.cs` and
+  `AdminItemMapping.cs`, which maps a `CatalogItemIngredient` to its line.
 
 Frontend, under `frontend/src/`:
 
@@ -56,6 +58,12 @@ Frontend, under `frontend/src/`:
   parameter `name`; an active namesake gets `nameTaken`.
 - An amount is a finite number above zero. The request attribute requires the number and
   `SetAmountAsync` refuses any other with `errors.admin.ingredients.amountInvalid`.
+- The recipe dialog shows every recipe line from the item view itself, with the name and unit the
+  line carries, even when the ingredient list has not loaded or failed to load. It never looks a
+  line up in the ingredients store and never drops one; the store feeds only the picker of the add
+  row and the creation of a new ingredient. A renamed ingredient raises `ConfigurationChanged`, the
+  items store reloads, and the open dialog follows because `ItemsList.vue` hands it the item from
+  that store.
 - The recipe dialog only selects. A new ingredient comes from `IngredientDialog.vue` and is chosen for
   adding as soon as it is saved (`afterSaving` of `useEditSession`).
 - A recipe is read and changed only in that dialog. The article row on the Artikel tab shows no
@@ -70,12 +78,17 @@ Frontend, under `frontend/src/`:
   `CatalogItemRecipeServiceTest` and the recipe cases of `CatalogItemAdministrationServiceTest`.
 - `GastronomyApp.Infrastructure.Tests/Repositories`: `IngredientRepositoryTest` and
   `CatalogItemIngredientRepositoryTest` (the unique indexes).
+- `GastronomyApp.Api.Tests/Mapping/AdminItemMappingTest`: the name and unit of every recipe line.
 - `GastronomyApp.Api.Tests/Endpoints`: `AdminIngredientEndpointsTest` and
-  `AdminItemIngredientEndpointsTest`; `Announcers/ConfigurationChangedAnnouncementTest` covers the
+  `AdminItemIngredientEndpointsTest` (including the name and unit of every listed recipe line, and
+  the new name after a rename); `Announcers/ConfigurationChangedAnnouncementTest` covers the
   announcement.
 - `frontend/tests/admin`: `stores/ingredients.spec.ts` and `stores/items.spec.ts`;
   `components/ingredients/` (`IngredientsList.*.spec.ts` on `ingredientsListFixture.ts`,
   `IngredientDialog.spec.ts`, `IngredientAmountField.spec.ts`); `components/items/`
-  (`ItemIngredientsDialog.*.spec.ts` on `itemIngredientsDialogFixture.ts`, `ItemsList.ingredients.spec.ts`,
-  and the activation refusal in `ItemsList.items.spec.ts`); `core/ingredientAmounts.spec.ts`. Fixtures
-  come from `anAdminIngredient` and `anAdminItem` in `tests/support/wireViews.ts`.
+  (`ItemIngredientsDialog.*.spec.ts` on `itemIngredientsDialogFixture.ts`, whose recipe lines spec
+  also opens the dialog before the ingredient list has loaded and after it failed;
+  `ItemsList.ingredients.spec.ts`, `ItemsList.renamedIngredient.spec.ts` for a rename behind the
+  open recipe, and the activation refusal in `ItemsList.items.spec.ts`);
+  `core/ingredientAmounts.spec.ts`. Fixtures come from `anAdminIngredient`, `anAdminItem` and
+  `anAdminItemIngredient` in `tests/support/wireViews.ts`.

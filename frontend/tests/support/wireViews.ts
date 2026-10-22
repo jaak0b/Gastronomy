@@ -2,6 +2,7 @@ import type {
   AdminFestivalIngredientView,
   AdminFestivalView,
   AdminIngredientView,
+  AdminItemIngredientView,
   AdminItemView,
   AdminStationView,
   OpenOrderItemView,
@@ -21,6 +22,18 @@ export function anAdminItem(overrides: Partial<AdminItemView> = {}): AdminItemVi
     isQueueIndependent: false,
     atTheFestival: null,
     ingredients: [],
+    ...overrides,
+  }
+}
+
+export function anAdminItemIngredient(
+  overrides: Partial<AdminItemIngredientView> = {},
+): AdminItemIngredientView {
+  return {
+    ingredientId: 'ingredient-broetchen',
+    name: 'Brötchen',
+    unit: 'piece',
+    amount: 1,
     ...overrides,
   }
 }

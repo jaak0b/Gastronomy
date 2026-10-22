@@ -154,7 +154,7 @@ copy of anything listed here.
   `inputOf`, `typeInto`, `typeIn`, `leave`, `clickOn`, `waitUntil`, and the confirmation dialog helpers
   `openDialog`, `waitForDialog`, `dialogText` and `pressInDialog`.
 - `formDialogs.ts` fills and saves or cancels the admin form dialogs.
-- `wireViews.ts` holds the factories for the wire views used most: `anAdminItem`, `anAdminIngredient`, `anAdminFestivalIngredient`, `aFestival`,
+- `wireViews.ts` holds the factories for the wire views used most: `anAdminItem`, `anAdminItemIngredient`, `anAdminIngredient`, `anAdminFestivalIngredient`, `aFestival`,
   `anAdminStation`, `anOpenItem`, `anOpenItemsTable`, `aQueuedItem` and `aStationOrder`.
 - `station.ts` holds the station tablet scenario: `KITCHEN`, `item`, `stationOrder`, `aQueue` and
   `enrolledStationTablet()`.

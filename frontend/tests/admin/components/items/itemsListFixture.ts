@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { expect, vi } from 'vitest'
+import { mount, type VueWrapper } from '@vue/test-utils'
 import ItemsList from '../../../../src/admin/components/items/ItemsList.vue'
 import { testPlugins } from '../../../support/plugins'
 import { answer, stubLaptop, type LaptopCall, type StubbedLaptop } from '../../../support/laptop'
@@ -139,4 +140,10 @@ export function itemsListLaptop(scenario: ItemsListScenario = {}): StubbedLaptop
 
 export function mountList() {
   return mount(ItemsList, { global: { plugins: testPlugins() }, attachTo: document.body })
+}
+
+export async function openTheRecipe(list: VueWrapper): Promise<void> {
+  await vi.waitFor(() => expect(list.find('[data-test="edit-ingredients"]').exists()).toBe(true))
+  await list.get('[data-test="edit-ingredients"]').trigger('click')
+  await vi.waitFor(() => expect(document.querySelector('[data-test="ingredient-search"]')).not.toBeNull())
 }

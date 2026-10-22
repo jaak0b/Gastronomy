@@ -59,6 +59,49 @@ public sealed class AdminItemIngredientEndpointsTest
                     });
   }
 
+  [Test]
+  public async Task GetItems_ARecipeOfTwoIngredients_CarriesTheNameAndUnitOfEveryLine()
+  {
+    var mustardId = await CreateIngredientAsync("Senf", "gram");
+    var bunId = await CreateIngredientAsync("Brötchen", "piece");
+    await PutRecipeLineAsync(mustardId, 20);
+    await PutRecipeLineAsync(bunId, 1);
+
+    var bratwurst = await FindListedBratwurstAsync();
+
+    List<string?> names = bratwurst.GetProperty("ingredients").EnumerateArray().Select(line => line.GetProperty("name").GetString()).ToList();
+    List<string?> units = bratwurst.GetProperty("ingredients").EnumerateArray().Select(line => line.GetProperty("unit").GetString()).ToList();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(names,
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Brötchen",
+                                               "Senf"
+                                             }));
+                      Assert.That(units,
+                                  Is.EqualTo(new[]
+                                             {
+                                               "piece",
+                                               "gram"
+                                             }));
+                    });
+  }
+
+  [Test]
+  public async Task GetItems_AnIngredientRenamedAfterJoiningTheRecipe_CarriesTheNewName()
+  {
+    var mustardId = await CreateIngredientAsync("Senf");
+    await PutRecipeLineAsync(mustardId, 20);
+    await RenameIngredientAsync(mustardId, "Dijonsenf");
+
+    var bratwurst = await FindListedBratwurstAsync();
+
+    var line = bratwurst.GetProperty("ingredients").EnumerateArray().Single();
+    Assert.That(line.GetProperty("name").GetString(), Is.EqualTo("Dijonsenf"));
+  }
+
   [TestCase(0d)]
   [TestCase(-3d)]
   public async Task PutItemIngredient_AnAmountNotAboveZero_IsRefusedWithAmountInvalid(double amount)
@@ -190,16 +233,33 @@ public sealed class AdminItemIngredientEndpointsTest
 
   private async Task<Guid> CreateIngredientAsync(string name)
   {
+    return await CreateIngredientAsync(name, "gram");
+  }
+
+  private async Task<Guid> CreateIngredientAsync(string name, string unit)
+  {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/ingredients",
                                                                new
                                                                {
                                                                  name,
-                                                                 unit = "gram"
+                                                                 unit
                                                                });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created), await response.Content.ReadAsStringAsync());
 
     return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("ingredientId").GetGuid();
+  }
+
+  private async Task RenameIngredientAsync(Guid ingredientId, string name)
+  {
+    using var response = await _context.Client.PutAsJsonAsync($"/api/admin/ingredients/{ingredientId}",
+                                                              new
+                                                              {
+                                                                name,
+                                                                unit = "gram"
+                                                              });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), await response.Content.ReadAsStringAsync());
   }
 
   private async Task PutRecipeLineAsync(Guid ingredientId, double amount)

@@ -4,9 +4,9 @@ import { VAutocomplete } from 'vuetify/components'
 import ItemIngredientsDialog from '../../../../src/admin/components/items/ItemIngredientsDialog.vue'
 import { useAdminIngredientsStore } from '../../../../src/admin/stores/ingredients'
 import { testPlugins } from '../../../support/plugins'
-import { answer, emptyAnswer, stubLaptop, type StubbedLaptop } from '../../../support/laptop'
+import { answer, emptyAnswer, noConnection, stubLaptop, type StubbedLaptop } from '../../../support/laptop'
 import { inputOf, onScreen } from '../../../support/dom'
-import { anAdminIngredient, anAdminItem } from '../../../support/wireViews'
+import { anAdminIngredient, anAdminItem, anAdminItemIngredient } from '../../../support/wireViews'
 import { BUN } from '../ingredients/ingredientsListFixture'
 
 const FLOUR = anAdminIngredient({ ingredientId: 'ingredient-mehl', name: 'Mehl', unit: 'gram' })
@@ -23,8 +23,8 @@ const PANCAKE = anAdminItem({
   itemId: 'item-pfannkuchen',
   name: 'Pfannkuchen',
   ingredients: [
-    { ingredientId: 'ingredient-mehl', amount: 1500 },
-    { ingredientId: 'ingredient-broetchen', amount: 2 },
+    anAdminItemIngredient({ ingredientId: 'ingredient-mehl', name: 'Mehl', unit: 'gram', amount: 1500 }),
+    anAdminItemIngredient({ amount: 2 }),
   ],
 })
 
@@ -45,13 +45,21 @@ export function recipeLaptopWithNothingLeftToAdd(): StubbedLaptop {
   return recipeLaptop().answers('GET', '/api/admin/ingredients', answer({ ingredients: [BUN, OLD_HONEY, FLOUR] }))
 }
 
-export async function loadIngredientsAndMountDialog(locale: 'de' | 'en' = 'de'): Promise<VueWrapper> {
-  await useAdminIngredientsStore().load()
-  const dialog = mount(ItemIngredientsDialog, {
+export function recipeLaptopWithoutTheIngredientList(): StubbedLaptop {
+  return recipeLaptop().answers('GET', '/api/admin/ingredients', noConnection())
+}
+
+export function mountDialog(locale: 'de' | 'en' = 'de'): VueWrapper {
+  return mount(ItemIngredientsDialog, {
     props: { item: PANCAKE },
     global: { plugins: testPlugins(locale) },
     attachTo: document.body,
   })
+}
+
+export async function loadIngredientsAndMountDialog(locale: 'de' | 'en' = 'de'): Promise<VueWrapper> {
+  await useAdminIngredientsStore().load()
+  const dialog = mountDialog(locale)
   await vi.waitFor(() => expect(document.querySelector('[data-test="recipe-line"]')).not.toBeNull())
   return dialog
 }

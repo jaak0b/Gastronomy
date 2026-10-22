@@ -30,7 +30,8 @@ this page is the set of tools and the shape of a spec.
 
 ## Wire data: `tests/support/wireViews.ts`
 
-Factories take overrides and return a full, schema valid view: `anAdminItem`, `anAdminIngredient`,
+Factories take overrides and return a full, schema valid view: `anAdminItem`, `anAdminItemIngredient`
+(one recipe line of an article), `anAdminIngredient`,
 `anAdminFestivalIngredient` (one stock row of the festival page, with its usage and forecasts),
 `aFestival`, `anAdminStation`, `anOpenItem`, `anOpenItemsTable`, `aQueuedItem`, `aStationOrder`. The
 generated schemas are strict, so an answer must hold every field; build it with the factory and
