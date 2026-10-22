@@ -23,10 +23,25 @@ describe('the item row itself', () => {
   it('adds one of the item and opens nothing when the name is tapped', async () => {
     const row = mountRow(true, [])
 
-    await row.get('[data-test="add"]').trigger('click')
+    await row.get('[data-test="add-by-name"]').trigger('click')
 
     expect(row.emitted('add')).toHaveLength(1)
     expect(document.querySelector('[data-test="note-dialog"]')).toBeNull()
+  })
+
+  it('adds one of the item when the price under the name is tapped', async () => {
+    const row = mountRow(true, [])
+
+    await row.get('[data-test="unit-price"]').trigger('click')
+
+    expect(row.emitted('add')).toHaveLength(1)
+  })
+
+  it('lets the keyboard reach adding once, through the name', () => {
+    const row = mountRow(true, [])
+
+    expect(row.get('[data-test="add-by-name"]').attributes('tabindex')).toBeUndefined()
+    expect(row.get('[data-test="add-by-price"]').attributes('tabindex')).toBe('-1')
   })
 
   it('puts the plain portions and the noted portion each on a row of their own', () => {
@@ -50,7 +65,8 @@ describe('the item row itself', () => {
   it('cannot be tapped once the item has sold out', () => {
     const row = mountRow(false, [])
 
-    expect(row.get('[data-test="add"]').attributes('disabled')).toBeDefined()
+    expect(row.get('[data-test="add-by-name"]').attributes('disabled')).toBeDefined()
+    expect(row.get('[data-test="add-by-price"]').attributes('disabled')).toBeDefined()
     expect(row.get('[data-test="add-note"]').attributes('disabled')).toBeDefined()
   })
 
@@ -62,16 +78,38 @@ describe('the item row itself', () => {
 })
 
 describe('the note control on an article with nothing ordered yet', () => {
-  it('sits inside the header and renders no rows area', () => {
+  it('sits on the price line of the header and renders no rows area', () => {
     const row = mountRow(true, [])
 
-    expect(row.get('[data-test="item-head"]').find('[data-test="add-note"]').exists()).toBe(true)
+    expect(row.get('[data-test="item-head"] [data-test="price-line"]').find('[data-test="add-note"]').exists()).toBe(true)
     expect(row.find('[data-test="note-group"]').exists()).toBe(false)
   })
 })
 
+describe('the second line of an article on the order', () => {
+  it('puts the total and the Note button beside the price, in that order', () => {
+    const row = mountRow(true, [plain(0), plain(1)])
+
+    const priceLine = row.get('[data-test="price-line"]')
+
+    expect([...priceLine.element.children].map((child) => (child as HTMLElement).dataset.test)).toEqual([
+      'add-by-price',
+      'article-total',
+      'add-note',
+    ])
+    expect(priceLine.get('[data-test="unit-price"]').text()).toBe('2 × 2,00 €')
+    expect(priceLine.get('[data-test="article-total"]').text()).toBe('4,00 €')
+  })
+
+  it('leaves the line above to the name alone', () => {
+    const row = mountRow(true, [plain(0), plain(1)])
+
+    expect(row.get('[data-test="add-by-name"]').text()).toBe('Wasser')
+  })
+})
+
 describe('the note button placement once rows are on the order', () => {
-  it('stays in the header for Schnitzel, an item with several rows underneath', () => {
+  it('stays on the price line of the header for Schnitzel, an item with several rows underneath', () => {
     const row = mount(ItemRow, {
       props: {
         item: schnitzel(),
@@ -84,7 +122,7 @@ describe('the note button placement once rows are on the order', () => {
       attachTo: document.body,
     })
 
-    expect(row.get('[data-test="item-head"]').find('[data-test="add-note"]').exists()).toBe(true)
+    expect(row.get('[data-test="item-head"] [data-test="price-line"]').find('[data-test="add-note"]').exists()).toBe(true)
   })
 })
 

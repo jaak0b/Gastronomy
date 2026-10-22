@@ -12,6 +12,11 @@ import { buildItemPositionsView, type ItemPosition, type PositionGroup } from '.
 import { needsStationChoice } from '../../core/routingPreview'
 import ItemNoteDialog from './ItemNoteDialog.vue'
 
+interface FactAfterThePrice {
+  kind: 'estimate' | 'sold-out'
+  text: string
+}
+
 const props = defineProps<{
   item: CatalogItemView
   positions: ItemPosition[]
@@ -49,9 +54,13 @@ const isSoldOut = computed(() => {
 
 const price = computed(() => formatPrice(props.item.priceCents, props.language))
 
-const estimate = computed(() =>
-  isSoldOut.value ? null : estimateRangeText(props.estimateRange, t, props.language),
-)
+const factAfterThePrice = computed<FactAfterThePrice | null>(() => {
+  if (isSoldOut.value) {
+    return { kind: 'sold-out', text: t('common.labels.soldOut') }
+  }
+  const waitingTime = estimateRangeText(props.estimateRange, t, props.language)
+  return waitingTime === null ? null : { kind: 'estimate', text: waitingTime }
+})
 
 const view = computed(() => buildItemPositionsView(props.positions, props.item.priceCents))
 
@@ -113,32 +122,47 @@ function stationNameForRow(group: PositionGroup): string | null {
 </script>
 
 <template>
-  <div class="item-row" data-test="item-row" :class="{ 'is-sold-out': isSoldOut }">
+  <div class="item-row" data-test="item-row">
     <div class="item-line d-flex align-start">
       <div class="item-body flex-grow-1">
-        <div class="item-head d-flex align-start" data-test="item-head">
-          <v-btn class="add flex-grow-1" data-test="add" variant="text" :disabled="isSoldOut" @click="emit('add')">
-            <span class="name-line">
-              <span class="name text-body-1" data-test="name">{{ item.name }}</span>
-              <span class="unit-price text-body-2 text-medium-emphasis" data-test="unit-price">
-                {{ unitPriceText }}
-              </span>
-            </span>
-            <span class="facts text-body-2 text-medium-emphasis" data-test="facts">
-              <span v-if="estimate !== null" class="estimate" data-test="estimate">{{ estimate }}</span>
-              <span v-if="isSoldOut" class="sold-out" data-test="sold-out">{{ t('common.labels.soldOut') }}</span>
-            </span>
-          </v-btn>
-          <span v-if="view.totalCount > 0" class="article-total text-body-1" data-test="article-total">{{ articleTotal }}</span>
+        <div class="item-head" data-test="item-head">
           <v-btn
-            class="add-note add-note-in-header"
-            data-test="add-note"
+            class="add add-by-name"
+            data-test="add-by-name"
             variant="text"
             :disabled="isSoldOut"
-            @click="askForANote"
+            @click="emit('add')"
           >
-            {{ t('phone.catalog.actions.addNote') }}
+            <span class="name text-body-1" data-test="name">{{ item.name }}</span>
           </v-btn>
+          <div class="price-line d-flex align-start" data-test="price-line">
+            <v-btn
+              class="add add-by-price"
+              data-test="add-by-price"
+              variant="text"
+              tabindex="-1"
+              :disabled="isSoldOut"
+              @click="emit('add')"
+            >
+              <span class="facts text-body-2 text-medium-emphasis" data-test="facts">
+                <span class="fact">
+                  <span data-test="unit-price">{{ unitPriceText }}</span>
+                  <span v-if="factAfterThePrice !== null" data-test="fact-separator">&nbsp;&middot;</span>
+                </span>
+                <span v-if="factAfterThePrice !== null" class="fact" :data-test="factAfterThePrice.kind">{{ factAfterThePrice.text }}</span>
+              </span>
+            </v-btn>
+            <span v-if="view.totalCount > 0" class="article-total text-body-1" data-test="article-total">{{ articleTotal }}</span>
+            <v-btn
+              class="add-note"
+              data-test="add-note"
+              variant="text"
+              :disabled="isSoldOut"
+              @click="askForANote"
+            >
+              {{ t('phone.catalog.actions.addNote') }}
+            </v-btn>
+          </div>
         </div>
       </div>
     </div>
@@ -213,34 +237,21 @@ function stationNameForRow(group: PositionGroup): string | null {
 }
 
 .add-note {
-  min-height: 48px;
+  flex: 0 0 auto;
+  min-height: var(--price-line-min-height);
   border-radius: 8px;
   padding-inline: 8px;
   text-transform: none;
   letter-spacing: normal;
 }
 
-.add-note-in-header {
-  flex: 0 0 auto;
-  align-self: center;
-}
-
-.name-line {
+.article-total {
   display: flex;
-  gap: 0.5rem;
-  align-items: baseline;
-  flex-wrap: wrap;
-}
-
-.unit-price,
-.article-total {
-  white-space: nowrap;
-}
-
-.article-total {
   flex: 0 0 auto;
-  align-self: center;
-  padding-inline: 0.75rem;
+  align-items: center;
+  min-height: var(--price-line-min-height);
+  white-space: nowrap;
+  padding-inline: 8px 4px;
 }
 
 .group-count {
@@ -271,11 +282,27 @@ function stationNameForRow(group: PositionGroup): string | null {
   min-width: 0;
 }
 
-.add {
-  flex: 1 1 0;
+.price-line {
+  --price-line-min-height: 48px;
+  --fact-line-height: 1.25rem;
   min-width: 0;
-  min-height: 64px;
+}
+
+.add {
+  min-width: 0;
   height: auto;
+}
+
+.add-by-name {
+  width: 100%;
+  padding-block: 8px 0;
+  padding-inline: 0.5rem;
+}
+
+.add-by-price {
+  flex: 1 1 0;
+  min-height: var(--price-line-min-height);
+  padding-block: calc((var(--price-line-min-height) - var(--fact-line-height)) / 2);
   padding-inline: 0.5rem 0;
 }
 
@@ -291,22 +318,21 @@ function stationNameForRow(group: PositionGroup): string | null {
 
 .facts {
   display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  white-space: nowrap;
-  padding-inline: 0;
-  padding-bottom: 0;
+  flex-wrap: wrap;
+  column-gap: 0.25em;
+  line-height: var(--fact-line-height);
+  text-align: start;
+}
+
+.fact {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .name {
   min-width: 0;
   text-align: start;
   overflow-wrap: anywhere;
-}
-
-.sold-out {
-  flex: 0 0 auto;
-  white-space: nowrap;
 }
 
 .note-group {

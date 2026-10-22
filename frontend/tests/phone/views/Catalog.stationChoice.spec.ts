@@ -64,6 +64,17 @@ describe('the question about which station is to make an item', () => {
     expect(view.findAll('[data-test="item-row"]').length).toBeGreaterThan(0)
   })
 
+  it('asks for the station first when the price of the item is tapped, and adds nothing yet', async () => {
+    const view = mountCatalogWithAStationChoice()
+    const order = useOrderStore()
+    await openCategory(view, 'Essen')
+
+    await itemRowNamed(view, 'Kaffee').get('[data-test="add-by-price"]').trigger('click')
+
+    await vi.waitFor(() => expect(document.querySelector('[data-test="line-station-sheet"]')).not.toBeNull())
+    expect(order.draft.lines).toHaveLength(0)
+  })
+
   it('takes the note in the station sheet and puts both on the line', async () => {
     const view = mountCatalogWithAStationChoice()
     const order = useOrderStore()

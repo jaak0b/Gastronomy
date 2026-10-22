@@ -11,18 +11,20 @@ beforeEach(() => {
 })
 
 describe('the waiting time written on an item row', () => {
-  it('sits on the facts line under the name, the price beside the name', () => {
+  it('follows the price on the facts line, joined to it by a dot', () => {
     const row = mountRowWithEstimate({ min: 6, max: 6 })
 
-    expect(row.get('[data-test="name"]').text()).toBe('Wasser')
-    expect(row.get('[data-test="unit-price"]').text()).toBe('2,00 €')
+    expect(row.get('[data-test="facts"] [data-test="unit-price"]').text()).toBe('2,00 €')
+    expect(row.get('[data-test="facts"] [data-test="fact-separator"]').text()).toBe('·')
     expect(row.get('[data-test="facts"] [data-test="estimate"]').text()).toBe('~6 Min.')
   })
 
-  it('keeps the facts line inside the add-one target, so one tap covers the whole block', () => {
+  it('adds one of the item when the waiting time is tapped', async () => {
     const row = mountRowWithEstimate({ min: 6, max: 6 })
 
-    expect(row.get('[data-test="add"]').find('[data-test="facts"]').exists()).toBe(true)
+    await row.get('[data-test="estimate"]').trigger('click')
+
+    expect(row.emitted('add')).toHaveLength(1)
   })
 
   it('writes just as short in English', () => {
@@ -54,7 +56,7 @@ describe('the waiting time written on an item row', () => {
     const row = mountRowWithEstimate(null)
 
     expect(row.get('[data-test="name"]').text()).toBe('Wasser')
-    expect(row.get('[data-test="unit-price"]').text()).toBe('2,00 €')
+    expect(row.get('[data-test="facts"]').text()).toBe('2,00 €')
     expect(row.find('[data-test="estimate"]').exists()).toBe(false)
   })
 
@@ -63,7 +65,8 @@ describe('the waiting time written on an item row', () => {
 
     expect(row.get('[data-test="name"]').text()).toBe('Wasser')
     expect(row.find('[data-test="estimate"]').exists()).toBe(false)
-    expect(row.get('[data-test="unit-price"]').text()).toBe('2,00 €')
+    expect(row.get('[data-test="facts"] [data-test="unit-price"]').text()).toBe('2,00 €')
+    expect(row.get('[data-test="facts"] [data-test="fact-separator"]').text()).toBe('·')
     expect(row.get('[data-test="facts"] [data-test="sold-out"]').text()).toBe('Ausverkauft')
   })
 })

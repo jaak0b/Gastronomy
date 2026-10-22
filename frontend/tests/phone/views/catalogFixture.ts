@@ -76,7 +76,7 @@ export function itemRowNamed(view: MountedCatalog, name: string) {
 }
 
 export async function tapToAdd(view: MountedCatalog, name: string): Promise<void> {
-  await itemRowNamed(view, name).get('[data-test="add"]').trigger('click')
+  await itemRowNamed(view, name).get('[data-test="add-by-name"]').trigger('click')
 }
 
 export function stationChoiceNamed(name: string): HTMLElement {
