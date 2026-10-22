@@ -87,11 +87,8 @@ rule each one touches. These
 still need a disposition from whoever asked for the review, so state them clearly, but never dress
 them up as defects.
 
-When the change is a bug fix, check the red run it claims. Rule 3 wants a run where the test compiled,
-executed and failed on its own assertion against the old code. A quoted compile error, a missing
-member, a fixture failure or an exception before the assertion is not that, and neither is a run
-against a throwing stub added for the purpose. Report a fix whose red proof is any of those as a rule
-finding, naming what was quoted instead.
+When the change is a bug fix, check the red run it claims against root rule 3, and report a fix
+whose red proof falls short of it as a rule finding, naming what was quoted instead.
 
 When a repository rule and the real world disagree, say so in the same breath rather than reporting
 the rule as a defect. "Hard rule 2 wants this surfaced to the user; in practice it needs an internal
@@ -113,8 +110,7 @@ product has hurt before:
 - A value computed in two places that can disagree, particularly prices, totals, sequence numbers,
   routing decisions and an item's fulfillment.
 - A grouping, collapse, summary or count that drops an item's note anywhere a person reads what to
-  make or hand out. Two units of one article are different work when their notes differ, and a
-  production count is not exempt because a note can change how the article is made.
+  make or hand out (root rule 20).
 - A catch that swallows, a failure that reaches the user as a raw exception, and any state where the
   laptop and a phone disagree about what exists.
 

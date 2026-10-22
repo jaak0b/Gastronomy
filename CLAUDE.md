@@ -128,7 +128,8 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
    **Red means the test compiled, ran and failed on the assertion it was written for.** A build
    error, a missing member, a type mismatch or a test the runner never reached is not a red run
    and proves nothing about the behaviour. Neither is a failure for another reason: a fixture that
-   does not set up, a wrong selector, an exception before the assertion. The quoted failure names
+   does not set up, a wrong selector, an exception before the assertion, or a stub that throws only
+   to produce a red run. The quoted failure names
    the wrong value the old code produced. A report that quotes anything else as the red run is
    rejected, and the fix restarts from (a).
 
@@ -413,7 +414,9 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     a first or nearest candidate, a clamped number, a shortened string, or a value recomputed from
     other data. This binds every layer: the phone, the station tablet, the admin screen and the
     server. Review treats any silent substitution as a defect, however small the difference looks,
-    because the person acted on a screen that showed something else.
+    because the person acted on a screen that showed something else. The one deliberate exception:
+    a phone drops an unsent order without a word once its festival is over or another one has
+    started, as the `festivals` feature page describes.
 
 24. **A write that nobody is told about is a bug, so no service tells anyone: the commit does.**
     Screens learn about changes from two broad hub events, `ConfigurationChanged` for everything an
