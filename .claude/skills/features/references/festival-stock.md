@@ -74,7 +74,7 @@ Frontend, under `frontend/src/`:
   now; `runsOutSoonAtUtc` carries that moment and is null in every other case. The forecast window and
   the warning horizon are two separate constants in `IngredientStockService`.
 - The frontend never recomputes a forecast or the warning. A row shows text only for `runsOutSoon`
-  and `usedUp`, in the `warning-text` colour with an alert icon, and the moment carries the weekday
+  and `usedUp`, in the `warning` colour with an alert icon, and the moment carries the weekday
   when the festival spans more than one local day.
 - "Verlauf" is closed at first and open under one row at most: opening it under another row closes
   the first, and a second press closes it. The open row lives in the page only. An ingredient whose

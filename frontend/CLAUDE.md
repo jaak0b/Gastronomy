@@ -99,11 +99,11 @@ in `src/shared/core/deviceLanguage.ts`, `DraftLine` and `DraftOrder` in `src/pho
    - `primary` neutral contrast: every action and the active navigation, the only interactive colour.
    - `together` blue and `individual` orange: the two delivery modes, on card borders, mode words and
      chips.
-   - `success` green, `warning` yellow and `error` red: status only. A healthy server, an item that is
+   - `success` green, `warning` amber and `error` red: status only. A healthy server, an item that is
      sold out, a refusal. Never an action and never a delivery mode. Inside a chart, `warning` marks
      only a point that is itself a warning, such as a run-out time inside the warning window.
-     `warning-text` is the same meaning as `warning` in a shade dark enough to read as text in the
-     light theme; a warning sentence uses it, never `warning` itself.
+     `warning` is dark enough in both themes to read as text, which `tests/shared/theme.spec.ts`
+     checks, so a warning sentence uses `warning` itself.
    - `chartData` teal: measured data in a chart, its line, the area under it and the forecast drawn
      from it. Only charts use it, never a control or a status. Reference lines in a chart (an
      available amount, a second forecast, the current moment) stay neutral. A chart that needs a

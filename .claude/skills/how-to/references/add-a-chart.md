@@ -60,9 +60,9 @@ The stock chart follows each of these; a new chart does the same.
   cover each other. A moment past the right edge is written at the edge as an arrow and the moment
   ("→ So., 19:35"), on a `markPoint` with `symbolSize: 0` and `align: 'right'`. Only the marker of a
   point that is itself a warning takes `warning`.
-- **Text colour.** Every label takes `ink` or `muted`, never a line's colour and never `warning`; the
-  light `warning` fails contrast as text. Warning text outside a chart takes the `warning-text`
-  token.
+- **Text colour.** Every label takes `ink` or `muted`, never a line's colour and never `warning`, so
+  the status colour stays on the marks. Warning text outside a chart takes the `warning` colour
+  (`text-warning`).
 - **Legend.** It names the measured data and every line without a label of its own, above the plot,
   with the line keys only (`itemStyle: { opacity: 0 }`) and no toggling (`selectedMode: false`).
 - **The current moment.** A thin dotted `muted` mark line (`width: 1`) whose label sits under the

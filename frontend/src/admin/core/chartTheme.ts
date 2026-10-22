@@ -1,4 +1,5 @@
 import type { ThemeDefinition } from 'vuetify'
+import { channelsOfHex } from '../../shared/core/colourChannels'
 import { appTheme } from '../../shared/theme'
 
 export interface ChartColours {
@@ -34,8 +35,7 @@ function variableOf(definition: ThemeDefinition, name: string): string | number 
 }
 
 function translucent(hexColour: string, opacity: number): string {
-  const channels = [1, 3, 5].map((start) => Number.parseInt(hexColour.slice(start, start + 2), 16))
-  return `rgba(${channels.join(', ')}, ${opacity})`
+  return `rgba(${channelsOfHex(hexColour).join(', ')}, ${opacity})`
 }
 
 function chartColoursOf(definition: ThemeDefinition): ChartColours {

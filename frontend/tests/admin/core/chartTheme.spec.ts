@@ -15,7 +15,7 @@ describe('the colours a chart takes from the app theme', () => {
       data: '#0d9488',
       ink: '#1f2328',
       muted: 'rgba(31, 35, 40, 0.71)',
-      warning: '#f9a825',
+      warning: '#875a00',
     })
   })
 

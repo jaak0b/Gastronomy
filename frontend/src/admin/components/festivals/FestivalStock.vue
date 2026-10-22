@@ -137,7 +137,7 @@ function toggleHistory(ingredientId: string): void {
                   size="small"
                 />
                 <span
-                  class="text-warning-text"
+                  class="text-warning"
                   data-test="stock-warning-text"
                 >
                   {{ warningText }}

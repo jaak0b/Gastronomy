@@ -232,12 +232,12 @@ describe('the warning beside an ingredient', () => {
     expect(textOnScreen(rowPart('ingredient-mehl', 'stock-warning'))).toBe('Reicht voraussichtlich bis Sa., 21:30')
   })
 
-  it('writes the sentence in the colour meant for warning text, which stays readable on a light screen', async () => {
+  it('writes the sentence in the warning colour', async () => {
     stockLaptop([{ ...FLOUR, ...RUNS_OUT_SOON }, BUN])
 
     await mountStock()
 
-    expect(onScreen(rowPart('ingredient-mehl', 'stock-warning-text')).classList).toContain('text-warning-text')
+    expect(onScreen(rowPart('ingredient-mehl', 'stock-warning-text')).classList).toContain('text-warning')
   })
 
   it('names only the time the stock runs out when the festival ends on the day it starts', async () => {
