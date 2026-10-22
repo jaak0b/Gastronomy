@@ -39,12 +39,12 @@ public sealed class CatalogItemRecipeService
         return Refusal.Ingredients.DeactivatedIngredientCannotJoinRecipe(itemId, ingredientId);
 
       recipeLine = new()
-      {
-        Id = Guid.NewGuid(),
-        CatalogItemId = itemId,
-        IngredientId = ingredientId,
-        Amount = usedPerUnit
-      };
+                   {
+                     Id = Guid.NewGuid(),
+                     CatalogItemId = itemId,
+                     IngredientId = ingredientId,
+                     Amount = usedPerUnit
+                   };
 
       await _repository.AddAsync(recipeLine, cancellationToken);
     }

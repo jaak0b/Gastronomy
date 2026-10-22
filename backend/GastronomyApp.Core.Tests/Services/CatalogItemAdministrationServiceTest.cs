@@ -67,13 +67,13 @@ public sealed class CatalogItemAdministrationServiceTest
   {
     var bratwurst = BuildItem(_bratwurstId, "Bratwurst", _foodCategoryId, true);
     bratwurst.FestivalCatalogItems.Add(new()
-    {
-      Id = Guid.NewGuid(),
-      FestivalId = _festivalId,
-      CatalogItemId = _bratwurstId,
-      PriceCents = 350,
-      IsAvailable = true
-    });
+                                       {
+                                         Id = Guid.NewGuid(),
+                                         FestivalId = _festivalId,
+                                         CatalogItemId = _bratwurstId,
+                                         PriceCents = 350,
+                                         IsAvailable = true
+                                       });
 
     A.CallTo(() => _itemRepository.FindAllOrderedAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<CatalogItem>>([bratwurst]));
 
@@ -188,8 +188,18 @@ public sealed class CatalogItemAdministrationServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(switchedOn.RefusedLines().Select(line => line.Code), Is.EqualTo(new[] { "errors.admin.items.ingredientIsDeactivated", "errors.admin.items.ingredientIsDeactivated" }));
-                      Assert.That(switchedOn.RefusedLines().Select(line => line.Metadata![Refusal.MetadataKeys.Name]), Is.EqualTo(new[] { "Brötchen", "Zwiebeln" }));
+                      Assert.That(switchedOn.RefusedLines().Select(line => line.Code),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "errors.admin.items.ingredientIsDeactivated",
+                                               "errors.admin.items.ingredientIsDeactivated"
+                                             }));
+                      Assert.That(switchedOn.RefusedLines().Select(line => line.Metadata![Refusal.MetadataKeys.Name]),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Brötchen",
+                                               "Zwiebeln"
+                                             }));
                       Assert.That(switchedOn.FirstError.NumericType, Is.EqualTo(RefusalType.UnprocessableEntity));
                       Assert.That(switchedOn.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("UnprocessableEntity"));
                       Assert.That(currywurst.IsActive, Is.False);
@@ -224,13 +234,13 @@ public sealed class CatalogItemAdministrationServiceTest
     GivenAFestivalIsRunning();
     A.CallTo(() => _itemRepository.FindMenuRowAsync(_festivalId, _bratwurstId, A<CancellationToken>._))
    .Returns(Task.FromResult<FestivalCatalogItem?>(new()
-   {
-     Id = Guid.NewGuid(),
-     FestivalId = _festivalId,
-     CatalogItemId = _bratwurstId,
-     PriceCents = 350,
-     IsAvailable = true
-   }));
+                                                  {
+                                                    Id = Guid.NewGuid(),
+                                                    FestivalId = _festivalId,
+                                                    CatalogItemId = _bratwurstId,
+                                                    PriceCents = 350,
+                                                    IsAvailable = true
+                                                  }));
 
     ErrorOr<CatalogItem> switchedOff = await _service.DeactivateAsync(_bratwurstId, CancellationToken.None);
 
@@ -257,14 +267,14 @@ public sealed class CatalogItemAdministrationServiceTest
   {
     A.CallTo(() => _festivalRepository.FindRunningAsync(_now, A<CancellationToken>._))
    .Returns(Task.FromResult<Festival?>(new()
-   {
-     Id = _festivalId,
-     Name = "Sommerfest",
-     StartsAtUtc = _now.AddHours(-1),
-     EndsAtUtc = _now.AddHours(5),
-     NextOrderNumber = 1,
-     IsHidden = false
-   }));
+                                       {
+                                         Id = _festivalId,
+                                         Name = "Sommerfest",
+                                         StartsAtUtc = _now.AddHours(-1),
+                                         EndsAtUtc = _now.AddHours(5),
+                                         NextOrderNumber = 1,
+                                         IsHidden = false
+                                       }));
   }
 
   private Task<ErrorOr<CatalogItem>> CreatedAsync(string? name, Guid? categoryId, int sortOrder = 1, double? productionMinutes = null, bool isQueueIndependent = false)
@@ -275,13 +285,13 @@ public sealed class CatalogItemAdministrationServiceTest
   private CatalogItem BuildItem(Guid itemId, string name, Guid categoryId, bool isActive)
   {
     return new()
-    {
-      Id = itemId,
-      Name = name,
-      CategoryId = categoryId,
-      SortOrder = 1,
-      IsActive = isActive
-    };
+           {
+             Id = itemId,
+             Name = name,
+             CategoryId = categoryId,
+             SortOrder = 1,
+             IsActive = isActive
+           };
   }
 
   private CatalogItem GivenASwitchedOffArticleWithTheRecipe(Guid categoryId, params Ingredient[] ingredients)
@@ -307,23 +317,23 @@ public sealed class CatalogItemAdministrationServiceTest
   private Ingredient BuildIngredient(string name, bool isActive)
   {
     return new()
-    {
-      Id = Guid.NewGuid(),
-      Name = name,
-      Unit = IngredientUnit.Gram,
-      IsActive = isActive
-    };
+           {
+             Id = Guid.NewGuid(),
+             Name = name,
+             Unit = IngredientUnit.Gram,
+             IsActive = isActive
+           };
   }
 
   private CatalogCategory BuildCategory(Guid categoryId, bool isActive)
   {
     return new()
-    {
-      Id = categoryId,
-      Name = "Speisen",
-      ColourHex = "#C62828",
-      SortOrder = 1,
-      IsActive = isActive
-    };
+           {
+             Id = categoryId,
+             Name = "Speisen",
+             ColourHex = "#C62828",
+             SortOrder = 1,
+             IsActive = isActive
+           };
   }
 }

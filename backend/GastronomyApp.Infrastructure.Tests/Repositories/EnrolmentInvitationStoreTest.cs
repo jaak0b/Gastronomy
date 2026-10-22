@@ -229,7 +229,6 @@ public sealed class EnrolmentInvitationStoreTest
     var created = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
     var redemption = await store.RedeemAsync(created.QRCodeValue, null, "Test agent", "de", TestContext.CurrentContext.CancellationToken);
 
-
     var separatorIndex = redemption.Value.PlaintextToken.IndexOf('.', StringComparison.Ordinal);
     var verifiedOwner = await deviceTokenStore.VerifyAsync(redemption.Value.PlaintextToken[..separatorIndex], redemption.Value.PlaintextToken[(separatorIndex + 1)..], TestContext.CurrentContext.CancellationToken);
 

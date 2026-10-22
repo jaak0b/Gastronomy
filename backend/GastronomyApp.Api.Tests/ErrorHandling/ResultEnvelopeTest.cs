@@ -43,7 +43,10 @@ public sealed class ResultEnvelopeTest
   [Test]
   public async Task Refuse_SeveralRefusedLines_AnswersWithTheFirstOne()
   {
-    var written = await AnswerOf(_envelope.Refuse([Refusal.Order.UnknownCatalogItemId(_catalogItemId), Refusal.Order.NoRunningFestival()]));
+    var written = await AnswerOf(_envelope.Refuse([
+                                                    Refusal.Order.UnknownCatalogItemId(_catalogItemId),
+                                                    Refusal.Order.NoRunningFestival()
+                                                  ]));
 
     Assert.Multiple(() =>
                     {

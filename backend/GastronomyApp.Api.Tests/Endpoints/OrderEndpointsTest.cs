@@ -175,12 +175,12 @@ public sealed class OrderEndpointsTest
     await using (var seeding = _context.Factory.CreateContext())
     {
       seeding.ItemStationAssignments.Add(new()
-      {
-        Id = Guid.NewGuid(),
-        FestivalId = _context.World.FestivalId,
-        CatalogItemId = _context.World.BratwurstItemId,
-        StationId = _context.World.BarStationId
-      });
+                                         {
+                                           Id = Guid.NewGuid(),
+                                           FestivalId = _context.World.FestivalId,
+                                           CatalogItemId = _context.World.BratwurstItemId,
+                                           StationId = _context.World.BarStationId
+                                         });
       var kitchen = await seeding.Stations.FirstAsync(station => station.Id == _context.World.KitchenStationId);
       kitchen.IsActive = false;
       await seeding.SaveChangesAsync();

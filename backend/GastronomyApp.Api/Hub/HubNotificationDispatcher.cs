@@ -25,25 +25,25 @@ public sealed class HubNotificationDispatcher : ICommittedChangeAnnouncer, IEnro
   public Task AnnounceAsync(HubEvent hubEvent, CancellationToken cancellationToken)
   {
     return hubEvent switch
-    {
-      HubEvent.ConfigurationChanged => SendGuardedAsync(Names.HubEvents.ConfigurationChanged,
+           {
+             HubEvent.ConfigurationChanged => SendGuardedAsync(Names.HubEvents.ConfigurationChanged,
+                                                               [],
+                                                               [
+                                                                 Names.HubGroups.Devices,
+                                                                 Names.HubGroups.Stations,
+                                                                 Names.HubGroups.Admin
+                                                               ],
+                                                               cancellationToken),
+             HubEvent.OrdersChanged => SendGuardedAsync(Names.HubEvents.OrdersChanged,
                                                         [],
                                                         [
                                                           Names.HubGroups.Devices,
-                                                          Names.HubGroups.Stations,
-                                                          Names.HubGroups.Admin
+                                                          Names.HubGroups.Admin,
+                                                          Names.HubGroups.Stations
                                                         ],
                                                         cancellationToken),
-      HubEvent.OrdersChanged => SendGuardedAsync(Names.HubEvents.OrdersChanged,
-                                                 [],
-                                                 [
-                                                   Names.HubGroups.Devices,
-                                                   Names.HubGroups.Admin,
-                                                   Names.HubGroups.Stations
-                                                 ],
-                                                 cancellationToken),
-      _ => throw new ArgumentOutOfRangeException(nameof(hubEvent), hubEvent, "Only a hub event that screens listen for can be announced.")
-    };
+             _ => throw new ArgumentOutOfRangeException(nameof(hubEvent), hubEvent, "Only a hub event that screens listen for can be announced.")
+           };
   }
 
   public Task AnnounceEnrolmentCompletedAsync(IDeviceOwner owner, CancellationToken cancellationToken)

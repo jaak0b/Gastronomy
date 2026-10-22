@@ -134,12 +134,12 @@ public sealed class CatalogCategoryAdministrationServiceTest
   private CatalogCategory BuildCategory(Guid categoryId, string name, int sortOrder, bool isActive)
   {
     return new()
-    {
-      Id = categoryId,
-      Name = name,
-      ColourHex = "#C62828",
-      SortOrder = sortOrder,
-      IsActive = isActive
-    };
+           {
+             Id = categoryId,
+             Name = name,
+             ColourHex = "#C62828",
+             SortOrder = sortOrder,
+             IsActive = isActive
+           };
   }
 }

@@ -18,16 +18,7 @@ public sealed class GeneratedOpenApiDocumentTest
   [Test]
   public void Paths_ForTheStationQueueRoute_DescribeTheStationQueueView()
   {
-    var response = _document.GetProperty("paths")
-                            .GetProperty("/api/station/orders")
-                            .GetProperty("get")
-                            .GetProperty("responses")
-                            .GetProperty("200")
-                            .GetProperty("content")
-                            .GetProperty("application/json")
-                            .GetProperty("schema")
-                            .GetProperty("$ref")
-                            .GetString();
+    var response = _document.GetProperty("paths").GetProperty("/api/station/orders").GetProperty("get").GetProperty("responses").GetProperty("200").GetProperty("content").GetProperty("application/json").GetProperty("schema").GetProperty("$ref").GetString();
 
     Assert.That(response, Is.EqualTo("#/components/schemas/StationQueueView"));
   }
@@ -44,25 +35,20 @@ public sealed class GeneratedOpenApiDocumentTest
   [Test]
   public void Schemas_ForDeliveryMode_KeepTheCamelCaseTextWireFormat()
   {
-    var values = _document.GetProperty("components")
-                          .GetProperty("schemas")
-                          .GetProperty("DeliveryMode")
-                          .GetProperty("enum")
-                          .EnumerateArray()
-                          .Select(value => value.GetString())
-                          .ToList();
+    var values = _document.GetProperty("components").GetProperty("schemas").GetProperty("DeliveryMode").GetProperty("enum").EnumerateArray().Select(value => value.GetString()).ToList();
 
-    Assert.That(values, Is.EqualTo(new[] { "together", "asItComes" }));
+    Assert.That(values,
+                Is.EqualTo(new[]
+                           {
+                             "together",
+                             "asItComes"
+                           }));
   }
 
   [Test]
   public void Schemas_ForAnInteger_DescribeItAsANumberAndNeverAsText()
   {
-    var sortOrder = _document.GetProperty("components")
-                             .GetProperty("schemas")
-                             .GetProperty("AdminStationView")
-                             .GetProperty("properties")
-                             .GetProperty("sortOrder");
+    var sortOrder = _document.GetProperty("components").GetProperty("schemas").GetProperty("AdminStationView").GetProperty("properties").GetProperty("sortOrder");
 
     Assert.That(sortOrder.GetProperty("type").GetString(), Is.EqualTo("integer"));
   }

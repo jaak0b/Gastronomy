@@ -28,11 +28,11 @@ public sealed class OrderItemFulfillmentServiceTest
     var beer = stationOrder.Items[1];
 
     ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Fulfill([
-                                                                                         bratwurst.Id,
-                                                                                         beer.Id
-                                                                                       ],
-                                                                                       stationOrder.Items,
-                                                                                       _now);
+                                                                      bratwurst.Id,
+                                                                      beer.Id
+                                                                    ],
+                                                                    stationOrder.Items,
+                                                                    _now);
 
     Assert.Multiple(() =>
                     {
@@ -49,12 +49,12 @@ public sealed class OrderItemFulfillmentServiceTest
     var second = StationOrderWith(OpenItem());
 
     ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Fulfill([
-                                                                                         first.Items[0].Id,
-                                                                                         first.Items[1].Id,
-                                                                                         second.Items[0].Id
-                                                                                       ],
-                                                                                       first.Items.Concat(second.Items).ToList(),
-                                                                                       _now);
+                                                                      first.Items[0].Id,
+                                                                      first.Items[1].Id,
+                                                                      second.Items[0].Id
+                                                                    ],
+                                                                    first.Items.Concat(second.Items).ToList(),
+                                                                    _now);
 
     Assert.That(outcome.Value.Select(stationOrder => stationOrder.Id),
                 Is.EqualTo(new[]
@@ -72,11 +72,11 @@ public sealed class OrderItemFulfillmentServiceTest
     var beer = stationOrder.Items[1];
 
     ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Fulfill([
-                                                                                         bratwurst.Id,
-                                                                                         beer.Id
-                                                                                       ],
-                                                                                       stationOrder.Items,
-                                                                                       _now);
+                                                                      bratwurst.Id,
+                                                                      beer.Id
+                                                                    ],
+                                                                    stationOrder.Items,
+                                                                    _now);
 
     Assert.Multiple(() =>
                     {
@@ -93,11 +93,11 @@ public sealed class OrderItemFulfillmentServiceTest
     var bratwurst = stationOrder.Items[0];
 
     ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Fulfill([
-                                                                                         bratwurst.Id,
-                                                                                         bratwurst.Id
-                                                                                       ],
-                                                                                       stationOrder.Items,
-                                                                                       _now);
+                                                                      bratwurst.Id,
+                                                                      bratwurst.Id
+                                                                    ],
+                                                                    stationOrder.Items,
+                                                                    _now);
 
     Assert.Multiple(() =>
                     {
@@ -114,11 +114,11 @@ public sealed class OrderItemFulfillmentServiceTest
     var strangerId = Guid.NewGuid();
 
     ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Fulfill([
-                                                                                         bratwurst.Id,
-                                                                                         strangerId
-                                                                                       ],
-                                                                                       stationOrder.Items,
-                                                                                       _now);
+                                                                      bratwurst.Id,
+                                                                      strangerId
+                                                                    ],
+                                                                    stationOrder.Items,
+                                                                    _now);
 
     Assert.Multiple(() =>
                     {
@@ -153,10 +153,10 @@ public sealed class OrderItemFulfillmentServiceTest
     var beer = stationOrder.Items[1];
 
     ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Unfulfill([
-                                                                                           bratwurst.Id,
-                                                                                           beer.Id
-                                                                                         ],
-                                                                                         stationOrder.Items);
+                                                                        bratwurst.Id,
+                                                                        beer.Id
+                                                                      ],
+                                                                      stationOrder.Items);
 
     Assert.Multiple(() =>
                     {
@@ -175,10 +175,10 @@ public sealed class OrderItemFulfillmentServiceTest
     var beer = stationOrder.Items[1];
 
     ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Unfulfill([
-                                                                                           bratwurst.Id,
-                                                                                           beer.Id
-                                                                                         ],
-                                                                                         stationOrder.Items);
+                                                                        bratwurst.Id,
+                                                                        beer.Id
+                                                                      ],
+                                                                      stationOrder.Items);
 
     Assert.Multiple(() =>
                     {
@@ -197,10 +197,10 @@ public sealed class OrderItemFulfillmentServiceTest
     var strangerId = Guid.NewGuid();
 
     ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Unfulfill([
-                                                                                           bratwurst.Id,
-                                                                                           strangerId
-                                                                                         ],
-                                                                                         stationOrder.Items);
+                                                                        bratwurst.Id,
+                                                                        strangerId
+                                                                      ],
+                                                                      stationOrder.Items);
 
     Assert.Multiple(() =>
                     {

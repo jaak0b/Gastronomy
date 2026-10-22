@@ -69,21 +69,21 @@ public sealed class AdminCatalogConcurrencyTest
     scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
     var dbContext = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
     dbContext.CatalogCategories.Add(new()
-    {
-      Id = Guid.NewGuid(),
-      Name = ColdDrinksName,
-      ColourHex = "#1565C0",
-      SortOrder = 9,
-      IsActive = true
-    });
+                                    {
+                                      Id = Guid.NewGuid(),
+                                      Name = ColdDrinksName,
+                                      ColourHex = "#1565C0",
+                                      SortOrder = 9,
+                                      IsActive = true
+                                    });
     await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/categories",
-                                                              new
-                                                              {
-                                                                name = ColdDrinksNameWithTheUmlautInCapitals,
-                                                                colourHex = "#1565C0"
-                                                              });
+                                                               new
+                                                               {
+                                                                 name = ColdDrinksNameWithTheUmlautInCapitals,
+                                                                 colourHex = "#1565C0"
+                                                               });
     var messageKey = await ReadMessageKeyAsync(response);
 
     Assert.Multiple(() =>

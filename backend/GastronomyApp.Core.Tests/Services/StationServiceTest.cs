@@ -116,12 +116,33 @@ public sealed class StationServiceTest
     var station = StationWith(OpenItem(2, false), OpenItemOf(pizza));
     EstimateQuoteLine[] lines =
     [
-      new() { CatalogItemId = bratwurst.Id, StationId = station.Id, Units = 1 },
-      new() { CatalogItemId = pizza.Id, StationId = station.Id, Units = 1 },
-      new() { CatalogItemId = bratwurst.Id, StationId = Guid.NewGuid(), Units = 5 }
+      new()
+      {
+        CatalogItemId = bratwurst.Id,
+        StationId = station.Id,
+        Units = 1
+      },
+      new()
+      {
+        CatalogItemId = pizza.Id,
+        StationId = station.Id,
+        Units = 1
+      },
+      new()
+      {
+        CatalogItemId = bratwurst.Id,
+        StationId = Guid.NewGuid(),
+        Units = 5
+      }
     ];
 
-    Assert.That(_stationService.QuotedReadyInMinutesOf(station, lines, [bratwurst, pizza]), Is.EqualTo(30));
+    Assert.That(_stationService.QuotedReadyInMinutesOf(station,
+                                                       lines,
+                                                       [
+                                                         bratwurst,
+                                                         pizza
+                                                       ]),
+                Is.EqualTo(30));
   }
 
   [Test]
@@ -132,11 +153,27 @@ public sealed class StationServiceTest
     var station = StationWith(OpenItem(10, false));
     EstimateQuoteLine[] lines =
     [
-      new() { CatalogItemId = bratwurst.Id, StationId = station.Id, Units = 2 },
-      new() { CatalogItemId = pizza.Id, StationId = station.Id, Units = 1 }
+      new()
+      {
+        CatalogItemId = bratwurst.Id,
+        StationId = station.Id,
+        Units = 2
+      },
+      new()
+      {
+        CatalogItemId = pizza.Id,
+        StationId = station.Id,
+        Units = 1
+      }
     ];
 
-    Assert.That(_stationService.QuotedReadyInMinutesOf(station, lines, [bratwurst, pizza]), Is.EqualTo(18));
+    Assert.That(_stationService.QuotedReadyInMinutesOf(station,
+                                                       lines,
+                                                       [
+                                                         bratwurst,
+                                                         pizza
+                                                       ]),
+                Is.EqualTo(18));
   }
 
   [Test]
@@ -144,7 +181,15 @@ public sealed class StationServiceTest
   {
     var pizza = Article(2.5, true);
     var station = StationWith(OpenItem(1, false));
-    EstimateQuoteLine[] lines = [new() { CatalogItemId = pizza.Id, StationId = station.Id, Units = 3 }];
+    EstimateQuoteLine[] lines =
+    [
+      new()
+      {
+        CatalogItemId = pizza.Id,
+        StationId = station.Id,
+        Units = 3
+      }
+    ];
 
     Assert.That(_stationService.QuotedReadyInMinutesOf(station, lines, [pizza]), Is.EqualTo(7.5));
   }
@@ -154,7 +199,15 @@ public sealed class StationServiceTest
   {
     var beer = Article(null, false);
     var station = StationWith(OpenItem(5, false));
-    EstimateQuoteLine[] lines = [new() { CatalogItemId = beer.Id, StationId = station.Id, Units = 2 }];
+    EstimateQuoteLine[] lines =
+    [
+      new()
+      {
+        CatalogItemId = beer.Id,
+        StationId = station.Id,
+        Units = 2
+      }
+    ];
 
     Assert.That(_stationService.QuotedReadyInMinutesOf(station, lines, [beer]), Is.Null);
   }

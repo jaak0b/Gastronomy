@@ -153,25 +153,25 @@ public sealed class FestivalStationServiceTest
   private FestivalStation BuildLink()
   {
     return new()
-    {
-      Id = Guid.NewGuid(),
-      FestivalId = _festivalId,
-      StationId = _kitchenId,
-      NextStationOrderNumber = 1
-    };
+           {
+             Id = Guid.NewGuid(),
+             FestivalId = _festivalId,
+             StationId = _kitchenId,
+             NextStationOrderNumber = 1
+           };
   }
 
   private Festival BuildFestival(bool hasEnded)
   {
     return new()
-    {
-      Id = _festivalId,
-      Name = "Sommerfest",
-      StartsAtUtc = _now.AddHours(-5),
-      EndsAtUtc = EndOfTheFestival(hasEnded),
-      NextOrderNumber = 1,
-      IsHidden = false
-    };
+           {
+             Id = _festivalId,
+             Name = "Sommerfest",
+             StartsAtUtc = _now.AddHours(-5),
+             EndsAtUtc = EndOfTheFestival(hasEnded),
+             NextOrderNumber = 1,
+             IsHidden = false
+           };
   }
 
   private DateTime EndOfTheFestival(bool hasEnded)

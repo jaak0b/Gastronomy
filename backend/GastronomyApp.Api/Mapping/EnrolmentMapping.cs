@@ -33,10 +33,6 @@ public sealed class EnrolmentMapping : IMappingRegistration
           .Map(payload => payload.OwnerName, owner => owner.Name)
           .Map(payload => payload.DeviceId, owner => owner.Device!.Id);
 
-    config.NewConfig<IDeviceOwner, SessionView>()
-          .Ignore(view => view.DeviceId)
-          .Ignore(view => view.Language)
-          .Map(view => view.StaffMember, owner => owner as StaffMember)
-          .Map(view => view.Station, owner => owner as Station);
+    config.NewConfig<IDeviceOwner, SessionView>().Ignore(view => view.DeviceId).Ignore(view => view.Language).Map(view => view.StaffMember, owner => owner as StaffMember).Map(view => view.Station, owner => owner as Station);
   }
 }

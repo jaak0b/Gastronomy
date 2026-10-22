@@ -195,7 +195,11 @@ public sealed class ChangeAnnouncementInterceptorTest
                     CreatedAtUtc = DateTime.UtcNow
                   };
 
-    foreach (var stationId in new[] { _seeded.KitchenStationId, _seeded.BarStationId })
+    foreach (var stationId in new[]
+                              {
+                                _seeded.KitchenStationId,
+                                _seeded.BarStationId
+                              })
       order.StationOrders.Add(new()
                               {
                                 Id = Guid.NewGuid(),

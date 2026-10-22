@@ -33,7 +33,16 @@ public sealed class EnrolmentServiceTest
     A.CallTo(() => _invitationCache.Read()).Returns(null);
     A.CallTo(() => _tokenSplitter.Split(A<string?>._)).Returns(null);
 
-    _service = new(_store, _ownerStore, _deviceTokenStore, _tokenSplitter, _invitationCache, _enrolmentAnnouncer, new ImmediateAfterCommitActions(A.Fake<ICommittedChangeAnnouncer>()), new(_store, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(A.Fake<ICommittedChangeAnnouncer>()), _clock), _clock, NullLogger<EnrolmentService>.Instance);
+    _service = new(_store,
+                   _ownerStore,
+                   _deviceTokenStore,
+                   _tokenSplitter,
+                   _invitationCache,
+                   _enrolmentAnnouncer,
+                   new ImmediateAfterCommitActions(A.Fake<ICommittedChangeAnnouncer>()),
+                   new(_store, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(A.Fake<ICommittedChangeAnnouncer>()), _clock),
+                   _clock,
+                   NullLogger<EnrolmentService>.Instance);
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);

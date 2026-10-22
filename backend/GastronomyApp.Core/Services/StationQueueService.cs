@@ -35,7 +35,6 @@ public sealed class StationQueueService
 
   public Task<ErrorOr<IReadOnlyList<StationOrder>>> ReadFulfilledAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    return _lookup.FindAsync(stationId, cancellationToken)
-                  .ThenAsync(station => _repository.FindFulfilledAtStationAsync(station.FestivalId, station.StationId, cancellationToken));
+    return _lookup.FindAsync(stationId, cancellationToken).ThenAsync(station => _repository.FindFulfilledAtStationAsync(station.FestivalId, station.StationId, cancellationToken));
   }
 }

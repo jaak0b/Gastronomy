@@ -170,13 +170,13 @@ public sealed class FestivalAdministrationService
   private Festival BuildFestival(string name, DateTime startsAtUtc, DateTime endsAtUtc)
   {
     return new()
-    {
-      Id = Guid.NewGuid(),
-      Name = name,
-      StartsAtUtc = startsAtUtc,
-      EndsAtUtc = endsAtUtc,
-      NextOrderNumber = FirstNumber,
-      IsHidden = false
-    };
+           {
+             Id = Guid.NewGuid(),
+             Name = name,
+             StartsAtUtc = startsAtUtc,
+             EndsAtUtc = endsAtUtc,
+             NextOrderNumber = FirstNumber,
+             IsHidden = false
+           };
   }
 }

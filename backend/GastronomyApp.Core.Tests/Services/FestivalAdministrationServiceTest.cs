@@ -205,7 +205,12 @@ public sealed class FestivalAdministrationServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(created.Value.Ingredients.Select(stock => stock.IngredientId), Is.EquivalentTo(new[] { mustardId, bunId }));
+                      Assert.That(created.Value.Ingredients.Select(stock => stock.IngredientId),
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    mustardId,
+                                                    bunId
+                                                  }));
                       Assert.That(created.Value.Ingredients.All(stock => stock.FestivalId == created.Value.Id && stock.AvailableAmount == null), Is.True);
                     });
   }
@@ -219,7 +224,12 @@ public sealed class FestivalAdministrationServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(copy.Value.Ingredients.Select(stock => stock.IngredientId), Is.EquivalentTo(new[] { mustardId, bunId }));
+                      Assert.That(copy.Value.Ingredients.Select(stock => stock.IngredientId),
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    mustardId,
+                                                    bunId
+                                                  }));
                       Assert.That(copy.Value.Ingredients.All(stock => stock.FestivalId == copy.Value.Id && stock.AvailableAmount == null), Is.True);
                     });
   }
@@ -229,21 +239,25 @@ public sealed class FestivalAdministrationServiceTest
     mustardId = Guid.NewGuid();
     bunId = Guid.NewGuid();
     Ingredient mustard = new()
-    {
-      Id = mustardId,
-      Name = "Senf",
-      Unit = IngredientUnit.Gram,
-      IsActive = true
-    };
+                         {
+                           Id = mustardId,
+                           Name = "Senf",
+                           Unit = IngredientUnit.Gram,
+                           IsActive = true
+                         };
     Ingredient bun = new()
-    {
-      Id = bunId,
-      Name = "Semmel",
-      Unit = IngredientUnit.Piece,
-      IsActive = false
-    };
+                     {
+                       Id = bunId,
+                       Name = "Semmel",
+                       Unit = IngredientUnit.Piece,
+                       IsActive = false
+                     };
 
-    A.CallTo(() => _ingredientRepository.FindAllOrderedByNameAsync(A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Ingredient>>([bun, mustard]));
+    A.CallTo(() => _ingredientRepository.FindAllOrderedByNameAsync(A<CancellationToken>._))
+   .Returns(Task.FromResult<IReadOnlyList<Ingredient>>([
+                                                         bun,
+                                                         mustard
+                                                       ]));
   }
 
   private Festival BuildFestival(Guid festivalId, bool isHidden)

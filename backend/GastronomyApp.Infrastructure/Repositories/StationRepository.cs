@@ -43,10 +43,7 @@ public sealed class StationRepository : IStationRepository
 
   public async Task<IReadOnlyList<Station>> FindAllAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
-    return await _dbContext.Stations.AsNoTracking()
-                           .OrderBy(station => station.SortOrder)
-                           .Include(station => station.FestivalStations.Where(link => festivalId != null && link.FestivalId == festivalId.Value))
-                           .ToListAsync(cancellationToken);
+    return await _dbContext.Stations.AsNoTracking().OrderBy(station => station.SortOrder).Include(station => station.FestivalStations.Where(link => festivalId != null && link.FestivalId == festivalId.Value)).ToListAsync(cancellationToken);
   }
 
   public async Task<Station?> FindByIdAsync(Guid stationId, CancellationToken cancellationToken)

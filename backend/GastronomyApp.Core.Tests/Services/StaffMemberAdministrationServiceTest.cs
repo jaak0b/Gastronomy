@@ -125,13 +125,13 @@ public sealed class StaffMemberAdministrationServiceTest
   private StaffMember BuildStaffMember(bool isActive, Guid? deviceId, Guid? invitationId)
   {
     return new()
-    {
-      Id = _annaId,
-      Name = "Anna",
-      IsActive = isActive,
-      DeviceId = deviceId,
-      EnrolmentInvitationId = invitationId,
-      CreatedAtUtc = _now
-    };
+           {
+             Id = _annaId,
+             Name = "Anna",
+             IsActive = isActive,
+             DeviceId = deviceId,
+             EnrolmentInvitationId = invitationId,
+             CreatedAtUtc = _now
+           };
   }
 }

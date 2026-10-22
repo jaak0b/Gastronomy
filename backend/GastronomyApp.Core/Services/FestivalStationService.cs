@@ -14,12 +14,7 @@ public sealed class FestivalStationService
   private readonly RunningFestivalLookup _runningFestival;
   private readonly IStationRepository _stationRepository;
 
-  public FestivalStationService(IFestivalStationRepository repository,
-                                IFestivalRepository festivalRepository,
-                                IStationRepository stationRepository,
-                                ItemOrderability orderability,
-                                INumberAllocator numberAllocator,
-                                RunningFestivalLookup runningFestival)
+  public FestivalStationService(IFestivalStationRepository repository, IFestivalRepository festivalRepository, IStationRepository stationRepository, ItemOrderability orderability, INumberAllocator numberAllocator, RunningFestivalLookup runningFestival)
   {
     _repository = repository;
     _festivalRepository = festivalRepository;
@@ -39,19 +34,18 @@ public sealed class FestivalStationService
 
     if (await _repository.FindLinkAsync(festivalId, stationId, cancellationToken) is { } alreadyTakingPart)
     {
-
       return alreadyTakingPart;
     }
 
     var nextStationOrderNumber = await _numberAllocator.FindNextStationOrderNumberAsync(festivalId, stationId, cancellationToken);
 
     FestivalStation link = new()
-    {
-      Id = Guid.NewGuid(),
-      FestivalId = festivalId,
-      StationId = stationId,
-      NextStationOrderNumber = nextStationOrderNumber
-    };
+                           {
+                             Id = Guid.NewGuid(),
+                             FestivalId = festivalId,
+                             StationId = stationId,
+                             NextStationOrderNumber = nextStationOrderNumber
+                           };
 
     await _repository.AddLinkAsync(link, cancellationToken);
 

@@ -87,12 +87,7 @@ public sealed class OrdersChangedAnnouncementTest
   [Test]
   public async Task HideStationOrder_AnAsItComesOrder_TellsThePhoneTheAdminAndTheKitchenOnce()
   {
-    using (var placed = await _context.SendAsync(HttpMethod.Post,
-                                                 "/api/orders",
-                                                 new OrderWithDeliveryModesBody(Guid.NewGuid(),
-                                                                                "Tisch 12",
-                                                                                [new(_context.World.BratwurstItemId, 350, null, null)],
-                                                                                [new(_context.World.KitchenStationId, "asItComes")])))
+    using (var placed = await _context.SendAsync(HttpMethod.Post, "/api/orders", new OrderWithDeliveryModesBody(Guid.NewGuid(), "Tisch 12", [new(_context.World.BratwurstItemId, 350, null, null)], [new(_context.World.KitchenStationId, "asItComes")])))
     {
       Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }

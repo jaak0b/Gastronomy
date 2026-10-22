@@ -14,12 +14,7 @@ public sealed class StationAdministrationService
   private readonly DeviceOwnerRetirement _retirement;
   private readonly RunningFestivalLookup _runningFestival;
 
-  public StationAdministrationService(IStationRepository repository,
-                                      IFestivalRepository festivalRepository,
-                                      IFestivalStationRepository festivalStationRepository,
-                                      DeviceOwnerRetirement retirement,
-                                      ItemOrderability orderability,
-                                      RunningFestivalLookup runningFestival)
+  public StationAdministrationService(IStationRepository repository, IFestivalRepository festivalRepository, IFestivalStationRepository festivalStationRepository, DeviceOwnerRetirement retirement, ItemOrderability orderability, RunningFestivalLookup runningFestival)
   {
     _repository = repository;
     _festivalRepository = festivalRepository;
@@ -42,12 +37,12 @@ public sealed class StationAdministrationService
   public async Task<ErrorOr<Station>> CreateAsync(string? name, int sortOrder, CancellationToken cancellationToken)
   {
     Station created = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = name!,
-      SortOrder = sortOrder,
-      IsActive = true
-    };
+                      {
+                        Id = Guid.NewGuid(),
+                        Name = name!,
+                        SortOrder = sortOrder,
+                        IsActive = true
+                      };
 
     await _repository.AddAsync(created, cancellationToken);
 

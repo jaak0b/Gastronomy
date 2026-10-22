@@ -18,19 +18,23 @@ public sealed class IngredientAdministrationServiceTest
     _repository = A.Fake<IIngredientRepository>();
     _festivalRepository = A.Fake<IFestivalRepository>();
     _mustard = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = "Senf",
-      Unit = IngredientUnit.Gram,
-      IsActive = true
-    };
+               {
+                 Id = Guid.NewGuid(),
+                 Name = "Senf",
+                 Unit = IngredientUnit.Gram,
+                 IsActive = true
+               };
 
     A.CallTo(() => _repository.FindAllOrderedByNameAsync(A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult<IReadOnlyList<Ingredient>>([_mustard]));
     A.CallTo(() => _repository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Ingredient?>(null));
     A.CallTo(() => _repository.FindByIdAsync(_mustard.Id, A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult<Ingredient?>(_mustard));
     A.CallTo(() => _repository.FindWithRecipeLinesAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Ingredient?>(null));
     A.CallTo(() => _repository.FindWithRecipeLinesAsync(_mustard.Id, A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult<Ingredient?>(_mustard));
-    A.CallTo(() => _festivalRepository.FindAllAsync(A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Festival>>([BuildFestival(_summerFestivalId), BuildFestival(_autumnFestivalId)]));
+    A.CallTo(() => _festivalRepository.FindAllAsync(A<CancellationToken>._))
+   .Returns(Task.FromResult<IReadOnlyCollection<Festival>>([
+                                                             BuildFestival(_summerFestivalId),
+                                                             BuildFestival(_autumnFestivalId)
+                                                           ]));
 
     _service = new(_repository, _festivalRepository, new IngredientService());
   }
@@ -53,7 +57,12 @@ public sealed class IngredientAdministrationServiceTest
                       Assert.That(created.Value.Name, Is.EqualTo("Bratwurst roh"));
                       Assert.That(created.Value.Unit, Is.EqualTo(IngredientUnit.Piece));
                       Assert.That(created.Value.IsActive, Is.True);
-                      Assert.That(created.Value.FestivalIngredients.Select(stock => stock.FestivalId), Is.EquivalentTo(new[] { _summerFestivalId, _autumnFestivalId }));
+                      Assert.That(created.Value.FestivalIngredients.Select(stock => stock.FestivalId),
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    _summerFestivalId,
+                                                    _autumnFestivalId
+                                                  }));
                       Assert.That(created.Value.FestivalIngredients.All(stock => stock.IngredientId == created.Value.Id && stock.AvailableAmount == null), Is.True);
                     });
     A.CallTo(() => _repository.AddAsync(created.Value, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
@@ -117,12 +126,12 @@ public sealed class IngredientAdministrationServiceTest
   public async Task UpdateAsync_ANameAnotherIngredientHolds_IsRefusedAsNameTaken()
   {
     Ingredient ketchup = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = "Ketchup",
-      Unit = IngredientUnit.Millilitre,
-      IsActive = true
-    };
+                         {
+                           Id = Guid.NewGuid(),
+                           Name = "Ketchup",
+                           Unit = IngredientUnit.Millilitre,
+                           IsActive = true
+                         };
     A.CallTo(() => _repository.FindByIdAsync(ketchup.Id, A<CancellationToken>._)).Returns(Task.FromResult<Ingredient?>(ketchup));
 
     ErrorOr<Ingredient> updated = await _service.UpdateAsync(ketchup.Id, "Senf", IngredientUnit.Millilitre, CancellationToken.None);
@@ -139,12 +148,12 @@ public sealed class IngredientAdministrationServiceTest
   {
     _mustard.IsActive = false;
     Ingredient ketchup = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = "Ketchup",
-      Unit = IngredientUnit.Millilitre,
-      IsActive = true
-    };
+                         {
+                           Id = Guid.NewGuid(),
+                           Name = "Ketchup",
+                           Unit = IngredientUnit.Millilitre,
+                           IsActive = true
+                         };
     A.CallTo(() => _repository.FindByIdAsync(ketchup.Id, A<CancellationToken>._)).Returns(Task.FromResult<Ingredient?>(ketchup));
 
     ErrorOr<Ingredient> updated = await _service.UpdateAsync(ketchup.Id, "senf", IngredientUnit.Millilitre, CancellationToken.None);
@@ -231,35 +240,35 @@ public sealed class IngredientAdministrationServiceTest
   private CatalogItemIngredient BuildRecipeLine(string itemName, bool isTheItemActive)
   {
     CatalogItem item = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = itemName,
-      CategoryId = Guid.NewGuid(),
-      SortOrder = 1,
-      IsActive = isTheItemActive
-    };
+                       {
+                         Id = Guid.NewGuid(),
+                         Name = itemName,
+                         CategoryId = Guid.NewGuid(),
+                         SortOrder = 1,
+                         IsActive = isTheItemActive
+                       };
 
     return new()
-    {
-      Id = Guid.NewGuid(),
-      CatalogItemId = item.Id,
-      IngredientId = _mustard.Id,
-      Amount = 20,
-      CatalogItem = item,
-      Ingredient = _mustard
-    };
+           {
+             Id = Guid.NewGuid(),
+             CatalogItemId = item.Id,
+             IngredientId = _mustard.Id,
+             Amount = 20,
+             CatalogItem = item,
+             Ingredient = _mustard
+           };
   }
 
   private Festival BuildFestival(Guid festivalId)
   {
     return new()
-    {
-      Id = festivalId,
-      Name = "Fest",
-      StartsAtUtc = new(2026, 9, 1, 16, 0, 0, DateTimeKind.Utc),
-      EndsAtUtc = new(2026, 9, 2, 2, 0, 0, DateTimeKind.Utc),
-      NextOrderNumber = 1,
-      IsHidden = false
-    };
+           {
+             Id = festivalId,
+             Name = "Fest",
+             StartsAtUtc = new(2026, 9, 1, 16, 0, 0, DateTimeKind.Utc),
+             EndsAtUtc = new(2026, 9, 2, 2, 0, 0, DateTimeKind.Utc),
+             NextOrderNumber = 1,
+             IsHidden = false
+           };
   }
 }

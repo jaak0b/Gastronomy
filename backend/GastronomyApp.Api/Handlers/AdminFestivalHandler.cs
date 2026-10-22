@@ -54,9 +54,9 @@ public sealed class AdminFestivalHandler
   private AdminFestivalView BuildFestivalView(Festival festival, IReadOnlyDictionary<Guid, int> orderCounts)
   {
     return _mapper.Map<AdminFestivalView>(festival) with
-    {
-      IsRunning = _service.IsRunning(festival),
-      OrderCount = orderCounts.GetValueOrDefault(festival.Id)
-    };
+           {
+             IsRunning = _service.IsRunning(festival),
+             OrderCount = orderCounts.GetValueOrDefault(festival.Id)
+           };
   }
 }

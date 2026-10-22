@@ -13,7 +13,10 @@ public sealed class SystemTextJsonRecordingSerializerTest
   public void GetRecording_ARefusedResult_WritesTheCodeTheDescriptionAndTheMetadataOfEveryRefusedLine()
   {
     var catalogItemId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-    IErrorOr refused = ErrorOrFactory.From<Success>([Refusal.Order.ItemNotAvailable(catalogItemId, "Bratwurst"), Refusal.Order.NoRunningFestival()]);
+    IErrorOr refused = ErrorOrFactory.From<Success>([
+                                                      Refusal.Order.ItemNotAvailable(catalogItemId, "Bratwurst"),
+                                                      Refusal.Order.NoRunningFestival()
+                                                    ]);
 
     var recording = refused.GetRecording(_serializer);
 

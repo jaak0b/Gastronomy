@@ -50,10 +50,6 @@ public sealed class EstimateService
     if (refusals.Count != 0)
       return refusals;
 
-    return request.Lines.Select(line => line.StationId)
-                  .Distinct()
-                  .Select(stationId => new StationQuote(stationId, _stationService.QuotedReadyInMinutesOf(stations.Single(station => station.Id == stationId), request.Lines, catalogItems)))
-                  .ToList()
-                  .ToErrorOr<IReadOnlyList<StationQuote>>();
+    return request.Lines.Select(line => line.StationId).Distinct().Select(stationId => new StationQuote(stationId, _stationService.QuotedReadyInMinutesOf(stations.Single(station => station.Id == stationId), request.Lines, catalogItems))).ToList().ToErrorOr<IReadOnlyList<StationQuote>>();
   }
 }

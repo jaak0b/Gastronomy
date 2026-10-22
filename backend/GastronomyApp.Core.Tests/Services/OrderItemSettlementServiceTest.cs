@@ -584,26 +584,26 @@ public sealed class OrderItemSettlementServiceTest
   private void PutAtTable(string tableName, OrderItem item)
   {
     Order order = new()
-    {
-      Id = Guid.NewGuid(),
-      ClientOrderId = Guid.NewGuid(),
-      FestivalId = RunningFestival().Id,
-      GlobalOrderNumber = 1,
-      StaffMemberId = Guid.NewGuid(),
-      TableName = tableName,
-      CreatedAtUtc = _earlier
-    };
+                  {
+                    Id = Guid.NewGuid(),
+                    ClientOrderId = Guid.NewGuid(),
+                    FestivalId = RunningFestival().Id,
+                    GlobalOrderNumber = 1,
+                    StaffMemberId = Guid.NewGuid(),
+                    TableName = tableName,
+                    CreatedAtUtc = _earlier
+                  };
 
     StationOrder stationOrder = new()
-    {
-      Id = item.StationOrderId,
-      OrderId = order.Id,
-      FestivalId = order.FestivalId,
-      StationId = Guid.NewGuid(),
-      StationOrderNumber = 1,
-      DeliveryMode = DeliveryMode.Together,
-      Order = order
-    };
+                                {
+                                  Id = item.StationOrderId,
+                                  OrderId = order.Id,
+                                  FestivalId = order.FestivalId,
+                                  StationId = Guid.NewGuid(),
+                                  StationOrderNumber = 1,
+                                  DeliveryMode = DeliveryMode.Together,
+                                  Order = order
+                                };
 
     stationOrder.Items.Add(item);
     order.StationOrders.Add(stationOrder);
@@ -613,34 +613,34 @@ public sealed class OrderItemSettlementServiceTest
   private Festival RunningFestival()
   {
     return new()
-    {
-      Id = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001"),
-      Name = "Sommerfest",
-      StartsAtUtc = _earlier,
-      EndsAtUtc = _now.AddHours(5),
-      NextOrderNumber = 1,
-      IsHidden = false
-    };
+           {
+             Id = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001"),
+             Name = "Sommerfest",
+             StartsAtUtc = _earlier,
+             EndsAtUtc = _now.AddHours(5),
+             NextOrderNumber = 1,
+             IsHidden = false
+           };
   }
 
   private SettleLineRequest Line(OrderItem item, int? paidPriceCents, string? paymentNotice = null)
   {
     return new()
-    {
-      OrderItemId = item.Id,
-      PaidPriceCents = paidPriceCents,
-      PaymentNotice = paymentNotice
-    };
+           {
+             OrderItemId = item.Id,
+             PaidPriceCents = paidPriceCents,
+             PaymentNotice = paymentNotice
+           };
   }
 
   private SettleLineRequest Line(Guid orderItemId, int? paidPriceCents, string? paymentNotice = null)
   {
     return new()
-    {
-      OrderItemId = orderItemId,
-      PaidPriceCents = paidPriceCents,
-      PaymentNotice = paymentNotice
-    };
+           {
+             OrderItemId = orderItemId,
+             PaidPriceCents = paidPriceCents,
+             PaymentNotice = paymentNotice
+           };
   }
 
   private IReadOnlyCollection<OrderItem> AtOneTable(params OrderItem[] items)
@@ -659,12 +659,12 @@ public sealed class OrderItemSettlementServiceTest
   private OrderItem OpenItem(int unitPriceCents)
   {
     return new()
-    {
-      Id = Guid.NewGuid(),
-      StationOrderId = Guid.NewGuid(),
-      CatalogItemId = Guid.NewGuid(),
-      ItemName = "Artikel",
-      UnitPriceCents = unitPriceCents
-    };
+           {
+             Id = Guid.NewGuid(),
+             StationOrderId = Guid.NewGuid(),
+             CatalogItemId = Guid.NewGuid(),
+             ItemName = "Artikel",
+             UnitPriceCents = unitPriceCents
+           };
   }
 }

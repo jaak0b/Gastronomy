@@ -13,9 +13,7 @@ public sealed class RefusalTest
   [Test]
   public void EveryRefusal_CarriesAStatusDeclaredInRefusalType()
   {
-    IReadOnlyList<int> declaredStatusCodes = typeof(RefusalType).GetFields(BindingFlags.Public | BindingFlags.Static)
-                                                                .Select(field => (int)field.GetRawConstantValue()!)
-                                                                .ToList();
+    IReadOnlyList<int> declaredStatusCodes = typeof(RefusalType).GetFields(BindingFlags.Public | BindingFlags.Static).Select(field => (int)field.GetRawConstantValue()!).ToList();
 
     Assert.Multiple(() =>
                     {
@@ -76,8 +74,8 @@ public sealed class RefusalTest
     List<(string, Error)> refusals = [];
 
     foreach (var area in typeof(Refusal).GetNestedTypes(BindingFlags.Public).Where(nested => nested.IsClass))
-      foreach (var factory in area.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly).Where(method => method.ReturnType == typeof(Error)))
-        refusals.Add(($"Refusal.{area.Name}.{factory.Name}", (Error)factory.Invoke(null, factory.GetParameters().Select(DummyFor).ToArray())!));
+    foreach (var factory in area.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly).Where(method => method.ReturnType == typeof(Error)))
+      refusals.Add(($"Refusal.{area.Name}.{factory.Name}", (Error)factory.Invoke(null, factory.GetParameters().Select(DummyFor).ToArray())!));
 
     Assert.That(refusals, Is.Not.Empty, "the reflection found no refusal at all");
 

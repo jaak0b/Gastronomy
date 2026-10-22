@@ -215,7 +215,8 @@ public sealed class OpenItemEndpointsTest
                                                   new SettleItemsBody([
                                                                         new(itemIds[0], 100, "Der Tisch zahlt den Rest spaeter"),
                                                                         new(itemIds[1], 200, "Der Tisch zahlt den Rest spaeter")
-                                                                      ], "cash"));
+                                                                      ],
+                                                                      "cash"));
     var open = await ReadOpenItemsAsync();
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
@@ -240,7 +241,8 @@ public sealed class OpenItemEndpointsTest
                                                   new SettleItemsBody([
                                                                         new(itemIds[0], 500),
                                                                         new(itemIds[1], 350)
-                                                                      ], "cash"));
+                                                                      ],
+                                                                      "cash"));
 
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
@@ -297,7 +299,8 @@ public sealed class OpenItemEndpointsTest
                                                   new SettleItemsBody([
                                                                         new(itemIds[0], 350),
                                                                         new(itemIds[0], 350)
-                                                                      ], "cash"));
+                                                                      ],
+                                                                      "cash"));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var open = await ReadOpenItemsAsync();
 
@@ -435,7 +438,8 @@ public sealed class OpenItemEndpointsTest
                                                                         new(itemIds[0], 350),
                                                                         new(itemIds[1], 350),
                                                                         new(Guid.NewGuid(), 350)
-                                                                      ], "cash"));
+                                                                      ],
+                                                                      "cash"));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var open = await ReadOpenItemsAsync();
 
@@ -460,7 +464,8 @@ public sealed class OpenItemEndpointsTest
                                                                         new(twelve[1], 350),
                                                                         new(three[0], 350),
                                                                         new(three[1], 350)
-                                                                      ], "cash"));
+                                                                      ],
+                                                                      "cash"));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var open = await ReadOpenItemsAsync();
     var tables = open.RootElement.GetProperty("tables");
@@ -542,7 +547,8 @@ public sealed class OpenItemEndpointsTest
                                                   new SettleItemsBody([
                                                                         new(itemIds[0], 350),
                                                                         new(itemIds[1], 0, "Kapelle")
-                                                                      ], "card"));
+                                                                      ],
+                                                                      "card"));
 
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
@@ -560,12 +566,7 @@ public sealed class OpenItemEndpointsTest
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
-    using var response = await _context.SendAsync(HttpMethod.Post,
-                                                  "/api/open-items/settle",
-                                                  new
-                                                  {
-                                                    lines = itemIds.Select(itemId => new SettleLineBody(itemId, 350)).ToList()
-                                                  });
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", new { lines = itemIds.Select(itemId => new SettleLineBody(itemId, 350)).ToList() });
 
     await AssertSettlementRefusedAndNothingStoredAsync(response);
   }
@@ -589,9 +590,7 @@ public sealed class OpenItemEndpointsTest
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
-    using var response = await _context.SendAsync(HttpMethod.Post,
-                                                  "/api/open-items/settle",
-                                                  new SettleItemsBody(itemIds.Select(itemId => new SettleLineBody(itemId, paidPriceCents, "Kapelle")).ToList(), paymentMethod));
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", new SettleItemsBody(itemIds.Select(itemId => new SettleLineBody(itemId, paidPriceCents, "Kapelle")).ToList(), paymentMethod));
 
     await AssertSettlementRefusedAndNothingStoredAsync(response);
   }
@@ -624,13 +623,13 @@ public sealed class OpenItemEndpointsTest
     await database.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys = OFF;");
 
     database.OrderItems.Add(new()
-    {
-      Id = Guid.NewGuid(),
-      StationOrderId = Guid.NewGuid(),
-      CatalogItemId = _context.World.BratwurstItemId,
-      ItemName = "Bratwurst mit Brot",
-      UnitPriceCents = 350
-    });
+                            {
+                              Id = Guid.NewGuid(),
+                              StationOrderId = Guid.NewGuid(),
+                              CatalogItemId = _context.World.BratwurstItemId,
+                              ItemName = "Bratwurst mit Brot",
+                              UnitPriceCents = 350
+                            });
 
     await database.SaveChangesAsync();
     await database.Database.CloseConnectionAsync();

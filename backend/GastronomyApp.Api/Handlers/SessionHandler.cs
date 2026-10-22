@@ -38,9 +38,9 @@ public sealed class SessionHandler
   private SessionView BuildSessionView(IDeviceOwner owner, DeviceCaller caller)
   {
     return _mapper.Map<IDeviceOwner, SessionView>(owner) with
-    {
-      DeviceId = caller.DeviceId,
-      Language = caller.Language
-    };
+           {
+             DeviceId = caller.DeviceId,
+             Language = caller.Language
+           };
   }
 }

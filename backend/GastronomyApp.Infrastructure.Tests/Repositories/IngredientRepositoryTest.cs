@@ -23,8 +23,18 @@ public sealed class IngredientRepositoryTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(ingredients.Select(ingredient => ingredient.Name), Is.EqualTo(new[] { "Apfelsaft", "Senf" }));
-                      Assert.That(ingredients.Select(ingredient => ingredient.Unit), Is.EqualTo(new[] { IngredientUnit.Millilitre, IngredientUnit.Gram }));
+                      Assert.That(ingredients.Select(ingredient => ingredient.Name),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Apfelsaft",
+                                               "Senf"
+                                             }));
+                      Assert.That(ingredients.Select(ingredient => ingredient.Unit),
+                                  Is.EqualTo(new[]
+                                             {
+                                               IngredientUnit.Millilitre,
+                                               IngredientUnit.Gram
+                                             }));
                     });
   }
 
@@ -45,8 +55,18 @@ public sealed class IngredientRepositoryTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(ingredients.Select(ingredient => ingredient.Name), Is.EqualTo(new[] { "Apfelsaft", "Senf" }));
-                      Assert.That(ingredients.Select(ingredient => ingredient.CatalogItems.Count), Is.EqualTo(new[] { 0, 1 }));
+                      Assert.That(ingredients.Select(ingredient => ingredient.Name),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Apfelsaft",
+                                               "Senf"
+                                             }));
+                      Assert.That(ingredients.Select(ingredient => ingredient.CatalogItems.Count),
+                                  Is.EqualTo(new[]
+                                             {
+                                               0,
+                                               1
+                                             }));
                       Assert.That(ingredients.Single(ingredient => ingredient.Name == "Senf").CatalogItems.Single().CatalogItem.Name, Is.EqualTo("Bratwurst"));
                     });
   }
@@ -66,7 +86,12 @@ public sealed class IngredientRepositoryTest
 
     var found = await repository.FindWithRecipeLinesAsync(mustard.Id, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(found!.CatalogItems.Select(recipeLine => recipeLine.CatalogItem.Name), Is.EquivalentTo(new[] { "Bratwurst", "Limonade" }));
+    Assert.That(found!.CatalogItems.Select(recipeLine => recipeLine.CatalogItem.Name),
+                Is.EquivalentTo(new[]
+                                {
+                                  "Bratwurst",
+                                  "Limonade"
+                                }));
   }
 
   [Test]
@@ -95,22 +120,22 @@ public sealed class IngredientRepositoryTest
   private CatalogItemIngredient BuildRecipeLine(Guid catalogItemId, Guid ingredientId)
   {
     return new()
-    {
-      Id = Guid.NewGuid(),
-      CatalogItemId = catalogItemId,
-      IngredientId = ingredientId,
-      Amount = 20
-    };
+           {
+             Id = Guid.NewGuid(),
+             CatalogItemId = catalogItemId,
+             IngredientId = ingredientId,
+             Amount = 20
+           };
   }
 
   private Ingredient BuildIngredient(string name, IngredientUnit unit)
   {
     return new()
-    {
-      Id = Guid.NewGuid(),
-      Name = name,
-      Unit = unit,
-      IsActive = true
-    };
+           {
+             Id = Guid.NewGuid(),
+             Name = name,
+             Unit = unit,
+             IsActive = true
+           };
   }
 }

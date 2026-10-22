@@ -122,7 +122,11 @@ public sealed class ConfigurationChangedAnnouncementTest
                                                                new
                                                                {
                                                                  priceCents = 300,
-                                                                 stationIds = new[] { _context.World.BarStationId, _context.World.KitchenStationId }
+                                                                 stationIds = new[]
+                                                                              {
+                                                                                _context.World.BarStationId,
+                                                                                _context.World.KitchenStationId
+                                                                              }
                                                                }))
     {
       Assert.That(assigned.StatusCode, Is.EqualTo(HttpStatusCode.OK));

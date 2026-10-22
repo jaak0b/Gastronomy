@@ -36,7 +36,11 @@ public sealed class RateLimitTest
     await _factory.DisposeAsync();
   }
 
-  private static readonly RateLimitOptions SmallLimits = new() { DeviceRequestsPerMinute = 12, AddressRequestsPerMinute = 5 };
+  private static readonly RateLimitOptions SmallLimits = new()
+                                                         {
+                                                           DeviceRequestsPerMinute = 12,
+                                                           AddressRequestsPerMinute = 5
+                                                         };
 
   private ApiTestFactory _factory = null!;
   private string _deviceToken = null!;

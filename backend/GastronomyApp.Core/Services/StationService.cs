@@ -42,7 +42,14 @@ public sealed class StationService
     ArgumentNullException.ThrowIfNull(catalogItems);
 
     var linesAtStation = lines.Where(line => line.StationId == station.Id)
-                              .Join(catalogItems, line => line.CatalogItemId, article => article.Id, (line, article) => new { line.Units, Article = article })
+                              .Join(catalogItems,
+                                    line => line.CatalogItemId,
+                                    article => article.Id,
+                                    (line, article) => new
+                                                       {
+                                                         line.Units,
+                                                         Article = article
+                                                       })
                               .ToList();
 
     if (linesAtStation.All(line => line.Article.ProductionMinutes == null))
@@ -50,9 +57,7 @@ public sealed class StationService
 
     IEnumerable<double> sharedLanes = linesAtStation.Any(line => !line.Article.IsQueueIndependent) ? [QueuedMinutesOf(station) + linesAtStation.Where(line => !line.Article.IsQueueIndependent).Sum(line => line.Units * (line.Article.ProductionMinutes ?? 0))] : [];
 
-    var articleLanes = linesAtStation.Where(line => line.Article.IsQueueIndependent)
-                                     .GroupBy(line => line.Article)
-                                     .Select(articleLines => OpenMinutesOfArticle(station, articleLines.Key.Id) + articleLines.Sum(line => line.Units * (line.Article.ProductionMinutes ?? 0)));
+    var articleLanes = linesAtStation.Where(line => line.Article.IsQueueIndependent).GroupBy(line => line.Article).Select(articleLines => OpenMinutesOfArticle(station, articleLines.Key.Id) + articleLines.Sum(line => line.Units * (line.Article.ProductionMinutes ?? 0)));
 
     return Math.Round(sharedLanes.Concat(articleLanes).Max(), 1);
   }

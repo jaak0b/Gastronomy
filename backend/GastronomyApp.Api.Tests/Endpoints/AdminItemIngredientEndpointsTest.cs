@@ -44,8 +44,18 @@ public sealed class AdminItemIngredientEndpointsTest
                       Assert.That(bun.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(changed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(saved.GetProperty("itemId").GetGuid(), Is.EqualTo(_context.World.BratwurstItemId));
-                      Assert.That(ingredientIds, Is.EqualTo(new[] { bunId, mustardId }));
-                      Assert.That(amounts, Is.EqualTo(new[] { 1d, 25.5d }));
+                      Assert.That(ingredientIds,
+                                  Is.EqualTo(new[]
+                                             {
+                                               bunId,
+                                               mustardId
+                                             }));
+                      Assert.That(amounts,
+                                  Is.EqualTo(new[]
+                                             {
+                                               1d,
+                                               25.5d
+                                             }));
                     });
   }
 

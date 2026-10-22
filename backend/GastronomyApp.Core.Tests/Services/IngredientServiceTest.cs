@@ -11,12 +11,12 @@ public sealed class IngredientServiceTest
   public void SetUp()
   {
     _mustard = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = "Senf",
-      Unit = IngredientUnit.Gram,
-      IsActive = true
-    };
+               {
+                 Id = Guid.NewGuid(),
+                 Name = "Senf",
+                 Unit = IngredientUnit.Gram,
+                 IsActive = true
+               };
   }
 
   private readonly IngredientService _service = new();
@@ -31,7 +31,12 @@ public sealed class IngredientServiceTest
 
     IReadOnlyList<string> activeItemNames = _service.ActiveItemNamesOf(_mustard);
 
-    Assert.That(activeItemNames, Is.EqualTo(new[] { "Bratwurst", "Currywurst" }));
+    Assert.That(activeItemNames,
+                Is.EqualTo(new[]
+                           {
+                             "Bratwurst",
+                             "Currywurst"
+                           }));
   }
 
   [Test]
@@ -47,22 +52,22 @@ public sealed class IngredientServiceTest
   private CatalogItemIngredient BuildRecipeLine(string itemName, bool isTheItemActive)
   {
     CatalogItem item = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = itemName,
-      CategoryId = Guid.NewGuid(),
-      SortOrder = 1,
-      IsActive = isTheItemActive
-    };
+                       {
+                         Id = Guid.NewGuid(),
+                         Name = itemName,
+                         CategoryId = Guid.NewGuid(),
+                         SortOrder = 1,
+                         IsActive = isTheItemActive
+                       };
 
     return new()
-    {
-      Id = Guid.NewGuid(),
-      CatalogItemId = item.Id,
-      IngredientId = _mustard.Id,
-      Amount = 20,
-      CatalogItem = item,
-      Ingredient = _mustard
-    };
+           {
+             Id = Guid.NewGuid(),
+             CatalogItemId = item.Id,
+             IngredientId = _mustard.Id,
+             Amount = 20,
+             CatalogItem = item,
+             Ingredient = _mustard
+           };
   }
 }

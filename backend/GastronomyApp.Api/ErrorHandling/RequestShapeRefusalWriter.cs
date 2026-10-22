@@ -41,8 +41,7 @@ public sealed class RequestShapeRefusalWriter : IProblemDetailsService
   {
     IReadOnlyList<string> declaredMembers = ReadDeclaredMemberNames(requestType);
 
-    return refusedShape.Errors
-                       .OrderBy(refusedMember => PositionOfMember(declaredMembers, refusedMember.Key))
+    return refusedShape.Errors.OrderBy(refusedMember => PositionOfMember(declaredMembers, refusedMember.Key))
                        .ThenBy(refusedMember => refusedMember.Key, StringComparer.Ordinal)
                        .SelectMany(refusedMember => refusedMember.Value.Select(messageKey => Refusal.RequestShape.MemberRefused(refusedMember.Key, messageKey)))
                        .ToList();

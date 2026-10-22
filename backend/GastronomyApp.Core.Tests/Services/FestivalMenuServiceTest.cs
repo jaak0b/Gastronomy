@@ -187,26 +187,26 @@ public sealed class FestivalMenuServiceTest
   private FestivalCatalogItem BuildMenuRow(int priceCents, bool isAvailable)
   {
     return new()
-    {
-      Id = Guid.NewGuid(),
-      FestivalId = _festivalId,
-      CatalogItemId = _bratwurstId,
-      PriceCents = priceCents,
-      IsAvailable = isAvailable
-    };
+           {
+             Id = Guid.NewGuid(),
+             FestivalId = _festivalId,
+             CatalogItemId = _bratwurstId,
+             PriceCents = priceCents,
+             IsAvailable = isAvailable
+           };
   }
 
   private Festival BuildFestival(bool hasEnded)
   {
     return new()
-    {
-      Id = _festivalId,
-      Name = "Sommerfest",
-      StartsAtUtc = _now.AddHours(-5),
-      EndsAtUtc = EndOfTheFestival(hasEnded),
-      NextOrderNumber = 1,
-      IsHidden = false
-    };
+           {
+             Id = _festivalId,
+             Name = "Sommerfest",
+             StartsAtUtc = _now.AddHours(-5),
+             EndsAtUtc = EndOfTheFestival(hasEnded),
+             NextOrderNumber = 1,
+             IsHidden = false
+           };
   }
 
   private DateTime EndOfTheFestival(bool hasEnded)

@@ -12,8 +12,6 @@ public sealed class AdminStaffMembersMapping : IMappingRegistration
 
     config.NewConfig<StaffMember, StaffMemberView>();
 
-    config.NewConfig<StaffMember, AdminStaffMemberView>()
-          .Map(view => view.StaffMemberId, staffMember => staffMember.Id)
-          .Map(view => view.HasDevice, staffMember => staffMember.DeviceId != null);
+    config.NewConfig<StaffMember, AdminStaffMemberView>().Map(view => view.StaffMemberId, staffMember => staffMember.Id).Map(view => view.HasDevice, staffMember => staffMember.DeviceId != null);
   }
 }

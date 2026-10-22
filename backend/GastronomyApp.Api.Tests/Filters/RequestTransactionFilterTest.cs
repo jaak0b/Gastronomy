@@ -263,13 +263,13 @@ public sealed class RequestTransactionFilterTest
   private async Task<Guid> WriteCategoryAsync(GastronomyAppDbContext database, string name, CancellationToken cancellationToken)
   {
     CatalogCategory category = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = name,
-      ColourHex = "#336699",
-      SortOrder = 1,
-      IsActive = true
-    };
+                               {
+                                 Id = Guid.NewGuid(),
+                                 Name = name,
+                                 ColourHex = "#336699",
+                                 SortOrder = 1,
+                                 IsActive = true
+                               };
 
     database.CatalogCategories.Add(category);
     await database.SaveChangesAsync(cancellationToken);

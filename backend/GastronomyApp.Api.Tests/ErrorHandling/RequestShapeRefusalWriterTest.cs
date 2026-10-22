@@ -44,11 +44,11 @@ public sealed class RequestShapeRefusalWriterTest
   private object BuildOrderWith(object items)
   {
     return new
-    {
-      clientOrderId = Guid.NewGuid(),
-      tableName = "Tisch 12",
-      items
-    };
+           {
+             clientOrderId = Guid.NewGuid(),
+             tableName = "Tisch 12",
+             items
+           };
   }
 
   [Test]
@@ -101,7 +101,13 @@ public sealed class RequestShapeRefusalWriterTest
   [Test]
   public async Task PostSettlement_NoLines_IsRefusedWithTheEmptySelectionMessage()
   {
-    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", new { lines = Array.Empty<object>(), paymentMethod = "none" });
+    using var response = await _context.SendAsync(HttpMethod.Post,
+                                                  "/api/open-items/settle",
+                                                  new
+                                                  {
+                                                    lines = Array.Empty<object>(),
+                                                    paymentMethod = "none"
+                                                  });
 
     await AssertRefusedWithAsync(response, "errors.settlement.noItemsSelected");
   }
@@ -239,10 +245,10 @@ public sealed class RequestShapeRefusalWriterTest
     RecordingLogger recordedRefusals = new();
 
     var written = await WriteRefusedShapeAsync(new HttpValidationProblemDetails(new Dictionary<string, string[]>
-    {
-      ["ColourHex"] = ["errors.admin.categories.colourInvalid"],
-      ["Name"] = ["errors.admin.categories.nameMissing"]
-    }),
+                                                                                {
+                                                                                  ["ColourHex"] = ["errors.admin.categories.colourInvalid"],
+                                                                                  ["Name"] = ["errors.admin.categories.nameMissing"]
+                                                                                }),
                                                typeof(SaveCategoryRequest),
                                                recordedRefusals);
 
@@ -266,10 +272,10 @@ public sealed class RequestShapeRefusalWriterTest
     RecordingLogger recordedRefusals = new();
 
     await WriteRefusedShapeAsync(new HttpValidationProblemDetails(new Dictionary<string, string[]>
-    {
-      ["ColourHex"] = ["errors.admin.categories.colourInvalid"],
-      ["Name"] = ["errors.admin.categories.nameMissing"]
-    }),
+                                                                  {
+                                                                    ["ColourHex"] = ["errors.admin.categories.colourInvalid"],
+                                                                    ["Name"] = ["errors.admin.categories.nameMissing"]
+                                                                  }),
                                  typeof(SaveCategoryRequest),
                                  recordedRefusals);
 
@@ -296,10 +302,10 @@ public sealed class RequestShapeRefusalWriterTest
     RequestShapeRefusalWriter writer = new(new ResultEnvelope(new SystemTextJsonRecordingSerializer(), new HttpContextAccessor(), recordedRefusals));
 
     await writer.TryWriteAsync(new ProblemDetailsContext
-    {
-      HttpContext = httpContext,
-      ProblemDetails = refusedShape
-    });
+                               {
+                                 HttpContext = httpContext,
+                                 ProblemDetails = refusedShape
+                               });
 
     body.Position = 0;
 

@@ -97,7 +97,12 @@ public sealed class AdminIngredientEndpointsTest
   [Test]
   public async Task PostIngredient_NoUnit_IsRefusedWithoutStoringAnything()
   {
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/ingredients", new { name = "Senf", unit = (string?)null });
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/ingredients",
+                                                               new
+                                                               {
+                                                                 name = "Senf",
+                                                                 unit = (string?)null
+                                                               });
 
     await using var database = _context.Factory.CreateContext();
 
@@ -117,7 +122,12 @@ public sealed class AdminIngredientEndpointsTest
     var body = JsonDocument.Parse(await _context.Client.GetStringAsync("/api/admin/ingredients")).RootElement;
     List<string?> names = body.GetProperty("ingredients").EnumerateArray().Select(ingredient => ingredient.GetProperty("name").GetString()).ToList();
 
-    Assert.That(names, Is.EqualTo(new[] { "Apfelsaft", "Senf" }));
+    Assert.That(names,
+                Is.EqualTo(new[]
+                           {
+                             "Apfelsaft",
+                             "Senf"
+                           }));
   }
 
   [Test]
@@ -130,7 +140,12 @@ public sealed class AdminIngredientEndpointsTest
     var listed = JsonDocument.Parse(await _context.Client.GetStringAsync("/api/admin/ingredients")).RootElement.GetProperty("ingredients").EnumerateArray().Single(ingredient => ingredient.GetProperty("ingredientId").GetGuid() == mustardId);
     List<string?> activeItemNames = listed.GetProperty("activeItemNames").EnumerateArray().Select(itemName => itemName.GetString()).ToList();
 
-    Assert.That(activeItemNames, Is.EqualTo(new[] { "Bier", "Bratwurst mit Brot" }));
+    Assert.That(activeItemNames,
+                Is.EqualTo(new[]
+                           {
+                             "Bier",
+                             "Bratwurst mit Brot"
+                           }));
   }
 
   [Test]

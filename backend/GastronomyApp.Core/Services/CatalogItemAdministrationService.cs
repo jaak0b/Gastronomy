@@ -14,10 +14,7 @@ public sealed class CatalogItemAdministrationService
   private readonly ICatalogItemRepository _itemRepository;
   private readonly RunningFestivalLookup _runningFestival;
 
-  public CatalogItemAdministrationService(ICatalogItemRepository itemRepository,
-                                          ICatalogCategoryRepository categoryRepository,
-                                          IFestivalRepository festivalRepository,
-                                          RunningFestivalLookup runningFestival)
+  public CatalogItemAdministrationService(ICatalogItemRepository itemRepository, ICatalogCategoryRepository categoryRepository, IFestivalRepository festivalRepository, RunningFestivalLookup runningFestival)
   {
     _itemRepository = itemRepository;
     _categoryRepository = categoryRepository;
@@ -43,15 +40,15 @@ public sealed class CatalogItemAdministrationService
       return error;
 
     CatalogItem created = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = name!,
-      CategoryId = categoryId!.Value,
-      SortOrder = sortOrder,
-      IsActive = true,
-      ProductionMinutes = productionMinutes,
-      IsQueueIndependent = isQueueIndependent
-    };
+                          {
+                            Id = Guid.NewGuid(),
+                            Name = name!,
+                            CategoryId = categoryId!.Value,
+                            SortOrder = sortOrder,
+                            IsActive = true,
+                            ProductionMinutes = productionMinutes,
+                            IsQueueIndependent = isQueueIndependent
+                          };
 
     await _itemRepository.AddAsync(created, cancellationToken);
 

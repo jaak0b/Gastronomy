@@ -30,13 +30,13 @@ public sealed class CatalogCategoryAdministrationService
       return Refusal.CatalogCategory.NameTaken(name!.Trim());
 
     CatalogCategory created = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = name!.Trim(),
-      ColourHex = colourHex!,
-      SortOrder = _ordering.NextSortOrder(categories.Select(category => category.SortOrder).ToList()),
-      IsActive = true
-    };
+                              {
+                                Id = Guid.NewGuid(),
+                                Name = name!.Trim(),
+                                ColourHex = colourHex!,
+                                SortOrder = _ordering.NextSortOrder(categories.Select(category => category.SortOrder).ToList()),
+                                IsActive = true
+                              };
 
     await _repository.AddAsync(created, cancellationToken);
     await _repository.SaveChangesAsync(cancellationToken);

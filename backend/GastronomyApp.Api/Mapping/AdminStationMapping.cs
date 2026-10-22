@@ -18,9 +18,6 @@ public sealed class AdminStationMapping : IMappingRegistration
   {
     ArgumentNullException.ThrowIfNull(config);
 
-    config.NewConfig<Station, AdminStationView>()
-          .Map(view => view.StationId, station => station.Id)
-          .Map(view => view.HasDevice, station => station.DeviceId != null)
-          .Map(view => view.IsAtAnyFestival, station => _stationService.IsAtAnyFestival(station));
+    config.NewConfig<Station, AdminStationView>().Map(view => view.StationId, station => station.Id).Map(view => view.HasDevice, station => station.DeviceId != null).Map(view => view.IsAtAnyFestival, station => _stationService.IsAtAnyFestival(station));
   }
 }

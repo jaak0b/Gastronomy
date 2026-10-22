@@ -35,9 +35,6 @@ public sealed class AdminEnrolmentHandler
 
     _invitationCache.Remember(new(issuedInvitation.Invitation.Id, issuedInvitation.QRCodeValue, qrUrl, issuedInvitation.Invitation.ExpiresAtUtc));
 
-    return _mapper.Map<InvitationView>(issuedInvitation) with
-           {
-             QRUrl = qrUrl
-           };
+    return _mapper.Map<InvitationView>(issuedInvitation) with { QRUrl = qrUrl };
   }
 }

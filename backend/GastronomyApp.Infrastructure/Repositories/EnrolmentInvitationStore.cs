@@ -44,17 +44,17 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
     var expiresAtUtc = now.AddMinutes(InvitationLifetimeMinutes);
 
     EnrolmentInvitation invitation = new()
-    {
-      Id = Guid.NewGuid(),
-      QRCodeHash = hashedQRCode.Hash,
-      QRCodeSalt = hashedQRCode.Salt,
-      QRCodeIterations = hashedQRCode.Iterations,
-      QRCodeAlgorithm = hashedQRCode.Algorithm,
-      CreatedAtUtc = now,
-      ExpiresAtUtc = expiresAtUtc,
-      ConsumedAtUtc = null,
-      ConsumedByDeviceId = null
-    };
+                                     {
+                                       Id = Guid.NewGuid(),
+                                       QRCodeHash = hashedQRCode.Hash,
+                                       QRCodeSalt = hashedQRCode.Salt,
+                                       QRCodeIterations = hashedQRCode.Iterations,
+                                       QRCodeAlgorithm = hashedQRCode.Algorithm,
+                                       CreatedAtUtc = now,
+                                       ExpiresAtUtc = expiresAtUtc,
+                                       ConsumedAtUtc = null,
+                                       ConsumedByDeviceId = null
+                                     };
 
     _dbContext.EnrolmentInvitations.Add(invitation);
     await _dbContext.SaveChangesAsync(cancellationToken);
@@ -116,11 +116,11 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
   private Error OffTheListRefusalFor(IDeviceOwner owner, Guid invitationId)
   {
     return owner switch
-    {
-      StaffMember => Refusal.EnrolmentRedemption.StaffMemberIsOffTheList(invitationId),
-      Station => Refusal.EnrolmentRedemption.StationIsOffTheList(invitationId),
-      _ => throw new InvalidOperationException($"Unhandled value: {owner}")
-    };
+           {
+             StaffMember => Refusal.EnrolmentRedemption.StaffMemberIsOffTheList(invitationId),
+             Station => Refusal.EnrolmentRedemption.StationIsOffTheList(invitationId),
+             _ => throw new InvalidOperationException($"Unhandled value: {owner}")
+           };
   }
 
   private async Task<EnrolmentInvitation?> LoadUnconsumedInvitationAsync(CancellationToken cancellationToken)
@@ -168,12 +168,12 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
   private async Task<IDeviceOwner> CreateStaffMemberAsync(string name, DateTime now, CancellationToken cancellationToken)
   {
     StaffMember newStaffMember = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = name.Trim(),
-      IsActive = true,
-      CreatedAtUtc = now
-    };
+                                 {
+                                   Id = Guid.NewGuid(),
+                                   Name = name.Trim(),
+                                   IsActive = true,
+                                   CreatedAtUtc = now
+                                 };
 
     _dbContext.StaffMembers.Add(newStaffMember);
     await _dbContext.SaveChangesAsync(cancellationToken);

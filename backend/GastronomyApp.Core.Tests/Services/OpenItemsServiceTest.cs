@@ -225,26 +225,26 @@ public sealed class OpenItemsServiceTest
     _ordersPlaced++;
 
     Order order = new()
-    {
-      Id = Guid.NewGuid(),
-      ClientOrderId = Guid.NewGuid(),
-      FestivalId = _festivalId,
-      GlobalOrderNumber = _ordersPlaced,
-      StaffMemberId = Guid.NewGuid(),
-      TableName = tableName,
-      CreatedAtUtc = _orderedAtUtc
-    };
+                  {
+                    Id = Guid.NewGuid(),
+                    ClientOrderId = Guid.NewGuid(),
+                    FestivalId = _festivalId,
+                    GlobalOrderNumber = _ordersPlaced,
+                    StaffMemberId = Guid.NewGuid(),
+                    TableName = tableName,
+                    CreatedAtUtc = _orderedAtUtc
+                  };
 
     StationOrder stationOrder = new()
-    {
-      Id = item.StationOrderId,
-      OrderId = order.Id,
-      FestivalId = _festivalId,
-      StationId = Guid.NewGuid(),
-      StationOrderNumber = _ordersPlaced,
-      DeliveryMode = DeliveryMode.Together,
-      Order = order
-    };
+                                {
+                                  Id = item.StationOrderId,
+                                  OrderId = order.Id,
+                                  FestivalId = _festivalId,
+                                  StationId = Guid.NewGuid(),
+                                  StationOrderNumber = _ordersPlaced,
+                                  DeliveryMode = DeliveryMode.Together,
+                                  Order = order
+                                };
 
     stationOrder.Items.Add(item);
     order.StationOrders.Add(stationOrder);
@@ -267,25 +267,25 @@ public sealed class OpenItemsServiceTest
   private OrderItem OpenItem(string itemName, int unitPriceCents)
   {
     return new()
-    {
-      Id = Guid.NewGuid(),
-      StationOrderId = Guid.NewGuid(),
-      CatalogItemId = Guid.NewGuid(),
-      ItemName = itemName,
-      UnitPriceCents = unitPriceCents
-    };
+           {
+             Id = Guid.NewGuid(),
+             StationOrderId = Guid.NewGuid(),
+             CatalogItemId = Guid.NewGuid(),
+             ItemName = itemName,
+             UnitPriceCents = unitPriceCents
+           };
   }
 
   private Festival RunningFestival()
   {
     return new()
-    {
-      Id = _festivalId,
-      Name = "Sommerfest",
-      StartsAtUtc = _orderedAtUtc,
-      EndsAtUtc = _now.AddHours(5),
-      NextOrderNumber = 1,
-      IsHidden = false
-    };
+           {
+             Id = _festivalId,
+             Name = "Sommerfest",
+             StartsAtUtc = _orderedAtUtc,
+             EndsAtUtc = _now.AddHours(5),
+             NextOrderNumber = 1,
+             IsHidden = false
+           };
   }
 }

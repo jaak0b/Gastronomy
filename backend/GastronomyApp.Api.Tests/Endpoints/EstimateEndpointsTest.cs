@@ -110,7 +110,20 @@ public sealed class EstimateEndpointsTest
   {
     await PlaceAsync(_context.BuildOrder(Guid.NewGuid()));
 
-    using var response = await _context.SendAsync(HttpMethod.Post, "/api/estimates/quote", new { lines = new[] { new { catalogItemId = _context.World.BratwurstItemId, stationId = _context.World.KitchenStationId, units = 2 } } });
+    using var response = await _context.SendAsync(HttpMethod.Post,
+                                                  "/api/estimates/quote",
+                                                  new
+                                                  {
+                                                    lines = new[]
+                                                            {
+                                                              new
+                                                              {
+                                                                catalogItemId = _context.World.BratwurstItemId,
+                                                                stationId = _context.World.KitchenStationId,
+                                                                units = 2
+                                                              }
+                                                            }
+                                                  });
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var kitchen = body.RootElement.GetProperty("stations").EnumerateArray().Single();
 
@@ -125,7 +138,20 @@ public sealed class EstimateEndpointsTest
   [Test]
   public async Task PostQuote_AnUnknownArticle_IsRefusedWithTheErrorEnvelope()
   {
-    using var response = await _context.SendAsync(HttpMethod.Post, "/api/estimates/quote", new { lines = new[] { new { catalogItemId = Guid.NewGuid(), stationId = _context.World.KitchenStationId, units = 1 } } });
+    using var response = await _context.SendAsync(HttpMethod.Post,
+                                                  "/api/estimates/quote",
+                                                  new
+                                                  {
+                                                    lines = new[]
+                                                            {
+                                                              new
+                                                              {
+                                                                catalogItemId = Guid.NewGuid(),
+                                                                stationId = _context.World.KitchenStationId,
+                                                                units = 1
+                                                              }
+                                                            }
+                                                  });
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>

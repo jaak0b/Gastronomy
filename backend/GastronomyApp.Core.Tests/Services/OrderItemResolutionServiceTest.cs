@@ -51,11 +51,11 @@ public sealed class OrderItemResolutionServiceTest
   public async Task BuildRoutedItemsAsync_ItemsThatAllRoute_ReturnsOneResolvedItemPerRequestInTheOrderTheyWereSent()
   {
     ErrorOr<IReadOnlyList<OrderItem>> result = await _service.BuildRoutedItemsAsync(_festivalId,
-                                                                                                           [
-                                                                                                             ItemFor(_bratwurstId),
-                                                                                                             ItemFor(_beerId)
-                                                                                                           ],
-                                                                                                           CancellationToken.None);
+                                                                                    [
+                                                                                      ItemFor(_bratwurstId),
+                                                                                      ItemFor(_beerId)
+                                                                                    ],
+                                                                                    CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -77,11 +77,11 @@ public sealed class OrderItemResolutionServiceTest
     A.CallTo(() => _catalogItemRepository.FindByIdAsync(secondUnknownId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItem?>(null));
 
     ErrorOr<IReadOnlyList<OrderItem>> result = await _service.BuildRoutedItemsAsync(_festivalId,
-                                                                                   [
-                                                                                     ItemFor(unknownId),
-                                                                                     ItemFor(secondUnknownId)
-                                                                                   ],
-                                                                                   CancellationToken.None);
+                                                                                    [
+                                                                                      ItemFor(unknownId),
+                                                                                      ItemFor(secondUnknownId)
+                                                                                    ],
+                                                                                    CancellationToken.None);
 
     Assert.Multiple(() =>
                     {

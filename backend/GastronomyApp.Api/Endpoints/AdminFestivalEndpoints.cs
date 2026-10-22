@@ -36,7 +36,8 @@ public static class AdminFestivalEndpoints
 
     group.MapGet("/{festivalId:guid}/ingredients", async (Guid festivalId, AdminFestivalStockHandler handler, CancellationToken cancellationToken) => await handler.ListAsync(festivalId, cancellationToken));
 
-    group.MapPut("/{festivalId:guid}/ingredients/{ingredientId:guid}", async (Guid festivalId, Guid ingredientId, SaveFestivalIngredientRequest request, AdminFestivalStockHandler handler, CancellationToken cancellationToken) => await handler.SetAvailableAmountAsync(festivalId, ingredientId, request, cancellationToken));
+    group.MapPut("/{festivalId:guid}/ingredients/{ingredientId:guid}",
+                 async (Guid festivalId, Guid ingredientId, SaveFestivalIngredientRequest request, AdminFestivalStockHandler handler, CancellationToken cancellationToken) => await handler.SetAvailableAmountAsync(festivalId, ingredientId, request, cancellationToken));
 
     return routes;
   }

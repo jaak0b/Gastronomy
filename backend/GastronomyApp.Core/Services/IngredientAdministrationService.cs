@@ -39,12 +39,12 @@ public sealed class IngredientAdministrationService
       return Refusal.Ingredients.NameTaken(name!);
 
     Ingredient created = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = name!,
-      Unit = unit.Value,
-      IsActive = true
-    };
+                         {
+                           Id = Guid.NewGuid(),
+                           Name = name!,
+                           Unit = unit.Value,
+                           IsActive = true
+                         };
 
     IReadOnlyCollection<Festival> festivals = await _festivalRepository.FindAllAsync(cancellationToken);
 

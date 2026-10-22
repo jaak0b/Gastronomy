@@ -102,12 +102,12 @@ public sealed class OrderAcceptanceServiceTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     Ingredient mustard = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = "Senf",
-      Unit = IngredientUnit.Gram,
-      IsActive = true
-    };
+                         {
+                           Id = Guid.NewGuid(),
+                           Name = "Senf",
+                           Unit = IngredientUnit.Gram,
+                           IsActive = true
+                         };
     mustard.FestivalIngredients.Add(new()
                                     {
                                       Id = Guid.NewGuid(),
@@ -143,10 +143,10 @@ public sealed class OrderAcceptanceServiceTest
   private PlaceOrderRequest BuildRequest(SeededDomain seeded, Guid clientOrderId)
   {
     return new()
-    {
-      ClientOrderId = clientOrderId,
-      TableName = "Tisch 12",
-      Items =
+           {
+             ClientOrderId = clientOrderId,
+             TableName = "Tisch 12",
+             Items =
              [
                new()
                {
@@ -161,6 +161,6 @@ public sealed class OrderAcceptanceServiceTest
                  UnitPriceCents = 350
                }
              ]
-    };
+           };
   }
 }

@@ -21,23 +21,23 @@ public sealed class CatalogItemRecipeServiceTest
 
     A.CallTo(() => _itemRepository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItem?>(null));
     A.CallTo(() => _itemRepository.FindByIdAsync(_itemId, A<CancellationToken>._))
-     .Returns(Task.FromResult<CatalogItem?>(new()
-                                            {
-                                              Id = _itemId,
-                                              Name = "Bratwurst",
-                                              CategoryId = Guid.NewGuid(),
-                                              SortOrder = 1,
-                                              IsActive = true
-                                            }));
+   .Returns(Task.FromResult<CatalogItem?>(new()
+                                          {
+                                            Id = _itemId,
+                                            Name = "Bratwurst",
+                                            CategoryId = Guid.NewGuid(),
+                                            SortOrder = 1,
+                                            IsActive = true
+                                          }));
     A.CallTo(() => _ingredientRepository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Ingredient?>(null));
     A.CallTo(() => _ingredientRepository.FindByIdAsync(_ingredientId, A<CancellationToken>._))
-     .Returns(Task.FromResult<Ingredient?>(new()
-                                           {
-                                             Id = _ingredientId,
-                                             Name = "Senf",
-                                             Unit = IngredientUnit.Gram,
-                                             IsActive = true
-                                           }));
+   .Returns(Task.FromResult<Ingredient?>(new()
+                                         {
+                                           Id = _ingredientId,
+                                           Name = "Senf",
+                                           Unit = IngredientUnit.Gram,
+                                           IsActive = true
+                                         }));
     A.CallTo(() => _repository.FindAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItemIngredient?>(null));
 
     _service = new(_repository, _itemRepository, _ingredientRepository);
@@ -70,12 +70,12 @@ public sealed class CatalogItemRecipeServiceTest
   public async Task SetAmountAsync_ALineExists_ChangesItsAmountWithoutAddingAnother()
   {
     CatalogItemIngredient existing = new()
-    {
-      Id = Guid.NewGuid(),
-      CatalogItemId = _itemId,
-      IngredientId = _ingredientId,
-      Amount = 10
-    };
+                                     {
+                                       Id = Guid.NewGuid(),
+                                       CatalogItemId = _itemId,
+                                       IngredientId = _ingredientId,
+                                       Amount = 10
+                                     };
     A.CallTo(() => _repository.FindAsync(_itemId, _ingredientId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItemIngredient?>(existing));
 
     ErrorOr<CatalogItemIngredient> saved = await _service.SetAmountAsync(_itemId, _ingredientId, 15, CancellationToken.None);
@@ -110,12 +110,12 @@ public sealed class CatalogItemRecipeServiceTest
   {
     GivenTheIngredientIsDeactivated();
     CatalogItemIngredient existing = new()
-    {
-      Id = Guid.NewGuid(),
-      CatalogItemId = _itemId,
-      IngredientId = _ingredientId,
-      Amount = 10
-    };
+                                     {
+                                       Id = Guid.NewGuid(),
+                                       CatalogItemId = _itemId,
+                                       IngredientId = _ingredientId,
+                                       Amount = 10
+                                     };
     A.CallTo(() => _repository.FindAsync(_itemId, _ingredientId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItemIngredient?>(existing));
 
     ErrorOr<CatalogItemIngredient> saved = await _service.SetAmountAsync(_itemId, _ingredientId, 15, CancellationToken.None);
@@ -173,12 +173,12 @@ public sealed class CatalogItemRecipeServiceTest
   public async Task RemoveAsync_ALineExists_RemovesIt()
   {
     CatalogItemIngredient existing = new()
-    {
-      Id = Guid.NewGuid(),
-      CatalogItemId = _itemId,
-      IngredientId = _ingredientId,
-      Amount = 10
-    };
+                                     {
+                                       Id = Guid.NewGuid(),
+                                       CatalogItemId = _itemId,
+                                       IngredientId = _ingredientId,
+                                       Amount = 10
+                                     };
     A.CallTo(() => _repository.FindAsync(_itemId, _ingredientId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItemIngredient?>(existing));
 
     ErrorOr<CatalogItemIngredient> removed = await _service.RemoveAsync(_itemId, _ingredientId, CancellationToken.None);
@@ -199,12 +199,12 @@ public sealed class CatalogItemRecipeServiceTest
   private void GivenTheIngredientIsDeactivated()
   {
     A.CallTo(() => _ingredientRepository.FindByIdAsync(_ingredientId, A<CancellationToken>._))
-     .Returns(Task.FromResult<Ingredient?>(new()
-                                           {
-                                             Id = _ingredientId,
-                                             Name = "Zwiebeln",
-                                             Unit = IngredientUnit.Gram,
-                                             IsActive = false
-                                           }));
+   .Returns(Task.FromResult<Ingredient?>(new()
+                                         {
+                                           Id = _ingredientId,
+                                           Name = "Zwiebeln",
+                                           Unit = IngredientUnit.Gram,
+                                           IsActive = false
+                                         }));
   }
 }

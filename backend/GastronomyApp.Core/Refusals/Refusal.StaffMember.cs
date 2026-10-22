@@ -8,8 +8,7 @@ public static partial class Refusal
   {
     public static Error StaffMemberNotFound(Guid staffMemberId)
     {
-      return NotFound("StaffMemberNotFound",
-                      $"The waiter {staffMemberId} does not exist.");
+      return NotFound("StaffMemberNotFound", $"The waiter {staffMemberId} does not exist.");
     }
   }
 }

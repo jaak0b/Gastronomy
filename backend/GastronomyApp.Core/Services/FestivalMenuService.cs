@@ -45,13 +45,13 @@ public sealed class FestivalMenuService
     if (menuRow is null)
     {
       menuRow = new()
-      {
-        Id = Guid.NewGuid(),
-        FestivalId = festivalId,
-        CatalogItemId = catalogItemId,
-        PriceCents = priceCents,
-        IsAvailable = true
-      };
+                {
+                  Id = Guid.NewGuid(),
+                  FestivalId = festivalId,
+                  CatalogItemId = catalogItemId,
+                  PriceCents = priceCents,
+                  IsAvailable = true
+                };
 
       await _repository.AddMenuRowAsync(menuRow, cancellationToken);
     }
@@ -64,12 +64,12 @@ public sealed class FestivalMenuService
 
     foreach (var stationId in stationIds.Distinct())
       await _repository.AddAssignmentAsync(new()
-      {
-        Id = Guid.NewGuid(),
-        FestivalId = festivalId,
-        CatalogItemId = catalogItemId,
-        StationId = stationId
-      },
+                                           {
+                                             Id = Guid.NewGuid(),
+                                             FestivalId = festivalId,
+                                             CatalogItemId = catalogItemId,
+                                             StationId = stationId
+                                           },
                                            cancellationToken);
 
     await _repository.SaveChangesAsync(cancellationToken);

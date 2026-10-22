@@ -8,28 +8,17 @@ public static partial class Refusal
   {
     public static Error CategoryNotFound(Guid categoryId)
     {
-      return NotFound("CategoryNotFound",
-                      $"The catalog category {categoryId} does not exist.");
+      return NotFound("CategoryNotFound", $"The catalog category {categoryId} does not exist.");
     }
 
     public static Error NameTaken(string name)
     {
-      return Conflict("errors.admin.categories.nameTaken",
-                      $"Another catalog category already carries the name {name}.",
-                      new Dictionary<string, object>
-                      {
-                        [MetadataKeys.ProblemCode] = "CategoryNameTaken"
-                      });
+      return Conflict("errors.admin.categories.nameTaken", $"Another catalog category already carries the name {name}.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "CategoryNameTaken" });
     }
 
     public static Error CategoryHoldsActiveItems(Guid categoryId)
     {
-      return Conflict("errors.admin.categories.hasActiveItems",
-                      $"The catalog category {categoryId} still holds articles that are switched on.",
-                      new Dictionary<string, object>
-                      {
-                        [MetadataKeys.ProblemCode] = "CategoryHasActiveItems"
-                      });
+      return Conflict("errors.admin.categories.hasActiveItems", $"The catalog category {categoryId} still holds articles that are switched on.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "CategoryHasActiveItems" });
     }
   }
 }

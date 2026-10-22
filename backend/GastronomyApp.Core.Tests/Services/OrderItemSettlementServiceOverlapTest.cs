@@ -93,11 +93,11 @@ public sealed class OrderItemSettlementServiceOverlapTest
   private SettleLineRequest Line(OrderItem item, int? paidPriceCents, string? paymentNotice = null)
   {
     return new()
-    {
-      OrderItemId = item.Id,
-      PaidPriceCents = paidPriceCents,
-      PaymentNotice = paymentNotice
-    };
+           {
+             OrderItemId = item.Id,
+             PaidPriceCents = paidPriceCents,
+             PaymentNotice = paymentNotice
+           };
   }
 
   private IReadOnlyCollection<OrderItem> AtOneTable(params OrderItem[] items)
@@ -111,26 +111,26 @@ public sealed class OrderItemSettlementServiceOverlapTest
   private void PutAtTable(string tableName, OrderItem item)
   {
     Order order = new()
-    {
-      Id = Guid.NewGuid(),
-      ClientOrderId = Guid.NewGuid(),
-      FestivalId = Guid.NewGuid(),
-      GlobalOrderNumber = 1,
-      StaffMemberId = Guid.NewGuid(),
-      TableName = tableName,
-      CreatedAtUtc = _earlier
-    };
+                  {
+                    Id = Guid.NewGuid(),
+                    ClientOrderId = Guid.NewGuid(),
+                    FestivalId = Guid.NewGuid(),
+                    GlobalOrderNumber = 1,
+                    StaffMemberId = Guid.NewGuid(),
+                    TableName = tableName,
+                    CreatedAtUtc = _earlier
+                  };
 
     StationOrder stationOrder = new()
-    {
-      Id = item.StationOrderId,
-      OrderId = order.Id,
-      FestivalId = order.FestivalId,
-      StationId = Guid.NewGuid(),
-      StationOrderNumber = 1,
-      DeliveryMode = DeliveryMode.Together,
-      Order = order
-    };
+                                {
+                                  Id = item.StationOrderId,
+                                  OrderId = order.Id,
+                                  FestivalId = order.FestivalId,
+                                  StationId = Guid.NewGuid(),
+                                  StationOrderNumber = 1,
+                                  DeliveryMode = DeliveryMode.Together,
+                                  Order = order
+                                };
 
     stationOrder.Items.Add(item);
     order.StationOrders.Add(stationOrder);
@@ -140,12 +140,12 @@ public sealed class OrderItemSettlementServiceOverlapTest
   private OrderItem OpenItem(int unitPriceCents)
   {
     return new()
-    {
-      Id = Guid.NewGuid(),
-      StationOrderId = Guid.NewGuid(),
-      CatalogItemId = Guid.NewGuid(),
-      ItemName = "Artikel",
-      UnitPriceCents = unitPriceCents
-    };
+           {
+             Id = Guid.NewGuid(),
+             StationOrderId = Guid.NewGuid(),
+             CatalogItemId = Guid.NewGuid(),
+             ItemName = "Artikel",
+             UnitPriceCents = unitPriceCents
+           };
   }
 }

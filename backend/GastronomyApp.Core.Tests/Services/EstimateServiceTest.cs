@@ -21,11 +21,15 @@ public sealed class EstimateServiceTest
 
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
     A.CallTo(() => _stationRepository.FindAtFestivalWithOpenItemsAsync(_festivalId, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<Station>>([
-                                                        Station(_kitchenId, "Kueche"),
-                                                        Station(_barId, "Theke")
-                                                      ]));
-    A.CallTo(() => _catalogItemRepository.FindByIdsAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<CatalogItem>>([_bratwurst, _beer]));
+   .Returns(Task.FromResult<IReadOnlyList<Station>>([
+                                                      Station(_kitchenId, "Kueche"),
+                                                      Station(_barId, "Theke")
+                                                    ]));
+    A.CallTo(() => _catalogItemRepository.FindByIdsAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._))
+   .Returns(Task.FromResult<IReadOnlyList<CatalogItem>>([
+                                                          _bratwurst,
+                                                          _beer
+                                                        ]));
 
     _service = new(_stationRepository, _catalogItemRepository, new(_festivalRepository, new(), _clock), new());
   }
@@ -83,9 +87,24 @@ public sealed class EstimateServiceTest
                                    {
                                      Lines =
                                      [
-                                       new() { CatalogItemId = _beer.Id, StationId = _barId, Units = 1 },
-                                       new() { CatalogItemId = _bratwurst.Id, StationId = _kitchenId, Units = 2 },
-                                       new() { CatalogItemId = _bratwurst.Id, StationId = _barId, Units = 1 }
+                                       new()
+                                       {
+                                         CatalogItemId = _beer.Id,
+                                         StationId = _barId,
+                                         Units = 1
+                                       },
+                                       new()
+                                       {
+                                         CatalogItemId = _bratwurst.Id,
+                                         StationId = _kitchenId,
+                                         Units = 2
+                                       },
+                                       new()
+                                       {
+                                         CatalogItemId = _bratwurst.Id,
+                                         StationId = _barId,
+                                         Units = 1
+                                       }
                                      ]
                                    };
 
@@ -103,7 +122,18 @@ public sealed class EstimateServiceTest
   public async Task QuoteAsync_AnUnknownArticle_IsRefused()
   {
     var unknownArticleId = Guid.NewGuid();
-    EstimateQuoteRequest request = new() { Lines = [new() { CatalogItemId = unknownArticleId, StationId = _kitchenId, Units = 1 }] };
+    EstimateQuoteRequest request = new()
+                                   {
+                                     Lines =
+                                     [
+                                       new()
+                                       {
+                                         CatalogItemId = unknownArticleId,
+                                         StationId = _kitchenId,
+                                         Units = 1
+                                       }
+                                     ]
+                                   };
 
     var quote = await _service.QuoteAsync(request, TestContext.CurrentContext.CancellationToken);
 
@@ -118,7 +148,18 @@ public sealed class EstimateServiceTest
   public async Task QuoteAsync_AStationThatIsNotAtTheRunningFestival_IsRefused()
   {
     var unknownStationId = Guid.NewGuid();
-    EstimateQuoteRequest request = new() { Lines = [new() { CatalogItemId = _bratwurst.Id, StationId = unknownStationId, Units = 1 }] };
+    EstimateQuoteRequest request = new()
+                                   {
+                                     Lines =
+                                     [
+                                       new()
+                                       {
+                                         CatalogItemId = _bratwurst.Id,
+                                         StationId = unknownStationId,
+                                         Units = 1
+                                       }
+                                     ]
+                                   };
 
     var quote = await _service.QuoteAsync(request, TestContext.CurrentContext.CancellationToken);
 

@@ -65,12 +65,12 @@ public sealed class CatalogItemIngredientRepositoryTest
   private async Task<Guid> AddIngredientAsync(SqliteInMemoryFixture fixture)
   {
     Ingredient ingredient = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = "Senf",
-      Unit = IngredientUnit.Gram,
-      IsActive = true
-    };
+                            {
+                              Id = Guid.NewGuid(),
+                              Name = "Senf",
+                              Unit = IngredientUnit.Gram,
+                              IsActive = true
+                            };
     fixture.DbContext.Ingredients.Add(ingredient);
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
@@ -80,11 +80,11 @@ public sealed class CatalogItemIngredientRepositoryTest
   private CatalogItemIngredient BuildLine(Guid catalogItemId, Guid ingredientId)
   {
     return new()
-    {
-      Id = Guid.NewGuid(),
-      CatalogItemId = catalogItemId,
-      IngredientId = ingredientId,
-      Amount = 20
-    };
+           {
+             Id = Guid.NewGuid(),
+             CatalogItemId = catalogItemId,
+             IngredientId = ingredientId,
+             Amount = 20
+           };
   }
 }

@@ -67,7 +67,9 @@ public sealed class TransactionProbeHostBuilder
 
     group.MapPost("/created", async Task<CreatedAnswer<Guid>> (TransactionProbe requestProbe, GastronomyAppDbContext database, IAfterCommitActions afterCommitActions, CancellationToken cancellationToken) => await requestProbe.Handle(database, afterCommitActions, cancellationToken));
 
-    group.MapPost("/no-content", async Task<NoContentAnswer> (TransactionProbe requestProbe, GastronomyAppDbContext database, IAfterCommitActions afterCommitActions, CancellationToken cancellationToken) => (await requestProbe.Handle(database, afterCommitActions, cancellationToken)).Then<Success>(_ => Result.Success));
+    group.MapPost("/no-content",
+                  async Task<NoContentAnswer> (TransactionProbe requestProbe, GastronomyAppDbContext database, IAfterCommitActions afterCommitActions, CancellationToken cancellationToken) =>
+                    (await requestProbe.Handle(database, afterCommitActions, cancellationToken)).Then<Success>(_ => Result.Success));
 
     group.MapGet(string.Empty, (GastronomyAppDbContext database) => Results.Text(database.Database.AutoTransactionBehavior.ToString()));
 

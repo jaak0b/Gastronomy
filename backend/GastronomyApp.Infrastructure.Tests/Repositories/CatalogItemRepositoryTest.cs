@@ -79,7 +79,12 @@ public sealed class CatalogItemRepositoryTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(found!.Ingredients.Select(recipeLine => recipeLine.Ingredient.Name), Is.EquivalentTo(new[] { "Senf", "Zwiebeln" }));
+                      Assert.That(found!.Ingredients.Select(recipeLine => recipeLine.Ingredient.Name),
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    "Senf",
+                                                    "Zwiebeln"
+                                                  }));
                       Assert.That(found.Ingredients.Single(recipeLine => recipeLine.Ingredient.Name == "Zwiebeln").Ingredient.IsActive, Is.False);
                     });
   }
@@ -151,12 +156,12 @@ public sealed class CatalogItemRepositoryTest
   private void AddIngredientToTheRecipe(SqliteInMemoryFixture fixture, Guid catalogItemId, string name, bool isActive)
   {
     Ingredient ingredient = new()
-    {
-      Id = Guid.NewGuid(),
-      Name = name,
-      Unit = IngredientUnit.Gram,
-      IsActive = isActive
-    };
+                            {
+                              Id = Guid.NewGuid(),
+                              Name = name,
+                              Unit = IngredientUnit.Gram,
+                              IsActive = isActive
+                            };
     fixture.DbContext.Ingredients.Add(ingredient);
     fixture.DbContext.CatalogItemIngredients.Add(new()
                                                  {

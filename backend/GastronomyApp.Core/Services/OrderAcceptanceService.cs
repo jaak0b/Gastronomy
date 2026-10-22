@@ -17,12 +17,7 @@ public sealed class OrderAcceptanceService
   private readonly IOrderRepository _orderRepository;
   private readonly RunningFestivalLookup _runningFestival;
 
-  public OrderAcceptanceService(IOrderRepository orderRepository,
-                                RunningFestivalLookup runningFestival,
-                                INumberAllocator numberAllocator,
-                                OrderItemResolutionService itemResolutionService,
-                                StockSoldOutMarker soldOutMarker,
-                                TimeProvider timeProvider)
+  public OrderAcceptanceService(IOrderRepository orderRepository, RunningFestivalLookup runningFestival, INumberAllocator numberAllocator, OrderItemResolutionService itemResolutionService, StockSoldOutMarker soldOutMarker, TimeProvider timeProvider)
   {
     _orderRepository = orderRepository;
     _runningFestival = runningFestival;
@@ -73,15 +68,15 @@ public sealed class OrderAcceptanceService
     var globalOrderNumber = await _numberAllocator.AllocateGlobalOrderNumberAsync(festivalId, cancellationToken);
 
     Order order = new()
-    {
-      Id = Guid.NewGuid(),
-      ClientOrderId = request.ClientOrderId,
-      FestivalId = festivalId,
-      GlobalOrderNumber = globalOrderNumber,
-      StaffMemberId = staffMemberId,
-      TableName = request.TableName ?? string.Empty,
-      CreatedAtUtc = createdAtUtc
-    };
+                  {
+                    Id = Guid.NewGuid(),
+                    ClientOrderId = request.ClientOrderId,
+                    FestivalId = festivalId,
+                    GlobalOrderNumber = globalOrderNumber,
+                    StaffMemberId = staffMemberId,
+                    TableName = request.TableName ?? string.Empty,
+                    CreatedAtUtc = createdAtUtc
+                  };
 
     Dictionary<Guid, DeliveryMode> deliveryModesByStationId = (request.DeliveryModes ?? []).GroupBy(mode => mode.StationId).ToDictionary(group => group.Key, group => group.Last().DeliveryMode);
 
