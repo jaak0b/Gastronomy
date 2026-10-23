@@ -8,6 +8,7 @@ import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/s
 import { testPlugins } from '../../support/plugins'
 import { OPEN_LIST, TABLE_REPORT, lineNamed, lookupCard, isHalfTaken, laptopWithALookup } from './openItemsFixture'
 import { stubLaptop, answer } from '../../support/laptop'
+import { onScreen } from '../../support/dom'
 import { nextTick } from 'vue'
 
 enableAutoUnmount(afterEach)
@@ -173,8 +174,10 @@ describe('looking up one table from the screen that shows what is open', () => {
     await lineNamed(lookupCard(screen, 137), 'Bratwurst').trigger('click')
     await nextTick()
     expect(screen.get('[data-test="selected-total"]').text()).toBe('Ausgewählt: 3,50 €')
+    await screen.get('[data-test="settle"]').trigger('click')
+    await vi.advanceTimersByTimeAsync(0)
 
-    await screen.get('[data-test="settle-in-cash"]').trigger('click')
+    onScreen('[data-test="amount-paid-dialog"] [data-test="confirm-in-cash"]').click()
     await vi.advanceTimersByTimeAsync(0)
 
     expect(laptop.writtenBodies()[0]).toEqual({

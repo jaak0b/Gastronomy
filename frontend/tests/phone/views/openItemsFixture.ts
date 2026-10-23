@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import type { VCheckboxBtn } from 'vuetify/components'
 import OpenItems from '../../../src/phone/views/OpenItems.vue'
+import type { AppLanguage } from '../../../src/shared/core/deviceLanguage'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
 import { testPlugins } from '../../support/plugins'
 import { answer, stubLaptop, type LaptopReply, type StubbedLaptop } from '../../support/laptop'
@@ -27,6 +28,27 @@ export const OPEN_LIST = {
           itemName: 'Bier',
           note: null,
           unitPriceCents: 350,
+          orderedAtUtc: '2026-09-05T18:00:00Z',
+        },
+      ],
+    },
+  ],
+  itemsWithoutAnOrderCount: 0,
+}
+
+export const ONE_FREE_ITEM = {
+  tables: [
+    {
+      tableName: '12',
+      openAmountCents: 0,
+      items: [
+        {
+          orderItemId: 'item-water',
+          orderId: 'order-1',
+          globalOrderNumber: 137,
+          itemName: 'Leitungswasser',
+          note: null,
+          unitPriceCents: 0,
           orderedAtUtc: '2026-09-05T18:00:00Z',
         },
       ],
@@ -199,13 +221,13 @@ export function isHalfTaken(part: MountedScreen | ScreenPart, selector: string):
   return part.findComponent<typeof VCheckboxBtn>(selector).props('indeterminate') === true
 }
 
-export async function mountScreen() {
+export async function mountScreen(language: AppLanguage = 'de') {
   localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
   const session = useSessionStore()
   session.deviceToken = 'token-here'
-  session.language = 'de'
+  session.language = language
   const screen = mount(OpenItems, {
-    global: { plugins: testPlugins() },
+    global: { plugins: testPlugins(language) },
     attachTo: document.body,
   })
   await flushPromises()

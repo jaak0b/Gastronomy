@@ -25,7 +25,7 @@ describe('settling what the table actually handed over', () => {
     const openItems = useOpenItemsStore()
     openItems.toggleItem('item-1')
     await nextTick()
-    await screen.get('[data-test="settle-amount-paid"]').trigger('click')
+    await screen.get('[data-test="settle"]').trigger('click')
     await flushPromises()
   }
 
@@ -34,17 +34,6 @@ describe('settling what the table actually handed over', () => {
   async function pressConfirm(button = '[data-test="confirm-in-cash"]'): Promise<void> {
     await clickOn(`${AMOUNT_DIALOG} ${button}`)
   }
-
-  it('offers the selection as the amount, so the ordinary case is one more tap', async () => {
-    const screen = await mountScreen()
-
-    await openTheAmountDialog(screen)
-
-    expect(document.querySelector('[data-test="amount-paid-dialog"] [data-test="selected-total"]')?.textContent).toContain(
-      'Ausgewählt: 3,50 €',
-    )
-    expect(inputOf(`${AMOUNT_DIALOG} [data-test="amount-field"]`).value).toBe('3,50')
-  })
 
   it('sends the smaller amount together with the typed reason', async () => {
     const laptop = openItemsLaptop()

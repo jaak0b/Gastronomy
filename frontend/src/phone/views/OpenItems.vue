@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { isAPaymentMethodNeeded, TABLE_LOOKUP_DEBOUNCE_MS } from '../core/openItems'
+import { TABLE_LOOKUP_DEBOUNCE_MS } from '../core/openItems'
 import { formatPrice } from '../../shared/core/money'
 import { useOpenItemsStore } from '../stores/openItems'
 import { useSessionStore } from '../../shared/stores/session'
@@ -16,7 +16,7 @@ import TableField from '../components/review/TableField.vue'
 const { t } = useI18n()
 const openItems = useOpenItemsStore()
 const session = useSessionStore()
-const { amountPaidIsOpen, settleAtFullPrice, settleTheAmountPaid } = useSettleDialog()
+const { amountPaidIsOpen, settleTheAmountPaid } = useSettleDialog()
 const tableReportLookup = useDebounced((tableName: string) => {
   void openItems.loadTableReport(tableName)
 }, TABLE_LOOKUP_DEBOUNCE_MS)
@@ -111,53 +111,15 @@ watch(typedTableName, (typed) => {
       <p class="selected-total text-h6 mb-2" data-test="selected-total">
         {{ t('phone.openItems.labels.selected', { amount: selectedTotal }) }}
       </p>
-      <template v-if="isAPaymentMethodNeeded(openItems.selectedTotalCents)">
-        <v-btn
-          class="settle-in-cash"
-          data-test="settle-in-cash"
-          color="primary"
-          block
-          size="x-large"
-          :disabled="openItems.isSettling"
-          @click="settleAtFullPrice('cash')"
-        >
-          {{ t('phone.openItems.actions.settleInCash') }}
-        </v-btn>
-        <v-btn
-          class="settle-by-card mt-2"
-          data-test="settle-by-card"
-          color="primary"
-          block
-          size="x-large"
-          :disabled="openItems.isSettling"
-          @click="settleAtFullPrice('card')"
-        >
-          {{ t('phone.openItems.actions.settleByCard') }}
-        </v-btn>
-      </template>
       <v-btn
-        v-else
-        class="settle-nothing-paid"
-        data-test="settle-nothing-paid"
+        class="settle"
+        data-test="settle"
         color="primary"
         block
         size="x-large"
-        :disabled="openItems.isSettling"
-        @click="settleAtFullPrice('none')"
-      >
-        {{ t('phone.openItems.actions.settle') }}
-      </v-btn>
-      <v-btn
-        class="settle-amount-paid mt-2"
-        data-test="settle-amount-paid"
-        color="primary"
-        variant="outlined"
-        block
-        size="large"
-        :disabled="openItems.isSettling"
         @click="amountPaidIsOpen = true"
       >
-        {{ t('phone.openItems.actions.settleAmountPaid') }}
+        {{ t('phone.openItems.actions.settle') }}
       </v-btn>
     </v-sheet>
     <AmountPaidDialog

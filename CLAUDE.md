@@ -31,8 +31,9 @@ Flow:
    and per station order, computed from the station's current queue plus the item's own time, except
    for an independent article, which shows its own time alone.
 4. A separate screen on the phone lists what each table still has open, so a server can settle a
-   table's items later. Settling always names the amount the table actually paid: the full price in
-   one tap, or any other amount the server types, which needs a typed reason whenever it falls short.
+   table's items later. Settling always names the amount the table actually paid: the full price is
+   filled in, and the server may type any other amount, which needs a typed reason whenever it falls
+   short.
    Giving something away is that same act with the amount set to zero, not a second kind of
    settlement.
 

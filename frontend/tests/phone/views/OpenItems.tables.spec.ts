@@ -7,6 +7,7 @@ import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/s
 import { testPlugins } from '../../support/plugins'
 import { OPEN_LIST, SETTLED, TWO_TABLES, openEveryTable, lineOf, mountScreen, openItemsLaptop } from './openItemsFixture'
 import { answer, stubLaptop, neverAnswers } from '../../support/laptop'
+import { clickOn } from '../../support/dom'
 import { nextTick } from 'vue'
 
 enableAutoUnmount(afterEach)
@@ -101,23 +102,6 @@ describe('the screen that shows what the tables still owe', () => {
     expect(openItems.selectedItemIds).toEqual(['item-7'])
   })
 
-  it('settles what has been ticked at the price the phone showed', async () => {
-    const laptop = openItemsLaptop()
-    const screen = await mountScreen()
-    const openItems = useOpenItemsStore()
-    openItems.toggleItem('item-1')
-    await nextTick()
-
-    await screen.get('[data-test="settle-in-cash"]').trigger('click')
-    await flushPromises()
-
-    expect(laptop.writtenBodies()[0]).toEqual({
-      lines: [{ orderItemId: 'item-1', paidPriceCents: 350, paymentNotice: null }],
-      paymentMethod: 'cash',
-    })
-    expect(document.querySelector('[data-test="amount-paid-dialog"]')).toBeNull()
-  })
-
   it('fetches the list again when the waiter asks for it, which is what the notices name', async () => {
     const laptop = stubLaptop().answersEverythingElse(answer(OPEN_LIST))
     const screen = await mountScreen()
@@ -171,9 +155,10 @@ describe('the screen that shows what the tables still owe', () => {
     const openItems = useOpenItemsStore()
     openItems.setWholeTable(openItems.tables[0], true)
     await nextTick()
-
-    await screen.get('[data-test="settle-in-cash"]').trigger('click')
+    await screen.get('[data-test="settle"]').trigger('click')
     await flushPromises()
+
+    await clickOn('[data-test="amount-paid-dialog"] [data-test="confirm-in-cash"]')
 
     expect(screen.get('[data-test="settle-notice"]').text()).toBe(
       'Jemand anderes hatte 1 Position aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast 3,50 € zurück.',

@@ -20,10 +20,6 @@ export function useSettleDialog() {
     }
   }
 
-  async function settleAtFullPrice(paymentMethod: SettlementPaymentMethod): Promise<void> {
-    await openItems.settle(openItems.selectedTotalCents, null, paymentMethod)
-  }
-
   async function settleTheAmountPaid(
     amountPaidCents: number,
     paymentNotice: string | null,
@@ -34,5 +30,5 @@ export function useSettleDialog() {
     )
   }
 
-  return { amountPaidIsOpen, settleAtFullPrice, settleTheAmountPaid }
+  return { amountPaidIsOpen, settleTheAmountPaid }
 }
