@@ -32,7 +32,7 @@ Run everything with `pwsh ./build.ps1 --target Test`. While working on one part,
 
 ```powershell
 dotnet test backend/<TestProject>/<TestProject>.csproj --filter "FullyQualifiedName~<Fixture>"
-npx --prefix frontend vitest run <spec path>
+cd frontend; npx vitest run <spec path>
 ```
 
 Build the installer with `pwsh ./build.ps1 --target Pack`; the output lands in `artifacts/velopack`. Publishing a release is `pwsh ./build.ps1 --target Release` with a `GH_TOKEN` set.
