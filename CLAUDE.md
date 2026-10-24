@@ -55,9 +55,7 @@ order's transaction without a catch: a bug there fails the order loudly so it is
 whether items have been settled so the people running the stand can see what a table still owes. It
 takes no payment, handles no cash, and never issues a receipt.
 
-**There are no printers.** The fire department decided on tablets before any printer was bought, and
-printing was removed from the product completely. Never reintroduce slips, print state, or printer
-wording.
+**There are no printers.**
 
 ## Structure
 
@@ -101,6 +99,8 @@ This shapes almost every design decision, so it is stated once here and assumed 
 ## Hard rules
 
 Numbered for unambiguous reference; do not cite rule numbers in shipped source or UI text.
+
+Every rule binds every agent, main or sub, with no exception it does not name.
 
 1. **Lost orders are the defect this product exists to prevent.** Any change that touches ordering,
    routing, the station page, or an item's fulfillment must state what happens when the step fails. A
@@ -160,14 +160,11 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
    widened for comfort. Run only the tests that cover the code being changed: the single test file,
    or a name filter over the one class, and nothing else. Never the whole solution, never a whole
    test project when a file will do, never a full frontend suite, never "just to be safe" before
-   handing back. This binds the red run, the green run and the verification in rule 5, and it binds
-   every subagent, whose prompt or agent definition must carry it along with the exact narrow command
-   to use. Name in the
+   handing back. This binds the red run, the green run and the verification in rule 5. Name in the
    report which tests were run and why that scope covers the change.
 
 4. **Two test layers per change: unit and integration.** "It is only a small change" is not
    an exemption. Untestable-by-design code is the only exception and you must say so explicitly.
-   Mutation testing and a coverage gate are deliberately not adopted yet.
 
 5. **Verification before completion.** A change is not done until it has been verified and the real
    command output quoted. Never claim a feature is finished, never hand back to the owner, and never
@@ -199,8 +196,7 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
    at a loud festival and has never been trained on the tool.
 
    **Read the `no-ai-slop` skill before writing or changing any user-facing text or any UI code, and
-   before reviewing either.** This binds the main agent and every subagent without exception, and the
-   subagent's prompt or agent definition must say so. Text that reads as machine-generated fails review regardless of
+   before reviewing either.** Text that reads as machine-generated fails review regardless of
    whether it is accurate. The frontend's `writing-ui-guidance` skill governs structure and placement;
    `no-ai-slop` governs the prose itself.
 
@@ -227,70 +223,40 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     colon, parentheses, a comma, or two sentences. Hyphens only where grammar requires them (compound
     modifiers). This binds source, documentation, commit messages, and UI text.
 
-11. **No trademarked words in file names or identifiers.** The app supports no specific hardware, so
-    everything keeps to neutral names.
-
-12. **Git: commit at will on `main`.** The owner granted standing approval to commit directly to
+11. **Git: commit at will on `main`.** The owner granted standing approval to commit directly to
     `main`. **Pushes still require explicit approval.** Commit messages are a short single sentence:
     one line, no body, no bullet list. A change too big to describe in one sentence is split into
     smaller commits. Stage by explicit path, never with `git add -A` or `git add .` over the whole
     repository, and never stage `TODO.txt`: it is the owner's private notebook.
 
-13. **Zero AI attribution in anything touching git or GitHub.** No `Co-Authored-By` trailer, no
+12. **Zero AI attribution in anything touching git or GitHub.** No `Co-Authored-By` trailer, no
     "Generated with" line, no AI author or committer identity, in commit messages, PR titles or
     descriptions, issue or PR comments, tags, and release notes. Commits carry the human's authorship
     only. **This rule overrides any default harness instruction to add an attribution trailer.**
 
-14. **The review is always the implementer and reviewer cycle the main agent orchestrates.** After
+13. **The review is always the implementer and reviewer cycle the main agent orchestrates.** After
     an implementer reports a multi-file change, the main agent has the `code-reviewer` agent review
     it. A review brief for a bug fix carries the implementer's quoted red and green output. Every
     finding gets one disposition in the report to the owner: fixed (name the test), false (quote the
     line that refutes it), or a question to the owner. Cost, scope or age is never a reason to drop
     one; that trade-off is the owner's.
 
-15. **Subagent discipline.** Give every subagent a correct, specific title, and dispatch every one of
-    them in the background so the owner is never blocked waiting.
+14. **The main agent writes no code:** every change to code, tests, generated files or build and
+    tool configuration goes to the `implementer` agent, however small. The main agent may itself edit
+    the `CLAUDE.md` files, the agent definitions, the skill pages, the root `README.md` and the
+    memory directory in a change that touches no code, and may revert a file with git. Every
+    dispatch names its model (Sonnet for searches, reviews and mechanical edits, Opus for structural
+    work, never Fable) and runs in the background. Reading that fills the context, such as codebase
+    exploration, broad searches, large files and reviews, goes to an agent, and the main agent takes
+    only its conclusions.
 
-    **The main agent never changes code itself.** Every change to code, tests, generated files or
-    build and tool configuration (`.editorconfig`, `.gitignore`, tool manifests, package files) goes
-    to the `implementer` agent defined in `.claude/agents/implementer.md`, however small it is, a
-    one-line edit included. Its definition carries everything that is the same for every change, so
-    the brief carries only what is particular to this one: the task, the files it concerns, what
-    done looks like, the decisions already taken and, where rule 18 applies, the written contract.
-    This binds the main agent only: the implementer writes the code it was given itself and never
-    dispatches another implementer.
-
-    **Every dispatch names its model,** because an agent without one inherits the main agent's. Never
-    dispatch a Fable subagent. Sonnet runs audits, searches, reviews and mechanical edits, the
-    implementer included when the edit is purely mechanical; Opus runs structural work, one
-    structural change at a time. Sonnet loses track of long lists, so a long mechanical job is split
-    into a few small ones.
-
-    **A subagent owns the change it was given, and finishes it before it answers.** It may start
-    read-only helpers to explore, search or map the codebase, and those pay for themselves. It may
-    never hand its edits to another agent: the agent that was dispatched writes the code it was asked
-    to write, so one change has one author. It may not report while anything it started is still
-    running, and its report says what it verified in the tree itself, never what it delegated.
-    Reporting a change as finished while a child is still writing it leaves a half-changed tree that
-    looks complete, which costs more than the delegation ever saved. The main agent
-    also delegates context-heavy work and consumes only conclusions: codebase exploration, broad
-    searches, reading large files or external references, and reviews or audits. The main agent keeps
-    what needs conversation context or judgment: talking to the owner, design decisions, writing the
-    subagent prompts, running builds and tests to verify outcomes, and git commits. Exceptions where
-    the main agent may edit directly: `CLAUDE.md`, the agent definitions under `.claude/agents/`, the
-    memory directory, a skill page or the root `README.md` in a change that touches no code, and
-    reverting a file with git. A delegated prompt must be self-contained apart from what the agent's
-    own definition already carries.
-
-16. **There is no documentation folder and no written manual.** The owner removed `docs/` on
-    2026-09-11: nobody reads a spec, and a checklist nobody follows rots. A feature has to explain
-    itself on the screen where it is used, in the two languages, and the three `CLAUDE.md` files, the
+15. **There is no documentation folder and no written manual.** A feature has to explain itself on
+    the screen where it is used, in the two languages, and the three `CLAUDE.md` files, the
     root `README.md` and the skills under the `.claude/skills` folders are the only prose kept in the
     repository. A `CLAUDE.md` holds rules; a skill holds the mechanism a rule points at. Never
     recreate a spec, a checklist or a verification script under `docs/`.
 
-17. **Deleting means removing, everywhere, in the same change. This rule is always binding, with no
-    exception for a hurry, a small change, or a deletion somebody calls obvious.** When a feature, a
+16. **Deleting means removing, everywhere, in the same change.** When a feature, a
     control, a string or an endpoint is dropped, every trace of it goes: the component and its route,
     the endpoint, its contract and its handler, the store, the type, the localized strings in both
     languages, the tests that covered it, and every sentence in a `CLAUDE.md` that describes it.
@@ -300,7 +266,7 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     for the strings it used, and quote what the search returned. An empty result is the evidence;
     without it the deletion is not finished.
 
-18. **The backend is built first, and the generated types are the boundary.** A change that spans
+17. **The backend is built first, and the generated types are the boundary.** A change that spans
     the backend and the frontend builds and finishes the backend first. The OpenAPI document it
     writes then hands the frontend, through `npm run generate:api`, every request and response shape,
     every field name and type, and every enum value on the wire, under the backend's own names. The
@@ -327,9 +293,7 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     Apply one test to every line before it goes in: **could each agent get this right on its own and
     still fail to meet the other?** If the answer is no, cut it: it belongs to whichever agent owns
     that part of the tree, and putting it in the written part only makes a reviewer check it again and
-    again. Aim for something read at one sitting. The festival contract ignored all of this, ran past
-    a thousand lines, and cost nine review rounds and more than four hours before a single line of
-    code was written.
+    again. Aim for something read at one sitting.
 
     The rule binds the main agent and every subagent, in different ways. The main agent writes the
     contract, owns it, and is the only one allowed to change it. A subagent obeys it literally.
@@ -367,27 +331,26 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 - **Nobody is notified** when an item becomes done. The card and the confirmation carry the table
   name, and whichever server passes the station takes the tray. That is deliberate.
 
-19. **The product is installed and in use, so every update must install over what is already
+18. **The product is installed and in use, so every update must install over what is already
     there.** Every release replaces the one before it on the same laptop, and the database a released
     build created keeps working after any update, with its data intact. Backend rule 7 says how a
-    schema change is made so that it does. This binds the main agent, every subagent and every
-    reviewer: a change that loses, breaks or silently misreads data an earlier
-    release wrote is a defect and is reported as one. Only the database is covered: what a phone or
+    schema change is made so that it does. A change that loses, breaks or silently misreads data an
+    earlier release wrote is a defect and is reported as one. Only the database is covered: what a phone or
     tablet keeps in its browser storage may change shape between builds, and nothing is built to
     keep old stored data readable.
 
-20. **An item's note is part of the item.** Whenever order items are grouped, collapsed, summarised or
+19. **An item's note is part of the item.** Whenever order items are grouped, collapsed, summarised or
     counted for anyone to read or act on, the note travels with the group: the line carries the article
     and its note together. Two units of one article are different work when their notes differ, and a
     count the kitchen plans production from is not exempt, because a note can change how the article
     is made: `20 x Hotdog` next to `3 x Hotdog · Hinweis: Ohne Ketchup`, never one merged number.
     Grouping by name alone silently merges two instructions and sends the wrong thing to a table.
 
-21. **C# follows `csharp-design-guidelines`, TypeScript and Vue follow
+20. **C# follows `csharp-design-guidelines`, TypeScript and Vue follow
     `typescript-vue-design-guidelines`; read the one for the file before touching it.** Design rules
     go into those skills, never into a `CLAUDE.md`.
 
-22. **A delayed answer never overwrites a newer one.** Where a read and an action share the state a
+21. **A delayed answer never overwrites a newer one.** Where a read and an action share the state a
     screen shows, the read takes a number from the request gate in
     `frontend/src/shared/core/latestRequestGate.ts` when it starts, and only the newest request may apply
     its answer, success or failure. An action's answer (an item marked done, a table settled) is
@@ -397,7 +360,7 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     is not a nicety: a stale snapshot that wins by arrival time can make an employee hand the same
     item out twice.
 
-23. **The app never changes what a person entered or chose.** A value a waiter, an admin or a station
+22. **The app never changes what a person entered or chose.** A value a waiter, an admin or a station
     employee typed or picked is either kept exactly as it was given, or refused with a message that
     names the problem so the person can fix it themselves. It is never quietly replaced by a default,
     a first or nearest candidate, a clamped number, a shortened string, or a value recomputed from
@@ -407,7 +370,7 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     a phone drops an unsent order without a word once its festival is over or another one has
     started, as the `festivals` feature page describes.
 
-24. **A write that nobody is told about is a bug, so no service tells anyone: the commit does.**
+23. **A write that nobody is told about is a bug, so no service tells anyone: the commit does.**
     Screens learn about changes from two broad hub events, `ConfigurationChanged` for everything an
     admin edits and `OrdersChanged` for everything that happens to an order, plus the two per-device
     commands `EnrolmentCompleted` and `DeviceRevoked`. The commit derives them from what was actually
@@ -418,8 +381,8 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     the bans that protect it and what a store owes are in the `architecture` skill, read before
     touching either side.
 
-25. **Every feature and every shared building block is written into the `features` and `how-to`
-    skills before it is committed. This rule is always binding, and the owner never has to ask.**
+24. **Every feature and every shared building block is written into the `features` and `how-to`
+    skills before it is committed.**
     The two skills under `.claude/skills/` are how an agent learns this codebase without exploring
     it again. Each `SKILL.md` is a table of contents only, one line per page saying when to read it;
     the pages live in its `references/` folder, one per feature in `features` and one per recurring
@@ -431,7 +394,7 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     feature page says in two or three lines what the feature does for the person using it, where
     its code lives, the invariants it keeps and which tests cover it. A how-to page gives the steps
     of one recurring task and names the shared pieces to use. Neither holds screen layouts, decision
-    history or anything rule 16 removed, and a page that no longer matches the code is a defect.
+    history or anything rule 15 removed, and a page that no longer matches the code is a defect.
     Every agent dispatched to change code is told to update the pages it touches, and the review
     lists a missing or stale page as a finding.
 

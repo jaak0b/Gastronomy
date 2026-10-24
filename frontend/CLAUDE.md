@@ -26,9 +26,6 @@ the TypeScript type beside it, under the backend's own contract names. Nothing e
 
 `npm run generate:api` regenerates them, and `npm run build` runs it before `vue-tsc`.
 
-`src/shared/api/apiTypes.ts` and `src/shared/api/apiSchemas.ts` no longer exist. `AppLanguage` lives
-in `src/shared/core/deviceLanguage.ts`, `DraftLine` and `DraftOrder` in `src/phone/core/draftCart.ts`.
-
 ## Hard rules
 
 1. **Keep the core framework-agnostic and modular.** Code in any `core/` folder, under `src/shared/`
@@ -202,8 +199,8 @@ the device, light or dark, both palettes soft (`src/shared/theme.ts`).
   Ausgabestellen, Artikel, Zutaten, Kellner; the Artikel tab groups its articles under their
   categories. Übersicht reports on the running festival, and an unknown festival id silently returns
   to it.
-- **Words:** the festival page says "Artikel", never "Karte", a running festival is "Aktiv" /
-  "Active", and no screen uses the word "Tempo".
+- **Words:** the festival page says "Artikel", never "Karte", and a running festival is "Aktiv" /
+  "Active".
 
 ## Testing
 

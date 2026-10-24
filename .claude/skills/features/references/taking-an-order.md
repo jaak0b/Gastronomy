@@ -59,7 +59,7 @@ Backend, under `backend/`:
 
 ## Invariants
 
-- **A note is never merged into another line (root rule 20).** Every portion is a draft line of its
+- **A note is never merged into another line (root rule 19).** Every portion is a draft line of its
   own (`addLine` appends one per tap), and `groupPositions` keys a group on the note and the station
   together, so `3 x Hotdog` with "ohne Ketchup" never joins the plain ones. Only the article's own
   count and total sum every group.

@@ -164,26 +164,8 @@ Core, no EF Core.
     `.editorconfig`, and every formatting setting lives there, never only in an IDE's own settings.
     Nobody wraps or formats by hand, and a diff that only a formatter could have made is a review
     finding. The cleanup runs on every C# file an agent created or edited, in the same turn as the
-    edit; the `how-to` skill's page `format-csharp.md` holds the commands. This binds the main agent
-    and every subagent, and it binds `desktop/` as well.
-
-## Code style
-
-- Two spaces per level, never tabs, and no trailing whitespace.
-- A fluent chain stays on one line while it fits. When it wraps, it breaks after every dot, one call
-  per line, indented to the start of the chain:
-
-  ```csharp
-  var stationOrders = await database.StationOrders
-                                    .AsNoTracking()
-                                    .Where(stationOrder => stationOrder.FestivalId == festivalId)
-                                    .OrderBy(stationOrder => stationOrder.StationOrderNumber)
-                                    .ToListAsync(cancellationToken);
-  ```
-
-- Never break an assignment after `=`. Keep the line whole and wrap the chain, or align a plain
-  call's arguments under its opening parenthesis as `OrderAcceptanceService` does.
-- Two statements on one line are never written, however short they are.
+    edit; the `how-to` skill's page `format-csharp.md` holds the commands. This binds `desktop/` as
+    well.
 
 ## The order model
 

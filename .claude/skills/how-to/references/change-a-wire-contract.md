@@ -49,6 +49,6 @@ and `npx vitest run tests/admin/stores/ingredients.spec.ts`.
 ## When the work is split
 
 A change shared by several agents, or by the backend and the frontend, starts from the written
-contract of root rule 18: every route with its request and response, field names and types, status
+contract of root rule 17: every route with its request and response, field names and types, status
 codes, message keys with their German and English text, and event names. It is copied into every
 prompt, nobody renames anything in it, and an agent that finds it cannot work stops and reports.

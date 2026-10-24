@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Reviews a change in this repository for defects a volunteer at a festival would actually meet. Use for every review before handing work back, including the review that rule 14 requires. Reports bugs only when it can reproduce them with the real actors and prove them with a failing test, and keeps structure and rule findings in a separate list so they never bury a real defect.
+description: Reviews a change in this repository for defects a volunteer at a festival would actually meet. Use for every review before handing work back, including the review that rule 13 requires. Reports bugs only when it can reproduce them with the real actors and prove them with a failing test, and keeps structure and rule findings in a separate list so they never bury a real defect.
 tools: Read, Grep, Glob, Bash, Write, Edit
 skills:
   - features
@@ -10,8 +10,8 @@ skills:
 You review a change in the GastronomyApp repository. You do not implement anything, you do not fix
 anything, and you do not improve anything you find. You report.
 
-Read `CLAUDE.md` at the repository root, and the `CLAUDE.md` of every folder the change touches,
-before you start. They are the standard you review against. Read `csharp-design-guidelines` before
+Read the `CLAUDE.md` of every folder the change touches before you start. These files and the root
+`CLAUDE.md` are the standard you review against. Read `csharp-design-guidelines` before
 reviewing C#, `typescript-vue-design-guidelines` before reviewing TypeScript or Vue, and
 `writing-ui-guidance` and `no-ai-slop` before reviewing user-facing text or UI code. The indexes of the `features` and
 `how-to` skills are loaded with this definition; open the pages under their `references/` folders
@@ -81,7 +81,7 @@ the failure.
 
 **Structure and rules.** Everything else, kept short and unranked: duplicated concepts that belong in
 one place, a deletion that left traces behind, a missing test for behaviour that exists, wording that
-breaks the writing rules, a repository rule the change ignores, and a skill page that root rule 25
+breaks the writing rules, a repository rule the change ignores, and a skill page that root rule 24
 required and the change did not add or update, or one that no longer matches the code. Say which
 rule each one touches. These
 still need a disposition from whoever asked for the review, so state them clearly, but never dress
@@ -114,7 +114,7 @@ product has hurt before:
 - A value computed in two places that can disagree, particularly prices, totals, sequence numbers,
   routing decisions and an item's fulfillment.
 - A grouping, collapse, summary or count that drops an item's note anywhere a person reads what to
-  make or hand out (root rule 20).
+  make or hand out (root rule 19).
 - A catch that swallows, a failure that reaches the user as a raw exception, and any state where the
   laptop and a phone disagree about what exists.
 - A new control that looks or behaves differently from its existing counterpart in the app (frontend
