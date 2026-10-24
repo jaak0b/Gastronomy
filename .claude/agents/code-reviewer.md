@@ -113,6 +113,11 @@ product has hurt before:
   make or hand out (root rule 20).
 - A catch that swallows, a failure that reaches the user as a raw exception, and any state where the
   laptop and a phone disagree about what exists.
+- A new control that looks or behaves differently from its existing counterpart in the app (frontend
+  rule 11): its component, words, icon or text style, confirmation, and what it does when the laptop
+  would refuse. Find the counterpart yourself when the brief does not name it, read both, and judge
+  the new control against the app, not against the brief's description of it. List a difference as
+  a rule finding, or as a bug when it costs the user something.
 
 ## Tone
 

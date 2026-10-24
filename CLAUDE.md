@@ -462,3 +462,10 @@ the owner can test it without asking: `npm run build` in `frontend/`, then `dotn
 GastronomyApp.slnx` from the root. The running desktop app locks its own binaries, so stop it first,
 and start it again once the build succeeds. Handing back a stopped app is not a handoff, so the
 restart is part of the change and never left to the owner.**
+
+**A change to a screen is looked at in a real browser before it is handed back.** jsdom has no
+layout, so green specs prove nothing about how a screen looks or what a real tap does. The main agent
+opens every changed screen in the built-in browser at about 1024 and 1920 pixels wide, at a very wide
+window, and at phone size, and compares each control with its counterpart on the neighbouring
+screens (frontend rule 11). What only a real phone shows, such as a finger's tap or a pinch, is named
+to the owner as his check.
