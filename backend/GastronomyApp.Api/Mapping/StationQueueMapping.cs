@@ -23,7 +23,7 @@ public sealed class StationQueueMapping : IMappingRegistration
     config.NewConfig<StationOrder, StationOrderQueueView>()
           .Map(view => view.StationOrderId, stationOrder => stationOrder.Id)
           .Map(view => view.GlobalOrderNumber, stationOrder => stationOrder.Order.GlobalOrderNumber)
-          .Map(view => view.TableName, stationOrder => stationOrder.Order.TableName)
+          .Map(view => view.TableName, stationOrder => stationOrder.Order.Table.Name)
           .Map(view => view.StaffMemberName, stationOrder => stationOrder.Order.StaffMember.Name)
           .Map(view => view.CreatedAtUtc, stationOrder => stationOrder.Order.CreatedAtUtc)
           .Map(view => view.ItemCount, stationOrder => stationOrder.Items.Count)

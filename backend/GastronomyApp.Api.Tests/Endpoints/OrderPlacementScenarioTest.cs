@@ -53,7 +53,7 @@ public sealed class OrderPlacementScenarioTest
     var kitchenToken = await EnrolAStationTabletAsync(_context.World.KitchenStationId);
 
     OrderWithDeliveryModesBody order = new(Guid.NewGuid(),
-                                           "Tisch 3",
+                                           _context.World.TableId,
                                            [
                                              new(_context.World.BratwurstItemId, 350, null, null),
                                              new(_context.World.BratwurstItemId, 350, null, null),
@@ -80,7 +80,7 @@ public sealed class OrderPlacementScenarioTest
       Assert.Multiple(() =>
                       {
                         Assert.That(body.RootElement.GetProperty("orders").GetArrayLength(), Is.EqualTo(1));
-                        Assert.That(stationOrder.GetProperty("tableName").GetString(), Is.EqualTo("Tisch 3"));
+                        Assert.That(stationOrder.GetProperty("tableName").GetString(), Is.EqualTo("Tisch 12"));
                         Assert.That(stationOrder.GetProperty("deliveryMode").GetString(), Is.EqualTo("together"));
                         Assert.That(kitchenItemIds, Has.Count.EqualTo(2));
                       });
@@ -97,7 +97,8 @@ public sealed class OrderPlacementScenarioTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(table.GetProperty("tableName").GetString(), Is.EqualTo("Tisch 3"));
+                      Assert.That(table.GetProperty("tableId").GetGuid(), Is.EqualTo(_context.World.TableId));
+                      Assert.That(table.GetProperty("tableName").GetString(), Is.EqualTo("Tisch 12"));
                       Assert.That(table.GetProperty("openAmountCents").GetInt32(), Is.EqualTo(1000));
                       Assert.That(table.GetProperty("items").GetArrayLength(), Is.EqualTo(3));
                     });
@@ -169,7 +170,7 @@ public sealed class OrderPlacementScenarioTest
   private async Task<PlacedOrderResponse> SendOrderAsync(string deviceToken, CatalogSelection selection)
   {
     OrderBody body = new(Guid.NewGuid(),
-                         "Tisch 12",
+                         _context.World.TableId,
                          [
                            new(selection.BratwurstItemId, selection.BratwurstPriceCents, null, null),
                            new(selection.BratwurstItemId, selection.BratwurstPriceCents, null, null),

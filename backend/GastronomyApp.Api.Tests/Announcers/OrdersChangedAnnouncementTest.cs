@@ -41,7 +41,7 @@ public sealed class OrdersChangedAnnouncementTest
     await ListenAsync(_context.DeviceToken, null, _kitchenToken, _barToken);
 
     using var response = await _context.PostOrderAsync(new(Guid.NewGuid(),
-                                                           "Tisch 12",
+                                                           _context.World.TableId,
                                                            [
                                                              new(_context.World.BratwurstItemId, 350, null, null),
                                                              new(_context.World.BeerItemId, 300, null, null)
@@ -87,7 +87,7 @@ public sealed class OrdersChangedAnnouncementTest
   [Test]
   public async Task HideStationOrder_AnAsItComesOrder_TellsThePhoneTheAdminAndTheKitchenOnce()
   {
-    using (var placed = await _context.SendAsync(HttpMethod.Post, "/api/orders", new OrderWithDeliveryModesBody(Guid.NewGuid(), "Tisch 12", [new(_context.World.BratwurstItemId, 350, null, null)], [new(_context.World.KitchenStationId, "asItComes")])))
+    using (var placed = await _context.SendAsync(HttpMethod.Post, "/api/orders", new OrderWithDeliveryModesBody(Guid.NewGuid(), _context.World.TableId, [new(_context.World.BratwurstItemId, 350, null, null)], [new(_context.World.KitchenStationId, "asItComes")])))
     {
       Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }

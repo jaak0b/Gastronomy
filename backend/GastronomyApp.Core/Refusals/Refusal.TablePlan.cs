@@ -58,5 +58,29 @@ public static partial class Refusal
     {
       return Conflict("errors.admin.festivals.tableStaysWhileTheFestivalRuns", $"The festival {festivalId} is running right now, so its table {tableId} cannot be deleted.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "TableStaysWhileTheFestivalRuns" });
     }
+
+    public static Error TableWithOrdersStays(Guid festivalId, Guid tableId)
+    {
+      return Conflict("errors.admin.festivals.tableWithOrdersStays", $"The table {tableId} of the festival {festivalId} has orders, so it cannot be deleted.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "TableWithOrdersStays" });
+    }
+
+    public static Error AreaWithOrdersStays(Guid festivalId, Guid areaId)
+    {
+      return Conflict("errors.admin.festivals.areaWithOrdersStays", $"A table in the area {areaId} of the festival {festivalId} has orders, so the area cannot be deleted.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "AreaWithOrdersStays" });
+    }
+
+    public static Error TableWithItemsToHandOutOrSettleStaysShown(Guid festivalId, Guid tableId)
+    {
+      return Conflict("errors.admin.festivals.tableWithItemsToHandOutOrSettleStaysShown",
+                      $"The festival {festivalId} is running and its table {tableId} has an item that is not yet handed out or not yet settled, so the table cannot be hidden.",
+                      new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "TableWithItemsToHandOutOrSettleStaysShown" });
+    }
+
+    public static Error AreaWithItemsToHandOutOrSettleStaysShown(Guid festivalId, Guid areaId)
+    {
+      return Conflict("errors.admin.festivals.areaWithItemsToHandOutOrSettleStaysShown",
+                      $"The festival {festivalId} is running and a table in its area {areaId} has an item that is not yet handed out or not yet settled, so the area cannot be hidden.",
+                      new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "AreaWithItemsToHandOutOrSettleStaysShown" });
+    }
   }
 }

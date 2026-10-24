@@ -170,6 +170,41 @@ public sealed class AreaAdministrationServiceTest
   }
 
   [Test]
+  public async Task HideAsync_AnAreaWithItemsStillToHandOutOrSettleWhileTheFestivalRuns_IsRefusedAndStaysShown()
+  {
+    var garden = BuildGarden(false);
+    A.CallTo(() => _repository.FindAreaAsync(_festivalId, _gardenId, A<CancellationToken>._)).Returns(Task.FromResult<Area?>(garden));
+    A.CallTo(() => _repository.HasItemsToHandOutOrSettleInAreaAsync(_gardenId, A<CancellationToken>._)).Returns(true);
+
+    ErrorOr<Area> hidden = await _service.HideAsync(_festivalId, _gardenId, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(hidden.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
+                      Assert.That(hidden.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.areaWithItemsToHandOutOrSettleStaysShown"));
+                      Assert.That(hidden.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("AreaWithItemsToHandOutOrSettleStaysShown"));
+                      Assert.That(garden.IsHidden, Is.False);
+                    });
+
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  [Test]
+  public async Task HideAsync_AnAreaWithItemsStillToHandOutOrSettleAfterTheFestival_HidesIt()
+  {
+    A.CallTo(() => _festivalRepository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(true)));
+    var garden = BuildGarden(false);
+    A.CallTo(() => _repository.FindAreaAsync(_festivalId, _gardenId, A<CancellationToken>._)).Returns(Task.FromResult<Area?>(garden));
+    A.CallTo(() => _repository.HasItemsToHandOutOrSettleInAreaAsync(_gardenId, A<CancellationToken>._)).Returns(true);
+
+    ErrorOr<Area> hidden = await _service.HideAsync(_festivalId, _gardenId, CancellationToken.None);
+
+    Assert.That(hidden.Value.IsHidden, Is.True);
+
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
   public async Task ShowAsync_AHiddenArea_ShowsItAgain()
   {
     var garden = BuildGarden(true);
@@ -225,6 +260,29 @@ public sealed class AreaAdministrationServiceTest
     A.CallTo(() => _repository.RemoveStationShapes(A<IReadOnlyCollection<FestivalStationShape>>.That.IsSameSequenceAs(new[] { shape }))).MustHaveHappenedOnceExactly();
     A.CallTo(() => _repository.RemoveArea(garden)).MustHaveHappenedOnceExactly();
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task DeleteAsync_AnAreaWhoseTableHasOrdersAfterTheFestival_IsRefusedAndRemovesNothing()
+  {
+    A.CallTo(() => _festivalRepository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(true)));
+    var garden = BuildGarden(false);
+    garden.Tables.Add(BuildTable());
+    A.CallTo(() => _repository.FindAreaWithContentsAsync(_festivalId, _gardenId, A<CancellationToken>._)).Returns(Task.FromResult<Area?>(garden));
+    A.CallTo(() => _repository.HasOrdersInAreaAsync(_gardenId, A<CancellationToken>._)).Returns(true);
+
+    ErrorOr<Area> deleted = await _service.DeleteAsync(_festivalId, _gardenId, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(deleted.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
+                      Assert.That(deleted.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.areaWithOrdersStays"));
+                      Assert.That(deleted.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("AreaWithOrdersStays"));
+                    });
+
+    A.CallTo(() => _repository.RemoveTables(A<IReadOnlyCollection<Table>>._)).MustNotHaveHappened();
+    A.CallTo(() => _repository.RemoveArea(A<Area>._)).MustNotHaveHappened();
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   [Test]

@@ -212,6 +212,56 @@ public sealed class TableAdministrationServiceTest
   }
 
   [Test]
+  public async Task HideAsync_ATableWithItemsStillToHandOutOrSettleWhileTheFestivalRuns_IsRefusedAndStaysShown()
+  {
+    var table = BuildTable();
+    A.CallTo(() => _repository.FindTableAsync(_festivalId, _tableId, A<CancellationToken>._)).Returns(Task.FromResult<Table?>(table));
+    A.CallTo(() => _repository.HasItemsToHandOutOrSettleAtTableAsync(_tableId, A<CancellationToken>._)).Returns(true);
+
+    ErrorOr<Table> hidden = await _service.HideAsync(_festivalId, _tableId, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(hidden.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
+                      Assert.That(hidden.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.tableWithItemsToHandOutOrSettleStaysShown"));
+                      Assert.That(hidden.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("TableWithItemsToHandOutOrSettleStaysShown"));
+                      Assert.That(table.IsHidden, Is.False);
+                    });
+
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  [Test]
+  public async Task HideAsync_ATableWithItemsStillToHandOutOrSettleAfterTheFestival_HidesIt()
+  {
+    A.CallTo(() => _festivalRepository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(true)));
+    var table = BuildTable();
+    A.CallTo(() => _repository.FindTableAsync(_festivalId, _tableId, A<CancellationToken>._)).Returns(Task.FromResult<Table?>(table));
+    A.CallTo(() => _repository.HasItemsToHandOutOrSettleAtTableAsync(_tableId, A<CancellationToken>._)).Returns(true);
+
+    ErrorOr<Table> hidden = await _service.HideAsync(_festivalId, _tableId, CancellationToken.None);
+
+    Assert.That(hidden.Value.IsHidden, Is.True);
+
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task HideAsync_ATableAlreadyHiddenWithItemsToHandOutOrSettleWhileTheFestivalRuns_AnswersTheHiddenTable()
+  {
+    var table = BuildTable();
+    table.IsHidden = true;
+    A.CallTo(() => _repository.FindTableAsync(_festivalId, _tableId, A<CancellationToken>._)).Returns(Task.FromResult<Table?>(table));
+    A.CallTo(() => _repository.HasItemsToHandOutOrSettleAtTableAsync(_tableId, A<CancellationToken>._)).Returns(true);
+
+    ErrorOr<Table> hidden = await _service.HideAsync(_festivalId, _tableId, CancellationToken.None);
+
+    Assert.That(hidden.Value.IsHidden, Is.True);
+
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  [Test]
   public async Task ShowAsync_AHiddenTable_ShowsItAgain()
   {
     var table = BuildTable();
@@ -261,6 +311,26 @@ public sealed class TableAdministrationServiceTest
 
     A.CallTo(() => _repository.RemoveTable(table)).MustHaveHappenedOnceExactly();
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task DeleteAsync_ATableWithOrdersAfterTheFestival_IsRefusedAndRemovesNothing()
+  {
+    A.CallTo(() => _festivalRepository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(true)));
+    A.CallTo(() => _repository.FindTableAsync(_festivalId, _tableId, A<CancellationToken>._)).Returns(Task.FromResult<Table?>(BuildTable()));
+    A.CallTo(() => _repository.HasOrdersAtTableAsync(_tableId, A<CancellationToken>._)).Returns(true);
+
+    ErrorOr<Table> deleted = await _service.DeleteAsync(_festivalId, _tableId, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(deleted.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
+                      Assert.That(deleted.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.tableWithOrdersStays"));
+                      Assert.That(deleted.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("TableWithOrdersStays"));
+                    });
+
+    A.CallTo(() => _repository.RemoveTable(A<Table>._)).MustNotHaveHappened();
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   private SaveTableRequest BuildRequest(Guid areaId, string name)

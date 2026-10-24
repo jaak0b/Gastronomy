@@ -102,6 +102,7 @@ public sealed class FestivalStationRepositoryTest
     DateTime now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
     var orderId = Guid.NewGuid();
     var stationOrderId = Guid.NewGuid();
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 1", TestContext.CurrentContext.CancellationToken);
 
     fixture.DbContext.Orders.Add(new()
                                  {
@@ -110,7 +111,7 @@ public sealed class FestivalStationRepositoryTest
                                    ClientOrderId = Guid.NewGuid(),
                                    GlobalOrderNumber = 1,
                                    StaffMemberId = seeded.StaffMemberId,
-                                   TableName = "Tisch 1",
+                                   TableId = tableId,
                                    CreatedAtUtc = now
                                  });
 

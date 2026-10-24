@@ -119,7 +119,7 @@ public sealed class OrderMappingTest
                     FestivalId = Guid.NewGuid(),
                     GlobalOrderNumber = 7,
                     StaffMemberId = Guid.NewGuid(),
-                    TableName = "Tisch 12",
+                    TableId = Guid.NewGuid(),
                     CreatedAtUtc = _placedAtUtc
                   };
 

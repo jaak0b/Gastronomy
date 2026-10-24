@@ -7,8 +7,7 @@ public sealed record PlaceOrderRequest
 {
   public required Guid ClientOrderId { get; init; }
 
-  [RequiredText(ErrorMessage = RefusalMessageKeys.OrderCannotBeProcessed)]
-  public required string? TableName { get; init; }
+  public required Guid TableId { get; init; }
 
   [Required(ErrorMessage = RefusalMessageKeys.OrderCannotBeProcessed)]
   [MinLength(1, ErrorMessage = RefusalMessageKeys.OrderCannotBeProcessed)]

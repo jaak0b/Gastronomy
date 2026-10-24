@@ -75,7 +75,7 @@ public sealed class EstimateEndpointsTest
     await MakeBeerIndependentAsync(3);
 
     await PlaceAsync(new(Guid.NewGuid(),
-                         "Tisch 12",
+                         _context.World.TableId,
                          [
                            new(_context.World.BeerItemId, 300, null, null),
                            new(_context.World.BratwurstItemId, 350, null, null)

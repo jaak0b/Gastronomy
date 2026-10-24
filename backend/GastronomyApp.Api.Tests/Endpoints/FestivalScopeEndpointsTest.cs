@@ -107,7 +107,7 @@ public sealed class FestivalScopeEndpointsTest
   }
 
   [Test]
-  public async Task GetTableNames_NoFestivalIsRunning_AnswersWithNoNames()
+  public async Task GetTable_NoFestivalIsRunning_IsRefusedWithTheSettlementMessage()
   {
     using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
     {
@@ -116,13 +116,13 @@ public sealed class FestivalScopeEndpointsTest
 
     await LetTheFestivalEndAsync();
 
-    using var response = await _context.SendAsync(HttpMethod.Get, "/api/open-items/table-names");
+    using var response = await _context.SendAsync(HttpMethod.Get, $"/api/open-items/tables/{_context.World.TableId}");
     var body = await ReadBodyAsync(response);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(body.RootElement.GetProperty("tableNames").GetArrayLength(), Is.EqualTo(0));
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
                     });
   }
 

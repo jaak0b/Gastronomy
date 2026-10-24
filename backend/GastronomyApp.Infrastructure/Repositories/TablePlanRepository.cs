@@ -57,6 +57,16 @@ public sealed class TablePlanRepository : ITablePlanRepository
     _dbContext.Areas.Remove(area);
   }
 
+  public async Task<bool> HasOrdersInAreaAsync(Guid areaId, CancellationToken cancellationToken)
+  {
+    return await _dbContext.Orders.AsNoTracking().AnyAsync(order => order.Table.AreaId == areaId, cancellationToken);
+  }
+
+  public async Task<bool> HasItemsToHandOutOrSettleInAreaAsync(Guid areaId, CancellationToken cancellationToken)
+  {
+    return await ItemsToHandOutOrSettle().AnyAsync(item => item.StationOrder.Order.Table.AreaId == areaId, cancellationToken);
+  }
+
   public async Task<Table?> FindTableAsync(Guid festivalId, Guid tableId, CancellationToken cancellationToken)
   {
     return await _dbContext.Tables.FirstOrDefaultAsync(table => table.Id == tableId && table.FestivalId == festivalId, cancellationToken);
@@ -89,6 +99,16 @@ public sealed class TablePlanRepository : ITablePlanRepository
     _dbContext.Tables.RemoveRange(tables);
   }
 
+  public async Task<bool> HasOrdersAtTableAsync(Guid tableId, CancellationToken cancellationToken)
+  {
+    return await _dbContext.Orders.AsNoTracking().AnyAsync(order => order.TableId == tableId, cancellationToken);
+  }
+
+  public async Task<bool> HasItemsToHandOutOrSettleAtTableAsync(Guid tableId, CancellationToken cancellationToken)
+  {
+    return await ItemsToHandOutOrSettle().AnyAsync(item => item.StationOrder.Order.TableId == tableId, cancellationToken);
+  }
+
   public async Task<FestivalStationShape?> FindStationShapeAsync(Guid festivalStationId, CancellationToken cancellationToken)
   {
     return await _dbContext.FestivalStationShapes.FirstOrDefaultAsync(shape => shape.FestivalStationId == festivalStationId, cancellationToken);
@@ -114,5 +134,10 @@ public sealed class TablePlanRepository : ITablePlanRepository
   public async Task SaveChangesAsync(CancellationToken cancellationToken)
   {
     await _dbContext.SaveChangesAsync(cancellationToken);
+  }
+
+  private IQueryable<OrderItem> ItemsToHandOutOrSettle()
+  {
+    return _dbContext.OrderItems.AsNoTracking().Where(item => item.FulfilledAtUtc == null || item.SettledAtUtc == null);
   }
 }

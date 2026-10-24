@@ -80,11 +80,19 @@ public sealed class AreaAdministrationService
     if (area is null)
       return Refusal.TablePlan.AreaNotFound(festivalId, areaId);
 
-    if (!area.IsHidden)
-    {
-      area.IsHidden = true;
-      await _repository.SaveChangesAsync(cancellationToken);
-    }
+    if (area.IsHidden)
+      return area;
+
+    var festival = await _festivalRepository.FindByIdAsync(festivalId, cancellationToken);
+
+    if (festival is null)
+      return Refusal.TablePlan.FestivalNotFound(festivalId);
+
+    if (_runningFestival.IsRunning(festival) && await _repository.HasItemsToHandOutOrSettleInAreaAsync(areaId, cancellationToken))
+      return Refusal.TablePlan.AreaWithItemsToHandOutOrSettleStaysShown(festivalId, areaId);
+
+    area.IsHidden = true;
+    await _repository.SaveChangesAsync(cancellationToken);
 
     return area;
   }
@@ -119,6 +127,9 @@ public sealed class AreaAdministrationService
 
     if (_runningFestival.IsRunning(festival))
       return Refusal.TablePlan.AreaStaysWhileTheFestivalRuns(festivalId, areaId);
+
+    if (await _repository.HasOrdersInAreaAsync(areaId, cancellationToken))
+      return Refusal.TablePlan.AreaWithOrdersStays(festivalId, areaId);
 
     _repository.RemoveStationShapes(area.StationShapes.ToList());
     _repository.RemoveTables(area.Tables.ToList());

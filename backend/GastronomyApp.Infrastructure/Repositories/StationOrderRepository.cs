@@ -23,6 +23,9 @@ public sealed class StationOrderRepository : IStationOrderRepository
                            .Include(station => station.StationOrders.Where(stationOrder => stationOrder.FestivalId == festivalId && stationOrder.Items.Any(item => item.FulfilledAtUtc == null)))
                            .ThenInclude(stationOrder => stationOrder.Order)
                            .ThenInclude(order => order.StaffMember)
+                           .Include(station => station.StationOrders.Where(stationOrder => stationOrder.FestivalId == festivalId && stationOrder.Items.Any(item => item.FulfilledAtUtc == null)))
+                           .ThenInclude(stationOrder => stationOrder.Order)
+                           .ThenInclude(order => order.Table)
                            .FirstOrDefaultAsync(cancellationToken);
   }
 
@@ -33,6 +36,8 @@ public sealed class StationOrderRepository : IStationOrderRepository
                            .Include(stationOrder => stationOrder.Items)
                            .Include(stationOrder => stationOrder.Order)
                            .ThenInclude(order => order.StaffMember)
+                           .Include(stationOrder => stationOrder.Order)
+                           .ThenInclude(order => order.Table)
                            .OrderBy(stationOrder => stationOrder.StationOrderNumber)
                            .ToListAsync(cancellationToken);
   }

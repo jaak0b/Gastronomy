@@ -65,7 +65,7 @@ public sealed class OpenItemRepositoryTest
     Assert.Multiple(() =>
                     {
                       Assert.That(open, Has.Count.EqualTo(2));
-                      Assert.That(open[0].StationOrder.Order.TableName, Is.EqualTo("Tisch 12"));
+                      Assert.That(open[0].StationOrder.Order.Table.Name, Is.EqualTo("Tisch 12"));
                       Assert.That(open[0].StationOrder.Order.GlobalOrderNumber, Is.EqualTo(4));
                       Assert.That(open[0].StationOrder.Order.CreatedAtUtc, Is.EqualTo(_orderedAtUtc));
                     });
@@ -85,33 +85,12 @@ public sealed class OpenItemRepositoryTest
     Assert.Multiple(() =>
                     {
                       Assert.That(selected, Has.Count.EqualTo(1));
-                      Assert.That(selected[0].StationOrder.Order.TableName, Is.EqualTo("Tisch 12"));
+                      Assert.That(selected[0].StationOrder.Order.Table.Name, Is.EqualTo("Tisch 12"));
                     });
   }
 
   [Test]
-  public async Task FindTableNamesAtFestivalAsync_SeveralOrdersAtOneTable_NamesThatTableOnce()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    await PlaceOrderAsync(fixture, seeded, seeded.FestivalId, "Tisch 12", 1);
-    await PlaceOrderAsync(fixture, seeded, seeded.FestivalId, "Tisch 12", 2);
-    await PlaceOrderAsync(fixture, seeded, seeded.FestivalId, "Tisch 3", 3);
-
-    OpenItemRepository repository = new(fixture.DbContext);
-
-    IReadOnlyList<string> tableNames = await repository.FindTableNamesAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
-
-    Assert.That(tableNames,
-                Is.EqualTo(new[]
-                           {
-                             "Tisch 12",
-                             "Tisch 3"
-                           }));
-  }
-
-  [Test]
-  public async Task FindTableOrdersAsync_TwoOrdersOfOneTable_ComeBackNewestFirstWithEveryPositionAndItsState()
+  public async Task FindTableWithOrdersAsync_TwoOrdersOfOneTable_ComeBackNewestFirstWithEveryPositionAndItsState()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
@@ -133,15 +112,19 @@ public sealed class OpenItemRepositoryTest
 
     var otherTableStationOrderId = Guid.NewGuid();
     await PlaceOrderWithItemsAsync(fixture, seeded, "Tisch 3", 4, _orderedAtUtc.AddMinutes(30), otherTableStationOrderId, BuildItem(otherTableStationOrderId, seeded.SausageItemId, "Bratwurst", 350));
+    var tableId = await TableIdAsync(fixture, seeded.FestivalId, "T1");
+    await using var readContext = fixture.CreateContext();
 
-    OpenItemRepository repository = new(fixture.DbContext);
+    OpenItemRepository repository = new(readContext);
 
-    IReadOnlyList<Order> orders = await repository.FindTableOrdersAsync(seeded.FestivalId, "T1", TestContext.CurrentContext.CancellationToken);
+    var table = await repository.FindTableWithOrdersAsync(seeded.FestivalId, tableId, TestContext.CurrentContext.CancellationToken);
 
+    List<Order> orders = table!.Orders.ToList();
     IReadOnlyList<OrderItem> newestItems = PositionsOf(orders[0]);
 
     Assert.Multiple(() =>
                     {
+                      Assert.That(table.Name, Is.EqualTo("T1"));
                       Assert.That(orders.Select(order => order.Id),
                                   Is.EqualTo(new[]
                                              {
@@ -173,31 +156,38 @@ public sealed class OpenItemRepositoryTest
   }
 
   [Test]
-  public async Task FindTableOrdersAsync_AUppercaseName_DoesNotMatchTheLowercaseTable()
+  public async Task FindTableWithOrdersAsync_ATableNobodyHasOrderedAt_ComesBackWithoutOrders()
   {
     using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-
-    var upperStationOrderId = Guid.NewGuid();
-    var upperOrderId = await PlaceOrderWithItemsAsync(fixture, seeded, "T1", 1, _orderedAtUtc, upperStationOrderId, BuildItem(upperStationOrderId, seeded.SausageItemId, "Bratwurst", 350));
-
-    var lowerStationOrderId = Guid.NewGuid();
-    await PlaceOrderWithItemsAsync(fixture, seeded, "t1", 2, _orderedAtUtc.AddMinutes(5), lowerStationOrderId, BuildItem(lowerStationOrderId, seeded.SausageItemId, "Limonade", 250));
+    DomainSeeder seeder = new();
+    var seeded = await seeder.SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var tableId = await seeder.SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 5", TestContext.CurrentContext.CancellationToken);
 
     OpenItemRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<Order> orders = await repository.FindTableOrdersAsync(seeded.FestivalId, "T1", TestContext.CurrentContext.CancellationToken);
+    var table = await repository.FindTableWithOrdersAsync(seeded.FestivalId, tableId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(orders.Select(order => order.Id), Is.EqualTo(new[] { upperOrderId }));
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(table!.Name, Is.EqualTo("Tisch 5"));
+                      Assert.That(table.Orders, Is.Empty);
+                    });
   }
 
   [Test]
-  public void FindTableOrdersAsync_NullTableName_ThrowsArgumentNullException()
+  public async Task FindTableWithOrdersAsync_ATableOfAnotherFestival_FindsNothing()
   {
     using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var lastYearFestivalId = await AddFestivalAsync(fixture, "Sommerfest im Vorjahr");
+    await PlaceOrderAsync(fixture, seeded, lastYearFestivalId, "Tisch 1", 1);
+    var lastYearTableId = await TableIdAsync(fixture, lastYearFestivalId, "Tisch 1");
+
     OpenItemRepository repository = new(fixture.DbContext);
 
-    Assert.That(async () => await repository.FindTableOrdersAsync(Guid.NewGuid(), null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
+    var table = await repository.FindTableWithOrdersAsync(seeded.FestivalId, lastYearTableId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(table, Is.Null);
   }
 
   [Test]
@@ -248,8 +238,14 @@ public sealed class OpenItemRepositoryTest
     return festivalId;
   }
 
+  private async Task<Guid> TableIdAsync(SqliteInMemoryFixture fixture, Guid festivalId, string tableName)
+  {
+    return await fixture.DbContext.Tables.Where(table => table.FestivalId == festivalId && table.Name == tableName).Select(table => table.Id).SingleAsync(TestContext.CurrentContext.CancellationToken);
+  }
+
   private async Task<IReadOnlyList<Guid>> PlaceOrderAsync(SqliteInMemoryFixture fixture, SeededDomain seeded, Guid festivalId, string tableName, int globalOrderNumber)
   {
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, festivalId, tableName, TestContext.CurrentContext.CancellationToken);
     var orderId = Guid.NewGuid();
     var stationOrderId = Guid.NewGuid();
 
@@ -260,7 +256,7 @@ public sealed class OpenItemRepositoryTest
                     FestivalId = festivalId,
                     GlobalOrderNumber = globalOrderNumber,
                     StaffMemberId = seeded.StaffMemberId,
-                    TableName = tableName,
+                    TableId = tableId,
                     CreatedAtUtc = _orderedAtUtc
                   };
 
@@ -299,6 +295,7 @@ public sealed class OpenItemRepositoryTest
 
   private async Task<Guid> PlaceOrderWithItemsAsync(SqliteInMemoryFixture fixture, SeededDomain seeded, string tableName, int globalOrderNumber, DateTime createdAtUtc, Guid stationOrderId, params OrderItem[] items)
   {
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, tableName, TestContext.CurrentContext.CancellationToken);
     var orderId = Guid.NewGuid();
 
     Order order = new()
@@ -308,7 +305,7 @@ public sealed class OpenItemRepositoryTest
                     FestivalId = seeded.FestivalId,
                     GlobalOrderNumber = globalOrderNumber,
                     StaffMemberId = seeded.StaffMemberId,
-                    TableName = tableName,
+                    TableId = tableId,
                     CreatedAtUtc = createdAtUtc
                   };
 

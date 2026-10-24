@@ -432,8 +432,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<Guid>("StaffMemberId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("TableName")
-                        .IsRequired()
+                    b.Property<Guid>("TableId")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -447,6 +446,8 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.HasIndex("FestivalId", "GlobalOrderNumber")
                         .IsUnique();
+
+                    b.HasIndex("TableId", "FestivalId");
 
                     b.ToTable("Orders");
                 });
@@ -827,9 +828,18 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("GastronomyApp.Core.Entities.Table", "Table")
+                        .WithMany("Orders")
+                        .HasForeignKey("TableId", "FestivalId")
+                        .HasPrincipalKey("Id", "FestivalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Festival");
 
                     b.Navigation("StaffMember");
+
+                    b.Navigation("Table");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.OrderItem", b =>
@@ -1000,6 +1010,11 @@ namespace GastronomyApp.Infrastructure.Migrations
             modelBuilder.Entity("GastronomyApp.Core.Entities.StationOrder", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Table", b =>
+                {
+                    b.Navigation("Orders");
                 });
 #pragma warning restore 612, 618
         }

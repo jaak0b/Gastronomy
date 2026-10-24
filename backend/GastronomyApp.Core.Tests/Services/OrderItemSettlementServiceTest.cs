@@ -34,6 +34,8 @@ public sealed class OrderItemSettlementServiceTest
   private readonly DateTime _earlier = new(2026, 9, 5, 19, 5, 0, DateTimeKind.Utc);
   private readonly Guid _collectingWaiter = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001");
   private readonly Guid _anotherWaiter = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000002");
+  private readonly Guid _tableTwelveId = Guid.Parse("cccccccc-0000-0000-0000-000000000012");
+  private readonly Guid _tableThreeId = Guid.Parse("cccccccc-0000-0000-0000-000000000003");
 
   private TimeProvider _clock = null!;
   private ILogger<OrderItemSettlementService> _logger = null!;
@@ -192,7 +194,7 @@ public sealed class OrderItemSettlementServiceTest
   {
     var bratwurst = OpenItem(350);
     var beer = OpenItem(400);
-    IReadOnlyCollection<OrderItem> twoTables = At("Tisch 12", bratwurst).Concat(At("Tisch 3", beer)).ToList();
+    IReadOnlyCollection<OrderItem> twoTables = At(_tableTwelveId, bratwurst).Concat(At(_tableThreeId, beer)).ToList();
 
     ErrorOr<SettlementResult> settlement = _service.Settle([
                                                              Line(bratwurst, 350),
@@ -207,7 +209,7 @@ public sealed class OrderItemSettlementServiceTest
                     {
                       Assert.That(settlement.IsSuccess, Is.False);
                       Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("errors.settlement.cannotBeProcessed"));
-                      Assert.That(settlement.RefusalDescription(), Does.Contain("Tisch 12, Tisch 3"));
+                      Assert.That(settlement.RefusalDescription(), Does.Contain($"{_tableTwelveId}, {_tableThreeId}"));
                       Assert.That(bratwurst.SettledAtUtc, Is.Null);
                       Assert.That(beer.SettledAtUtc, Is.Null);
                     });
@@ -219,7 +221,7 @@ public sealed class OrderItemSettlementServiceTest
     var bratwurst = OpenItem(350);
     var beer = OpenItem(400);
     _service.MarkSettled(beer, 400, null, PaymentMethod.Cash, _anotherWaiter, _earlier);
-    IReadOnlyCollection<OrderItem> twoTables = At("Tisch 12", bratwurst).Concat(At("Tisch 3", beer)).ToList();
+    IReadOnlyCollection<OrderItem> twoTables = At(_tableTwelveId, bratwurst).Concat(At(_tableThreeId, beer)).ToList();
 
     ErrorOr<SettlementResult> settlement = _service.Settle([
                                                              Line(bratwurst, 350),
@@ -356,7 +358,7 @@ public sealed class OrderItemSettlementServiceTest
   public async Task SettleAsync_TheItemsTheScreenSent_SettlesThemAndCommitsTheTransaction()
   {
     var bratwurst = OpenItem(350);
-    GivenTheTableHolds("Tisch 12", bratwurst);
+    GivenTheTableHolds(_tableTwelveId, bratwurst);
 
     ErrorOr<SettlementResult> settlement = await _service.SettleAsync([Line(bratwurst, 350)], PaymentMethod.Cash, _collectingWaiter, CancellationToken.None);
 
@@ -374,7 +376,7 @@ public sealed class OrderItemSettlementServiceTest
   public async Task SettleAsync_ItemsWereSettled_NamesTheirIdsAndTheirCountInTheLog()
   {
     var bratwurst = OpenItem(350);
-    GivenTheTableHolds("Tisch 12", bratwurst);
+    GivenTheTableHolds(_tableTwelveId, bratwurst);
 
     await _service.SettleAsync([Line(bratwurst, 350)], PaymentMethod.Cash, _collectingWaiter, CancellationToken.None);
 
@@ -517,7 +519,7 @@ public sealed class OrderItemSettlementServiceTest
   public async Task SettleAsync_MoneyPaidWithNone_RefusesTheSettlementAndSavesNothing()
   {
     var bratwurst = OpenItem(350);
-    GivenTheTableHolds("Tisch 12", bratwurst);
+    GivenTheTableHolds(_tableTwelveId, bratwurst);
 
     ErrorOr<SettlementResult> settlement = await _service.SettleAsync([Line(bratwurst, 350)], PaymentMethod.None, _collectingWaiter, CancellationToken.None);
 
@@ -573,15 +575,15 @@ public sealed class OrderItemSettlementServiceTest
                     });
   }
 
-  private void GivenTheTableHolds(string tableName, params OrderItem[] items)
+  private void GivenTheTableHolds(Guid tableId, params OrderItem[] items)
   {
     foreach (var item in items)
-      PutAtTable(tableName, item);
+      PutAtTable(tableId, item);
 
     A.CallTo(() => _repository.FindForSettlementAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>(items.ToList()));
   }
 
-  private void PutAtTable(string tableName, OrderItem item)
+  private void PutAtTable(Guid tableId, OrderItem item)
   {
     Order order = new()
                   {
@@ -590,7 +592,7 @@ public sealed class OrderItemSettlementServiceTest
                     FestivalId = RunningFestival().Id,
                     GlobalOrderNumber = 1,
                     StaffMemberId = Guid.NewGuid(),
-                    TableName = tableName,
+                    TableId = tableId,
                     CreatedAtUtc = _earlier
                   };
 
@@ -645,13 +647,13 @@ public sealed class OrderItemSettlementServiceTest
 
   private IReadOnlyCollection<OrderItem> AtOneTable(params OrderItem[] items)
   {
-    return At("Tisch 12", items);
+    return At(_tableTwelveId, items);
   }
 
-  private IReadOnlyCollection<OrderItem> At(string tableName, params OrderItem[] items)
+  private IReadOnlyCollection<OrderItem> At(Guid tableId, params OrderItem[] items)
   {
     foreach (var item in items)
-      PutAtTable(tableName, item);
+      PutAtTable(tableId, item);
 
     return items.ToList();
   }

@@ -16,13 +16,15 @@ public sealed class Order
 
   public required Guid StaffMemberId { get; set; }
 
-  public required string TableName { get; set; }
+  public required Guid TableId { get; set; }
 
   public required DateTime CreatedAtUtc { get; set; }
 
   public Festival Festival { get; set; } = null!;
 
   public StaffMember StaffMember { get; set; } = null!;
+
+  public Table Table { get; set; } = null!;
 
   public Collection<StationOrder> StationOrders { get; } = [];
 }

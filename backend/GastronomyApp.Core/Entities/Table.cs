@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using GastronomyApp.Core.Announcements;
 
 namespace GastronomyApp.Core.Entities;
@@ -10,4 +11,6 @@ public sealed class Table : AreaShape
   public required string Name { get; set; }
 
   public required bool IsHidden { get; set; }
+
+  public Collection<Order> Orders { get; } = [];
 }

@@ -54,6 +54,7 @@ public sealed class GastronomyAppDbContextTest
     using SqliteInMemoryFixture fixture = new();
     DomainSeeder seeder = new();
     var seeded = await seeder.SeedAsync(fixture.DbContext, CancellationToken.None);
+    var tableId = await seeder.SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 3", CancellationToken.None);
     var orderItemId = Guid.NewGuid();
     DateTime settledAtUtc = new(2026, 8, 27, 19, 0, 0, DateTimeKind.Utc);
 
@@ -64,7 +65,7 @@ public sealed class GastronomyAppDbContextTest
                     FestivalId = seeded.FestivalId,
                     GlobalOrderNumber = 1,
                     StaffMemberId = seeded.StaffMemberId,
-                    TableName = "Tisch 3",
+                    TableId = tableId,
                     CreatedAtUtc = settledAtUtc
                   };
     StationOrder stationOrder = new()
@@ -115,6 +116,7 @@ public sealed class GastronomyAppDbContextTest
     using SqliteInMemoryFixture fixture = new();
     DomainSeeder seeder = new();
     var seeded = await seeder.SeedAsync(fixture.DbContext, CancellationToken.None);
+    var tableId = await seeder.SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 3", CancellationToken.None);
     var paidItemId = Guid.NewGuid();
     var freeItemId = Guid.NewGuid();
     var openItemId = Guid.NewGuid();
@@ -127,7 +129,7 @@ public sealed class GastronomyAppDbContextTest
                     FestivalId = seeded.FestivalId,
                     GlobalOrderNumber = 1,
                     StaffMemberId = seeded.StaffMemberId,
-                    TableName = "Tisch 3",
+                    TableId = tableId,
                     CreatedAtUtc = settledAtUtc
                   };
     StationOrder stationOrder = new()

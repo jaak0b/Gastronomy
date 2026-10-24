@@ -78,11 +78,19 @@ public sealed class TableAdministrationService
     if (table is null)
       return Refusal.TablePlan.TableNotFound(festivalId, tableId);
 
-    if (!table.IsHidden)
-    {
-      table.IsHidden = true;
-      await _repository.SaveChangesAsync(cancellationToken);
-    }
+    if (table.IsHidden)
+      return table;
+
+    var festival = await _festivalRepository.FindByIdAsync(festivalId, cancellationToken);
+
+    if (festival is null)
+      return Refusal.TablePlan.FestivalNotFound(festivalId);
+
+    if (_runningFestival.IsRunning(festival) && await _repository.HasItemsToHandOutOrSettleAtTableAsync(tableId, cancellationToken))
+      return Refusal.TablePlan.TableWithItemsToHandOutOrSettleStaysShown(festivalId, tableId);
+
+    table.IsHidden = true;
+    await _repository.SaveChangesAsync(cancellationToken);
 
     return table;
   }
@@ -117,6 +125,9 @@ public sealed class TableAdministrationService
 
     if (_runningFestival.IsRunning(festival))
       return Refusal.TablePlan.TableStaysWhileTheFestivalRuns(festivalId, tableId);
+
+    if (await _repository.HasOrdersAtTableAsync(tableId, cancellationToken))
+      return Refusal.TablePlan.TableWithOrdersStays(festivalId, tableId);
 
     _repository.RemoveTable(table);
     await _repository.SaveChangesAsync(cancellationToken);

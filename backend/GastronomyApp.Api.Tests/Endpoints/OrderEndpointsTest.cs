@@ -56,6 +56,74 @@ public sealed class OrderEndpointsTest
   }
 
   [Test]
+  public async Task PostOrder_ATableOfTheRunningFestival_StoresTheOrderAtThatTable()
+  {
+    using (var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
+    {
+      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    await using var database = _context.Factory.CreateContext();
+    var stored = await database.Orders.SingleAsync();
+
+    Assert.That(stored.TableId, Is.EqualTo(_context.World.TableId));
+  }
+
+  [Test]
+  public async Task PostOrder_AHiddenTable_IsAccepted()
+  {
+    await using (var hiding = _context.Factory.CreateContext())
+    {
+      var table = await hiding.Tables.SingleAsync(candidate => candidate.Id == _context.World.TableId);
+      table.IsHidden = true;
+      await hiding.SaveChangesAsync();
+    }
+
+    using var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+  }
+
+  [Test]
+  public async Task PostOrder_ATableOfAnotherFestival_IsRefusedWithTheGenericMessageAndStoresNothing()
+  {
+    var otherFestivalId = Guid.NewGuid();
+    await using (var seeding = _context.Factory.CreateContext())
+    {
+      seeding.Festivals.Add(new()
+                            {
+                              Id = otherFestivalId,
+                              Name = "Herbstfest",
+                              StartsAtUtc = DateTime.UtcNow.AddYears(2),
+                              EndsAtUtc = DateTime.UtcNow.AddYears(2).AddDays(1),
+                              NextOrderNumber = 1,
+                              IsHidden = false
+                            });
+      await seeding.SaveChangesAsync();
+    }
+
+    Guid otherFestivalsTableId;
+    await using (var seeding = _context.Factory.CreateContext())
+    {
+      otherFestivalsTableId = await new ApiSeeder().SeedTableAsync(seeding, otherFestivalId, "Tisch 12", CancellationToken.None);
+    }
+
+    using var response = await _context.PostOrderAsync(new(Guid.NewGuid(), otherFestivalsTableId, [new(_context.World.BratwurstItemId, 350, null, null)]));
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    await using var database = _context.Factory.CreateContext();
+    var orderCount = await database.Orders.CountAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
+                      Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("UnprocessableEntity"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.order.cannotBeProcessed"));
+                      Assert.That(orderCount, Is.Zero);
+                    });
+  }
+
+  [Test]
   public async Task PostOrder_FirstSubmission_LeavesEveryItemOpen()
   {
     using (var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
@@ -72,7 +140,7 @@ public sealed class OrderEndpointsTest
   public async Task PostOrder_TwoStations_CreatesOneStationOrderPerStation()
   {
     OrderBody twoStations = new(Guid.NewGuid(),
-                                "Tisch 12",
+                                _context.World.TableId,
                                 [
                                   new(_context.World.BratwurstItemId, 350, null, null),
                                   new(_context.World.BratwurstItemId, 350, null, null),
@@ -92,7 +160,7 @@ public sealed class OrderEndpointsTest
   [Test]
   public async Task PostOrder_UnknownItemId_IsRefusedAsUnprocessable()
   {
-    OrderBody unknownItem = new(Guid.NewGuid(), "Tisch 12", [new(Guid.NewGuid(), 350, null, null)]);
+    OrderBody unknownItem = new(Guid.NewGuid(), _context.World.TableId, [new(Guid.NewGuid(), 350, null, null)]);
 
     using var response = await _context.PostOrderAsync(unknownItem);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -107,7 +175,7 @@ public sealed class OrderEndpointsTest
   [Test]
   public async Task PostOrder_NoItems_IsRefusedAsAValidationFailure()
   {
-    OrderBody empty = new(Guid.NewGuid(), "Tisch 12", []);
+    OrderBody empty = new(Guid.NewGuid(), _context.World.TableId, []);
 
     using var response = await _context.PostOrderAsync(empty);
 
@@ -186,7 +254,7 @@ public sealed class OrderEndpointsTest
       await seeding.SaveChangesAsync();
     }
 
-    OrderBody body = new(Guid.NewGuid(), "Tisch 12", [new(_context.World.BratwurstItemId, 350, null, _context.World.KitchenStationId)]);
+    OrderBody body = new(Guid.NewGuid(), _context.World.TableId, [new(_context.World.BratwurstItemId, 350, null, _context.World.KitchenStationId)]);
 
     using var response = await _context.PostOrderAsync(body);
     var error = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -210,7 +278,7 @@ public sealed class OrderEndpointsTest
   public async Task PostOrder_ItemPrices_AreStoredAsThePhoneSentThem()
   {
     OrderBody body = new(Guid.NewGuid(),
-                         "Tisch 12",
+                         _context.World.TableId,
                          [
                            new(_context.World.BratwurstItemId, 399, null, null),
                            new(_context.World.BratwurstItemId, 399, null, null)

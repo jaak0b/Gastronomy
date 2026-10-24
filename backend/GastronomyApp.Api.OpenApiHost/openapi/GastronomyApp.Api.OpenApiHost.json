@@ -213,36 +213,19 @@
         }
       }
     },
-    "/api/open-items/table-names": {
-      "get": {
-        "tags": [
-          "GetDocument.Insider"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TableNamesView"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/open-items/table": {
+    "/api/open-items/tables/{tableId}": {
       "get": {
         "tags": [
           "GetDocument.Insider"
         ],
         "parameters": [
           {
-            "name": "tableName",
-            "in": "query",
+            "name": "tableId",
+            "in": "path",
+            "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -3302,12 +3285,17 @@
       },
       "OpenTableView": {
         "required": [
+          "tableId",
           "tableName",
           "openAmountCents",
           "items"
         ],
         "type": "object",
         "properties": {
+          "tableId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "tableName": {
             "type": "string"
           },
@@ -3427,7 +3415,7 @@
       "PlaceOrderRequest": {
         "required": [
           "clientOrderId",
-          "tableName",
+          "tableId",
           "items"
         ],
         "type": "object",
@@ -3436,11 +3424,9 @@
             "type": "string",
             "format": "uuid"
           },
-          "tableName": {
-            "type": [
-              "null",
-              "string"
-            ]
+          "tableId": {
+            "type": "string",
+            "format": "uuid"
           },
           "items": {
             "minItems": 1,
@@ -4288,20 +4274,6 @@
           "usedUp"
         ]
       },
-      "TableNamesView": {
-        "required": [
-          "tableNames"
-        ],
-        "type": "object",
-        "properties": {
-          "tableNames": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
       "TableOrderRecordItemView": {
         "required": [
           "orderItemId",
@@ -4396,12 +4368,17 @@
       },
       "TableOrderReportView": {
         "required": [
+          "tableId",
           "tableName",
           "openAmountCents",
           "orders"
         ],
         "type": "object",
         "properties": {
+          "tableId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "tableName": {
             "type": "string"
           },

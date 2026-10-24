@@ -21,6 +21,11 @@ public sealed class TableConfiguration : IEntityTypeConfiguration<Table>
     builder.Property(table => table.Height).IsRequired();
     builder.Property(table => table.Rotation).IsRequired();
     builder.Property(table => table.IsHidden).IsRequired();
+    builder.HasAlternateKey(table => new
+                                     {
+                                       table.Id,
+                                       table.FestivalId
+                                     });
     builder.HasIndex(table => new
                               {
                                 table.FestivalId,

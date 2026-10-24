@@ -1,5 +1,7 @@
-﻿using GastronomyApp.Core.Entities;
+﻿using ErrorOr;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Refusals;
 using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Core.Services;
@@ -27,15 +29,16 @@ public sealed class OpenItemsService
     return await _repository.FindOpenAtFestivalAsync(festival.Id, cancellationToken);
   }
 
-  public IReadOnlyList<IGrouping<string, OrderItem>> GroupItemsWithAKnownOrderByTableName(IEnumerable<OrderItem> openItems)
+  public IReadOnlyList<IGrouping<Guid, OrderItem>> GroupItemsWithAKnownOrderByTable(IEnumerable<OrderItem> openItems)
   {
     ArgumentNullException.ThrowIfNull(openItems);
 
     return openItems.Where(item => item.StationOrder?.Order is not null)
                     .OrderBy(item => item.StationOrder!.Order!.GlobalOrderNumber)
                     .ThenBy(item => item.ItemName, StringComparer.Ordinal)
-                    .GroupBy(item => item.StationOrder!.Order!.TableName, StringComparer.Ordinal)
-                    .OrderBy(table => table.Key, StringComparer.Ordinal)
+                    .GroupBy(item => item.StationOrder!.Order!.TableId)
+                    .OrderBy(table => table.First().StationOrder.Order.Table.Name, StringComparer.Ordinal)
+                    .ThenBy(table => table.Key)
                     .ToList();
   }
 
@@ -51,28 +54,18 @@ public sealed class OpenItemsService
     return itemIdsWithoutAnOrder;
   }
 
-  public async Task<IReadOnlyList<string>> ReadTableNamesAsync(CancellationToken cancellationToken)
+  public async Task<ErrorOr<Table>> ReadTableWithOrdersAsync(Guid tableId, CancellationToken cancellationToken)
   {
     var festival = await _runningFestival.FindAsync(cancellationToken);
 
     if (festival is null)
-      return [];
+      return Refusal.Settlement.NoRunningFestival();
 
-    return await _repository.FindTableNamesAtFestivalAsync(festival.Id, cancellationToken);
-  }
+    var table = await _repository.FindTableWithOrdersAsync(festival.Id, tableId, cancellationToken);
 
-  public async Task<IReadOnlyList<Order>> ReadTableOrdersAsync(string tableName, CancellationToken cancellationToken)
-  {
-    ArgumentNullException.ThrowIfNull(tableName);
+    if (table is null)
+      return Refusal.Settlement.TableNotAtTheRunningFestival(tableId);
 
-    if (string.IsNullOrWhiteSpace(tableName))
-      return [];
-
-    var festival = await _runningFestival.FindAsync(cancellationToken);
-
-    if (festival is null)
-      return [];
-
-    return await _repository.FindTableOrdersAsync(festival.Id, tableName, cancellationToken);
+    return table;
   }
 }

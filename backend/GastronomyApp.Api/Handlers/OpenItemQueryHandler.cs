@@ -1,4 +1,5 @@
-﻿using GastronomyApp.Api.Answers;
+﻿using ErrorOr;
+using GastronomyApp.Api.Answers;
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
@@ -25,33 +26,27 @@ public sealed class OpenItemQueryHandler
 
     IReadOnlyList<Guid> orderItemIdsWithoutAnOrder = _service.ItemIdsWithoutAnOrder(openItems);
 
-    List<OpenTableView> tables = _service.GroupItemsWithAKnownOrderByTableName(openItems).Select(ToOpenTableView).ToList();
+    List<OpenTableView> tables = _service.GroupItemsWithAKnownOrderByTable(openItems).Select(ToOpenTableView).ToList();
 
     return new OpenItemsView(tables, orderItemIdsWithoutAnOrder.Count);
   }
 
-  public async Task<ApiAnswer<TableNamesView>> ListTableNamesAsync(CancellationToken cancellationToken)
+  public async Task<ApiAnswer<TableOrderReportView>> ReadTableAsync(Guid tableId, CancellationToken cancellationToken)
   {
-    IReadOnlyList<string> tableNames = await _service.ReadTableNamesAsync(cancellationToken);
-
-    return new TableNamesView(tableNames);
+    return await _service.ReadTableWithOrdersAsync(tableId, cancellationToken).Then(ToTableOrderReportView);
   }
 
-  public async Task<ApiAnswer<TableOrderReportView>> ReadTableAsync(string? tableName, CancellationToken cancellationToken)
+  private TableOrderReportView ToTableOrderReportView(Table table)
   {
-    var readTableName = tableName ?? string.Empty;
+    List<OrderItem> positions = table.Orders.SelectMany(order => order.StationOrders).SelectMany(stationOrder => stationOrder.Items).ToList();
 
-    IReadOnlyList<Order> orders = await _service.ReadTableOrdersAsync(readTableName, cancellationToken);
-
-    List<OrderItem> positions = orders.SelectMany(order => order.StationOrders).SelectMany(stationOrder => stationOrder.Items).ToList();
-
-    return new TableOrderReportView(readTableName, _settlementService.SumOpenAmountCents(positions), _mapper.Map<IReadOnlyList<TableOrderRecordView>>(orders));
+    return new(table.Id, table.Name, _settlementService.SumOpenAmountCents(positions), _mapper.Map<IReadOnlyList<TableOrderRecordView>>(table.Orders));
   }
 
-  private OpenTableView ToOpenTableView(IGrouping<string, OrderItem> table)
+  private OpenTableView ToOpenTableView(IGrouping<Guid, OrderItem> table)
   {
     List<OrderItem> openItems = table.ToList();
 
-    return new(table.Key, _settlementService.SumOpenAmountCents(openItems), _mapper.Map<IReadOnlyList<OpenOrderItemView>>(openItems));
+    return new(table.Key, openItems[0].StationOrder.Order.Table.Name, _settlementService.SumOpenAmountCents(openItems), _mapper.Map<IReadOnlyList<OpenOrderItemView>>(openItems));
   }
 }

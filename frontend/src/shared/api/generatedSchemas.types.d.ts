@@ -47,7 +47,7 @@ export type LanguageChangeRequest = { language: (null | string) }
 export type LanguageView = { language: string }
 export type MoveCategoryRequest = { direction: CategoryMoveDirection }
 export type OpenOrderItemView = { orderItemId: string, orderId: string, globalOrderNumber: number, itemName: string, note: (null | string), unitPriceCents: number, orderedAtUtc: string }
-export type OpenTableView = { tableName: string, openAmountCents: number, items: Array<OpenOrderItemView> }
+export type OpenTableView = { tableId: string, tableName: string, openAmountCents: number, items: Array<OpenOrderItemView> }
 export type OpenItemsView = { tables: Array<OpenTableView>, itemsWithoutAnOrderCount: number }
 export type OrderDeliveryModeRequest = { stationId: string, deliveryMode: DeliveryMode }
 export type OrderItemRequest = { catalogItemId: string, unitPriceCents: number, note?: (null | string), stationId?: (null | string) }
@@ -55,7 +55,7 @@ export type OrderStatus = ("open" | "partiallyFulfilled" | "fulfilled")
 export type PaymentMethod = ("none" | "cash" | "card" | null)
 export type StationOrderView = { stationOrderId: string, stationId: string, stationName: string, stationOrderNumber: number, deliveryMode: DeliveryMode, itemIds: Array<string> }
 export type PlacedOrderView = { orderId: string, globalOrderNumber: number, status: OrderStatus, totalCents: number, createdAtUtc: string, stationOrders: Array<StationOrderView> }
-export type PlaceOrderRequest = { clientOrderId: string, tableName: (null | string), items: (null | Array<OrderItemRequest>), deliveryModes?: (null | Array<OrderDeliveryModeRequest>) }
+export type PlaceOrderRequest = { clientOrderId: string, tableId: string, items: (null | Array<OrderItemRequest>), deliveryModes?: (null | Array<OrderDeliveryModeRequest>) }
 export type RedeemedEnrolmentView = { deviceId: string, deviceToken: string, staffMember: (null | StaffMemberView), station: (null | StationSummaryView), language: string }
 export type RedeemEnrolmentRequest = { code: (null | string), name?: (null | string), userAgent?: (null | string), previousDeviceToken?: (null | string) }
 export type RenameStaffMemberRequest = { name: (null | string) }
@@ -87,10 +87,9 @@ export type StationOrderQueueView = { stationOrderId: string, globalOrderNumber:
 export type StationFulfilledView = { stationOrders: Array<StationOrderQueueView> }
 export type StationItemSelectionRequest = { orderItemIds: (null | Array<string>) }
 export type StationQueueView = { station: StationSummaryView, orders: Array<StationOrderQueueView>, asItComes: Array<StationOrderQueueView> }
-export type TableNamesView = { tableNames: Array<string> }
 export type TableOrderRecordItemView = { orderItemId: string, orderId: string, globalOrderNumber: number, itemName: string, note: (null | string), unitPriceCents: number, orderedAtUtc: string, fulfilledAtUtc: (null | string), settledAtUtc: (null | string) }
 export type TableOrderRecordView = { orderId: string, globalOrderNumber: number, createdAtUtc: string, staffMemberName: string, items: Array<TableOrderRecordItemView> }
-export type TableOrderReportView = { tableName: string, openAmountCents: number, orders: Array<TableOrderRecordView> }
+export type TableOrderReportView = { tableId: string, tableName: string, openAmountCents: number, orders: Array<TableOrderRecordView> }
 
     // </Schemas>
     }
@@ -218,24 +217,14 @@ export type get__api_openItems = {
 },
       
     }
-export type get__api_openItems_tableNames = {
+export type get__api_openItems_tables_TableId = {
       method: "GET",
-      path: "/api/open-items/table-names",
-      requestFormat: "json",
-      responseFormat: "json",
-      parameters: never,
-      responses: {200: Schemas.TableNamesView,
-},
-      
-    }
-export type get__api_openItems_table = {
-      method: "GET",
-      path: "/api/open-items/table",
+      path: "/api/open-items/tables/{tableId}",
       requestFormat: "json",
       responseFormat: "json",
       parameters: {
-            query?:  Partial<{ tableName: string }>,
-        
+            
+        path:  { tableId: string },
         
         
         
@@ -1227,8 +1216,7 @@ get: {
 "/api/admin/enrolment/invitations/{invitationId}/qr.svg": Endpoints.get__api_admin_enrolment_invitations_InvitationId_qr_svg,
 "/api/session": Endpoints.get__api_session,
 "/api/open-items": Endpoints.get__api_openItems,
-"/api/open-items/table-names": Endpoints.get__api_openItems_tableNames,
-"/api/open-items/table": Endpoints.get__api_openItems_table,
+"/api/open-items/tables/{tableId}": Endpoints.get__api_openItems_tables_TableId,
 "/api/estimates": Endpoints.get__api_estimates,
 "/api/station/orders": Endpoints.get__api_station_orders,
 "/api/station/orders/fulfilled": Endpoints.get__api_station_orders_fulfilled,

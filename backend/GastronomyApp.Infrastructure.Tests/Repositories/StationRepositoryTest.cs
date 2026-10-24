@@ -170,6 +170,7 @@ public sealed class StationRepositoryTest
 
   private async Task<IReadOnlyList<Guid>> PlaceKitchenOrderAsync(SqliteInMemoryFixture fixture, SeededDomain seeded)
   {
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     var orderId = Guid.NewGuid();
     var stationOrderId = Guid.NewGuid();
 
@@ -180,7 +181,7 @@ public sealed class StationRepositoryTest
                     FestivalId = seeded.FestivalId,
                     GlobalOrderNumber = 1,
                     StaffMemberId = seeded.StaffMemberId,
-                    TableName = "Tisch 12",
+                    TableId = tableId,
                     CreatedAtUtc = _now
                   };
 

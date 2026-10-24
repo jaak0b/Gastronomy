@@ -35,11 +35,18 @@ public sealed class OrderTestContext : IAsyncDisposable
   public OrderBody BuildOrder(Guid clientOrderId)
   {
     return new(clientOrderId,
-               "Tisch 12",
+               World.TableId,
                [
                  new(World.BratwurstItemId, 350, null, null),
                  new(World.BratwurstItemId, 350, null, null)
                ]);
+  }
+
+  public async Task<Guid> SeedTableAsync(string tableName)
+  {
+    await using var context = Factory.CreateContext();
+
+    return await new ApiSeeder().SeedTableAsync(context, World.FestivalId, tableName, CancellationToken.None);
   }
 
   public Task<HttpResponseMessage> PostOrderAsync(OrderBody body)

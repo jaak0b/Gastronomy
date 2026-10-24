@@ -210,8 +210,17 @@ to one festival.
   neither, because both are facts about an item at one festival.
 - **ItemStationAssignment**: which station prepares an item at one festival. Unique on
   `(FestivalId, CatalogItemId, StationId)`.
-- **Order**: what the waiter sent. The festival it belongs to, global order number, table name,
-  who took it, when. It has no status and no total: both are derived, never stored.
+- **Area**: a part of one festival's table plan (a hall, a tent, the garden), with the order of its
+  button on the phone and `IsHidden`. Its name is unique per festival without regard to case.
+- **Table**: a guest's table in one area, with its name, unique per festival without regard to
+  case, its position and size, and `IsHidden`. `(AreaId, FestivalId)` points at the area, so a table
+  never sits in another festival's area.
+- **FestivalStationShape**: where a station of one festival sits in one area. Its key is the
+  `FestivalStation` it places, so a station stands in at most one area.
+- **Order**: what the waiter sent. The festival it belongs to, global order number, its table,
+  who took it, when. `(TableId, FestivalId)` points at the table, so an order never names another
+  festival's table, and every screen shows that table's current name. It has no status and no
+  total: both are derived, never stored.
 - **StationOrder**: the part of that order belonging to one station, carrying the number that station
   shows for it. Unique on `(OrderId, StationId)`, so a station can never receive two station orders of
   one order. It carries the `DeliveryMode` the waiter chose for that station: `Together` means the

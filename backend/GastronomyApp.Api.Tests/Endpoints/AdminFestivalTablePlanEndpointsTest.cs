@@ -45,7 +45,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(areas.GetArrayLength(), Is.EqualTo(2));
+                      Assert.That(areas.GetArrayLength(), Is.EqualTo(3));
                       Assert.That(garden.GetProperty("areaId").GetGuid(), Is.EqualTo(gardenId));
                       Assert.That(garden.GetProperty("name").GetString(), Is.EqualTo("Garten"));
                       Assert.That(garden.GetProperty("sortOrder").GetInt32(), Is.EqualTo(1));
@@ -189,8 +189,8 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     var raw = await response.Content.ReadAsStringAsync();
 
     await using var database = _context.Factory.CreateContext();
-    var areaCount = await database.Areas.CountAsync();
-    var tableCount = await database.Tables.CountAsync();
+    var areaCount = await database.Areas.CountAsync(area => area.Id == gardenId);
+    var tableCount = await database.Tables.CountAsync(table => table.AreaId == gardenId);
     var shapeCount = await database.FestivalStationShapes.CountAsync();
 
     Assert.Multiple(() =>
@@ -372,6 +372,113 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   }
 
   [Test]
+  public async Task PostTableHide_ATableWithAnItemNotYetHandedOutWhileTheFestivalRuns_IsRefusedAndKeepsItShown()
+  {
+    var gardenId = await CreateAreaAsync("Garten", 1);
+    var tableId = await CreateTableAsync(gardenId, "Tisch 1");
+    await PlaceOrderAtAsync(tableId);
+
+    using var response = await _context.Client.PostAsync($"{FestivalPath}/tables/{tableId}/hide", null);
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+    var isHidden = await IsTableHiddenAsync(tableId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+                      Assert.That(body.GetProperty("code").GetString(), Is.EqualTo("TableWithItemsToHandOutOrSettleStaysShown"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.tableWithItemsToHandOutOrSettleStaysShown"));
+                      Assert.That(isHidden, Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task PostTableHide_ATableWithItemsToHandOutOrSettleAfterTheFestival_HidesIt()
+  {
+    var gardenId = await CreateAreaAsync("Garten", 1);
+    var tableId = await CreateTableAsync(gardenId, "Tisch 1");
+    await PlaceOrderAtAsync(tableId);
+    await LetTheFestivalEndAsync();
+
+    using var response = await _context.Client.PostAsync($"{FestivalPath}/tables/{tableId}/hide", null);
+    var isHidden = await IsTableHiddenAsync(tableId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(isHidden, Is.True);
+                    });
+  }
+
+  [Test]
+  public async Task PostAreaHide_AnAreaWhoseTableHasAnItemNotYetSettledWhileTheFestivalRuns_IsRefusedAndKeepsItShown()
+  {
+    var gardenId = await CreateAreaAsync("Garten", 1);
+    var tableId = await CreateTableAsync(gardenId, "Tisch 1");
+    await PlaceOrderAtAsync(tableId);
+
+    using var response = await _context.Client.PostAsync($"{FestivalPath}/areas/{gardenId}/hide", null);
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+    var isHidden = await IsAreaHiddenAsync(gardenId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+                      Assert.That(body.GetProperty("code").GetString(), Is.EqualTo("AreaWithItemsToHandOutOrSettleStaysShown"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.areaWithItemsToHandOutOrSettleStaysShown"));
+                      Assert.That(isHidden, Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task DeleteTable_ATableWithAnOrderAfterTheFestival_IsRefusedAndKeepsTheTable()
+  {
+    var gardenId = await CreateAreaAsync("Garten", 1);
+    var tableId = await CreateTableAsync(gardenId, "Tisch 1");
+    await PlaceOrderAtAsync(tableId);
+    await LetTheFestivalEndAsync();
+
+    using var response = await _context.Client.DeleteAsync($"{FestivalPath}/tables/{tableId}");
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+    await using var database = _context.Factory.CreateContext();
+    var tableCount = await database.Tables.CountAsync(table => table.Id == tableId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+                      Assert.That(body.GetProperty("code").GetString(), Is.EqualTo("TableWithOrdersStays"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.tableWithOrdersStays"));
+                      Assert.That(tableCount, Is.EqualTo(1));
+                    });
+  }
+
+  [Test]
+  public async Task DeleteArea_AnAreaWhoseTableHasAnOrderAfterTheFestival_IsRefusedAndKeepsTheAreaAndItsTables()
+  {
+    var gardenId = await CreateAreaAsync("Garten", 1);
+    var tableId = await CreateTableAsync(gardenId, "Tisch 1");
+    await CreateTableAsync(gardenId, "Tisch 2");
+    await PlaceOrderAtAsync(tableId);
+    await LetTheFestivalEndAsync();
+
+    using var response = await _context.Client.DeleteAsync($"{FestivalPath}/areas/{gardenId}");
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+    await using var database = _context.Factory.CreateContext();
+    var areaCount = await database.Areas.CountAsync(area => area.Id == gardenId);
+    var tableCount = await database.Tables.CountAsync(table => table.AreaId == gardenId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+                      Assert.That(body.GetProperty("code").GetString(), Is.EqualTo("AreaWithOrdersStays"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.areaWithOrdersStays"));
+                      Assert.That(areaCount, Is.EqualTo(1));
+                      Assert.That(tableCount, Is.EqualTo(2));
+                    });
+  }
+
+  [Test]
   public async Task DeleteTable_WhileTheFestivalRuns_IsRefusedAndKeepsTheTable()
   {
     var gardenId = await CreateAreaAsync("Garten", 1);
@@ -402,7 +509,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     using var response = await _context.Client.DeleteAsync($"{FestivalPath}/tables/{tableId}");
 
     await using var database = _context.Factory.CreateContext();
-    var tableCount = await database.Tables.CountAsync();
+    var tableCount = await database.Tables.CountAsync(table => table.Id == tableId);
 
     Assert.Multiple(() =>
                     {
@@ -568,6 +675,13 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     using var response = await _context.Client.PutAsJsonAsync($"{FestivalPath}/stations/{stationId}/shape", BuildStationShape(areaId));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), await response.Content.ReadAsStringAsync());
+  }
+
+  private async Task PlaceOrderAtAsync(Guid tableId)
+  {
+    using var response = await _context.PostOrderAsync(new(Guid.NewGuid(), tableId, [new(_context.World.BratwurstItemId, 350, null, null)]));
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created), await response.Content.ReadAsStringAsync());
   }
 
   private async Task HideAsync(string path)

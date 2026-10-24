@@ -11,14 +11,16 @@ public sealed class OrderNumberIndexTest
   public async Task Save_ASecondOrderWithTheGlobalOrderNumberOfTheFirst_IsRefused()
   {
     using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    DomainSeeder seeder = new();
+    var seeded = await seeder.SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var tableId = await seeder.SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 1", TestContext.CurrentContext.CancellationToken);
 
     await using var first = fixture.CreateContext();
-    first.Orders.Add(BuildOrder(seeded, 7, 1));
+    first.Orders.Add(BuildOrder(seeded, tableId, 7));
     await first.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     await using var second = fixture.CreateContext();
-    second.Orders.Add(BuildOrder(seeded, 7, 2));
+    second.Orders.Add(BuildOrder(seeded, tableId, 7));
 
     Assert.ThrowsAsync<DbUpdateException>(async () => await second.SaveChangesAsync(TestContext.CurrentContext.CancellationToken));
   }
@@ -27,19 +29,21 @@ public sealed class OrderNumberIndexTest
   public async Task Save_ASecondStationOrderWithTheStationOrderNumberOfTheFirstAtTheSameStation_IsRefused()
   {
     using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    DomainSeeder seeder = new();
+    var seeded = await seeder.SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var tableId = await seeder.SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 1", TestContext.CurrentContext.CancellationToken);
 
     await using var first = fixture.CreateContext();
-    first.Orders.Add(BuildOrderWithStationOrder(seeded, 1, 4));
+    first.Orders.Add(BuildOrderWithStationOrder(seeded, tableId, 1, 4));
     await first.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     await using var second = fixture.CreateContext();
-    second.Orders.Add(BuildOrderWithStationOrder(seeded, 2, 4));
+    second.Orders.Add(BuildOrderWithStationOrder(seeded, tableId, 2, 4));
 
     Assert.ThrowsAsync<DbUpdateException>(async () => await second.SaveChangesAsync(TestContext.CurrentContext.CancellationToken));
   }
 
-  private Order BuildOrder(SeededDomain seeded, int globalOrderNumber, int distinguisher)
+  private Order BuildOrder(SeededDomain seeded, Guid tableId, int globalOrderNumber)
   {
     return new()
            {
@@ -48,14 +52,14 @@ public sealed class OrderNumberIndexTest
              FestivalId = seeded.FestivalId,
              GlobalOrderNumber = globalOrderNumber,
              StaffMemberId = seeded.StaffMemberId,
-             TableName = $"Tisch {distinguisher}",
+             TableId = tableId,
              CreatedAtUtc = new(2026, 8, 27, 18, 30, 0, DateTimeKind.Utc)
            };
   }
 
-  private Order BuildOrderWithStationOrder(SeededDomain seeded, int globalOrderNumber, int stationOrderNumber)
+  private Order BuildOrderWithStationOrder(SeededDomain seeded, Guid tableId, int globalOrderNumber, int stationOrderNumber)
   {
-    var order = BuildOrder(seeded, globalOrderNumber, globalOrderNumber);
+    var order = BuildOrder(seeded, tableId, globalOrderNumber);
 
     order.StationOrders.Add(new()
                             {

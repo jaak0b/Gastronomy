@@ -36,25 +36,16 @@ public sealed class OpenItemRepository : IOpenItemRepository
     return selectedItems;
   }
 
-  public async Task<IReadOnlyList<string>> FindTableNamesAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken)
+  public async Task<Table?> FindTableWithOrdersAsync(Guid festivalId, Guid tableId, CancellationToken cancellationToken)
   {
-    List<string> usedNames = await _dbContext.Orders.AsNoTracking().Where(order => order.FestivalId == festivalId).Select(order => order.TableName).ToListAsync(cancellationToken);
-
-    return usedNames.Distinct(StringComparer.Ordinal).OrderBy(tableName => tableName, StringComparer.Ordinal).ToList();
-  }
-
-  public async Task<IReadOnlyList<Order>> FindTableOrdersAsync(Guid festivalId, string tableName, CancellationToken cancellationToken)
-  {
-    ArgumentNullException.ThrowIfNull(tableName);
-
-    return await _dbContext.Orders.AsNoTracking()
-                           .Where(order => order.FestivalId == festivalId && order.TableName == tableName)
-                           .Include(order => order.StaffMember)
-                           .Include(order => order.StationOrders)
+    return await _dbContext.Tables.AsNoTracking()
+                           .Where(table => table.Id == tableId && table.FestivalId == festivalId)
+                           .Include(table => table.Orders.OrderByDescending(order => order.CreatedAtUtc).ThenByDescending(order => order.GlobalOrderNumber))
+                           .ThenInclude(order => order.StaffMember)
+                           .Include(table => table.Orders)
+                           .ThenInclude(order => order.StationOrders)
                            .ThenInclude(stationOrder => stationOrder.Items)
-                           .OrderByDescending(order => order.CreatedAtUtc)
-                           .ThenByDescending(order => order.GlobalOrderNumber)
-                           .ToListAsync(cancellationToken);
+                           .FirstOrDefaultAsync(cancellationToken);
   }
 
   public async Task SaveChangesAsync(CancellationToken cancellationToken)
@@ -66,7 +57,7 @@ public sealed class OpenItemRepository : IOpenItemRepository
   {
     List<Guid> stationOrderIds = items.Select(item => item.StationOrderId).Distinct().ToList();
 
-    Dictionary<Guid, StationOrder> stationOrdersById = await _dbContext.StationOrders.Where(stationOrder => stationOrderIds.Contains(stationOrder.Id)).Include(stationOrder => stationOrder.Order).ToDictionaryAsync(stationOrder => stationOrder.Id, cancellationToken);
+    Dictionary<Guid, StationOrder> stationOrdersById = await _dbContext.StationOrders.Where(stationOrder => stationOrderIds.Contains(stationOrder.Id)).Include(stationOrder => stationOrder.Order).ThenInclude(order => order.Table).ToDictionaryAsync(stationOrder => stationOrder.Id, cancellationToken);
 
     foreach (var item in items)
       if (stationOrdersById.TryGetValue(item.StationOrderId, out var stationOrder))

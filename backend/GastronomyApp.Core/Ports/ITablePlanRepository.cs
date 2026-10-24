@@ -16,6 +16,10 @@ public interface ITablePlanRepository
 
   public void RemoveArea(Area area);
 
+  public Task<bool> HasOrdersInAreaAsync(Guid areaId, CancellationToken cancellationToken);
+
+  public Task<bool> HasItemsToHandOutOrSettleInAreaAsync(Guid areaId, CancellationToken cancellationToken);
+
   public Task<Table?> FindTableAsync(Guid festivalId, Guid tableId, CancellationToken cancellationToken);
 
   public Task<bool> IsTableNameTakenAsync(Guid festivalId, string name, Guid? tableBeingSaved, CancellationToken cancellationToken);
@@ -25,6 +29,10 @@ public interface ITablePlanRepository
   public void RemoveTable(Table table);
 
   public void RemoveTables(IReadOnlyCollection<Table> tables);
+
+  public Task<bool> HasOrdersAtTableAsync(Guid tableId, CancellationToken cancellationToken);
+
+  public Task<bool> HasItemsToHandOutOrSettleAtTableAsync(Guid tableId, CancellationToken cancellationToken);
 
   public Task<FestivalStationShape?> FindStationShapeAsync(Guid festivalStationId, CancellationToken cancellationToken);
 

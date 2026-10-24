@@ -56,6 +56,23 @@ public sealed class StationQueueEndpointsTest
   }
 
   [Test]
+  public async Task GetStationOrders_ATableRenamedAfterTheOrder_ShowsTheCardUnderTheCurrentName()
+  {
+    await PlaceOrderAcrossBothStationsAsync("Tisch 3");
+    await using (var database = _context.Factory.CreateContext())
+    {
+      var table = await database.Tables.SingleAsync(candidate => candidate.Name == "Tisch 3");
+      table.Name = "Stammtisch";
+      await database.SaveChangesAsync();
+    }
+
+    using var response = await _context.SendAsAsync(_kitchenToken, HttpMethod.Get, "/api/station/orders");
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.That(body.RootElement.GetProperty("orders")[0].GetProperty("tableName").GetString(), Is.EqualTo("Stammtisch"));
+  }
+
+  [Test]
   public async Task GetStationOrders_TwoStationOrdersAtTheKitchen_ListsBothWithOnlyTheAsItComesOneInBothColumns()
   {
     await PlaceOrderAcrossBothStationsAsync("Tisch 3", _context.World.KitchenStationId);
@@ -358,8 +375,9 @@ public sealed class StationQueueEndpointsTest
     if (asItComesStationId is not null)
       deliveryModes = [new(asItComesStationId.Value, "asItComes")];
 
+    var tableId = await _context.SeedTableAsync(tableName);
     OrderWithDeliveryModesBody order = new(Guid.NewGuid(),
-                                           tableName,
+                                           tableId,
                                            [
                                              new(_context.World.BratwurstItemId, 350, null, null),
                                              new(_context.World.BratwurstItemId, 350, null, null),
