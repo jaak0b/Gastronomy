@@ -12,8 +12,9 @@ public sealed class OrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     OrderRepository repository = new(fixture.DbContext);
-    var order = BuildOrder(seeded, Guid.NewGuid());
+    var order = BuildOrder(seeded, tableId, Guid.NewGuid());
 
     await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
 
@@ -56,8 +57,9 @@ public sealed class OrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     OrderRepository repository = new(fixture.DbContext);
-    var order = BuildOrder(seeded, Guid.NewGuid());
+    var order = BuildOrder(seeded, tableId, Guid.NewGuid());
     await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
 
     var found = (await repository.FindWithStationOrdersAsync(order.Id, TestContext.CurrentContext.CancellationToken))!;
@@ -80,8 +82,9 @@ public sealed class OrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     OrderRepository repository = new(fixture.DbContext);
-    var order = BuildOrder(seeded, Guid.NewGuid());
+    var order = BuildOrder(seeded, tableId, Guid.NewGuid());
     var handedOutAtUtc = new DateTime(2026, 8, 27, 18, 45, 0, DateTimeKind.Utc);
     order.StationOrders[0].Items[0].FulfilledAtUtc = handedOutAtUtc;
     await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
@@ -96,8 +99,9 @@ public sealed class OrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     OrderRepository repository = new(fixture.DbContext);
-    var order = BuildOrderForTwoStations(seeded, Guid.NewGuid());
+    var order = BuildOrderForTwoStations(seeded, tableId, Guid.NewGuid());
     await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
 
     var found = (await repository.FindWithStationOrdersAsync(order.Id, TestContext.CurrentContext.CancellationToken))!;
@@ -110,9 +114,9 @@ public sealed class OrderRepositoryTest
                                 }));
   }
 
-  private Order BuildOrderForTwoStations(SeededDomain seeded, Guid clientOrderId)
+  private Order BuildOrderForTwoStations(SeededDomain seeded, Guid tableId, Guid clientOrderId)
   {
-    var order = BuildOrder(seeded, clientOrderId);
+    var order = BuildOrder(seeded, tableId, clientOrderId);
     order.StationOrders.Clear();
     order.StationOrders.Add(BuildStationOrder(seeded, order.Id, seeded.BarStationId, new("00000000-0000-0000-0000-000000000001")));
     order.StationOrders.Add(BuildStationOrder(seeded, order.Id, seeded.KitchenStationId, new("00000000-0000-0000-0000-000000000002")));
@@ -133,7 +137,7 @@ public sealed class OrderRepositoryTest
            };
   }
 
-  private Order BuildOrder(SeededDomain seeded, Guid clientOrderId)
+  private Order BuildOrder(SeededDomain seeded, Guid tableId, Guid clientOrderId)
   {
     DateTime createdAtUtc = new(2026, 8, 27, 18, 30, 0, DateTimeKind.Utc);
     var orderId = Guid.NewGuid();
@@ -146,7 +150,7 @@ public sealed class OrderRepositoryTest
                     FestivalId = seeded.FestivalId,
                     GlobalOrderNumber = 1,
                     StaffMemberId = seeded.StaffMemberId,
-                    TableName = "Tisch 12",
+                    TableId = tableId,
                     CreatedAtUtc = createdAtUtc
                   };
 

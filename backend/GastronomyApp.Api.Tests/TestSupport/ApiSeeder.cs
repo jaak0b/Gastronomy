@@ -1,4 +1,5 @@
 using GastronomyApp.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.TestSupport;
 
@@ -10,7 +11,7 @@ public sealed class ApiSeeder
   {
     ArgumentNullException.ThrowIfNull(context);
 
-    SeededWorld world = new(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+    SeededWorld world = new(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
 
     context.Festivals.Add(new()
                           {
@@ -39,8 +40,70 @@ public sealed class ApiSeeder
     AddItem(context, world, world.BratwurstItemId, "Bratwurst mit Brot", world.FoodCategoryId, 350, 1, world.KitchenStationId);
     AddItem(context, world, world.BeerItemId, "Bier", world.DrinkCategoryId, 300, 2, world.BarStationId);
 
+    AddTable(context, world);
+
     await context.SaveChangesAsync(cancellationToken);
     return world;
+  }
+
+  public async Task<Guid> SeedTableAsync(GastronomyAppDbContext context, Guid festivalId, string tableName, CancellationToken cancellationToken)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    var existingTable = await context.Tables.FirstOrDefaultAsync(table => table.FestivalId == festivalId && table.Name == tableName, cancellationToken);
+
+    if (existingTable is not null)
+      return existingTable.Id;
+
+    var areaId = Guid.NewGuid();
+    var tableId = Guid.NewGuid();
+
+    context.Areas.Add(new()
+                      {
+                        Id = areaId,
+                        FestivalId = festivalId,
+                        Name = $"Bereich von {tableName}",
+                        SortOrder = 99,
+                        IsHidden = true
+                      });
+    context.Tables.Add(new()
+                       {
+                         Id = tableId,
+                         FestivalId = festivalId,
+                         AreaId = areaId,
+                         Name = tableName,
+                         IsHidden = false,
+                         Width = 80,
+                         Height = 80
+                       });
+
+    await context.SaveChangesAsync(cancellationToken);
+    return tableId;
+  }
+
+  private void AddTable(GastronomyAppDbContext context, SeededWorld world)
+  {
+    var areaId = Guid.NewGuid();
+
+    context.Areas.Add(new()
+                      {
+                        Id = areaId,
+                        FestivalId = world.FestivalId,
+                        Name = "Festzelt",
+                        SortOrder = 99,
+                        IsHidden = true
+                      });
+
+    context.Tables.Add(new()
+                       {
+                         Id = world.TableId,
+                         FestivalId = world.FestivalId,
+                         AreaId = areaId,
+                         Name = "Tisch 12",
+                         IsHidden = false,
+                         Width = 80,
+                         Height = 80
+                       });
   }
 
   private void AddStation(GastronomyAppDbContext context, SeededWorld world, Guid stationId, string name, int sortOrder)

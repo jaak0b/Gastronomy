@@ -36,12 +36,12 @@ public sealed class OrdersChangedAnnouncementTest
   [Test]
   public async Task PostOrder_AnOrderForTwoStations_TellsThePhoneTheAdminAndBothStationsOnceAndSendsTheCounterChangeOnce()
   {
-    await using HubEventListener configurationListener = new(new(_context.Factory.BaseAddress, "hub"), "ConfigurationChanged");
+    await using HubEventListener configurationListener = new(_context.Factory, "hub", "ConfigurationChanged");
     await configurationListener.StartAsync();
     await ListenAsync(_context.DeviceToken, null, _kitchenToken, _barToken);
 
     using var response = await _context.PostOrderAsync(new(Guid.NewGuid(),
-                                                           "Tisch 12",
+                                                           _context.World.TableId,
                                                            [
                                                              new(_context.World.BratwurstItemId, 350, null, null),
                                                              new(_context.World.BeerItemId, 300, null, null)
@@ -87,7 +87,7 @@ public sealed class OrdersChangedAnnouncementTest
   [Test]
   public async Task HideStationOrder_AnAsItComesOrder_TellsThePhoneTheAdminAndTheKitchenOnce()
   {
-    using (var placed = await _context.SendAsync(HttpMethod.Post, "/api/orders", new OrderWithDeliveryModesBody(Guid.NewGuid(), "Tisch 12", [new(_context.World.BratwurstItemId, 350, null, null)], [new(_context.World.KitchenStationId, "asItComes")])))
+    using (var placed = await _context.SendAsync(HttpMethod.Post, "/api/orders", new OrderWithDeliveryModesBody(Guid.NewGuid(), _context.World.TableId, [new(_context.World.BratwurstItemId, 350, null, null)], [new(_context.World.KitchenStationId, "asItComes")])))
     {
       Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
@@ -124,7 +124,7 @@ public sealed class OrdersChangedAnnouncementTest
   {
     foreach (var deviceToken in deviceTokens)
     {
-      HubEventListener listener = new(new(_context.Factory.BaseAddress, deviceToken is null ? "hub" : $"hub?access_token={deviceToken}"), "OrdersChanged");
+      HubEventListener listener = new(_context.Factory, deviceToken is null ? "hub" : $"hub?access_token={deviceToken}", "OrdersChanged");
       _listeners.Add(listener);
       await listener.StartAsync();
     }

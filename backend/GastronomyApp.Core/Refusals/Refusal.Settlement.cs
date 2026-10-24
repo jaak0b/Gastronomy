@@ -40,16 +40,21 @@ public static partial class Refusal
                                  });
     }
 
-    public static Error SelectionSpansSeveralTables(IReadOnlyList<string> tableNames)
+    public static Error SelectionSpansSeveralTables(IReadOnlyList<Guid> tableIds)
     {
       return BadRequest(RefusalMessageKeys.SettlementCannotBeProcessed,
-                        $"The items sent belong to the tables {string.Join(", ", tableNames)}. The open items screen holds every other table back once one of them has something ticked, so this call did not come from that screen.",
+                        $"The items sent belong to the tables {string.Join(", ", tableIds)}. The open items screen holds every other table back once one of them has something ticked, so this call did not come from that screen.",
                         new() { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
+    }
+
+    public static Error TableNotAtTheRunningFestival(Guid tableId)
+    {
+      return NotFound("TableNotAtTheRunningFestival", $"The table {tableId} whose orders were asked for is not a table of the running festival.");
     }
 
     public static Error NoRunningFestival()
     {
-      return BadRequest(RefusalMessageKeys.SettlementCannotBeProcessed, "No festival is running, so nothing was settled.", new() { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
+      return BadRequest(RefusalMessageKeys.SettlementCannotBeProcessed, "No festival is running, so the request about open items was refused.", new() { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
     }
 
     public static Error DuplicateOrderItemId(Guid orderItemId)

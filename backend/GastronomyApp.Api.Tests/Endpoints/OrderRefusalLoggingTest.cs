@@ -24,14 +24,16 @@ public sealed class OrderRefusalLoggingTest
   private OrderTestContext _context = null!;
   private RecordedLog _log = null!;
 
-  private OrderBody WithoutATableName()
+  private readonly Guid _tableThePlanDoesNotHold = Guid.Parse("99999999-0000-0000-0000-000000000001");
+
+  private OrderBody AtATableThePlanDoesNotHold()
   {
-    return new(Guid.NewGuid(), string.Empty, [new(_context.World.BratwurstItemId, 350, null, null)]);
+    return new(Guid.NewGuid(), _tableThePlanDoesNotHold, [new(_context.World.BratwurstItemId, 350, null, null)]);
   }
 
   private OrderBody BuildOrderBodyWithAnUnknownItem()
   {
-    return new(Guid.NewGuid(), "Tisch 12", [new(Guid.NewGuid(), 350, null, null)]);
+    return new(Guid.NewGuid(), _context.World.TableId, [new(Guid.NewGuid(), 350, null, null)]);
   }
 
   private async static Task<string> ReadMessageKeyAsync(HttpResponseMessage response)
@@ -44,12 +46,12 @@ public sealed class OrderRefusalLoggingTest
   [Test]
   public async Task PostOrder_SomethingTheScreenAlreadyPrevents_AnswersWithTheOneSharedMessage()
   {
-    using var response = await _context.PostOrderAsync(WithoutATableName());
+    using var response = await _context.PostOrderAsync(AtATableThePlanDoesNotHold());
     var messageKey = await ReadMessageKeyAsync(response);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
                       Assert.That(messageKey, Is.EqualTo("errors.order.cannotBeProcessed"));
                     });
   }
@@ -57,12 +59,12 @@ public sealed class OrderRefusalLoggingTest
   [Test]
   public async Task PostOrder_SomethingTheScreenAlreadyPrevents_WritesTheExactReasonToTheLog()
   {
-    using var response = await _context.PostOrderAsync(WithoutATableName());
+    using var response = await _context.PostOrderAsync(AtATableThePlanDoesNotHold());
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(_log.ReadRenderedMessages(), Has.Some.Contains("TableName"));
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
+                      Assert.That(_log.ReadRenderedMessages(), Has.Some.Contains(_tableThePlanDoesNotHold.ToString()));
                     });
   }
 

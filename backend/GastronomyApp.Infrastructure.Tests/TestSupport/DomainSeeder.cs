@@ -1,4 +1,6 @@
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Tests.TestSupport;
 
@@ -165,5 +167,46 @@ public sealed class DomainSeeder
     await dbContext.SaveChangesAsync(cancellationToken);
 
     return seeded;
+  }
+
+  public async Task<Guid> SeedTableAsync(GastronomyAppDbContext dbContext, Guid festivalId, string tableName, CancellationToken cancellationToken)
+  {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    var existingTable = await dbContext.Tables.FirstOrDefaultAsync(table => table.FestivalId == festivalId && table.Name == tableName, cancellationToken);
+
+    if (existingTable is not null)
+      return existingTable.Id;
+
+    var area = await dbContext.Areas.FirstOrDefaultAsync(area => area.FestivalId == festivalId && area.Name == "Festzelt", cancellationToken);
+
+    if (area is null)
+    {
+      area = new()
+             {
+               Id = Guid.NewGuid(),
+               FestivalId = festivalId,
+               Name = "Festzelt",
+               SortOrder = 1,
+               IsHidden = false
+             };
+      dbContext.Areas.Add(area);
+    }
+
+    Table table = new()
+                  {
+                    Id = Guid.NewGuid(),
+                    FestivalId = festivalId,
+                    AreaId = area.Id,
+                    Name = tableName,
+                    IsHidden = false,
+                    Width = 80,
+                    Height = 80
+                  };
+    dbContext.Tables.Add(table);
+
+    await dbContext.SaveChangesAsync(cancellationToken);
+
+    return table.Id;
   }
 }

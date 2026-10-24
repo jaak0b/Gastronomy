@@ -16,11 +16,13 @@ public sealed class OrderAcceptanceService
 
   private readonly IOrderRepository _orderRepository;
   private readonly RunningFestivalLookup _runningFestival;
+  private readonly ITablePlanRepository _tablePlanRepository;
 
-  public OrderAcceptanceService(IOrderRepository orderRepository, RunningFestivalLookup runningFestival, INumberAllocator numberAllocator, OrderItemResolutionService itemResolutionService, StockSoldOutMarker soldOutMarker, TimeProvider timeProvider)
+  public OrderAcceptanceService(IOrderRepository orderRepository, RunningFestivalLookup runningFestival, ITablePlanRepository tablePlanRepository, INumberAllocator numberAllocator, OrderItemResolutionService itemResolutionService, StockSoldOutMarker soldOutMarker, TimeProvider timeProvider)
   {
     _orderRepository = orderRepository;
     _runningFestival = runningFestival;
+    _tablePlanRepository = tablePlanRepository;
     _numberAllocator = numberAllocator;
     _itemResolutionService = itemResolutionService;
     _soldOutMarker = soldOutMarker;
@@ -38,6 +40,9 @@ public sealed class OrderAcceptanceService
     var festival = await _runningFestival.FindAsync(cancellationToken);
     if (festival is null)
       return Refusal.Order.NoRunningFestival();
+
+    if (await _tablePlanRepository.FindTableAsync(festival.Id, request.TableId, cancellationToken) is null)
+      return Refusal.Order.TableNotAtTheRunningFestival(festival.Id, request.TableId);
 
     IReadOnlyList<OrderItemRequest> itemRequests = request.Items!;
 
@@ -74,7 +79,7 @@ public sealed class OrderAcceptanceService
                     FestivalId = festivalId,
                     GlobalOrderNumber = globalOrderNumber,
                     StaffMemberId = staffMemberId,
-                    TableName = request.TableName ?? string.Empty,
+                    TableId = request.TableId,
                     CreatedAtUtc = createdAtUtc
                   };
 

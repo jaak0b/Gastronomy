@@ -431,13 +431,21 @@
         "nameTaken": "There is already a category with this name. Choose a different one."
       },
       "festivals": {
+        "areaNameTaken": "An area at this festival already has this name, whether it is shown or hidden. Choose a different name.",
+        "areaStaysWhileTheFestivalRuns": "An area cannot be deleted while the festival is active. Hide it instead.",
+        "areaWithItemsToHandOutOrSettleStaysShown": "While the festival is active, an area can only be hidden once everything ordered at its tables has been prepared and settled.",
+        "areaWithOrdersStays": "An area cannot be deleted once one of its tables has an order. Hide it instead.",
         "itemNeedsAStation": "Choose at least one station for the item.",
         "itemPriceOutOfRange": "Enter a price between 0.00 and 999.99 euros.",
         "itemStaysOnTheMenuWhileTheFestivalRuns": "An item cannot be removed from an active festival.",
         "nameMissing": "Give the festival a name.",
         "overlaps": "The festival {name} overlaps this period. Move the start or the end.",
         "periodInvalid": "The end has to come after the start. Set the end to a later time.",
-        "stationHasOrdersAtTheFestival": "While the festival is active, a station with open orders cannot be removed."
+        "stationHasOrdersAtTheFestival": "While the festival is active, a station with open orders cannot be removed.",
+        "tableNameTaken": "A table at this festival already has this name, whether it is shown or hidden. Choose a different name.",
+        "tableStaysWhileTheFestivalRuns": "A table cannot be deleted while the festival is active. Hide it instead.",
+        "tableWithItemsToHandOutOrSettleStaysShown": "While the festival is active, a table can only be hidden once everything ordered there has been prepared and settled.",
+        "tableWithOrdersStays": "A table that has orders cannot be deleted. Hide it instead."
       },
       "ingredients": {
         "nameMissing": "Enter a name for the ingredient.",

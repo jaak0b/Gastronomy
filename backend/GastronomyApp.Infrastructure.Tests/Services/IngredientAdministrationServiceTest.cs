@@ -16,7 +16,7 @@ public sealed class IngredientAdministrationServiceTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    IngredientAdministrationService service = new(new IngredientRepository(fixture.DbContext), new FestivalRepository(fixture.DbContext, new()), new IngredientService());
+    IngredientAdministrationService service = new(new IngredientRepository(fixture.DbContext), new FestivalRepository(fixture.DbContext, new(), new()), new IngredientService());
 
     ErrorOr<Ingredient> created = await service.CreateAsync("Senf", IngredientUnit.Gram, TestContext.CurrentContext.CancellationToken);
     fixture.DbContext.ChangeTracker.Clear();

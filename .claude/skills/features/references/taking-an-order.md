@@ -37,6 +37,14 @@ Frontend, under `frontend/src/phone/`:
 - Texts: `phone.catalog.*`, `common.labels.soldOut` and `common.estimates.*` in
   `shared/i18n/de.json` and `en.json`.
 
+Backend, under `backend/`:
+
+- `POST /api/orders` (`GastronomyApp.Api/Endpoints/OrderEndpoints.cs`, `OrderPlacementHandler`)
+  takes `PlaceOrderRequest` (`GastronomyApp.Contracts/Orders`): the client order id, the `TableId`
+  of a table of the plan, the items and the delivery modes.
+- `GastronomyApp.Core/Services/OrderAcceptanceService.cs` accepts it; refusals are in
+  `Core/Refusals/Refusal.Order.cs`.
+
 ## Invariants
 
 - **A note is never merged into another line (root rule 20).** Every portion is a draft line of its
@@ -66,6 +74,15 @@ Frontend, under `frontend/src/phone/`:
   focus reaches that action once per article.
 - **No summary without a table.** `goToTheSummary` refuses an empty or blank table name, marks the
   field and puts the cursor in it.
+- **An order names a table of the running festival.** The laptop looks the `TableId` up at the
+  running festival, hidden tables included. A table it does not find there is a broken program: it
+  logs the table id, answers 422 with `errors.order.cannotBeProcessed` and stores nothing, so the
+  phone's handling of a refusal with our envelope applies. A retry with a known client order id
+  returns the original order before the table is looked at.
+- **What happens when a step of placing fails.** No running festival, an unknown table, an item
+  that is not on the menu or not routable: refused before anything is numbered or written, so no
+  order exists. The insert, the numbers and the stock step share the request's transaction; a
+  failure in any of them rolls all of it back and the phone keeps the order on screen with its retry.
 
 ## Tests
 
@@ -83,6 +100,10 @@ Frontend, under `frontend/src/phone/`:
   `catalogItemState.spec.ts` and `tableName.spec.ts`.
 - `frontend/tests/phone/stores`: `order.reload.spec.ts` (the unreadable draft, an order frozen by a
   reload) and `orderFestivalScope.spec.ts`; `frontend/tests/phone/composables/useStationChoiceQuotes.spec.ts`.
+- Backend: `GastronomyApp.Core.Tests/Services/OrderAcceptanceServiceTest.cs`,
+  `GastronomyApp.Infrastructure.Tests/Services/OrderAcceptanceServiceTest.cs`,
+  `GastronomyApp.Api.Tests/Endpoints/OrderEndpointsTest.cs` (a table of the running festival, a
+  hidden one, one of another festival), `OrderIdempotencyTest.cs` and `OrderRefusalLoggingTest.cs`.
 - jsdom has no layout and does not apply scoped styles, so no spec proves where the row's parts
   land on a phone. A change to the row's layout is measured in a real browser at 360 px with the
   root font at 100, 130 and 160 percent.

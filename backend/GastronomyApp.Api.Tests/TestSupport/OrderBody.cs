@@ -1,3 +1,3 @@
 namespace GastronomyApp.Api.Tests.TestSupport;
 
-public sealed record OrderBody(Guid ClientOrderId, string TableName, IReadOnlyList<OrderItemBody> Items);
+public sealed record OrderBody(Guid ClientOrderId, Guid TableId, IReadOnlyList<OrderItemBody> Items);

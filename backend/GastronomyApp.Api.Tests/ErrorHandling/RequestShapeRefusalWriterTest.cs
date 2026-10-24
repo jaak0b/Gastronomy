@@ -46,31 +46,9 @@ public sealed class RequestShapeRefusalWriterTest
     return new
            {
              clientOrderId = Guid.NewGuid(),
-             tableName = "Tisch 12",
+             tableId = _context.World.TableId,
              items
            };
-  }
-
-  [Test]
-  public async Task PostOrder_TableNameOfOnlySpaces_IsRefusedWithTheOrderMessage()
-  {
-    using var response = await _context.SendAsync(HttpMethod.Post,
-                                                  "/api/orders",
-                                                  new
-                                                  {
-                                                    clientOrderId = Guid.NewGuid(),
-                                                    tableName = "   ",
-                                                    items = new[]
-                                                            {
-                                                              new
-                                                              {
-                                                                catalogItemId = _context.World.BratwurstItemId,
-                                                                unitPriceCents = 350
-                                                              }
-                                                            }
-                                                  });
-
-    await AssertRefusedWithAsync(response, "errors.order.cannotBeProcessed");
   }
 
   [Test]

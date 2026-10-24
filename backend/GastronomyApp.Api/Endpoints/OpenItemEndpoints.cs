@@ -15,9 +15,7 @@ public static class OpenItemEndpoints
 
     group.MapGet(string.Empty, async (OpenItemQueryHandler handler, CancellationToken cancellationToken) => await handler.ListAsync(cancellationToken));
 
-    group.MapGet("/table-names", async (OpenItemQueryHandler handler, CancellationToken cancellationToken) => await handler.ListTableNamesAsync(cancellationToken));
-
-    group.MapGet("/table", async (string? tableName, OpenItemQueryHandler handler, CancellationToken cancellationToken) => await handler.ReadTableAsync(tableName, cancellationToken));
+    group.MapGet("/tables/{tableId:guid}", async (Guid tableId, OpenItemQueryHandler handler, CancellationToken cancellationToken) => await handler.ReadTableAsync(tableId, cancellationToken));
 
     group.MapPost("/settle", async (SettleItemsRequest request, StaffDeviceCaller caller, OrderItemSettlementHandler handler, CancellationToken cancellationToken) => await handler.SettleAsync(request, caller, cancellationToken));
 

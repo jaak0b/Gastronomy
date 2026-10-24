@@ -43,6 +43,7 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton<IMappingRegistration, AdminCategoryMapping>();
     services.AddSingleton<IMappingRegistration, AdminFestivalMapping>();
+    services.AddSingleton<IMappingRegistration, AdminTablePlanMapping>();
     services.AddSingleton<IMappingRegistration, AdminIngredientMapping>();
     services.AddSingleton<IMappingRegistration, AdminItemMapping>();
     services.AddSingleton<IMappingRegistration, AdminStaffMembersMapping>();
@@ -84,6 +85,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IFestivalRepository, FestivalRepository>();
     services.AddScoped<IFestivalMenuRepository, FestivalMenuRepository>();
     services.AddScoped<IFestivalStationRepository, FestivalStationRepository>();
+    services.AddScoped<ITablePlanRepository, TablePlanRepository>();
     services.AddScoped<INumberAllocator, SequenceNumberAllocator>();
     services.AddScoped<IStationOrderRepository, StationOrderRepository>();
     services.AddScoped<IIngredientRepository, IngredientRepository>();
@@ -97,6 +99,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<StationService>();
     services.AddSingleton<FestivalService>();
     services.AddSingleton<FestivalSchedule>();
+    services.AddSingleton<AreaShapeService>();
     services.AddSingleton<OrderItemFulfillmentService>();
 
     services.AddScoped<OrderItemResolutionService>();
@@ -113,6 +116,9 @@ public sealed class ApiServiceRegistration
     services.AddScoped<FestivalAdministrationService>();
     services.AddScoped<FestivalMenuService>();
     services.AddScoped<FestivalStationService>();
+    services.AddScoped<AreaAdministrationService>();
+    services.AddScoped<TableAdministrationService>();
+    services.AddScoped<FestivalStationShapeService>();
     services.AddScoped<StationAdministrationService>();
     services.AddScoped<StaffMemberAdministrationService>();
     services.AddScoped<EnrolmentService>();
@@ -158,6 +164,9 @@ public sealed class ApiServiceRegistration
     services.AddScoped<AdminFestivalHandler>();
     services.AddScoped<AdminFestivalMenuHandler>();
     services.AddScoped<AdminFestivalStationHandler>();
+    services.AddScoped<AdminAreaHandler>();
+    services.AddScoped<AdminTableHandler>();
+    services.AddScoped<AdminFestivalStationShapeHandler>();
     services.AddScoped<AdminCategoryHandler>();
     services.AddScoped<AdminItemHandler>();
     services.AddScoped<AdminItemRecipeHandler>();

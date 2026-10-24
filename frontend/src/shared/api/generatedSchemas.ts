@@ -4,6 +4,18 @@ import type * as __TypedOpenapi from "./generatedSchemas.types.js";
   import { z } from "zod";
 
 // <Schemas>
+export type AreaShapeGeometry = __TypedOpenapi.Schemas.AreaShapeGeometry;
+export const AreaShapeGeometry = z.strictObject({ x: z.number(), y: z.number(), width: z.number(), height: z.number(), rotation: z.number() });
+
+export type AdminTableView = __TypedOpenapi.Schemas.AdminTableView;
+export const AdminTableView = z.strictObject({ tableId: z.string(), name: z.string(), geometry: AreaShapeGeometry, isHidden: z.boolean() });
+
+export type AdminStationShapeView = __TypedOpenapi.Schemas.AdminStationShapeView;
+export const AdminStationShapeView = z.strictObject({ stationId: z.string(), stationName: z.string(), geometry: AreaShapeGeometry });
+
+export type AdminAreaView = __TypedOpenapi.Schemas.AdminAreaView;
+export const AdminAreaView = z.strictObject({ areaId: z.string(), name: z.string(), sortOrder: z.number().int(), isHidden: z.boolean(), tables: z.array(AdminTableView), stationShapes: z.array(AdminStationShapeView) });
+
 export type AdminCategoryView = __TypedOpenapi.Schemas.AdminCategoryView;
 export const AdminCategoryView = z.strictObject({ categoryId: z.string(), name: z.string(), colourHex: z.string(), sortOrder: z.number().int(), isActive: z.boolean() });
 
@@ -60,6 +72,9 @@ export const AdminStationView = z.strictObject({ stationId: z.string(), name: z.
 
 export type AdminStationListView = __TypedOpenapi.Schemas.AdminStationListView;
 export const AdminStationListView = z.strictObject({ stations: z.array(AdminStationView) });
+
+export type AdminTablePlanView = __TypedOpenapi.Schemas.AdminTablePlanView;
+export const AdminTablePlanView = z.strictObject({ areas: z.array(AdminAreaView) });
 
 export type CatalogCategoryView = __TypedOpenapi.Schemas.CatalogCategoryView;
 export const CatalogCategoryView = z.strictObject({ categoryId: z.string(), name: z.string(), colourHex: z.string(), sortOrder: z.number().int() });
@@ -128,7 +143,7 @@ export type OpenOrderItemView = __TypedOpenapi.Schemas.OpenOrderItemView;
 export const OpenOrderItemView = z.strictObject({ orderItemId: z.string(), orderId: z.string(), globalOrderNumber: z.number().int(), itemName: z.string(), note: z.string().nullable(), unitPriceCents: z.number().int(), orderedAtUtc: z.string() });
 
 export type OpenTableView = __TypedOpenapi.Schemas.OpenTableView;
-export const OpenTableView = z.strictObject({ tableName: z.string(), openAmountCents: z.number().int(), items: z.array(OpenOrderItemView) });
+export const OpenTableView = z.strictObject({ tableId: z.string(), tableName: z.string(), openAmountCents: z.number().int(), items: z.array(OpenOrderItemView) });
 
 export type OpenItemsView = __TypedOpenapi.Schemas.OpenItemsView;
 export const OpenItemsView = z.strictObject({ tables: z.array(OpenTableView), itemsWithoutAnOrderCount: z.number().int() });
@@ -152,7 +167,7 @@ export type PlacedOrderView = __TypedOpenapi.Schemas.PlacedOrderView;
 export const PlacedOrderView = z.strictObject({ orderId: z.string(), globalOrderNumber: z.number().int(), status: OrderStatus, totalCents: z.number().int(), createdAtUtc: z.string(), stationOrders: z.array(StationOrderView) });
 
 export type PlaceOrderRequest = __TypedOpenapi.Schemas.PlaceOrderRequest;
-export const PlaceOrderRequest = z.strictObject({ clientOrderId: z.string(), tableName: z.string().nullable(), items: z.array(OrderItemRequest).nullable(), deliveryModes: z.array(OrderDeliveryModeRequest).nullable().optional() });
+export const PlaceOrderRequest = z.strictObject({ clientOrderId: z.string(), tableId: z.string(), items: z.array(OrderItemRequest).nullable(), deliveryModes: z.array(OrderDeliveryModeRequest).nullable().optional() });
 
 export type RedeemedEnrolmentView = __TypedOpenapi.Schemas.RedeemedEnrolmentView;
 export const RedeemedEnrolmentView = z.strictObject({ deviceId: z.string(), deviceToken: z.string(), staffMember: StaffMemberView.nullable(), station: StationSummaryView.nullable(), language: z.string() });
@@ -163,8 +178,14 @@ export const RedeemEnrolmentRequest = z.strictObject({ code: z.string().nullable
 export type RenameStaffMemberRequest = __TypedOpenapi.Schemas.RenameStaffMemberRequest;
 export const RenameStaffMemberRequest = z.strictObject({ name: z.string().nullable() });
 
+export type SaveAreaRequest = __TypedOpenapi.Schemas.SaveAreaRequest;
+export const SaveAreaRequest = z.strictObject({ name: z.string().nullable(), sortOrder: z.number().int() });
+
 export type SaveCategoryRequest = __TypedOpenapi.Schemas.SaveCategoryRequest;
 export const SaveCategoryRequest = z.strictObject({ name: z.string().nullable(), colourHex: z.string().nullable() });
+
+export type SavedAreaView = __TypedOpenapi.Schemas.SavedAreaView;
+export const SavedAreaView = z.strictObject({ areaId: z.string() });
 
 export type SavedFestivalIngredientView = __TypedOpenapi.Schemas.SavedFestivalIngredientView;
 export const SavedFestivalIngredientView = z.strictObject({ ingredientId: z.string() });
@@ -180,6 +201,9 @@ export const SavedItemView = z.strictObject({ itemId: z.string() });
 
 export type SavedStationView = __TypedOpenapi.Schemas.SavedStationView;
 export const SavedStationView = z.strictObject({ stationId: z.string() });
+
+export type SavedTableView = __TypedOpenapi.Schemas.SavedTableView;
+export const SavedTableView = z.strictObject({ tableId: z.string() });
 
 export type SaveFestivalIngredientRequest = __TypedOpenapi.Schemas.SaveFestivalIngredientRequest;
 export const SaveFestivalIngredientRequest = z.strictObject({ availableAmount: z.number().nullable() });
@@ -201,6 +225,12 @@ export const SaveItemRequest = z.strictObject({ name: z.string().nullable(), cat
 
 export type SaveStationRequest = __TypedOpenapi.Schemas.SaveStationRequest;
 export const SaveStationRequest = z.strictObject({ name: z.string().nullable(), sortOrder: z.number().int() });
+
+export type SaveStationShapeRequest = __TypedOpenapi.Schemas.SaveStationShapeRequest;
+export const SaveStationShapeRequest = z.strictObject({ areaId: z.string(), geometry: AreaShapeGeometry.nullable() });
+
+export type SaveTableRequest = __TypedOpenapi.Schemas.SaveTableRequest;
+export const SaveTableRequest = z.strictObject({ areaId: z.string(), name: z.string().nullable(), geometry: AreaShapeGeometry.nullable() });
 
 export type SessionView = __TypedOpenapi.Schemas.SessionView;
 export const SessionView = z.strictObject({ deviceId: z.string(), staffMember: StaffMemberView.nullable(), station: StationSummaryView.nullable(), language: z.string() });
@@ -232,9 +262,6 @@ export const StationItemSelectionRequest = z.strictObject({ orderItemIds: z.arra
 export type StationQueueView = __TypedOpenapi.Schemas.StationQueueView;
 export const StationQueueView = z.strictObject({ station: StationSummaryView, orders: z.array(StationOrderQueueView), asItComes: z.array(StationOrderQueueView) });
 
-export type TableNamesView = __TypedOpenapi.Schemas.TableNamesView;
-export const TableNamesView = z.strictObject({ tableNames: z.array(z.string()) });
-
 export type TableOrderRecordItemView = __TypedOpenapi.Schemas.TableOrderRecordItemView;
 export const TableOrderRecordItemView = z.strictObject({ orderItemId: z.string(), orderId: z.string(), globalOrderNumber: z.number().int(), itemName: z.string(), note: z.string().nullable(), unitPriceCents: z.number().int(), orderedAtUtc: z.string(), fulfilledAtUtc: z.string().nullable(), settledAtUtc: z.string().nullable() });
 
@@ -242,7 +269,7 @@ export type TableOrderRecordView = __TypedOpenapi.Schemas.TableOrderRecordView;
 export const TableOrderRecordView = z.strictObject({ orderId: z.string(), globalOrderNumber: z.number().int(), createdAtUtc: z.string(), staffMemberName: z.string(), items: z.array(TableOrderRecordItemView) });
 
 export type TableOrderReportView = __TypedOpenapi.Schemas.TableOrderReportView;
-export const TableOrderReportView = z.strictObject({ tableName: z.string(), openAmountCents: z.number().int(), orders: z.array(TableOrderRecordView) });
+export const TableOrderReportView = z.strictObject({ tableId: z.string(), tableName: z.string(), openAmountCents: z.number().int(), orders: z.array(TableOrderRecordView) });
 
 // </Schemas>
 

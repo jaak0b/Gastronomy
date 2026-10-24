@@ -431,13 +431,21 @@
         "nameTaken": "Es gibt schon eine Kategorie mit diesem Namen. Wählen Sie einen anderen."
       },
       "festivals": {
+        "areaNameTaken": "Ein Bereich dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.",
+        "areaStaysWhileTheFestivalRuns": "Solange das Fest aktiv ist, kann ein Bereich nicht gelöscht werden. Blenden Sie ihn stattdessen aus.",
+        "areaWithItemsToHandOutOrSettleStaysShown": "Solange das Fest aktiv ist, lässt sich ein Bereich erst ausblenden, wenn an allen seinen Tischen alles zubereitet und abgerechnet ist.",
+        "areaWithOrdersStays": "Ein Bereich, an dessen Tischen schon bestellt wurde, kann nicht gelöscht werden. Blenden Sie ihn stattdessen aus.",
         "itemNeedsAStation": "Wählen Sie mindestens eine Ausgabestelle für den Artikel.",
         "itemPriceOutOfRange": "Tragen Sie einen Preis zwischen 0,00 und 999,99 Euro ein.",
         "itemStaysOnTheMenuWhileTheFestivalRuns": "Ein Artikel kann von einem aktiven Fest nicht entfernt werden.",
         "nameMissing": "Geben Sie dem Fest einen Namen.",
         "overlaps": "Das Fest {name} überschneidet sich mit diesem Zeitraum. Verschieben Sie den Beginn oder das Ende.",
         "periodInvalid": "Das Ende muss nach dem Beginn liegen. Tragen Sie beim Ende einen späteren Zeitpunkt ein.",
-        "stationHasOrdersAtTheFestival": "Solange das Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht entfernt werden."
+        "stationHasOrdersAtTheFestival": "Solange das Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht entfernt werden.",
+        "tableNameTaken": "Ein Tisch dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.",
+        "tableStaysWhileTheFestivalRuns": "Solange das Fest aktiv ist, kann ein Tisch nicht gelöscht werden. Blenden Sie ihn stattdessen aus.",
+        "tableWithItemsToHandOutOrSettleStaysShown": "Solange das Fest aktiv ist, lässt sich ein Tisch erst ausblenden, wenn dort alles zubereitet und abgerechnet ist.",
+        "tableWithOrdersStays": "Ein Tisch, an dem schon bestellt wurde, kann nicht gelöscht werden. Blenden Sie ihn stattdessen aus."
       },
       "ingredients": {
         "nameMissing": "Geben Sie einen Namen für die Zutat an.",

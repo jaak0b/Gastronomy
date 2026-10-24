@@ -17,6 +17,7 @@ public sealed class FestivalStationServiceTest
     _repository = A.Fake<IFestivalStationRepository>();
     _festivalRepository = A.Fake<IFestivalRepository>();
     _stationRepository = A.Fake<IStationRepository>();
+    _tablePlanRepository = A.Fake<ITablePlanRepository>();
     _orderabilityRepository = A.Fake<IItemOrderabilityRepository>();
     _numberAllocator = A.Fake<INumberAllocator>();
     _clock = new FakeTimeProvider(new(_now));
@@ -27,12 +28,13 @@ public sealed class FestivalStationServiceTest
     A.CallTo(() => _repository.FindLinkAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(null));
     A.CallTo(() => _repository.FindAssignmentsAtStationAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<ItemStationAssignment>>([]));
     A.CallTo(() => _repository.CountUnfulfilledItemsAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(0);
+    A.CallTo(() => _tablePlanRepository.FindStationShapeAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStationShape?>(null));
     A.CallTo(() => _numberAllocator.FindNextStationOrderNumberAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(7);
     A.CallTo(() => _orderabilityRepository.FindActiveStationIdsAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_kitchenId]));
     A.CallTo(() => _orderabilityRepository.FindItemIdsPreparedByAsync(A<Guid>._, A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
     A.CallTo(() => _orderabilityRepository.FindActiveMenuItemIdsAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
 
-    _service = new(_repository, _festivalRepository, _stationRepository, new(_orderabilityRepository, _festivalRepository, _clock), _numberAllocator, new(_festivalRepository, new(), _clock));
+    _service = new(_repository, _festivalRepository, _stationRepository, new(_orderabilityRepository, _festivalRepository, _clock), _numberAllocator, new(_festivalRepository, new(), _clock), _tablePlanRepository);
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
@@ -47,6 +49,7 @@ public sealed class FestivalStationServiceTest
   private IFestivalStationRepository _repository = null!;
   private FestivalStationService _service = null!;
   private IStationRepository _stationRepository = null!;
+  private ITablePlanRepository _tablePlanRepository = null!;
 
   [Test]
   public async Task AddAsync_AStationThatIsNotThere_FailsBecauseTheStationIsNotFound()
@@ -148,6 +151,44 @@ public sealed class FestivalStationServiceTest
                       Assert.That(removed.RefusalMessageKey(), Is.EqualTo("errors.admin.stations.itemsWouldHaveNoStation"));
                       Assert.That(removed.RefusalMetadata("count"), Is.EqualTo("1"));
                     });
+  }
+
+  [Test]
+  public async Task RemoveAsync_AStationPlacedOnTheFestivalsPlan_RemovesItsShapeWithIt()
+  {
+    var link = BuildLink();
+    FestivalStationShape shape = new()
+                                 {
+                                   FestivalStationId = link.Id,
+                                   FestivalId = _festivalId,
+                                   AreaId = Guid.NewGuid(),
+                                   X = 10,
+                                   Y = 20,
+                                   Width = 60,
+                                   Height = 60,
+                                   Rotation = 0
+                                 };
+    A.CallTo(() => _repository.FindLinkAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(link));
+    A.CallTo(() => _tablePlanRepository.FindStationShapeAsync(link.Id, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStationShape?>(shape));
+
+    ErrorOr<FestivalStation> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
+
+    Assert.That(removed.IsSuccess, Is.True);
+
+    A.CallTo(() => _tablePlanRepository.RemoveStationShape(shape)).MustHaveHappenedOnceExactly();
+    A.CallTo(() => _repository.RemoveLink(link)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task RemoveAsync_AStationNotOnTheFestivalsPlan_RemovesNoShape()
+  {
+    A.CallTo(() => _repository.FindLinkAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(BuildLink()));
+
+    ErrorOr<FestivalStation> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
+
+    Assert.That(removed.IsSuccess, Is.True);
+
+    A.CallTo(() => _tablePlanRepository.RemoveStationShape(A<FestivalStationShape>._)).MustNotHaveHappened();
   }
 
   private FestivalStation BuildLink()

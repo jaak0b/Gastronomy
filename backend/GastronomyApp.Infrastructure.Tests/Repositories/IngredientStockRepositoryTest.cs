@@ -16,12 +16,13 @@ public sealed class IngredientStockRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 3", TestContext.CurrentContext.CancellationToken);
     var mustard = await AddIngredientAsync(fixture.DbContext, "Senf", true, seeded.FestivalId, null);
     await AddRecipeLineAsync(fixture.DbContext, seeded.SausageItemId, mustard.Id, 20);
     await AddRecipeLineAsync(fixture.DbContext, seeded.LemonadeItemId, mustard.Id, 1.5);
     var acceptance = new OrderAcceptanceComposition().Create(fixture.DbContext);
-    await acceptance.AcceptAsync(RequestFor(seeded.SausageItemId, seeded.SausageItemId, seeded.LemonadeItemId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
-    await acceptance.AcceptAsync(RequestFor(seeded.SausageItemId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    await acceptance.AcceptAsync(RequestFor(tableId, seeded.SausageItemId, seeded.SausageItemId, seeded.LemonadeItemId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    await acceptance.AcceptAsync(RequestFor(tableId, seeded.SausageItemId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
 
     IngredientStockRepository repository = new(fixture.DbContext);
 
@@ -40,12 +41,13 @@ public sealed class IngredientStockRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 3", TestContext.CurrentContext.CancellationToken);
     var mustard = await AddIngredientAsync(fixture.DbContext, "Senf", true, seeded.FestivalId, null);
     await AddRecipeLineAsync(fixture.DbContext, seeded.SausageItemId, mustard.Id, 20);
     await AddRecipeLineAsync(fixture.DbContext, seeded.LemonadeItemId, mustard.Id, 1.5);
     var acceptance = new OrderAcceptanceComposition().Create(fixture.DbContext);
-    await acceptance.AcceptAsync(RequestFor(seeded.SausageItemId, seeded.SausageItemId, seeded.LemonadeItemId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
-    await acceptance.AcceptAsync(RequestFor(seeded.SausageItemId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    await acceptance.AcceptAsync(RequestFor(tableId, seeded.SausageItemId, seeded.SausageItemId, seeded.LemonadeItemId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    await acceptance.AcceptAsync(RequestFor(tableId, seeded.SausageItemId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
     List<DateTime> orderTimes = await fixture.DbContext.Orders.OrderBy(order => order.GlobalOrderNumber).Select(order => order.CreatedAtUtc).ToListAsync(TestContext.CurrentContext.CancellationToken);
 
     IngredientStockRepository repository = new(fixture.DbContext);
@@ -203,12 +205,12 @@ public sealed class IngredientStockRepositoryTest
     await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
 
-  private PlaceOrderRequest RequestFor(params Guid[] catalogItemIds)
+  private PlaceOrderRequest RequestFor(Guid tableId, params Guid[] catalogItemIds)
   {
     return new()
            {
              ClientOrderId = Guid.NewGuid(),
-             TableName = "Tisch 3",
+             TableId = tableId,
              Items = catalogItemIds.Select(catalogItemId => new OrderItemRequest
                                                             {
                                                               CatalogItemId = catalogItemId,

@@ -4,6 +4,7 @@ using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
 using Microsoft.Extensions.Logging;
@@ -23,7 +24,11 @@ public sealed class OrderAcceptanceServiceTest
     _festivalRepository = A.Fake<IFestivalRepository>();
     _numberAllocator = A.Fake<INumberAllocator>();
     _stockRepository = A.Fake<IIngredientStockRepository>();
+    _tablePlanRepository = A.Fake<ITablePlanRepository>();
     _clock = new FakeTimeProvider(new(_now));
+
+    A.CallTo(() => _tablePlanRepository.FindTableAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Table?>(null));
+    A.CallTo(() => _tablePlanRepository.FindTableAsync(_festivalId, _tableId, A<CancellationToken>._)).Returns(Task.FromResult<Table?>(TableTwelve()));
 
     A.CallTo(() => _orderRepository.FindByClientOrderIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Order?>(null));
     A.CallTo(() => _orderRepository.AddAsync(A<Order>._, A<CancellationToken>._)).Invokes(call => Remember(call.GetArgument<Order>(0)!));
@@ -43,7 +48,7 @@ public sealed class OrderAcceptanceServiceTest
 
     RunningFestivalLookup runningFestival = new(_festivalRepository, new(), _clock);
 
-    _service = new(_orderRepository, runningFestival, _numberAllocator, new(_catalogItemRepository, _stationRepository, new()), new(_stockRepository, new(), A.Fake<ILogger<StockSoldOutMarker>>()), _clock);
+    _service = new(_orderRepository, runningFestival, _tablePlanRepository, _numberAllocator, new(_catalogItemRepository, _stationRepository, new()), new(_stockRepository, new(), A.Fake<ILogger<StockSoldOutMarker>>()), _clock);
   }
 
   private readonly Guid _eventSessionId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
@@ -56,6 +61,7 @@ public sealed class OrderAcceptanceServiceTest
   private readonly Guid _barOutdoorId = Guid.Parse("cccccccc-0000-0000-0000-000000000003");
   private readonly Guid _clientOrderId = Guid.Parse("dddddddd-0000-0000-0000-000000000001");
   private readonly Guid _festivalId = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001");
+  private readonly Guid _tableId = Guid.Parse("ffffffff-0000-0000-0000-000000000001");
   private readonly DateTime _now = new(2026, 8, 26, 17, 42, 3, DateTimeKind.Utc);
 
   private readonly Dictionary<Guid, Order> _ordersTheLaptopHolds = [];
@@ -66,6 +72,7 @@ public sealed class OrderAcceptanceServiceTest
   private IFestivalRepository _festivalRepository = null!;
   private INumberAllocator _numberAllocator = null!;
   private IIngredientStockRepository _stockRepository = null!;
+  private ITablePlanRepository _tablePlanRepository = null!;
   private TimeProvider _clock = null!;
   private OrderAcceptanceService _service = null!;
 
@@ -78,6 +85,18 @@ public sealed class OrderAcceptanceServiceTest
              StartsAtUtc = _now.AddHours(-5),
              EndsAtUtc = _now.AddHours(10),
              NextOrderNumber = 1,
+             IsHidden = false
+           };
+  }
+
+  private Table TableTwelve()
+  {
+    return new()
+           {
+             Id = _tableId,
+             FestivalId = _festivalId,
+             AreaId = Guid.NewGuid(),
+             Name = "Tisch 12",
              IsHidden = false
            };
   }
@@ -122,12 +141,17 @@ public sealed class OrderAcceptanceServiceTest
     A.CallTo(() => _catalogItemRepository.FindAssignmentsAsync(A<Guid>._, catalogItemId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<ItemStationAssignment>>(assignments));
   }
 
-  private PlaceOrderRequest RequestWith(IReadOnlyList<OrderItemRequest> items, string tableName = "Tisch 12", IReadOnlyList<OrderDeliveryModeRequest>? deliveryModes = null)
+  private PlaceOrderRequest RequestWith(IReadOnlyList<OrderItemRequest> items, IReadOnlyList<OrderDeliveryModeRequest>? deliveryModes = null)
+  {
+    return RequestAt(_tableId, items, deliveryModes);
+  }
+
+  private PlaceOrderRequest RequestAt(Guid tableId, IReadOnlyList<OrderItemRequest> items, IReadOnlyList<OrderDeliveryModeRequest>? deliveryModes = null)
   {
     return new()
            {
              ClientOrderId = _clientOrderId,
-             TableName = tableName,
+             TableId = tableId,
              Items = items,
              DeliveryModes = deliveryModes ?? []
            };
@@ -259,7 +283,7 @@ public sealed class OrderAcceptanceServiceTest
                        FestivalId = _festivalId,
                        GlobalOrderNumber = 12,
                        StaffMemberId = _staffMemberId,
-                       TableName = "Tisch 12",
+                       TableId = _tableId,
                        CreatedAtUtc = _now
                      };
     A.CallTo(() => _orderRepository.FindByClientOrderIdAsync(_clientOrderId, A<CancellationToken>._)).Returns(Task.FromResult<Order?>(existing));
@@ -272,6 +296,67 @@ public sealed class OrderAcceptanceServiceTest
                       Assert.That(result.IsSuccess, Is.True);
                       Assert.That(result.Value, Is.SameAs(existing));
                     });
+    AssertNothingWasAllocatedOrStored();
+  }
+
+  [Test]
+  public async Task AcceptAsync_ATableOfTheRunningFestival_StoresTheOrderAtThatTable()
+  {
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)]), _staffMemberId, CancellationToken.None);
+
+    Assert.That(result.Value.TableId, Is.EqualTo(_tableId));
+  }
+
+  [Test]
+  public async Task AcceptAsync_AHiddenTableOfTheRunningFestival_StoresTheOrderAtThatTable()
+  {
+    var hiddenTable = TableTwelve();
+    hiddenTable.IsHidden = true;
+    A.CallTo(() => _tablePlanRepository.FindTableAsync(_festivalId, _tableId, A<CancellationToken>._)).Returns(Task.FromResult<Table?>(hiddenTable));
+
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)]), _staffMemberId, CancellationToken.None);
+
+    Assert.That(result.Value.TableId, Is.EqualTo(_tableId));
+  }
+
+  [Test]
+  public async Task AcceptAsync_ATableTheRunningFestivalDoesNotHold_IsRefusedAsAGuardAndStoresNothing()
+  {
+    var strangerTableId = Guid.NewGuid();
+
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestAt(strangerTableId, [ItemFor(_bratwurstId)]), _staffMemberId, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.FirstError.NumericType, Is.EqualTo(RefusalType.UnprocessableEntity));
+                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("errors.order.cannotBeProcessed"));
+                      Assert.That(result.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo(Refusal.ProblemCodes.UnprocessableEntity));
+                      Assert.That(result.RefusalDescription(), Does.Contain(strangerTableId.ToString()));
+                    });
+    A.CallTo(() => _tablePlanRepository.FindTableAsync(_festivalId, strangerTableId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+    AssertNothingWasAllocatedOrStored();
+  }
+
+  [Test]
+  public async Task AcceptAsync_KnownClientOrderIdNamingATableNoLongerAtTheFestival_StillReturnsTheExistingOrder()
+  {
+    Order existing = new()
+                     {
+                       Id = Guid.NewGuid(),
+                       ClientOrderId = _clientOrderId,
+                       FestivalId = _festivalId,
+                       GlobalOrderNumber = 12,
+                       StaffMemberId = _staffMemberId,
+                       TableId = _tableId,
+                       CreatedAtUtc = _now
+                     };
+    A.CallTo(() => _orderRepository.FindByClientOrderIdAsync(_clientOrderId, A<CancellationToken>._)).Returns(Task.FromResult<Order?>(existing));
+    A.CallTo(() => _tablePlanRepository.FindTableAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Table?>(null));
+    Remember(existing);
+
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)]), _staffMemberId, CancellationToken.None);
+
+    Assert.That(result.Value, Is.SameAs(existing));
     AssertNothingWasAllocatedOrStored();
   }
 

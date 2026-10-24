@@ -15,6 +15,11 @@ public sealed class FestivalStationConfiguration : IEntityTypeConfiguration<Fest
     builder.Property(link => link.FestivalId).IsRequired();
     builder.Property(link => link.StationId).IsRequired();
     builder.Property(link => link.NextStationOrderNumber).IsRequired().IsConcurrencyToken();
+    builder.HasAlternateKey(link => new
+                                    {
+                                      link.Id,
+                                      link.FestivalId
+                                    });
     builder.HasIndex(link => new
                              {
                                link.FestivalId,

@@ -90,9 +90,9 @@ public sealed class OrderItemSettlementService
     if (missingNotices.Count > 0)
       return missingNotices;
 
-    IReadOnlyList<string> tableNames = selected.Select(item => item.StationOrder.Order.TableName).Distinct(StringComparer.Ordinal).OrderBy(tableName => tableName, StringComparer.Ordinal).ToList();
-    if (tableNames.Count > 1)
-      return Refusal.Settlement.SelectionSpansSeveralTables(tableNames);
+    IReadOnlyList<Guid> tableIds = selected.Select(item => item.StationOrder.Order.TableId).Distinct().ToList();
+    if (tableIds.Count > 1)
+      return Refusal.Settlement.SelectionSpansSeveralTables(tableIds);
 
     return Apply(lines, paymentMethod, selected, settledByStaffMemberId, settledAtUtc);
   }

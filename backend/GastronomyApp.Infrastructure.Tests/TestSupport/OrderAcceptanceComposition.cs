@@ -17,11 +17,11 @@ public sealed class OrderAcceptanceComposition
   {
     OrderItemResolutionService itemResolutionService = new(new CatalogItemRepository(dbContext), new StationRepository(dbContext), new());
 
-    FestivalRepository festivalRepository = new(dbContext, new());
+    FestivalRepository festivalRepository = new(dbContext, new(), new());
     RunningFestivalLookup runningFestival = new(festivalRepository, new(), TimeProvider.System);
 
     StockSoldOutMarker soldOutMarker = new(new IngredientStockRepository(dbContext), new(), NullLogger<StockSoldOutMarker>.Instance);
 
-    return new(new OrderRepository(dbContext), runningFestival, numberAllocator, itemResolutionService, soldOutMarker, TimeProvider.System);
+    return new(new OrderRepository(dbContext), runningFestival, new TablePlanRepository(dbContext), numberAllocator, itemResolutionService, soldOutMarker, TimeProvider.System);
   }
 }

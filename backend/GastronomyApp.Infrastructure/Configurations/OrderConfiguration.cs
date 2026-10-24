@@ -16,7 +16,7 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
     builder.Property(order => order.FestivalId).IsRequired();
     builder.Property(order => order.GlobalOrderNumber).IsRequired();
     builder.Property(order => order.StaffMemberId).IsRequired();
-    builder.Property(order => order.TableName).IsRequired();
+    builder.Property(order => order.TableId).IsRequired();
     builder.Property(order => order.CreatedAtUtc).IsRequired();
     builder.HasIndex(order => order.ClientOrderId).IsUnique();
     builder.HasIndex(order => order.FestivalId);
@@ -28,6 +28,19 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
            .IsUnique();
     builder.HasOne(order => order.Festival).WithMany().HasForeignKey(order => order.FestivalId).OnDelete(DeleteBehavior.Restrict);
     builder.HasOne(order => order.StaffMember).WithMany(staffMember => staffMember.Orders).HasForeignKey(order => order.StaffMemberId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasOne(order => order.Table)
+           .WithMany(table => table.Orders)
+           .HasForeignKey(order => new
+                                   {
+                                     order.TableId,
+                                     order.FestivalId
+                                   })
+           .HasPrincipalKey(table => new
+                                     {
+                                       table.Id,
+                                       table.FestivalId
+                                     })
+           .OnDelete(DeleteBehavior.Restrict);
     builder.HasMany(order => order.StationOrders).WithOne(stationOrder => stationOrder.Order).HasForeignKey(stationOrder => stationOrder.OrderId);
   }
 }

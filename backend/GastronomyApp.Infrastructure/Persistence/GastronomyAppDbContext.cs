@@ -41,6 +41,12 @@ public sealed class GastronomyAppDbContext : DbContext
 
   public DbSet<FestivalIngredient> FestivalIngredients => Set<FestivalIngredient>();
 
+  public DbSet<Area> Areas => Set<Area>();
+
+  public DbSet<Table> Tables => Set<Table>();
+
+  public DbSet<FestivalStationShape> FestivalStationShapes => Set<FestivalStationShape>();
+
   override protected void OnModelCreating(ModelBuilder modelBuilder)
   {
     modelBuilder.ApplyConfigurationsFromAssembly(typeof(GastronomyAppDbContext).Assembly);

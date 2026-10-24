@@ -149,8 +149,17 @@ public sealed class OpenItemMappingTest
                     FestivalId = Guid.NewGuid(),
                     GlobalOrderNumber = _ordersPlaced,
                     StaffMemberId = Guid.NewGuid(),
-                    TableName = tableName,
+                    TableId = Guid.NewGuid(),
                     CreatedAtUtc = _orderedAtUtc
+                  };
+
+    order.Table = new()
+                  {
+                    Id = order.TableId,
+                    FestivalId = order.FestivalId,
+                    AreaId = Guid.NewGuid(),
+                    Name = tableName,
+                    IsHidden = false
                   };
 
     order.StaffMember = new()

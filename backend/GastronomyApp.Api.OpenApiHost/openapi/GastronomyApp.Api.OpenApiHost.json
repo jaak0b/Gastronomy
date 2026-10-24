@@ -213,36 +213,19 @@
         }
       }
     },
-    "/api/open-items/table-names": {
-      "get": {
-        "tags": [
-          "GetDocument.Insider"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TableNamesView"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/open-items/table": {
+    "/api/open-items/tables/{tableId}": {
       "get": {
         "tags": [
           "GetDocument.Insider"
         ],
         "parameters": [
           {
-            "name": "tableName",
-            "in": "query",
+            "name": "tableId",
+            "in": "path",
+            "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -1624,6 +1607,509 @@
         }
       }
     },
+    "/api/admin/festivals/{festivalId}/table-plan": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTablePlanView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/areas": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAreaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedAreaView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/areas/{areaId}": {
+      "put": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAreaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedAreaView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/areas/{areaId}/hide": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedAreaView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/areas/{areaId}/show": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedAreaView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/tables": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveTableRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedTableView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/tables/{tableId}": {
+      "put": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "tableId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveTableRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedTableView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "tableId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/tables/{tableId}/hide": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "tableId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedTableView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/tables/{tableId}/show": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "tableId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedTableView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/stations/{stationId}/shape": {
+      "put": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "stationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveStationShapeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedStationView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "stationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/admin/ingredients": {
       "get": {
         "tags": [
@@ -1773,6 +2259,45 @@
   },
   "components": {
     "schemas": {
+      "AdminAreaView": {
+        "required": [
+          "areaId",
+          "name",
+          "sortOrder",
+          "isHidden",
+          "tables",
+          "stationShapes"
+        ],
+        "type": "object",
+        "properties": {
+          "areaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isHidden": {
+            "type": "boolean"
+          },
+          "tables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminTableView"
+            }
+          },
+          "stationShapes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminStationShapeView"
+            }
+          }
+        }
+      },
       "AdminCategoryListView": {
         "required": [
           "categories"
@@ -2181,6 +2706,26 @@
           }
         }
       },
+      "AdminStationShapeView": {
+        "required": [
+          "stationId",
+          "stationName",
+          "geometry"
+        ],
+        "type": "object",
+        "properties": {
+          "stationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stationName": {
+            "type": "string"
+          },
+          "geometry": {
+            "$ref": "#/components/schemas/AreaShapeGeometry"
+          }
+        }
+      },
       "AdminStationView": {
         "required": [
           "stationId",
@@ -2211,6 +2756,76 @@
           },
           "isAtAnyFestival": {
             "type": "boolean"
+          }
+        }
+      },
+      "AdminTablePlanView": {
+        "required": [
+          "areas"
+        ],
+        "type": "object",
+        "properties": {
+          "areas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminAreaView"
+            }
+          }
+        }
+      },
+      "AdminTableView": {
+        "required": [
+          "tableId",
+          "name",
+          "geometry",
+          "isHidden"
+        ],
+        "type": "object",
+        "properties": {
+          "tableId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "geometry": {
+            "$ref": "#/components/schemas/AreaShapeGeometry"
+          },
+          "isHidden": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AreaShapeGeometry": {
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height",
+          "rotation"
+        ],
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number",
+            "format": "double"
+          },
+          "y": {
+            "type": "number",
+            "format": "double"
+          },
+          "width": {
+            "type": "number",
+            "format": "double"
+          },
+          "height": {
+            "type": "number",
+            "format": "double"
+          },
+          "rotation": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -2670,12 +3285,17 @@
       },
       "OpenTableView": {
         "required": [
+          "tableId",
           "tableName",
           "openAmountCents",
           "items"
         ],
         "type": "object",
         "properties": {
+          "tableId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "tableName": {
             "type": "string"
           },
@@ -2795,7 +3415,7 @@
       "PlaceOrderRequest": {
         "required": [
           "clientOrderId",
-          "tableName",
+          "tableId",
           "items"
         ],
         "type": "object",
@@ -2804,11 +3424,9 @@
             "type": "string",
             "format": "uuid"
           },
-          "tableName": {
-            "type": [
-              "null",
-              "string"
-            ]
+          "tableId": {
+            "type": "string",
+            "format": "uuid"
           },
           "items": {
             "minItems": 1,
@@ -2935,6 +3553,25 @@
           }
         }
       },
+      "SaveAreaRequest": {
+        "required": [
+          "name",
+          "sortOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "SaveCategoryRequest": {
         "required": [
           "name",
@@ -2954,6 +3591,18 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "SavedAreaView": {
+        "required": [
+          "areaId"
+        ],
+        "type": "object",
+        "properties": {
+          "areaId": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -3012,6 +3661,18 @@
         "type": "object",
         "properties": {
           "stationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "SavedTableView": {
+        "required": [
+          "tableId"
+        ],
+        "type": "object",
+        "properties": {
+          "tableId": {
             "type": "string",
             "format": "uuid"
           }
@@ -3174,6 +3835,59 @@
           "sortOrder": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "SaveStationShapeRequest": {
+        "required": [
+          "areaId",
+          "geometry"
+        ],
+        "type": "object",
+        "properties": {
+          "areaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "geometry": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AreaShapeGeometry"
+              }
+            ]
+          }
+        }
+      },
+      "SaveTableRequest": {
+        "required": [
+          "areaId",
+          "name",
+          "geometry"
+        ],
+        "type": "object",
+        "properties": {
+          "areaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "geometry": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AreaShapeGeometry"
+              }
+            ]
           }
         }
       },
@@ -3560,20 +4274,6 @@
           "usedUp"
         ]
       },
-      "TableNamesView": {
-        "required": [
-          "tableNames"
-        ],
-        "type": "object",
-        "properties": {
-          "tableNames": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
       "TableOrderRecordItemView": {
         "required": [
           "orderItemId",
@@ -3668,12 +4368,17 @@
       },
       "TableOrderReportView": {
         "required": [
+          "tableId",
           "tableName",
           "openAmountCents",
           "orders"
         ],
         "type": "object",
         "properties": {
+          "tableId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "tableName": {
             "type": "string"
           },

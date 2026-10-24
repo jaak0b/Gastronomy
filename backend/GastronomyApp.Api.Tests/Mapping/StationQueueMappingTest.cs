@@ -206,8 +206,16 @@ public sealed class StationQueueMappingTest
              FestivalId = Guid.NewGuid(),
              GlobalOrderNumber = 7,
              StaffMemberId = Guid.NewGuid(),
-             TableName = "Tisch 12",
+             TableId = Guid.NewGuid(),
              CreatedAtUtc = _placedAtUtc,
+             Table = new()
+                     {
+                       Id = Guid.NewGuid(),
+                       FestivalId = Guid.NewGuid(),
+                       AreaId = Guid.NewGuid(),
+                       Name = "Tisch 12",
+                       IsHidden = false
+                     },
              StaffMember = new()
                            {
                              Id = Guid.NewGuid(),

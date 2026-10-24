@@ -15,7 +15,9 @@ public sealed class ChangeAnnouncementInterceptorTest
   public async Task SetUp()
   {
     _fixture = new();
-    _seeded = await new DomainSeeder().SeedAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    DomainSeeder seeder = new();
+    _seeded = await seeder.SeedAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    _tableId = await seeder.SeedTableAsync(_fixture.DbContext, _seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     _announcer = A.Fake<ICommittedChangeAnnouncer>();
     _afterCommitActions = new(_announcer);
     _afterCommitActions.StartCollecting();
@@ -36,6 +38,7 @@ public sealed class ChangeAnnouncementInterceptorTest
   private SqliteInMemoryFixture _fixture = null!;
   private ChangeAnnouncementInterceptor _interceptor = null!;
   private SeededDomain _seeded = null!;
+  private Guid _tableId;
 
   [Test]
   public async Task SavingChangesAsync_ThreeNewCatalogItems_EnqueuesOneConfigurationChanged()
@@ -191,7 +194,7 @@ public sealed class ChangeAnnouncementInterceptorTest
                     FestivalId = _seeded.FestivalId,
                     GlobalOrderNumber = 1,
                     StaffMemberId = _seeded.StaffMemberId,
-                    TableName = "Tisch 12",
+                    TableId = _tableId,
                     CreatedAtUtc = DateTime.UtcNow
                   };
 

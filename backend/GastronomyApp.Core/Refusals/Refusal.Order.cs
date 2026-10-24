@@ -66,6 +66,13 @@ public static partial class Refusal
       return UnprocessableEntity(RefusalMessageKeys.OrderCannotBeProcessed, $"No station at the running festival prepares the item {itemName} ({catalogItemId}), so the order cannot be routed anywhere.", new() { [MetadataKeys.ProblemCode] = ProblemCodes.UnprocessableEntity });
     }
 
+    public static Error TableNotAtTheRunningFestival(Guid festivalId, Guid tableId)
+    {
+      return UnprocessableEntity(RefusalMessageKeys.OrderCannotBeProcessed,
+                                 $"The order names the table {tableId}, which is not a table of the running festival {festivalId}. The phone offers only that festival's tables, so this call did not come from that screen.",
+                                 new() { [MetadataKeys.ProblemCode] = ProblemCodes.UnprocessableEntity });
+    }
+
     public static Error NoRunningFestival()
     {
       return UnprocessableEntity(RefusalMessageKeys.OrderCannotBeProcessed, "No festival is running, so the order belongs to nothing and was not stored.", new() { [MetadataKeys.ProblemCode] = ProblemCodes.UnprocessableEntity });

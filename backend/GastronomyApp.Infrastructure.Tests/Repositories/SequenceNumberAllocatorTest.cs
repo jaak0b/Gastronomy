@@ -272,6 +272,7 @@ public sealed class SequenceNumberAllocatorTest
   {
     var orderId = Guid.NewGuid();
     var staffMemberId = await AddStaffMemberAsync(dbContext, $"Anna {stationOrderNumber}");
+    var tableId = await new DomainSeeder().SeedTableAsync(dbContext, festivalId, $"Tisch {stationOrderNumber}", TestContext.CurrentContext.CancellationToken);
 
     dbContext.Orders.Add(new()
                          {
@@ -280,7 +281,7 @@ public sealed class SequenceNumberAllocatorTest
                            FestivalId = festivalId,
                            GlobalOrderNumber = stationOrderNumber,
                            StaffMemberId = staffMemberId,
-                           TableName = $"Tisch {stationOrderNumber}",
+                           TableId = tableId,
                            CreatedAtUtc = DateTime.UtcNow
                          });
 

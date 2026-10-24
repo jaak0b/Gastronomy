@@ -26,6 +26,7 @@ public sealed class OrderItemSettlementServiceOverlapTest
   private readonly DateTime _earlier = new(2026, 9, 5, 19, 5, 0, DateTimeKind.Utc);
   private readonly Guid _collectingWaiter = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001");
   private readonly Guid _anotherWaiter = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000002");
+  private readonly Guid _tableThreeId = Guid.Parse("cccccccc-0000-0000-0000-000000000003");
 
   private OrderItemSettlementService _service = null!;
 
@@ -103,12 +104,12 @@ public sealed class OrderItemSettlementServiceOverlapTest
   private IReadOnlyCollection<OrderItem> AtOneTable(params OrderItem[] items)
   {
     foreach (var item in items)
-      PutAtTable("Tisch 3", item);
+      PutAtTable(_tableThreeId, item);
 
     return items.ToList();
   }
 
-  private void PutAtTable(string tableName, OrderItem item)
+  private void PutAtTable(Guid tableId, OrderItem item)
   {
     Order order = new()
                   {
@@ -117,7 +118,7 @@ public sealed class OrderItemSettlementServiceOverlapTest
                     FestivalId = Guid.NewGuid(),
                     GlobalOrderNumber = 1,
                     StaffMemberId = Guid.NewGuid(),
-                    TableName = tableName,
+                    TableId = tableId,
                     CreatedAtUtc = _earlier
                   };
 

@@ -10,9 +10,11 @@ public sealed class HubEventListener : IAsyncDisposable
   private readonly TimeSpan _groupsJoinedPatience = TimeSpan.FromSeconds(10);
   private int _heardCount;
 
-  public HubEventListener(Uri hubAddress, string eventName)
+  public HubEventListener(ApiTestFactory laptop, string hubPath, string eventName)
   {
-    _connection = new HubConnectionBuilder().WithUrl(hubAddress).Build();
+    ArgumentNullException.ThrowIfNull(laptop);
+
+    _connection = new HubConnectionBuilder().WithUrl(new Uri(laptop.BaseAddress, hubPath)).Build();
     _connection.On(eventName,
                    () =>
                    {

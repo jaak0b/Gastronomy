@@ -14,9 +14,10 @@ public sealed class OrderAcceptanceServiceTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
 
-    ErrorOr<Order> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Order> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, tableId, Guid.NewGuid()), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -32,11 +33,12 @@ public sealed class OrderAcceptanceServiceTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
     var clientOrderId = Guid.NewGuid();
 
-    ErrorOr<Order> first = await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
-    ErrorOr<Order> second = await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Order> first = await acceptanceService.AcceptAsync(BuildRequest(seeded, tableId, clientOrderId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Order> second = await acceptanceService.AcceptAsync(BuildRequest(seeded, tableId, clientOrderId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
 
     var orderCount = await fixture.DbContext.Orders.CountAsync(TestContext.CurrentContext.CancellationToken);
 
@@ -49,14 +51,49 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   [Test]
+  public async Task AcceptAsync_ATableOfAnotherFestival_IsRefusedAndStoresNothing()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    DomainSeeder seeder = new();
+    var seeded = await seeder.SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var otherFestivalId = Guid.NewGuid();
+    fixture.DbContext.Festivals.Add(new()
+                                    {
+                                      Id = otherFestivalId,
+                                      Name = "Herbstfest",
+                                      StartsAtUtc = new(2030, 10, 1, 12, 0, 0, DateTimeKind.Utc),
+                                      EndsAtUtc = new(2030, 10, 2, 12, 0, 0, DateTimeKind.Utc),
+                                      NextOrderNumber = 1,
+                                      IsHidden = false
+                                    });
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    var otherFestivalsTableId = await seeder.SeedTableAsync(fixture.DbContext, otherFestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
+    var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
+
+    ErrorOr<Order> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, otherFestivalsTableId, Guid.NewGuid()), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+
+    var orderCount = await fixture.DbContext.Orders.CountAsync(TestContext.CurrentContext.CancellationToken);
+    var festival = await fixture.DbContext.Festivals.AsNoTracking().SingleAsync(candidate => candidate.Id == seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsError, Is.True);
+                      Assert.That(result.FirstError.Code, Is.EqualTo("errors.order.cannotBeProcessed"));
+                      Assert.That(orderCount, Is.Zero);
+                      Assert.That(festival.NextOrderNumber, Is.EqualTo(1));
+                    });
+  }
+
+  [Test]
   public async Task AcceptAsync_MultipleStations_AllocatesIndependentSequenceNumbers()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
 
-    await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
-    ErrorOr<Order> second = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    await acceptanceService.AcceptAsync(BuildRequest(seeded, tableId, Guid.NewGuid()), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Order> second = await acceptanceService.AcceptAsync(BuildRequest(seeded, tableId, Guid.NewGuid()), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
 
     var kitchenTicket = second.Value.StationOrders.Single(stationOrder => stationOrder.StationId == seeded.KitchenStationId);
     var barTicket = second.Value.StationOrders.Single(stationOrder => stationOrder.StationId == seeded.BarStationId);
@@ -74,12 +111,13 @@ public sealed class OrderAcceptanceServiceTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
     var clientOrderId = Guid.NewGuid();
 
-    ErrorOr<Order> first = await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Order> first = await acceptanceService.AcceptAsync(BuildRequest(seeded, tableId, clientOrderId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
     fixture.DbContext.ChangeTracker.Clear();
-    ErrorOr<Order> second = await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Order> second = await acceptanceService.AcceptAsync(BuildRequest(seeded, tableId, clientOrderId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
 
     using var verificationContext = fixture.CreateContext();
     List<OrderItem> storedItems = await verificationContext.OrderItems.ToListAsync(TestContext.CurrentContext.CancellationToken);
@@ -101,6 +139,7 @@ public sealed class OrderAcceptanceServiceTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     Ingredient mustard = new()
                          {
                            Id = Guid.NewGuid(),
@@ -126,7 +165,7 @@ public sealed class OrderAcceptanceServiceTest
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
 
-    ErrorOr<Order> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Order> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, tableId, Guid.NewGuid()), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
     fixture.DbContext.ChangeTracker.Clear();
 
     var sausageRow = await fixture.DbContext.FestivalCatalogItems.SingleAsync(menuRow => menuRow.CatalogItemId == seeded.SausageItemId, TestContext.CurrentContext.CancellationToken);
@@ -140,12 +179,12 @@ public sealed class OrderAcceptanceServiceTest
                     });
   }
 
-  private PlaceOrderRequest BuildRequest(SeededDomain seeded, Guid clientOrderId)
+  private PlaceOrderRequest BuildRequest(SeededDomain seeded, Guid tableId, Guid clientOrderId)
   {
     return new()
            {
              ClientOrderId = clientOrderId,
-             TableName = "Tisch 12",
+             TableId = tableId,
              Items =
              [
                new()

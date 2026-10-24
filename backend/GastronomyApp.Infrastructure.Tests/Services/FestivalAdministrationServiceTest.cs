@@ -57,7 +57,7 @@ public sealed class FestivalAdministrationServiceTest
 
   private FestivalAdministrationService Compose(GastronomyAppDbContext dbContext)
   {
-    FestivalRepository festivalRepository = new(dbContext, new());
+    FestivalRepository festivalRepository = new(dbContext, new(), new());
 
     return new(festivalRepository, new IngredientRepository(dbContext), new(), new(festivalRepository, new(), TimeProvider.System));
   }

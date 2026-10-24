@@ -13,8 +13,9 @@ Backend, under `backend/`:
 - `GastronomyApp.Core/Entities/Festival.cs`: `Name`, `StartsAtUtc`, `EndsAtUtc`, `NextOrderNumber` (the
   global order number counter, a concurrency token) and `IsHidden`. It raises `ConfigurationChanged`
   and `OrdersChanged`. What belongs to it: `FestivalStation` (with `NextStationOrderNumber`),
-  `FestivalCatalogItem` (price and `IsAvailable`), `ItemStationAssignment` and `FestivalIngredient`
-  (see the `festival-stock` page). `Order` and `StationOrder` each carry a `FestivalId`.
+  `FestivalCatalogItem` (price and `IsAvailable`), `ItemStationAssignment`, `FestivalIngredient`
+  (see the `festival-stock` page) and `Area` with its tables and station shapes (see the
+  `table-plan` page). `Order` and `StationOrder` each carry a `FestivalId`.
 - `Core/Services/FestivalSchedule.cs` is the only place that answers time questions about a festival:
   `IsRunning`, `FindRunningAt`, `FindOverlapping` and `HasStartWithin` (the desktop's
   `UpdateInstallGate` uses it to hold an update back). `RunningFestivalLookup` is what every other
@@ -39,7 +40,8 @@ Backend, under `backend/`:
   create, `PUT /{festivalId}`, `POST /{festivalId}/copy`, `/hide` and `/show` with
   `Handlers/AdminFestivalHandler.cs`; `PUT` and `DELETE /{festivalId}/items/{itemId}` and
   `POST .../availability` with `AdminFestivalMenuHandler.cs`; `PUT` and `DELETE
-  /{festivalId}/stations/{stationId}` with `AdminFestivalStationHandler.cs`.
+  /{festivalId}/stations/{stationId}` with `AdminFestivalStationHandler.cs`, which also deletes the
+  station's shape on the plan. The plan's own routes are on the `table-plan` page.
 - Wire records: `GastronomyApp.Contracts/Admin/Festivals` (`SaveFestivalRequest`, `SavedFestivalView`,
   `AdminFestivalView` with `IsHidden`, `IsRunning` and the three counts, `AdminFestivalListView`,
   `SaveFestivalItemRequest`). Mapping: `GastronomyApp.Api/Mapping/AdminFestivalMapping.cs`; the handler
@@ -93,8 +95,9 @@ Every point below is intended behaviour. A change to any of them needs the owner
   on `(FestivalId, StationId, StationOrderNumber)` in `StationOrderConfiguration` can only cover the
   columns of its own table, and it is what keeps a station's numbers unique within a festival.
 - **Copying a festival exists only on the Feste list** (`FestivalsList.vue`; the festival page has no
-  copy control) and copies configuration only: the station links, the menu rows with their prices and
-  the station assignments, never an order. The copy takes a new name and a new period that must pass
+  copy control) and copies configuration only: the station links, the menu rows with their prices,
+  the station assignments and the plan's areas, tables and station shapes that are not hidden
+  (see the `table-plan` page), never an order. The copy takes a new name and a new period that must pass
   the overlap check, starts both order counters at 1, puts every article back on sale and gets
   unlimited stock rows instead of the source's amounts.
 - **Running means not hidden and `StartsAtUtc <= now < EndsAtUtc`, and only `FestivalSchedule`

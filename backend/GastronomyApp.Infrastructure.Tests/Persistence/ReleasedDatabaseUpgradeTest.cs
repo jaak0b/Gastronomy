@@ -48,7 +48,7 @@ public sealed class ReleasedDatabaseUpgradeTest
 
     var category = await context.Set<CatalogCategory>().SingleAsync(persisted => persisted.Id == categoryId);
     var invitation = await context.Set<EnrolmentInvitation>().SingleAsync(persisted => persisted.Id == invitationId);
-    var order = await context.Set<Order>().SingleAsync(persisted => persisted.Id == orderId);
+    var order = await context.Set<Order>().Include(persisted => persisted.Table).ThenInclude(table => table.Area).SingleAsync(persisted => persisted.Id == orderId);
     var orderItem = await context.Set<OrderItem>().SingleAsync(persisted => persisted.Id == orderItemId);
     List<string> appliedMigrations = (await context.Database.GetAppliedMigrationsAsync()).ToList();
     var ingredientCount = await context.Set<Ingredient>().CountAsync();
@@ -62,7 +62,11 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(invitation.QRCodeSalt, Is.EqualTo(qrCodeSalt));
                       Assert.That(invitation.QRCodeIterations, Is.EqualTo(210000));
                       Assert.That(invitation.QRCodeAlgorithm, Is.EqualTo("PBKDF2-HMAC-SHA512"));
-                      Assert.That(order.TableName, Is.EqualTo("Tisch 7"));
+                      Assert.That(order.Table.Name, Is.EqualTo("Tisch 7"));
+                      Assert.That(order.Table.FestivalId, Is.EqualTo(festivalId));
+                      Assert.That(order.Table.IsHidden, Is.True);
+                      Assert.That(order.Table.Area.Name, Is.EqualTo("Bisherige Tische"));
+                      Assert.That(order.Table.Area.IsHidden, Is.True);
                       Assert.That(order.GlobalOrderNumber, Is.EqualTo(4));
                       Assert.That(order.CreatedAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 17, 30, 0)));
                       Assert.That(order.StaffMemberId, Is.EqualTo(staffMemberId));
@@ -70,13 +74,15 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(orderItem.SettledAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 18, 0, 0)));
                       Assert.That(orderItem.SettledByStaffMemberId, Is.EqualTo(staffMemberId));
                       Assert.That(orderItem.PaymentMethod, Is.Null);
-                      Assert.That(appliedMigrations, Has.Count.EqualTo(6));
+                      Assert.That(appliedMigrations, Has.Count.EqualTo(8));
                       Assert.That(appliedMigrations[0], Is.EqualTo(_releasedSchema.MigrationId));
                       Assert.That(appliedMigrations[1], Does.EndWith("_CollateCategoryNamesAndCapitalizeQRColumns"));
                       Assert.That(appliedMigrations[2], Does.EndWith("_DropOrderNote"));
                       Assert.That(appliedMigrations[3], Does.EndWith("_AddEntityNavigations"));
                       Assert.That(appliedMigrations[4], Does.EndWith("_AddOrderItemPaymentMethod"));
                       Assert.That(appliedMigrations[5], Does.EndWith("_AddIngredientStock"));
+                      Assert.That(appliedMigrations[6], Does.EndWith("_AddTablePlan"));
+                      Assert.That(appliedMigrations[7], Does.EndWith("_SwitchOrdersToTables"));
                       Assert.That(ingredientCount, Is.Zero);
                       Assert.That(stockRowCount, Is.Zero);
                       Assert.That(recipeLineCount, Is.Zero);
@@ -106,6 +112,161 @@ public sealed class ReleasedDatabaseUpgradeTest
                     {
                       Assert.That(invitations.Select(invitation => invitation.Id), Is.EquivalentTo(new[] { survivingInvitationId }));
                       Assert.That(invitations.Single().ConsumedByDeviceId, Is.EqualTo(survivingDeviceId));
+                    });
+  }
+
+  [Test]
+  public async Task MigrateAsync_OnReleasedDatabaseWithStationsAtAFestival_KeepsEveryLinkAndLetsItBePlacedOnThePlan()
+  {
+    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
+    var festivalId = Guid.NewGuid();
+    var kitchenLinkId = Guid.NewGuid();
+    var kitchenId = Guid.NewGuid();
+    var barLinkId = Guid.NewGuid();
+    var barId = Guid.NewGuid();
+
+    var connection = fixture.OpenConnection();
+    await ExecuteAsync(connection, _releasedSchema.Sql);
+    await InsertFestivalAsync(connection, festivalId);
+    await InsertFestivalStationAsync(connection, kitchenLinkId, festivalId, kitchenId, "Kueche", 7);
+    await InsertFestivalStationAsync(connection, barLinkId, festivalId, barId, "Theke", 3);
+
+    var context = fixture.CreateContext();
+    await context.Database.MigrateAsync();
+
+    List<FestivalStation> links = await context.Set<FestivalStation>().OrderBy(link => link.NextStationOrderNumber).ToListAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(links.Select(link => link.Id),
+                                  Is.EqualTo(new[]
+                                             {
+                                               barLinkId,
+                                               kitchenLinkId
+                                             }));
+                      Assert.That(links.Select(link => link.StationId),
+                                  Is.EqualTo(new[]
+                                             {
+                                               barId,
+                                               kitchenId
+                                             }));
+                      Assert.That(links.Select(link => link.FestivalId), Is.All.EqualTo(festivalId));
+                      Assert.That(links.Select(link => link.NextStationOrderNumber),
+                                  Is.EqualTo(new[]
+                                             {
+                                               3,
+                                               7
+                                             }));
+                    });
+
+    var areaId = Guid.NewGuid();
+    context.Set<Area>()
+   .Add(new()
+        {
+          Id = areaId,
+          FestivalId = festivalId,
+          Name = "Garten",
+          SortOrder = 1,
+          IsHidden = false
+        });
+    context.Set<FestivalStationShape>()
+   .Add(new()
+        {
+          FestivalStationId = kitchenLinkId,
+          FestivalId = festivalId,
+          AreaId = areaId,
+          X = 10,
+          Y = 20,
+          Width = 60,
+          Height = 40,
+          Rotation = 0
+        });
+
+    Assert.DoesNotThrowAsync(async () => await context.SaveChangesAsync());
+  }
+
+  [Test]
+  public async Task MigrateAsync_OnReleasedDatabaseWithOrdersAtTwoFestivals_PointsEveryOrderAtAHiddenTableOfItsOwnFestival()
+  {
+    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
+    var summerFestivalId = Guid.NewGuid();
+    var autumnFestivalId = Guid.NewGuid();
+    var emptyFestivalId = Guid.NewGuid();
+    var staffMemberId = Guid.NewGuid();
+    var categoryId = Guid.NewGuid();
+    var stationId = Guid.NewGuid();
+    var catalogItemId = Guid.NewGuid();
+    var firstSpellingOrderId = Guid.NewGuid();
+    var otherCapitalsOrderId = Guid.NewGuid();
+    var barOrderId = Guid.NewGuid();
+    var autumnOrderId = Guid.NewGuid();
+    var emptyNameOrderId = Guid.NewGuid();
+    var blankNameOrderId = Guid.NewGuid();
+    var withoutStationOrdersOrderId = Guid.NewGuid();
+
+    var connection = fixture.OpenConnection();
+    await ExecuteAsync(connection, _releasedSchema.Sql);
+    await InsertCatalogCategoryAsync(connection, categoryId);
+    await InsertFestivalAsync(connection, summerFestivalId);
+    await InsertFestivalAsync(connection, autumnFestivalId);
+    await InsertFestivalAsync(connection, emptyFestivalId);
+    await InsertStaffMemberAsync(connection, staffMemberId);
+    await InsertStationAndCatalogItemAsync(connection, stationId, catalogItemId, categoryId);
+    await InsertOrderWithOneItemAsync(connection, new(otherCapitalsOrderId, summerFestivalId, 2, "tisch 4", "2026-09-20 17:00:00"), staffMemberId, stationId, catalogItemId);
+    await InsertOrderWithOneItemAsync(connection, new(firstSpellingOrderId, summerFestivalId, 1, "Tisch 4", "2026-09-20 16:30:00"), staffMemberId, stationId, catalogItemId);
+    await InsertOrderWithOneItemAsync(connection, new(barOrderId, summerFestivalId, 3, "Bar", "2026-09-20 18:00:00"), staffMemberId, stationId, catalogItemId);
+    await InsertOrderWithOneItemAsync(connection, new(autumnOrderId, autumnFestivalId, 1, "Tisch 4", "2026-09-27 17:00:00"), staffMemberId, stationId, catalogItemId);
+    await InsertOrderWithOneItemAsync(connection, new(emptyNameOrderId, summerFestivalId, 4, string.Empty, "2026-09-20 18:10:00"), staffMemberId, stationId, catalogItemId);
+    await InsertOrderWithOneItemAsync(connection, new(blankNameOrderId, summerFestivalId, 5, "   ", "2026-09-20 18:20:00"), staffMemberId, stationId, catalogItemId);
+    await InsertOrderWithoutStationOrdersAsync(connection, new(withoutStationOrdersOrderId, summerFestivalId, 6, "Tisch 9", "2026-09-20 18:30:00"), staffMemberId);
+
+    var context = fixture.CreateContext();
+    await context.Database.MigrateAsync();
+
+    List<Order> orders = await context.Set<Order>().Include(order => order.Table).ThenInclude(table => table.Area).Include(order => order.StationOrders).ThenInclude(stationOrder => stationOrder.Items).ToListAsync();
+    Dictionary<Guid, Order> ordersById = orders.ToDictionary(order => order.Id);
+    List<Table> tables = await context.Set<Table>().ToListAsync();
+    List<Area> areas = await context.Set<Area>().ToListAsync();
+    var tableFoundById = await context.Set<Table>().SingleAsync(table => table.Id == ordersById[barOrderId].TableId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(orders.Select(order => order.Id),
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    firstSpellingOrderId,
+                                                    otherCapitalsOrderId,
+                                                    barOrderId,
+                                                    autumnOrderId,
+                                                    emptyNameOrderId,
+                                                    blankNameOrderId,
+                                                    withoutStationOrdersOrderId
+                                                  }));
+                      Assert.That(orders.SelectMany(order => order.StationOrders).Count(), Is.EqualTo(6));
+                      Assert.That(orders.SelectMany(order => order.StationOrders).SelectMany(stationOrder => stationOrder.Items).Count(), Is.EqualTo(6));
+                      Assert.That(orders.Select(order => order.Table.FestivalId), Is.EqualTo(orders.Select(order => order.FestivalId)));
+                      Assert.That(orders.Select(order => order.Table.Area.FestivalId), Is.EqualTo(orders.Select(order => order.FestivalId)));
+                      Assert.That(orders.Select(order => order.Table.IsHidden), Is.All.True);
+                      Assert.That(orders.Select(order => order.Table.Area.IsHidden), Is.All.True);
+                      Assert.That(orders.Select(order => order.Table.Area.Name), Is.All.EqualTo("Bisherige Tische"));
+                      Assert.That(ordersById[firstSpellingOrderId].Table.Name, Is.EqualTo("Tisch 4"));
+                      Assert.That(ordersById[otherCapitalsOrderId].TableId, Is.EqualTo(ordersById[firstSpellingOrderId].TableId));
+                      Assert.That(ordersById[barOrderId].Table.Name, Is.EqualTo("Bar"));
+                      Assert.That(ordersById[autumnOrderId].Table.Name, Is.EqualTo("Tisch 4"));
+                      Assert.That(ordersById[autumnOrderId].TableId, Is.Not.EqualTo(ordersById[firstSpellingOrderId].TableId));
+                      Assert.That(ordersById[emptyNameOrderId].Table.Name, Is.Empty);
+                      Assert.That(ordersById[blankNameOrderId].Table.Name, Is.EqualTo("   "));
+                      Assert.That(ordersById[blankNameOrderId].TableId, Is.Not.EqualTo(ordersById[emptyNameOrderId].TableId));
+                      Assert.That(ordersById[withoutStationOrdersOrderId].Table.Name, Is.EqualTo("Tisch 9"));
+                      Assert.That(ordersById[withoutStationOrdersOrderId].StationOrders, Is.Empty);
+                      Assert.That(tables, Has.Count.EqualTo(6));
+                      Assert.That(areas.Select(area => area.FestivalId),
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    summerFestivalId,
+                                                    autumnFestivalId
+                                                  }));
+                      Assert.That(tableFoundById.Name, Is.EqualTo("Bar"));
                     });
   }
 
@@ -250,6 +411,23 @@ public sealed class ReleasedDatabaseUpgradeTest
     await command.ExecuteNonQueryAsync();
   }
 
+  private async Task InsertFestivalStationAsync(SqliteConnection connection, Guid linkId, Guid festivalId, Guid stationId, string stationName, int nextStationOrderNumber)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "Stations" ("Id", "Name", "SortOrder", "IsActive", "DeviceId", "EnrolmentInvitationId")
+                          VALUES ($stationId, $stationName, 1, 1, NULL, NULL);
+                          INSERT INTO "FestivalStations" ("Id", "FestivalId", "StationId", "NextStationOrderNumber")
+                          VALUES ($linkId, $festivalId, $stationId, $nextStationOrderNumber);
+                          """;
+    command.Parameters.AddWithValue("$stationId", ToStoredText(stationId));
+    command.Parameters.AddWithValue("$stationName", stationName);
+    command.Parameters.AddWithValue("$linkId", ToStoredText(linkId));
+    command.Parameters.AddWithValue("$festivalId", ToStoredText(festivalId));
+    command.Parameters.AddWithValue("$nextStationOrderNumber", nextStationOrderNumber);
+    await command.ExecuteNonQueryAsync();
+  }
+
   private async Task InsertOrderAsync(SqliteConnection connection, Guid orderId, Guid festivalId, Guid staffMemberId)
   {
     await using var command = connection.CreateCommand();
@@ -265,6 +443,59 @@ public sealed class ReleasedDatabaseUpgradeTest
     command.Parameters.AddWithValue("$tableName", "Tisch 7");
     command.Parameters.AddWithValue("$note", "An old note that nobody reads any more");
     command.Parameters.AddWithValue("$createdAtUtc", "2026-09-20 17:30:00");
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertStationAndCatalogItemAsync(SqliteConnection connection, Guid stationId, Guid catalogItemId, Guid categoryId)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "Stations" ("Id", "Name", "SortOrder", "IsActive", "DeviceId", "EnrolmentInvitationId")
+                          VALUES ($stationId, 'Kueche', 1, 1, NULL, NULL);
+                          INSERT INTO "CatalogItems" ("Id", "Name", "CategoryId", "SortOrder", "IsActive", "ProductionMinutes", "IsQueueIndependent")
+                          VALUES ($catalogItemId, 'Bratwurst', $categoryId, 1, 1, NULL, 0);
+                          """;
+    command.Parameters.AddWithValue("$stationId", ToStoredText(stationId));
+    command.Parameters.AddWithValue("$catalogItemId", ToStoredText(catalogItemId));
+    command.Parameters.AddWithValue("$categoryId", ToStoredText(categoryId));
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertOrderWithoutStationOrdersAsync(SqliteConnection connection, ReleasedOrder order, Guid staffMemberId)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "Orders" ("Id", "ClientOrderId", "FestivalId", "GlobalOrderNumber", "StaffMemberId", "TableName", "Note", "CreatedAtUtc")
+                          VALUES ($orderId, $clientOrderId, $festivalId, $globalOrderNumber, $staffMemberId, $tableName, NULL, $createdAtUtc);
+                          """;
+    command.Parameters.AddWithValue("$orderId", ToStoredText(order.Id));
+    command.Parameters.AddWithValue("$clientOrderId", ToStoredText(Guid.NewGuid()));
+    command.Parameters.AddWithValue("$festivalId", ToStoredText(order.FestivalId));
+    command.Parameters.AddWithValue("$globalOrderNumber", order.GlobalOrderNumber);
+    command.Parameters.AddWithValue("$staffMemberId", ToStoredText(staffMemberId));
+    command.Parameters.AddWithValue("$tableName", order.TableName);
+    command.Parameters.AddWithValue("$createdAtUtc", order.CreatedAtUtc);
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertOrderWithOneItemAsync(SqliteConnection connection, ReleasedOrder order, Guid staffMemberId, Guid stationId, Guid catalogItemId)
+  {
+    await InsertOrderWithoutStationOrdersAsync(connection, order, staffMemberId);
+
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "StationOrders" ("Id", "OrderId", "FestivalId", "StationId", "StationOrderNumber", "DeliveryMode", "IsHiddenFromAsItComesQueue")
+                          VALUES ($stationOrderId, $orderId, $festivalId, $stationId, $globalOrderNumber, 0, 0);
+                          INSERT INTO "OrderItems" ("Id", "StationOrderId", "CatalogItemId", "ItemName", "UnitPriceCents", "Note", "FulfilledAtUtc", "SettledAtUtc", "ChargedPriceCents", "SettledByStaffMemberId", "PaymentNotice")
+                          VALUES ($orderItemId, $stationOrderId, $catalogItemId, 'Bratwurst', 350, NULL, NULL, NULL, NULL, NULL, NULL);
+                          """;
+    command.Parameters.AddWithValue("$orderId", ToStoredText(order.Id));
+    command.Parameters.AddWithValue("$festivalId", ToStoredText(order.FestivalId));
+    command.Parameters.AddWithValue("$globalOrderNumber", order.GlobalOrderNumber);
+    command.Parameters.AddWithValue("$stationOrderId", ToStoredText(Guid.NewGuid()));
+    command.Parameters.AddWithValue("$stationId", ToStoredText(stationId));
+    command.Parameters.AddWithValue("$orderItemId", ToStoredText(Guid.NewGuid()));
+    command.Parameters.AddWithValue("$catalogItemId", ToStoredText(catalogItemId));
     await command.ExecuteNonQueryAsync();
   }
 

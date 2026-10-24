@@ -32,14 +32,16 @@ Frontend, under `frontend/src/phone/`:
 
 Backend, under `backend/`:
 
-- `GastronomyApp.Api/Endpoints/OpenItemEndpoints.cs` under `/api/open-items`: the list,
-  `/table-names`, `/table` (`Handlers/OpenItemQueryHandler.cs`) and `POST /settle`
+- `GastronomyApp.Api/Endpoints/OpenItemEndpoints.cs` under `/api/open-items`: the list and
+  `/tables/{tableId}` (`Handlers/OpenItemQueryHandler.cs`), and `POST /settle`
   (`Handlers/OrderItemSettlementHandler.cs`). Wire records in `GastronomyApp.Contracts/OpenItems/`
-  (`SettleItemsRequest`, `SettleLineRequest`, `SettlementView`).
+  (`OpenItemsView`, `OpenTableView` and `TableOrderReportView`, each table with its `TableId` and
+  current `TableName`; `SettleItemsRequest`, `SettleLineRequest`, `SettlementView`).
 - `GastronomyApp.Core/Services/OrderItemSettlementService.cs` checks and applies a settlement, and
-  `OpenItemsService.cs` reads the open items, the table names and one table's orders. Refusals are in
+  `OpenItemsService.cs` reads the open items, groups them by table (`GroupItemsWithAKnownOrderByTable`)
+  and reads one table with its orders (`ReadTableWithOrdersAsync`). Refusals are in
   `Core/Refusals/Refusal.Settlement.cs`, the queries in
-  `Infrastructure/Repositories/OpenItemRepository.cs`.
+  `Infrastructure/Repositories/OpenItemRepository.cs` (`FindTableWithOrdersAsync`).
 
 ## Invariants
 
@@ -60,7 +62,12 @@ Backend, under `backend/`:
   no answer came it closes, keeps the selection, and the screen tells the waiter to reload the list
   (`useSettleDialog`).
 - **One table per settlement.** Once an item is ticked, no item of another table can be ticked
-  (`isHeldBackByAnotherTable`), and the laptop refuses a selection that spans several tables.
+  (`isHeldBackByAnotherTable`), and the laptop refuses a selection whose orders name more than one
+  `TableId`.
+- **The laptop keys everything by table.** The list groups the open items by `TableId` and sorts
+  the tables by their current name; the one-table view answers a table of the running festival,
+  hidden or not, with every order newest first, and a bare 404 for any other id. When no festival
+  runs it answers `Refusal.Settlement.NoRunningFestival`, as settling does.
 - **Whoever settled first keeps it.** An item another waiter already settled stays as it was, and the
   notice names the amount to hand back to the guest (`noticeAfterSettling`). The same waiter settling
   an item again overwrites their own price, so sending again after a lost answer settles nothing twice.
@@ -85,6 +92,7 @@ Backend, under `backend/`:
   `frontend/tests/phone/composables/useSettleDialog.spec.ts`.
 - Backend: `GastronomyApp.Core.Tests/Services/OrderItemSettlementServiceTest.cs`,
   `OrderItemSettlementServiceOverlapTest.cs` and `OpenItemsServiceTest.cs`,
-  `GastronomyApp.Api.Tests/Endpoints/OpenItemEndpointsTest.cs`,
+  `GastronomyApp.Api.Tests/Endpoints/OpenItemEndpointsTest.cs` (the list and the one-table view by
+  table id, a renamed table, a selection spanning two tables), `FestivalScopeEndpointsTest.cs`,
   `GastronomyApp.Api.Tests/Mapping/OpenItemMappingTest.cs` and
   `GastronomyApp.Infrastructure.Tests/Repositories/OpenItemRepositoryTest.cs`.
