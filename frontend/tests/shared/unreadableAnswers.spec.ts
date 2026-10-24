@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { OpenTableView } from '../../src/shared/api/generatedSchemas'
+import type { TableOrderReportView } from '../../src/shared/api/generatedSchemas'
 import { stubLaptop, answer } from '../support/laptop'
+import { TISCH_3, theWaiterTakesTheOrderAt } from '../support/waiterPhone'
 
 const { useOpenItemsStore } = await import('../../src/phone/stores/openItems')
 const { useOrderStore } = await import('../../src/phone/stores/order')
@@ -12,18 +13,29 @@ function aLaptopThatAnswersWith(aBody: unknown): void {
   stubLaptop().answersEverythingElse(answer(aBody))
 }
 
-const A_TABLE: OpenTableView = {
+const A_TABLE: TableOrderReportView = {
+  tableId: 'table-5',
   tableName: 'Tisch 5',
   openAmountCents: 200,
-  items: [
+  orders: [
     {
-      orderItemId: 'item-of-the-order',
       orderId: 'order-1',
       globalOrderNumber: 1,
-      itemName: 'Wasser',
-      note: null,
-      unitPriceCents: 200,
-      orderedAtUtc: '2026-09-20T18:00:00Z',
+      createdAtUtc: '2026-09-20T18:00:00Z',
+      staffMemberName: 'Anna',
+      items: [
+        {
+          orderItemId: 'item-of-the-order',
+          orderId: 'order-1',
+          globalOrderNumber: 1,
+          itemName: 'Wasser',
+          note: null,
+          unitPriceCents: 200,
+          orderedAtUtc: '2026-09-20T18:00:00Z',
+          fulfilledAtUtc: null,
+          settledAtUtc: null,
+        },
+      ],
     },
   ],
 }
@@ -40,6 +52,7 @@ describe('an answer the phone cannot read', () => {
 
   it('leaves a send failed and frozen instead of looking accepted', async () => {
     aLaptopThatAnswersWith({ orderId: 'order-1' })
+    theWaiterTakesTheOrderAt(TISCH_3)
     const order = useOrderStore()
 
     await order.send('leaveOpen')
@@ -75,7 +88,7 @@ describe('an answer the phone cannot read', () => {
   it('says the settlement answer never came instead of settling the table on screen', async () => {
     aLaptopThatAnswersWith({ settledOrderItemIds: [] })
     const openItems = useOpenItemsStore()
-    openItems.tables = [A_TABLE]
+    openItems.report = A_TABLE
     openItems.toggleItem('item-of-the-order')
 
     const outcome = await openItems.settle(200, null, 'cash')

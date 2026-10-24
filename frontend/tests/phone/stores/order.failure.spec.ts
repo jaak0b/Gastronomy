@@ -3,11 +3,13 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useOrderStore } from '../../../src/phone/stores/order'
 import { restoreSendProgress, saveDraft, saveSendProgress } from '../../../src/phone/core/draftCart'
 import { stubLaptop, answer, neverAnswers, noConnection } from '../../support/laptop'
+import { TISCH_3, theWaiterTakesTheOrderAt } from '../../support/waiterPhone'
 
 describe('an order whose send failed', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    theWaiterTakesTheOrderAt(TISCH_3)
   })
 
   afterEach(() => {
@@ -95,6 +97,7 @@ describe('an attempt the laptop never answers', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    theWaiterTakesTheOrderAt(TISCH_3)
     vi.useFakeTimers()
     stubLaptop().answersEverythingElse(neverAnswers())
   })
@@ -138,6 +141,7 @@ describe('an order the laptop could not save', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    theWaiterTakesTheOrderAt(TISCH_3)
   })
 
   afterEach(() => {
@@ -201,6 +205,7 @@ describe('an order sent from a phone the laptop no longer knows', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    theWaiterTakesTheOrderAt(TISCH_3)
   })
 
   afterEach(() => {
@@ -214,7 +219,7 @@ describe('an order sent from a phone the laptop no longer knows', () => {
   function anOrderOnThePhone(): void {
     saveDraft({
       festivalId: null,
-      tableName: 'Tisch 5',
+      table: { tableId: 'table-5', name: 'Tisch 5' },
       lines: [{ catalogItemId: 'item-wasser', note: null, stationId: 'station-bar', name: 'Wasser', stationName: 'Bar' }],
       clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
       deliveryModes: {},
@@ -229,7 +234,7 @@ describe('an order sent from a phone the laptop no longer knows', () => {
       failure: null,
       unresolvedAttempt: {
         clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
-        tableName: 'Tisch 5',
+        tableId: 'table-5',
         items: [
           {
             catalogItemId: 'item-wasser',

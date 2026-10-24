@@ -5,8 +5,9 @@ tables and the shapes of the festival's stations placed in it, each drawn as a r
 can move and resize. Every order belongs to one table of the plan. A waiter's phone reads the
 running festival's plan, where each table shows by its fill how far its orders are handed out and by
 its border how far they are settled. The admin draws the plan in an editor of its own, opened from
-the "Tischplan" card of the festival page. The waiter's plan screen comes later; until then the phone
-does not typecheck. In code the whole thing is the table plan, never a layout.
+the "Tischplan" card of the festival page. The phone opens on the plan: the list of areas, or the
+plan itself when there is only one area, and tapping a table offers to take an order there or to
+settle it. In code the whole thing is the table plan, never a layout.
 
 ## Where the code lives
 
@@ -114,11 +115,38 @@ Frontend, under `frontend/src/`:
   `snapResizeCorner`, a grid of 10 units and a snap distance of 6), and
   `admin/core/tablePlanPlacement.ts` where a new shape goes, the smallest size, the room below the
   lowest shape and `fitsTheDrawing`.
-- Colours: `shared/core/tablePlanColours.ts` builds the light and dark palette from neutral tokens of
+- Colours: `shared/core/tablePlanColours.ts` builds the light and dark palette from tokens of
   `shared/theme.ts` through `shared/core/themeColours.ts`, and the drawing picks the one of the
-  current theme with `shared/composables/useThemedValue.ts`, as the charts do. A table is
-  `surface-light` with an `on-surface` border, a station is inverted (`primary` with `on-primary`
+  current theme with `shared/composables/useThemedValue.ts`, as the charts do. In the editor a table
+  is `surface-light` with an `on-surface` border, a station is inverted (`primary` with `on-primary`
   lettering), a hidden table has a dashed muted border and the word "Ausgeblendet" under its name.
+  On the phone `handOutFill` and `settlementBorder` take each `ShareState`'s status token from
+  `shared/core/statusTints.ts`: the border takes the token itself, the fill takes `statusTintOf`.
+  That module is the one home of the mapping (none `error`, some `warning`, all `success`) and of the
+  tint strength (`STATUS_TINT_PERCENT`, thirty percent of the token mixed into `surface`), and the
+  settle view's cards and rows take the same through `statusTintCssOf`.
+- The waiter's phone: `phone/views/TablePlan.vue` is the home screen (route `home`, screen
+  `tablePlan`). `shared/core/landing.ts` decides what it shows (`waiterLandingFor`, read through
+  `phone/composables/useWaiterLanding.ts`): the locked order first, then no festival active (the
+  catalog names none) or no tables, the plan of the only area, the plan of the area the waiter
+  opened, or the area list. Until the plan has loaded, and while an empty plan waits for the catalog,
+  it claims nothing. A plan of an area without tables says so above the drawing. It shows
+  `phone/components/tablePlan/AreaList.vue` (one large button per area, in the laptop's order),
+  `AreaPlan.vue` (the read-only Konva drawing of one area), `TableActionSheet.vue` (the table's name,
+  "Bestellung aufnehmen", "Abrechnen", "Abbrechen") and `UnsentOrderDialog.vue` (the question when
+  another table's unsent items are on the phone). `phone/components/header/AppHeader.vue` carries
+  the back control ("Bereiche" from a plan when there are several areas, "Tischplan" from the
+  ordering screen and the settle view) and the area or table name.
+- `phone/core/tablePlanCamera.ts` is the camera of the phone's drawing: `cameraFittingTheWidth`,
+  `clampedPosition`, `pinchOf`, `pinchedCamera` (zoom about the point between the fingers, from the
+  width of the screen up to `DEEPEST_ZOOM`, four times that) and `waiterDrawingLength` (the lowest
+  shape plus `ROOM_BELOW_THE_LOWEST_SHAPE`).
+- `phone/stores/tablePlan.ts` (`useTablePlanStore`: `areas`, `hasLoaded`, `loadFailed`,
+  `openedAreaId`, `load`, `listen`, `openArea`, `closeArea`) reads `GET /api/table-plan` through the
+  latest request gate and reloads on `ConfigurationChanged` (the plan) and `OrdersChanged` (the
+  colours); `App.vue` starts its listeners and its first load with the catalog's, and the connection's
+  refetch on `GroupsJoined` reloads it.
+- Texts: `phone.tablePlan.*`.
 - Texts: `admin.tablePlan.*` (the fields for a new area and a new table have labels of their own,
   `newAreaName` and `newTableName`), `errors.admin.festivals.areaNameMissing` and
   `tableNameMissing`.
@@ -132,8 +160,8 @@ Frontend, under `frontend/src/`:
   point at the area's alternate key `(Id, FestivalId)`, a station shape's
   `(FestivalStationId, FestivalId)` at the festival station's, and an order's `(TableId, FestivalId)`
   at the table's. Every relation is `Restrict`.
-- **An order shows its table's current name**, read through `Order.Table` on the station cards, the
-  open items list and the one-table view, so renaming a table renames it on every order.
+- **An order shows its table's current name**, read through `Order.Table` on the station cards and
+  the one-table view, so renaming a table renames it on every order.
 - **Names are unique per festival without regard to case, hidden rows included**, for areas and for
   tables (collation `NOCASE`, unique index on `(FestivalId, Name)`). The service checks first and
   refuses with `areaNameTaken` or `tableNameTaken`.
@@ -193,6 +221,23 @@ Frontend, under `frontend/src/`:
   for both. Example: order 1 fully handed out, order 2 untouched, order 3 partly handed out is
   `Some`; once order 3 is fully handed out it is `None`; once order 2 is too it is `All`; a new
   order makes it `None` again.
+- **The phone draws the plan read-only, as large as the screen.** The stage is the size of the
+  frame under the header (`App.vue` gives the home screen the full height), and `stage.scale` and
+  `stage.position` are the camera, starting at the width of the screen over
+  `TABLE_PLAN_DRAWING_WIDTH`. The waiter pans by dragging the stage, held inside the drawing by
+  `clampedPosition` as its `dragBoundFunc`, and zooms by pinching, following Konva's Multi-touch Scale
+  Stage demo: `Konva.hitOnDragEnabled` is set when the plan mounts, and the stage's drag stops while
+  two fingers touch and starts again when one is left. Konva blocks native scrolling on the canvas,
+  so the plan is panned, never page-scrolled.
+- **A tap opens a table, a pan never does.** Each table is a group at its stored geometry, rotation
+  included, with `id` `table-<tableId>`, name `plan-table` and its name inside; a station is a group
+  named `plan-station` that does not listen, so a tap on it opens nothing and a press on it still
+  pans. The stage starts a pan only after 8 pixels, and Konva cancels the click once a pan has
+  started, so a waiter who lets go over the table they started on opens nothing. Konva cancels a tap
+  per finger, so a gesture in which two fingers touched is marked a pinch and opens no table, and the
+  next gesture's first finger clears that mark and the stopped pan.
+- **The fill shows `handOutProgress` and the border shows `settlementProgress`**: none red, some
+  amber, all green, with no legend. The words are one tap away, on the settle view.
 - **Orders from before the plan keep their table.** `SwitchOrdersToTables` gives every festival
   with orders one hidden area "Bisherige Tische" holding one hidden table per table name its orders
   used, at one default position and size. Names that differ only in capitals (SQLite `NOCASE`)
@@ -241,3 +286,13 @@ Frontend, under `frontend/src/`:
   `tablePlanEditorFixture.ts`; `shared/composables/useThemedValue.spec.ts`; the address in `shared/router/adminRoute.spec.ts` and
   `admin/views/AdminShell.spec.ts`. The how-to page `test-a-konva-drawing.md` describes the drawing
   helpers.
+- The phone: `shared/core/landing.spec.ts` (`waiterLandingFor`: one area, several, an opened area,
+  none, no festival, the locked order), `shared/core/statusTints.spec.ts`, `phone/core/tablePlanCamera.spec.ts` (fit, clamped pan, pinch limits),
+  `phone/stores/tablePlan.spec.ts` (the read, a failed read keeping the plan, the gate, the reloads
+  on `GroupsJoined`, `OrdersChanged` and `ConfigurationChanged`), and on `tablePlanFixture.ts` in
+  `phone/views`: `TablePlan.landing.spec.ts` (the landings, no festival, an area without tables,
+  the failed load, the locked order leading to the summary), `TablePlan.touch.spec.ts` (a tap, a
+  one-finger pan, a pinch that zooms and opens nothing, the tap after a pinch), `TablePlan.drawing.spec.ts` (geometry, names, stations not tappable, the
+  fit, fill and border per state in both themes, a tap, a pan that opens nothing, the clamped pan)
+  and `TablePlan.sheet.spec.ts` (each button, the question about unsent items in both choices);
+  `phone/components/header/AppHeader.spec.ts` for the back control and the names.

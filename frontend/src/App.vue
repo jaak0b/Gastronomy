@@ -14,12 +14,14 @@ import { useStationStore } from './station/stores/station'
 import { useCatalogStore } from './phone/stores/catalog'
 import { useConnectionStore } from './shared/stores/connection'
 import { useEstimatesStore } from './phone/stores/estimates'
+import { useTablePlanStore } from './phone/stores/tablePlan'
 import AppHeader from './phone/components/header/AppHeader.vue'
 import AppNotices from './phone/components/header/AppNotices.vue'
 import EnrolQr from './shared/views/EnrolQr.vue'
 import DoorGate from './shared/views/DoorGate.vue'
 import Welcome from './shared/views/Welcome.vue'
 import StartingUp from './shared/views/StartingUp.vue'
+import TablePlan from './phone/views/TablePlan.vue'
 import Catalog from './phone/views/Catalog.vue'
 import Review from './phone/views/Review.vue'
 import OpenItems from './phone/views/OpenItems.vue'
@@ -31,6 +33,7 @@ const station = useStationStore()
 const catalog = useCatalogStore()
 const connection = useConnectionStore()
 const estimates = useEstimatesStore()
+const tablePlan = useTablePlanStore()
 
 const { t } = useI18n()
 
@@ -70,15 +73,21 @@ const isAWaiterScreen = computed(() => isPhoneScreen(screen.value))
 
 const showsTheAppBar = computed(() => isAWaiterScreen.value && screen.value !== 'review')
 
-let catalogListenersStarted = false
+let waiterListenersStarted = false
 
-function ensureCatalogListenersStarted(): void {
-  if (catalogListenersStarted) {
+function ensureWaiterListenersStarted(): void {
+  if (waiterListenersStarted) {
     return
   }
-  catalogListenersStarted = true
+  waiterListenersStarted = true
   catalog.listen()
   estimates.listen()
+  tablePlan.listen()
+}
+
+async function loadTheWaiterApp(): Promise<void> {
+  ensureWaiterListenersStarted()
+  await Promise.all([catalog.load(), tablePlan.load()])
 }
 
 watch(
@@ -93,8 +102,7 @@ watch(
 
 watch(isAWaiterScreen, async (isTheWaiterApp) => {
   if (isTheWaiterApp) {
-    ensureCatalogListenersStarted()
-    await catalog.load()
+    await loadTheWaiterApp()
   }
 })
 
@@ -113,8 +121,7 @@ onMounted(async () => {
   }
   await connection.connect({ deviceToken: session.deviceToken })
   if (isAWaiterScreen.value) {
-    ensureCatalogListenersStarted()
-    await catalog.load()
+    await loadTheWaiterApp()
   }
 })
 </script>
@@ -122,12 +129,13 @@ onMounted(async () => {
 <template>
   <v-app>
     <AppHeader v-if="showsTheAppBar" />
-    <v-main data-test="main">
+    <v-main data-test="main" :class="{ 'fills-the-screen': screen === 'tablePlan' }">
     <AppNotices v-if="isAWaiterScreen" />
     <DoorGate v-if="screen === 'doorGate'" />
     <EnrolQr v-else-if="screen === 'enrolQr'" />
     <Welcome v-else-if="screen === 'welcome'" />
     <StartingUp v-else-if="screen === 'startingUp'" />
+    <TablePlan v-else-if="screen === 'tablePlan'" />
     <Catalog v-else-if="screen === 'catalog'" />
     <Review v-else-if="screen === 'review'" />
     <OpenItems v-else-if="screen === 'openItems'" />
@@ -136,3 +144,12 @@ onMounted(async () => {
     </v-main>
   </v-app>
 </template>
+
+<style scoped>
+.fills-the-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+</style>

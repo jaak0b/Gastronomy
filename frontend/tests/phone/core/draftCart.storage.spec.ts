@@ -14,7 +14,7 @@ describe('restoreDraft', () => {
       outcome: 'nothingStored',
       draft: {
         festivalId: null,
-        tableName: '',
+        table: null,
         lines: [],
         clientOrderId: null,
         deliveryModes: {},
@@ -25,7 +25,7 @@ describe('restoreDraft', () => {
   it('reports the half built order it put back on the screen', () => {
     saveDraft({
       festivalId: null,
-      tableName: 'Tisch 12',
+      table: { tableId: 'table-12', name: 'Tisch 12' },
       lines: [bratwurstLine()],
       clientOrderId: null,
       deliveryModes: {},
@@ -46,7 +46,7 @@ describe('restoreDraft', () => {
       outcome: 'unreadableDraftDiscarded',
       draft: {
         festivalId: null,
-        tableName: '',
+        table: null,
         lines: [],
         clientOrderId: null,
         deliveryModes: {},
@@ -63,7 +63,7 @@ describe('restoreDraft', () => {
   })
 
   it('reports a stored draft that no longer has the shape of an order as thrown away', () => {
-    localStorage.setItem(DRAFT_STORAGE_KEY, '{"tableName":12,"lines":[]}')
+    localStorage.setItem(DRAFT_STORAGE_KEY, '{"table":12,"lines":[]}')
 
     const restoration = restoreDraft()
 
@@ -71,7 +71,7 @@ describe('restoreDraft', () => {
   })
 
   it('reports a stored draft whose lines are unreadable as thrown away', () => {
-    localStorage.setItem(DRAFT_STORAGE_KEY, '{"tableName":"Tisch 12","lines":[{"note":"ohne Eis"}]}')
+    localStorage.setItem(DRAFT_STORAGE_KEY, '{"festivalId":null,"table":null,"clientOrderId":null,"deliveryModes":{},"lines":[{"note":"ohne Eis"}]}')
 
     const restoration = restoreDraft()
 
@@ -95,7 +95,7 @@ describe('the stored draft shape', () => {
   it('stores no field beyond the festival, the table, the lines, the submission id and the delivery choice', () => {
     saveDraft({
       festivalId: null,
-      tableName: 'Tisch 3',
+      table: { tableId: 'table-3', name: 'Tisch 3' },
       lines: [],
       clientOrderId: null,
       deliveryModes: {},
@@ -108,7 +108,7 @@ describe('the stored draft shape', () => {
       'deliveryModes',
       'festivalId',
       'lines',
-      'tableName',
+      'table',
     ])
   })
 
@@ -128,6 +128,14 @@ describe('the stored draft shape', () => {
     ])
   })
 
+  it('stores the id and the name of the table the order is taken for', () => {
+    saveDraft({ ...emptyDraft(), table: { tableId: 'table-3', name: 'Tisch 3' } })
+
+    const stored = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) as string) as { table: object }
+
+    expect(stored.table).toEqual({ tableId: 'table-3', name: 'Tisch 3' })
+  })
+
   it('keeps the name the item carried when the line was added', () => {
     addLine(emptyDraft(), bratwurstLine())
 
@@ -138,7 +146,7 @@ describe('the stored draft shape', () => {
 
 describe('the festival a draft belongs to', () => {
   it('is remembered across a reload, so the order is not thrown away as another festival', () => {
-    saveDraft({ ...emptyDraft(), festivalId: 'fest-1', tableName: 'Tisch 4' })
+    saveDraft({ ...emptyDraft(), festivalId: 'fest-1', table: { tableId: 'table-4', name: 'Tisch 4' } })
 
     expect(restoreDraft().draft.festivalId).toBe('fest-1')
   })

@@ -29,7 +29,7 @@ function line(catalogItemId: string, note: string | null, stationId: string | nu
 }
 
 function draftWith(lines: DraftLine[]): DraftOrder {
-  return { festivalId: null, tableName: '', lines, clientOrderId: null, deliveryModes: {} }
+  return { festivalId: null, table: null, lines, clientOrderId: null, deliveryModes: {} }
 }
 
 const stationNameOf = (stationId: string): string =>

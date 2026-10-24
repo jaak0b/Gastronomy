@@ -52,7 +52,7 @@ describe('a phone carrying values an older build left in its storage', () => {
     await flushPromises()
 
     expect(device.find('[data-test="welcome"]').exists()).toBe(true)
-    expect(order.draft.tableName).toBe('')
+    expect(order.draft.table).toBeNull()
     expect(order.draft.lines).toEqual([])
     expect(order.sendState).toBe('idle')
     expect(order.changesAreRefused).toBe(false)

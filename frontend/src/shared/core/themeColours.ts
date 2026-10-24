@@ -27,3 +27,4 @@ export function mutedInkOf(definition: ThemeDefinition): string {
     Number(themeVariableOf(definition, 'medium-emphasis-opacity')),
   )
 }
+

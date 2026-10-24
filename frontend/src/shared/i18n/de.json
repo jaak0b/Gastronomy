@@ -65,7 +65,6 @@
   },
   "phone": {
     "catalog": {
-      "title": "Bestellung aufnehmen",
       "labels": {
         "basketSummary": "{count} Artikel, {total} | {count} Artikel, {total}",
         "categoryWithCount": "{count} x {name}",
@@ -89,7 +88,6 @@
     },
     "header": {
       "actions": {
-        "openItems": "Offene Posten",
         "settings": "Einstellungen"
       },
       "messages": {
@@ -101,35 +99,32 @@
       }
     },
     "openItems": {
-      "title": "Offene Posten",
+      "title": "Abrechnen",
       "labels": {
         "amountPaidField": "Bezahlter Betrag",
         "amountPaidReason": "Grund",
         "amountPaidTitle": "Wie viel hat der Tisch bezahlt?",
-        "fromOrder": "Bestellung {number}",
         "order": "Bestellung {order}",
         "paid": "Bezahlt",
         "reasonPlaceholder": "Zum Beispiel: Essen für die Kapelle",
-        "selected": "Ausgewählt: {amount}",
-        "tableOpen": "Offen: {amount}"
+        "selected": "Ausgewählt: {amount}"
       },
       "actions": {
-        "reload": "Liste neu laden",
+        "reload": "Neu laden",
         "settle": "Abrechnen",
         "settleByCard": "Mit Karte abrechnen",
         "settleInCash": "Bar abrechnen",
         "wholeTable": "Ganzen Tisch auswählen"
       },
       "messages": {
-        "empty": "Es ist nichts offen. Alle Tische sind abgerechnet.",
-        "listIncomplete": "Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Position nicht, weil der Rechner die Bestellung dazu nicht mehr findet. | Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Positionen nicht, weil der Rechner die Bestellungen dazu nicht mehr findet.",
         "noOrdersForTable": "Für diesen Tisch gibt es keine Bestellungen.",
         "someWereAlreadySettled": "Jemand anderes hatte {count} Position aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast {amount} zurück. | Jemand anderes hatte {count} Positionen aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast {amount} zurück."
       },
       "errors": {
-        "loadFailed": "Tippen Sie auf \"Liste neu laden\". Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein.",
-        "settleAnswerNeverCame": "Es ist nicht klar, ob die Abrechnung angekommen ist. Laden Sie die Liste neu und schauen Sie nach, ob die Positionen noch offen sind.",
-        "settleFailed": "Versuchen Sie es noch einmal. Das Abrechnen ist fehlgeschlagen."
+        "loadFailed": "Der Rechner war nicht erreichbar. Tippen Sie auf \"Neu laden\".",
+        "settleAnswerNeverCame": "Es ist nicht klar, ob die Abrechnung angekommen ist. Tippen Sie auf \"Neu laden\" und schauen Sie nach, ob die Positionen noch offen sind.",
+        "settleFailed": "Versuchen Sie es noch einmal. Das Abrechnen ist fehlgeschlagen.",
+        "tableCouldNotBeLoaded": "Dieser Tisch konnte nicht geladen werden. Öffnen Sie ihn noch einmal über den Tischplan."
       }
     },
     "review": {
@@ -137,8 +132,6 @@
         "goesTo": "Geht an {name}",
         "stationDelivery": "{name}:",
         "table": "Tisch: {name}",
-        "tableName": "Tisch",
-        "tablePlaceholder": "Zum Beispiel: 12",
         "unknownPrice": "-"
       },
       "actions": {
@@ -157,6 +150,25 @@
       "errors": {
         "sendFailed": "Die Bestellung konnte nicht gesendet werden. Tippen Sie auf \"Erneut senden\".",
         "sendInterrupted": "Es ist nicht klar, ob die Bestellung angekommen ist. Tippen Sie auf \"Erneut senden\"."
+      }
+    },
+    "tablePlan": {
+      "actions": {
+        "takeOrder": "Bestellung aufnehmen",
+        "backToAreas": "Bereiche",
+        "backToThePlan": "Tischplan",
+        "reload": "Neu laden",
+        "backToTheUnsentOrder": "Zurück zur Bestellung für Tisch {table}",
+        "discardAndTakeTheOrder": "Verwerfen und Bestellung für Tisch {table} aufnehmen"
+      },
+      "messages": {
+        "noFestivalIsActive": "Es ist kein Fest aktiv.",
+        "noTables": "Es sind noch keine Tische angelegt.",
+        "noTablesInArea": "In diesem Bereich ist noch kein Tisch angelegt.",
+        "unsentOrder": "Die Bestellung für Tisch {table} ist noch nicht gesendet."
+      },
+      "errors": {
+        "loadFailed": "Der Tischplan konnte nicht geladen werden. Tippen Sie auf \"Neu laden\"."
       }
     },
     "settings": {
@@ -531,7 +543,7 @@
     "settlement": {
       "cannotBeProcessed": "Die Abrechnung konnte nicht verarbeitet werden. Schreiben Sie auf einen Zettel, was der Tisch bezahlt hat.",
       "noItemsSelected": "Wählen Sie zuerst die Positionen aus, die Sie abrechnen wollen.",
-      "unknownItem": "Laden Sie die Liste neu. Eine der ausgewählten Positionen kennt der Rechner nicht mehr, deshalb wurde nichts abgerechnet."
+      "unknownItem": "Der Rechner kennt eine der ausgewählten Positionen nicht mehr, deshalb wurde nichts abgerechnet. Tippen Sie auf \"Neu laden\"."
     },
     "station": {
       "changeNotSaved": "Die Bestellung konnte nicht aktualisiert werden. Laden Sie die Seite neu und versuchen Sie es erneut.",

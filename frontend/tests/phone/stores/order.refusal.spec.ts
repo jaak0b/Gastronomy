@@ -5,6 +5,7 @@ import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useOrderStore } from '../../../src/phone/stores/order'
 import { TOKEN_STORAGE_KEY } from '../../../src/shared/stores/session'
 import { menuWithWaterAtTheBar, answerWith } from './orderFixture'
+import { TISCH_3, theWaiterTakesTheOrderAt } from '../../support/waiterPhone'
 import { stubLaptop, refusal, neverAnswers } from '../../support/laptop'
 
 describe('an order the laptop answered no to', () => {
@@ -33,7 +34,7 @@ describe('an order the laptop answered no to', () => {
       stationId: 'station-bar',
       name: 'Wasser',
     })
-    order.setTable('Tisch 6')
+    order.chooseTable({ tableId: 'table-6', name: 'Tisch 6' })
     await order.send('leaveOpen')
     return order
   }
@@ -129,7 +130,7 @@ describe('an order the laptop refused because an item sold out', () => {
       stationId: 'station-bar',
       name: 'Wasser',
     })
-    order.setTable('Tisch 6')
+    order.chooseTable({ tableId: 'table-6', name: 'Tisch 6' })
 
     await order.send('leaveOpen')
 
@@ -143,6 +144,7 @@ describe('what an order costs while the item list changes underneath it', () => 
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    theWaiterTakesTheOrderAt(TISCH_3)
   })
 
   afterEach(() => {

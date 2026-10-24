@@ -9,7 +9,6 @@ enableAutoUnmount(afterEach)
 interface RowProps {
   itemName: string
   note: string | null
-  orderLabel: string | null
   priceText: string
   isSelected: boolean
   isDisabled: boolean
@@ -21,12 +20,11 @@ function mountRow(overrides: Partial<RowProps> = {}) {
   const props: RowProps = {
     itemName: 'Bratwurst',
     note: null,
-    orderLabel: null,
     priceText: '3,50 €',
     isSelected: false,
     isDisabled: false,
     isSettled: false,
-    productionState: 'unknown',
+    productionState: 'notProduced',
     ...overrides,
   }
   return mount(OpenPositionRow, {
@@ -48,18 +46,6 @@ describe('one position of an open table', () => {
     expect(row.get('[data-test="line-price"]').text()).toBe('3,50 €')
   })
 
-  it('writes the order it came from where the screen hands one in', () => {
-    const row = mountRow({ orderLabel: 'Bestellung 137' })
-
-    expect(row.get('[data-test="line-origin"]').text()).toBe('Bestellung 137')
-  })
-
-  it('leaves the order out where the screen already names it', () => {
-    const row = mountRow()
-
-    expect(row.find('[data-test="line-origin"]').exists()).toBe(false)
-  })
-
   it('writes the note as a hint when the position carries one', () => {
     const row = mountRow({ note: 'ohne Zwiebeln' })
 
@@ -78,14 +64,6 @@ describe('one position of an open table', () => {
 
     expect(row.get('[data-test="open-line"]').classes()).toContain('is-not-produced')
     expect(row.get('[data-test="line-state"]').classes()).toContain('mdi-clock-outline')
-  })
-
-  it('shows no state at all where the screen does not know it', () => {
-    const row = mountRow()
-
-    expect(row.get('[data-test="open-line"]').classes()).not.toContain('is-produced')
-    expect(row.get('[data-test="open-line"]').classes()).not.toContain('is-not-produced')
-    expect(row.find('[data-test="line-state"]').exists()).toBe(false)
   })
 
   it('offers the tick box while the position is open', () => {

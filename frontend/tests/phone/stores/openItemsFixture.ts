@@ -2,45 +2,16 @@ import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
 import { stubLaptop, answer, inTurn, type LaptopReply, type StubbedLaptop } from '../../support/laptop'
 
-export const OPEN_LIST = {
-  tables: [
-    {
-      tableName: 'Tisch 12',
-      openAmountCents: 700,
-      items: [
-        {
-          orderItemId: 'item-1',
-          orderId: 'order-1',
-          globalOrderNumber: 137,
-          itemName: 'Bratwurst',
-          note: null,
-          unitPriceCents: 350,
-          orderedAtUtc: '2026-09-05T18:00:00Z',
-        },
-        {
-          orderItemId: 'item-2',
-          orderId: 'order-1',
-          globalOrderNumber: 137,
-          itemName: 'Bratwurst',
-          note: null,
-          unitPriceCents: 350,
-          orderedAtUtc: '2026-09-05T18:00:00Z',
-        },
-      ],
-    },
-  ],
-  itemsWithoutAnOrderCount: 0,
-}
-
-export const EMPTY_LIST = { tables: [], itemsWithoutAnOrderCount: 0 }
-
 export const SETTLED = {
   settledOrderItemIds: ['item-1'],
   reappliedOrderItemIds: [],
   alreadySettledByOthersOrderItemIds: [],
 }
 
+export const TABLE_PATH = '/api/open-items/tables/table-12'
+
 export const TABLE_REPORT = {
+  tableId: 'table-12',
   tableName: 'Tisch 12',
   openAmountCents: 400,
   orders: [
@@ -51,7 +22,7 @@ export const TABLE_REPORT = {
       staffMemberName: 'Anna',
       items: [
         {
-          orderItemId: 'lookup-open',
+          orderItemId: 'bier-open',
           orderId: 'order-9',
           globalOrderNumber: 141,
           itemName: 'Bier',
@@ -62,7 +33,7 @@ export const TABLE_REPORT = {
           settledAtUtc: null,
         },
         {
-          orderItemId: 'lookup-settled',
+          orderItemId: 'wasser-settled',
           orderId: 'order-9',
           globalOrderNumber: 141,
           itemName: 'Wasser',
@@ -73,6 +44,35 @@ export const TABLE_REPORT = {
           settledAtUtc: '2026-09-05T18:40:00Z',
         },
       ],
+    },
+  ],
+}
+
+function bratwurst(orderItemId: string) {
+  return {
+    orderItemId,
+    orderId: 'order-1',
+    globalOrderNumber: 137,
+    itemName: 'Bratwurst',
+    note: null,
+    unitPriceCents: 350,
+    orderedAtUtc: '2026-09-05T18:00:00Z',
+    fulfilledAtUtc: null,
+    settledAtUtc: null,
+  }
+}
+
+export const TWO_BRATWURST = {
+  tableId: 'table-12',
+  tableName: 'Tisch 12',
+  openAmountCents: 700,
+  orders: [
+    {
+      orderId: 'order-1',
+      globalOrderNumber: 137,
+      createdAtUtc: '2026-09-05T18:00:00Z',
+      staffMemberName: 'Anna',
+      items: [bratwurst('item-1'), bratwurst('item-2')],
     },
   ],
 }
@@ -97,18 +97,24 @@ export function laptopAnsweringInTurn(replies: LaptopReply[]): StubbedLaptop {
   return stubLaptop().answersEverythingElse(inTurn(...replies))
 }
 
-export async function storeWithTheOpenList(replies: LaptopReply[]) {
-  const laptop = laptopAnsweringInTurn([answer(OPEN_LIST), ...replies])
+export function aWaiterPhone(): void {
   localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
   const session = useSessionStore()
   session.deviceToken = 'token-here'
   session.language = 'de'
+}
+
+export async function storeShowingTisch12(replies: LaptopReply[], report: unknown = TABLE_REPORT) {
+  const laptop = laptopAnsweringInTurn([answer(report), ...replies])
+  aWaiterPhone()
   const openItems = useOpenItemsStore()
+  openItems.openTable('table-12')
   await openItems.load()
   return { openItems, laptop }
 }
 
 export const REPORT_AFTER_THE_NEW_ORDER = {
+  tableId: 'table-12',
   tableName: 'Tisch 12',
   openAmountCents: 1100,
   orders: [
@@ -193,6 +199,7 @@ export function positionOf(orderItemId: string, settledAtUtc: string | null) {
 }
 
 export const REPORT_WITH_TWO_ORDERS = {
+  tableId: 'table-12',
   tableName: 'Tisch 12',
   openAmountCents: 1600,
   orders: [

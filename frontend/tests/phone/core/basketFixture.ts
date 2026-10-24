@@ -40,5 +40,5 @@ export function catalog(): CatalogView {
 }
 
 export function draftWith(lines: DraftOrder['lines']): DraftOrder {
-  return { festivalId: null, tableName: '', lines, clientOrderId: null, deliveryModes: {} }
+  return { festivalId: null, table: null, lines, clientOrderId: null, deliveryModes: {} }
 }

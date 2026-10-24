@@ -21,57 +21,6 @@ public sealed class OpenItemRepositoryTest
   }
 
   [Test]
-  public async Task FindOpenAtFestivalAsync_ASettledItem_LeavesItOut()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded, seeded.FestivalId, "Tisch 12", 1);
-    await SettleAsync(fixture, seeded, items[0], 350, _orderedAtUtc.AddMinutes(5));
-
-    OpenItemRepository repository = new(fixture.DbContext);
-
-    IReadOnlyList<OrderItem> open = await repository.FindOpenAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
-
-    Assert.That(open.Select(item => item.Id), Is.EqualTo(new[] { items[1] }));
-  }
-
-  [Test]
-  public async Task FindOpenAtFestivalAsync_AnOrderOfAnotherFestival_LeavesItOut()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var lastYearFestivalId = await AddFestivalAsync(fixture, "Sommerfest im Vorjahr");
-    await PlaceOrderAsync(fixture, seeded, seeded.FestivalId, "Tisch 12", 1);
-    await PlaceOrderAsync(fixture, seeded, lastYearFestivalId, "Tisch 1", 1);
-
-    OpenItemRepository repository = new(fixture.DbContext);
-
-    IReadOnlyList<OrderItem> open = await repository.FindOpenAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
-
-    Assert.That(open, Has.Count.EqualTo(2));
-  }
-
-  [Test]
-  public async Task FindOpenAtFestivalAsync_ItemsOfAnOrder_CarryTheOrderThatNamesTheTable()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    await PlaceOrderAsync(fixture, seeded, seeded.FestivalId, "Tisch 12", 4);
-
-    OpenItemRepository repository = new(fixture.DbContext);
-
-    IReadOnlyList<OrderItem> open = await repository.FindOpenAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(open, Has.Count.EqualTo(2));
-                      Assert.That(open[0].StationOrder.Order.Table.Name, Is.EqualTo("Tisch 12"));
-                      Assert.That(open[0].StationOrder.Order.GlobalOrderNumber, Is.EqualTo(4));
-                      Assert.That(open[0].StationOrder.Order.CreatedAtUtc, Is.EqualTo(_orderedAtUtc));
-                    });
-  }
-
-  [Test]
   public async Task FindForSettlementAsync_ItemsOfAnOrder_CarryTheOrderThatNamesTheTable()
   {
     using SqliteInMemoryFixture fixture = new();
@@ -328,16 +277,5 @@ public sealed class OpenItemRepositoryTest
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     return orderId;
-  }
-
-  private async Task SettleAsync(SqliteInMemoryFixture fixture, SeededDomain seeded, Guid orderItemId, int chargedPriceCents, DateTime settledAtUtc)
-  {
-    var item = await fixture.DbContext.OrderItems.FirstAsync(candidate => candidate.Id == orderItemId, TestContext.CurrentContext.CancellationToken);
-
-    item.SettledAtUtc = settledAtUtc;
-    item.SettledByStaffMemberId = seeded.StaffMemberId;
-    item.ChargedPriceCents = chargedPriceCents;
-
-    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
 }

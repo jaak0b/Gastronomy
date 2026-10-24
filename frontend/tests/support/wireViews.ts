@@ -9,8 +9,9 @@ import type {
   AdminStationView,
   AdminTableView,
   AreaShapeGeometry,
-  OpenOrderItemView,
-  OpenTableView,
+  TablePlanAreaView,
+  TablePlanStationShapeView,
+  TablePlanTableView,
   StationOrderQueueView,
   StationQueueItemView,
 } from '../../src/shared/api/generatedSchemas'
@@ -102,28 +103,6 @@ export function anAdminStation(overrides: Partial<AdminStationView> = {}): Admin
   }
 }
 
-export function anOpenItem(overrides: Partial<OpenOrderItemView> = {}): OpenOrderItemView {
-  return {
-    orderItemId: 'item-1',
-    orderId: 'order-1',
-    globalOrderNumber: 1,
-    itemName: 'Bratwurst',
-    note: null,
-    unitPriceCents: 350,
-    orderedAtUtc: '2026-07-18T18:00:00Z',
-    ...overrides,
-  }
-}
-
-export function anOpenItemsTable(overrides: Partial<OpenTableView> = {}): OpenTableView {
-  return {
-    tableName: 'Tisch 4',
-    openAmountCents: 350,
-    items: [anOpenItem()],
-    ...overrides,
-  }
-}
-
 export function aQueuedItem(overrides: Partial<StationQueueItemView> = {}): StationQueueItemView {
   return {
     orderItemId: 'order-item-1',
@@ -185,6 +164,37 @@ export function anAdminArea(overrides: Partial<AdminAreaView> = {}): AdminAreaVi
     name: 'Halle',
     sortOrder: 1,
     isHidden: false,
+    tables: [],
+    stationShapes: [],
+    ...overrides,
+  }
+}
+
+export function aPlanTable(overrides: Partial<TablePlanTableView> = {}): TablePlanTableView {
+  return {
+    tableId: 'table-4',
+    name: 'Tisch 4',
+    geometry: aGeometry(),
+    handOutProgress: 'all',
+    settlementProgress: 'all',
+    ...overrides,
+  }
+}
+
+export function aPlanStationShape(
+  overrides: Partial<TablePlanStationShapeView> = {},
+): TablePlanStationShapeView {
+  return {
+    stationName: 'Schank',
+    geometry: aGeometry({ x: 200, y: 30, width: 120, height: 40 }),
+    ...overrides,
+  }
+}
+
+export function aPlanArea(overrides: Partial<TablePlanAreaView> = {}): TablePlanAreaView {
+  return {
+    areaId: 'area-halle',
+    name: 'Halle',
     tables: [],
     stationShapes: [],
     ...overrides,

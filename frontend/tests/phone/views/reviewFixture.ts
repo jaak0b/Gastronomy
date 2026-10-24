@@ -2,6 +2,7 @@ import { type VueWrapper } from '@vue/test-utils'
 import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useOrderStore } from '../../../src/phone/stores/order'
 import { nextTick } from 'vue'
+import { TISCH_3 } from '../../support/waiterPhone'
 
 export const WASSER = {
   id: 'item-wasser',
@@ -15,9 +16,8 @@ export const WASSER = {
   isQueueIndependent: false,
 }
 
-export function prepareOrder() {
-  const catalog = useCatalogStore()
-  catalog.catalog = {
+export function wasserOnTheMenu(): void {
+  useCatalogStore().catalog = {
     festival: null,
     categories: [
       { categoryId: 'category-getraenke', name: 'Getränke', colourHex: '#C62828', sortOrder: 1 },
@@ -25,6 +25,10 @@ export function prepareOrder() {
     items: [WASSER],
     stations: [{ id: 'station-bar', name: 'Bar', sortOrder: 1 }],
   }
+}
+
+export function prepareOrder() {
+  wasserOnTheMenu()
   const order = useOrderStore()
   order.addItem({
     catalogItemId: WASSER.id,
@@ -32,7 +36,7 @@ export function prepareOrder() {
     stationId: 'station-bar',
     name: WASSER.name,
   })
-  order.setTable('Tisch 3')
+  order.chooseTable(TISCH_3)
   return order
 }
 

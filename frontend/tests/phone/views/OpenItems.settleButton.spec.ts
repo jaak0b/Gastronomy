@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
-import { ONE_FREE_ITEM, OPEN_LIST, mountScreen, openItemsLaptop } from './openItemsFixture'
+import { ONE_FREE_ITEM, TISCH_12, mountScreen, openItemsLaptop } from './openItemsFixture'
 import { neverAnswers } from '../../support/laptop'
 import { clickOn, inputOf, onScreen } from '../../support/dom'
 import { nextTick } from 'vue'
@@ -75,7 +75,7 @@ describe('the settle button under the selected total', () => {
 
   describe('the amount page while a settlement is on its way', () => {
     it('keeps Bar, Karte and Abbrechen shut until the laptop answers', async () => {
-      openItemsLaptop(OPEN_LIST, neverAnswers())
+      openItemsLaptop(TISCH_12, neverAnswers())
       const screen = await mountScreen()
       useOpenItemsStore().toggleItem('item-1')
       await nextTick()

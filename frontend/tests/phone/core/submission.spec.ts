@@ -7,7 +7,7 @@ import {
   clearDraft,
   emptyDraft,
   restoreDraft,
-  setTableName,
+  setTable,
 } from '../../../src/phone/core/draftCart'
 
 describe('withClientOrderIdIfMissing', () => {
@@ -120,7 +120,7 @@ describe('buildSubmitRequest', () => {
       name: 'Bratwurst',
       stationName: stationId === null ? '' : 'Kueche',
     })
-    return withClientOrderIdIfMissing(setTableName(withLine, 'Tisch 12'))
+    return withClientOrderIdIfMissing(setTable(withLine, { tableId: 'table-12', name: 'Tisch 12' }))
   }
 
   it('sends the table and every item with its note and the price the phone showed', () => {
@@ -132,7 +132,7 @@ describe('buildSubmitRequest', () => {
 
     expect(request).toEqual({
       clientOrderId: ready.clientOrderId,
-      tableName: 'Tisch 12',
+      tableId: 'table-12',
       items: [
         {
           catalogItemId: 'item-1',
@@ -143,14 +143,6 @@ describe('buildSubmitRequest', () => {
       ],
       deliveryModes: [{ stationId: 'station-2', deliveryMode: 'together' }],
     })
-  })
-
-  it('sends the table name with the spaces around it cut off', () => {
-    const ready = setTableName(draftWithABratwurst(), ' Tisch 12 ')
-
-    const request = buildSubmitRequest(ready, catalog(), [])
-
-    expect(request.tableName).toBe('Tisch 12')
   })
 
   it('takes the price from the item list the laptop pushed out, not from the line', () => {
@@ -188,5 +180,13 @@ describe('buildSubmitRequest', () => {
 
   it('refuses to build a request for a draft that never got a submission id', () => {
     expect(() => buildSubmitRequest(emptyDraft(), catalog(), [])).toThrow()
+  })
+
+  it('refuses to build a request for a draft that has no table', () => {
+    const withoutATable = withClientOrderIdIfMissing(emptyDraft())
+
+    expect(() => buildSubmitRequest(withoutATable, catalog(), [])).toThrow(
+      'A draft without a table must not be submitted',
+    )
   })
 })

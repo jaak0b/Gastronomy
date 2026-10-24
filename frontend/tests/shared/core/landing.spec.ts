@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screenFor } from '../../../src/shared/core/landing'
+import { screenFor, waiterLandingFor } from '../../../src/shared/core/landing'
 
 const aStationTablet = { state: 'stationTablet' } as const
 const aWaiterPhone = { state: 'waiterPhone' } as const
@@ -23,8 +23,12 @@ describe('screenFor, the screen a device lands on', () => {
     expect(screenFor(aStationTablet, { name: 'stations' })).toBe('station')
   })
 
-  it('sends a waiter phone to the catalog when it opens the app root', () => {
-    expect(screenFor(aWaiterPhone, { name: 'home' })).toBe('catalog')
+  it('sends a waiter phone to the table plan when it opens the app root', () => {
+    expect(screenFor(aWaiterPhone, { name: 'home' })).toBe('tablePlan')
+  })
+
+  it('lets a waiter phone open the catalog', () => {
+    expect(screenFor(aWaiterPhone, { name: 'catalog' })).toBe('catalog')
   })
 
   it('lets a waiter phone open the review', () => {
@@ -35,8 +39,8 @@ describe('screenFor, the screen a device lands on', () => {
     expect(screenFor(aWaiterPhone, { name: 'openItems' })).toBe('openItems')
   })
 
-  it('sends a waiter phone that opens the stations address back to the catalog', () => {
-    expect(screenFor(aWaiterPhone, { name: 'stations' })).toBe('catalog')
+  it('sends a waiter phone that opens the stations address back to the table plan', () => {
+    expect(screenFor(aWaiterPhone, { name: 'stations' })).toBe('tablePlan')
   })
 
   it('sends a device that is not set up to the welcome screen wherever it opens', () => {
@@ -72,5 +76,50 @@ describe('a device that is set up while the laptop has not said yet whose device
     expect(screenFor(aDeviceWaitingForTheLaptop, { name: 'admin', section: 'overview', festivalId: null })).toBe(
       'admin',
     )
+  })
+})
+
+describe('waiterLandingFor, what the waiter sees on the home screen', () => {
+  it('opens straight on the plan when the festival has exactly one area', () => {
+    expect(waiterLandingFor({ orderIsLocked: false, festivalIsRunning: true, areaIds: ['area-halle'], openedAreaId: null })).toEqual({
+      kind: 'plan',
+      areaId: 'area-halle',
+    })
+  })
+
+  it('lists the areas when the festival has several and none is open yet', () => {
+    expect(
+      waiterLandingFor({ orderIsLocked: false, festivalIsRunning: true, areaIds: ['area-halle', 'area-zelt'], openedAreaId: null }),
+    ).toEqual({ kind: 'areaList' })
+  })
+
+  it('shows the plan of the area the waiter opened', () => {
+    expect(
+      waiterLandingFor({ orderIsLocked: false, festivalIsRunning: true, areaIds: ['area-halle', 'area-zelt'], openedAreaId: 'area-zelt' }),
+    ).toEqual({ kind: 'plan', areaId: 'area-zelt' })
+  })
+
+  it('lists the areas again when the area the waiter opened is no longer shown', () => {
+    expect(
+      waiterLandingFor({ orderIsLocked: false, festivalIsRunning: true, areaIds: ['area-halle', 'area-zelt'], openedAreaId: 'area-garten' }),
+    ).toEqual({ kind: 'areaList' })
+  })
+
+  it('says that no festival is active when none runs', () => {
+    expect(waiterLandingFor({ orderIsLocked: false, festivalIsRunning: false, areaIds: [], openedAreaId: null })).toEqual({
+      kind: 'noFestival',
+    })
+  })
+
+  it('says that no tables are set up when the festival has no area', () => {
+    expect(waiterLandingFor({ orderIsLocked: false, festivalIsRunning: true, areaIds: [], openedAreaId: null })).toEqual({
+      kind: 'noTables',
+    })
+  })
+
+  it('leads to the order nobody knows the fate of, before anything else', () => {
+    expect(waiterLandingFor({ orderIsLocked: true, festivalIsRunning: true, areaIds: ['area-halle'], openedAreaId: null })).toEqual({
+      kind: 'lockedOrder',
+    })
   })
 })

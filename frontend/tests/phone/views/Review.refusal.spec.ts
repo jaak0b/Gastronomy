@@ -143,7 +143,7 @@ describe('an order the laptop refused after an attempt it never answered', () =>
   function anOrderTheLaptopMayAlreadyHold() {
     saveDraft({
       festivalId: null,
-      tableName: 'Tisch 3',
+      table: { tableId: 'table-3', name: 'Tisch 3' },
       lines: [
         {
           catalogItemId: WASSER.id,
@@ -162,7 +162,7 @@ describe('an order the laptop refused after an attempt it never answered', () =>
       failure: { key: 'phone.review.errors.sendFailed' },
       unresolvedAttempt: {
         clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
-        tableName: 'Tisch 3',
+        tableId: 'table-3',
         items: [
           {
             catalogItemId: WASSER.id,

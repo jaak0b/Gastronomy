@@ -6,6 +6,7 @@ import { useOrderStore } from '../../../src/phone/stores/order'
 import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { stubLaptop, answer, refusal, noConnection } from '../../support/laptop'
 import { nextTick } from 'vue'
+import { TISCH_3, theWaiterTakesTheOrderAt } from '../../support/waiterPhone'
 import { CATALOG, mountCatalog, openCategory, itemRowNamed, tapToAdd, goBackToTheCategories } from './catalogFixture'
 
 enableAutoUnmount(afterEach)
@@ -14,8 +15,9 @@ describe('building the order on the ordering screen', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    theWaiterTakesTheOrderAt(TISCH_3)
     document.body.innerHTML = ''
-    navigate('/')
+    navigate('/catalog')
     stubLaptop().answersEverythingElse(answer({}))
   })
 
@@ -77,8 +79,9 @@ describe('the way from the ordering screen to the summary', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    theWaiterTakesTheOrderAt(TISCH_3)
     document.body.innerHTML = ''
-    navigate('/')
+    navigate('/catalog')
     stubLaptop().answersEverythingElse(answer({}))
   })
 
@@ -90,41 +93,8 @@ describe('the way from the ordering screen to the summary', () => {
     return view
   }
 
-  it('keeps the way to the summary open while the table is empty, so tapping it can say so', async () => {
+  it('moves on to the summary when the waiter taps it', async () => {
     const view = await catalogWithOnePortion()
-
-    expect(view.get('[data-test="to-review"]').attributes('disabled')).toBeUndefined()
-  })
-
-  it('marks the table field instead of moving on when no table was entered', async () => {
-    const view = await catalogWithOnePortion()
-
-    await view.get('[data-test="to-review"]').trigger('click')
-
-    expect(currentRoute.value).toEqual({ name: 'home' })
-    expect(view.get('[data-test="table-field"]').classes()).toContain('is-missing')
-  })
-
-  it('puts the cursor in the table field so the keyboard opens on the thing that is missing', async () => {
-    const view = await catalogWithOnePortion()
-
-    await view.get('[data-test="to-review"]').trigger('click')
-
-    expect(document.activeElement).toBe(view.get('[data-test="table-field"] input').element)
-  })
-
-  it('takes the mark off again as soon as a table is typed', async () => {
-    const view = await catalogWithOnePortion()
-    await view.get('[data-test="to-review"]').trigger('click')
-
-    await view.get('[data-test="table-field"] input').setValue('Tisch 12')
-
-    expect(view.get('[data-test="table-field"]').classes()).not.toContain('is-missing')
-  })
-
-  it('moves on to the summary once a table is there', async () => {
-    const view = await catalogWithOnePortion()
-    await view.get('[data-test="table-field"] input').setValue('Tisch 12')
 
     await view.get('[data-test="to-review"]').trigger('click')
 
@@ -132,28 +102,13 @@ describe('the way from the ordering screen to the summary', () => {
   })
 })
 
-describe('the length of what a waiter types on the ordering screen', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-    document.body.innerHTML = ''
-    navigate('/')
-    stubLaptop().answersEverythingElse(answer({}))
-  })
-
-  it('stops the table name after forty characters', () => {
-    const view = mountCatalog()
-
-    expect(view.get('[data-test="table-input"] input').attributes('maxlength')).toBe('40')
-  })
-})
-
 describe('the items screen while an order is frozen on the laptop', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    theWaiterTakesTheOrderAt(TISCH_3)
     document.body.innerHTML = ''
-    navigate('/')
+    navigate('/catalog')
     stubLaptop().answersEverythingElse(noConnection())
   })
 
@@ -166,7 +121,7 @@ describe('the items screen while an order is frozen on the laptop', () => {
       stationId: 'station-bar',
       name: 'Wasser',
     })
-    order.setTable('Tisch 5')
+    order.chooseTable({ tableId: 'table-5', name: 'Tisch 5' })
     await order.send('leaveOpen')
     return order
   }
@@ -185,13 +140,13 @@ describe('the items screen while an order is frozen on the laptop', () => {
     mountCatalog()
 
     expect(order.draft.lines).toHaveLength(1)
-    expect(order.draft.tableName).toBe('Tisch 5')
+    expect(order.draft.table).toEqual({ tableId: 'table-5', name: 'Tisch 5' })
   })
 
   it('stays on the items while the order still belongs to the waiter', () => {
     mountCatalog()
 
-    expect(currentRoute.value).toEqual({ name: 'home' })
+    expect(currentRoute.value).toEqual({ name: 'catalog' })
   })
 })
 
@@ -199,8 +154,9 @@ describe('the items screen after the laptop refused an order', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    theWaiterTakesTheOrderAt(TISCH_3)
     document.body.innerHTML = ''
-    navigate('/')
+    navigate('/catalog')
     stubLaptop().answersEverythingElse(
       refusal('errors.order.cannotBeProcessed', {
         status: 400,
@@ -217,9 +173,25 @@ describe('the items screen after the laptop refused an order', () => {
       stationId: null,
       name: 'Wasser',
     })
-    order.setTable('Tisch 5')
+    order.chooseTable({ tableId: 'table-5', name: 'Tisch 5' })
     await order.send('leaveOpen')
 
+    mountCatalog()
+
+    expect(currentRoute.value).toEqual({ name: 'catalog' })
+  })
+})
+
+describe('the items screen without a table', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/catalog')
+    stubLaptop().answersEverythingElse(answer({}))
+  })
+
+  it('sends the waiter to the table plan, where a table is chosen', () => {
     mountCatalog()
 
     expect(currentRoute.value).toEqual({ name: 'home' })

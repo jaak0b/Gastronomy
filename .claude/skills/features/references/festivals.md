@@ -67,7 +67,8 @@ Frontend, under `frontend/src/`:
   "running": it takes `isRunning` from the laptop. The stations and items stores read one festival
   through `admin/stores/festivalScopedList.ts` (`loadAtTheFestival`), `festivalStock.ts` holds the
   stock and `tablePlan.ts` the plan.
-- Phone: `phone/stores/catalog.ts` (the catalog names the running festival), `phone/stores/order.ts`
+- Phone: `phone/stores/catalog.ts` (the catalog names the running festival), `phone/stores/tablePlan.ts`
+  (the running festival's plan, empty when none runs), `phone/stores/order.ts`
   (`dropTheDraftIfTheFestivalChanged`), `phone/core/draftCart.ts` (`festivalId`,
   `draftIsForAnotherFestival`, `stampFestival`) and `phone/core/sendProgress.ts`
   (`changesAreRefusedFor`).
@@ -94,7 +95,7 @@ Every point below is intended behaviour. A change to any of them needs the owner
   order takes its place and `draftWasLost` stays false. A frozen order is never dropped: while
   `changesAreRefused` is true (a send is under way or the phone does not know how it ended) the draft
   stays on screen and in `localStorage`. A catalog that fails to load changes nothing. The draft takes
-  the running festival's id with its first change, a table name typed before any line included.
+  the running festival's id with its first change, a table chosen before any line included.
 - **`StationOrder` carries its own `FestivalId`** although its `Order` has one too. The unique index
   on `(FestivalId, StationId, StationOrderNumber)` in `StationOrderConfiguration` can only cover the
   columns of its own table, and it is what keeps a station's numbers unique within a festival.

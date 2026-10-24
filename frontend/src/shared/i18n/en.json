@@ -65,7 +65,6 @@
   },
   "phone": {
     "catalog": {
-      "title": "Take an order",
       "labels": {
         "basketSummary": "{count} item, {total} | {count} items, {total}",
         "categoryWithCount": "{count} x {name}",
@@ -89,7 +88,6 @@
     },
     "header": {
       "actions": {
-        "openItems": "Open items",
         "settings": "Settings"
       },
       "messages": {
@@ -101,35 +99,32 @@
       }
     },
     "openItems": {
-      "title": "Open items",
+      "title": "Settle",
       "labels": {
         "amountPaidField": "Amount paid",
         "amountPaidReason": "Reason",
         "amountPaidTitle": "How much did the table pay?",
-        "fromOrder": "Order {number}",
         "order": "Order {order}",
         "paid": "Paid",
         "reasonPlaceholder": "For example: food for the band",
-        "selected": "Selected: {amount}",
-        "tableOpen": "Open: {amount}"
+        "selected": "Selected: {amount}"
       },
       "actions": {
-        "reload": "Reload the list",
+        "reload": "Reload",
         "settle": "Settle",
         "settleByCard": "Settle by card",
         "settleInCash": "Settle in cash",
         "wholeTable": "Select the whole table"
       },
       "messages": {
-        "empty": "Nothing is open. Every table is settled.",
-        "listIncomplete": "Ask at the table what is still open. This list is missing {count} item, because the computer can no longer find the order it belongs to. | Ask at the table what is still open. This list is missing {count} items, because the computer can no longer find the orders they belong to.",
         "noOrdersForTable": "There are no orders for this table.",
         "someWereAlreadySettled": "Somebody else had already settled {count} item in your selection. Give the guest {amount} back. | Somebody else had already settled {count} items in your selection. Give the guest {amount} back."
       },
       "errors": {
-        "loadFailed": "Tap \"Reload the list\". The computer could not be reached, so this list may be out of date.",
-        "settleAnswerNeverCame": "It is not clear whether the settlement arrived. Reload the list and check whether the items are still open.",
-        "settleFailed": "Try again. Settling failed."
+        "loadFailed": "The computer could not be reached. Tap \"Reload\".",
+        "settleAnswerNeverCame": "It is not clear whether the settlement arrived. Tap \"Reload\" and check whether the items are still open.",
+        "settleFailed": "Try again. Settling failed.",
+        "tableCouldNotBeLoaded": "This table could not be loaded. Open it again from the table plan."
       }
     },
     "review": {
@@ -137,8 +132,6 @@
         "goesTo": "Goes to {name}",
         "stationDelivery": "{name}:",
         "table": "Table: {name}",
-        "tableName": "Table",
-        "tablePlaceholder": "For example: 12",
         "unknownPrice": "-"
       },
       "actions": {
@@ -157,6 +150,25 @@
       "errors": {
         "sendFailed": "The order could not be sent. Tap \"Send again\".",
         "sendInterrupted": "It is not clear whether the order arrived. Tap \"Send again\"."
+      }
+    },
+    "tablePlan": {
+      "actions": {
+        "takeOrder": "Take an order",
+        "backToAreas": "Areas",
+        "backToThePlan": "Table plan",
+        "reload": "Reload",
+        "backToTheUnsentOrder": "Back to the order for table {table}",
+        "discardAndTakeTheOrder": "Discard it and take the order for table {table}"
+      },
+      "messages": {
+        "noFestivalIsActive": "No festival is active.",
+        "noTables": "No tables have been set up yet.",
+        "noTablesInArea": "No table has been set up in this area yet.",
+        "unsentOrder": "The order for table {table} has not been sent yet."
+      },
+      "errors": {
+        "loadFailed": "The table plan could not be loaded. Tap \"Reload\"."
       }
     },
     "settings": {
@@ -531,7 +543,7 @@
     "settlement": {
       "cannotBeProcessed": "The settlement could not be processed. Write on a slip of paper what the table paid.",
       "noItemsSelected": "Choose the items you want to settle first.",
-      "unknownItem": "Reload the list. The computer no longer knows one of the selected items, so nothing was settled."
+      "unknownItem": "The computer no longer knows one of the selected items, so nothing was settled. Tap \"Reload\"."
     },
     "station": {
       "changeNotSaved": "The order could not be updated. Reload the page and try again.",

@@ -46,9 +46,6 @@ export type ItemEstimateView = { catalogItemId: string, stationId: string, ready
 export type LanguageChangeRequest = { language: (null | string) }
 export type LanguageView = { language: string }
 export type MoveCategoryRequest = { direction: CategoryMoveDirection }
-export type OpenOrderItemView = { orderItemId: string, orderId: string, globalOrderNumber: number, itemName: string, note: (null | string), unitPriceCents: number, orderedAtUtc: string }
-export type OpenTableView = { tableId: string, tableName: string, openAmountCents: number, items: Array<OpenOrderItemView> }
-export type OpenItemsView = { tables: Array<OpenTableView>, itemsWithoutAnOrderCount: number }
 export type OrderDeliveryModeRequest = { stationId: string, deliveryMode: DeliveryMode }
 export type OrderItemRequest = { catalogItemId: string, unitPriceCents: number, note?: (null | string), stationId?: (null | string) }
 export type OrderStatus = ("open" | "partiallyFulfilled" | "fulfilled")
@@ -219,16 +216,6 @@ export type post__api_orders = {
         body:  Schemas.PlaceOrderRequest,
           }
       responses: {201: Schemas.PlacedOrderView,
-},
-      
-    }
-export type get__api_openItems = {
-      method: "GET",
-      path: "/api/open-items",
-      requestFormat: "json",
-      responseFormat: "json",
-      parameters: never,
-      responses: {200: Schemas.OpenItemsView,
 },
       
     }
@@ -1231,7 +1218,6 @@ get: {
 "/api/language": Endpoints.get__api_language,
 "/api/admin/enrolment/invitations/{invitationId}/qr.svg": Endpoints.get__api_admin_enrolment_invitations_InvitationId_qr_svg,
 "/api/session": Endpoints.get__api_session,
-"/api/open-items": Endpoints.get__api_openItems,
 "/api/open-items/tables/{tableId}": Endpoints.get__api_openItems_tables_TableId,
 "/api/estimates": Endpoints.get__api_estimates,
 "/api/station/orders": Endpoints.get__api_station_orders,

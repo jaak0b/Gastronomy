@@ -1,4 +1,5 @@
 import Konva from 'konva'
+import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { onScreen } from './dom'
 
@@ -84,6 +85,12 @@ export async function releaseAt(at: StagePoint): Promise<void> {
   await flushPromises()
 }
 
+export async function releaseOnTheDrawingAt(stage: Konva.Stage, at: StagePoint): Promise<void> {
+  stage.content.dispatchEvent(mouse('mouseup', at))
+  window.dispatchEvent(mouse('mouseup', at))
+  await flushPromises()
+}
+
 async function dragFromBy(stage: Konva.Stage, from: StagePoint, by: StagePoint): Promise<void> {
   const to = { x: from.x + by.x, y: from.y + by.y }
   await pressAt(stage, from)
@@ -105,4 +112,41 @@ export async function dragAnchorBy(
   by: StagePoint,
 ): Promise<void> {
   await dragFromBy(stage, anchorOf(stage, anchor), by)
+}
+
+export function layOutTheScreen(size: { width: number; height: number }): void {
+  vi.spyOn(Element.prototype, 'clientWidth', 'get').mockReturnValue(size.width)
+  vi.spyOn(Element.prototype, 'clientHeight', 'get').mockReturnValue(size.height)
+}
+
+export interface Finger {
+  id: number
+  at: StagePoint
+}
+
+function touch(type: string, touches: Finger[], changedTouches: Finger[]): Event {
+  const event = new Event(type, { bubbles: true, cancelable: true })
+  Object.defineProperties(event, {
+    touches: { value: touches.map((finger) => ({ identifier: finger.id, clientX: finger.at.x, clientY: finger.at.y })) },
+    changedTouches: {
+      value: changedTouches.map((finger) => ({ identifier: finger.id, clientX: finger.at.x, clientY: finger.at.y })),
+    },
+  })
+  return event
+}
+
+export async function putFingerDown(stage: Konva.Stage, finger: Finger, alreadyDown: Finger[] = []): Promise<void> {
+  stage.draw()
+  stage.content.dispatchEvent(touch('touchstart', [...alreadyDown, finger], [finger]))
+  await flushPromises()
+}
+
+export async function moveFingers(stage: Konva.Stage, fingers: Finger[]): Promise<void> {
+  stage.content.dispatchEvent(touch('touchmove', fingers, fingers))
+  await flushPromises()
+}
+
+export async function liftFinger(stage: Konva.Stage, finger: Finger, stillDown: Finger[] = []): Promise<void> {
+  stage.content.dispatchEvent(touch('touchend', stillDown, [finger]))
+  await flushPromises()
 }

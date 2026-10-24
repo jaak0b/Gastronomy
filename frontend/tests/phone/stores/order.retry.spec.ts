@@ -36,7 +36,7 @@ describe('an order the laptop answered only after it had already stayed silent o
     aLaptopThatSaysNothingAndThenCannotSave()
     const order = useOrderStore()
     order.addItem(waterLine())
-    order.setTable('Tisch 3')
+    order.chooseTable({ tableId: 'table-3', name: 'Tisch 3' })
     const firstAttempt = order.send('leaveOpen')
     await vi.advanceTimersByTimeAsync(SEND_TIMEOUT_MS)
     await firstAttempt
@@ -114,7 +114,7 @@ describe('an order the laptop refused with a reason after it had stayed silent o
     aLaptopThatSaysNothingAndThenAnswersWith(secondAnswer)
     const order = useOrderStore()
     order.addItem(waterLine())
-    order.setTable('Tisch 3')
+    order.chooseTable({ tableId: 'table-3', name: 'Tisch 3' })
     const firstAttempt = order.send('leaveOpen')
     await vi.advanceTimersByTimeAsync(SEND_TIMEOUT_MS)
     await firstAttempt

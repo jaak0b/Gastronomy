@@ -20,6 +20,7 @@ function trapChainUrl(): string {
 function returnPathFor(route: AppRoute): string {
   switch (route.name) {
     case 'home':
+    case 'catalog':
     case 'review':
     case 'openItems':
       return '/'

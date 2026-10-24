@@ -140,7 +140,7 @@ describe('a phone the laptop does not know any more', () => {
     localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.the-laptop-forgot')
     saveDraft({
       festivalId: null,
-      tableName: 'Tisch 12',
+      table: { tableId: 'table-12', name: 'Tisch 12' },
       lines: [{ catalogItemId: 'item-1', note: null, stationId: null, name: 'Bratwurst', stationName: '' }],
       clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
       deliveryModes: {},
@@ -191,7 +191,7 @@ describe('a phone that is signed out while a reason stands on the order screen',
     localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.the-laptop-forgot')
     saveDraft({
       festivalId: null,
-      tableName: 'Tisch 12',
+      table: { tableId: 'table-12', name: 'Tisch 12' },
       lines: [{ catalogItemId: 'item-1', note: null, stationId: null, name: 'Bratwurst', stationName: '' }],
       clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
       deliveryModes: {},
@@ -202,7 +202,7 @@ describe('a phone that is signed out while a reason stands on the order screen',
       failure: { key: 'phone.review.errors.sendFailed' },
       unresolvedAttempt: {
         clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
-        tableName: 'Tisch 12',
+        tableId: 'table-12',
         items: [
           {
             catalogItemId: 'item-1',

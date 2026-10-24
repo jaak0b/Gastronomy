@@ -31,7 +31,7 @@ function line(catalogItemId: string, note: string | null = null): DraftLine {
 }
 
 function draftWith(lines: DraftLine[]): DraftOrder {
-  return { festivalId: null, tableName: '', lines, clientOrderId: null, deliveryModes: {} }
+  return { festivalId: null, table: null, lines, clientOrderId: null, deliveryModes: {} }
 }
 
 describe('countCategoryPortions', () => {

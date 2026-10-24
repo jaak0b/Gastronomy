@@ -87,26 +87,6 @@ public sealed class FestivalScopeEndpointsTest
   }
 
   [Test]
-  public async Task GetOpenItems_NoFestivalIsRunning_AnswersWithNoTables()
-  {
-    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
-    {
-      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-    }
-
-    await LetTheFestivalEndAsync();
-
-    using var response = await _context.SendAsync(HttpMethod.Get, "/api/open-items");
-    var body = await ReadBodyAsync(response);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(body.RootElement.GetProperty("tables").GetArrayLength(), Is.EqualTo(0));
-                    });
-  }
-
-  [Test]
   public async Task GetTable_NoFestivalIsRunning_IsRefusedWithTheSettlementMessage()
   {
     using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))

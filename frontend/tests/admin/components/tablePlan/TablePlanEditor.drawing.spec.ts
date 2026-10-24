@@ -8,11 +8,12 @@ import { textOnScreen, waitUntil } from '../../../support/dom'
 import {
   centreOf,
   dragBy,
+  layOutTheScreen,
   movePointerTo,
   pressAt,
   releaseAt,
-  shapeWithId,
   shapesNamed,
+  shapeWithId,
   tapAt,
 } from '../../../support/konvaDrawing'
 import { refusal } from '../../../support/laptop'
@@ -23,7 +24,6 @@ import {
   TABLE_A1_SHAPE_ID,
   drawingScrollArea,
   editorLaptop,
-  layOutTheScreen,
   mountEditor,
   selectTheShape,
   theDrawing,

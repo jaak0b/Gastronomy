@@ -38,6 +38,7 @@
     "vue-tsc": "^3.3.11"
   },
   "allowScripts": {
-    "canvas@3.2.3": true
+    "canvas@3.2.3": true,
+    "esbuild@0.28.2": true
   }
 }

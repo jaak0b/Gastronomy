@@ -1,9 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
-import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
 import { stubLaptop, answer, inTurn } from '../../support/laptop'
-import { EMPTY_LIST, deferredResponse, storeWithTheOpenList, REPORT_AFTER_THE_NEW_ORDER, REPORT_WITH_THE_NEW_ITEM_SETTLED } from './openItemsFixture'
+import {
+  REPORT_AFTER_THE_NEW_ORDER,
+  REPORT_WITH_THE_NEW_ITEM_SETTLED,
+  TABLE_PATH,
+  aWaiterPhone,
+  deferredResponse,
+  laptopAnsweringInTurn,
+} from './openItemsFixture'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -11,83 +17,79 @@ describe('a table opened with the items of an order just sent ticked', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    aWaiterPhone()
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
   })
 
-  it('ticks nothing before the table has loaded', async () => {
-    const { openItems } = await storeWithTheOpenList([answer(REPORT_AFTER_THE_NEW_ORDER)])
+  it('ticks nothing before the table has loaded', () => {
+    laptopAnsweringInTurn([answer(REPORT_AFTER_THE_NEW_ORDER)])
+    const openItems = useOpenItemsStore()
 
-    openItems.openTableAndSelectItemsOnceLoaded('Tisch 12', ['new-open', 'new-settled'])
+    openItems.openTableAndSelectItemsOnceLoaded('table-12', ['new-open', 'new-settled'])
 
-    expect({ table: openItems.lookupName, ticked: openItems.selectedItemIds }).toEqual({
-      table: 'Tisch 12',
+    expect({ table: openItems.tableId, ticked: openItems.selectedItemIds }).toEqual({
+      table: 'table-12',
       ticked: [],
     })
   })
 
   it('ticks the items of the order that are still open once the table has loaded, and leaves older ones unticked', async () => {
-    const { openItems } = await storeWithTheOpenList([answer(REPORT_AFTER_THE_NEW_ORDER)])
-    openItems.openTableAndSelectItemsOnceLoaded('Tisch 12', ['new-open', 'new-settled'])
+    laptopAnsweringInTurn([answer(REPORT_AFTER_THE_NEW_ORDER)])
+    const openItems = useOpenItemsStore()
+    openItems.openTableAndSelectItemsOnceLoaded('table-12', ['new-open', 'new-settled'])
 
-    await openItems.loadTableReport('Tisch 12')
+    await openItems.load()
 
     expect(openItems.selectedItemIds).toEqual(['new-open'])
   })
 
-  it('ticks from the newest answer when an older lookup answers after it', async () => {
+  it('ticks from the newest answer when an older load answers after it', async () => {
     const older = deferredResponse()
     const newer = deferredResponse()
-    stubLaptop()
-      .answersEverythingElse(answer(EMPTY_LIST))
-      .answers('GET', '/api/open-items/table', inTurn(() => older.promise, () => newer.promise))
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
-    useSessionStore().deviceToken = 'token-here'
+    stubLaptop().answers('GET', TABLE_PATH, inTurn(() => older.promise, () => newer.promise))
     const openItems = useOpenItemsStore()
-    openItems.openTableAndSelectItemsOnceLoaded('Tisch 12', ['new-open'])
+    openItems.openTableAndSelectItemsOnceLoaded('table-12', ['new-open'])
 
-    const firstLookup = openItems.loadTableReport('Tisch 12')
-    const newestLookup = openItems.loadTableReport('Tisch 12')
+    const firstLoad = openItems.load()
+    const newestLoad = openItems.load()
     newer.answerWith(REPORT_WITH_THE_NEW_ITEM_SETTLED)
-    await newestLookup
+    await newestLoad
     older.answerWith(REPORT_AFTER_THE_NEW_ORDER)
-    await firstLookup
+    await firstLoad
 
     expect(openItems.selectedItemIds).toEqual([])
   })
 
   it('ticks the handed over items only once, so the table opened again starts with nothing ticked', async () => {
-    const { openItems } = await storeWithTheOpenList([answer(REPORT_AFTER_THE_NEW_ORDER)])
-    openItems.openTableAndSelectItemsOnceLoaded('Tisch 12', ['new-open'])
-    await openItems.loadTableReport('Tisch 12')
-    openItems.closeLookup()
+    laptopAnsweringInTurn([answer(REPORT_AFTER_THE_NEW_ORDER), answer(REPORT_AFTER_THE_NEW_ORDER)])
+    const openItems = useOpenItemsStore()
+    openItems.openTableAndSelectItemsOnceLoaded('table-12', ['new-open'])
+    await openItems.load()
+    openItems.closeTable()
 
-    openItems.openLookup('Tisch 12')
-    await openItems.loadTableReport('Tisch 12')
+    openItems.openTable('table-12')
+    await openItems.load()
 
     expect(openItems.selectedItemIds).toEqual([])
   })
 
-  it('ticks the new items when a lookup of the same table started before the handover answers first', async () => {
+  it('ticks the new items when a load of the same table started before the handover answers first', async () => {
     const before = deferredResponse()
     const after = deferredResponse()
-    stubLaptop()
-      .answersEverythingElse(answer(EMPTY_LIST))
-      .answers('GET', '/api/open-items/table', inTurn(() => before.promise, () => after.promise))
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
-    useSessionStore().deviceToken = 'token-here'
+    stubLaptop().answers('GET', TABLE_PATH, inTurn(() => before.promise, () => after.promise))
     const openItems = useOpenItemsStore()
-    openItems.openLookup('Tisch 12')
-    const lookupBeforeTheHandover = openItems.loadTableReport('Tisch 12')
+    openItems.openTable('table-12')
+    const loadBeforeTheHandover = openItems.load()
 
-    openItems.openTableAndSelectItemsOnceLoaded('Tisch 12', ['new-open'])
+    openItems.openTableAndSelectItemsOnceLoaded('table-12', ['new-open'])
     before.answerWith({ ...REPORT_AFTER_THE_NEW_ORDER, orders: [REPORT_AFTER_THE_NEW_ORDER.orders[0]] })
-    await lookupBeforeTheHandover
-    const lookupAfterTheHandover = openItems.loadTableReport('Tisch 12')
+    await loadBeforeTheHandover
+    const loadAfterTheHandover = openItems.load()
     after.answerWith(REPORT_AFTER_THE_NEW_ORDER)
-    await lookupAfterTheHandover
+    await loadAfterTheHandover
 
     expect(openItems.selectedItemIds).toEqual(['new-open'])
   })

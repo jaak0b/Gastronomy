@@ -22,4 +22,5 @@ describe('reading the app theme', () => {
   it('gives the text colour at medium emphasis as the muted ink', () => {
     expect(mutedInkOf(appTheme.themes.dark)).toBe('rgba(230, 232, 235, 0.66)')
   })
+
 })

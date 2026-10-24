@@ -213,25 +213,6 @@
         }
       }
     },
-    "/api/open-items": {
-      "get": {
-        "tags": [
-          "GetDocument.Insider"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenItemsView"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/open-items/tables/{tableId}": {
       "get": {
         "tags": [
@@ -3237,96 +3218,6 @@
         "properties": {
           "direction": {
             "$ref": "#/components/schemas/CategoryMoveDirection"
-          }
-        }
-      },
-      "OpenItemsView": {
-        "required": [
-          "tables",
-          "itemsWithoutAnOrderCount"
-        ],
-        "type": "object",
-        "properties": {
-          "tables": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OpenTableView"
-            }
-          },
-          "itemsWithoutAnOrderCount": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "OpenOrderItemView": {
-        "required": [
-          "orderItemId",
-          "orderId",
-          "globalOrderNumber",
-          "itemName",
-          "note",
-          "unitPriceCents",
-          "orderedAtUtc"
-        ],
-        "type": "object",
-        "properties": {
-          "orderItemId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "orderId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "globalOrderNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "itemName": {
-            "type": "string"
-          },
-          "note": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "unitPriceCents": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "orderedAtUtc": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "OpenTableView": {
-        "required": [
-          "tableId",
-          "tableName",
-          "openAmountCents",
-          "items"
-        ],
-        "type": "object",
-        "properties": {
-          "tableId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "tableName": {
-            "type": "string"
-          },
-          "openAmountCents": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OpenOrderItemView"
-            }
           }
         }
       },

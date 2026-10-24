@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { isTableNameValid } from '../core/tableName'
 import { formatPrice } from '../../shared/core/money'
 import { quoteLinesFor } from '../core/estimates'
 import { withEstimate } from '../core/estimateWording'
@@ -15,6 +14,7 @@ import { useEstimatesStore } from '../stores/estimates'
 import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../../shared/stores/session'
 import { navigate } from '../../shared/router/router'
+import { useDraftTableName } from '../composables/useDraftTableName'
 import { useSendAndLeave } from '../composables/useSendAndLeave'
 import DockedStrip from '../components/DockedStrip.vue'
 import LineList from '../components/review/LineList.vue'
@@ -25,6 +25,7 @@ const estimates = useEstimatesStore()
 const order = useOrderStore()
 const session = useSessionStore()
 const { send, sendAgain } = useSendAndLeave()
+const { draftTableName } = useDraftTableName()
 
 const quoteLines = computed(() => quoteLinesFor(order.basketLines))
 
@@ -43,10 +44,7 @@ onUnmounted(() => {
 const total = computed(() => formatPrice(order.totalCents, session.language))
 
 const canSend = computed(
-  () =>
-    isTableNameValid(order.draft.tableName) &&
-    order.basketLines.length > 0 &&
-    !order.isSending,
+  () => order.draft.table !== null && order.basketLines.length > 0 && !order.isSending,
 )
 
 const stationLines = computed(() =>
@@ -66,7 +64,7 @@ function startTheNextOrder(): void {
 
 function backToItems(): void {
   order.dismissConfirmation()
-  navigate('/')
+  navigate('/catalog')
 }
 </script>
 
@@ -88,7 +86,9 @@ function backToItems(): void {
     />
     <div class="review-heading d-flex align-center mb-2" data-test="review-heading">
       <h1 class="table-name text-subtitle-1 text-medium-emphasis" data-test="table-name">
-        {{ t('phone.review.labels.table', { name: order.draft.tableName }) }}
+        <template v-if="draftTableName !== null">
+          {{ t('phone.review.labels.table', { name: draftTableName }) }}
+        </template>
       </h1>
       <span class="order-total text-h5" data-test="order-total">{{ total }}</span>
     </div>

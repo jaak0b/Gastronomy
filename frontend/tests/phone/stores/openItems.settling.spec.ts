@@ -2,9 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { SEND_TIMEOUT_MS } from '../../../src/phone/core/sendTimeout'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
-import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
 import { stubLaptop, answer, neverAnswers } from '../../support/laptop'
-import { OPEN_LIST, EMPTY_LIST, SETTLED, storeWithTheOpenList } from './openItemsFixture'
+import { SETTLED, TWO_BRATWURST, aWaiterPhone, storeShowingTisch12 } from './openItemsFixture'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -19,7 +18,7 @@ describe('settling what the waiter ticked', () => {
   })
 
   it('sends the ticked items with the amount paid and clears the selection', async () => {
-    const { openItems, laptop } = await storeWithTheOpenList([answer(SETTLED), answer(EMPTY_LIST)])
+    const { openItems, laptop } = await storeShowingTisch12([answer(SETTLED), answer(TWO_BRATWURST)], TWO_BRATWURST)
     openItems.toggleItem('item-1')
 
     await openItems.settle(350, null, 'cash')
@@ -38,7 +37,7 @@ describe('settling what the waiter ticked', () => {
   })
 
   it('sends card as the way the table paid when the waiter settles by card', async () => {
-    const { openItems, laptop } = await storeWithTheOpenList([answer(SETTLED), answer(EMPTY_LIST)])
+    const { openItems, laptop } = await storeShowingTisch12([answer(SETTLED), answer(TWO_BRATWURST)], TWO_BRATWURST)
     openItems.toggleItem('item-1')
 
     await openItems.settle(350, null, 'card')
@@ -50,7 +49,7 @@ describe('settling what the waiter ticked', () => {
   })
 
   it('carries the typed reason when the table pays less than it owes', async () => {
-    const { openItems, laptop } = await storeWithTheOpenList([answer(SETTLED), answer(EMPTY_LIST)])
+    const { openItems, laptop } = await storeShowingTisch12([answer(SETTLED), answer(TWO_BRATWURST)], TWO_BRATWURST)
     openItems.toggleItem('item-1')
 
     await openItems.settle(0, 'Essen fuer die Kapelle', 'none')
@@ -69,14 +68,14 @@ describe('settling what the waiter ticked', () => {
   })
 
   it('names the amount to hand back for the items another phone had already taken', async () => {
-    const { openItems } = await storeWithTheOpenList([
+    const { openItems } = await storeShowingTisch12([
       answer({
         settledOrderItemIds: ['item-1'],
         reappliedOrderItemIds: [],
         alreadySettledByOthersOrderItemIds: ['item-2'],
       }),
-      answer(EMPTY_LIST),
-    ])
+      answer(TWO_BRATWURST),
+    ], TWO_BRATWURST)
     openItems.toggleItem('item-1')
     openItems.toggleItem('item-2')
 
@@ -90,7 +89,7 @@ describe('settling what the waiter ticked', () => {
   })
 
   it('shows the laptop wording when the laptop refuses, so no raw key reaches the phone', async () => {
-    const { openItems } = await storeWithTheOpenList([
+    const { openItems } = await storeShowingTisch12([
       answer(
         {
           code: 'ValidationFailed',
@@ -100,8 +99,8 @@ describe('settling what the waiter ticked', () => {
         },
         400,
       ),
-      answer(OPEN_LIST),
-    ])
+      answer(TWO_BRATWURST),
+    ], TWO_BRATWURST)
     openItems.toggleItem('item-1')
 
     const outcome = await openItems.settle(200, '   ', 'cash')
@@ -114,10 +113,10 @@ describe('settling what the waiter ticked', () => {
     vi.useFakeTimers()
     try {
       stubLaptop().answersEverythingElse(neverAnswers())
-      localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
-      useSessionStore().deviceToken = 'token-here'
+      aWaiterPhone()
       const openItems = useOpenItemsStore()
-      openItems.tables = OPEN_LIST.tables
+      openItems.openTable('table-12')
+      openItems.report = TWO_BRATWURST
       openItems.toggleItem('item-1')
 
       const settling = openItems.settle(350, null, 'cash')
@@ -133,11 +132,14 @@ describe('settling what the waiter ticked', () => {
   })
 
   it('claims nothing about what was settled when the laptop was not reached at all', async () => {
-    const { openItems } = await storeWithTheOpenList([
-      () => {
-        throw new TypeError('the laptop cannot be reached')
-      },
-    ])
+    const { openItems } = await storeShowingTisch12(
+      [
+        () => {
+          throw new TypeError('the laptop cannot be reached')
+        },
+      ],
+      TWO_BRATWURST,
+    )
     openItems.toggleItem('item-1')
 
     await openItems.settle(350, null, 'cash')
@@ -147,7 +149,7 @@ describe('settling what the waiter ticked', () => {
   })
 
   it('keeps saying what a refusal from the laptop said, because a refusal is knowledge', async () => {
-    const { openItems } = await storeWithTheOpenList([
+    const { openItems } = await storeShowingTisch12([
       answer(
         {
           code: 'ValidationFailed',
@@ -157,12 +159,59 @@ describe('settling what the waiter ticked', () => {
         },
         400,
       ),
-      answer(OPEN_LIST),
-    ])
+      answer(TWO_BRATWURST),
+    ], TWO_BRATWURST)
     openItems.toggleItem('item-1')
 
     await openItems.settle(200, null, 'cash')
 
     expect(openItems.notice?.key).toBe('errors.settlement.cannotBeProcessed')
+  })
+})
+
+describe('a notice about settling one table', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  async function aNoticeToHandMoneyBackAtTisch12() {
+    const { openItems } = await storeShowingTisch12(
+      [
+        answer({
+          settledOrderItemIds: ['item-1'],
+          reappliedOrderItemIds: [],
+          alreadySettledByOthersOrderItemIds: ['item-2'],
+        }),
+        answer(TWO_BRATWURST),
+      ],
+      TWO_BRATWURST,
+    )
+    openItems.toggleItem('item-1')
+    openItems.toggleItem('item-2')
+    await openItems.settle(700, null, 'cash')
+    return openItems
+  }
+
+  it('stays behind when the waiter leaves for another table', async () => {
+    const openItems = await aNoticeToHandMoneyBackAtTisch12()
+
+    openItems.closeTable()
+    openItems.openTable('table-14')
+
+    expect(openItems.notice).toBeNull()
+  })
+
+  it('stays behind when an order just sent opens another table', async () => {
+    const openItems = await aNoticeToHandMoneyBackAtTisch12()
+
+    openItems.closeTable()
+    openItems.openTableAndSelectItemsOnceLoaded('table-14', ['new-1'])
+
+    expect(openItems.notice).toBeNull()
   })
 })

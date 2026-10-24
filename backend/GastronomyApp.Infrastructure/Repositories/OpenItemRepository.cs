@@ -14,15 +14,6 @@ public sealed class OpenItemRepository : IOpenItemRepository
     _dbContext = dbContext;
   }
 
-  public async Task<IReadOnlyList<OrderItem>> FindOpenAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken)
-  {
-    List<OrderItem> openItems = await ItemsAtFestival(festivalId).AsNoTracking().Where(item => item.SettledAtUtc == null).ToListAsync(cancellationToken);
-
-    await AttachStationOrdersWithTheirOrdersAsync(openItems, cancellationToken);
-
-    return openItems;
-  }
-
   public async Task<IReadOnlyList<OrderItem>> FindForSettlementAsync(IReadOnlyCollection<Guid> orderItemIds, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
@@ -62,22 +53,5 @@ public sealed class OpenItemRepository : IOpenItemRepository
     foreach (var item in items)
       if (stationOrdersById.TryGetValue(item.StationOrderId, out var stationOrder))
         item.StationOrder = stationOrder;
-  }
-
-  private IQueryable<OrderItem> ItemsAtFestival(Guid festivalId)
-  {
-    IQueryable<Guid> stationOrderIdsOfAnotherFestival = _dbContext.StationOrders.AsNoTracking()
-                                                                  .Join(_dbContext.Orders.AsNoTracking(),
-                                                                        stationOrder => stationOrder.OrderId,
-                                                                        order => order.Id,
-                                                                        (stationOrder, order) => new
-                                                                                                 {
-                                                                                                   StationOrder = stationOrder,
-                                                                                                   Order = order
-                                                                                                 })
-                                                                  .Where(joined => joined.Order.FestivalId != festivalId)
-                                                                  .Select(joined => joined.StationOrder.Id);
-
-    return _dbContext.OrderItems.Where(item => !stationOrderIdsOfAnotherFestival.Contains(item.StationOrderId));
   }
 }

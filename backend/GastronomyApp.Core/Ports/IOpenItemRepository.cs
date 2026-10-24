@@ -4,8 +4,6 @@ namespace GastronomyApp.Core.Ports;
 
 public interface IOpenItemRepository
 {
-  public Task<IReadOnlyList<OrderItem>> FindOpenAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken);
-
   public Task<IReadOnlyList<OrderItem>> FindForSettlementAsync(IReadOnlyCollection<Guid> orderItemIds, CancellationToken cancellationToken);
 
   public Task<Table?> FindTableWithOrdersAsync(Guid festivalId, Guid tableId, CancellationToken cancellationToken);

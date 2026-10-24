@@ -1,3 +1,5 @@
+import { assertNever } from '../core/assertNever'
+
 export type AdminSection = 'festivals' | 'overview' | 'stations' | 'items' | 'ingredients' | 'staff'
 
 export type FestivalSubpage = 'tablePlan'
@@ -5,6 +7,7 @@ export type FestivalSubpage = 'tablePlan'
 export type AppRoute =
   | { name: 'enrolQr'; code: string }
   | { name: 'home' }
+  | { name: 'catalog' }
   | { name: 'review' }
   | { name: 'openItems' }
   | { name: 'stations' }
@@ -40,6 +43,9 @@ export function resolveRoute(path: string): AppRoute {
   if (first === 'j' && segments.length >= 2) {
     return { name: 'enrolQr', code: segments[1] }
   }
+  if (first === 'catalog') {
+    return { name: 'catalog' }
+  }
   if (first === 'review') {
     return { name: 'review' }
   }
@@ -53,6 +59,23 @@ export function resolveRoute(path: string): AppRoute {
     return adminRouteFrom(segments)
   }
   return { name: 'home' }
+}
+
+export function routeToStartAt(path: string): AppRoute {
+  const route = resolveRoute(path)
+  switch (route.name) {
+    case 'catalog':
+    case 'review':
+    case 'openItems':
+      return { name: 'home' }
+    case 'home':
+    case 'stations':
+    case 'enrolQr':
+    case 'admin':
+      return route
+    default:
+      return assertNever(route)
+  }
 }
 
 export { ADMIN_SECTIONS }

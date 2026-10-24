@@ -2,12 +2,12 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { assertNever } from '../../../shared/core/assertNever'
+import { statusTintCssOf, statusTokenOf } from '../../../shared/core/statusTints'
 import type { PositionState } from '../../core/openItems'
 
 const props = defineProps<{
   itemName: string
   note: string | null
-  orderLabel: string | null
   priceText: string
   isSelected: boolean
   isDisabled: boolean
@@ -24,12 +24,23 @@ const stateClass = computed(() => {
       return 'is-produced'
     case 'notProduced':
       return 'is-not-produced'
-    case 'unknown':
-      return null
     default:
       return assertNever(props.productionState)
   }
 })
+
+const stateToken = computed(() => {
+  switch (props.productionState) {
+    case 'produced':
+      return statusTokenOf('all')
+    case 'notProduced':
+      return statusTokenOf('none')
+    default:
+      return assertNever(props.productionState)
+  }
+})
+
+const tint = computed(() => ({ background: statusTintCssOf(stateToken.value) }))
 
 const stateIcon = computed(() => {
   switch (props.productionState) {
@@ -37,8 +48,6 @@ const stateIcon = computed(() => {
       return 'mdi-check'
     case 'notProduced':
       return 'mdi-clock-outline'
-    case 'unknown':
-      return null
     default:
       return assertNever(props.productionState)
   }
@@ -50,6 +59,7 @@ const stateIcon = computed(() => {
     class="open-line"
     data-test="open-line"
     :class="stateClass"
+    :style="tint"
     :disabled="isDisabled"
     @click="emit('toggle')"
   >
@@ -63,14 +73,11 @@ const stateIcon = computed(() => {
       />
     </template>
     <v-list-item-title class="line-name" data-test="line-name">{{ itemName }}</v-list-item-title>
-    <v-list-item-subtitle v-if="orderLabel !== null" class="line-origin" data-test="line-origin">
-      {{ orderLabel }}
-    </v-list-item-subtitle>
     <v-list-item-subtitle v-if="note !== null" class="line-note" data-test="line-note">
       {{ t('common.labels.note', { note }) }}
     </v-list-item-subtitle>
     <template #append>
-      <v-icon v-if="stateIcon !== null" class="line-state" data-test="line-state" :icon="stateIcon" size="small" />
+      <v-icon class="line-state" :color="stateToken" data-test="line-state" :icon="stateIcon" size="small" />
       <span v-if="isSettled" class="line-paid text-body-1" data-test="line-paid">{{ t('phone.openItems.labels.paid') }}</span>
       <span class="line-price text-body-1" data-test="line-price">{{ priceText }}</span>
     </template>
@@ -79,7 +86,6 @@ const stateIcon = computed(() => {
 
 <style scoped>
 .line-name,
-.line-origin,
 .line-note {
   white-space: normal;
   overflow: visible;
@@ -106,21 +112,5 @@ const stateIcon = computed(() => {
 .open-line {
   min-height: 0;
   padding-block: 0.75rem;
-}
-
-.open-line.is-produced {
-  background: color-mix(in srgb, rgb(var(--v-theme-success)) 38%, rgb(var(--v-theme-surface)));
-}
-
-.open-line.is-not-produced {
-  background: color-mix(in srgb, rgb(var(--v-theme-error)) 38%, rgb(var(--v-theme-surface)));
-}
-
-.open-line.is-produced .line-state {
-  color: rgb(var(--v-theme-success));
-}
-
-.open-line.is-not-produced .line-state {
-  color: rgb(var(--v-theme-error));
 }
 </style>

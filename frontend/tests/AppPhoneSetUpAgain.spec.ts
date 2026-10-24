@@ -49,7 +49,7 @@ function aLaptopThatForgotThisPhoneAfterItStarted(): void {
     '/api/catalog': answer(CATALOG),
     '/api/session': answer(SESSION),
     '/api/enrolment/redeem': answer({ ...SESSION, deviceToken: 'token-from-the-fresh-code' }),
-  }).answersEverythingElse(answer({ stations: [], tableNames: [] }))
+  }).answersEverythingElse(answer({ stations: [] }))
 }
 
 async function aPhoneOnTheSummaryWithAnOrderOnIt() {
@@ -65,7 +65,7 @@ async function aPhoneOnTheSummaryWithAnOrderOnIt() {
     stationId: 'station-bar',
     name: 'Wasser',
   })
-  order.setTable('Tisch 5')
+  order.chooseTable({ tableId: 'table-5', name: 'Tisch 5' })
   return order
 }
 
@@ -157,7 +157,7 @@ describe('a waiter whose order was already frozen when the phone was set up agai
     localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.the-laptop-forgot')
     saveDraft({
       festivalId: null,
-      tableName: 'Tisch 5',
+      table: { tableId: 'table-5', name: 'Tisch 5' },
       lines: [
         {
           catalogItemId: 'item-wasser',
@@ -176,7 +176,7 @@ describe('a waiter whose order was already frozen when the phone was set up agai
       failure: null,
       unresolvedAttempt: {
         clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
-        tableName: 'Tisch 5',
+        tableId: 'table-5',
         items: [
           {
             catalogItemId: 'item-wasser',

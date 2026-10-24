@@ -13,8 +13,6 @@ public static class OpenItemEndpoints
   {
     var group = routes.MapGroup("/api/open-items").RequireAuthorization().RequireStaffDevice().RequireRateLimiting(Names.RateLimitPolicies.PerDevice);
 
-    group.MapGet(string.Empty, async (OpenItemQueryHandler handler, CancellationToken cancellationToken) => await handler.ListAsync(cancellationToken));
-
     group.MapGet("/tables/{tableId:guid}", async (Guid tableId, OpenItemQueryHandler handler, CancellationToken cancellationToken) => await handler.ReadTableAsync(tableId, cancellationToken));
 
     group.MapPost("/settle", async (SettleItemsRequest request, StaffDeviceCaller caller, OrderItemSettlementHandler handler, CancellationToken cancellationToken) => await handler.SettleAsync(request, caller, cancellationToken));

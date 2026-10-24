@@ -1,4 +1,4 @@
-import { OpenTableView, TableOrderRecordItemView, TableOrderRecordView } from '../../../src/shared/api/generatedSchemas'
+import type { TableOrderRecordItemView, TableOrderRecordView, TableOrderReportView } from '../../../src/shared/api/generatedSchemas'
 
 export function itemWith(
   orderItemId: string,
@@ -29,18 +29,11 @@ export function recordWith(items: TableOrderRecordItemView[]): TableOrderRecordV
   }
 }
 
-export function tableWith(tableName: string, prices: number[]): OpenTableView {
+export function reportWith(orders: TableOrderRecordView[]): TableOrderReportView {
   return {
-    tableName,
-    openAmountCents: prices.reduce((total, price) => total + price, 0),
-    items: prices.map((unitPriceCents, position) => ({
-      orderItemId: `${tableName}-${position}`,
-      orderId: 'order-1',
-      globalOrderNumber: 1,
-      itemName: 'Bratwurst',
-      note: null,
-      unitPriceCents,
-      orderedAtUtc: '2026-09-05T18:00:00Z',
-    })),
+    tableId: 'table-12',
+    tableName: 'Tisch 12',
+    openAmountCents: 0,
+    orders,
   }
 }

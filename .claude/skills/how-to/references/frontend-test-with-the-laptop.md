@@ -33,8 +33,9 @@ this page is the set of tools and the shape of a spec.
 Factories take overrides and return a full, schema valid view: `anAdminItem`, `anAdminItemIngredient`
 (one recipe line of an article), `anAdminIngredient`,
 `anAdminFestivalIngredient` (one stock row of the festival page, with its usage and forecasts),
-`aFestival`, `anAdminStation`, `anOpenItem`, `anOpenItemsTable`, `aQueuedItem`, `aStationOrder`, and
-the table plan's `aGeometry`, `anAdminTable`, `anAdminStationShape` and `anAdminArea`. The
+`aFestival`, `anAdminStation`, `aQueuedItem`, `aStationOrder`, the table plan's `aGeometry`,
+`anAdminTable`, `anAdminStationShape` and `anAdminArea`, and the waiter's plan `aPlanTable`,
+`aPlanStationShape` and `aPlanArea`. The
 generated schemas are strict, so an answer must hold every field; build it with the factory and
 override only what the spec is about, `anAdminIngredient({ name: 'Senf', unit: 'gram' })`. A shape that
 changes on the wire is fixed in the factory once.
@@ -63,6 +64,9 @@ changes on the wire is fixed in the factory once.
   started last, and `forgetHubEvents()` resets all of these.
 - A Konva drawing is driven through `tests/support/konvaDrawing.ts`; see
   [test-a-konva-drawing.md](test-a-konva-drawing.md).
+- A phone spec that needs an order at a table calls `theWaiterTakesTheOrderAt(TISCH_3)` from
+  `tests/support/waiterPhone.ts` before the order store is first used; it stores a draft for that
+  table, which the store reads back.
 - Select by `data-test`, and by `data-test-id` when a list holds several rows:
   `[data-test="ingredient-row"][data-test-id="ingredient-senf"]`. Add the attribute to the template when
   it is missing. Never select by position or by a class.

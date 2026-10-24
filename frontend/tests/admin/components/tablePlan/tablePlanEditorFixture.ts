@@ -1,4 +1,4 @@
-import { expect, vi } from 'vitest'
+import { expect } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import type Konva from 'konva'
 import type { Plugin } from 'vue'
@@ -96,11 +96,6 @@ export async function selectTheShape(id: string): Promise<void> {
 
 export function areaRow(areaId: string): HTMLElement {
   return onScreen(`[data-test="area-row"][data-test-id="${areaId}"]`)
-}
-
-export function layOutTheScreen(size: { width: number; height: number }): void {
-  vi.spyOn(Element.prototype, 'clientWidth', 'get').mockReturnValue(size.width)
-  vi.spyOn(Element.prototype, 'clientHeight', 'get').mockReturnValue(size.height)
 }
 
 export function drawingScrollArea(): HTMLElement {

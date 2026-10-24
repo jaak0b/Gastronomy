@@ -43,7 +43,7 @@ public static partial class Refusal
     public static Error SelectionSpansSeveralTables(IReadOnlyList<Guid> tableIds)
     {
       return BadRequest(RefusalMessageKeys.SettlementCannotBeProcessed,
-                        $"The items sent belong to the tables {string.Join(", ", tableIds)}. The open items screen holds every other table back once one of them has something ticked, so this call did not come from that screen.",
+                        $"The items sent belong to the tables {string.Join(", ", tableIds)}. The open items screen shows the items of one table only, so this call did not come from that screen.",
                         new() { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
     }
 

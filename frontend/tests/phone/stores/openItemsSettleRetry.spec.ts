@@ -6,37 +6,36 @@ import { stubLaptop, answer, inTurn, noConnection, type LaptopReply, type Stubbe
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
-const OPEN_LIST = {
-  tables: [
-    {
-      tableName: 'Tisch 5',
-      openAmountCents: 1200,
-      items: [
-        {
-          orderItemId: 'item-1',
-          orderId: 'order-1',
-          globalOrderNumber: 204,
-          itemName: 'Schnitzel',
-          note: null,
-          unitPriceCents: 900,
-          orderedAtUtc: '2026-09-05T18:00:00Z',
-        },
-        {
-          orderItemId: 'item-2',
-          orderId: 'order-1',
-          globalOrderNumber: 204,
-          itemName: 'Radler',
-          note: null,
-          unitPriceCents: 300,
-          orderedAtUtc: '2026-09-05T18:00:00Z',
-        },
-      ],
-    },
-  ],
-  itemsWithoutAnOrderCount: 0,
+function itemOf(orderItemId: string, itemName: string, unitPriceCents: number) {
+  return {
+    orderItemId,
+    orderId: 'order-1',
+    globalOrderNumber: 204,
+    itemName,
+    note: null,
+    unitPriceCents,
+    orderedAtUtc: '2026-09-05T18:00:00Z',
+    fulfilledAtUtc: null,
+    settledAtUtc: null,
+  }
 }
 
-const LIST_AFTER_THE_SETTLEMENT = { tables: [], itemsWithoutAnOrderCount: 0 }
+const TISCH_FUENF = {
+  tableId: 'table-5',
+  tableName: 'Tisch 5',
+  openAmountCents: 1200,
+  orders: [
+    {
+      orderId: 'order-1',
+      globalOrderNumber: 204,
+      createdAtUtc: '2026-09-05T18:00:00Z',
+      staffMemberName: 'Anna',
+      items: [itemOf('item-1', 'Schnitzel', 900), itemOf('item-2', 'Radler', 300)],
+    },
+  ],
+}
+
+const TISCH_FUENF_AFTER_THE_SETTLEMENT = { ...TISCH_FUENF, openAmountCents: 0, orders: [] }
 
 const OWN_SETTLEMENT_APPLIED_AGAIN = {
   settledOrderItemIds: [],
@@ -60,6 +59,7 @@ async function theTableWithTwoItems() {
   session.deviceToken = 'token-here'
   session.language = 'de'
   const openItems = useOpenItemsStore()
+  openItems.openTable('table-5')
   await openItems.load()
   openItems.toggleItem('item-1')
   openItems.toggleItem('item-2')
@@ -78,10 +78,10 @@ describe('settling the same items again after the answer never came', () => {
 
   it('sends the same lines and the same way of paying again, so the laptop can take it as this phone settling twice', async () => {
     const laptop = laptopAnsweringInTurn([
-      answer(OPEN_LIST),
+      answer(TISCH_FUENF),
       noConnection(),
       answer(OWN_SETTLEMENT_APPLIED_AGAIN),
-      answer(LIST_AFTER_THE_SETTLEMENT),
+      answer(TISCH_FUENF_AFTER_THE_SETTLEMENT),
     ])
     const openItems = await theTableWithTwoItems()
 
@@ -100,10 +100,10 @@ describe('settling the same items again after the answer never came', () => {
 
   it('does not tell the waiter to hand back the twelve euros they correctly collected', async () => {
     laptopAnsweringInTurn([
-      answer(OPEN_LIST),
+      answer(TISCH_FUENF),
       noConnection(),
       answer(OWN_SETTLEMENT_APPLIED_AGAIN),
-      answer(LIST_AFTER_THE_SETTLEMENT),
+      answer(TISCH_FUENF_AFTER_THE_SETTLEMENT),
     ])
     const openItems = await theTableWithTwoItems()
 
@@ -115,9 +115,9 @@ describe('settling the same items again after the answer never came', () => {
 
   it('names the amount this phone sent for the lines somebody else had already taken', async () => {
     laptopAnsweringInTurn([
-      answer(OPEN_LIST),
+      answer(TISCH_FUENF),
       answer(SOMEBODY_ELSE_HAD_ITEM_ONE),
-      answer(LIST_AFTER_THE_SETTLEMENT),
+      answer(TISCH_FUENF_AFTER_THE_SETTLEMENT),
     ])
     const openItems = await theTableWithTwoItems()
 

@@ -125,12 +125,12 @@ describe('withoutLinesThatCannotBeOrdered', () => {
     expect(remaining.lines.map((line) => line.catalogItemId)).toEqual(['item-bratwurst'])
   })
 
-  it('keeps the table the server has already typed', () => {
-    const draft = { ...draftWithOneVanishedItem(), tableName: 'Tisch 12' }
+  it('keeps the table the order is taken for', () => {
+    const draft = { ...draftWithOneVanishedItem(), table: { tableId: 'table-12', name: 'Tisch 12' } }
 
     const remaining = withoutLinesThatCannotBeOrdered(draft, catalog())
 
-    expect(remaining.tableName).toBe('Tisch 12')
+    expect(remaining.table).toEqual({ tableId: 'table-12', name: 'Tisch 12' })
   })
 
   it('writes the shortened order to storage, so a reload does not bring the line back', () => {

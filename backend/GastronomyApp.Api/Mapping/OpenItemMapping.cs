@@ -10,12 +10,6 @@ public sealed class OpenItemMapping : IMappingRegistration
   {
     ArgumentNullException.ThrowIfNull(config);
 
-    config.NewConfig<OrderItem, OpenOrderItemView>()
-          .Map(view => view.OrderItemId, item => item.Id)
-          .Map(view => view.OrderId, item => item.StationOrder.Order.Id)
-          .Map(view => view.GlobalOrderNumber, item => item.StationOrder.Order.GlobalOrderNumber)
-          .Map(view => view.OrderedAtUtc, item => item.StationOrder.Order.CreatedAtUtc);
-
     config.NewConfig<OrderItem, TableOrderRecordItemView>()
           .Map(view => view.OrderItemId, item => item.Id)
           .Map(view => view.OrderId, item => item.StationOrder.Order.Id)

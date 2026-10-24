@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { answerIsABusinessRefusal, answerSaysTheDeviceIsNoLongerSetUp, request } from '../../shared/api/client'
-import type { DraftLine, DraftOrder } from '../core/draftCart'
+import type { DraftLine, DraftOrder, DraftTable } from '../core/draftCart'
 import { DeliveryMode, PlaceOrderRequest, PlacedOrderView } from '../../shared/api/generatedSchemas'
 import {
   addLine,
@@ -14,7 +14,7 @@ import {
   setDeliveryMode,
   setLineNote,
   setLineStation,
-  setTableName,
+  setTable,
   stampFestival,
 } from '../core/draftCart'
 import {
@@ -47,7 +47,7 @@ export const ARRIVAL_NOTICE_MS = 8000
 export type SettlingIntent = 'leaveOpen' | 'settleRightAway'
 
 export interface OrderAcceptedForSettling {
-  readonly tableName: string
+  readonly tableId: string
   readonly itemIds: readonly string[]
 }
 
@@ -174,8 +174,16 @@ export const useOrderStore = defineStore('order', () => {
     change((current) => setLineStation(current, index, stationId, stationName(stationId)))
   }
 
-  function setTable(tableName: string): void {
-    change((current) => setTableName(current, tableName))
+  function chooseTable(table: DraftTable): void {
+    change((current) => setTable(current, table))
+  }
+
+  function discardTheDraftAndChooseTable(table: DraftTable): void {
+    if (changesAreRefused.value) {
+      return
+    }
+    startNextOrder()
+    chooseTable(table)
   }
 
   function deliveryModeAt(stationId: string): DeliveryMode {
@@ -289,7 +297,7 @@ export const useOrderStore = defineStore('order', () => {
         unresolvedAttempt.value = null
         sendState.value = 'accepted'
         arrivalNoticeTimer = setTimeout(dismissConfirmation, ARRIVAL_NOTICE_MS)
-        rememberTheOrderIfItIsSettledRightAway(attempt.tableName, result.data)
+        rememberTheOrderIfItIsSettledRightAway(attempt.tableId, result.data)
         startNextOrder()
         return
       case 'unreachable':
@@ -320,18 +328,15 @@ export const useOrderStore = defineStore('order', () => {
   }
 
   function rememberTheOrderIfItIsSettledRightAway(
-    tableName: string | null,
+    tableId: string,
     placedOrder: PlacedOrderView,
   ): void {
-    if (tableName === null) {
-      return
-    }
     switch (settlingIntent.value) {
       case 'leaveOpen':
         return
       case 'settleRightAway':
         orderAcceptedForSettling = {
-          tableName,
+          tableId,
           itemIds: placedOrder.stationOrders.flatMap((stationOrder) => stationOrder.itemIds),
         }
         return
@@ -376,7 +381,8 @@ export const useOrderStore = defineStore('order', () => {
     dropLinesThatCannotBeOrdered,
     noteLine,
     chooseStation,
-    setTable,
+    chooseTable,
+    discardTheDraftAndChooseTable,
     deliveryModeAt,
     chooseDeliveryMode,
     dismissConfirmation,

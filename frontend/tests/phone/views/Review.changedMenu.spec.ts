@@ -49,7 +49,7 @@ describe('an order holding an item the laptop no longer has', () => {
 
     await review.get('[data-test="drop-lines-that-cannot-be-ordered"]').trigger('click')
 
-    expect(order.draft.tableName).toBe('Tisch 3')
+    expect(order.draft.table).toEqual({ tableId: 'table-3', name: 'Tisch 3' })
     expect(order.totalCents).toBe(200)
   })
 

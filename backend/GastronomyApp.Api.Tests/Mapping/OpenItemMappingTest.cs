@@ -39,27 +39,6 @@ public sealed class OpenItemMappingTest
   private IMapper _mapper = null!;
 
   [Test]
-  public void Map_AnOpenItem_CarriesTheArticleItsNoteAndTheOrderItBelongsTo()
-  {
-    var bratwurst = Item("Bratwurst", 350);
-    bratwurst.Note = "Ohne Ketchup";
-    var order = OrderAt("Tisch 12", bratwurst);
-
-    var view = _mapper.Map<OpenOrderItemView>(bratwurst);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(view.OrderItemId, Is.EqualTo(bratwurst.Id));
-                      Assert.That(view.OrderId, Is.EqualTo(order.Id));
-                      Assert.That(view.GlobalOrderNumber, Is.EqualTo(order.GlobalOrderNumber));
-                      Assert.That(view.ItemName, Is.EqualTo("Bratwurst"));
-                      Assert.That(view.Note, Is.EqualTo("Ohne Ketchup"));
-                      Assert.That(view.UnitPriceCents, Is.EqualTo(350));
-                      Assert.That(view.OrderedAtUtc, Is.EqualTo(order.CreatedAtUtc));
-                    });
-  }
-
-  [Test]
   public void Map_APositionOfATable_CarriesWhenItWasHandedOutAndWhenItWasSettled()
   {
     var limonade = Item("Limonade", 250);

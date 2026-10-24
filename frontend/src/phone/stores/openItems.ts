@@ -1,13 +1,12 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request, type ApiResult } from '../../shared/api/client'
-import { OpenItemsView, OpenTableView, SettlementView, TableNamesView, TableOrderRecordView, TableOrderReportView } from '../../shared/api/generatedSchemas'
+import { SettlementView, TableOrderRecordView, TableOrderReportView } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import {
   noticeAfterSettling,
   type SentSettleLine,
-  openTableInReport,
   selectedAmountCents,
   selectedItems,
   withItemToggled,
@@ -23,162 +22,105 @@ import { splitSettlement } from '../core/settlementSplit'
 import { useConnectionStore } from '../../shared/stores/connection'
 import { useSessionStore } from '../../shared/stores/session'
 
-interface TablePreselection {
-  tableName: string
-  itemIds: string[]
-}
+const TABLE_NOT_FOUND = 404
 
 export const useOpenItemsStore = defineStore('openItems', () => {
-  const tables = ref<OpenTableView[]>([])
-  const knownTableNames = ref<string[]>([])
+  const tableId = ref<string | null>(null)
+  const report = ref<TableOrderReportView | null>(null)
+  const loadFailureKey = ref<string | null>(null)
   const selectedItemIds = ref<string[]>([])
-  const hasLoaded = ref(false)
-  const loadFailed = ref(false)
-  const itemsWithoutAnOrderCount = ref(0)
   const isSettling = ref(false)
   const notice = ref<SettleNotice | null>(null)
-  const lookupName = ref<string | null>(null)
-  const lookupReport = ref<TableOrderReportView | null>(null)
-  const lookupFailed = ref(false)
-  const preselection = ref<TablePreselection | null>(null)
+  const preselectedItemIds = ref<string[] | null>(null)
 
-  const tablesGate = createLatestRequestGate()
-  const tableNamesGate = createLatestRequestGate()
-  const lookupGate = createLatestRequestGate()
-
-  const isLookingUp = computed(() => lookupName.value !== null)
-
-  const lookupTable = computed<OpenTableView | null>(() =>
-    lookupReport.value === null ? null : openTableInReport(lookupReport.value),
-  )
-
-  const activeTables = computed<OpenTableView[]>(() => {
-    if (lookupName.value === null) {
-      return tables.value
-    }
-    return lookupTable.value === null ? [] : [lookupTable.value]
-  })
+  const loadGate = createLatestRequestGate()
 
   const selectedTotalCents = computed(() =>
-    selectedAmountCents(activeTables.value, selectedItemIds.value),
+    report.value === null ? 0 : selectedAmountCents(report.value, selectedItemIds.value),
   )
 
   function deviceToken(): string | null {
     return useSessionStore().deviceToken
   }
 
+  function openTable(openedTableId: string): void {
+    loadGate.startRequest()
+    tableId.value = openedTableId
+    report.value = null
+    loadFailureKey.value = null
+    selectedItemIds.value = []
+    preselectedItemIds.value = null
+    notice.value = null
+  }
+
+  function openTableAndSelectItemsOnceLoaded(openedTableId: string, itemIds: readonly string[]): void {
+    openTable(openedTableId)
+    preselectedItemIds.value = [...itemIds]
+  }
+
+  function closeTable(): void {
+    loadGate.startRequest()
+    tableId.value = null
+    report.value = null
+    loadFailureKey.value = null
+    selectedItemIds.value = []
+    preselectedItemIds.value = null
+    notice.value = null
+  }
+
+  function showWhyTheLaptopRefusedTheTable(failureKey: string): void {
+    report.value = null
+    selectedItemIds.value = []
+    preselectedItemIds.value = null
+    loadFailureKey.value = failureKey
+  }
+
+  function showThatTheLaptopCouldNotAnswer(): void {
+    report.value = null
+    loadFailureKey.value = 'phone.openItems.errors.loadFailed'
+  }
+
   async function load(): Promise<void> {
-    if (deviceToken() === null) {
+    const shownTableId = tableId.value
+    if (deviceToken() === null || shownTableId === null) {
       return
     }
-    const token = tablesGate.startRequest()
-    const result = await request('/api/open-items', {
-      token: deviceToken(),
-      schema: OpenItemsView,
-    })
-    if (!tablesGate.isNewestRequest(token)) {
-      return
-    }
-    loadFailed.value = result.kind !== 'ok'
-    if (result.kind === 'ok') {
-      tables.value = result.data.tables
-      itemsWithoutAnOrderCount.value = result.data.itemsWithoutAnOrderCount
-      selectedItemIds.value = withoutItemsThatAreGone(selectedItemIds.value, activeTables.value)
-      hasLoaded.value = true
-    }
-    await refreshLookup()
-  }
-
-  async function loadTableNames(): Promise<void> {
-    if (deviceToken() === null) {
-      return
-    }
-    const token = tableNamesGate.startRequest()
-    const result = await request('/api/open-items/table-names', {
-      token: deviceToken(),
-      schema: TableNamesView,
-    })
-    if (!tableNamesGate.isNewestRequest(token)) {
-      return
-    }
-    if (result.kind !== 'ok') {
-      return
-    }
-    knownTableNames.value = result.data.tableNames
-  }
-
-  function openLookup(tableName: string): void {
-    if (lookupName.value === tableName) {
-      return
-    }
-    lookupName.value = tableName
-    lookupReport.value = null
-    lookupFailed.value = false
-    selectedItemIds.value = []
-    preselection.value = null
-  }
-
-  function openTableAndSelectItemsOnceLoaded(tableName: string, itemIds: readonly string[]): void {
-    lookupGate.startRequest()
-    lookupName.value = tableName
-    lookupReport.value = null
-    lookupFailed.value = false
-    selectedItemIds.value = []
-    preselection.value = { tableName, itemIds: [...itemIds] }
-  }
-
-  function closeLookup(): void {
-    lookupName.value = null
-    lookupReport.value = null
-    lookupFailed.value = false
-    selectedItemIds.value = []
-    preselection.value = null
-    lookupGate.startRequest()
-  }
-
-  async function loadTableReport(tableName: string): Promise<void> {
-    if (deviceToken() === null) {
-      return
-    }
-    if (lookupName.value !== tableName) {
-      return
-    }
-    const token = lookupGate.startRequest()
-    const result = await request(`/api/open-items/table?tableName=${encodeURIComponent(tableName)}`, {
+    const token = loadGate.startRequest()
+    const result = await request(`/api/open-items/tables/${encodeURIComponent(shownTableId)}`, {
       token: deviceToken(),
       schema: TableOrderReportView,
     })
-    if (!lookupGate.isNewestRequest(token)) {
+    if (!loadGate.isNewestRequest(token)) {
       return
     }
-    if (lookupName.value !== tableName) {
-      return
+    switch (result.kind) {
+      case 'ok':
+        report.value = result.data
+        loadFailureKey.value = null
+        selectedItemIds.value = withoutItemsThatAreGone(
+          preselectedItemIds.value ?? selectedItemIds.value,
+          result.data,
+        )
+        preselectedItemIds.value = null
+        return
+      case 'error':
+        if (result.status === TABLE_NOT_FOUND) {
+          showWhyTheLaptopRefusedTheTable('phone.openItems.errors.tableCouldNotBeLoaded')
+          return
+        }
+        if (result.body !== null) {
+          showWhyTheLaptopRefusedTheTable(result.body.messageKey)
+          return
+        }
+        showThatTheLaptopCouldNotAnswer()
+        return
+      case 'unreachable':
+      case 'unreadableAnswer':
+        showThatTheLaptopCouldNotAnswer()
+        return
+      default:
+        return assertNever(result)
     }
-    lookupFailed.value = result.kind !== 'ok'
-    if (result.kind !== 'ok') {
-      lookupReport.value = null
-      return
-    }
-    lookupReport.value = result.data
-    const wanted = preselection.value?.tableName === tableName ? preselection.value.itemIds : selectedItemIds.value
-    preselection.value = null
-    selectedItemIds.value = withoutItemsThatAreGone(wanted, activeTables.value)
-  }
-
-  async function refreshLookup(): Promise<void> {
-    const tableName = lookupName.value
-    if (tableName === null) {
-      return
-    }
-    await loadTableReport(tableName)
-  }
-
-  async function reloadTheActiveView(): Promise<void> {
-    if (isLookingUp.value) {
-      await refreshLookup()
-      return
-    }
-    await load()
   }
 
   function listen(): () => void {
@@ -191,28 +133,23 @@ export const useOpenItemsStore = defineStore('openItems', () => {
 
   function toggleItem(orderItemId: string): void {
     dismissNotice()
-    selectedItemIds.value = withItemToggled(selectedItemIds.value, activeTables.value, orderItemId)
+    if (report.value === null) {
+      return
+    }
+    selectedItemIds.value = withItemToggled(selectedItemIds.value, report.value, orderItemId)
   }
 
-  function setWholeTable(table: OpenTableView, isWanted: boolean): void {
+  function setWholeTable(isWanted: boolean): void {
     dismissNotice()
-    selectedItemIds.value = withWholeTable(
-      selectedItemIds.value,
-      activeTables.value,
-      table,
-      isWanted,
-    )
+    if (report.value === null) {
+      return
+    }
+    selectedItemIds.value = withWholeTable(selectedItemIds.value, report.value, isWanted)
   }
 
-  function setWholeOrder(tableName: string, order: TableOrderRecordView, isWanted: boolean): void {
+  function setWholeOrder(order: TableOrderRecordView, isWanted: boolean): void {
     dismissNotice()
-    selectedItemIds.value = withWholeOrder(
-      selectedItemIds.value,
-      activeTables.value,
-      tableName,
-      order,
-      isWanted,
-    )
+    selectedItemIds.value = withWholeOrder(selectedItemIds.value, order, isWanted)
   }
 
   async function accept(
@@ -249,7 +186,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     paymentMethod: SettlementPaymentMethod,
   ): Promise<SettleOutcome> {
     isSettling.value = true
-    const items = selectedItems(activeTables.value, selectedItemIds.value)
+    const items = report.value === null ? [] : selectedItems(report.value, selectedItemIds.value)
     const split = splitSettlement(amountPaidCents, items, paymentNotice ?? '')
     const lines = items.map((item, index) => ({
       orderItemId: item.orderItemId,
@@ -269,33 +206,22 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   }
 
   return {
-    tables,
-    knownTableNames,
+    tableId,
+    report,
+    loadFailureKey,
     selectedItemIds,
     selectedTotalCents,
-    hasLoaded,
-    loadFailed,
-    itemsWithoutAnOrderCount,
     isSettling,
     notice,
-    lookupName,
-    lookupReport,
-    lookupFailed,
-    isLookingUp,
-    lookupTable,
+    openTable,
+    openTableAndSelectItemsOnceLoaded,
+    closeTable,
     load,
-    loadTableNames,
     listen,
     dismissNotice,
     toggleItem,
     setWholeTable,
     setWholeOrder,
     settle,
-    openLookup,
-    openTableAndSelectItemsOnceLoaded,
-    closeLookup,
-    loadTableReport,
-    refreshLookup,
-    reloadTheActiveView,
   }
 })

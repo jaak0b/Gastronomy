@@ -52,4 +52,28 @@ describe('the route the app boots into, read from the address bar', () => {
 
     expect(currentRoute.value).toEqual({ name: 'enrolQr', code: 'abc123' })
   })
+
+  it('boots a waiter that reloads the ordering screen at home, where the table plan is', async () => {
+    window.history.replaceState({}, '', '/catalog')
+
+    const { currentRoute } = await import('../../../src/shared/router/router')
+
+    expect(currentRoute.value).toEqual({ name: 'home' })
+  })
+
+  it('boots a waiter that reloads the summary at home, which leads on to a locked order', async () => {
+    window.history.replaceState({}, '', '/review')
+
+    const { currentRoute } = await import('../../../src/shared/router/router')
+
+    expect(currentRoute.value).toEqual({ name: 'home' })
+  })
+
+  it('boots a waiter that reloads the settle view of a table at home', async () => {
+    window.history.replaceState({}, '', '/open-items')
+
+    const { currentRoute } = await import('../../../src/shared/router/router')
+
+    expect(currentRoute.value).toEqual({ name: 'home' })
+  })
 })

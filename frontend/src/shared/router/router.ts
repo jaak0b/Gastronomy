@@ -1,5 +1,5 @@
 import { ref, type Ref } from 'vue'
-import { resolveRoute, type AppRoute } from './route'
+import { resolveRoute, routeToStartAt, type AppRoute } from './route'
 import {
   backButtonTrapIsActive,
   noteRouteChangeForBackButtonTrap,
@@ -10,7 +10,7 @@ import {
 export { ADMIN_SECTIONS, resolveRoute } from './route'
 export type { AdminSection, AppRoute, FestivalSubpage } from './route'
 
-export const currentRoute: Ref<AppRoute> = ref(resolveRoute(window.location.pathname))
+export const currentRoute: Ref<AppRoute> = ref(routeToStartAt(window.location.pathname))
 
 let closeTheOpenStep: (() => void) | null = null
 

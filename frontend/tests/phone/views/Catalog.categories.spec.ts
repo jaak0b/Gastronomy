@@ -49,12 +49,10 @@ describe('the categories on the ordering screen', () => {
     expect(view.get('[data-test="to-review"]').element.closest('[data-test="docked-strip"]')).not.toBeNull()
   })
 
-  it('keeps the table and the summary together in one tray at the bottom', () => {
+  it('keeps the way to the summary in the tray at the bottom', () => {
     const view = mountCatalog()
 
-    const tray = view.get('[data-test="docked-strip"]')
-    expect(tray.find('[data-test="table-field"]').exists()).toBe(true)
-    expect(tray.find('[data-test="to-review"]').exists()).toBe(true)
+    expect(view.get('[data-test="docked-strip"]').find('[data-test="to-review"]').exists()).toBe(true)
   })
 
   it('keeps the order the laptop gives the categories in', () => {

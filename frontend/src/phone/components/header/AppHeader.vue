@@ -3,21 +3,37 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { assertNever } from '../../../shared/core/assertNever'
 import { currentRoute, navigate } from '../../../shared/router/router'
+import { useDraftTableName } from '../../composables/useDraftTableName'
+import { useWaiterLanding } from '../../composables/useWaiterLanding'
+import { useOpenItemsStore } from '../../stores/openItems'
+import { useTablePlanStore } from '../../stores/tablePlan'
 import SettingsSheet from './SettingsSheet.vue'
 
-type Destination = 'catalog' | 'openItems' | 'none'
+type BackDestination = 'areaList' | 'tablePlan' | 'none'
 
 const { t } = useI18n()
+const tablePlan = useTablePlanStore()
+const openItems = useOpenItemsStore()
+const { landing } = useWaiterLanding()
+const { draftTableName } = useDraftTableName()
 const settingsAreOpen = ref(false)
 
-const currentDestination = computed<Destination>(() => {
+const shownAreaName = computed(() => {
+  const shown = landing.value
+  return shown.kind === 'plan'
+    ? (tablePlan.areas.find((area) => area.areaId === shown.areaId)?.name ?? null)
+    : null
+})
+
+const backDestination = computed<BackDestination>(() => {
   const route = currentRoute.value
   switch (route.name) {
     case 'home':
-    case 'review':
-      return 'catalog'
+      return shownAreaName.value !== null && tablePlan.areas.length > 1 ? 'areaList' : 'none'
+    case 'catalog':
     case 'openItems':
-      return 'openItems'
+      return 'tablePlan'
+    case 'review':
     case 'enrolQr':
     case 'stations':
     case 'admin':
@@ -27,40 +43,76 @@ const currentDestination = computed<Destination>(() => {
   }
 })
 
-const catalogLinkEmphasis = computed(() =>
-  currentDestination.value === 'catalog' ? 'text-primary' : 'text-medium-emphasis',
+const backLabel = computed<string | null>(() => {
+  const destination = backDestination.value
+  switch (destination) {
+    case 'areaList':
+      return t('phone.tablePlan.actions.backToAreas')
+    case 'tablePlan':
+      return t('phone.tablePlan.actions.backToThePlan')
+    case 'none':
+      return null
+    default:
+      return assertNever(destination)
+  }
+})
+
+const shownTableName = computed<string | null>(() => {
+  const route = currentRoute.value
+  switch (route.name) {
+    case 'catalog':
+      return draftTableName.value
+    case 'openItems':
+      return openItems.report?.tableName ?? null
+    case 'home':
+    case 'review':
+    case 'enrolQr':
+    case 'stations':
+    case 'admin':
+      return null
+    default:
+      return assertNever(route)
+  }
+})
+
+const title = computed(() =>
+  shownTableName.value === null
+    ? shownAreaName.value
+    : t('common.labels.table', { name: shownTableName.value }),
 )
-const openItemsLinkEmphasis = computed(() =>
-  currentDestination.value === 'openItems' ? 'text-primary' : 'text-medium-emphasis',
-)
+
+function goBack(): void {
+  const destination = backDestination.value
+  switch (destination) {
+    case 'areaList':
+      tablePlan.closeArea()
+      return
+    case 'tablePlan':
+      navigate('/')
+      return
+    case 'none':
+      return
+    default:
+      assertNever(destination)
+  }
+}
 </script>
 
 <template>
   <v-app-bar class="app-header" data-test="app-header" height="72">
-    <div class="destinations d-flex flex-grow-1">
-      <v-btn
-        class="catalog-link flex-grow-1"
-        data-test="catalog-link"
-        variant="text"
-        stacked
-        :class="catalogLinkEmphasis"
-        @click="navigate('/')"
-      >
-        <v-icon data-test="destination-icon" icon="mdi-clipboard-text-outline" />
-        <span class="label" data-test="label">{{ t('phone.catalog.title') }}</span>
-      </v-btn>
-      <v-btn
-        class="open-items-link flex-grow-1"
-        data-test="open-items-link"
-        variant="text"
-        stacked
-        :class="openItemsLinkEmphasis"
-        @click="navigate('/open-items')"
-      >
-        <v-icon data-test="destination-icon" icon="mdi-cash-register" />
-        <span class="label" data-test="label">{{ t('phone.header.actions.openItems') }}</span>
-      </v-btn>
-    </div>
+    <v-btn
+      v-if="backLabel !== null"
+      class="back-button ms-1"
+      data-test="header-back"
+      prepend-icon="mdi-arrow-left"
+      variant="text"
+      size="large"
+      @click="goBack"
+    >
+      {{ backLabel }}
+    </v-btn>
+    <span v-if="title !== null" class="header-title text-h6 px-3" data-test="header-title">{{ title }}</span>
+    <v-spacer />
     <v-btn
       class="settings"
       data-test="settings"
@@ -76,16 +128,15 @@ const openItemsLinkEmphasis = computed(() =>
 </template>
 
 <style scoped>
-.label {
-  font-size: 0.6875rem;
-  line-height: 1.1;
-  text-align: center;
-  white-space: normal;
+.back-button {
   text-transform: none;
   letter-spacing: normal;
 }
 
-.destinations .v-btn {
+.header-title {
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

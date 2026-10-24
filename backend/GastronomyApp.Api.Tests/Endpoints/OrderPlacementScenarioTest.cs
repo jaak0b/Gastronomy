@@ -91,16 +91,15 @@ public sealed class OrderPlacementScenarioTest
       Assert.That(fulfilled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using var openItems = await _context.SendAsAsync(deviceToken, HttpMethod.Get, "/api/open-items");
-    var openBody = JsonDocument.Parse(await openItems.Content.ReadAsStringAsync());
-    var table = openBody.RootElement.GetProperty("tables")[0];
+    using var openItems = await _context.SendAsAsync(deviceToken, HttpMethod.Get, $"/api/open-items/tables/{_context.World.TableId}");
+    var table = JsonDocument.Parse(await openItems.Content.ReadAsStringAsync()).RootElement;
 
     Assert.Multiple(() =>
                     {
                       Assert.That(table.GetProperty("tableId").GetGuid(), Is.EqualTo(_context.World.TableId));
                       Assert.That(table.GetProperty("tableName").GetString(), Is.EqualTo("Tisch 12"));
                       Assert.That(table.GetProperty("openAmountCents").GetInt32(), Is.EqualTo(1000));
-                      Assert.That(table.GetProperty("items").GetArrayLength(), Is.EqualTo(3));
+                      Assert.That(table.GetProperty("orders")[0].GetProperty("items").GetArrayLength(), Is.EqualTo(3));
                     });
   }
 

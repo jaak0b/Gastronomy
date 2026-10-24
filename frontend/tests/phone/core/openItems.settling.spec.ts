@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { TableOrderReportView } from '../../../src/shared/api/generatedSchemas'
-import { canTheAmountBeSettled, isAPaymentMethodNeeded, isPaymentNoticeNeeded, isPaymentNoticeWritten, noticeAfterSettling, openTableInReport, positionStateOf, producedCountIn, productionStateOf } from '../../../src/phone/core/openItems'
+import { canTheAmountBeSettled, isAPaymentMethodNeeded, isPaymentNoticeNeeded, isPaymentNoticeWritten, noticeAfterSettling, positionStateOf, producedCountIn, productionStateOf } from '../../../src/phone/core/openItems'
 import { itemWith, recordWith } from './openItemsFixture'
 
 describe('what the waiter is told after settling', () => {
@@ -151,39 +150,6 @@ describe('whether the phone may send the amount the waiter typed', () => {
 
   it('allows more than the full price with no reason', () => {
     expect(canTheAmountBeSettled(1000, '', 700)).toBe(true)
-  })
-})
-
-describe('the open table inside what the laptop knows about one table', () => {
-  const report: TableOrderReportView = {
-    tableName: 'Tisch 12',
-    openAmountCents: 750,
-    orders: [
-      recordWith([
-        itemWith('item-open', null, null, 400),
-        itemWith('item-settled', '2026-09-05T18:12:00Z', '2026-09-05T18:30:00Z', 200),
-      ]),
-      recordWith([itemWith('item-produced', '2026-09-05T18:05:00Z', null, 350)]),
-    ],
-  }
-
-  it('keeps the table name and what the table still owes', () => {
-    const table = openTableInReport(report)
-
-    expect(table.tableName).toBe('Tisch 12')
-    expect(table.openAmountCents).toBe(750)
-  })
-
-  it('lists the positions of every order that is not settled yet', () => {
-    const table = openTableInReport(report)
-
-    expect(table.items.map((item) => item.orderItemId)).toEqual(['item-open', 'item-produced'])
-  })
-
-  it('leaves a settled position out, so the waiter cannot tick it again', () => {
-    const table = openTableInReport(report)
-
-    expect(table.items.map((item) => item.orderItemId)).not.toContain('item-settled')
   })
 })
 

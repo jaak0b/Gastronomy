@@ -61,7 +61,7 @@ function menuAfterSpeisenWasSwitchedOff(): CatalogView {
 function draftForZeltVier(): void {
   saveDraft({
     festivalId: 'fest-1',
-    tableName: 'Zelt 4',
+    table: { tableId: 'table-zelt-4', name: 'Zelt 4' },
     clientOrderId: '11111111-1111-4111-8111-111111111111',
     deliveryModes: {},
     lines: [

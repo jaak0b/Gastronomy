@@ -124,13 +124,13 @@ describe('a device once the laptop has said whose device it is', () => {
     expect(tablet.find('[data-test="station-page"]').exists()).toBe(true)
   })
 
-  it('puts a waiter phone in the menu', async () => {
+  it('puts a waiter phone on its table plan', async () => {
     aLaptopThatKnowsThisDeviceAs('staffMember')
 
     const phone = aDeviceThatWasSetUpEarlier()
     await flushPromises()
 
-    expect(phone.find('[data-test="category-button"]').text()).toBe('Essen')
+    expect(phone.find('[data-test="table-plan"]').exists()).toBe(true)
   })
 
   it('never asks for the ordering menu on a station tablet, which works off its own list', async () => {

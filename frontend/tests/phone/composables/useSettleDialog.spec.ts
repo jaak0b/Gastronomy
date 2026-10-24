@@ -10,9 +10,7 @@ import { answer, noConnection, refusal, stubLaptop, type LaptopReply } from '../
 const SETTLED = { settledOrderItemIds: [], reappliedOrderItemIds: [], alreadySettledByOthersOrderItemIds: [] }
 
 function settleAnswers(settleReply: LaptopReply): void {
-  stubLaptop()
-    .answersEverythingElse(answer({ tables: [], itemsWithoutAnOrderCount: 0 }))
-    .answers('ANY', (call) => call.url === '/api/open-items/settle', settleReply)
+  stubLaptop().answers('ANY', (call) => call.url === '/api/open-items/settle', settleReply)
 }
 
 function mountWithTheAmountDialogOpen() {
@@ -62,7 +60,7 @@ describe('the amount dialog after the waiter settled through it', () => {
     expect(settling.amountPaidIsOpen.value).toBe(true)
   })
 
-  it('closes when the answer never came, because the reload is on the list', async () => {
+  it('closes when the answer never came, because the reload is on the screen of the table', async () => {
     settleAnswers(noConnection())
     const settling = mountWithTheAmountDialogOpen()
 

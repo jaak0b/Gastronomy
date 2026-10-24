@@ -13,7 +13,6 @@ const PLURAL_KEYS = [
   'admin.festivals.labels.stationCount',
   'admin.festivals.labels.menuItemCount',
   'admin.festivals.labels.orderCount',
-  'phone.openItems.messages.listIncomplete',
   'phone.openItems.messages.someWereAlreadySettled',
   'admin.ingredients.labels.pieceCount',
   'admin.tablePlan.labels.tableCount',
@@ -71,16 +70,6 @@ describe('the two locale files', () => {
       .map(([key]) => key)
 
     expect(withEmDash).toEqual([])
-  })
-})
-
-describe('the example the table field offers a waiter', () => {
-  it('names a bare number in German, because the open items screen writes the word itself', () => {
-    expect(german.get('phone.review.labels.tablePlaceholder')).toBe('Zum Beispiel: 12')
-  })
-
-  it('names a bare number in English for the same reason', () => {
-    expect(english.get('phone.review.labels.tablePlaceholder')).toBe('For example: 12')
   })
 })
 

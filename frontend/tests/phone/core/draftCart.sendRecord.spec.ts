@@ -78,7 +78,7 @@ describe('the record of what became of a send', () => {
       state: 'failed',
       attempts: 1,
       failure: null,
-      unresolvedAttempt: { tableName: 'Tisch 5' } as unknown as PlaceOrderRequest,
+      unresolvedAttempt: { tableId: 'table-5' } as unknown as PlaceOrderRequest,
     })
 
     expect(restoreSendProgress()).toEqual({

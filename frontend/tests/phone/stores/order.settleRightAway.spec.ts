@@ -21,7 +21,7 @@ describe('an accepted order the waiter settles right away', () => {
   function anOrderForTableThree() {
     const order = useOrderStore()
     order.addItem({ catalogItemId: 'item-wasser', note: null, stationId: 'station-bar', name: 'Wasser' })
-    order.setTable(' Tisch 3 ')
+    order.chooseTable({ tableId: 'table-3', name: 'Tisch 3' })
     return order
   }
 
@@ -32,7 +32,7 @@ describe('an accepted order the waiter settles right away', () => {
     await order.send('settleRightAway')
 
     const openItems = useOpenItemsStore()
-    expect({ table: openItems.lookupName, ticked: openItems.selectedItemIds }).toEqual({
+    expect({ table: openItems.tableId, ticked: openItems.selectedItemIds }).toEqual({
       table: null,
       ticked: [],
     })
@@ -45,7 +45,7 @@ describe('an accepted order the waiter settles right away', () => {
     await order.send('settleRightAway')
 
     expect([order.takeTheOrderAcceptedForSettling(), order.takeTheOrderAcceptedForSettling()]).toEqual([
-      { tableName: 'Tisch 3', itemIds: ['new-1', 'new-2'] },
+      { tableId: 'table-3', itemIds: ['new-1', 'new-2'] },
       null,
     ])
   })
@@ -67,7 +67,7 @@ describe('an accepted order the waiter settles right away', () => {
     await order.sendAgain()
 
     expect(order.takeTheOrderAcceptedForSettling()).toEqual({
-      tableName: 'Tisch 3',
+      tableId: 'table-3',
       itemIds: ['new-1', 'new-2'],
     })
   })

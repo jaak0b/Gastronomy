@@ -6,10 +6,12 @@ import { useSendAndLeave } from '../../../src/phone/composables/useSendAndLeave'
 import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { useOrderStore } from '../../../src/phone/stores/order'
+import { useTablePlanStore } from '../../../src/phone/stores/tablePlan'
 import { useSessionStore } from '../../../src/shared/stores/session'
 import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
 import { answer, inTurn, noConnection, stubLaptop } from '../../support/laptop'
+import { TISCH_3 } from '../../support/waiterPhone'
 
 const WASSER = {
   id: 'item-wasser',
@@ -42,6 +44,7 @@ const PLACED_ORDER_TO_SETTLE = {
 }
 
 const TABLE_THREE_WITH_THE_SENT_ITEM = {
+  tableId: 'table-3',
   tableName: 'Tisch 3',
   openAmountCents: 200,
   orders: [
@@ -78,7 +81,7 @@ function prepareOrder() {
   }
   const order = useOrderStore()
   order.addItem({ catalogItemId: WASSER.id, note: null, stationId: 'station-bar', name: WASSER.name })
-  order.setTable('Tisch 3')
+  order.chooseTable(TISCH_3)
   return order
 }
 
@@ -87,7 +90,7 @@ function theLaptopPlacesTheOrderToSettleAfter(failedAttempts: number): void {
   const failedAnswers = Array.from({ length: failedAttempts }, () => noConnection())
   stubLaptop()
     .answersEverythingElse(answer({ stations: [] }))
-    .answers('ANY', (call) => call.url.startsWith('/api/open-items/table?'), answer(TABLE_THREE_WITH_THE_SENT_ITEM))
+    .answers('GET', '/api/open-items/tables/table-3', answer(TABLE_THREE_WITH_THE_SENT_ITEM))
     .answers('ANY', (call) => call.url === '/api/orders', inTurn(...failedAnswers, answer(PLACED_ORDER_TO_SETTLE)))
 }
 
@@ -110,8 +113,8 @@ function mountTheSendingScreen() {
 
 async function whatOpenItemsShows() {
   const openItems = useOpenItemsStore()
-  await openItems.loadTableReport('Tisch 3')
-  return { route: currentRoute.value, table: openItems.lookupName, ticked: openItems.selectedItemIds }
+  await openItems.load()
+  return { route: currentRoute.value, table: openItems.tableId, ticked: openItems.selectedItemIds }
 }
 
 describe('leaving the review once the laptop accepted the order', () => {
@@ -121,7 +124,7 @@ describe('leaving the review once the laptop accepted the order', () => {
     navigate('/review')
   })
 
-  it('takes the server back to the items, so the sent order cannot be typed into any more', async () => {
+  it('takes the waiter home when the table settles later, so the sent order cannot be typed into any more', async () => {
     theLaptopPlacesTheOrderToSettleAfter(0)
     prepareOrder()
     const { sender } = mountTheSendingScreen()
@@ -129,6 +132,17 @@ describe('leaving the review once the laptop accepted the order', () => {
     await sender.send('leaveOpen')
 
     expect(currentRoute.value).toEqual({ name: 'home' })
+  })
+
+  it('lands on the area list rather than the area last opened, when the table settles later', async () => {
+    theLaptopPlacesTheOrderToSettleAfter(0)
+    prepareOrder()
+    useTablePlanStore().openArea('area-zelt')
+    const { sender } = mountTheSendingScreen()
+
+    await sender.send('leaveOpen')
+
+    expect(useTablePlanStore().openedAreaId).toBeNull()
   })
 
   it('opens the open items of the table with the items just sent ticked when the guest pays on the spot', async () => {
@@ -140,7 +154,7 @@ describe('leaving the review once the laptop accepted the order', () => {
 
     expect(await whatOpenItemsShows()).toEqual({
       route: { name: 'openItems' },
-      table: 'Tisch 3',
+      table: 'table-3',
       ticked: ['new-wasser'],
     })
   })
@@ -156,7 +170,7 @@ describe('leaving the review once the laptop accepted the order', () => {
 
     expect(await whatOpenItemsShows()).toEqual({
       route: { name: 'openItems' },
-      table: 'Tisch 3',
+      table: 'table-3',
       ticked: ['new-wasser'],
     })
   })
@@ -168,7 +182,7 @@ describe('leaving the review once the laptop accepted the order', () => {
 
     await sender.send('settleRightAway')
 
-    expect({ route: currentRoute.value, table: useOpenItemsStore().lookupName }).toEqual({
+    expect({ route: currentRoute.value, table: useOpenItemsStore().tableId }).toEqual({
       route: { name: 'review' },
       table: null,
     })
@@ -184,7 +198,7 @@ describe('leaving the review once the laptop accepted the order', () => {
 
     await sending
 
-    expect({ state: order.sendState, route: currentRoute.value, table: useOpenItemsStore().lookupName }).toEqual({
+    expect({ state: order.sendState, route: currentRoute.value, table: useOpenItemsStore().tableId }).toEqual({
       state: 'accepted',
       route: { name: 'home' },
       table: null,

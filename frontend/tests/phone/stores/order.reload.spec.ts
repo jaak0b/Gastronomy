@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useOrderStore } from '../../../src/phone/stores/order'
 import { DRAFT_STORAGE_KEY, saveSendProgress } from '../../../src/phone/core/draftCart'
 import { answerWith } from './orderFixture'
+import { TISCH_3, theWaiterTakesTheOrderAt } from '../../support/waiterPhone'
 import { stubLaptop, noConnection } from '../../support/laptop'
 
 describe('an order in progress that could not be read back', () => {
@@ -42,7 +43,7 @@ describe('an order in progress that could not be read back', () => {
       DRAFT_STORAGE_KEY,
       JSON.stringify({
         festivalId: null,
-        tableName: 'Tisch 12',
+        table: { tableId: 'table-12', name: 'Tisch 12' },
         clientOrderId: null,
         deliveryModes: {},
         lines: [],
@@ -79,6 +80,7 @@ describe('an order in progress that could not be read back', () => {
 
   it('is not raised by the empty draft that follows a sent order', async () => {
     answerWith(0)
+    theWaiterTakesTheOrderAt(TISCH_3)
     const order = useOrderStore()
 
     await order.send('leaveOpen')
@@ -102,7 +104,7 @@ describe('an order the page was still sending when it was loaded again', () => {
       DRAFT_STORAGE_KEY,
       JSON.stringify({
         festivalId: null,
-        tableName: 'Tisch 4',
+        table: { tableId: 'table-4', name: 'Tisch 4' },
         lines: [
           {
             catalogItemId: 'item-wasser',
@@ -122,7 +124,7 @@ describe('an order the page was still sending when it was loaded again', () => {
       failure: null,
       unresolvedAttempt: {
         clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
-        tableName: 'Tisch 4',
+        tableId: 'table-4',
         items: [
           {
             catalogItemId: 'item-wasser',
@@ -182,7 +184,7 @@ describe('an order whose send failed, after the page is loaded again', () => {
   async function aFailedSend() {
     stubLaptop().answersEverythingElse(noConnection())
     const order = useOrderStore()
-    order.setTable('Tisch 2')
+    order.chooseTable({ tableId: 'table-2', name: 'Tisch 2' })
     await order.send('leaveOpen')
   }
 

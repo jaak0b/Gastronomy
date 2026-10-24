@@ -146,6 +146,10 @@ in `src/shared/core/deviceLanguage.ts`, `DraftLine` and `DraftOrder` in `src/pho
   there; a waiter's phone keeps the ordering flow. A device that is set up but has not yet heard
   back from the laptop shows a starting screen until it does. That decision lives in
   `src/shared/core/landing.ts`, not in a component.
+- **A waiter's phone opens on the table plan.** It shows the list of areas, or the plan straight
+  away when the festival has one area, and a reload starts there again. An order whose send got no
+  answer blocks the way to the plan: every way there leads to its summary with the retry, until the
+  waiter learns whether it reached the laptop. That decision lives in `src/shared/core/landing.ts`.
 - **A delivery mode is chosen once, before sending, and never afterwards.** The server picks, per
   station, whether that station hands its part of the order out together or as each item is ready.
   No screen may offer to change it after the order is sent.

@@ -16,7 +16,7 @@ import {
 function anUnresolvedAttempt(): PlaceOrderRequest {
   return {
     clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
-    tableName: 'Tisch 4',
+    tableId: 'table-4',
     items: [
       {
         catalogItemId: 'item-wasser',

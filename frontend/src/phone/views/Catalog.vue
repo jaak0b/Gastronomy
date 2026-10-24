@@ -7,43 +7,44 @@ import { positionsForItem, type ItemPosition } from '../core/itemPositions'
 import { estimateRangeForItem, type EstimateRange } from '../core/estimates'
 import { letteringColourOn } from '../../shared/core/letteringColour'
 import { needsStationChoice } from '../core/routingPreview'
-import { isTableNameValid } from '../core/tableName'
 import { useCatalogStore } from '../stores/catalog'
 import { useEstimatesStore } from '../stores/estimates'
-import { useOpenItemsStore } from '../stores/openItems'
 import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../../shared/stores/session'
 import { closeOpenStep, navigate, registerOpenStepCloser } from '../../shared/router/router'
-import { useKeyboardInset } from '../composables/useKeyboardInset'
 import { useStationChoiceQuotes } from '../composables/useStationChoiceQuotes'
 import DockedStrip from '../components/DockedStrip.vue'
 import ItemGrid from '../components/catalog/ItemGrid.vue'
 import LineStationSheet from '../components/catalog/LineStationSheet.vue'
 import BasketBar from '../components/catalog/BasketBar.vue'
-import TableField from '../components/review/TableField.vue'
 
 const { t } = useI18n()
-const keyboardInset = useKeyboardInset()
 const catalog = useCatalogStore()
 const estimates = useEstimatesStore()
-const openItems = useOpenItemsStore()
 const order = useOrderStore()
 const session = useSessionStore()
 
 const tappedCategory = ref<string | null>(null)
-const tableField = ref<{ focus: () => void } | null>(null)
-const isTableMissing = ref(false)
 const itemAwaitingStation = ref<CatalogItemView | null>(null)
 const linesAwaitingStation = ref<number[]>([])
 const focusTheNoteField = ref(false)
 
-onMounted(async () => {
+function leaveWhenTheOrderCannotBeBuiltHere(): void {
   if (order.changesAreRefused) {
     navigate('/review')
+    return
   }
-  await openItems.loadTableNames()
+  if (order.draft.table === null) {
+    navigate('/')
+  }
+}
+
+onMounted(async () => {
+  leaveWhenTheOrderCannotBeBuiltHere()
   await estimates.load()
 })
+
+watch(() => order.draft.table, leaveWhenTheOrderCannotBeBuiltHere)
 
 onUnmounted(() => {
   closeOpenStep()
@@ -84,25 +85,6 @@ const itemsInTheOpenCategory = computed(
       (group) => group.category.categoryId === openCategory.value?.categoryId,
     )?.items ?? [],
 )
-
-const tableName = computed({
-  get: () => order.draft.tableName,
-  set: (value: string) => {
-    order.setTable(value)
-    if (isTableNameValid(value)) {
-      isTableMissing.value = false
-    }
-  },
-})
-
-function goToTheSummary(): void {
-  if (!isTableNameValid(order.draft.tableName)) {
-    isTableMissing.value = true
-    tableField.value?.focus()
-    return
-  }
-  navigate('/review')
-}
 
 const itemBehindTheStationChoice = computed(() => {
   if (linesAwaitingStation.value.length === 0) {
@@ -199,7 +181,7 @@ function chooseStation(stationId: string, note: string | null): void {
 </script>
 
 <template>
-  <v-container class="catalog" data-test="catalog" :style="{ paddingBottom: `${keyboardInset}px` }">
+  <v-container class="catalog" data-test="catalog">
     <template v-if="openCategory === null">
       <div class="category-grid my-2" data-test="category-grid">
         <v-btn
@@ -216,17 +198,11 @@ function chooseStation(stationId: string, note: string | null): void {
         </v-btn>
       </div>
       <DockedStrip class="order-tray">
-        <TableField
-          ref="tableField"
-          v-model="tableName"
-          :is-missing="isTableMissing"
-          :known-table-names="openItems.knownTableNames"
-        />
         <BasketBar
           :item-count="order.itemCount"
           :total-cents="order.totalCents"
           :language="session.language"
-          @review="goToTheSummary"
+          @review="navigate('/review')"
         />
       </DockedStrip>
     </template>

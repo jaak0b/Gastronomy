@@ -9,7 +9,7 @@ describe('a stored draft this build cannot read', () => {
   it('is thrown away when it misses the delivery choice field this build writes', () => {
     localStorage.setItem(
       DRAFT_STORAGE_KEY,
-      '{"festivalId":null,"tableName":"Tisch 12","clientOrderId":null,"lines":[]}',
+      '{"festivalId":null,"table":null,"clientOrderId":null,"lines":[]}',
     )
 
     expect(restoreDraft()).toEqual({
@@ -23,7 +23,7 @@ describe('a stored draft this build cannot read', () => {
       DRAFT_STORAGE_KEY,
       JSON.stringify({
         festivalId: null,
-        tableName: 'Tisch 12',
+        table: { tableId: 'table-12', name: 'Tisch 12' },
         clientOrderId: null,
         deliveryModes: {},
         lines: [
@@ -47,7 +47,7 @@ describe('a stored draft this build cannot read', () => {
       DRAFT_STORAGE_KEY,
       JSON.stringify({
         festivalId: null,
-        tableName: 'Tisch 12',
+        table: { tableId: 'table-12', name: 'Tisch 12' },
         clientOrderId: null,
         deliveryModes: {},
         lines: [{ catalogItemId: 'item-1', note: null, stationId: null, stationName: '' }],
@@ -62,7 +62,7 @@ describe('a stored draft this build cannot read', () => {
       DRAFT_STORAGE_KEY,
       JSON.stringify({
         festivalId: 7,
-        tableName: 'Tisch 12',
+        table: { tableId: 'table-12', name: 'Tisch 12' },
         clientOrderId: null,
         deliveryModes: {},
         lines: [],
@@ -77,7 +77,7 @@ describe('a stored draft this build cannot read', () => {
       DRAFT_STORAGE_KEY,
       JSON.stringify({
         festivalId: null,
-        tableName: 'Tisch 12',
+        table: { tableId: 'table-12', name: 'Tisch 12' },
         clientOrderId: null,
         deliveryModes: { 'station-kueche': 'whenever' },
         lines: [],
@@ -92,9 +92,24 @@ describe('a stored draft this build cannot read', () => {
       DRAFT_STORAGE_KEY,
       JSON.stringify({
         festivalId: null,
-        tableName: 'Tisch 12',
+        table: { tableId: 'table-12', name: 'Tisch 12' },
         clientOrderId: null,
         deliveryModes: [],
+        lines: [],
+      }),
+    )
+
+    expect(restoreDraft().outcome).toBe('unreadableDraftDiscarded')
+  })
+
+  it('is thrown away when it names its table by a typed name, as builds before the table plan stored it', () => {
+    localStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        festivalId: null,
+        tableName: 'Tisch 12',
+        clientOrderId: null,
+        deliveryModes: {},
         lines: [],
       }),
     )
@@ -131,7 +146,7 @@ describe('a stored send record this build cannot read', () => {
         failure: null,
         unresolvedAttempt: {
           clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
-          tableName: 'Tisch 5',
+          tableId: 'table-5',
           items: [],
         },
       }),
@@ -150,7 +165,7 @@ describe('a stored send record this build cannot read', () => {
         failure: null,
         unresolvedAttempt: {
           clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
-          tableName: 'Tisch 5',
+          tableId: 'table-5',
           items: [
             {
               catalogItemId: 'item-wasser',
@@ -176,7 +191,7 @@ describe('a stored send record this build cannot read', () => {
         failure: null,
         unresolvedAttempt: {
           clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
-          tableName: 'Tisch 5',
+          tableId: 'table-5',
           items: [],
           deliveryModes: [{ stationId: 'station-kueche', deliveryMode: 'whenever' }],
         },
@@ -240,7 +255,7 @@ describe('a stored send record this build cannot read', () => {
         failure: null,
         unresolvedAttempt: {
           clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
-          tableName: 'Tisch 5',
+          tableId: 'table-5',
           items: [],
           deliveryModes: [],
         },

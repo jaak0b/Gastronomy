@@ -116,9 +116,8 @@ is checked as the text the person reads.
 
 Never sleep. There is no `setTimeout` in a test and no fixed wait. Await the observable outcome
 with `waitUntil(() => expect(...))` from `tests/support/dom.ts` or `vi.waitFor`, or settle pending
-promises with `flushPromises()`. Where the code itself waits, such as the ten second send timeout
-or a debounced lookup, use fake timers and `vi.advanceTimersByTimeAsync` with the constant the
-code exports.
+promises with `flushPromises()`. Where the code itself waits, such as the ten second send timeout,
+use fake timers and `vi.advanceTimersByTimeAsync` with the constant the code exports.
 
 ## Finding elements
 
@@ -155,11 +154,16 @@ copy of anything listed here.
   `openDialog`, `waitForDialog`, `dialogText` and `pressInDialog`.
 - `formDialogs.ts` fills and saves or cancels the admin form dialogs.
 - `wireViews.ts` holds the factories for the wire views used most: `anAdminItem`, `anAdminItemIngredient`, `anAdminIngredient`, `anAdminFestivalIngredient`, `aFestival`,
-  `anAdminStation`, `anOpenItem`, `anOpenItemsTable`, `aQueuedItem`, `aStationOrder`, and for the
-  table plan `aGeometry`, `anAdminTable`, `anAdminStationShape` and `anAdminArea`.
+  `anAdminStation`, `aQueuedItem`, `aStationOrder`, for the table plan `aGeometry`, `anAdminTable`,
+  `anAdminStationShape` and `anAdminArea`, and for the waiter's plan `aPlanTable`,
+  `aPlanStationShape` and `aPlanArea`.
 - `konvaDrawing.ts` finds and drives a Konva drawing: `drawingIn`, `shapeWithId`, `hasShapeWithId`,
-  `shapesNamed`, `centreOf`, `anchorOf`, `tapAt`, `dragBy`, `dragAnchorBy`, and the single steps
-  `pressAt`, `movePointerTo` and `releaseAt`. The `how-to` page `test-a-konva-drawing.md` shows how.
+  `shapesNamed`, `centreOf`, `anchorOf`, `tapAt`, `dragBy`, `dragAnchorBy`, the single steps
+  `pressAt`, `movePointerTo`, `releaseAt` and `releaseOnTheDrawingAt`, the touch steps
+  `putFingerDown`, `moveFingers` and `liftFinger`, and `layOutTheScreen`. The
+  `how-to` page `test-a-konva-drawing.md` shows how.
+- `waiterPhone.ts` gives a phone spec an order at a table: `TISCH_3` and
+  `theWaiterTakesTheOrderAt(table)`.
 - `station.ts` holds the station tablet scenario: `KITCHEN`, `item`, `stationOrder`, `aQueue` and
   `enrolledStationTablet()`.
 - `plugins.ts` gives `testPlugins(locale)` for mounting, `mountApp.ts` mounts the whole app,

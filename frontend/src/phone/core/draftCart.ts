@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { DeliveryMode, OrderDeliveryModeRequest, OrderItemRequest, PlaceOrderRequest } from '../../shared/api/generatedSchemas'
+import type { TablePlanAreaView } from '../../shared/api/generatedSchemas'
 import type { SendFailureMessage } from './sendFailure'
 import { noSendProgress, SEND_STATES, type SendProgress } from './sendProgress'
 
@@ -11,9 +12,14 @@ export interface DraftLine {
   stationName: string
 }
 
+export interface DraftTable {
+  tableId: string
+  name: string
+}
+
 export interface DraftOrder {
   festivalId: string | null
-  tableName: string
+  table: DraftTable | null
   lines: DraftLine[]
   clientOrderId: string | null
   deliveryModes: Record<string, DeliveryMode>
@@ -30,9 +36,14 @@ const draftLineSchema: z.ZodType<DraftLine> = z.strictObject({
   stationName: z.string(),
 })
 
+const draftTableSchema: z.ZodType<DraftTable> = z.strictObject({
+  tableId: z.string(),
+  name: z.string(),
+})
+
 const draftOrderSchema: z.ZodType<DraftOrder> = z.strictObject({
   festivalId: z.string().nullable(),
-  tableName: z.string(),
+  table: draftTableSchema.nullable(),
   lines: z.array(draftLineSchema),
   clientOrderId: z.string().nullable(),
   deliveryModes: z.record(z.string(), DeliveryMode),
@@ -57,7 +68,7 @@ const stationDeliveryModeSchema: z.ZodType<OrderDeliveryModeRequest> = z.strictO
 
 const submitRequestSchema: z.ZodType<PlaceOrderRequest> = z.strictObject({
   clientOrderId: z.string(),
-  tableName: z.string(),
+  tableId: z.string(),
   items: z.array(submitItemSchema),
   deliveryModes: z.array(stationDeliveryModeSchema),
 })
@@ -78,7 +89,7 @@ const sendProgressSchema: z.ZodType<SendProgress> = z
 export function emptyDraft(): DraftOrder {
   return {
     festivalId: null,
-    tableName: '',
+    table: null,
     lines: [],
     clientOrderId: null,
     deliveryModes: {},
@@ -117,7 +128,7 @@ export function saveDraft(draft: DraftOrder): void {
     DRAFT_STORAGE_KEY,
     JSON.stringify({
       festivalId: draft.festivalId,
-      tableName: draft.tableName,
+      table: draft.table === null ? null : { tableId: draft.table.tableId, name: draft.table.name },
       lines: draft.lines.map((line) => ({
         catalogItemId: line.catalogItemId,
         note: line.note,
@@ -218,8 +229,24 @@ export function stampFestival(draft: DraftOrder, festivalId: string): DraftOrder
   return persisted({ ...draft, festivalId })
 }
 
-export function setTableName(draft: DraftOrder, tableName: string): DraftOrder {
-  return persisted({ ...draft, tableName })
+export function setTable(draft: DraftOrder, table: DraftTable): DraftOrder {
+  return persisted({ ...draft, table: { ...table } })
+}
+
+export function shownNameOf(table: DraftTable, areas: readonly TablePlanAreaView[]): string {
+  return (
+    areas.flatMap((area) => area.tables).find((planTable) => planTable.tableId === table.tableId)?.name ??
+    table.name
+  )
+}
+
+export type OrderOpening = 'continueTheDraft' | 'takeTheTable' | 'askBeforeDiscardingTheDraft'
+
+export function openingTheOrderAt(draft: DraftOrder, tableId: string): OrderOpening {
+  if (draft.table === null || draft.lines.length === 0) {
+    return 'takeTheTable'
+  }
+  return draft.table.tableId === tableId ? 'continueTheDraft' : 'askBeforeDiscardingTheDraft'
 }
 
 export function setDeliveryMode(

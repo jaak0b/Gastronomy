@@ -1,7 +1,8 @@
 # Taking an order
 
-A waiter builds a table's order on the phone: the categories screen shows one button per category with
-the number of portions already taken from it, the table field and a bar with the item count and the
+A waiter taps a table on the plan and "Bestellung aufnehmen", and builds that table's order: the
+categories screen shows one button per category with the number of portions already taken from it,
+the table's name in the header with the way back to the plan, and a bar with the item count and the
 running total. Tapping a category lists its articles, one row each, where a tap adds one portion, the
 Note button adds one with a note, and the rows under the article count the portions by note and
 station and take them off again.
@@ -10,12 +11,16 @@ station and take them off again.
 
 Frontend, under `frontend/src/phone/`:
 
-- `views/Catalog.vue` is the whole ordering screen: the category buttons (`labelFor` adds the portion
-  count from `core/categoryPortions.ts`), the table field (`components/review/TableField.vue`), the
-  basket bar (`components/catalog/BasketBar.vue`) and, once a category is open, its articles in
-  `components/catalog/ItemGrid.vue` and the button back to the categories. It decides where a new portion goes:
-  `addItem` places it straight away or opens the station question, `chooseStation` answers it, and
-  `goToTheSummary` checks the table name before it navigates to `/review`.
+- `views/Catalog.vue` (route `/catalog`) is the whole ordering screen: the category buttons
+  (`labelFor` adds the portion count from `core/categoryPortions.ts`), the basket bar
+  (`components/catalog/BasketBar.vue`, which goes on to `/review`) and, once a category is open, its
+  articles in `components/catalog/ItemGrid.vue` and the button back to the categories. It decides
+  where a new portion goes: `addItem` places it straight away or opens the station question, and
+  `chooseStation` answers it. It leaves for the summary while the order is locked and for the plan
+  while the draft has no table. The header (`components/header/AppHeader.vue`) shows the table's
+  name and "Tischplan".
+- `views/TablePlan.vue` opens the ordering screen from the table's action sheet
+  (`openingTheOrderAt` in `core/draftCart.ts`; see the `table-plan` page).
 - `components/catalog/ItemRow.vue` is one article: tapping its name or its price adds one portion,
   the Note button adds one with a note, and each group of portions has its count, its station, its
   note, minus and plus.
@@ -26,16 +31,23 @@ Frontend, under `frontend/src/phone/`:
   `groupPositions` groups them by note and station, and `buildItemPositionsView` adds the count and
   the article total. `core/routingPreview.ts` (`needsStationChoice`, `candidateStations`),
   `core/estimates.ts` (`estimateRangeForItem`, the quickest and the slowest station's minutes),
-  `core/estimateWording.ts`, `core/catalogItemState.ts`, `core/tableName.ts` and `core/totals.ts`.
-- `core/draftCart.ts` holds the draft order (`DraftOrder`, `DraftLine`) and saves it to
-  `localStorage` under `draftOrder` with every change; `core/basket.ts` turns it into the lines the
-  basket shows.
+  `core/estimateWording.ts`, `core/catalogItemState.ts` and `core/totals.ts`.
+- `core/draftCart.ts` holds the draft order (`DraftOrder`, `DraftLine`, and `DraftTable`, the
+  `tableId` and `name` of the table it is taken at) and saves it to `localStorage` under `draftOrder`
+  with every change; `openingTheOrderAt` decides what "Bestellung aufnehmen" does with the draft.
+  `core/basket.ts` turns it into the lines the basket shows, and `core/submission.ts` sends the
+  table's id. `shownNameOf` names the draft's table, read on every screen through
+  `composables/useDraftTableName.ts`.
 - Stores: `stores/order.ts` (`useOrderStore`: `addItem`, `dropLine`, `noteLine`, `chooseStation`,
-  `setTable`, `itemCount`, `totalCents`, `changesAreRefused`), `stores/catalog.ts`, and
+  `chooseTable`, `discardTheDraftAndChooseTable`, `itemCount`, `totalCents`, `changesAreRefused`),
+  `stores/catalog.ts`, and
   `stores/estimates.ts`, whose `load` the screen calls when it opens. `composables/useStationChoiceQuotes.ts`
   gives the station question its waiting times.
-- Texts: `phone.catalog.*`, `common.labels.soldOut` and `common.estimates.*` in
-  `shared/i18n/de.json` and `en.json`.
+- After sending, `composables/useSendAndLeave.ts` closes the opened area and lands on the home
+  screen for "Senden und später abrechnen", or opens the table's settle view with the new items
+  ticked for "Senden und abrechnen".
+- Texts: `phone.catalog.*`, `phone.tablePlan.*` (the action sheet and the question about unsent
+  items), `common.labels.soldOut` and `common.estimates.*` in `shared/i18n/de.json` and `en.json`.
 
 Backend, under `backend/`:
 
@@ -59,11 +71,22 @@ Backend, under `backend/`:
   names the station as plain text.
 - **The draft is one order, never a list.** `draftCart.ts` saves the order on every change, a reload
   puts it back, and a stored draft that cannot be read is thrown away and reported once
-  (`draftWasLost`). Nothing sends it on its own; see the frontend `CLAUDE.md` rule on the retry queue.
-- **A frozen order takes no change.** While a send attempt is unresolved (`changesAreRefusedFor`), the
-  order store ignores every change, and the ordering screen moves the waiter to the summary as it
-  opens. A draft from another festival is dropped silently unless it is frozen (see the `festivals`
-  page).
+  (`draftWasLost`), a draft an older build stored under a typed table name included. Nothing sends
+  it on its own; see the frontend `CLAUDE.md` rule on the retry queue.
+- **The draft shows its table's current name.** The header, the summary and the question about
+  unsent items show the name the phone's plan holds for the table now, and the name the draft was
+  opened under only while the table is not on the plan.
+- **The draft belongs to the table it was opened at.** "Bestellung aufnehmen" on a table takes the
+  table when the draft has no items, carries on with the draft on its own table, and asks first when
+  another table's items are on it: back to the order for that table, or discard the items and take
+  the order for the new one. "Abrechnen" asks nothing and leaves the draft alone. A draft that was
+  never sent locks nothing: the waiter may go back to the plan, and the items wait for their table.
+- **A frozen order takes no change and blocks the way to the plan.** While a send attempt is
+  unresolved (`changesAreRefusedFor`), the order store ignores every change, and the ordering screen
+  and the home screen move the waiter to the summary as they open (`waiterLandingFor` puts the locked
+  order first). A reload always starts at home (`routeToStartAt` in `shared/router/route.ts`), so it
+  leads there too. A draft from another festival is dropped silently unless it is frozen (see the
+  `festivals` page).
 - **The total is a calculation aid.** Once a portion is on the order, the article shows
   "{count} × {price}" and its total, and the basket bar shows the item count and the order total on the
   categories screen only; the screen of one category leaves the order total out. `orderTotalCents`
@@ -72,8 +95,8 @@ Backend, under `backend/`:
   nothing, and the waiting time gives way to "Ausverkauft"; minus still takes portions off.
 - **The keyboard reaches adding once.** The name and the price add the same portion, and keyboard
   focus reaches that action once per article.
-- **No summary without a table.** `goToTheSummary` refuses an empty or blank table name, marks the
-  field and puts the cursor in it.
+- **The summary sends only with a table.** Both send buttons stay disabled while the draft has no
+  table, and `buildSubmitRequest` throws for one, because the plan is the only way to an order.
 - **An order names a table of the running festival.** The laptop looks the `TableId` up at the
   running festival, hidden tables included. A table it does not find there is a broken program: it
   logs the table id, answers 422 with `errors.order.cannotBeProcessed` and stores nothing, so the
@@ -91,15 +114,23 @@ Backend, under `backend/`:
   `ItemRow.figures.spec.ts` (price, waiting time, counts and totals), `ItemRow.notes.spec.ts` (the
   note dialog, the note and station groups, the station question for a note) and
   `ItemRow.keyboardInset.spec.ts`, on `itemRowFixture.ts`.
-- `frontend/tests/phone/views`: `Catalog.building.spec.ts` (adding, the table check, the frozen
-  order), `Catalog.categories.spec.ts`, `Catalog.stationChoice.spec.ts` (the station question, also
-  when the price is tapped) and `Catalog.waitingTime.spec.ts`, on `catalogFixture.ts`.
+- `frontend/tests/phone/views`: `Catalog.building.spec.ts` (adding, the way to the summary, the
+  frozen order, no table), `Catalog.categories.spec.ts`, `Catalog.stationChoice.spec.ts` (the station
+  question, also when the price is tapped) and `Catalog.waitingTime.spec.ts`, on `catalogFixture.ts`;
+  `Review.sending.spec.ts` (both landings after sending, no table); `TablePlan.sheet.spec.ts` (the
+  action sheet and the question about unsent items) and `TablePlan.landing.spec.ts` (the locked order
+  leading to the summary).
 - `frontend/tests/phone/core`: `itemPositions.spec.ts`, `categoryPortions.spec.ts`,
-  `routingPreview.spec.ts`, `draftCart.editing.spec.ts`, `draftCart.storage.spec.ts`,
-  `draftCart.unreadable.spec.ts`, `totals.spec.ts`, `estimates.spec.ts`, `estimateWording.spec.ts`,
-  `catalogItemState.spec.ts` and `tableName.spec.ts`.
+  `routingPreview.spec.ts`, `draftCart.editing.spec.ts` (including `openingTheOrderAt`),
+  `draftCart.storage.spec.ts`, `draftCart.unreadable.spec.ts` (including a draft with a typed table
+  name), `submission.spec.ts`, `totals.spec.ts`, `estimates.spec.ts`, `estimateWording.spec.ts` and
+  `catalogItemState.spec.ts`; `frontend/tests/shared/router/bootPath.spec.ts` (a reload starts at
+  home).
 - `frontend/tests/phone/stores`: `order.reload.spec.ts` (the unreadable draft, an order frozen by a
-  reload) and `orderFestivalScope.spec.ts`; `frontend/tests/phone/composables/useStationChoiceQuotes.spec.ts`.
+  reload), `order.sending.spec.ts` (the table's id on the wire, a frozen order keeping its table) and
+  `orderFestivalScope.spec.ts`; `frontend/tests/phone/composables/useStationChoiceQuotes.spec.ts` and
+  `useSendAndLeave.spec.ts`. `tests/support/waiterPhone.ts` (`theWaiterTakesTheOrderAt`) gives a
+  store spec an order at a table.
 - Backend: `GastronomyApp.Core.Tests/Services/OrderAcceptanceServiceTest.cs`,
   `GastronomyApp.Infrastructure.Tests/Services/OrderAcceptanceServiceTest.cs`,
   `GastronomyApp.Api.Tests/Endpoints/OrderEndpointsTest.cs` (a table of the running festival, a

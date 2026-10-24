@@ -139,15 +139,6 @@ export const LanguageView = z.strictObject({ language: z.string() });
 export type MoveCategoryRequest = __TypedOpenapi.Schemas.MoveCategoryRequest;
 export const MoveCategoryRequest = z.strictObject({ direction: CategoryMoveDirection });
 
-export type OpenOrderItemView = __TypedOpenapi.Schemas.OpenOrderItemView;
-export const OpenOrderItemView = z.strictObject({ orderItemId: z.string(), orderId: z.string(), globalOrderNumber: z.number().int(), itemName: z.string(), note: z.string().nullable(), unitPriceCents: z.number().int(), orderedAtUtc: z.string() });
-
-export type OpenTableView = __TypedOpenapi.Schemas.OpenTableView;
-export const OpenTableView = z.strictObject({ tableId: z.string(), tableName: z.string(), openAmountCents: z.number().int(), items: z.array(OpenOrderItemView) });
-
-export type OpenItemsView = __TypedOpenapi.Schemas.OpenItemsView;
-export const OpenItemsView = z.strictObject({ tables: z.array(OpenTableView), itemsWithoutAnOrderCount: z.number().int() });
-
 export type OrderDeliveryModeRequest = __TypedOpenapi.Schemas.OrderDeliveryModeRequest;
 export const OrderDeliveryModeRequest = z.strictObject({ stationId: z.string(), deliveryMode: DeliveryMode });
 

@@ -4,12 +4,14 @@ import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useOrderStore, ARRIVAL_NOTICE_MS } from '../../../src/phone/stores/order'
 import { DRAFT_STORAGE_KEY, SEND_PROGRESS_STORAGE_KEY, restoreDraft, restoreSendProgress } from '../../../src/phone/core/draftCart'
 import { menuWithWaterAtTheBar, answerWith } from './orderFixture'
+import { TISCH_3, theWaiterTakesTheOrderAt } from '../../support/waiterPhone'
 import { stubLaptop, neverAnswers, noConnection } from '../../support/laptop'
 
 describe('the notice that an order has arrived', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    theWaiterTakesTheOrderAt(TISCH_3)
     vi.useFakeTimers()
   })
 
@@ -36,6 +38,7 @@ describe('the identity an order carries', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    theWaiterTakesTheOrderAt(TISCH_3)
   })
 
   afterEach(() => {
@@ -78,18 +81,19 @@ describe('the identity an order carries', () => {
   })
 })
 
-describe('the table name an order goes out with', () => {
+describe('the table an order goes out with', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     useCatalogStore().catalog = menuWithWaterAtTheBar()
     localStorage.clear()
+    theWaiterTakesTheOrderAt(TISCH_3)
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
   })
 
-  it('has no spaces around it, so the open list cannot hold the same table twice', async () => {
+  it('is the id of the table the waiter chose on the plan', async () => {
     answerWith(0)
     const order = useOrderStore()
     order.addItem({
@@ -98,12 +102,12 @@ describe('the table name an order goes out with', () => {
       stationId: 'station-bar',
       name: 'Wasser',
     })
-    order.setTable(' Tisch 3 ')
+    order.chooseTable({ tableId: 'table-7', name: 'Tisch 7' })
 
     await order.send('leaveOpen')
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.tableName).toBe('Tisch 3')
+    expect(sent.tableId).toBe('table-7')
   })
 })
 
@@ -112,6 +116,7 @@ describe('an order the waiter has already pressed send on', () => {
     setActivePinia(createPinia())
     useCatalogStore().catalog = menuWithWaterAtTheBar()
     localStorage.clear()
+    theWaiterTakesTheOrderAt(TISCH_3)
   })
 
   afterEach(() => {
@@ -131,7 +136,7 @@ describe('an order the waiter has already pressed send on', () => {
     stubLaptop().answersEverythingElse(neverAnswers())
     const order = useOrderStore()
     order.addItem(waterLine())
-    order.setTable('Tisch 7')
+    order.chooseTable({ tableId: 'table-7', name: 'Tisch 7' })
     void order.send('leaveOpen')
     return order
   }
@@ -174,12 +179,20 @@ describe('an order the waiter has already pressed send on', () => {
     expect(order.draft.lines[0].stationId).toBe('station-bar')
   })
 
-  it('takes no other table name', () => {
+  it('takes no other table', () => {
     const order = orderOnItsWayToTheLaptop()
 
-    order.setTable('Tisch 9')
+    order.chooseTable({ tableId: 'table-9', name: 'Tisch 9' })
 
-    expect(order.draft.tableName).toBe('Tisch 7')
+    expect(order.draft.table).toEqual({ tableId: 'table-7', name: 'Tisch 7' })
+  })
+
+  it('cannot be thrown away for another table', () => {
+    const order = orderOnItsWayToTheLaptop()
+
+    order.discardTheDraftAndChooseTable({ tableId: 'table-9', name: 'Tisch 9' })
+
+    expect(order.draft.lines).toHaveLength(1)
   })
 
   it('takes no other delivery choice for a station', () => {
@@ -227,6 +240,7 @@ describe('an order the laptop accepted', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    theWaiterTakesTheOrderAt(TISCH_3)
   })
 
   afterEach(() => {
@@ -251,14 +265,14 @@ describe('an order the laptop accepted', () => {
     expect(localStorage.getItem(SEND_PROGRESS_STORAGE_KEY)).toBeNull()
   })
 
-  it('lets the next table be typed in straight away', async () => {
+  it('lets the next table be chosen straight away', async () => {
     answerWith(0)
     const order = useOrderStore()
     await order.send('leaveOpen')
 
-    order.setTable('Tisch 8')
+    order.chooseTable({ tableId: 'table-8', name: 'Tisch 8' })
 
-    expect(order.draft.tableName).toBe('Tisch 8')
+    expect(order.draft.table).toEqual({ tableId: 'table-8', name: 'Tisch 8' })
   })
 })
 
@@ -266,6 +280,7 @@ describe('the station name a line is given when it is added', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    theWaiterTakesTheOrderAt(TISCH_3)
   })
 
   function twoBarsAndTheDrinksTheyPour() {

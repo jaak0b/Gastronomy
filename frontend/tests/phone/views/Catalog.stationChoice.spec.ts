@@ -8,7 +8,7 @@ import { navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
 import { stubLaptop, answer } from '../../support/laptop'
 import { nextTick } from 'vue'
-import { mountCatalog, type MountedCatalog, openCategory, itemRowNamed, tapToAdd, stationChoiceNamed, goBackToTheCategories, CATALOG_WITH_A_STATION_CHOICE } from './catalogFixture'
+import { type MountedCatalog, openCategory, itemRowNamed, tapToAdd, stationChoiceNamed, goBackToTheCategories, CATALOG_WITH_A_STATION_CHOICE } from './catalogFixture'
 
 enableAutoUnmount(afterEach)
 
@@ -166,46 +166,5 @@ describe('the question about which station is to make an item', () => {
     expect(overlay.style.height).toBe('calc(100% - 400px)')
     expect(overlay.style.bottom).toBe('auto')
     expect(overlay.classList).toContain('v-dialog--scrollable')
-  })
-})
-
-describe('the ordering screen on a phone whose keyboard covers the lower screen', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-    document.body.innerHTML = ''
-    navigate('/')
-    stubLaptop().answersEverythingElse(answer({}))
-    vi.stubGlobal('innerHeight', 800)
-    vi.stubGlobal('visualViewport', {
-      height: 400,
-      scale: 1,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('lifts the tray with the table field above the keyboard', async () => {
-    const view = mountCatalog()
-    await nextTick()
-
-    expect((view.get('[data-test="catalog"]').element as HTMLElement).style.paddingBottom).toBe('400px')
-  })
-
-  it('leaves the tray where it is while the waiter is zoomed in', async () => {
-    vi.stubGlobal('visualViewport', {
-      height: 400,
-      scale: 2,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    })
-    const view = mountCatalog()
-    await nextTick()
-
-    expect((view.get('[data-test="catalog"]').element as HTMLElement).style.paddingBottom).toBe('0px')
   })
 })

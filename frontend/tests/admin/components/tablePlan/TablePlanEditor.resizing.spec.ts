@@ -3,13 +3,17 @@ import { createPinia, setActivePinia } from 'pinia'
 import { enableAutoUnmount } from '@vue/test-utils'
 import type Konva from 'konva'
 import { textOnScreen } from '../../../support/dom'
-import { anchorOf, dragAnchorBy, shapeWithId } from '../../../support/konvaDrawing'
+import {
+  anchorOf,
+  dragAnchorBy,
+  layOutTheScreen,
+  shapeWithId,
+} from '../../../support/konvaDrawing'
 import { refusal } from '../../../support/laptop'
 import {
   SCHANK_SHAPE_ID,
   TABLE_A1_SHAPE_ID,
   editorLaptop,
-  layOutTheScreen,
   mountEditor,
   selectTheShape,
   theDrawing,

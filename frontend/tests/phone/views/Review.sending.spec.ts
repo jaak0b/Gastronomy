@@ -3,10 +3,14 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import Review from '../../../src/phone/views/Review.vue'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
+import { useTablePlanStore } from '../../../src/phone/stores/tablePlan'
+import { DRAFT_STORAGE_KEY } from '../../../src/phone/core/draftCart'
 import { useSessionStore } from '../../../src/shared/stores/session'
 import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
-import { prepareOrder, sendAndSettleLater, sendAndSettle } from './reviewFixture'
+import { TISCH_3 } from '../../support/waiterPhone'
+import { aPlanArea, aPlanTable } from '../../support/wireViews'
+import { prepareOrder, sendAndSettleLater, sendAndSettle, wasserOnTheMenu } from './reviewFixture'
 import { stubLaptop, answer, noConnection } from '../../support/laptop'
 import { nextTick } from 'vue'
 
@@ -53,7 +57,7 @@ describe('sending the order from the review screen', () => {
 
     expect(currentRoute.value).toEqual({ name: 'review' })
     expect(review.find('[data-test="send-failure"]').exists()).toBe(true)
-    expect(order.draft.tableName).toBe('Tisch 3')
+    expect(order.draft.table).toEqual(TISCH_3)
     expect(order.basketLines).toHaveLength(1)
   })
 
@@ -69,12 +73,35 @@ describe('sending the order from the review screen', () => {
     expect(review.find('[data-test="send-failure"]').exists()).toBe(true)
   })
 
+  it('names the table by the name the plan holds now, after the admin renamed it', () => {
+    prepareOrder()
+    useTablePlanStore().areas = [aPlanArea({ tables: [aPlanTable({ tableId: 'table-3', name: 'Tisch 3a' })] })]
+
+    const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+
+    expect(review.get('h1.table-name').text()).toBe('Tisch: Tisch 3a')
+  })
+
   it('keeps the table and the total together in the compact heading', () => {
     prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
     expect(review.get('h1.table-name').text()).toBe('Tisch: Tisch 3')
     expect(review.get('[data-test="order-total"]').text()).toContain('2.00')
+  })
+
+  it('takes the waiter home after sending to settle later, to the area list or the plan of the one area', async () => {
+    const order = prepareOrder()
+    useTablePlanStore().openArea('area-zelt')
+    const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+
+    await sendAndSettleLater(review)
+    await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
+
+    expect({ route: currentRoute.value, openedArea: useTablePlanStore().openedAreaId }).toEqual({
+      route: { name: 'home' },
+      openedArea: null,
+    })
   })
 
   it('takes the waiter back to the items from the back button at the bottom of the strip', async () => {
@@ -86,7 +113,7 @@ describe('sending the order from the review screen', () => {
 
     await review.get('[data-test="back"]').trigger('click')
 
-    expect(currentRoute.value).toEqual({ name: 'home' })
+    expect(currentRoute.value).toEqual({ name: 'catalog' })
   })
 
   it('sends the order on the first tap of either button, without asking anything first', async () => {
@@ -103,9 +130,18 @@ describe('sending the order from the review screen', () => {
     expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual(['/api/orders', '/api/orders'])
   })
 
-  it('offers neither way to send while the order has no table name', () => {
-    const order = prepareOrder()
-    order.setTable('')
+  it('offers neither way to send while the order has no table', () => {
+    localStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        festivalId: null,
+        table: null,
+        lines: [{ catalogItemId: 'item-wasser', note: null, stationId: 'station-bar', name: 'Wasser', stationName: 'Bar' }],
+        clientOrderId: null,
+        deliveryModes: {},
+      }),
+    )
+    wasserOnTheMenu()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
     expect({
@@ -135,8 +171,9 @@ describe('sending an order the guest pays on the spot', () => {
       .answersEverythingElse(answer({ stations: [] }))
       .answers(
         'GET',
-        '/api/open-items/table',
+        '/api/open-items/tables/table-3',
         answer({
+          tableId: 'table-3',
           tableName: 'Tisch 3',
           openAmountCents: 200,
           orders: [
@@ -192,10 +229,10 @@ describe('sending an order the guest pays on the spot', () => {
     await sendAndSettle(review)
     await vi.waitFor(() => expect(currentRoute.value).toEqual({ name: 'openItems' }))
     const openItems = useOpenItemsStore()
-    await openItems.loadTableReport('Tisch 3')
+    await openItems.load()
 
-    expect({ table: openItems.lookupName, ticked: openItems.selectedItemIds }).toEqual({
-      table: 'Tisch 3',
+    expect({ table: openItems.tableId, ticked: openItems.selectedItemIds }).toEqual({
+      table: 'table-3',
       ticked: ['new-wasser'],
     })
   })

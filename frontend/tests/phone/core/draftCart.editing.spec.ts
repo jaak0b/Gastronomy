@@ -1,5 +1,20 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { DRAFT_STORAGE_KEY, addLine, clearDraft, emptyDraft, removeLine, restoreDraft, saveDraft, setDeliveryMode, setLineNote, setLineStation, setTableName } from '../../../src/phone/core/draftCart'
+import {
+  DRAFT_STORAGE_KEY,
+  addLine,
+  clearDraft,
+  emptyDraft,
+  openingTheOrderAt,
+  removeLine,
+  restoreDraft,
+  saveDraft,
+  setDeliveryMode,
+  setLineNote,
+  setLineStation,
+  setTable,
+  shownNameOf,
+} from '../../../src/phone/core/draftCart'
+import { aPlanArea, aPlanTable } from '../../support/wireViews'
 import { bratwurstLine } from './draftCartFixture'
 
 describe('emptyDraft', () => {
@@ -8,7 +23,7 @@ describe('emptyDraft', () => {
 
     expect(draft).toEqual({
       festivalId: null,
-      tableName: '',
+      table: null,
       lines: [],
       clientOrderId: null,
       deliveryModes: {},
@@ -85,9 +100,9 @@ describe('draft mutators', () => {
   })
 
   it('persists the table', () => {
-    setTableName(emptyDraft(), 'Tisch 12')
+    setTable(emptyDraft(), { tableId: 'table-12', name: 'Tisch 12' })
 
-    expect(restoreDraft().draft.tableName).toBe('Tisch 12')
+    expect(restoreDraft().draft.table).toEqual({ tableId: 'table-12', name: 'Tisch 12' })
   })
 
   it('persists how a station should hand its part of the order out', () => {
@@ -116,7 +131,7 @@ describe('clearDraft', () => {
   it('removes the stored order', () => {
     saveDraft({
       festivalId: null,
-      tableName: 'Tisch 12',
+      table: { tableId: 'table-12', name: 'Tisch 12' },
       lines: [bratwurstLine()],
       clientOrderId: 'a2f0c0de-0000-4000-8000-000000000001',
       deliveryModes: {},
@@ -130,7 +145,7 @@ describe('clearDraft', () => {
   it('leaves the next draft empty', () => {
     saveDraft({
       festivalId: null,
-      tableName: 'Tisch 12',
+      table: { tableId: 'table-12', name: 'Tisch 12' },
       lines: [bratwurstLine()],
       clientOrderId: 'a2f0c0de-0000-4000-8000-000000000001',
       deliveryModes: { 'station-kueche': 'asItComes' },
@@ -140,7 +155,7 @@ describe('clearDraft', () => {
 
     expect(restoreDraft().draft).toEqual({
       festivalId: null,
-      tableName: '',
+      table: null,
       lines: [],
       clientOrderId: null,
       deliveryModes: {},
@@ -191,5 +206,49 @@ describe('the station name a line keeps', () => {
     saveDraft(setLineStation(addLine(emptyDraft(), bratwurstLine()), 0, 'station-kueche', 'Küche'))
 
     expect(restoreDraft().draft.lines[0].stationName).toBe('Küche')
+  })
+})
+
+describe('taking the order at a table of the plan', () => {
+  const TISCH_3 = { tableId: 'table-3', name: 'Tisch 3' }
+
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('takes the table when nothing is on the order yet', () => {
+    const draft = setTable(emptyDraft(), TISCH_3)
+
+    expect(openingTheOrderAt(draft, 'table-5')).toBe('takeTheTable')
+  })
+
+  it('takes the table when no table was chosen yet', () => {
+    expect(openingTheOrderAt(emptyDraft(), 'table-5')).toBe('takeTheTable')
+  })
+
+  it('carries on with the order when it already belongs to that table', () => {
+    const draft = addLine(setTable(emptyDraft(), TISCH_3), bratwurstLine())
+
+    expect(openingTheOrderAt(draft, 'table-3')).toBe('continueTheDraft')
+  })
+
+  it('asks first when the unsent items belong to another table', () => {
+    const draft = addLine(setTable(emptyDraft(), TISCH_3), bratwurstLine())
+
+    expect(openingTheOrderAt(draft, 'table-5')).toBe('askBeforeDiscardingTheDraft')
+  })
+})
+
+describe('the name a draft shows for its table', () => {
+  const OPENED_AS_TISCH_3 = { tableId: 'table-3', name: 'Tisch 3' }
+
+  it('is the name the plan holds now, after the admin renamed the table', () => {
+    const plan = [aPlanArea({ tables: [aPlanTable({ tableId: 'table-3', name: 'Stammtisch' })] })]
+
+    expect(shownNameOf(OPENED_AS_TISCH_3, plan)).toBe('Stammtisch')
+  })
+
+  it('is the name it was opened under while the table is not on the plan', () => {
+    expect(shownNameOf(OPENED_AS_TISCH_3, [aPlanArea()])).toBe('Tisch 3')
   })
 })

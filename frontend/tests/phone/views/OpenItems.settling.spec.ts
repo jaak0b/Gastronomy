@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
-import { OPEN_LIST, mountScreen, openItemsLaptop } from './openItemsFixture'
+import { TISCH_12, mountScreen, openItemsLaptop } from './openItemsFixture'
 import { noConnection, refusal } from '../../support/laptop'
 import { inputOf, typeIn, clickOn } from '../../support/dom'
 import { nextTick } from 'vue'
@@ -130,9 +130,9 @@ describe('settling what the table actually handed over', () => {
     expect(inputOf(`${AMOUNT_DIALOG} [data-test="reason-field"]`).getAttribute('maxlength')).toBe('200')
   })
 
-  it('goes back to the list when the answer never came, because the list is where the reload is', async () => {
+  it('goes back to the table when the answer never came, because the table is where the reload is', async () => {
     const screen = await mountScreen()
-    openItemsLaptop(OPEN_LIST, noConnection())
+    openItemsLaptop(TISCH_12, noConnection())
     await openTheAmountDialog(screen)
 
     await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '2,00')
@@ -141,7 +141,7 @@ describe('settling what the table actually handed over', () => {
 
     expect(document.querySelector('[data-test="amount-paid-dialog"]')).toBeNull()
     expect(screen.get('[data-test="settle-notice"]').text()).toBe(
-      'Es ist nicht klar, ob die Abrechnung angekommen ist. Laden Sie die Liste neu und schauen Sie nach, ob die Positionen noch offen sind.',
+      'Es ist nicht klar, ob die Abrechnung angekommen ist. Tippen Sie auf "Neu laden" und schauen Sie nach, ob die Positionen noch offen sind.',
     )
     expect(useOpenItemsStore().selectedItemIds).toEqual(['item-1'])
   })
@@ -149,7 +149,7 @@ describe('settling what the table actually handed over', () => {
   it('keeps what was typed on screen when the laptop refuses, so nobody types it twice', async () => {
     const screen = await mountScreen()
     openItemsLaptop(
-      OPEN_LIST,
+      TISCH_12,
       refusal('phone.openItems.errors.settleFailed', { status: 400, code: 'ValidationFailed' }),
     )
     await openTheAmountDialog(screen)

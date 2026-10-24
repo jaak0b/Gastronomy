@@ -1,4 +1,12 @@
-import { OpenOrderItemView, OpenTableView, type PaymentMethod, SettleLineRequest, SettlementView, TableOrderRecordItemView, TableOrderRecordView, TableOrderReportView } from '../../shared/api/generatedSchemas'
+import type {
+  PaymentMethod,
+  SettleLineRequest,
+  SettlementView,
+  ShareState,
+  TableOrderRecordItemView,
+  TableOrderRecordView,
+  TableOrderReportView,
+} from '../../shared/api/generatedSchemas'
 import type { AppLanguage } from '../../shared/core/deviceLanguage'
 import { formatPrice } from '../../shared/core/money'
 
@@ -11,26 +19,12 @@ export interface AmountPaidWithReason {
   paymentNotice: string | null
 }
 
-export type ShareState = 'none' | 'some' | 'all'
-
-export type PositionState = 'produced' | 'notProduced' | 'unknown'
-
-export const TABLE_LOOKUP_DEBOUNCE_MS = 300
+export type PositionState = 'produced' | 'notProduced'
 
 export interface SettleNotice {
   key: string
   parameters: Record<string, string | number>
   count: number | null
-}
-
-export function openTableInReport(report: TableOrderReportView): OpenTableView {
-  return {
-    tableName: report.tableName,
-    openAmountCents: report.openAmountCents,
-    items: report.orders
-      .flatMap((order) => order.items)
-      .filter((item) => item.settledAtUtc === null),
-  }
 }
 
 export function producedCountIn(order: TableOrderRecordView): number {
@@ -52,29 +46,26 @@ export function positionStateOf(item: TableOrderRecordItemView): PositionState {
   return item.fulfilledAtUtc === null ? 'notProduced' : 'produced'
 }
 
-export function itemIdsAtTable(table: OpenTableView): string[] {
-  return table.items.map((item) => item.orderItemId)
+export function unsettledItemsIn(report: TableOrderReportView): TableOrderRecordItemView[] {
+  return report.orders.flatMap((order) => order.items).filter((item) => item.settledAtUtc === null)
 }
 
-export function selectedItemsAtTable(
-  table: OpenTableView,
-  selectedItemIds: readonly string[],
-): OpenOrderItemView[] {
-  return table.items.filter((item) => selectedItemIds.includes(item.orderItemId))
+export function unsettledItemIdsIn(report: TableOrderReportView): string[] {
+  return unsettledItemsIn(report).map((item) => item.orderItemId)
 }
 
 export function selectedItems(
-  tables: readonly OpenTableView[],
+  report: TableOrderReportView,
   selectedItemIds: readonly string[],
-): OpenOrderItemView[] {
-  return tables.flatMap((table) => selectedItemsAtTable(table, selectedItemIds))
+): TableOrderRecordItemView[] {
+  return unsettledItemsIn(report).filter((item) => selectedItemIds.includes(item.orderItemId))
 }
 
 export function selectedAmountCents(
-  tables: readonly OpenTableView[],
+  report: TableOrderReportView,
   selectedItemIds: readonly string[],
 ): number {
-  return selectedItems(tables, selectedItemIds).reduce(
+  return selectedItems(report, selectedItemIds).reduce(
     (total, item) => total + item.unitPriceCents,
     0,
   )
@@ -96,37 +87,12 @@ export function unsettledItemIdsInOrder(order: TableOrderRecordView): string[] {
     .map((item) => item.orderItemId)
 }
 
-export function tableHoldingTheSelection(
-  tables: readonly OpenTableView[],
-  selectedItemIds: readonly string[],
-): string | null {
-  const holding = tables.find(
-    (table) => selectedItemsAtTable(table, selectedItemIds).length > 0,
-  )
-  return holding === undefined ? null : holding.tableName
-}
-
-export function tableForItem(tables: readonly OpenTableView[], orderItemId: string): string | null {
-  const owning = tables.find((table) => itemIdsAtTable(table).includes(orderItemId))
-  return owning === undefined ? null : owning.tableName
-}
-
-export function isHeldBackByAnotherTable(
-  tables: readonly OpenTableView[],
-  selectedItemIds: readonly string[],
-  tableName: string,
-): boolean {
-  const holding = tableHoldingTheSelection(tables, selectedItemIds)
-  return holding !== null && holding !== tableName
-}
-
 export function withItemToggled(
   selectedItemIds: readonly string[],
-  tables: readonly OpenTableView[],
+  report: TableOrderReportView,
   orderItemId: string,
 ): string[] {
-  const tableName = tableForItem(tables, orderItemId)
-  if (tableName === null || isHeldBackByAnotherTable(tables, selectedItemIds, tableName)) {
+  if (!unsettledItemIdsIn(report).includes(orderItemId)) {
     return [...selectedItemIds]
   }
   return selectedItemIds.includes(orderItemId)
@@ -136,28 +102,19 @@ export function withItemToggled(
 
 export function withWholeTable(
   selectedItemIds: readonly string[],
-  tables: readonly OpenTableView[],
-  table: OpenTableView,
+  report: TableOrderReportView,
   isWanted: boolean,
 ): string[] {
-  if (isHeldBackByAnotherTable(tables, selectedItemIds, table.tableName)) {
-    return [...selectedItemIds]
-  }
-  const tableItemIds = itemIdsAtTable(table)
+  const tableItemIds = unsettledItemIdsIn(report)
   const untouched = selectedItemIds.filter((id) => !tableItemIds.includes(id))
   return isWanted ? [...untouched, ...tableItemIds] : untouched
 }
 
 export function withWholeOrder(
   selectedItemIds: readonly string[],
-  tables: readonly OpenTableView[],
-  tableName: string,
   order: TableOrderRecordView,
   isWanted: boolean,
 ): string[] {
-  if (isHeldBackByAnotherTable(tables, selectedItemIds, tableName)) {
-    return [...selectedItemIds]
-  }
   const orderItemIds = unsettledItemIdsInOrder(order)
   const untouched = selectedItemIds.filter((id) => !orderItemIds.includes(id))
   return isWanted ? [...untouched, ...orderItemIds] : untouched
@@ -165,9 +122,9 @@ export function withWholeOrder(
 
 export function withoutItemsThatAreGone(
   selectedItemIds: readonly string[],
-  tables: readonly OpenTableView[],
+  report: TableOrderReportView,
 ): string[] {
-  const stillOpen = tables.flatMap(itemIdsAtTable)
+  const stillOpen = unsettledItemIdsIn(report)
   return selectedItemIds.filter((id) => stillOpen.includes(id))
 }
 

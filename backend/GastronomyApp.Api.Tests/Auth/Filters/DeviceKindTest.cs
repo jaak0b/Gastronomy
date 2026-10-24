@@ -24,7 +24,8 @@ public sealed class DeviceKindTest
   private string _stationToken = null!;
 
   [TestCase("/api/catalog")]
-  [TestCase("/api/open-items")]
+  [TestCase("/api/open-items/tables/6f9619ff-8b86-4011-b42d-00cf4fc964ff")]
+  [TestCase("/api/table-plan")]
   [TestCase("/api/estimates")]
   public async Task Get_WaiterRouteWithAStationTablet_IsRefusedAsTheWrongKindOfDevice(string path)
   {

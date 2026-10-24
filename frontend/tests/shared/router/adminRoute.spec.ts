@@ -61,6 +61,10 @@ describe('resolveRoute', () => {
     expect(resolveRoute('/stations')).toEqual({ name: 'stations' })
   })
 
+  it('reads the catalog path as the ordering screen of the chosen table', () => {
+    expect(resolveRoute('/catalog')).toEqual({ name: 'catalog' })
+  })
+
   it('no longer honours an old station link that carried a key', () => {
     expect(resolveRoute('/station/abc123')).toEqual({ name: 'home' })
   })
@@ -147,7 +151,7 @@ describe('the screen a device lands on', () => {
     await vi.waitFor(() => expect(app.find('[data-test="station-page"]').exists()).toBe(true))
   })
 
-  it('sends a waiter phone that opens the station address back to the item list', async () => {
+  it('sends a waiter phone that opens the station address back to the table plan', async () => {
     const { useSessionStore } = await import('../../../src/shared/stores/session')
     const session = useSessionStore()
     session.deviceToken = 'a-token'
@@ -155,7 +159,7 @@ describe('the screen a device lands on', () => {
 
     const app = await mountApp()
 
-    await vi.waitFor(() => expect(app.find('[data-test="catalog"]').exists()).toBe(true))
+    await vi.waitFor(() => expect(app.find('[data-test="table-plan"]').exists()).toBe(true))
 
     expect(app.find('[data-test="station-page"]').exists()).toBe(false)
   })

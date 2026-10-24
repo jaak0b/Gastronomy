@@ -45,13 +45,16 @@ export function buildSubmitRequest(
   if (clientOrderId === null) {
     throw new Error('A draft without a clientOrderId must not be submitted')
   }
+  if (draft.table === null) {
+    throw new Error('A draft without a table must not be submitted')
+  }
   const pricedLines = draft.lines.map((line) => ({
     line,
     unitPriceCents: priceOnTheMenu(catalog, line),
   }))
   return {
     clientOrderId,
-    tableName: draft.tableName.trim(),
+    tableId: draft.table.tableId,
     items: pricedLines.map(({ line, unitPriceCents }) => ({
       catalogItemId: line.catalogItemId,
       unitPriceCents,

@@ -22,8 +22,7 @@ function phoneLaptop(): void {
         language: 'de',
       }),
     )
-    .answers('GET', /^\/api\/open-items/, answer({ tables: [], itemsWithoutAnOrderCount: 0 }))
-    .answers('GET', /^\/api\/open-items\/table-names/, answer({ tableNames: [] }))
+    .answers('GET', /^\/api\/table-plan/, answer({ areas: [] }))
     .answers('GET', /^\/api\/estimates/, answer([]))
     .answers('GET', /^\/api\/catalog/, answer({ festival: null, categories: [], items: [], stations: [] }))
 }
@@ -69,8 +68,14 @@ describe('where the app bar stands', () => {
     return app
   }
 
-  it('keeps the bar over the catalogue', async () => {
+  it('keeps the bar over the table plan', async () => {
     const app = await mountAppAt('/')
+
+    expect(app.find('[data-test="app-header"]').exists()).toBe(true)
+  })
+
+  it('keeps the bar over the catalogue', async () => {
+    const app = await mountAppAt('/catalog')
 
     expect(app.find('[data-test="app-header"]').exists()).toBe(true)
   })

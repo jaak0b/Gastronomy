@@ -79,7 +79,7 @@ describe('the order on the phone and the festival that is running', () => {
     const order = useOrderStore()
     await catalog.load()
 
-    order.setTable('Tisch 4')
+    order.chooseTable({ tableId: 'table-4', name: 'Tisch 4' })
 
     expect(order.draft.festivalId).toBe('fest-1')
   })
@@ -161,7 +161,7 @@ describe('the order on the phone and the festival that is running', () => {
     const order = useOrderStore()
     await catalog.load()
     addABratwurst(order)
-    order.setTable('Tisch 4')
+    order.chooseTable({ tableId: 'table-4', name: 'Tisch 4' })
     laptopCannotBeReached()
     await order.send('leaveOpen')
     expect(order.changesAreRefused).toBe(true)

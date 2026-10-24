@@ -14,7 +14,7 @@ export function bratwurstLine(): DraftLine {
 export function anAttempt(): PlaceOrderRequest {
   return {
     clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
-    tableName: 'Tisch 5',
+    tableId: 'table-5',
     items: [
       {
         catalogItemId: 'item-1',

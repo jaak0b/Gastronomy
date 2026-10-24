@@ -2,59 +2,47 @@ import { flushPromises, mount } from '@vue/test-utils'
 import type { VCheckboxBtn } from 'vuetify/components'
 import OpenItems from '../../../src/phone/views/OpenItems.vue'
 import type { AppLanguage } from '../../../src/shared/core/deviceLanguage'
+import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
 import { testPlugins } from '../../support/plugins'
 import { answer, stubLaptop, type LaptopReply, type StubbedLaptop } from '../../support/laptop'
 
-export const OPEN_LIST = {
-  tables: [
+function itemOfOrder137(orderItemId: string, itemName: string, note: string | null, unitPriceCents: number) {
+  return {
+    orderItemId,
+    orderId: 'order-1',
+    globalOrderNumber: 137,
+    itemName,
+    note,
+    unitPriceCents,
+    orderedAtUtc: '2026-09-05T18:00:00Z',
+    fulfilledAtUtc: null,
+    settledAtUtc: null,
+  }
+}
+
+export const TISCH_12 = {
+  tableId: 'table-12',
+  tableName: 'Tisch 12',
+  openAmountCents: 700,
+  orders: [
     {
-      tableName: '12',
-      openAmountCents: 700,
+      orderId: 'order-1',
+      globalOrderNumber: 137,
+      createdAtUtc: '2026-09-05T18:00:00Z',
+      staffMemberName: 'Anna',
       items: [
-        {
-          orderItemId: 'item-1',
-          orderId: 'order-1',
-          globalOrderNumber: 137,
-          itemName: 'Bratwurst',
-          note: 'ohne Zwiebeln',
-          unitPriceCents: 350,
-          orderedAtUtc: '2026-09-05T18:00:00Z',
-        },
-        {
-          orderItemId: 'item-2',
-          orderId: 'order-1',
-          globalOrderNumber: 137,
-          itemName: 'Bier',
-          note: null,
-          unitPriceCents: 350,
-          orderedAtUtc: '2026-09-05T18:00:00Z',
-        },
+        itemOfOrder137('item-1', 'Bratwurst', 'ohne Zwiebeln', 350),
+        itemOfOrder137('item-2', 'Bier', null, 350),
       ],
     },
   ],
-  itemsWithoutAnOrderCount: 0,
 }
 
 export const ONE_FREE_ITEM = {
-  tables: [
-    {
-      tableName: '12',
-      openAmountCents: 0,
-      items: [
-        {
-          orderItemId: 'item-water',
-          orderId: 'order-1',
-          globalOrderNumber: 137,
-          itemName: 'Leitungswasser',
-          note: null,
-          unitPriceCents: 0,
-          orderedAtUtc: '2026-09-05T18:00:00Z',
-        },
-      ],
-    },
-  ],
-  itemsWithoutAnOrderCount: 0,
+  ...TISCH_12,
+  openAmountCents: 0,
+  orders: [{ ...TISCH_12.orders[0], items: [itemOfOrder137('item-water', 'Leitungswasser', null, 0)] }],
 }
 
 export const SETTLED = {
@@ -63,29 +51,8 @@ export const SETTLED = {
   alreadySettledByOthersOrderItemIds: [],
 }
 
-export const TWO_TABLES = {
-  ...OPEN_LIST,
-  tables: [
-    ...OPEN_LIST.tables,
-    {
-      tableName: '123',
-      openAmountCents: 500,
-      items: [
-        {
-          orderItemId: 'item-7',
-          orderId: 'order-7',
-          globalOrderNumber: 141,
-          itemName: 'Bier',
-          note: null,
-          unitPriceCents: 500,
-          orderedAtUtc: '2026-09-05T18:20:00Z',
-        },
-      ],
-    },
-  ],
-}
-
 export const TABLE_REPORT = {
+  tableId: 'table-12',
   tableName: 'Tisch 12',
   openAmountCents: 1200,
   orders: [
@@ -171,28 +138,13 @@ export const TABLE_REPORT = {
   ],
 }
 
-export function laptopWithALookup(report: unknown, list: unknown = OPEN_LIST): StubbedLaptop {
-  return stubLaptop()
-    .answersEverythingElse(answer(list))
-    .answers('GET', '/api/open-items/table-names', answer({ tableNames: ['Tisch 12'] }))
-    .answers('GET', '/api/open-items/table', answer(report))
-    .answers('ANY', (call) => call.method !== 'GET', answer(SETTLED))
-}
-
 export function openItemsLaptop(
-  list: unknown = OPEN_LIST,
+  report: unknown = TISCH_12,
   settlement: LaptopReply = answer(SETTLED),
 ): StubbedLaptop {
   return stubLaptop()
-    .answersEverythingElse(answer(list))
+    .answers('GET', '/api/open-items/tables/table-12', answer(report))
     .answers('ANY', (call) => call.method !== 'GET', settlement)
-}
-
-export async function openEveryTable(screen: Awaited<ReturnType<typeof mountScreen>>): Promise<void> {
-  for (const title of screen.findAll('[data-test="open-table-title"]')) {
-    await title.trigger('click')
-  }
-  await flushPromises()
 }
 
 type MountedScreen = Awaited<ReturnType<typeof mountScreen>>
@@ -209,12 +161,8 @@ export function lineNamed(container: MountedScreen | ScreenPart, itemName: strin
   return line
 }
 
-export function lineOf(screen: MountedScreen, tableName: string, itemName: string): ScreenPart {
-  return lineNamed(screen.get(`[data-test="open-table"][data-test-id="${tableName}"]`), itemName)
-}
-
-export function lookupCard(screen: MountedScreen, orderNumber: number): ScreenPart {
-  return screen.get(`[data-test="lookup-card"][data-test-id="${orderNumber}"]`)
+export function orderCard(screen: MountedScreen, orderNumber: number): ScreenPart {
+  return screen.get(`[data-test="order-card"][data-test-id="${orderNumber}"]`)
 }
 
 export function isHalfTaken(part: MountedScreen | ScreenPart, selector: string): boolean {
@@ -226,6 +174,7 @@ export async function mountScreen(language: AppLanguage = 'de') {
   const session = useSessionStore()
   session.deviceToken = 'token-here'
   session.language = language
+  useOpenItemsStore().openTable('table-12')
   const screen = mount(OpenItems, {
     global: { plugins: testPlugins(language) },
     attachTo: document.body,

@@ -1,36 +1,34 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {
-  OpenTableView,
+import type {
+  ShareState,
   TableOrderRecordView,
   TableOrderReportView,
 } from '../../../shared/api/generatedSchemas'
-import { assertNever } from '../../../shared/core/assertNever'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { formatFestivalMoment } from '../../../shared/core/moments'
 import {
-  itemIdsAtTable,
   positionStateOf,
   producedCountIn,
   productionStateOf,
   selectionStateOf,
+  unsettledItemIdsIn,
   unsettledItemIdsInOrder,
-  type ShareState,
 } from '../../core/openItems'
 import { formatPrice } from '../../../shared/core/money'
+import { statusTintCssOf, statusTokenOf } from '../../../shared/core/statusTints'
 import OpenPositionRow from './OpenPositionRow.vue'
 
 const props = defineProps<{
   report: TableOrderReportView | null
-  table: OpenTableView | null
   selectedItemIds: string[]
   language: AppLanguage
 }>()
 const emit = defineEmits<{
   'toggle-item': [orderItemId: string]
-  'set-whole-table': [table: OpenTableView, isWanted: boolean]
-  'set-whole-order': [tableName: string, order: TableOrderRecordView, isWanted: boolean]
+  'set-whole-table': [isWanted: boolean]
+  'set-whole-order': [order: TableOrderRecordView, isWanted: boolean]
 }>()
 
 const { t } = useI18n()
@@ -39,16 +37,16 @@ const orders = computed(() => props.report?.orders ?? [])
 
 const foundNothing = computed(() => props.report !== null && orders.value.length === 0)
 
+const unsettledItemIds = computed(() =>
+  props.report === null ? [] : unsettledItemIdsIn(props.report),
+)
+
 const wholeTableSelection = computed<ShareState>(() =>
-  props.table === null
-    ? 'none'
-    : selectionStateOf(itemIdsAtTable(props.table), props.selectedItemIds),
+  selectionStateOf(unsettledItemIds.value, props.selectedItemIds),
 )
 
 function setTheWholeTable(): void {
-  if (props.table !== null) {
-    emit('set-whole-table', props.table, wholeTableSelection.value !== 'all')
-  }
+  emit('set-whole-table', wholeTableSelection.value !== 'all')
 }
 
 function orderSelectionOf(order: TableOrderRecordView): ShareState {
@@ -56,27 +54,18 @@ function orderSelectionOf(order: TableOrderRecordView): ShareState {
 }
 
 function setWholeOrder(order: TableOrderRecordView): void {
-  if (props.report === null) {
-    return
-  }
-  emit('set-whole-order', props.report.tableName, order, orderSelectionOf(order) !== 'all')
+  emit('set-whole-order', order, orderSelectionOf(order) !== 'all')
 }
 
 function priceTextFor(cents: number): string {
   return formatPrice(cents, props.language)
 }
 
-function stateClassFor(order: TableOrderRecordView): string {
-  const state = productionStateOf(order)
-  switch (state) {
-    case 'none':
-      return 'state-none'
-    case 'some':
-      return 'state-some'
-    case 'all':
-      return 'state-all'
-    default:
-      return assertNever(state)
+function coloursOf(order: TableOrderRecordView): Record<string, string> {
+  const token = statusTokenOf(productionStateOf(order))
+  return {
+    background: statusTintCssOf(token),
+    borderInlineStart: `0.375rem solid rgb(var(--v-theme-${token}))`,
   }
 }
 
@@ -97,7 +86,7 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
 
 <template>
   <v-checkbox
-    v-if="table !== null && table.items.length > 0"
+    v-if="unsettledItemIds.length > 0"
     data-test="whole-table"
     density="comfortable"
     hide-details
@@ -109,14 +98,14 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
   <v-card
     v-for="order in orders"
     :key="order.orderId"
-    class="lookup-card mb-3"
-    :class="stateClassFor(order)"
-    data-test="lookup-card"
+    class="order-card mb-3"
+    :style="coloursOf(order)"
+    data-test="order-card"
     :data-test-id="order.globalOrderNumber"
     :data-state="productionStateOf(order)"
   >
-    <v-card-text class="lookup-body">
-      <div class="lookup-card-head d-flex flex-wrap align-baseline ga-2">
+    <v-card-text class="order-body">
+      <div class="order-card-head d-flex flex-wrap align-baseline ga-2">
         <span class="text-h6" data-test="order-number">
           {{ t('phone.openItems.labels.order', { order: order.globalOrderNumber }) }}
         </span>
@@ -124,7 +113,7 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
           {{ takenByTextFor(order) }}
         </span>
       </div>
-      <div class="lookup-card-tally d-flex align-center ga-2">
+      <div class="order-card-tally d-flex align-center ga-2">
         <v-checkbox-btn
           v-if="unsettledItemIdsInOrder(order).length > 0"
           class="flex-grow-0"
@@ -137,13 +126,12 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
           {{ doneCounterTextFor(order) }}
         </span>
       </div>
-      <v-list class="lookup-lines" lines="three">
+      <v-list class="order-lines" lines="three">
         <OpenPositionRow
           v-for="item in order.items"
           :key="item.orderItemId"
           :item-name="item.itemName"
           :note="item.note"
-          :order-label="null"
           :price-text="priceTextFor(item.unitPriceCents)"
           :is-selected="selectedItemIds.includes(item.orderItemId)"
           :is-disabled="item.settledAtUtc !== null"
@@ -154,45 +142,26 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
       </v-list>
     </v-card-text>
   </v-card>
-  <v-alert v-if="foundNothing" data-test="lookup-empty" type="info" variant="tonal">
+  <v-alert v-if="foundNothing" data-test="no-orders" type="info" variant="tonal">
     {{ t('phone.openItems.messages.noOrdersForTable') }}
   </v-alert>
 </template>
 
 <style scoped>
-.lookup-card {
-  background: rgb(var(--v-theme-surface));
-}
-
-.lookup-card.state-none {
-  background: color-mix(in srgb, rgb(var(--v-theme-error)) 30%, rgb(var(--v-theme-surface)));
-  border-inline-start: 0.375rem solid rgb(var(--v-theme-error));
-}
-
-.lookup-card.state-some {
-  background: color-mix(in srgb, rgb(var(--v-theme-warning)) 30%, rgb(var(--v-theme-surface)));
-  border-inline-start: 0.375rem solid rgb(var(--v-theme-warning));
-}
-
-.lookup-card.state-all {
-  background: color-mix(in srgb, rgb(var(--v-theme-success)) 30%, rgb(var(--v-theme-surface)));
-  border-inline-start: 0.375rem solid rgb(var(--v-theme-success));
-}
-
-.lookup-body {
+.order-body {
   padding: 0;
 }
 
-.lookup-card-head {
+.order-card-head {
   padding: 0.75rem 1rem 0;
 }
 
-.lookup-card-tally {
+.order-card-tally {
   min-height: 3rem;
   padding: 0 1rem;
 }
 
-.lookup-lines {
+.order-lines {
   background: transparent;
   padding: 0;
 }

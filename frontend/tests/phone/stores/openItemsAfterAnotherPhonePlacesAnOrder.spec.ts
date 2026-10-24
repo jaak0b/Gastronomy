@@ -8,60 +8,52 @@ import { answer, inTurn, stubLaptop } from '../../support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
+function bratwurstOf(orderItemId: string, orderId: string, globalOrderNumber: number, unitPriceCents: number) {
+  return {
+    orderItemId,
+    orderId,
+    globalOrderNumber,
+    itemName: 'Bratwurst',
+    note: null,
+    unitPriceCents,
+    orderedAtUtc: '2026-09-05T18:00:00Z',
+    fulfilledAtUtc: null,
+    settledAtUtc: null,
+  }
+}
+
+const FIRST_ORDER = {
+  orderId: 'order-1',
+  globalOrderNumber: 41,
+  createdAtUtc: '2026-09-05T18:00:00Z',
+  staffMemberName: 'Anna',
+  items: [bratwurstOf('item-1', 'order-1', 41, 350)],
+}
 
 const TISCH_SIEBEN_BEFORE = {
-  tables: [
-    {
-      tableName: 'Tisch 7',
-      openAmountCents: 350,
-      items: [
-        {
-          orderItemId: 'item-1',
-          orderId: 'order-1',
-          globalOrderNumber: 41,
-          itemName: 'Bratwurst',
-          note: null,
-          unitPriceCents: 350,
-          orderedAtUtc: '2026-09-05T18:00:00Z',
-        },
-      ],
-    },
-  ],
-  itemsWithoutAnOrderCount: 0,
+  tableId: 'table-7',
+  tableName: 'Tisch 7',
+  openAmountCents: 350,
+  orders: [FIRST_ORDER],
 }
 
 const TISCH_SIEBEN_AFTER_THE_SECOND_WAITER_SENT_TWO_BRATWURST = {
-  tables: [
+  tableId: 'table-7',
+  tableName: 'Tisch 7',
+  openAmountCents: 950,
+  orders: [
     {
-      tableName: 'Tisch 7',
-      openAmountCents: 950,
-      items: [
-        ...TISCH_SIEBEN_BEFORE.tables[0].items,
-        {
-          orderItemId: 'item-2',
-          orderId: 'order-2',
-          globalOrderNumber: 42,
-          itemName: 'Bratwurst',
-          note: null,
-          unitPriceCents: 300,
-          orderedAtUtc: '2026-09-05T18:04:00Z',
-        },
-        {
-          orderItemId: 'item-3',
-          orderId: 'order-2',
-          globalOrderNumber: 42,
-          itemName: 'Bratwurst',
-          note: null,
-          unitPriceCents: 300,
-          orderedAtUtc: '2026-09-05T18:04:00Z',
-        },
-      ],
+      orderId: 'order-2',
+      globalOrderNumber: 42,
+      createdAtUtc: '2026-09-05T18:04:00Z',
+      staffMemberName: 'Bernd',
+      items: [bratwurstOf('item-2', 'order-2', 42, 300), bratwurstOf('item-3', 'order-2', 42, 300)],
     },
+    FIRST_ORDER,
   ],
-  itemsWithoutAnOrderCount: 0,
 }
 
-describe('the open list on a phone while another phone places an order', () => {
+describe('the open table on a phone while another phone places an order', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
@@ -73,18 +65,21 @@ describe('the open list on a phone while another phone places an order', () => {
   })
 
   it('shows the two Bratwurst the other waiter sent for Tisch 7', async () => {
-    stubLaptop().answersEverythingElse(
+    stubLaptop().answers(
+      'GET',
+      '/api/open-items/tables/table-7',
       inTurn(answer(TISCH_SIEBEN_BEFORE), answer(TISCH_SIEBEN_AFTER_THE_SECOND_WAITER_SENT_TWO_BRATWURST)),
     )
     localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
     useSessionStore().deviceToken = 'token-here'
     const openItems = useOpenItemsStore()
     openItems.listen()
+    openItems.openTable('table-7')
     await useConnectionStore().connect({ deviceToken: 'token-here' })
-    await vi.waitFor(() => expect(openItems.tables[0].openAmountCents).toBe(350))
+    await vi.waitFor(() => expect(openItems.report?.openAmountCents).toBe(350))
 
     fireHubEvent('OrdersChanged')
 
-    await vi.waitFor(() => expect(openItems.tables[0].openAmountCents).toBe(950))
+    await vi.waitFor(() => expect(openItems.report?.openAmountCents).toBe(950))
   })
 })
