@@ -108,8 +108,11 @@ in `src/shared/core/deviceLanguage.ts`, `DraftLine` and `DraftOrder` in `src/pho
      from it. Only charts use it, never a control or a status. Reference lines in a chart (an
      available amount, a second forecast, the current moment) stay neutral. A chart that needs a
      second data series adds its own token here first.
-   Colour never carries meaning alone: the word or the icon is always there. A new control takes a
-   token from this list; it never invents a hue and never borrows a status colour for an action.
+   Colour carries meaning together with a word or an icon, or as a summary whose details are one tap
+   away in words: a table on the waiter's plan shows what has been handed out in its fill and what
+   has been settled in its border, and tapping it leads to the settle view that says the same in
+   words. A new control takes a token from this list; it never invents a hue and never borrows a
+   status colour for an action.
 
 9. **No aria-labels.** `aria-label` and `aria-labelledby` are forbidden in every template and
    component, and no locale key exists only to feed one. Every control says what it does through its
