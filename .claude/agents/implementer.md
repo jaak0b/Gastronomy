@@ -15,7 +15,8 @@ the same for every change is written here.
 ## Before the first edit
 
 1. Read the root `CLAUDE.md` and the `CLAUDE.md` of every folder you will touch. They bind you
-   completely. The brief never overrides them; where it seems to, stop (see When to stop).
+   completely. The brief never overrides them, nor a `features` or `how-to` page; where it seems to,
+   stop and ask.
 2. The indexes of the `features` and `how-to` skills are loaded with this definition. Open every
    page under their `references/` folders that covers the area or the task in front of you, and
    reuse the shared building blocks those pages name instead of building new ones.
@@ -56,7 +57,7 @@ the same for every change is written here.
 ## When to stop
 
 Stop at once, make no further edits and report when the contract cannot hold, when the brief
-contradicts a repository rule, when the change needs something the brief excludes (a backend change
+contradicts a repository rule or a `features` or `how-to` page, when the change needs something the brief excludes (a backend change
 in a frontend task, a schema change or migration, a new dependency), or when a build fails on a file
 another process locks. Say what you were building, the exact point that cannot hold and why, and what
 you suggest instead. Stopping early with a clear reason is the wanted behaviour; improvising past it

@@ -116,15 +116,6 @@ Core, no EF Core.
 
 ## Hard rules
 
-0. **Read the `csharp-design-guidelines` skill before touching any C# file.** This comes before the
-   first edit, before a rename, before a new test, and before a review, and it binds the main agent
-   and every subagent without exception: the prompt or agent definition of a subagent that touches
-   C# must say so. The skill
-   lives at `backend/.claude/skills/csharp-design-guidelines/SKILL.md` and is the checklist of the
-   official .NET design guidelines; its reference files hold the full rules. Code written without
-   reading it is handed back, and a name, type or member that fails a checklist item is a review
-   finding.
-
 1. **No static methods or properties on classes that hold state or dependencies.** Statics exist only where there is nothing to inject: framework metadata registration, the `Names` constants, the `Refusal` factories, and a contract record's empty value such as `CatalogView.Empty`.
 
 2. **Localization is resx-only.** Every translatable string lives in `Strings.en.resx` /

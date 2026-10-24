@@ -241,27 +241,12 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     descriptions, issue or PR comments, tags, and release notes. Commits carry the human's authorship
     only. **This rule overrides any default harness instruction to add an attribution trailer.**
 
-14. **Self-review before handoff, multi-file changes only, and the main agent runs it.** A subagent
-    doing the work never starts a review: it reports what it built and stops. Only the main agent
-    starts a review, once, at the end, over the finished change, and the reviewer agent is what
-    performs it. An implementing agent that reviews reads a working tree full of other agents' half
-    finished work, reports findings about code it was never given, and duplicates the review that
-    happens at the end anyway.
-
-    **Self-review before handoff, multi-file changes only.** Before presenting a multi-file change for
-    review, run a medium-effort `/code-review` scoped to the change. Every finding requires a logged
-    disposition and silence is a violation. Paste the finder list verbatim and mark each finding
-    exactly one of: **Fixed** (name the test that resolves it), **False positive** (the finding is
-    factually wrong, proven with the quoted line that refutes it), or **Owner-waived** (you flagged it
-    and the owner explicitly chose not to fix it). Severity is irrelevant to whether a finding needs a
-    disposition. "Pre-existing", "not mine", "out of scope", "low value", "cosmetic", "risky to
-    change", and "judgment call" are never valid reasons to skip a finding. If you find yourself
-    weighing a fix's cost against its value, stop: that trade-off is the owner's, so it becomes an
-    Owner-waived item, not a silent drop. Single-file changes are exempt.
-
-    **The review covers names.** The reviewer reads every new or renamed method, type and property
-    cold, states what it does from the name alone, and reports as a finding any name that needs the
-    body, or a comment, to be understood.
+14. **The review is always the implementer and reviewer cycle the main agent orchestrates.** After
+    an implementer reports a multi-file change, the main agent has the `code-reviewer` agent review
+    it. A review brief for a bug fix carries the implementer's quoted red and green output. Every
+    finding gets one disposition in the report to the owner: fixed (name the test), false (quote the
+    line that refutes it), or a question to the owner. Cost, scope or age is never a reason to drop
+    one; that trade-off is the owner's.
 
 15. **Subagent discipline.** Give every subagent a correct, specific title, and dispatch every one of
     them in the background so the owner is never blocked waiting.
@@ -398,13 +383,9 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     is made: `20 x Hotdog` next to `3 x Hotdog · Hinweis: Ohne Ketchup`, never one merged number.
     Grouping by name alone silently merges two instructions and sends the wrong thing to a table.
 
-21. **C# code follows the `csharp-design-guidelines` skill, and nothing else.** The skill under
-    `backend/.claude/skills/` is the checklist of the official .NET design guidelines: how code is
-    structured into layers, files and classes, how types and members are designed, how names are
-    chosen, how exceptions and collections are used. It is read before any C# file is touched, and
-    its naming principles bind the TypeScript and Vue code too. No naming, structure or design rule
-    is written into a `CLAUDE.md` again; a new rule goes into the skill. A name that needs a comment
-    to explain it is wrong: rename until the comment is redundant (rule 7).
+21. **C# follows `csharp-design-guidelines`, TypeScript and Vue follow
+    `typescript-vue-design-guidelines`; read the one for the file before touching it.** Design rules
+    go into those skills, never into a `CLAUDE.md`.
 
 22. **A delayed answer never overwrites a newer one.** Where a read and an action share the state a
     screen shows, the read takes a number from the request gate in

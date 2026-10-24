@@ -31,8 +31,6 @@ in `src/shared/core/deviceLanguage.ts`, `DraftLine` and `DraftOrder` in `src/pho
 
 ## Hard rules
 
-0. **Read the `typescript-vue-design-guidelines` skill before touching any `.ts` or `.vue` file.** This comes before the first edit, before a rename, before a new test, and before a review, and it binds the main agent and every subagent without exception: the prompt or agent definition of a subagent that touches TypeScript or Vue must say so. The skill lives at `frontend/.claude/skills/typescript-vue-design-guidelines/SKILL.md` and is the checklist of the Google TypeScript Style Guide, the TypeScript declaration Do's and Don'ts and the official Vue style guide; its reference files hold the full rules. Code written without reading it is handed back, and a name, type, function or component that fails a checklist item is a review finding.
-
 1. **Keep the core framework-agnostic and modular.** Code in any `core/` folder, under `src/shared/`
    or under a surface, must not import Vue or Pinia and must not touch the document. Browser storage
    (`localStorage`) is allowed there, because the draft cart and the device language live in it.
@@ -129,13 +127,12 @@ in `src/shared/core/deviceLanguage.ts`, `DraftLine` and `DraftOrder` in `src/pho
 
 11. **New features behave like the existing ones.** When a screen needs something the app already
     does elsewhere (hiding and showing, removing, a confirmation, a list row with a name field, a
-    checkbox that reveals hidden entries), it looks, reads and behaves the same as that place.
-    Example: when the laptop would refuse to hide or remove something, the button is disabled with a
-    tooltip naming the reason, as on the article rows of the festival page, never a warning after the
-    click. Same behaviour means shared code, never a duplicate (root rule 6): the new screen uses the
-    component, composable or locale key that place already uses, and where that place's code is not
-    shared yet, it moves into a shared home both use. A brief names, for every such control, the
-    existing place it follows.
+    checkbox that reveals hidden entries), it looks, reads and behaves the same as that place and
+    uses the same component or composable. Example: when the laptop would refuse to hide or remove
+    something, the button is disabled with a tooltip naming the reason, as
+    `how-to/references/admin-list-screen.md` describes, never a warning after the click. Where that
+    place's code is not shared yet, it moves into a shared home both use. The brief names, for every
+    such control, the place it follows and the shared piece to use or create.
 
 ## Design constraints from the deployment
 
@@ -228,5 +225,5 @@ npm install
 npm run dev        # Vite dev server, proxying the API to the backend
 npm run generate:api  # regenerate the wire shapes from the backend's OpenAPI document
 npm run build      # generate:api, then vue-tsc typecheck plus production build
-npm test           # Vitest
+npx vitest run <spec path>  # Vitest
 ```
