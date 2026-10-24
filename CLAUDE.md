@@ -312,29 +312,33 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     for the strings it used, and quote what the search returned. An empty result is the evidence;
     without it the deletion is not finished.
 
-18. **Parallel work shares one written contract.** When a change is split across agents, or across
-    the backend and the frontend, the boundary between them is written down before any of them
-    starts: every route with its request and response shape, every field name and its type, every
-    error message key, every localization key with its German and English text, and every event name.
-    That text is copied into each agent's prompt verbatim, and none of them may invent, rename or
-    "improve" anything in it. A disagreement about a name is not a small problem: it compiles on both
-    sides, passes both test suites, and fails only in the running app, which is the most expensive
-    place to find it. When a contract genuinely has to change mid-flight, it changes in the written
-    contract first and every affected agent is told, never in one side's code alone.
+18. **The backend is built first, and the generated types are the boundary.** A change that spans
+    the backend and the frontend builds and finishes the backend first. The OpenAPI document it
+    writes then hands the frontend, through `npm run generate:api`, every request and response shape,
+    every field name and type, and every enum value on the wire, under the backend's own names. The
+    frontend uses those generated types for every request body and every answer, never a hand-written
+    copy, so a name the two sides disagree on fails the frontend build instead of the running app.
 
-    **The contract is essentially an API description, and it is never the specification of the
-    feature.** Its whole job is that both agents build halves that meet on the first run, so the
-    owner does not have to sit through several attempts before a feature works.
+    **What the generated document does not carry is written down before the backend starts**, in one
+    short text copied verbatim into the prompt of every agent on either side: the route paths, which
+    the frontend writes as plain strings; the refusal message keys with their German and English
+    texts; the hub event names; and the few rules both sides rely on, such as which list includes
+    hidden rows. None of them may invent, rename or "improve" anything in it. A disagreement about a
+    name there compiles on both sides, passes both test suites, and fails only in the running app,
+    which is the most expensive place to find it. When the text genuinely has to change mid-flight, it
+    changes in the written text first and every affected agent is told, never in one side's code
+    alone. Agents working in parallel inside one tree write down the boundary between them the same
+    way before any of them starts.
 
-    In: every route with its request and response shape, field names and types, status codes and
-    error codes, message keys, localization keys with their German and English text, event names, the
-    wire format of anything ambiguous such as a timestamp, and the few invariants both sides depend
-    on. Out: screen layouts, which component holds which control, dialog flows, the tests each side
-    writes, and the reasoning behind decisions already taken.
+    **The written part is never the specification of the feature.** Its whole job is that both halves
+    meet on the first run, so the owner does not have to sit through several attempts before a
+    feature works. Out: request and response shapes and field names, which the generated types own;
+    screen layouts, which component holds which control, dialog flows, the tests each side writes,
+    and the reasoning behind decisions already taken.
 
     Apply one test to every line before it goes in: **could each agent get this right on its own and
     still fail to meet the other?** If the answer is no, cut it: it belongs to whichever agent owns
-    that part of the tree, and putting it in the contract only makes a reviewer check it again and
+    that part of the tree, and putting it in the written part only makes a reviewer check it again and
     again. Aim for something read at one sitting. The festival contract ignored all of this, ran past
     a thousand lines, and cost nine review rounds and more than four hours before a single line of
     code was written.
@@ -349,12 +353,12 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     the failure, because it produces two halves that each look finished and do not meet.
 
     **A green suite on each side proves nothing about the boundary,** because each side's tests agree
-    with that side's own vocabulary. After any change that touches the boundary, and always after
-    parallel agents worked, check every shared name on both sides by name: enum values on the wire,
-    hub event names, route paths, JSON property names, error codes and message keys. Prefer a test
-    that reads the backend's source and asserts the frontend declares the same set, the way
-    `i18nCoverage.spec.ts` already does for message keys, so the check holds without anyone
-    remembering it.
+    with that side's own vocabulary. After any change that touches the boundary, regenerate the
+    frontend types and typecheck, then check by name every shared name the generated types do not
+    cover: route paths, hub event names and message keys. Prefer a test that reads the backend's
+    source and asserts the frontend declares the same set, the way `i18nCoverage.spec.ts`,
+    `apiRouteVocabulary.spec.ts` and `hubEventVocabulary.spec.ts` already do, so the check holds
+    without anyone remembering it.
 
 ## The fulfillment model
 
