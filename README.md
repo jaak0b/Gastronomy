@@ -28,11 +28,11 @@ dotnet build GastronomyApp.slnx
 dotnet run --project desktop/GastronomyApp.Desktop
 ```
 
-Run everything with `pwsh ./build.ps1 --target Test`, or the two suites separately:
+Run everything with `pwsh ./build.ps1 --target Test`. While working on one part, run only the tests that cover it:
 
 ```powershell
-dotnet test GastronomyApp.slnx
-npm test --prefix frontend -- --run
+dotnet test backend/<TestProject>/<TestProject>.csproj --filter "FullyQualifiedName~<Fixture>"
+npx --prefix frontend vitest run <spec path>
 ```
 
 Build the installer with `pwsh ./build.ps1 --target Pack`; the output lands in `artifacts/velopack`. Publishing a release is `pwsh ./build.ps1 --target Release` with a `GH_TOKEN` set.
