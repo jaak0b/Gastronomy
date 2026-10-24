@@ -323,8 +323,8 @@ Every rule binds every agent, main or sub, with no exception it does not name.
     adds or updates the matching page in the same change, and no commit goes in without it. A
     feature page says in two or three lines what the feature does for the person using it, where
     its code lives, the invariants it keeps and which tests cover it. A how-to page gives the steps
-    of one recurring task and names the shared pieces to use. Neither holds screen layouts, decision
-    history or anything rule 15 removed, and a page that no longer matches the code is a defect.
+    of one recurring task and names the shared pieces to use. Neither holds decision history or
+    anything rule 15 removed, and a page that no longer matches the code is a defect.
     Every agent dispatched to change code is told to update the pages it touches, and the review
     lists a missing or stale page as a finding.
 

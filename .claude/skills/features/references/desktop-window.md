@@ -1,9 +1,11 @@
 # Desktop window
 
 `GastronomyApp.Desktop` is the only executable of the product. It hosts the web application in its own
-process and puts one small Avalonia window in front of it. The operator opens the admin page from the
-window, reads the status bar to see whether the server is healthy, and quits through a confirmation.
-The window is a launcher and never a second admin UI.
+process and puts one small Avalonia window in front of it, so an operator with little technical
+ability never sees a console, never edits a configuration file, and can never end the evening by
+accident. The operator opens the admin page from the window, reads the status bar to see whether the
+server is healthy, and quits through a confirmation. The window is a launcher and never a second
+admin UI.
 
 ## Where the code lives
 
@@ -42,6 +44,41 @@ Everything is under `desktop/GastronomyApp.Desktop/`:
   red when something is down. It carries text only when there is a notice or an error to show, and a
   button for the technical detail of a failed start. `StatusLevelConverter` turns the status into the
   classes `running`, `warning` and `down` that `MainWindow.axaml` styles.
+- The admin interface is the web page. The window never grows a second admin UI: no item editing, no
+  station management, no order views, no address, no QR code, no counts and no status readouts. The
+  web admin has to exist for the phones anyway, and two admin surfaces would both have to be kept
+  true.
+- There is no settings window, because nothing is left to configure: the port is chosen
+  automatically, the server answers on every network interface, and the data folder is fixed.
+  Opening the data folder and the elevated "Repair the setup" are buttons on the main window.
+
+## The port
+
+The port is never typed by a human. On first start the program asks Windows for a free port and
+writes it down. Every later start tries the port it wrote down; if that one is taken it asks for
+another, writes that down, and tells the operator that everybody has to set their phone up again,
+which is the truth because a phone's device token is scoped to the origin and a new port is a new
+origin. It retries only on "address already in use", at most ten times; any other bind failure stops
+at once and is shown.
+
+## Updates
+
+The program updates itself from the public GitHub releases of its repository through Velopack. It
+never reads prereleases and needs no access token.
+
+On every start it checks at most once an hour. The moment of the last attempt is written down, so a
+failed check counts and the next start waits an hour before trying again. A found update is
+downloaded in the background at once.
+
+Installation happens on quit, inside the confirmed quit flow: the downloaded update is applied when
+no festival is running and none starts within the next 24 hours, hidden festivals included. If a
+festival is near, the download stays on disk and a later quit can still install it. A quit while the
+server is not running postpones as well.
+
+The download icon in the title bar of an installed copy checks and downloads on demand, ignoring the
+hourly limit and the festival window, and asks before installing. "Update now" installs at once and
+restarts the program. "Not now" closes the question and changes nothing, and a downloaded update
+still installs on quit when the gate allows it. The program never restarts on its own.
 
 ## Styling
 

@@ -1,55 +1,8 @@
 # CLAUDE.md (desktop)
 
 Rules for the Avalonia desktop application. The repository root `CLAUDE.md` binds here too; this file
-adds to it and never contradicts it.
-
-## What this application is
-
-`GastronomyApp.Desktop` is the only executable in the product. It hosts the ASP.NET Core server
-(`GastronomyApp.Api`, a library) **in the same process** and puts a small window in front of it. The
-operator is a volunteer with little technical ability, and this window exists so that person never
-sees a console, never edits a configuration file, and can never end the evening by accident.
-
-## The boundary that must stay sharp
-
-**The admin interface is the web page. This window is a launcher and nothing else.** It shows the
-language picker, whatever has gone wrong, and buttons to open the admin page, open settings, and quit.
-While the server is healthy it carries only the version line. It must never grow a second admin UI: no item
-editing, no station management, no order views, no address, no QR code, no counts and no status
-readouts. The web admin has to exist for the phones regardless, and two admin surfaces would have to be
-kept true.
-
-**There is no settings window.** There is nothing left to configure: the port is chosen automatically,
-the server always answers on every network interface, and the data folder is fixed. The two machine
-level actions that used to live there, opening the data folder and the elevated "Repair the setup",
-are buttons on the main window.
-
-**The port is never typed by a human.** On first start the program asks Windows for a free port and
-writes it down. Every later start tries the port it wrote down; if that one is taken it asks for
-another, writes that down, and tells the operator that everybody has to set their phone up again,
-which is the truth because a phone's device token is scoped to the origin and a new port is a new
-origin. It retries only on "address already in use", at most ten times; any other bind failure stops
-at once and is shown.
-
-## Updates
-
-The program updates itself from the public GitHub releases of its repository through Velopack. It
-never reads prereleases and needs no access token.
-
-On every start it checks at most once an hour. The moment of the last attempt is written down, so a
-failed check counts and the next start waits an hour before trying again. A found update is
-downloaded in the background at once.
-
-Installation happens on quit, inside the confirmed quit flow: the downloaded update is applied when
-no festival is running and none starts within the next 24 hours, hidden festivals included. If a
-festival is near, the download stays on disk and a later quit can still install it. A quit while the
-server is not running postpones as well.
-
-The window always shows the version of the running program in its header, and a small download icon
-only in an installed copy. That icon checks and downloads on demand, ignoring the hourly limit and
-the festival window, and asks before installing. Update now installs it at once and restarts the
-program. Not now closes the question and changes nothing, and a downloaded update still installs on
-quit when the gate allows it. It never restarts the program on its own.
+adds to it and never contradicts it. What the window shows and never shows, how the port is chosen
+and how the program updates itself are in the `features` page `desktop-window.md`.
 
 ## Hard rules
 

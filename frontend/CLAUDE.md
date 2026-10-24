@@ -125,7 +125,6 @@ never contradicts it.
   its history, which is what `navigate` doing `replaceState` there preserves. The address of the
   chain carries the page's last-modified stamp so a cached door from an older build can never be
   used.
-- **No feature may require a service worker**, a secure context, or an installed PWA.
 
 ## Testing
 
