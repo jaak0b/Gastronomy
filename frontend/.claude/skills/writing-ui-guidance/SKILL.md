@@ -13,7 +13,7 @@ Before writing a sentence, ask: can the app enforce or check this itself? Valida
 
 ## 2. One constraint, one sentence, one place
 
-Never restate the same rule at different strengths ("300 or higher", "600 recommended", "scan at 600"). Multiple versions of one rule read as three rules and the user cannot tell which binds. Collapse to the single true rule and delete the rest. If two genuinely different rules exist (a hard requirement and an optional tip), they never share a sentence or a severity register.
+Never restate the same rule at different strengths ("a reason is required", "a reason is recommended", "please give a reason"). Multiple versions of one rule read as three rules and the user cannot tell which binds. Collapse to the single true rule and delete the rest. If two genuinely different rules exist (a hard requirement and an optional tip), they never share a sentence or a severity register.
 
 ## 3. Mandatory constraints get isolation, not prose
 
@@ -21,7 +21,7 @@ A must-do never lives inside a descriptive paragraph. It gets its own line, visu
 
 ## 4. Instruction first, reason second or cut
 
-Verb-first imperative ("Scan at 600 dpi."), rationale as a trailing clause or second short sentence only when the rule would otherwise look arbitrary. Reasons never precede or bury the instruction. Optional tips can drop the reason entirely.
+Verb-first imperative ("Scan the QR code on the laptop."), rationale as a trailing clause or second short sentence only when the rule would otherwise look arbitrary. Reasons never precede or bury the instruction. Optional tips can drop the reason entirely.
 
 A refusal or a status line is not an instruction. It states the rule as a plain fact and stops: "Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden." Add an instruction only where the reader has a control on that screen and something to do with it.
 
@@ -35,7 +35,7 @@ Users retain roughly four chunks from text read once and acted on later. One cor
 
 ## 7. Optional depth is one click, never for essentials
 
-Progressive disclosure (a labeled expander or tooltip) is only for depth some users want; the essential path must work with zero disclosure interactions. One level of disclosure at most, and label the trigger with what it answers ("Why this DPI?"), not a bare icon.
+Progressive disclosure (a labeled expander or tooltip) is only for depth some users want; the essential path must work with zero disclosure interactions. One level of disclosure at most, and label the trigger with what it answers ("Why does the QR code expire?"), not a bare icon.
 
 ## Checklist before committing guidance text
 

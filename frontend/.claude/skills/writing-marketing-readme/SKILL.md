@@ -13,23 +13,23 @@ The voice that converts technical hobbyists is a third thing between neutral man
 
 - First person is an asset when it carries a real technical story (a real maker who hit a real problem). It becomes a liability the moment it turns into persuasion or self-congratulation.
 - Zero hype: no superlatives, no "revolutionary", "effortless", "blazing", "magic". Developers detect marketing spin instantly and find it patronizing. Assume the reader is smart.
-- Specifics carry the weight that adjectives cannot: exact numbers ("differs by 0.05% in X"), exact commands, exact method names ("gradient centroid sub-pixel edge estimator", "Taubin circle fit"). Naming the established method is credibility signaling.
+- Specifics carry the weight that adjectives cannot: exact numbers ("two columns on every station tablet", "one device per waiter"), exact commands (`pwsh ./build.ps1 --target Test`), exact mechanism names ("single-use QR code", "long-lived device token"). Naming the mechanism precisely is credibility signaling.
 - Section split: the hero line and the "why this exists" section may use peer voice and first person. Everything below (how-to steps, how it works, requirements, limitations) is plain technical prose in the same register as the in-app text.
 
 ## Structure (in order)
 
 1. **Hero**: one factual spec-like sentence stating function, audience, and payoff mechanism. No slogan. The visitor decides in seconds whether to keep reading.
 2. **Badges**: build status, license, version. Near-universal in the example READMEs (ripgrep, fzf) and a cheap credibility signal.
-3. **Proof above the fold**: a screenshot or GIF of the tool actually working, plus the concrete output artifact (a code block with a real pasteable result, e.g. `SET_SKEW` or `M221 S...`). Pattern example: fzf. The "visitors bounce without early proof" framing is practitioner heuristic, not study-backed, but images correlating with popularity is study-backed.
-4. **CTA with friction-killing microcopy**: the live link plus the genuine trust signals ("free, open source, runs entirely in your browser, nothing uploaded"). Stating local processing as differentiation is a heuristic (it is true and relevant for a scanning tool), not a case-study finding.
-5. **Why / how it works**: the measurement principle is itself the selling point when the mechanism is not self-evident. Explaining the method credibly is what separates the tool from eyeballed alternatives and earns the skeptical crowd's trust.
-6. **What you get**: name the exact outputs using community terminology (Klipper `SET_SKEW`, Marlin `M900 K`, RRF `M572`, flow %). Specificity doubles as searchable keywords for the exact phrases hobbyists Google.
+3. **Proof above the fold**: a screenshot or GIF of the tool actually working, plus the concrete output artifact (an order as a station tablet really shows it, with its table name, the festival's order number and the station's own number). Pattern example: fzf. The "visitors bounce without early proof" framing is practitioner heuristic, not study-backed, but images correlating with popularity is study-backed.
+4. **CTA with friction-killing microcopy**: the link to the installer plus the genuine trust signals ("MIT license, runs on one laptop, no internet needed on site, no usernames or passwords"). Stating local hosting as differentiation is a heuristic (it is true and relevant for a tool a fire department runs on its own laptop and WiFi), not a case-study finding.
+5. **Why / how it works**: the working principle is itself the selling point when the mechanism is not self-evident (a single-use QR code that a device exchanges for a long-lived device token, an order number per festival plus one per station so a gap shows in the station's list). Explaining the method credibly is what separates the tool from paper order slips and earns the skeptical crowd's trust.
+6. **What you get**: name the exact outputs using the product's own terminology ("Tischplan", "Bestellung aufnehmen", "Abrechnen", "Ausgabestelle", "Ausblenden"). Specificity doubles as searchable keywords for the exact phrases hobbyists Google.
 7. **Honest limitations**: a plain section on requirements and what the tool cannot do (ripgrep's "Why shouldn't I use ripgrep?" pattern). Owning limits up front reads as expertise, not weakness, and pre-empts the skeptical forum reply.
 8. **Quickstart / build / license, plus a contributing or reference section**: plain technical prose. Contribution guidelines and reference/documentation sections correlate with higher popularity in the arXiv study; include at least a short pointer.
 
 ## Proof beats claims
 
-- Balanced factual comparisons against the status quo (calipers, eyeballed test prints) are strong trust devices; FUD destroys trust (PostHog).
+- Balanced factual comparisons against the status quo (the paper order slip, the walk to the kitchen and back) are strong trust devices; FUD destroys trust (PostHog).
 - Heuristics (general practice, not sourced studies): real user quotes beat zero testimonials, but never fabricate and add social proof only as it accrues; do not build the pitch on vanity metrics such as star counts.
 
 ## Scannability
