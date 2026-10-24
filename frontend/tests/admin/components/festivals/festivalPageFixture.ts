@@ -86,6 +86,7 @@ export interface FestivalScenario {
   created?: Record<string, unknown>
   waitBeforeAnswering?: (call: LaptopCall) => Promise<void>
   stock?: unknown[]
+  areas?: unknown[]
 }
 
 export function festivalLaptop(scenario: FestivalScenario = {}): StubbedLaptop {
@@ -102,6 +103,7 @@ export function festivalLaptop(scenario: FestivalScenario = {}): StubbedLaptop {
     .answers('GET', '/api/admin/stations', afterTheWait(answer({ stations: scenario.stations ?? [KITCHEN, BAR] })))
     .answers('GET', '/api/admin/festivals', afterTheWait(answer({ festivals: scenario.festivals ?? [SUMMER] })))
     .answers('GET', /\/ingredients$/, afterTheWait(answer({ ingredients: scenario.stock ?? [] })))
+    .answers('GET', /\/table-plan$/, afterTheWait(answer({ areas: scenario.areas ?? [] })))
     .answers('ANY', (call) => call.method !== 'GET', afterTheWait(answer(scenario.created ?? {})))
     .answers(
       'ANY',

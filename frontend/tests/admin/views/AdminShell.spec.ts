@@ -5,6 +5,7 @@ import AdminShell from '../../../src/admin/views/AdminShell.vue'
 import { navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
 import { stubLaptop, answer, emptyAnswer } from '../../support/laptop'
+import { aFestival } from '../../support/wireViews'
 
 function shellLaptop(adminStatus: number): void {
   stubLaptop()
@@ -53,6 +54,20 @@ describe('the admin shell', () => {
 
     expect(shell.find('[data-test="admin-tabs"] [data-test="admin-tab"][data-selected="true"]').text()).toBe('Kellner')
     expect(shell.find('[data-test="not-on-laptop"]').exists()).toBe(false)
+  })
+
+  it('opens the table plan editor at the table plan address of a festival', async () => {
+    stubLaptop()
+      .answersEverythingElse(answer({ stations: [] }))
+      .answers('GET', '/api/language', answer({ language: 'de' }))
+      .answers('GET', '/api/admin/festivals', answer({ festivals: [aFestival({ festivalId: 'fest-1' })] }))
+      .answers('GET', '/api/admin/festivals/fest-1/table-plan', answer({ areas: [] }))
+
+    const shell = mountShellAt('/admin/festivals/fest-1/table-plan')
+    await flushPromises()
+
+    expect(shell.find('[data-test="table-plan-editor"]').exists()).toBe(true)
+    expect(shell.find('[data-test="festival-name-field"]').exists()).toBe(false)
   })
 
   it('places the ingredients tab between the items and the waiters', async () => {

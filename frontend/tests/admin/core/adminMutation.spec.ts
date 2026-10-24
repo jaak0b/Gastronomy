@@ -26,6 +26,14 @@ describe('turning the laptop answer to a change into something the screen can sh
     expect(reloads).toBe(1)
   })
 
+  it('hands back what the laptop answered once it accepted the change', async () => {
+    const created: ApiResult<{ areaId: string }> = { kind: 'ok', status: 201, data: { areaId: 'area-halle' } }
+
+    const reported = await reloadOrFailureOf(created, async () => undefined)
+
+    expect(reported).toEqual({ kind: 'ok', value: { areaId: 'area-halle' } })
+  })
+
   it('carries the laptop refusal and leaves the list alone', async () => {
     let reloads = 0
 

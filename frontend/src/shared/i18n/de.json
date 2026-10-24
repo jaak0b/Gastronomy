@@ -306,6 +306,35 @@
         "namedItemNeedsAStation": "{item} braucht mindestens eine Ausgabestelle."
       }
     },
+    "tablePlan": {
+      "title": "Tischplan",
+      "labels": {
+        "areas": "Bereiche",
+        "areaName": "Name des Bereichs",
+        "newAreaName": "Name des neuen Bereichs",
+        "tableName": "Name des Tisches",
+        "newTableName": "Name des neuen Tisches",
+        "station": "Ausgabestelle",
+        "tableCount": "{count} Tisch | {count} Tische",
+        "deleteAreaTitle": "Bereich {name} löschen",
+        "deleteTableTitle": "Tisch {name} löschen",
+        "stationsToPlace": "Ausgabestellen, die noch nicht im Tischplan stehen"
+      },
+      "actions": {
+        "edit": "Tischplan bearbeiten",
+        "createArea": "Bereich anlegen",
+        "addTable": "Tisch hinzufügen",
+        "delete": "Löschen",
+        "placeStation": "Zu diesem Bereich hinzufügen",
+        "takeStationOffThePlan": "Aus dem Tischplan nehmen"
+      },
+      "messages": {
+        "noArea": "Die Kellner sehen noch keinen Bereich. Klicken Sie auf \"Tischplan bearbeiten\".",
+        "noTable": "Die Kellner sehen noch keinen Tisch. Klicken Sie auf \"Tischplan bearbeiten\".",
+        "createAnAreaFirst": "Legen Sie zuerst einen Bereich an.",
+        "deleteAreaBody": "Die Tische in diesem Bereich werden mit gelöscht."
+      }
+    },
     "ingredients": {
       "title": "Zutaten",
       "labels": {
@@ -431,6 +460,7 @@
         "nameTaken": "Es gibt schon eine Kategorie mit diesem Namen. Wählen Sie einen anderen."
       },
       "festivals": {
+        "areaNameMissing": "Geben Sie dem Bereich einen Namen.",
         "areaNameTaken": "Ein Bereich dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.",
         "areaStaysWhileTheFestivalRuns": "Solange das Fest aktiv ist, kann ein Bereich nicht gelöscht werden. Blenden Sie ihn stattdessen aus.",
         "areaWithItemsToHandOutOrSettleStaysShown": "Solange das Fest aktiv ist, lässt sich ein Bereich erst ausblenden, wenn an allen seinen Tischen alles zubereitet und abgerechnet ist.",
@@ -442,6 +472,7 @@
         "overlaps": "Das Fest {name} überschneidet sich mit diesem Zeitraum. Verschieben Sie den Beginn oder das Ende.",
         "periodInvalid": "Das Ende muss nach dem Beginn liegen. Tragen Sie beim Ende einen späteren Zeitpunkt ein.",
         "stationHasOrdersAtTheFestival": "Solange das Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht entfernt werden.",
+        "tableNameMissing": "Geben Sie dem Tisch einen Namen.",
         "tableNameTaken": "Ein Tisch dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.",
         "tableStaysWhileTheFestivalRuns": "Solange das Fest aktiv ist, kann ein Tisch nicht gelöscht werden. Blenden Sie ihn stattdessen aus.",
         "tableWithItemsToHandOutOrSettleStaysShown": "Solange das Fest aktiv ist, lässt sich ein Tisch erst ausblenden, wenn dort alles zubereitet und abgerechnet ist.",

@@ -1,10 +1,14 @@
 import type {
+  AdminAreaView,
   AdminFestivalIngredientView,
   AdminFestivalView,
   AdminIngredientView,
   AdminItemIngredientView,
   AdminItemView,
+  AdminStationShapeView,
   AdminStationView,
+  AdminTableView,
+  AreaShapeGeometry,
   OpenOrderItemView,
   OpenTableView,
   StationOrderQueueView,
@@ -147,5 +151,42 @@ export function aStationOrder(
     fulfilledItemCount: items.filter((item) => item.fulfilledAtUtc !== null).length,
     ...overrides,
     items,
+  }
+}
+
+export function aGeometry(overrides: Partial<AreaShapeGeometry> = {}): AreaShapeGeometry {
+  return { x: 20, y: 30, width: 80, height: 40, rotation: 0, ...overrides }
+}
+
+export function anAdminTable(overrides: Partial<AdminTableView> = {}): AdminTableView {
+  return {
+    tableId: 'table-a1',
+    name: 'A1',
+    geometry: aGeometry(),
+    isHidden: false,
+    ...overrides,
+  }
+}
+
+export function anAdminStationShape(
+  overrides: Partial<AdminStationShapeView> = {},
+): AdminStationShapeView {
+  return {
+    stationId: 'station-schank',
+    stationName: 'Schank',
+    geometry: aGeometry({ x: 200, y: 30, width: 120, height: 40 }),
+    ...overrides,
+  }
+}
+
+export function anAdminArea(overrides: Partial<AdminAreaView> = {}): AdminAreaView {
+  return {
+    areaId: 'area-halle',
+    name: 'Halle',
+    sortOrder: 1,
+    isHidden: false,
+    tables: [],
+    stationShapes: [],
+    ...overrides,
   }
 }

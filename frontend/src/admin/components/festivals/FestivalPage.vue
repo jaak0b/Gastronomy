@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { navigate } from '../../../shared/router/router'
 import { assertNever } from '../../../shared/core/assertNever'
@@ -11,10 +11,13 @@ import { useAdminFestivalStockStore } from '../../stores/festivalStock'
 import { useAdminFestivalsStore } from '../../stores/festivals'
 import { useAdminItemsStore } from '../../stores/items'
 import { useAdminStationsStore } from '../../stores/stations'
+import { useAdminTablePlanStore } from '../../stores/tablePlan'
+import { useOpenedFestival } from '../../composables/useOpenedFestival'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import FestivalItems from './FestivalItems.vue'
 import FestivalStations from './FestivalStations.vue'
 import FestivalStock from './FestivalStock.vue'
+import FestivalTablePlan from './FestivalTablePlan.vue'
 
 const props = defineProps<{ festivalId: string }>()
 
@@ -24,6 +27,7 @@ const stations = useAdminStationsStore()
 const categories = useAdminCategoriesStore()
 const items = useAdminItemsStore()
 const stock = useAdminFestivalStockStore()
+const tablePlan = useAdminTablePlanStore()
 const festivalName = ref(laptopConfirmedField('', ''))
 const startsAt = ref(laptopConfirmedField('', ''))
 const endsAt = ref(laptopConfirmedField('', ''))
@@ -31,7 +35,7 @@ const refusedField = ref<'name' | 'period' | null>(null)
 const { refusal, refusalText } = useRefusalDisplay()
 let stopListening: (() => void) | null = null
 
-const festival = computed(() => festivals.findFestivalWithId(props.festivalId))
+const { festival, loadTheFestivalOrLeave } = useOpenedFestival(() => props.festivalId)
 
 watch(
   festival,
@@ -97,17 +101,14 @@ async function saveTheFields(): Promise<void> {
 }
 
 async function reload(): Promise<void> {
-  await festivals.load()
-  if (festival.value === null) {
-    if (!festivals.loadFailed) {
-      navigate('/admin/overview')
-    }
+  if ((await loadTheFestivalOrLeave()) === null) {
     return
   }
   await stations.loadAtTheFestival(props.festivalId)
   await categories.load()
   await items.loadAtTheFestival(props.festivalId)
   await stock.loadForFestival(props.festivalId)
+  await tablePlan.loadForFestival(props.festivalId)
 }
 
 watch(
@@ -124,6 +125,7 @@ onMounted(async () => {
     categories.listen(),
     items.listen(),
     stock.listen(),
+    tablePlan.listen(),
   )
   await reload()
 })
@@ -146,7 +148,7 @@ onUnmounted(() => {
       {{ t('common.actions.back') }}
     </v-btn>
     <v-alert
-      v-if="festivals.loadFailed || stock.loadFailed"
+      v-if="festivals.loadFailed || stock.loadFailed || tablePlan.loadFailed"
       class="error mb-4"
       type="error"
       variant="tonal"
@@ -212,6 +214,7 @@ onUnmounted(() => {
       </v-card>
 
       <FestivalStations :festival-id="festivalId" />
+      <FestivalTablePlan :festival-id="festivalId" />
       <FestivalItems :festival-id="festivalId" :is-running="festival?.isRunning === true" />
       <FestivalStock :festival="festival" />
     </template>

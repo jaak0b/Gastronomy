@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ADMIN_SECTIONS, currentRoute, navigate, type AdminSection } from '../../shared/router/router'
+import {
+  ADMIN_SECTIONS,
+  currentRoute,
+  navigate,
+  type AdminSection,
+  type FestivalSubpage,
+} from '../../shared/router/router'
 import { assertNever } from '../../shared/core/assertNever'
 import AdminOverview from '../components/overview/AdminOverview.vue'
 import FestivalsList from '../components/festivals/FestivalsList.vue'
 import FestivalPage from '../components/festivals/FestivalPage.vue'
+import TablePlanEditor from '../components/tablePlan/TablePlanEditor.vue'
 import StationsList from '../components/stations/StationsList.vue'
 import ItemsList from '../components/items/ItemsList.vue'
 import IngredientsList from '../components/ingredients/IngredientsList.vue'
@@ -32,6 +39,15 @@ const festivalId = computed<string | null>(() => {
   const route = currentRoute.value
   return route.name === 'admin' ? route.festivalId : null
 })
+
+const festivalSubpage = computed<FestivalSubpage | null>(() => {
+  const route = currentRoute.value
+  return route.name === 'admin' ? (route.festivalSubpage ?? null) : null
+})
+
+const showsTablePlan = computed(
+  () => section.value === 'festivals' && festivalId.value !== null && festivalSubpage.value === 'tablePlan',
+)
 
 const sections: AdminSection[] = ADMIN_SECTIONS
 
@@ -61,7 +77,12 @@ void isThisTheLaptop().then((isLaptop) => {
 
 <template>
   <NotOnLaptop v-if="!isReachable" />
-  <div v-else class="admin-shell" data-test="admin-shell">
+  <div
+    v-else
+    class="admin-shell"
+    data-test="admin-shell"
+    :class="{ 'fills-the-screen': showsTablePlan }"
+  >
     <v-toolbar class="admin-nav" density="comfortable" color="surface">
       <v-tabs :model-value="section" class="admin-tabs" data-test="admin-tabs">
         <v-tab
@@ -76,8 +97,13 @@ void isThisTheLaptop().then((isLaptop) => {
         </v-tab>
       </v-tabs>
     </v-toolbar>
+    <TablePlanEditor
+      v-if="showsTablePlan && festivalId !== null"
+      :key="`${festivalId}-table-plan`"
+      :festival-id="festivalId"
+    />
     <FestivalPage
-      v-if="section === 'festivals' && festivalId !== null"
+      v-else-if="section === 'festivals' && festivalId !== null"
       :key="festivalId"
       :festival-id="festivalId"
     />
@@ -89,3 +115,11 @@ void isThisTheLaptop().then((isLaptop) => {
     <StaffList v-else-if="section === 'staff'" />
   </div>
 </template>
+
+<style scoped>
+.admin-shell.fills-the-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+</style>

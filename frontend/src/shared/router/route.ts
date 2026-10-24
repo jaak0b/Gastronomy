@@ -1,12 +1,14 @@
 export type AdminSection = 'festivals' | 'overview' | 'stations' | 'items' | 'ingredients' | 'staff'
 
+export type FestivalSubpage = 'tablePlan'
+
 export type AppRoute =
   | { name: 'enrolQr'; code: string }
   | { name: 'home' }
   | { name: 'review' }
   | { name: 'openItems' }
   | { name: 'stations' }
-  | { name: 'admin'; section: AdminSection; festivalId: string | null }
+  | { name: 'admin'; section: AdminSection; festivalId: string | null; festivalSubpage?: FestivalSubpage }
 
 const ADMIN_SECTIONS: AdminSection[] = ['overview', 'festivals', 'stations', 'items', 'ingredients', 'staff']
 
@@ -19,6 +21,9 @@ function adminSectionFrom(segment: string | undefined): AdminSection {
 function adminRouteFrom(segments: string[]): AppRoute {
   const section = adminSectionFrom(segments[1])
   const festivalId = section === 'festivals' ? (segments[2] ?? null) : null
+  if (festivalId !== null && (segments[3] ?? '').toLowerCase() === 'table-plan') {
+    return { name: 'admin', section, festivalId, festivalSubpage: 'tablePlan' }
+  }
   return { name: 'admin', section, festivalId }
 }
 

@@ -2,11 +2,11 @@
 
 A festival has areas ("Bereich" / "Area" on screen: a hall, a tent, the garden). Each area holds its
 tables and the shapes of the festival's stations placed in it, each drawn as a rectangle the admin
-can move, resize and rotate. Every order belongs to one table of the plan. A waiter's phone reads
-the running festival's plan, where each table shows by its fill how far its orders are handed out
-and by its border how far they are settled. So far only the laptop has this: the admin routes, the
-phone's read route, the data behind them and orders placed by table. The admin editor (Konva) and
-the waiter's plan screen come later. In code the whole thing is the table plan, never a layout.
+can move and resize. Every order belongs to one table of the plan. A waiter's phone reads the
+running festival's plan, where each table shows by its fill how far its orders are handed out and by
+its border how far they are settled. The admin draws the plan in an editor of its own, opened from
+the "Tischplan" card of the festival page. The waiter's plan screen comes later; until then the phone
+does not typecheck. In code the whole thing is the table plan, never a layout.
 
 ## Where the code lives
 
@@ -83,6 +83,46 @@ Backend, under `backend/`:
   `areaWithItemsToHandOutOrSettleStaysShown` and `tableWithItemsToHandOutOrSettleStaysShown` in
   `frontend/src/shared/i18n/de.json` and `en.json`.
 
+Frontend, under `frontend/src/`:
+
+- `admin/components/festivals/FestivalTablePlan.vue` is the "Tischplan" card of the festival page:
+  each area with its number of tables, a hidden area with the "Ausgeblendet" chip, and the button
+  "Tischplan bearbeiten". It warns only about what waiters see: no shown area
+  (`admin.tablePlan.messages.noArea`), or shown areas without a shown table (`noTable`).
+- The editor is its own page at `/admin/festivals/{festivalId}/table-plan`: `shared/router/route.ts`
+  reads it as the admin route with `festivalSubpage: 'tablePlan'`, and `admin/views/AdminShell.vue`
+  chooses `admin/components/tablePlan/TablePlanEditor.vue` and lets it fill the screen height. The
+  editor owns the selected area (the first one when it opens) and the selected shape
+  (`ShapeSelection` in `admin/core/tablePlanSelection.ts`) and lays out three columns:
+  `TablePlanAreas.vue` (select, create, rename, move up and down, hide, show, delete),
+  `TablePlanDrawing.vue` (the Konva drawing) and on the right `TablePlanShapeDetails.vue` above
+  `TablePlanAdding.vue` ("Tisch hinzufügen" and the festival's stations on no plan yet).
+  `TablePlanShapeDetails.vue` stays mounted while the selection changes and shows one block per shape:
+  the selected one first, then every shape that carries a refusal or a typed name, each with its
+  name field, hide, show and delete for a table, or "Aus dem Tischplan nehmen" for a station.
+  Refusals are kept per shape (`useRowRefusals` keyed by the shape's Konva id) and typed names per
+  table and per area (`admin/composables/useTypedNames.ts`). An unknown festival returns to the
+  overview through `admin/composables/useOpenedFestival.ts`, the guard the festival page uses too.
+- `admin/stores/tablePlan.ts` (`useAdminTablePlanStore`) holds the festival's `AdminAreaView` list
+  and has one action per admin route; every action reloads the plan through the latest request gate,
+  and the store reloads on `ConfigurationChanged`. `moveArea` writes the new `SortOrder` of every area
+  whose place changes (`admin/core/areaOrder.ts` numbers them from 1 in the shown order) and reads the
+  plan once at the end, or at the first refusal.
+- `shared/core/tablePlanDrawing.ts` holds `TABLE_PLAN_DRAWING_WIDTH` (400 units, for the phone as
+  well), `cornersOf` and `lowestEdgeOf`. `admin/core/tablePlanSnapping.ts` holds the snapping
+  geometry adapted from Konva's Objects Snapping demo (`snapStopsBeside`, `snapDraggedBox`,
+  `snapResizeCorner`, a grid of 10 units and a snap distance of 6), and
+  `admin/core/tablePlanPlacement.ts` where a new shape goes, the smallest size, the room below the
+  lowest shape and `fitsTheDrawing`.
+- Colours: `shared/core/tablePlanColours.ts` builds the light and dark palette from neutral tokens of
+  `shared/theme.ts` through `shared/core/themeColours.ts`, and the drawing picks the one of the
+  current theme with `shared/composables/useThemedValue.ts`, as the charts do. A table is
+  `surface-light` with an `on-surface` border, a station is inverted (`primary` with `on-primary`
+  lettering), a hidden table has a dashed muted border and the word "Ausgeblendet" under its name.
+- Texts: `admin.tablePlan.*` (the fields for a new area and a new table have labels of their own,
+  `newAreaName` and `newTableName`), `errors.admin.festivals.areaNameMissing` and
+  `tableNameMissing`.
+
 ## Invariants
 
 - **Geometry values are Konva's own and are stored exactly as received**, as doubles: no rounding,
@@ -124,6 +164,27 @@ Backend, under `backend/`:
   way the catalog answers an empty value, and a running festival without shown areas answers the
   same. Its answer changes with `ConfigurationChanged` (the plan) and `OrdersChanged` (orders,
   hand-outs, settlements), and both reach the phones.
+- **The editor sends Konva's values unchanged.** Each shape is a Konva group carrying `x`, `y`,
+  `width`, `height` and `rotation` of the stored geometry, with its rectangle and name inside, and a
+  drop or a resize sends the group's values as they are, without rounding. Snapping and keeping the
+  shape inside the drawing (inside its width, below its top, at least 20 units on each side) move the
+  node itself during the drag (`dragmove`) or the resize (`anchorDragBoundFunc`, `boundBoxFunc`), so
+  what is drawn is what is saved. The transformer's scale is multiplied into `width` and `height` on
+  `transform` and reset to 1, so the name never stretches. There is no rotate control, but a stored
+  rotation is drawn. A refused save puts the node back to the stored geometry, because vue-konva only
+  reapplies a value that changed. A shape's listeners go in its group config (`onDragmove` and so
+  on), which vue-konva registers on the node: listeners written as `@dragmove` on a vue-konva
+  `Group`, whose root is a fragment, make Vue warn on every shape.
+- **The drawing is 400 units wide and as long as its lowest shape.** The editor adds 200 units below
+  the lowest shape, or more to fill the screen, and scrolls; a new table or station goes below the
+  lowest shape. Nothing about the length is stored.
+- **The editor never fills in a name and never sends a blank one.** The add buttons wait for a typed
+  name, and a renamed area or table left blank shows `areaNameMissing` or `tableNameMissing` instead
+  of being sent. Everything else saves the moment it is dropped or a field is left; deleting an area or
+  a table asks first. A refusal shows where the admin acted: under the area, under the add field, in
+  the shape's block beside the drawing, above the drawing, or under the station. A refusal and a
+  refused name belong to their area or shape, never to what is selected: a rename refused after the
+  admin has already tapped another table keeps its block, its reason and the typed name on screen.
 - **The two colour states are computed on every read and never stored.** Handed out (the fill):
   leave out every order of the table whose items are all handed out, at every one of its stations.
   Of the orders left, none with an item handed out is `None`, at least one handed-out item is
@@ -167,3 +228,16 @@ Backend, under `backend/`:
   `AdminFestivalEndpointsTest`; one hub test per entity type in
   `Announcers/ConfigurationChangedAnnouncementTest`. The seeded world (`ApiSeeder`) holds the table
   "Tisch 12" in a hidden area; `OrderTestContext.SeedTableAsync` adds another by name.
+- `frontend/tests`: `admin/core/tablePlanSnapping.spec.ts`, `tablePlanPlacement.spec.ts`,
+  `areaOrder.spec.ts`, `tablePlanSelection.spec.ts`; `shared/core/tablePlanDrawing.spec.ts`,
+  `tablePlanColours.spec.ts` and `themeColours.spec.ts`; the store in
+  `admin/stores/tablePlan.loading.spec.ts` (the gate, `ConfigurationChanged`, the refetch),
+  `tablePlan.areas.spec.ts` and `tablePlan.tables.spec.ts` on `tablePlanFixture.ts`; the card in
+  `admin/components/festivals/FestivalPage.tablePlan.spec.ts`; the editor in
+  `admin/components/tablePlan/TablePlanEditor.drawing.spec.ts` (Konva on `canvas`: drag, snap, guide
+  lines, a drawing shown at twice the size, scrolling a selected shape into view, refusal, theme
+  switch), `.resizing` (the 20-unit and width limits, a refused resize, a station shape), `.areas`,
+  `.tables` (a refused rename the admin walked away from), `.stations` and `.page.spec.ts` on
+  `tablePlanEditorFixture.ts`; `shared/composables/useThemedValue.spec.ts`; the address in `shared/router/adminRoute.spec.ts` and
+  `admin/views/AdminShell.spec.ts`. The how-to page `test-a-konva-drawing.md` describes the drawing
+  helpers.

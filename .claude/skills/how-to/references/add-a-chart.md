@@ -15,12 +15,14 @@ model to copy.
    `CHART_THEMES` with `registerTheme`. A chart that needs another series type or component adds it
    to that list. Never import the full `echarts` bundle, and keep every import static.
 2. **Take the colours from the theme.** `admin/core/chartTheme.ts` builds the `ChartColours` roles
-   from the tokens in `shared/theme.ts`, once per theme (`LIGHT_CHART_COLOURS`,
+   from the tokens in `shared/theme.ts` through `shared/core/themeColours.ts` (`themeColourOf`,
+   `themeVariableOf`, `mutedInkOf`, which the table plan's colours use too), once per theme (`LIGHT_CHART_COLOURS`,
    `DARK_CHART_COLOURS`): `data` is the `chartData` teal, `ink` is `on-surface`, `muted` is
    `on-surface` at the medium emphasis opacity, and `warning` is the status token. `CHART_THEMES`
    holds the two ECharts themes built from the same roles (axis text and mark lines muted, axes, grid
    and tooltip border in `border-color`, the tooltip on `surface`, and `data` as the default series
-   colour). `useChartTheme` picks both for the current device theme: `BaseChart` takes its `name`, and
+   colour). `useChartTheme` picks both for the current device theme through
+   `shared/composables/useThemedValue.ts`, which the table plan's colours use too: `BaseChart` takes its `name`, and
    the chart component hands its `colours` to the option function. The option sets each colour from
    a role, never from a hex value. A second data series needs its own token in `shared/theme.ts`
    first (frontend rule 8), checked with the `dataviz` skill's `scripts/validate_palette.js` against

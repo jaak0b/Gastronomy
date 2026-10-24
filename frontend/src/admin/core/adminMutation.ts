@@ -6,13 +6,13 @@ export function adminFailureFrom(result: ApiResult<unknown>): AdminActionResult<
   return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
 }
 
-export async function reloadOrFailureOf(
-  result: ApiResult<unknown>,
+export async function reloadOrFailureOf<T>(
+  result: ApiResult<T>,
   reload: () => Promise<void>,
-): Promise<AdminActionResult<null>> {
+): Promise<AdminActionResult<T>> {
   if (result.kind !== 'ok') {
     return adminFailureFrom(result)
   }
   await reload()
-  return adminOk(null)
+  return adminOk(result.data)
 }

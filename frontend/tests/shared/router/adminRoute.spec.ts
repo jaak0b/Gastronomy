@@ -40,6 +40,23 @@ describe('resolveRoute', () => {
     })
   })
 
+  it('reads the table plan address of one festival as its table plan editor', () => {
+    expect(resolveRoute('/admin/festivals/fest-1/table-plan')).toEqual({
+      name: 'admin',
+      section: 'festivals',
+      festivalId: 'fest-1',
+      festivalSubpage: 'tablePlan',
+    })
+  })
+
+  it('reads an unknown address below a festival as that festival page', () => {
+    expect(resolveRoute('/admin/festivals/fest-1/elsewhere')).toEqual({
+      name: 'admin',
+      section: 'festivals',
+      festivalId: 'fest-1',
+    })
+  })
+
   it('reads the stations path as the station screen', () => {
     expect(resolveRoute('/stations')).toEqual({ name: 'stations' })
   })

@@ -155,7 +155,11 @@ copy of anything listed here.
   `openDialog`, `waitForDialog`, `dialogText` and `pressInDialog`.
 - `formDialogs.ts` fills and saves or cancels the admin form dialogs.
 - `wireViews.ts` holds the factories for the wire views used most: `anAdminItem`, `anAdminItemIngredient`, `anAdminIngredient`, `anAdminFestivalIngredient`, `aFestival`,
-  `anAdminStation`, `anOpenItem`, `anOpenItemsTable`, `aQueuedItem` and `aStationOrder`.
+  `anAdminStation`, `anOpenItem`, `anOpenItemsTable`, `aQueuedItem`, `aStationOrder`, and for the
+  table plan `aGeometry`, `anAdminTable`, `anAdminStationShape` and `anAdminArea`.
+- `konvaDrawing.ts` finds and drives a Konva drawing: `drawingIn`, `shapeWithId`, `hasShapeWithId`,
+  `shapesNamed`, `centreOf`, `anchorOf`, `tapAt`, `dragBy`, `dragAnchorBy`, and the single steps
+  `pressAt`, `movePointerTo` and `releaseAt`. The `how-to` page `test-a-konva-drawing.md` shows how.
 - `station.ts` holds the station tablet scenario: `KITCHEN`, `item`, `stationOrder`, `aQueue` and
   `enrolledStationTablet()`.
 - `plugins.ts` gives `testPlugins(locale)` for mounting, `mountApp.ts` mounts the whole app,

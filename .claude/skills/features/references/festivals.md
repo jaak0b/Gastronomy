@@ -52,17 +52,21 @@ Frontend, under `frontend/src/`:
 - `admin/components/festivals/FestivalsList.vue` is the Feste tab: one row per festival with the
   "Aktiv" and "Ausgeblendet" chips, open, copy, hide and show, a checkbox that reveals the hidden ones,
   and the new festival button. `FestivalDialog.vue` is the form for a new festival and for a copy.
-  `shared/router/route.ts` reads `/admin/festivals/{festivalId}` and `admin/views/AdminShell.vue`
-  chooses between the list and the page.
-- `FestivalPage.vue` is the festival page: name, start and end save when a field is left or Enter is
-  pressed, with no save button. Its sections are `FestivalStations.vue`, `FestivalItems.vue` (with
-  `FestivalPlacementDialog.vue`, `StationSelect.vue` and `admin/composables/useFestivalItemRows.ts`)
-  and `FestivalStock.vue` (see the `festival-stock` page).
+  `shared/router/route.ts` reads `/admin/festivals/{festivalId}` and
+  `/admin/festivals/{festivalId}/table-plan`, and `admin/views/AdminShell.vue` chooses between the
+  list, the page and the table plan editor.
+- `FestivalPage.vue` is the festival page; an unknown festival id returns to the overview through
+  `admin/composables/useOpenedFestival.ts`, which the table plan editor shares. Name, start and end
+  save when a field is left or Enter is
+  pressed, with no save button. Its sections are `FestivalStations.vue`, `FestivalTablePlan.vue`
+  (see the `table-plan` page), `FestivalItems.vue` (with `FestivalPlacementDialog.vue`,
+  `StationSelect.vue` and `admin/composables/useFestivalItemRows.ts`) and `FestivalStock.vue` (see
+  the `festival-stock` page).
 - Stores: `admin/stores/festivals.ts` (`useAdminFestivalsStore`: `save`, `copy`, `hide`, `show`,
   `runningFestival`, reloading on `ConfigurationChanged` and `OrdersChanged`). It never computes
   "running": it takes `isRunning` from the laptop. The stations and items stores read one festival
-  through `admin/stores/festivalScopedList.ts` (`loadAtTheFestival`), and `festivalStock.ts` holds the
-  stock.
+  through `admin/stores/festivalScopedList.ts` (`loadAtTheFestival`), `festivalStock.ts` holds the
+  stock and `tablePlan.ts` the plan.
 - Phone: `phone/stores/catalog.ts` (the catalog names the running festival), `phone/stores/order.ts`
   (`dropTheDraftIfTheFestivalChanged`), `phone/core/draftCart.ts` (`festivalId`,
   `draftIsForAnotherFestival`, `stampFestival`) and `phone/core/sendProgress.ts`
@@ -121,6 +125,6 @@ Every point below is intended behaviour. A change to any of them needs the owner
   `FestivalScopeEndpointsTest`.
 - `frontend/tests`: `admin/stores/festivals.spec.ts` and `festivalScope.spec.ts`;
   `admin/components/festivals/FestivalsList.spec.ts` and `FestivalPage.*.spec.ts` (`heading`,
-  `refusals`, `stations`, `itemChanges`, `itemPlacement`) on `festivalPageFixture.ts`;
+  `refusals`, `stations`, `itemChanges`, `itemPlacement`, `tablePlan`) on `festivalPageFixture.ts`;
   `phone/stores/orderFestivalScope.spec.ts` (the silent drop and the frozen order). Fixtures come from
   `aFestival` in `tests/support/wireViews.ts`.
