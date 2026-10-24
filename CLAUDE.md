@@ -13,11 +13,12 @@ staff still work that list off, and a server with a free hand still delivers the
 
 Flow:
 
-1. A server opens a web page on their own phone, picks items and quantities, enters a table name, sees
-   the running total (a calculation aid only, cash is handled by hand), and places the order. An
-   order is always sent open. One button sends it and returns to the items, for a table that runs a
-   tab; the other sends it and opens the table on the open items screen with the new items ticked,
-   for a guest who pays on the spot. Before sending, they choose per production location whether
+1. Before the festival the admin draws its areas and places its tables and stations on the laptop.
+   A server opens a web page on their own phone, picks the area, taps the guest's table on its plan
+   and chooses "Bestellung aufnehmen", picks items and quantities, sees the running total (a
+   calculation aid only, cash is handled by hand), and places the order. An order is always sent
+   open. One button sends it and returns to the plan, for a table that runs a tab; the other sends
+   it and opens the table's settle view with the new items ticked, for a guest who pays on the spot. Before sending, they choose per production location whether
    that station order is to be produced together or handed out item by item as each is ready. That
    choice is fixed once sent.
 2. The backend splits the order by production location (kitchen, bar indoor, bar outdoor). Each
@@ -30,8 +31,10 @@ Flow:
    prepared independently of its station's queue. The phone shows the server an estimate per item
    and per station order, computed from the station's current queue plus the item's own time, except
    for an independent article, which shows its own time alone.
-4. A separate screen on the phone lists what each table still has open, so a server can settle a
-   table's items later. Settling always names the amount the table actually paid: the full price is
+4. On the plan each table's fill shows what has been handed out and its border what has been
+   settled, so a server sees which tables still owe something. Tapping a table and choosing
+   "Abrechnen" opens its settle view, where the server settles its items. Settling always names the
+   amount the table actually paid: the full price is
    filled in, and the server may type any other amount, which needs a typed reason whenever it falls
    short.
    Giving something away is that same act with the amount set to zero, not a second kind of
