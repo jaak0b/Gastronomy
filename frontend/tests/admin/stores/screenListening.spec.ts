@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { fireHubEvent, forgetHubEvents, hubEventsRegistered } from '../../support/hubConnection'
+import { fireHubEvent, forgetHubEvents, hubEventsOtherThanGroupsJoined, hubEventsRegistered } from '../../support/hubConnection'
 import { stubLaptop, answer, type StubbedLaptop } from '../../support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
@@ -310,7 +310,7 @@ describe('the handler that answers a finished enrolment', () => {
 
     await useConnectionStore().connect({})
 
-    expect(hubEventsRegistered).toEqual(['EnrolmentCompleted'])
+    expect(hubEventsOtherThanGroupsJoined()).toEqual(['EnrolmentCompleted'])
   })
 
   it('is taken off the hub once the admin has moved to another screen', async () => {
@@ -320,6 +320,6 @@ describe('the handler that answers a finished enrolment', () => {
     stopListening()
     await useConnectionStore().connect({})
 
-    expect(hubEventsRegistered).toEqual([])
+    expect(hubEventsOtherThanGroupsJoined()).toEqual([])
   })
 })

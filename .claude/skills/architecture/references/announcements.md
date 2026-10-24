@@ -7,7 +7,7 @@ order change: the commit does. A writer that has to remember to announce will fo
 
 ## Events
 
-Four SignalR hub events exist, and no others are added without a page here saying why.
+Five SignalR hub events exist, and no others are added without a page here saying why.
 
 | Event | Payload | Groups | Raised when |
 |---|---|---|---|
@@ -15,6 +15,7 @@ Four SignalR hub events exist, and no others are added without a page here sayin
 | `OrdersChanged` | none | `Devices`, `Admin`, `Stations` | an order, a station order or an order item was added, changed or deleted, which covers placing, handing out, putting back, hiding and settling |
 | `EnrolmentCompleted` | staff member id or station id, owner name, device id | `Admin` | a device redeemed an invitation |
 | `DeviceRevoked` | device id | `device:{id}`, `Admin` | a device was signed out |
+| `GroupsJoined` | none | the connecting connection only | the laptop has put a new connection into all its groups |
 
 Two events are broad on purpose. A reload of a catalog or a queue is a few kilobytes on a festival
 WiFi that carries nothing else, while a fine-grained event is exactly the thing a writer forgets.
@@ -50,6 +51,14 @@ The two device commands, `EnrolmentCompleted` and `DeviceRevoked`, are sent by `
 handed to the same after-commit queue, because they carry a payload and address one device; they are
 not derived from the tracker.
 
+SignalR finishes the client's start before `GastronomyHub.OnConnectedAsync` has put the connection
+into its groups, and for a station tablet the hub first reads the device from the database. A
+reload on start can therefore miss a change committed in between, and nobody tells that device
+about it. The hub sends `GroupsJoined` to the caller as the last step of `OnConnectedAsync`, after
+every group join and the connection registry entry, and the phone reloads then. The send has no
+catch and does not go through `IAnnouncementGuard`, because it announces no saved change: if it
+fails, SignalR logs the error and closes the connection, and the phone falls back to polling.
+
 The mechanism only sees writes that go through the tracker. Every write therefore loads its
 entities and saves them. `ExecuteDeleteAsync`, `ExecuteUpdateAsync`, `FromSqlRaw`,
 `ExecuteSqlRawAsync` and any other statement that reaches the database without tracked entities are
@@ -63,7 +72,8 @@ A store subscribes to the event whose name says what it holds and reloads from t
 never patches its own copy after an action instead of reloading, and a screen never hides a stale
 value by filtering it against another list: a value the laptop no longer has is shown as the problem
 it is, or refetched, never quietly dropped and later sent back. Every store also registers with the
-connection store's refetch so a reconnect reloads everything. Where a reload and an action share the
+connection store's refetch, which runs when `GroupsJoined` arrives, on the first connection and after
+every reconnect, so a reconnect reloads everything. Where a reload and an action share the
 state a screen shows, the reload goes through the latest request gate, so a slow answer never
 overwrites a newer one.
 
@@ -77,3 +87,8 @@ asserts the phone, the admin connection and the station tablet hear the event ex
 entity type gets a hub test through one of its routes in the same change. The interceptor's unit
 tests cover the union of events, once per request over several saves, nothing after a rollback,
 nothing outside a request, and the throw for a type without the attribute.
+
+`GastronomyHubTest` proves for a phone, a station tablet and the laptop that `GroupsJoined` arrives
+once and that a broadcast sent right after it reaches the connection. `HubEventListener.StartAsync`
+returns only once its connection heard `GroupsJoined`, so a hub test never sends an event before the
+listener is in its groups.

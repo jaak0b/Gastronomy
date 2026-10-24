@@ -23,6 +23,8 @@ public static class Names
     public const string EnrolmentCompleted = "EnrolmentCompleted";
 
     public const string DeviceRevoked = "DeviceRevoked";
+
+    public const string GroupsJoined = "GroupsJoined";
   }
 
   public static class HubGroups

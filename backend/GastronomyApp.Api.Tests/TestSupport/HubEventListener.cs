@@ -6,6 +6,8 @@ public sealed class HubEventListener : IAsyncDisposable
 {
   private readonly HubConnection _connection;
   private readonly TaskCompletionSource _firstHeard = new(TaskCreationOptions.RunContinuationsAsynchronously);
+  private readonly TaskCompletionSource _groupsJoined = new(TaskCreationOptions.RunContinuationsAsynchronously);
+  private readonly TimeSpan _groupsJoinedPatience = TimeSpan.FromSeconds(10);
   private int _heardCount;
 
   public HubEventListener(Uri hubAddress, string eventName)
@@ -17,6 +19,7 @@ public sealed class HubEventListener : IAsyncDisposable
                      Interlocked.Increment(ref _heardCount);
                      _firstHeard.TrySetResult();
                    });
+    _connection.On("GroupsJoined", () => _groupsJoined.TrySetResult());
   }
 
   public int HeardCount => Volatile.Read(ref _heardCount);
@@ -28,8 +31,13 @@ public sealed class HubEventListener : IAsyncDisposable
     return _connection.DisposeAsync();
   }
 
-  public Task StartAsync()
+  public async Task StartAsync()
   {
-    return _connection.StartAsync();
+    await _connection.StartAsync();
+
+    var joined = await Task.WhenAny(_groupsJoined.Task, Task.Delay(_groupsJoinedPatience));
+
+    if (joined != _groupsJoined.Task)
+      throw new TimeoutException($"The hub connection {_connection.ConnectionId} was not told within {_groupsJoinedPatience.TotalSeconds} seconds that it joined its groups.");
   }
 }
