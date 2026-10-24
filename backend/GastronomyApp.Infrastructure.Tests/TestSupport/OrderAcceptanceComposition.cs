@@ -17,7 +17,7 @@ public sealed class OrderAcceptanceComposition
   {
     OrderItemResolutionService itemResolutionService = new(new CatalogItemRepository(dbContext), new StationRepository(dbContext), new());
 
-    FestivalRepository festivalRepository = new(dbContext, new());
+    FestivalRepository festivalRepository = new(dbContext, new(), new());
     RunningFestivalLookup runningFestival = new(festivalRepository, new(), TimeProvider.System);
 
     StockSoldOutMarker soldOutMarker = new(new IngredientStockRepository(dbContext), new(), NullLogger<StockSoldOutMarker>.Instance);

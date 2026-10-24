@@ -20,6 +20,7 @@ Full rules: [references/naming.md](references/naming.md)
 - **Do** name classes and structs with nouns, interfaces with adjective phrases prefixed with `I`.
 - **Do** give methods verb or verb-phrase names, and properties noun, noun-phrase or adjective names.
 - **Do** name Boolean properties with an affirmative phrase, prefixed with `Is`, `Can` or `Has` only where it adds value.
+- **Do** name the flag that takes a row out of view `IsHidden` on whatever belongs to one festival (the festival itself, an area, a table), and `IsActive` on the global lists (stations, articles, categories, ingredients, waiters); **do not** give one entity both, or use the other word for the same idea.
 - **Do** name collection properties with a plural phrase, never a singular followed by `List` or `Collection`.
 - **Do not** have a property that matches the name of a `Get` method; one of them should go.
 - **Do** name events with a verb in the present tense before the change and the past tense after it: `Closing`, `Closed`.
@@ -190,6 +191,11 @@ than about five parameters, only after trying the entity or its id first. Two jo
   happens in a `Core` service. When the result needs more than the entity, the service returns a
   record that carries the entity itself plus the computed values, never copies of the entity's
   fields: `IngredientStockLevel` holds the `FestivalIngredient` and the amounts computed for it.
+
+Every foreign key id property on an entity has its navigation property beside it (`FestivalId` and
+`Festival`, `AreaId` and `Area`), and the entity's configuration maps the relationship through that
+navigation (`HasOne(table => table.Festival)`), never through the id alone. A composite key maps the
+same way, with `HasPrincipalKey` naming the principal's alternate key.
 
 An EF entity carries properties only, never a method: a fact derived from an
 entity is a method on that entity type's service (`OrderService.StatusOf(order)`), and a transaction

@@ -17,6 +17,33 @@ namespace GastronomyApp.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.19");
 
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Area", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("FestivalId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FestivalId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Areas");
+                });
+
             modelBuilder.Entity("GastronomyApp.Core.Entities.CatalogCategory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -297,6 +324,44 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.ToTable("FestivalStations");
                 });
 
+            modelBuilder.Entity("GastronomyApp.Core.Entities.FestivalStationShape", b =>
+                {
+                    b.Property<Guid>("FestivalStationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AreaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("FestivalId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Height")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("Rotation")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("Width")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("X")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("Y")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("FestivalStationId");
+
+                    b.HasIndex("FestivalId");
+
+                    b.HasIndex("AreaId", "FestivalId");
+
+                    b.HasIndex("FestivalStationId", "FestivalId")
+                        .IsUnique();
+
+                    b.ToTable("FestivalStationShapes");
+                });
+
             modelBuilder.Entity("GastronomyApp.Core.Entities.Ingredient", b =>
                 {
                     b.Property<Guid>("Id")
@@ -540,6 +605,61 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.ToTable("StationOrders");
                 });
 
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Table", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AreaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("FestivalId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Height")
+                        .HasColumnType("REAL");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<double>("Rotation")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("Width")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("X")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("Y")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AreaId", "FestivalId");
+
+                    b.HasIndex("FestivalId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Tables");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Area", b =>
+                {
+                    b.HasOne("GastronomyApp.Core.Entities.Festival", "Festival")
+                        .WithMany("Areas")
+                        .HasForeignKey("FestivalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Festival");
+                });
+
             modelBuilder.Entity("GastronomyApp.Core.Entities.CatalogItem", b =>
                 {
                     b.HasOne("GastronomyApp.Core.Entities.CatalogCategory", "Category")
@@ -635,6 +755,35 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Navigation("Festival");
 
                     b.Navigation("Station");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.FestivalStationShape", b =>
+                {
+                    b.HasOne("GastronomyApp.Core.Entities.Festival", "Festival")
+                        .WithMany()
+                        .HasForeignKey("FestivalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GastronomyApp.Core.Entities.Area", "Area")
+                        .WithMany("StationShapes")
+                        .HasForeignKey("AreaId", "FestivalId")
+                        .HasPrincipalKey("Id", "FestivalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GastronomyApp.Core.Entities.FestivalStation", "FestivalStation")
+                        .WithOne()
+                        .HasForeignKey("GastronomyApp.Core.Entities.FestivalStationShape", "FestivalStationId", "FestivalId")
+                        .HasPrincipalKey("GastronomyApp.Core.Entities.FestivalStation", "Id", "FestivalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Area");
+
+                    b.Navigation("Festival");
+
+                    b.Navigation("FestivalStation");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.ItemStationAssignment", b =>
@@ -770,6 +919,33 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Navigation("Station");
                 });
 
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Table", b =>
+                {
+                    b.HasOne("GastronomyApp.Core.Entities.Festival", "Festival")
+                        .WithMany()
+                        .HasForeignKey("FestivalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GastronomyApp.Core.Entities.Area", "Area")
+                        .WithMany("Tables")
+                        .HasForeignKey("AreaId", "FestivalId")
+                        .HasPrincipalKey("Id", "FestivalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Area");
+
+                    b.Navigation("Festival");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Area", b =>
+                {
+                    b.Navigation("StationShapes");
+
+                    b.Navigation("Tables");
+                });
+
             modelBuilder.Entity("GastronomyApp.Core.Entities.CatalogCategory", b =>
                 {
                     b.Navigation("Items");
@@ -786,6 +962,8 @@ namespace GastronomyApp.Infrastructure.Migrations
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.Festival", b =>
                 {
+                    b.Navigation("Areas");
+
                     b.Navigation("CatalogItems");
 
                     b.Navigation("Ingredients");

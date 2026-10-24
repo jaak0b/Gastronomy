@@ -11,7 +11,7 @@ Four SignalR hub events exist, and no others are added without a page here sayin
 
 | Event | Payload | Groups | Raised when |
 |---|---|---|---|
-| `ConfigurationChanged` | none | `Devices`, `Admin`, `Stations` | any entity an admin edits was added, changed or deleted: catalog category, catalog item, festival, festival catalog item, item station assignment, station, festival station, staff member |
+| `ConfigurationChanged` | none | `Devices`, `Admin`, `Stations` | any entity an admin edits was added, changed or deleted: catalog category, catalog item, festival, festival catalog item, item station assignment, station, festival station, staff member, ingredient, recipe line, festival stock row, area, table, festival station shape |
 | `OrdersChanged` | none | `Devices`, `Admin`, `Stations` | an order, a station order or an order item was added, changed or deleted, which covers placing, handing out, putting back, hiding and settling |
 | `EnrolmentCompleted` | staff member id or station id, owner name, device id | `Admin` | a device redeemed an invitation |
 | `DeviceRevoked` | device id | `device:{id}`, `Admin` | a device was signed out |
@@ -71,9 +71,13 @@ overwrites a newer one.
 
 The mechanism is per entity type, so the hub tests prove it per type through one real route each:
 `ConfigurationChangedAnnouncementTest` for a category, an article, a festival, a station, a waiter,
-a station removed from a festival with its assignments, and a phone replaced over several saves;
+a station removed from a festival with its assignments, an area, a table, a station shape on the
+plan, and a phone replaced over several saves;
 `OrdersChangedAnnouncementTest` for placing, handing out, putting back, hiding and settling. Each
 asserts the phone, the admin connection and the station tablet hear the event exactly once. A new
-entity type gets a hub test through one of its routes in the same change. The interceptor's unit
+entity type gets a hub test through one of its routes in the same change. The tests listen through
+`HubEventListener`, built on the test factory: SignalR completes a client's start before
+`GastronomyHub.OnConnectedAsync` has put the connection into its groups, so `StartAsync` probes the
+broadcast groups until the connection hears the probe, and an event sent right after it is never missed. The interceptor's unit
 tests cover the union of events, once per request over several saves, nothing after a rollback,
 nothing outside a request, and the throw for a type without the attribute.

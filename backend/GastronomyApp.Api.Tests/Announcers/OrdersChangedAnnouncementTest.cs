@@ -36,7 +36,7 @@ public sealed class OrdersChangedAnnouncementTest
   [Test]
   public async Task PostOrder_AnOrderForTwoStations_TellsThePhoneTheAdminAndBothStationsOnceAndSendsTheCounterChangeOnce()
   {
-    await using HubEventListener configurationListener = new(new(_context.Factory.BaseAddress, "hub"), "ConfigurationChanged");
+    await using HubEventListener configurationListener = new(_context.Factory, "hub", "ConfigurationChanged");
     await configurationListener.StartAsync();
     await ListenAsync(_context.DeviceToken, null, _kitchenToken, _barToken);
 
@@ -124,7 +124,7 @@ public sealed class OrdersChangedAnnouncementTest
   {
     foreach (var deviceToken in deviceTokens)
     {
-      HubEventListener listener = new(new(_context.Factory.BaseAddress, deviceToken is null ? "hub" : $"hub?access_token={deviceToken}"), "OrdersChanged");
+      HubEventListener listener = new(_context.Factory, deviceToken is null ? "hub" : $"hub?access_token={deviceToken}", "OrdersChanged");
       _listeners.Add(listener);
       await listener.StartAsync();
     }

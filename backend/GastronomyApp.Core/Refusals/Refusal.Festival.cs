@@ -1,4 +1,5 @@
 ﻿using ErrorOr;
+using GastronomyApp.Contracts.Validation;
 
 namespace GastronomyApp.Core.Refusals;
 
@@ -29,7 +30,7 @@ public static partial class Refusal
 
     public static Error FestivalIsRunning(Guid festivalId)
     {
-      return BadRequest("errors.admin.actionFailed",
+      return BadRequest(RefusalMessageKeys.AdminActionFailed,
                         $"The festival {festivalId} was not hidden because it is running right now, and hiding it would empty every phone and every station tablet in the middle of service. The festivals page draws no hide control on a running festival, so this call did not come from that screen.",
                         new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
     }

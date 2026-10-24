@@ -61,21 +61,21 @@ public static partial class Refusal
 
     public static Error UsedByActiveItems(Guid ingredientId, IReadOnlyList<string> activeItemNames)
     {
-      return Conflict("errors.admin.actionFailed",
+      return Conflict(RefusalMessageKeys.AdminActionFailed,
                       $"The ingredient {ingredientId} stays switched on because the active articles {string.Join(", ", activeItemNames)} still use it in their recipes. The ingredients page disables the delete control while an active article uses the ingredient, so this call did not come from that screen.",
                       new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "IngredientUsedByActiveItems" });
     }
 
     public static Error DeactivatedIngredientCannotJoinRecipe(Guid itemId, Guid ingredientId)
     {
-      return Conflict("errors.admin.actionFailed",
+      return Conflict(RefusalMessageKeys.AdminActionFailed,
                       $"The ingredient {ingredientId} is deactivated, so it was not added to the recipe of the article {itemId}. The recipe dialog never sends a deactivated ingredient, so this call did not come from that screen.",
                       new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "DeactivatedIngredientCannotJoinRecipe" });
     }
 
     public static Error UnitUndefined(IngredientUnit? unit)
     {
-      return BadRequest("errors.admin.actionFailed", $"The unit {unit} is not one the ingredient form offers, so this call did not come from that screen.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
+      return BadRequest(RefusalMessageKeys.AdminActionFailed, $"The unit {unit} is not one the ingredient form offers, so this call did not come from that screen.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
     }
   }
 }

@@ -70,13 +70,14 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(orderItem.SettledAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 18, 0, 0)));
                       Assert.That(orderItem.SettledByStaffMemberId, Is.EqualTo(staffMemberId));
                       Assert.That(orderItem.PaymentMethod, Is.Null);
-                      Assert.That(appliedMigrations, Has.Count.EqualTo(6));
+                      Assert.That(appliedMigrations, Has.Count.EqualTo(7));
                       Assert.That(appliedMigrations[0], Is.EqualTo(_releasedSchema.MigrationId));
                       Assert.That(appliedMigrations[1], Does.EndWith("_CollateCategoryNamesAndCapitalizeQRColumns"));
                       Assert.That(appliedMigrations[2], Does.EndWith("_DropOrderNote"));
                       Assert.That(appliedMigrations[3], Does.EndWith("_AddEntityNavigations"));
                       Assert.That(appliedMigrations[4], Does.EndWith("_AddOrderItemPaymentMethod"));
                       Assert.That(appliedMigrations[5], Does.EndWith("_AddIngredientStock"));
+                      Assert.That(appliedMigrations[6], Does.EndWith("_AddTablePlan"));
                       Assert.That(ingredientCount, Is.Zero);
                       Assert.That(stockRowCount, Is.Zero);
                       Assert.That(recipeLineCount, Is.Zero);
@@ -107,6 +108,76 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(invitations.Select(invitation => invitation.Id), Is.EquivalentTo(new[] { survivingInvitationId }));
                       Assert.That(invitations.Single().ConsumedByDeviceId, Is.EqualTo(survivingDeviceId));
                     });
+  }
+
+  [Test]
+  public async Task MigrateAsync_OnReleasedDatabaseWithStationsAtAFestival_KeepsEveryLinkAndLetsItBePlacedOnThePlan()
+  {
+    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
+    var festivalId = Guid.NewGuid();
+    var kitchenLinkId = Guid.NewGuid();
+    var kitchenId = Guid.NewGuid();
+    var barLinkId = Guid.NewGuid();
+    var barId = Guid.NewGuid();
+
+    var connection = fixture.OpenConnection();
+    await ExecuteAsync(connection, _releasedSchema.Sql);
+    await InsertFestivalAsync(connection, festivalId);
+    await InsertFestivalStationAsync(connection, kitchenLinkId, festivalId, kitchenId, "Kueche", 7);
+    await InsertFestivalStationAsync(connection, barLinkId, festivalId, barId, "Theke", 3);
+
+    var context = fixture.CreateContext();
+    await context.Database.MigrateAsync();
+
+    List<FestivalStation> links = await context.Set<FestivalStation>().OrderBy(link => link.NextStationOrderNumber).ToListAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(links.Select(link => link.Id),
+                                  Is.EqualTo(new[]
+                                             {
+                                               barLinkId,
+                                               kitchenLinkId
+                                             }));
+                      Assert.That(links.Select(link => link.StationId),
+                                  Is.EqualTo(new[]
+                                             {
+                                               barId,
+                                               kitchenId
+                                             }));
+                      Assert.That(links.Select(link => link.FestivalId), Is.All.EqualTo(festivalId));
+                      Assert.That(links.Select(link => link.NextStationOrderNumber),
+                                  Is.EqualTo(new[]
+                                             {
+                                               3,
+                                               7
+                                             }));
+                    });
+
+    var areaId = Guid.NewGuid();
+    context.Set<Area>()
+   .Add(new()
+        {
+          Id = areaId,
+          FestivalId = festivalId,
+          Name = "Garten",
+          SortOrder = 1,
+          IsHidden = false
+        });
+    context.Set<FestivalStationShape>()
+   .Add(new()
+        {
+          FestivalStationId = kitchenLinkId,
+          FestivalId = festivalId,
+          AreaId = areaId,
+          X = 10,
+          Y = 20,
+          Width = 60,
+          Height = 40,
+          Rotation = 0
+        });
+
+    Assert.DoesNotThrowAsync(async () => await context.SaveChangesAsync());
   }
 
   private string ToStoredText(Guid id)
@@ -247,6 +318,23 @@ public sealed class ReleasedDatabaseUpgradeTest
     command.Parameters.AddWithValue("$endsAtUtc", "2026-09-21 02:00:00");
     command.Parameters.AddWithValue("$nextOrderNumber", 5);
     command.Parameters.AddWithValue("$isHidden", 0);
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertFestivalStationAsync(SqliteConnection connection, Guid linkId, Guid festivalId, Guid stationId, string stationName, int nextStationOrderNumber)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "Stations" ("Id", "Name", "SortOrder", "IsActive", "DeviceId", "EnrolmentInvitationId")
+                          VALUES ($stationId, $stationName, 1, 1, NULL, NULL);
+                          INSERT INTO "FestivalStations" ("Id", "FestivalId", "StationId", "NextStationOrderNumber")
+                          VALUES ($linkId, $festivalId, $stationId, $nextStationOrderNumber);
+                          """;
+    command.Parameters.AddWithValue("$stationId", ToStoredText(stationId));
+    command.Parameters.AddWithValue("$stationName", stationName);
+    command.Parameters.AddWithValue("$linkId", ToStoredText(linkId));
+    command.Parameters.AddWithValue("$festivalId", ToStoredText(festivalId));
+    command.Parameters.AddWithValue("$nextStationOrderNumber", nextStationOrderNumber);
     await command.ExecuteNonQueryAsync();
   }
 

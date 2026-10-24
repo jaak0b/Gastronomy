@@ -10,13 +10,15 @@ public sealed class FestivalRepository : IFestivalRepository
 {
   private const int FirstNumber = 1;
 
+  private readonly AreaShapeService _areaShapeService;
   private readonly GastronomyAppDbContext _dbContext;
   private readonly FestivalSchedule _schedule;
 
-  public FestivalRepository(GastronomyAppDbContext dbContext, FestivalSchedule schedule)
+  public FestivalRepository(GastronomyAppDbContext dbContext, FestivalSchedule schedule, AreaShapeService areaShapeService)
   {
     _dbContext = dbContext;
     _schedule = schedule;
+    _areaShapeService = areaShapeService;
   }
 
   public async Task<Festival?> FindRunningAsync(DateTime nowUtc, CancellationToken cancellationToken)
@@ -64,15 +66,60 @@ public sealed class FestivalRepository : IFestivalRepository
   public async Task CopyContentsAsync(Guid copiedFromFestivalId, Guid newFestivalId, CancellationToken cancellationToken)
   {
     List<FestivalStation> stationLinks = await _dbContext.FestivalStations.AsNoTracking().Where(link => link.FestivalId == copiedFromFestivalId).ToListAsync(cancellationToken);
+    Dictionary<Guid, Guid> linkIdsAtTheCopy = stationLinks.ToDictionary(link => link.Id, link => Guid.NewGuid());
 
     foreach (var link in stationLinks)
       _dbContext.FestivalStations.Add(new()
                                       {
-                                        Id = Guid.NewGuid(),
+                                        Id = linkIdsAtTheCopy[link.Id],
                                         FestivalId = newFestivalId,
                                         StationId = link.StationId,
                                         NextStationOrderNumber = FirstNumber
                                       });
+
+    List<Area> shownAreas = await _dbContext.Areas.AsNoTracking().Where(area => area.FestivalId == copiedFromFestivalId && !area.IsHidden).Include(area => area.Tables.Where(table => !table.IsHidden)).Include(area => area.StationShapes).ToListAsync(cancellationToken);
+
+    foreach (var area in shownAreas)
+    {
+      var areaIdAtTheCopy = Guid.NewGuid();
+
+      _dbContext.Areas.Add(new()
+                           {
+                             Id = areaIdAtTheCopy,
+                             FestivalId = newFestivalId,
+                             Name = area.Name,
+                             SortOrder = area.SortOrder,
+                             IsHidden = false
+                           });
+
+      foreach (var table in area.Tables)
+      {
+        Table copiedTable = new()
+                            {
+                              Id = Guid.NewGuid(),
+                              FestivalId = newFestivalId,
+                              AreaId = areaIdAtTheCopy,
+                              Name = table.Name,
+                              IsHidden = false
+                            };
+
+        _areaShapeService.Reshape(copiedTable, _areaShapeService.GeometryOf(table));
+        _dbContext.Tables.Add(copiedTable);
+      }
+
+      foreach (var shape in area.StationShapes)
+      {
+        FestivalStationShape copiedShape = new()
+                                           {
+                                             FestivalStationId = linkIdsAtTheCopy[shape.FestivalStationId],
+                                             FestivalId = newFestivalId,
+                                             AreaId = areaIdAtTheCopy
+                                           };
+
+        _areaShapeService.Reshape(copiedShape, _areaShapeService.GeometryOf(shape));
+        _dbContext.FestivalStationShapes.Add(copiedShape);
+      }
+    }
 
     List<FestivalCatalogItem> menuRows = await _dbContext.FestivalCatalogItems.AsNoTracking().Where(menuRow => menuRow.FestivalId == copiedFromFestivalId).ToListAsync(cancellationToken);
 

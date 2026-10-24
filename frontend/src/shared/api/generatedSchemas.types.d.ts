@@ -1,7 +1,11 @@
 
   export namespace Schemas {
     // <Schemas>
-  export type AdminCategoryView = { categoryId: string, name: string, colourHex: string, sortOrder: number, isActive: boolean }
+  export type AreaShapeGeometry = { x: number, y: number, width: number, height: number, rotation: number }
+export type AdminTableView = { tableId: string, name: string, geometry: AreaShapeGeometry, isHidden: boolean }
+export type AdminStationShapeView = { stationId: string, stationName: string, geometry: AreaShapeGeometry }
+export type AdminAreaView = { areaId: string, name: string, sortOrder: number, isHidden: boolean, tables: Array<AdminTableView>, stationShapes: Array<AdminStationShapeView> }
+export type AdminCategoryView = { categoryId: string, name: string, colourHex: string, sortOrder: number, isActive: boolean }
 export type AdminCategoryListView = { categories: Array<AdminCategoryView> }
 export type IngredientUnit = ("piece" | "gram" | "millilitre")
 export type IngredientUsagePoint = { atUtc: string, usedAmount: number }
@@ -20,6 +24,7 @@ export type AdminStaffMemberView = { staffMemberId: string, name: string, isActi
 export type AdminStaffMemberListView = { staffMembers: Array<AdminStaffMemberView> }
 export type AdminStationView = { stationId: string, name: string, sortOrder: number, isActive: boolean, hasDevice: boolean, isAtAnyFestival: boolean }
 export type AdminStationListView = { stations: Array<AdminStationView> }
+export type AdminTablePlanView = { areas: Array<AdminAreaView> }
 export type CatalogCategoryView = { categoryId: string, name: string, colourHex: string, sortOrder: number }
 export type CatalogItemView = { id: string, categoryId: string, name: string, priceCents: number, sortOrder: number, isAvailable: boolean, productionMinutes: (null | number), isQueueIndependent: boolean, stationIds: Array<string> }
 export type CatalogStationView = { id: string, name: string, sortOrder: number }
@@ -54,12 +59,15 @@ export type PlaceOrderRequest = { clientOrderId: string, tableName: (null | stri
 export type RedeemedEnrolmentView = { deviceId: string, deviceToken: string, staffMember: (null | StaffMemberView), station: (null | StationSummaryView), language: string }
 export type RedeemEnrolmentRequest = { code: (null | string), name?: (null | string), userAgent?: (null | string), previousDeviceToken?: (null | string) }
 export type RenameStaffMemberRequest = { name: (null | string) }
+export type SaveAreaRequest = { name: (null | string), sortOrder: number }
 export type SaveCategoryRequest = { name: (null | string), colourHex: (null | string) }
+export type SavedAreaView = { areaId: string }
 export type SavedFestivalIngredientView = { ingredientId: string }
 export type SavedFestivalView = { festivalId: string }
 export type SavedIngredientView = { ingredientId: string }
 export type SavedItemView = { itemId: string }
 export type SavedStationView = { stationId: string }
+export type SavedTableView = { tableId: string }
 export type SaveFestivalIngredientRequest = { availableAmount: (null | number) }
 export type SaveFestivalItemRequest = { priceCents: number, stationIds: (null | Array<string>) }
 export type SaveFestivalRequest = { name: (null | string), startsAtUtc: string, endsAtUtc: string }
@@ -67,6 +75,8 @@ export type SaveIngredientRequest = { name: (null | string), unit: (null | Ingre
 export type SaveItemIngredientRequest = { amount: (null | number) }
 export type SaveItemRequest = { name: (null | string), categoryId: (null | string), sortOrder: number, productionMinutes?: (null | number), isQueueIndependent?: boolean }
 export type SaveStationRequest = { name: (null | string), sortOrder: number }
+export type SaveStationShapeRequest = { areaId: string, geometry: (null | AreaShapeGeometry) }
+export type SaveTableRequest = { areaId: string, name: (null | string), geometry: (null | AreaShapeGeometry) }
 export type SessionView = { deviceId: string, staffMember: (null | StaffMemberView), station: (null | StationSummaryView), language: string }
 export type SetAvailabilityRequest = { isAvailable: boolean }
 export type SettleLineRequest = { orderItemId: string, paidPriceCents: (null | number), paymentNotice?: (null | string) }
@@ -886,6 +896,214 @@ export type put__api_admin_festivals_FestivalId_ingredients_IngredientId = {
 },
       
     }
+export type get__api_admin_festivals_FestivalId_tablePlan = {
+      method: "GET",
+      path: "/api/admin/festivals/{festivalId}/table-plan",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string },
+        
+        
+        
+          }
+      responses: {200: Schemas.AdminTablePlanView,
+},
+      
+    }
+export type post__api_admin_festivals_FestivalId_areas = {
+      method: "POST",
+      path: "/api/admin/festivals/{festivalId}/areas",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string },
+        
+        
+        body:  Schemas.SaveAreaRequest,
+          }
+      responses: {201: Schemas.SavedAreaView,
+},
+      
+    }
+export type put__api_admin_festivals_FestivalId_areas_AreaId = {
+      method: "PUT",
+      path: "/api/admin/festivals/{festivalId}/areas/{areaId}",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string, areaId: string },
+        
+        
+        body:  Schemas.SaveAreaRequest,
+          }
+      responses: {200: Schemas.SavedAreaView,
+},
+      
+    }
+export type delete__api_admin_festivals_FestivalId_areas_AreaId = {
+      method: "DELETE",
+      path: "/api/admin/festivals/{festivalId}/areas/{areaId}",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string, areaId: string },
+        
+        
+        
+          }
+      responses: {204: unknown,
+},
+      
+    }
+export type post__api_admin_festivals_FestivalId_areas_AreaId_hide = {
+      method: "POST",
+      path: "/api/admin/festivals/{festivalId}/areas/{areaId}/hide",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string, areaId: string },
+        
+        
+        
+          }
+      responses: {200: Schemas.SavedAreaView,
+},
+      
+    }
+export type post__api_admin_festivals_FestivalId_areas_AreaId_show = {
+      method: "POST",
+      path: "/api/admin/festivals/{festivalId}/areas/{areaId}/show",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string, areaId: string },
+        
+        
+        
+          }
+      responses: {200: Schemas.SavedAreaView,
+},
+      
+    }
+export type post__api_admin_festivals_FestivalId_tables = {
+      method: "POST",
+      path: "/api/admin/festivals/{festivalId}/tables",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string },
+        
+        
+        body:  Schemas.SaveTableRequest,
+          }
+      responses: {201: Schemas.SavedTableView,
+},
+      
+    }
+export type put__api_admin_festivals_FestivalId_tables_TableId = {
+      method: "PUT",
+      path: "/api/admin/festivals/{festivalId}/tables/{tableId}",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string, tableId: string },
+        
+        
+        body:  Schemas.SaveTableRequest,
+          }
+      responses: {200: Schemas.SavedTableView,
+},
+      
+    }
+export type delete__api_admin_festivals_FestivalId_tables_TableId = {
+      method: "DELETE",
+      path: "/api/admin/festivals/{festivalId}/tables/{tableId}",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string, tableId: string },
+        
+        
+        
+          }
+      responses: {204: unknown,
+},
+      
+    }
+export type post__api_admin_festivals_FestivalId_tables_TableId_hide = {
+      method: "POST",
+      path: "/api/admin/festivals/{festivalId}/tables/{tableId}/hide",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string, tableId: string },
+        
+        
+        
+          }
+      responses: {200: Schemas.SavedTableView,
+},
+      
+    }
+export type post__api_admin_festivals_FestivalId_tables_TableId_show = {
+      method: "POST",
+      path: "/api/admin/festivals/{festivalId}/tables/{tableId}/show",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string, tableId: string },
+        
+        
+        
+          }
+      responses: {200: Schemas.SavedTableView,
+},
+      
+    }
+export type put__api_admin_festivals_FestivalId_stations_StationId_shape = {
+      method: "PUT",
+      path: "/api/admin/festivals/{festivalId}/stations/{stationId}/shape",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string, stationId: string },
+        
+        
+        body:  Schemas.SaveStationShapeRequest,
+          }
+      responses: {200: Schemas.SavedStationView,
+},
+      
+    }
+export type delete__api_admin_festivals_FestivalId_stations_StationId_shape = {
+      method: "DELETE",
+      path: "/api/admin/festivals/{festivalId}/stations/{stationId}/shape",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string, stationId: string },
+        
+        
+        
+          }
+      responses: {204: unknown,
+},
+      
+    }
 export type get__api_admin_ingredients = {
       method: "GET",
       path: "/api/admin/ingredients",
@@ -993,6 +1211,12 @@ export type post__api_admin_ingredients_IngredientId_deactivate = {
 "/api/admin/festivals/{festivalId}/hide": Endpoints.post__api_admin_festivals_FestivalId_hide,
 "/api/admin/festivals/{festivalId}/show": Endpoints.post__api_admin_festivals_FestivalId_show,
 "/api/admin/festivals/{festivalId}/items/{itemId}/availability": Endpoints.post__api_admin_festivals_FestivalId_items_ItemId_availability,
+"/api/admin/festivals/{festivalId}/areas": Endpoints.post__api_admin_festivals_FestivalId_areas,
+"/api/admin/festivals/{festivalId}/areas/{areaId}/hide": Endpoints.post__api_admin_festivals_FestivalId_areas_AreaId_hide,
+"/api/admin/festivals/{festivalId}/areas/{areaId}/show": Endpoints.post__api_admin_festivals_FestivalId_areas_AreaId_show,
+"/api/admin/festivals/{festivalId}/tables": Endpoints.post__api_admin_festivals_FestivalId_tables,
+"/api/admin/festivals/{festivalId}/tables/{tableId}/hide": Endpoints.post__api_admin_festivals_FestivalId_tables_TableId_hide,
+"/api/admin/festivals/{festivalId}/tables/{tableId}/show": Endpoints.post__api_admin_festivals_FestivalId_tables_TableId_show,
 "/api/admin/ingredients": Endpoints.post__api_admin_ingredients,
 "/api/admin/ingredients/{ingredientId}/activate": Endpoints.post__api_admin_ingredients_IngredientId_activate,
 "/api/admin/ingredients/{ingredientId}/deactivate": Endpoints.post__api_admin_ingredients_IngredientId_deactivate
@@ -1014,6 +1238,7 @@ get: {
 "/api/admin/staff-members": Endpoints.get__api_admin_staffMembers,
 "/api/admin/festivals": Endpoints.get__api_admin_festivals,
 "/api/admin/festivals/{festivalId}/ingredients": Endpoints.get__api_admin_festivals_FestivalId_ingredients,
+"/api/admin/festivals/{festivalId}/table-plan": Endpoints.get__api_admin_festivals_FestivalId_tablePlan,
 "/api/admin/ingredients": Endpoints.get__api_admin_ingredients
          },
 put: {
@@ -1027,12 +1252,18 @@ put: {
 "/api/admin/festivals/{festivalId}/items/{itemId}": Endpoints.put__api_admin_festivals_FestivalId_items_ItemId,
 "/api/admin/festivals/{festivalId}/stations/{stationId}": Endpoints.put__api_admin_festivals_FestivalId_stations_StationId,
 "/api/admin/festivals/{festivalId}/ingredients/{ingredientId}": Endpoints.put__api_admin_festivals_FestivalId_ingredients_IngredientId,
+"/api/admin/festivals/{festivalId}/areas/{areaId}": Endpoints.put__api_admin_festivals_FestivalId_areas_AreaId,
+"/api/admin/festivals/{festivalId}/tables/{tableId}": Endpoints.put__api_admin_festivals_FestivalId_tables_TableId,
+"/api/admin/festivals/{festivalId}/stations/{stationId}/shape": Endpoints.put__api_admin_festivals_FestivalId_stations_StationId_shape,
 "/api/admin/ingredients/{ingredientId}": Endpoints.put__api_admin_ingredients_IngredientId
          },
 delete: {
            "/api/admin/items/{itemId}/ingredients/{ingredientId}": Endpoints.delete__api_admin_items_ItemId_ingredients_IngredientId,
 "/api/admin/festivals/{festivalId}/items/{itemId}": Endpoints.delete__api_admin_festivals_FestivalId_items_ItemId,
-"/api/admin/festivals/{festivalId}/stations/{stationId}": Endpoints.delete__api_admin_festivals_FestivalId_stations_StationId
+"/api/admin/festivals/{festivalId}/stations/{stationId}": Endpoints.delete__api_admin_festivals_FestivalId_stations_StationId,
+"/api/admin/festivals/{festivalId}/areas/{areaId}": Endpoints.delete__api_admin_festivals_FestivalId_areas_AreaId,
+"/api/admin/festivals/{festivalId}/tables/{tableId}": Endpoints.delete__api_admin_festivals_FestivalId_tables_TableId,
+"/api/admin/festivals/{festivalId}/stations/{stationId}/shape": Endpoints.delete__api_admin_festivals_FestivalId_stations_StationId_shape
          }
      }
      

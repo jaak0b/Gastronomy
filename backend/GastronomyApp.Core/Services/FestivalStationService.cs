@@ -13,8 +13,9 @@ public sealed class FestivalStationService
   private readonly IFestivalStationRepository _repository;
   private readonly RunningFestivalLookup _runningFestival;
   private readonly IStationRepository _stationRepository;
+  private readonly ITablePlanRepository _tablePlanRepository;
 
-  public FestivalStationService(IFestivalStationRepository repository, IFestivalRepository festivalRepository, IStationRepository stationRepository, ItemOrderability orderability, INumberAllocator numberAllocator, RunningFestivalLookup runningFestival)
+  public FestivalStationService(IFestivalStationRepository repository, IFestivalRepository festivalRepository, IStationRepository stationRepository, ItemOrderability orderability, INumberAllocator numberAllocator, RunningFestivalLookup runningFestival, ITablePlanRepository tablePlanRepository)
   {
     _repository = repository;
     _festivalRepository = festivalRepository;
@@ -22,6 +23,7 @@ public sealed class FestivalStationService
     _orderability = orderability;
     _numberAllocator = numberAllocator;
     _runningFestival = runningFestival;
+    _tablePlanRepository = tablePlanRepository;
   }
 
   public async Task<ErrorOr<FestivalStation>> AddAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
@@ -75,6 +77,9 @@ public sealed class FestivalStationService
       return Refusal.FestivalStation.ItemsWouldHaveNoStation(strandedItemIds.Count);
 
     IReadOnlyList<ItemStationAssignment> assignmentsHere = await _repository.FindAssignmentsAtStationAsync(festivalId, stationId, cancellationToken);
+
+    if (await _tablePlanRepository.FindStationShapeAsync(link.Id, cancellationToken) is { } shape)
+      _tablePlanRepository.RemoveStationShape(shape);
 
     _repository.RemoveAssignments(assignmentsHere);
     _repository.RemoveLink(link);

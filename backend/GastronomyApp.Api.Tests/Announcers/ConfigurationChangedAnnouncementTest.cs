@@ -13,9 +13,9 @@ public sealed class ConfigurationChangedAnnouncementTest
   {
     _context = await new OrderTestContextBuilder().StartAsync();
     _kitchenToken = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
-    _phone = new(new(_context.Factory.BaseAddress, $"hub?access_token={_context.DeviceToken}"), "ConfigurationChanged");
-    _admin = new(new(_context.Factory.BaseAddress, "hub"), "ConfigurationChanged");
-    _tablet = new(new(_context.Factory.BaseAddress, $"hub?access_token={_kitchenToken}"), "ConfigurationChanged");
+    _phone = new(_context.Factory, $"hub?access_token={_context.DeviceToken}", "ConfigurationChanged");
+    _admin = new(_context.Factory, "hub", "ConfigurationChanged");
+    _tablet = new(_context.Factory, $"hub?access_token={_kitchenToken}", "ConfigurationChanged");
   }
 
   [TearDown]
@@ -214,7 +214,7 @@ public sealed class ConfigurationChangedAnnouncementTest
       Assert.That(stock.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    await using HubEventListener ordersListener = new(new(_context.Factory.BaseAddress, "hub"), "OrdersChanged");
+    await using HubEventListener ordersListener = new(_context.Factory, "hub", "OrdersChanged");
     await ordersListener.StartAsync();
     await ListenAsync();
 
@@ -223,6 +223,85 @@ public sealed class ConfigurationChangedAnnouncementTest
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     await AssertEveryScreenHeardOnceAsync();
     Assert.That(ordersListener.HeardCount, Is.EqualTo(1), "The order itself is one change to the orders.");
+  }
+
+  [Test]
+  public async Task PostArea_ANewAreaOnTheFestivalsPlan_TellsEveryScreenOnce()
+  {
+    await ListenAsync();
+
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/areas",
+                                                               new
+                                                               {
+                                                                 name = "Garten",
+                                                                 sortOrder = 1
+                                                               });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    await AssertEveryScreenHeardOnceAsync();
+  }
+
+  [Test]
+  public async Task PostTable_ANewTableInAnArea_TellsEveryScreenOnce()
+  {
+    var gardenId = await CreateAreaAsync();
+    await ListenAsync();
+
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/tables",
+                                                               new
+                                                               {
+                                                                 areaId = gardenId,
+                                                                 name = "Tisch 1",
+                                                                 geometry = new
+                                                                            {
+                                                                              x = 10,
+                                                                              y = 20,
+                                                                              width = 80,
+                                                                              height = 40,
+                                                                              rotation = 0
+                                                                            }
+                                                               });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    await AssertEveryScreenHeardOnceAsync();
+  }
+
+  [Test]
+  public async Task PutStationShape_AStationPlacedInAnArea_TellsEveryScreenOnce()
+  {
+    var gardenId = await CreateAreaAsync();
+    await ListenAsync();
+
+    using var response = await _context.Client.PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/stations/{_context.World.KitchenStationId}/shape",
+                                                              new
+                                                              {
+                                                                areaId = gardenId,
+                                                                geometry = new
+                                                                           {
+                                                                             x = 100,
+                                                                             y = 50,
+                                                                             width = 60,
+                                                                             height = 60,
+                                                                             rotation = 0
+                                                                           }
+                                                              });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await AssertEveryScreenHeardOnceAsync();
+  }
+
+  private async Task<Guid> CreateAreaAsync()
+  {
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/areas",
+                                                               new
+                                                               {
+                                                                 name = "Garten",
+                                                                 sortOrder = 1
+                                                               });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+
+    return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("areaId").GetGuid();
   }
 
   private async Task<Guid> CreateIngredientAsync()
