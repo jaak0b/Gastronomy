@@ -169,8 +169,13 @@ The admin runs on the laptop, in a single column; there is no phone layout for i
 the device, light or dark, both palettes soft (`src/shared/theme.ts`).
 
 - **One festival page** at `/admin/festivals/{id}` manages a festival end to end: name and dates,
-  then its stations, articles and ingredient stock, each in an outlined card. It works the same for
-  past, running, future and hidden festivals; nothing on it is read-only.
+  then its stations, table plan, articles and ingredient stock, each in an outlined card. It works
+  the same for past, running, future and hidden festivals; nothing on it is read-only.
+- **The table plan has a page of its own** at `/admin/festivals/{id}/table-plan`, opened from the
+  festival page's "Tischplan" card, which lists each area with its number of tables and warns while
+  waiters see no area or no table. The page fills the screen height: the areas on the left, the
+  selected area's drawing in the middle, the selected table or station on the right. Everything
+  saves when it is dropped or a field is left, and deleting asks first.
 - **The festival page has no save button of its own.** Its fields (name, dates, an article's price
   and stations, an ingredient's available amount) save the moment the admin leaves them, and a field
   the laptop refuses says so on its row. The forms it opens, to create or edit a station, an article
