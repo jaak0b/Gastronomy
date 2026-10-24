@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { answer, emptyAnswer, inTurn, refusal } from '../../support/laptop'
+import { answer, refusal } from '../../support/laptop'
 import { FESTIVAL_ID, PLAN_PATH, planLaptop, planOfTheFestival } from './tablePlanFixture'
-import { anAdminArea } from '../../support/wireViews'
 
 const AREAS_PATH = '/api/admin/festivals/fest-1/areas'
 
@@ -80,63 +79,4 @@ describe('changing an area', () => {
     expect(laptop.writes()).toEqual([{ url: `${AREAS_PATH}/area-zelt/show`, method: 'POST', body: undefined }])
   })
 
-  it('deletes an area and reads the plan again', async () => {
-    const laptop = planLaptop(emptyAnswer(204))
-    const plan = await planOfTheFestival(laptop)
-
-    const deleted = await plan.deleteArea(FESTIVAL_ID, 'area-zelt')
-
-    expect(deleted).toEqual({ kind: 'ok', value: null })
-    expect(laptop.calls).toEqual([
-      { url: `${AREAS_PATH}/area-zelt`, method: 'DELETE', body: undefined },
-      { url: PLAN_PATH, method: 'GET', body: undefined },
-    ])
-  })
-
-  it('hands back the reason when the festival runs and the area cannot be deleted', async () => {
-    const laptop = planLaptop(refusal('errors.admin.festivals.areaStaysWhileTheFestivalRuns'))
-    const plan = await planOfTheFestival(laptop)
-
-    const deleted = await plan.deleteArea(FESTIVAL_ID, 'area-zelt')
-
-    expect(deleted).toEqual({
-      kind: 'failed',
-      message: { key: 'errors.admin.festivals.areaStaysWhileTheFestivalRuns', parameters: {}, count: null },
-    })
-  })
-})
-
-describe('moving an area in the order', () => {
-  it('sends the new place of the two areas that swap and reads the plan once', async () => {
-    const laptop = planLaptop(answer({ areaId: 'area-zelt' }))
-    const plan = await planOfTheFestival(laptop)
-
-    await plan.moveArea(FESTIVAL_ID, 'area-zelt', 'up')
-
-    expect(laptop.calls).toEqual([
-      { url: `${AREAS_PATH}/area-zelt`, method: 'PUT', body: { name: 'Zelt', sortOrder: 1 } },
-      { url: `${AREAS_PATH}/area-halle`, method: 'PUT', body: { name: 'Halle', sortOrder: 2 } },
-      { url: PLAN_PATH, method: 'GET', body: undefined },
-    ])
-  })
-
-  it('stops at the first refusal, reads the plan again and hands back the reason', async () => {
-    const threeAreas = [
-      anAdminArea({ areaId: 'area-halle', name: 'Halle', sortOrder: 1 }),
-      anAdminArea({ areaId: 'area-zelt', name: 'Zelt', sortOrder: 2 }),
-      anAdminArea({ areaId: 'area-garten', name: 'Garten', sortOrder: 3 }),
-    ]
-    const laptop = planLaptop(
-      inTurn(answer({ areaId: 'area-garten' }), refusal('errors.admin.actionFailed', { status: 400 })),
-    ).answers('GET', PLAN_PATH, answer({ areas: threeAreas }))
-    const plan = await planOfTheFestival(laptop)
-
-    const moved = await plan.moveArea(FESTIVAL_ID, 'area-garten', 'up')
-
-    expect(moved).toEqual({
-      kind: 'failed',
-      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
-    })
-    expect(laptop.urls()).toEqual([`${AREAS_PATH}/area-garten`, `${AREAS_PATH}/area-zelt`, PLAN_PATH])
-  })
 })

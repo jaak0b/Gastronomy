@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import type Konva from 'konva'
 import type { Plugin } from 'vue'
 import TablePlanEditor from '../../../../src/admin/components/tablePlan/TablePlanEditor.vue'
-import type { AdminAreaView, AdminStationView } from '../../../../src/shared/api/generatedSchemas'
+import type { AdminAreaView, AdminFestivalView, AdminStationView } from '../../../../src/shared/api/generatedSchemas'
 import { onScreen, waitUntil } from '../../../support/dom'
 import { drawingIn, shapeWithId, centreOf, tapAt } from '../../../support/konvaDrawing'
 import { answer, stubLaptop, type LaptopReply, type StubbedLaptop } from '../../../support/laptop'
@@ -59,6 +59,7 @@ export const SCHANK_SHAPE_ID = 'station-station-schank'
 export const DRAWING = '[data-test="table-plan-drawing"]'
 
 export interface EditorScenario {
+  festival?: AdminFestivalView
   areas?: AdminAreaView[]
   planReply?: LaptopReply
   stations?: AdminStationView[]
@@ -68,14 +69,18 @@ export interface EditorScenario {
 export function editorLaptop(scenario: EditorScenario = {}): StubbedLaptop {
   return stubLaptop()
     .answersEverythingElse(scenario.writeReply ?? answer({}))
-    .answers('GET', '/api/admin/festivals', answer({ festivals: [aFestival({ festivalId: FESTIVAL_ID })] }))
+    .answers('GET', '/api/admin/festivals', answer({ festivals: [scenario.festival ?? aFestival({ festivalId: FESTIVAL_ID })] }))
     .answers('GET', '/api/admin/stations', answer({ stations: scenario.stations ?? [KITCHEN, SCHANK] }))
     .answers('GET', PLAN_PATH, scenario.planReply ?? answer({ areas: scenario.areas ?? [HALL, TENT] }))
 }
 
-export async function mountEditor(locale: 'de' | 'en' = 'de', extraPlugins: Plugin[] = []) {
+export async function mountEditor(
+  locale: 'de' | 'en' = 'de',
+  extraPlugins: Plugin[] = [],
+  areaId = HALL.areaId,
+) {
   const editor = mount(TablePlanEditor, {
-    props: { festivalId: FESTIVAL_ID },
+    props: { festivalId: FESTIVAL_ID, areaId },
     global: { plugins: [...testPlugins(locale), ...extraPlugins] },
     attachTo: document.body,
   })
@@ -88,14 +93,22 @@ export function theDrawing(): Konva.Stage {
   return drawingIn(DRAWING)
 }
 
+export function shapesWithTheHandles(): string[] {
+  return theDrawing().findOne<Konva.Transformer>('Transformer')?.nodes().map((node) => node.id()) ?? []
+}
+
 export async function selectTheShape(id: string): Promise<void> {
   const stage = theDrawing()
   await tapAt(stage, centreOf(shapeWithId(stage, id)))
-  await waitUntil(() => expect(onScreen(`[data-test="shape-details"][data-test-id="${id}"]`)).toBeTruthy())
+  await waitUntil(() => expect(shapesWithTheHandles()).toEqual([id]))
 }
 
-export function areaRow(areaId: string): HTMLElement {
-  return onScreen(`[data-test="area-row"][data-test-id="${areaId}"]`)
+export function tableRow(tableId: string): HTMLElement {
+  return onScreen(`[data-test="table-row"][data-test-id="${tableId}"]`)
+}
+
+export function stationRow(stationId: string): HTMLElement {
+  return onScreen(`[data-test="station-row"][data-test-id="${stationId}"]`)
 }
 
 export function drawingScrollArea(): HTMLElement {

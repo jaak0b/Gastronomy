@@ -5,7 +5,7 @@ import AdminShell from '../../../src/admin/views/AdminShell.vue'
 import { navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
 import { stubLaptop, answer, emptyAnswer } from '../../support/laptop'
-import { aFestival } from '../../support/wireViews'
+import { aFestival, anAdminArea } from '../../support/wireViews'
 
 function shellLaptop(adminStatus: number): void {
   stubLaptop()
@@ -56,14 +56,14 @@ describe('the admin shell', () => {
     expect(shell.find('[data-test="not-on-laptop"]').exists()).toBe(false)
   })
 
-  it('opens the table plan editor at the table plan address of a festival', async () => {
+  it('opens the editor of one area at the address of that area', async () => {
     stubLaptop()
       .answersEverythingElse(answer({ stations: [] }))
       .answers('GET', '/api/language', answer({ language: 'de' }))
       .answers('GET', '/api/admin/festivals', answer({ festivals: [aFestival({ festivalId: 'fest-1' })] }))
-      .answers('GET', '/api/admin/festivals/fest-1/table-plan', answer({ areas: [] }))
+      .answers('GET', '/api/admin/festivals/fest-1/table-plan', answer({ areas: [anAdminArea({ areaId: 'area-halle' })] }))
 
-    const shell = mountShellAt('/admin/festivals/fest-1/table-plan')
+    const shell = mountShellAt('/admin/festivals/fest-1/areas/area-halle')
     await flushPromises()
 
     expect(shell.find('[data-test="table-plan-editor"]').exists()).toBe(true)

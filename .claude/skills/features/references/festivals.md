@@ -46,18 +46,38 @@ Backend, under `backend/`:
   `AdminFestivalView` with `IsHidden`, `IsRunning` and the three counts, `AdminFestivalListView`,
   `SaveFestivalItemRequest`). Mapping: `GastronomyApp.Api/Mapping/AdminFestivalMapping.cs`; the handler
   sets `IsRunning` from `FestivalAdministrationService.IsRunning`.
+- The station list read for one festival (`GET /api/admin/stations?festivalId=`) answers
+  `AdminStationView.HasItemsToHandOut`: `StationRepository.FindAllAsync` projects a `ListedStation`
+  (`Core/Results`) per station in the same statement, through `GastronomyAppDbContext.ItemsToHandOutAt`,
+  the predicate `FestivalStationRepository.CountUnfulfilledItemsAsync` uses for the removal refusal
+  (`StationHasUnfulfilledItems`). Without a festival the flag is false.
 
 Frontend, under `frontend/src/`:
 
 - `admin/components/festivals/FestivalsList.vue` is the Feste tab: one row per festival with the
-  "Aktiv" and "Ausgeblendet" chips, open, copy, hide and show, a checkbox that reveals the hidden ones,
-  and the new festival button. `FestivalDialog.vue` is the form for a new festival and for a copy.
+  "Aktiv" and "Ausgeblendet" chips, open, copy, hide (the crossed-out eye of the category rows with
+  the tooltip "Ausblenden", `BaseIconAction.vue`, asking through `BaseHideConfirmDialog.vue`) and
+  show (the open eye with the tooltip "Einblenden", `BaseShowButton.vue`), the checkbox that reveals
+  the hidden ones in the heading line (`BaseHeadingWithCheckbox.vue`, as on every global tab), and
+  the new festival button; the table plan's areas and tables hide and show through the same pieces
+  (see the `hideable-rows` how-to page). `FestivalDialog.vue` is the form for a new festival and for a copy.
   `shared/router/route.ts` reads `/admin/festivals/{festivalId}` and
-  `/admin/festivals/{festivalId}/table-plan`, and `admin/views/AdminShell.vue` chooses between the
-  list, the page and the table plan editor.
+  `/admin/festivals/{festivalId}/areas/{areaId}`, and `admin/views/AdminShell.vue` chooses between the
+  list, the page and the editor of one area of the table plan.
 - `FestivalPage.vue` is the festival page; an unknown festival id returns to the overview through
-  `admin/composables/useOpenedFestival.ts`, which the table plan editor shares. Name, start and end
-  save when a field is left or Enter is
+  `admin/composables/useOpenedFestival.ts`, which the editor of an area shares. It decides only once
+  the festival list has arrived (`hasLoaded` of `admin/stores/adminList.ts`), so a read overtaken by
+  the connection's refetch neither sends the admin away nor skips loading the page. The article
+  rows' trash icon is `BaseTrashButton.vue` inside `BaseActionWithRefusalReason.vue` (disabled with
+  its reason while the festival runs), and so is the station rows' trash icon, disabled with
+  `stationHasOrdersAtTheFestival` while the festival runs and the station has items to hand out. The
+  station rows are `stations/RemovableStationRows.vue`, which the table plan editor's station list
+  uses too; a refusal that comes back anyway shows on the row. The article and station removals ask
+  through `BaseRemoveConfirmDialog.vue`. The station card's and the article card's search and add
+  button are `BaseSearchAddLine.vue`, with "Neu…" in its slot; with nothing to add the station search
+  says either that every station switched on is already here (`noStationsToAdd`) or that none is
+  switched on (`noStationSwitchedOn`). Every row of the page's lists is a `BaseListRow.vue`, the one
+  home of the tint on every second row. Name, start and end save when a field is left or Enter is
   pressed, with no save button. Its sections are `FestivalStations.vue`, `FestivalTablePlan.vue`
   (see the `table-plan` page), `FestivalItems.vue` (with `FestivalPlacementDialog.vue`,
   `StationSelect.vue` and `admin/composables/useFestivalItemRows.ts`) and `FestivalStock.vue` (see
@@ -124,8 +144,13 @@ Every point below is intended behaviour. A change to any of them needs the owner
 - `GastronomyApp.Api.Tests/Endpoints`: `AdminFestivalEndpointsTest` (the wire shape, overlap with a
   hidden festival, show without an overlap check, hide while running, copy) and
   `FestivalScopeEndpointsTest`.
+- `GastronomyApp.Infrastructure.Tests/Repositories/StationRepositoryTest` and
+  `GastronomyApp.Api.Tests/Endpoints/AdminFestivalEndpointsTest` for `HasItemsToHandOut`.
 - `frontend/tests`: `admin/stores/festivals.spec.ts` and `festivalScope.spec.ts`;
-  `admin/components/festivals/FestivalsList.spec.ts` and `FestivalPage.*.spec.ts` (`heading`,
-  `refusals`, `stations`, `itemChanges`, `itemPlacement`, `tablePlan`) on `festivalPageFixture.ts`;
+  `admin/components/festivals/FestivalsList.spec.ts` (the eye icons and their names) and
+  `FestivalPage.*.spec.ts` (`heading`, `refusals`, `stations` with the disabled trash icon and the
+  two sentences of the empty search, `itemChanges`, `itemPlacement`, `tablePlan`, `tablePlanAreas`) on
+  `festivalPageFixture.ts`, the guard against an overtaken festival read in `.heading`, and the
+  loaded state in `admin/stores/adminList.spec.ts`;
   `phone/stores/orderFestivalScope.spec.ts` (the silent drop and the frozen order). Fixtures come from
   `aFestival` in `tests/support/wireViews.ts`.

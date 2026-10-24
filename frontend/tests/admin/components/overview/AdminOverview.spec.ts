@@ -121,6 +121,7 @@ describe('the overview of the festival that is running', () => {
           isActive: true,
           hasDevice: false,
           isAtAnyFestival: true,
+          hasItemsToHandOut: false,
         },
       ],
     })
@@ -143,6 +144,7 @@ describe('the overview of the festival that is running', () => {
           isActive: true,
           hasDevice: true,
           isAtAnyFestival: true,
+          hasItemsToHandOut: false,
         },
       ],
     })

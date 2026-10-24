@@ -29,4 +29,10 @@ describe('a selected shape', () => {
   it('is not drawn in an area without that table', () => {
     expect(isDrawnIn(HALL, { kind: 'table', tableId: 'table-b1' })).toBe(false)
   })
+
+  it('is not drawn once its table is hidden', () => {
+    const hallWithAHiddenTable = anAdminArea({ tables: [anAdminTable({ tableId: 'table-a1', isHidden: true })] })
+
+    expect(isDrawnIn(hallWithAHiddenTable, { kind: 'table', tableId: 'table-a1' })).toBe(false)
+  })
 })

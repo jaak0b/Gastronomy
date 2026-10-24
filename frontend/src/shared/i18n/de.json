@@ -130,7 +130,6 @@
     "review": {
       "labels": {
         "goesTo": "Geht an {name}",
-        "stationDelivery": "{name}:",
         "table": "Tisch: {name}",
         "unknownPrice": "-"
       },
@@ -158,14 +157,14 @@
         "backToAreas": "Bereiche",
         "backToThePlan": "Tischplan",
         "reload": "Neu laden",
-        "backToTheUnsentOrder": "Zurück zur Bestellung für Tisch {table}",
-        "discardAndTakeTheOrder": "Verwerfen und Bestellung für Tisch {table} aufnehmen"
+        "toTheUnsentTable": "Zu Tisch {table}",
+        "discard": "Verwerfen"
       },
       "messages": {
         "noFestivalIsActive": "Es ist kein Fest aktiv.",
         "noTables": "Es sind noch keine Tische angelegt.",
         "noTablesInArea": "In diesem Bereich ist noch kein Tisch angelegt.",
-        "unsentOrder": "Die Bestellung für Tisch {table} ist noch nicht gesendet."
+        "unsentOrder": "Tisch {table} hat {count} Artikel für {total}, der noch nicht gesendet ist. | Tisch {table} hat {count} Artikel für {total}, die noch nicht gesendet sind."
       },
       "errors": {
         "loadFailed": "Der Tischplan konnte nicht geladen werden. Tippen Sie auf \"Neu laden\"."
@@ -243,7 +242,8 @@
       "actions": {
         "edit": "Bearbeiten",
         "save": "Speichern",
-        "showDeactivated": "Deaktivierte anzeigen"
+        "showDeactivated": "Deaktivierte anzeigen",
+        "showHidden": "Ausgeblendete anzeigen"
       },
       "messages": {
         "notOnLaptop": "Die Verwaltung lässt sich nur am Rechner öffnen."
@@ -311,6 +311,7 @@
         "noItemsToAdd": "Alle eingeschalteten Artikel gehören schon zu diesem Fest. Klicken Sie auf \"Neuer Artikel\".",
         "noneYet": "Es ist noch kein Fest angelegt. Klicken Sie auf \"Neues Fest\".",
         "noStationsToAdd": "Alle eingeschalteten Ausgabestellen gehören schon zu diesem Fest. Klicken Sie auf \"Neue Ausgabestelle\".",
+        "noStationSwitchedOn": "Es ist keine Ausgabestelle eingeschaltet. Klicken Sie auf \"Neue Ausgabestelle\".",
         "removeItemBody": "Der Artikel wird nur von diesem Fest entfernt.",
         "removeStationBody": "Die Ausgabestelle wird nur von diesem Fest entfernt."
       },
@@ -321,30 +322,29 @@
     "tablePlan": {
       "title": "Tischplan",
       "labels": {
-        "areas": "Bereiche",
         "areaName": "Name des Bereichs",
-        "newAreaName": "Name des neuen Bereichs",
         "tableName": "Name des Tisches",
-        "newTableName": "Name des neuen Tisches",
-        "station": "Ausgabestelle",
         "tableCount": "{count} Tisch | {count} Tische",
-        "deleteAreaTitle": "Bereich {name} löschen",
-        "deleteTableTitle": "Tisch {name} löschen",
-        "stationsToPlace": "Ausgabestellen, die noch nicht im Tischplan stehen"
+        "tables": "Tische",
+        "hideAreaTitle": "Bereich ausblenden",
+        "hideTableTitle": "Tisch ausblenden"
       },
       "actions": {
-        "edit": "Tischplan bearbeiten",
-        "createArea": "Bereich anlegen",
-        "addTable": "Tisch hinzufügen",
-        "delete": "Löschen",
-        "placeStation": "Zu diesem Bereich hinzufügen",
-        "takeStationOffThePlan": "Aus dem Tischplan nehmen"
+        "newArea": "Neuer Bereich",
+        "editArea": "Bereich bearbeiten",
+        "newTable": "Neuer Tisch",
+        "editTable": "Tisch bearbeiten",
+        "openPlan": "Plan öffnen"
       },
       "messages": {
-        "noArea": "Die Kellner sehen noch keinen Bereich. Klicken Sie auf \"Tischplan bearbeiten\".",
-        "noTable": "Die Kellner sehen noch keinen Tisch. Klicken Sie auf \"Tischplan bearbeiten\".",
-        "createAnAreaFirst": "Legen Sie zuerst einen Bereich an.",
-        "deleteAreaBody": "Die Tische in diesem Bereich werden mit gelöscht."
+        "noArea": "Die Kellner sehen noch keinen Bereich. Klicken Sie auf \"Neuer Bereich\".",
+        "noTable": "Die Kellner sehen noch keinen Tisch. Klicken Sie bei einem Bereich auf \"Plan öffnen\".",
+        "hideAreaBody": "Die Kellner sehen diesen Bereich dann nicht mehr.",
+        "hideTableBody": "Die Kellner sehen diesen Tisch dann nicht mehr.",
+        "removeStationBody": "Die Ausgabestelle wird nur aus diesem Bereich entfernt.",
+        "allAreasHidden": "Alle Bereiche sind ausgeblendet. Kreuzen Sie \"Ausgeblendete anzeigen\" an und blenden Sie einen Bereich wieder ein.",
+        "noStationsToPlace": "Alle Ausgabestellen dieses Festes stehen schon in einem Bereich.",
+        "festivalHasNoStations": "Zu diesem Fest gehört noch keine Ausgabestelle."
       }
     },
     "ingredients": {
@@ -472,23 +472,17 @@
         "nameTaken": "Es gibt schon eine Kategorie mit diesem Namen. Wählen Sie einen anderen."
       },
       "festivals": {
-        "areaNameMissing": "Geben Sie dem Bereich einen Namen.",
         "areaNameTaken": "Ein Bereich dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.",
-        "areaStaysWhileTheFestivalRuns": "Solange das Fest aktiv ist, kann ein Bereich nicht gelöscht werden. Blenden Sie ihn stattdessen aus.",
-        "areaWithItemsToHandOutOrSettleStaysShown": "Solange das Fest aktiv ist, lässt sich ein Bereich erst ausblenden, wenn an allen seinen Tischen alles zubereitet und abgerechnet ist.",
-        "areaWithOrdersStays": "Ein Bereich, an dessen Tischen schon bestellt wurde, kann nicht gelöscht werden. Blenden Sie ihn stattdessen aus.",
+        "areaWithItemsToHandOutOrSettleStaysShown": "Ein Bereich kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und abgerechnet ist.",
         "itemNeedsAStation": "Wählen Sie mindestens eine Ausgabestelle für den Artikel.",
         "itemPriceOutOfRange": "Tragen Sie einen Preis zwischen 0,00 und 999,99 Euro ein.",
         "itemStaysOnTheMenuWhileTheFestivalRuns": "Ein Artikel kann von einem aktiven Fest nicht entfernt werden.",
         "nameMissing": "Geben Sie dem Fest einen Namen.",
         "overlaps": "Das Fest {name} überschneidet sich mit diesem Zeitraum. Verschieben Sie den Beginn oder das Ende.",
         "periodInvalid": "Das Ende muss nach dem Beginn liegen. Tragen Sie beim Ende einen späteren Zeitpunkt ein.",
-        "stationHasOrdersAtTheFestival": "Solange das Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht entfernt werden.",
-        "tableNameMissing": "Geben Sie dem Tisch einen Namen.",
+        "stationHasOrdersAtTheFestival": "Eine Ausgabestelle mit offenen Bestellungen kann von einem aktiven Fest nicht entfernt werden.",
         "tableNameTaken": "Ein Tisch dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.",
-        "tableStaysWhileTheFestivalRuns": "Solange das Fest aktiv ist, kann ein Tisch nicht gelöscht werden. Blenden Sie ihn stattdessen aus.",
-        "tableWithItemsToHandOutOrSettleStaysShown": "Solange das Fest aktiv ist, lässt sich ein Tisch erst ausblenden, wenn dort alles zubereitet und abgerechnet ist.",
-        "tableWithOrdersStays": "Ein Tisch, an dem schon bestellt wurde, kann nicht gelöscht werden. Blenden Sie ihn stattdessen aus."
+        "tableWithItemsToHandOutOrSettleStaysShown": "Ein Tisch kann bei einem aktiven Fest erst ausgeblendet werden, wenn dort alles zubereitet und abgerechnet ist."
       },
       "ingredients": {
         "nameMissing": "Geben Sie einen Namen für die Zutat an.",

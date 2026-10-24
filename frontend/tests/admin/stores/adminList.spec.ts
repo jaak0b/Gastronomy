@@ -54,6 +54,25 @@ afterEach(() => {
 })
 
 describe('loading an admin list', () => {
+  it('says it has loaded once the first read has arrived', async () => {
+    laptopListing([FOOD])
+    const list = categoryList()
+
+    await list.load()
+
+    expect(list.hasLoaded.value).toBe(true)
+  })
+
+  it('has not loaded while a read is still on its way', async () => {
+    const theRead = aHold()
+    stubLaptop().answers('GET', /./, heldUntil(theRead.released, answer({ categories: [FOOD] })))
+    const list = categoryList()
+
+    void list.load()
+
+    expect(list.hasLoaded.value).toBe(false)
+  })
+
   it('holds what the laptop listed, in its order', async () => {
     laptopListing([DRINKS, FOOD])
     const list = categoryList()

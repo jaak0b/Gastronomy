@@ -3,12 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { enableAutoUnmount } from '@vue/test-utils'
 import type Konva from 'konva'
 import { textOnScreen } from '../../../support/dom'
-import {
-  anchorOf,
-  dragAnchorBy,
-  layOutTheScreen,
-  shapeWithId,
-} from '../../../support/konvaDrawing'
+import { anchorOf, dragAnchorBy, shapeWithId } from '../../../support/konvaDrawing'
 import { refusal } from '../../../support/laptop'
 import {
   SCHANK_SHAPE_ID,
@@ -40,17 +35,16 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
-  vi.restoreAllMocks()
 })
 
 describe('resizing a table', () => {
-  it('saves the new width and height and keeps the name at its size', async () => {
+  it('saves the new width and height in drawing units and keeps the name at its size', async () => {
     const laptop = editorLaptop()
     await mountEditor()
     await selectTheShape(TABLE_A1_SHAPE_ID)
     const table = shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID)
 
-    await dragAnchorBy(theDrawing(), 'bottom-right', { x: 27, y: 13 })
+    await dragAnchorBy(theDrawing(), 'bottom-right', { x: 40.5, y: 19.5 })
 
     const saved = laptop.writtenBodies()[0] as SavedShape
     expect(roundedValuesOf(saved)).toEqual([20, 30, 110, 50, 0])
@@ -58,33 +52,17 @@ describe('resizing a table', () => {
     expect([table.scaleX(), table.scaleY(), table.findOne<Konva.Text>('Text')?.width()]).toEqual([1, 1, table.width()])
   })
 
-  it('snaps the corner in drawing units when the drawing is shown twice as large', async () => {
-    layOutTheScreen({ width: 800, height: 0 })
-    const laptop = editorLaptop()
-    await mountEditor()
-    await selectTheShape(TABLE_A1_SHAPE_ID)
-    const table = shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID)
-
-    await dragAnchorBy(theDrawing(), 'bottom-right', { x: 54, y: 26 })
-
-    const saved = laptop.writtenBodies()[0] as SavedShape
-    expect(roundedValuesOf(saved)).toEqual([20, 30, 110, 50, 0])
-    expect(saved.geometry).toEqual(geometryOfTheNode(table))
-  })
-
   it('keeps a table at least 20 units wide when the admin drags its side too far', async () => {
-    layOutTheScreen({ width: 800, height: 0 })
     const laptop = editorLaptop()
     await mountEditor()
     await selectTheShape(TABLE_A1_SHAPE_ID)
 
-    await dragAnchorBy(theDrawing(), 'bottom-right', { x: -150, y: 0 })
+    await dragAnchorBy(theDrawing(), 'bottom-right', { x: -112.5, y: 0 })
 
-    expect(roundedValuesOf(laptop.writtenBodies()[0] as SavedShape)).toEqual([20, 30, 80, 40, 0])
+    expect(roundedValuesOf(laptop.writtenBodies()[0] as SavedShape)).toEqual([20, 30, 70, 40, 0])
   })
 
   it('keeps a table inside the right edge of the drawing', async () => {
-    layOutTheScreen({ width: 800, height: 0 })
     const laptop = editorLaptop()
     await mountEditor()
     await selectTheShape(TABLE_A1_SHAPE_ID)
@@ -100,10 +78,10 @@ describe('resizing a table', () => {
     await selectTheShape(TABLE_A1_SHAPE_ID)
     const table = shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID)
 
-    await dragAnchorBy(theDrawing(), 'bottom-right', { x: 27, y: 13 })
+    await dragAnchorBy(theDrawing(), 'bottom-right', { x: 40.5, y: 19.5 })
 
     expect(geometryOfTheNode(table)).toEqual({ x: 20, y: 30, width: 80, height: 40, rotation: 0 })
-    expect(anchorOf(theDrawing(), 'bottom-right')).toEqual({ x: 100, y: 70 })
+    expect(anchorOf(theDrawing(), 'bottom-right')).toEqual({ x: 156, y: 111 })
     expect(textOnScreen('[data-test="table-plan-drawing-column"] [data-test="refusal"]').trim()).toBe(
       'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.',
     )
@@ -116,7 +94,7 @@ describe('resizing a station shape', () => {
     await mountEditor()
     await selectTheShape(SCHANK_SHAPE_ID)
 
-    await dragAnchorBy(theDrawing(), 'bottom-right', { x: 17, y: 23 })
+    await dragAnchorBy(theDrawing(), 'bottom-right', { x: 25.5, y: 34.5 })
 
     const written = laptop.writes()[0]
     expect(written.url).toBe('/api/admin/festivals/fest-1/stations/station-schank/shape')

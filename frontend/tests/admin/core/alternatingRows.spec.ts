@@ -1,20 +1,36 @@
 import { describe, expect, it } from 'vitest'
-import { idsOfEverySecondRow } from '../../../src/admin/core/alternatingRows'
+import { numberRowsAcrossGroups } from '../../../src/admin/core/alternatingRows'
 
-describe('the rows tinted to guide the eye', () => {
-  it('tints the second and fourth row of one group', () => {
-    const groups = [{ items: [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }] }]
+function positionsOf(groups: { items: { id: string }[] }[]): [string, number][] {
+  return numberRowsAcrossGroups(groups).flatMap((group) =>
+    group.rows.map(({ item, position }): [string, number] => [item.id, position]),
+  )
+}
 
-    expect([...idsOfEverySecondRow(groups, (row) => row.id)]).toEqual(['b', 'd'])
+describe('the rows numbered so every second one can be tinted', () => {
+  it('numbers the rows of one group from the top', () => {
+    expect(positionsOf([{ items: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] }])).toEqual([
+      ['a', 0],
+      ['b', 1],
+      ['c', 2],
+    ])
   })
 
   it('counts on through the next group instead of starting over', () => {
-    const groups = [{ items: [{ id: 'a' }] }, { items: [{ id: 'b' }, { id: 'c' }] }]
-
-    expect([...idsOfEverySecondRow(groups, (row) => row.id)]).toEqual(['b'])
+    expect(positionsOf([{ items: [{ id: 'a' }] }, { items: [{ id: 'b' }, { id: 'c' }] }])).toEqual([
+      ['a', 0],
+      ['b', 1],
+      ['c', 2],
+    ])
   })
 
-  it('tints nothing when there are no rows', () => {
-    expect([...idsOfEverySecondRow([], (row: { id: string }) => row.id)]).toEqual([])
+  it('keeps everything else the group carries', () => {
+    const numbered = numberRowsAcrossGroups([{ name: 'Speisen', items: [{ id: 'a' }] }])
+
+    expect(numbered.map((group) => group.name)).toEqual(['Speisen'])
+  })
+
+  it('numbers nothing when there are no rows', () => {
+    expect(positionsOf([])).toEqual([])
   })
 })

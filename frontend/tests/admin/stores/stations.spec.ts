@@ -20,6 +20,7 @@ const BACKEND_STATION = {
   isActive: true,
   hasDevice: false,
   isAtAnyFestival: true,
+  hasItemsToHandOut: false,
 }
 
 const ZELT = {
@@ -29,6 +30,7 @@ const ZELT = {
   isActive: true,
   hasDevice: false,
   isAtAnyFestival: false,
+  hasItemsToHandOut: false,
 }
 
 function laptopReplyingBy(
@@ -199,6 +201,7 @@ const CREATED_STATION = {
   isActive: true,
   hasDevice: false,
   isAtAnyFestival: false,
+  hasItemsToHandOut: false,
 }
 
 describe('a station created while a list read is on the way', () => {

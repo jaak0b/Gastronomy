@@ -78,9 +78,15 @@ Backend, under `backend/`:
   opened under only while the table is not on the plan.
 - **The draft belongs to the table it was opened at.** "Bestellung aufnehmen" on a table takes the
   table when the draft has no items, carries on with the draft on its own table, and asks first when
-  another table's items are on it: back to the order for that table, or discard the items and take
-  the order for the new one. "Abrechnen" asks nothing and leaves the draft alone. A draft that was
-  never sent locks nothing: the waiter may go back to the plan, and the items wait for their table.
+  another table's items are on it. The question (`components/tablePlan/UnsentOrderDialog.vue`) hides
+  the plan behind an opaque surface (scrim `background` at opacity 1) and says in one sentence which
+  table holds how many unsent items for what total (`phone.tablePlan.messages.unsentOrder`, counted
+  with `order.itemCount` and priced with `formatPrice` like the basket bar). Its three buttons: "Zu
+  Tisch …" (the filled one) goes to that table's order, "Verwerfen" discards the items and takes the
+  order for the tapped table without asking again, and "Zurück" closes the question and leaves the
+  draft and the plan as they were. "Abrechnen" asks nothing and leaves the draft alone. A draft that
+  was never sent locks nothing: the waiter may go back to the plan, and the items wait for their
+  table.
 - **A frozen order takes no change and blocks the way to the plan.** While a send attempt is
   unresolved (`changesAreRefusedFor`), the order store ignores every change, and the ordering screen
   and the home screen move the waiter to the summary as they open (`waiterLandingFor` puts the locked
@@ -118,8 +124,9 @@ Backend, under `backend/`:
   frozen order, no table), `Catalog.categories.spec.ts`, `Catalog.stationChoice.spec.ts` (the station
   question, also when the price is tapped) and `Catalog.waitingTime.spec.ts`, on `catalogFixture.ts`;
   `Review.sending.spec.ts` (both landings after sending, no table); `TablePlan.sheet.spec.ts` (the
-  action sheet and the question about unsent items) and `TablePlan.landing.spec.ts` (the locked order
-  leading to the summary).
+  action sheet, and the question about unsent items: its sentence with count and total in both
+  languages, each of its three buttons and what follows) and `TablePlan.landing.spec.ts` (the locked
+  order leading to the summary).
 - `frontend/tests/phone/core`: `itemPositions.spec.ts`, `categoryPortions.spec.ts`,
   `routingPreview.spec.ts`, `draftCart.editing.spec.ts` (including `openingTheOrderAt`),
   `draftCart.storage.spec.ts`, `draftCart.unreadable.spec.ts` (including a draft with a typed table

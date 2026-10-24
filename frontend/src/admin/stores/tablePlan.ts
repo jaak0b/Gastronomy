@@ -6,27 +6,31 @@ import {
   SavedAreaView,
   SavedTableView,
   type AdminAreaView,
+  type MoveDirection,
   type SaveAreaRequest,
   type SaveStationShapeRequest,
   type SaveTableRequest,
 } from '../../shared/api/generatedSchemas'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { useConnectionStore } from '../../shared/stores/connection'
-import { adminOk, type AdminActionResult } from '../core/adminActionResult'
-import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
-import { sortOrderChangesForMoving, type AreaMove } from '../core/areaOrder'
+import type { AdminActionResult } from '../core/adminActionResult'
+import { reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/listLoading'
+import { oneAtATime } from '../core/oneAtATime'
 
 export const useAdminTablePlanStore = defineStore('adminTablePlan', () => {
   const areas = ref<AdminAreaView[]>([])
   const loadFailed = ref(false)
   const festivalInView = ref<string | null>(null)
+  const loadedFestivalId = ref<string | null>(null)
 
   const tablePlanGate = createLatestRequestGate()
+  const areaMoves = oneAtATime()
 
   async function loadForFestival(festivalId: string): Promise<void> {
     if (festivalInView.value !== festivalId) {
       areas.value = []
+      loadedFestivalId.value = null
     }
     festivalInView.value = festivalId
     await loadAdminList({
@@ -36,6 +40,7 @@ export const useAdminTablePlanStore = defineStore('adminTablePlan', () => {
       itemsOf: (response) => response.areas,
       showItems: (loaded) => {
         areas.value = loaded
+        loadedFestivalId.value = festivalId
       },
       setLoadFailed: (failed) => {
         loadFailed.value = failed
@@ -81,21 +86,17 @@ export const useAdminTablePlanStore = defineStore('adminTablePlan', () => {
   async function moveArea(
     festivalId: string,
     areaId: string,
-    move: AreaMove,
+    direction: MoveDirection,
   ): Promise<AdminActionResult<null>> {
-    for (const change of sortOrderChangesForMoving(areas.value, areaId, move)) {
-      const body: SaveAreaRequest = { name: change.area.name, sortOrder: change.sortOrder }
-      const saved = await requestAction(
-        `/api/admin/festivals/${festivalId}/areas/${change.area.areaId}`,
-        { method: 'PUT', body },
-      )
-      if (saved.kind !== 'ok') {
-        await reload()
-        return adminFailureFrom(saved)
-      }
-    }
-    await reload()
-    return adminOk(null)
+    return await areaMoves.run(async () =>
+      reloadOrFailureOf(
+        await requestAction(`/api/admin/festivals/${festivalId}/areas/${areaId}/move`, {
+          method: 'POST',
+          body: { direction },
+        }),
+        reload,
+      ),
+    )
   }
 
   async function hideArea(festivalId: string, areaId: string): Promise<AdminActionResult<null>> {
@@ -111,15 +112,6 @@ export const useAdminTablePlanStore = defineStore('adminTablePlan', () => {
     return await reloadOrFailureOf(
       await requestAction(`/api/admin/festivals/${festivalId}/areas/${areaId}/show`, {
         method: 'POST',
-      }),
-      reload,
-    )
-  }
-
-  async function deleteArea(festivalId: string, areaId: string): Promise<AdminActionResult<null>> {
-    return await reloadOrFailureOf(
-      await requestAction(`/api/admin/festivals/${festivalId}/areas/${areaId}`, {
-        method: 'DELETE',
       }),
       reload,
     )
@@ -171,15 +163,6 @@ export const useAdminTablePlanStore = defineStore('adminTablePlan', () => {
     )
   }
 
-  async function deleteTable(festivalId: string, tableId: string): Promise<AdminActionResult<null>> {
-    return await reloadOrFailureOf(
-      await requestAction(`/api/admin/festivals/${festivalId}/tables/${tableId}`, {
-        method: 'DELETE',
-      }),
-      reload,
-    )
-  }
-
   async function placeStation(
     festivalId: string,
     stationId: string,
@@ -207,24 +190,23 @@ export const useAdminTablePlanStore = defineStore('adminTablePlan', () => {
   }
 
   function listen(): () => void {
-    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], reload)
+    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged', 'OrdersChanged'], reload)
   }
 
   return {
     areas,
     loadFailed,
+    loadedFestivalId,
     loadForFestival,
     createArea,
     saveArea,
     moveArea,
     hideArea,
     showArea,
-    deleteArea,
     createTable,
     saveTable,
     hideTable,
     showTable,
-    deleteTable,
     placeStation,
     takeStationOffThePlan,
     listen,

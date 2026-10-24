@@ -99,6 +99,7 @@ export function anAdminStation(overrides: Partial<AdminStationView> = {}): Admin
     isActive: true,
     hasDevice: true,
     isAtAnyFestival: true,
+    hasItemsToHandOut: false,
     ...overrides,
   }
 }
@@ -143,6 +144,7 @@ export function anAdminTable(overrides: Partial<AdminTableView> = {}): AdminTabl
     name: 'A1',
     geometry: aGeometry(),
     isHidden: false,
+    hasItemsToHandOutOrSettle: false,
     ...overrides,
   }
 }
@@ -164,6 +166,7 @@ export function anAdminArea(overrides: Partial<AdminAreaView> = {}): AdminAreaVi
     name: 'Halle',
     sortOrder: 1,
     isHidden: false,
+    hasItemsToHandOutOrSettle: false,
     tables: [],
     stationShapes: [],
     ...overrides,

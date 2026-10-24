@@ -43,13 +43,27 @@ Wrap the `KonvaStage` in an element of our own with a `data-test`, because vue-k
   `touchmove` and `touchend` with the fingers that touch, which Konva turns into `tap`, a pan and,
   with two fingers, the plan's pinch. Use them for anything a finger decides, since Konva handles
   each finger's tap on its own.
+- `tapAsAPhoneDoes(stage, finger)` sends what a phone's browser sends for one quick tap: pointer and
+  touch events, a pixel of slip, and then, unless the page cancelled the `touchend`, `mousedown`,
+  `mouseup` and `click` at that spot, delivered to what lies on top there by then (the scrim of an
+  open Vuetify overlay, otherwise the drawing). `clickAsAMouseDoes(stage, point)` sends the laptop's
+  mouse click: pointer and mouse events and the native click on the drawing. Use these for anything
+  that must survive the click a browser sends behind a tap, such as a sheet the tap opens.
+
+A spec that checks a Vuetify overlay against that click mounts with Vue's real transitions
+(`stubs: { transition: false }`, as `mountThePlan` does): Vuetify recognises a click on its scrim
+by the scrim's own element, and a stubbed transition puts its stub in that place, so the overlay
+would ignore the click. Vuetify closes on such a click in a `setTimeout`, so the spec fakes only
+`setTimeout` (`vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })`, leaving
+`flushPromises` working) and runs it with `vi.runOnlyPendingTimersAsync()` before it asserts.
 
 Every helper that presses calls `stage.draw()` first, so the hit canvas shows what the last change
 drew, and every step ends with `flushPromises()`. Coordinates are stage pixels: when the stage is
-scaled they are drawing units times the scale. In jsdom every element measures 0 pixels, so the
-editor draws at scale 1 and a pixel is a drawing unit. A spec that needs another scale or a visible
-height stubs the measurement with `layOutTheScreen({ width, height })`, which spies on
-`Element.prototype`'s `clientWidth` and `clientHeight`, and calls `vi.restoreAllMocks()` in
+scaled they are drawing units times the scale. The admin's editor always draws at its fixed scale
+of 1.5, in jsdom too, with its drawing shifted 4 units (6 pixels) right and down for the margin, so
+a move of 33 units is a pointer move of 49.5 pixels and a shape at 300 units sits at 456 pixels. In jsdom every element measures 0 pixels; a spec that needs a visible height, or
+a window of a certain width, stubs the measurement with `layOutTheScreen({ width, height })`, which
+spies on `Element.prototype`'s `clientWidth` and `clientHeight`, and calls `vi.restoreAllMocks()` in
 `afterEach`. The waiter's plan falls back to the size of the drawing at scale 1 when it measures 0
 pixels. Only the part of the stage inside its height can be hit, so a spec taps and drags shapes
 inside the laid-out screen.
@@ -59,6 +73,9 @@ inside the laid-out screen.
 - A save: the body the laptop received (`laptop.writtenBodies()`), as a literal, and equal to the
   node's own values, which proves nothing rounded or clamped the value on the way.
 - A refusal: the sentence on screen and the node back at the stored values.
+- A Konva node made outside the drawing, such as the text that measures the words of a table name:
+  spy on its class's `destroy`, unmount the screen, and count the destroyed nodes of that kind
+  (`TablePlanEditor.drawing.spec.ts` counts the texts without words).
 - A colour: the shape's `fill()` or `stroke()` against the literal from `shared/theme.ts`. A spec that
   switches the theme mounts with `createVuetify({ theme: appTheme })` as an extra plugin and calls
   `vuetify.theme.change('dark')`.
@@ -70,8 +87,12 @@ Wire data for the plan comes from `tests/support/wireViews.ts` (`aGeometry`, `an
 
 `frontend/tests/admin/components/tablePlan/TablePlanEditor.drawing.spec.ts` and
 `TablePlanEditor.resizing.spec.ts` with `tablePlanEditorFixture.ts` beside them (`editorLaptop`,
-`mountEditor`, `theDrawing`, `selectTheShape`, `drawingScrollArea`), and the waiter's plan in
-`frontend/tests/phone/views/TablePlan.drawing.spec.ts` with `tablePlanFixture.ts` (`planLaptop`,
-`mountThePlan`, `theDrawing`, `tableNode`, `tapTheTable`).
+`mountEditor`, `theDrawing`, `selectTheShape`, `shapesWithTheHandles`, `tableRow`, `stationRow`,
+`drawingScrollArea`; `editorLaptop({ festival })` sets whether the festival runs), and the waiter's
+plan in
+`frontend/tests/phone/views/TablePlan.drawing.spec.ts` and `TablePlan.touch.spec.ts` with
+`tablePlanFixture.ts` (`planLaptop`, `mountThePlan`, `theDrawing`, `tableNode`, `tapTheTable`,
+`aPinchThatSpreadsTwoFingersOnTisch12`). A name a narrow shape draws is read as its lines from the
+Konva text node: `findOne<Konva.Text>('Text')?.textArr.map((line) => line.text)`.
 
 Run one file from `frontend/`: `npx vitest run tests/admin/components/tablePlan/TablePlanEditor.drawing.spec.ts`.

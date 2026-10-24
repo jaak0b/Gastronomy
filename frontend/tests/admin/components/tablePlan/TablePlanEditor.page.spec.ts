@@ -4,29 +4,38 @@ import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import TablePlanEditor from '../../../../src/admin/components/tablePlan/TablePlanEditor.vue'
 import { currentRoute, navigate } from '../../../../src/shared/router/router'
 import { clickOn, textOnScreen, waitUntil } from '../../../support/dom'
-import { answer, stubLaptop } from '../../../support/laptop'
+import { useConnectionStore } from '../../../../src/shared/stores/connection'
+import { aHold, answer, heldUntil, inTurn, stubLaptop } from '../../../support/laptop'
 import { testPlugins } from '../../../support/plugins'
-import { FESTIVAL_ID, editorLaptop, mountEditor } from './tablePlanEditorFixture'
+import { FESTIVAL_ID, HALL, PLAN_PATH, TENT, editorLaptop, mountEditor } from './tablePlanEditorFixture'
 
 enableAutoUnmount(afterEach)
 
 beforeEach(() => {
   setActivePinia(createPinia())
   document.body.innerHTML = ''
-  navigate(`/admin/festivals/${FESTIVAL_ID}/table-plan`)
+  navigate(`/admin/festivals/${FESTIVAL_ID}/areas/area-halle`)
 })
 
 afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('the table plan editor', () => {
-  it('names the festival whose plan it shows', async () => {
+describe('the editor of one area', () => {
+  it('names the area as its heading', async () => {
     editorLaptop()
 
     await mountEditor()
 
-    expect(textOnScreen('[data-test="festival-name"]').trim()).toBe('Sommerfest')
+    expect(textOnScreen('[data-test="area-name"]').trim()).toBe('Halle')
+  })
+
+  it('shows the area it was opened for, not the first one of the festival', async () => {
+    editorLaptop()
+
+    await mountEditor('de', [], 'area-zelt')
+
+    expect(textOnScreen('[data-test="area-name"]').trim()).toBe('Zelt')
   })
 
   it('leads back to the festival page', async () => {
@@ -38,25 +47,74 @@ describe('the table plan editor', () => {
     expect(currentRoute.value).toEqual({ name: 'admin', section: 'festivals', festivalId: FESTIVAL_ID })
   })
 
-  it('asks for an area first when the festival has none', async () => {
-    editorLaptop({ areas: [] })
+  it('returns to the festival page for an area the festival does not have', async () => {
+    editorLaptop()
 
     mount(TablePlanEditor, {
-      props: { festivalId: FESTIVAL_ID },
+      props: { festivalId: FESTIVAL_ID, areaId: 'area-unknown' },
       global: { plugins: testPlugins() },
       attachTo: document.body,
     })
 
     await waitUntil(() =>
-      expect(textOnScreen('[data-test="no-area"]').trim()).toBe('Legen Sie zuerst einen Bereich an.'),
+      expect(currentRoute.value).toEqual({ name: 'admin', section: 'festivals', festivalId: FESTIVAL_ID }),
     )
+  })
+
+  it('stays on the area when a newer read of the plan overtakes the first one', async () => {
+    const firstRead = aHold()
+    const newerRead = aHold()
+    const plan = answer({ areas: [HALL, TENT] })
+    const laptop = editorLaptop({ planReply: inTurn(heldUntil(firstRead.released, plan), heldUntil(newerRead.released, plan)) })
+    mount(TablePlanEditor, {
+      props: { festivalId: FESTIVAL_ID, areaId: 'area-halle' },
+      global: { plugins: testPlugins() },
+      attachTo: document.body,
+    })
+    await waitUntil(() => expect(laptop.urls()).toContain(PLAN_PATH))
+    const refetch = useConnectionStore().refetchAll()
+
+    firstRead.release()
+    await flushPromises()
+    newerRead.release()
+    await refetch
+
+    await waitUntil(() => expect(textOnScreen('[data-test="area-name"]').trim()).toBe('Halle'))
+    expect(currentRoute.value).toEqual({
+      name: 'admin',
+      section: 'festivals',
+      festivalId: FESTIVAL_ID,
+      areaId: 'area-halle',
+    })
+  })
+
+  it('stays on the page when the plan cannot be read, and says so', async () => {
+    editorLaptop({ planReply: answer({ message: 'kaputt' }, 500) })
+
+    mount(TablePlanEditor, {
+      props: { festivalId: FESTIVAL_ID, areaId: 'area-halle' },
+      global: { plugins: testPlugins() },
+      attachTo: document.body,
+    })
+
+    await waitUntil(() =>
+      expect(textOnScreen('[data-test="load-failed"]').trim()).toBe(
+        'Laden Sie die Seite neu. Die Daten konnten nicht geladen werden.',
+      ),
+    )
+    expect(currentRoute.value).toEqual({
+      name: 'admin',
+      section: 'festivals',
+      festivalId: FESTIVAL_ID,
+      areaId: 'area-halle',
+    })
   })
 
   it('returns to the overview for a festival the laptop does not know, as the festival page does', async () => {
     stubLaptop().answersEverythingElse(answer({ festivals: [] }))
 
     mount(TablePlanEditor, {
-      props: { festivalId: 'fest-unknown' },
+      props: { festivalId: 'fest-unknown', areaId: 'area-halle' },
       global: { plugins: testPlugins() },
       attachTo: document.body,
     })

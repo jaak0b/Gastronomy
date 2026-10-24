@@ -94,31 +94,6 @@ describe('changing a table', () => {
 
     expect(laptop.writes()).toEqual([{ url: `${TABLES_PATH}/table-a1/show`, method: 'POST', body: undefined }])
   })
-
-  it('deletes a table and reads the plan again', async () => {
-    const laptop = planLaptop(emptyAnswer(204))
-    const plan = await planOfTheFestival(laptop)
-
-    const deleted = await plan.deleteTable(FESTIVAL_ID, 'table-a1')
-
-    expect(deleted).toEqual({ kind: 'ok', value: null })
-    expect(laptop.calls).toEqual([
-      { url: `${TABLES_PATH}/table-a1`, method: 'DELETE', body: undefined },
-      { url: PLAN_PATH, method: 'GET', body: undefined },
-    ])
-  })
-
-  it('hands back the reason when a table with orders cannot be deleted', async () => {
-    const laptop = planLaptop(refusal('errors.admin.festivals.tableWithOrdersStays'))
-    const plan = await planOfTheFestival(laptop)
-
-    const deleted = await plan.deleteTable(FESTIVAL_ID, 'table-a1')
-
-    expect(deleted).toEqual({
-      kind: 'failed',
-      message: { key: 'errors.admin.festivals.tableWithOrdersStays', parameters: {}, count: null },
-    })
-  })
 })
 
 describe('a station on the plan', () => {

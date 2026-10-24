@@ -39,7 +39,7 @@ describe('a refusal beside an open item form', () => {
     await list.get('[data-test="edit-item"]').trigger('click')
     await vi.waitFor(() => expect(document.querySelector('[data-test="item-name-field"]')).not.toBeNull())
 
-    await list.get('[data-test="move-category-up"]').trigger('click')
+    await list.get('[data-test="move-up"]').trigger('click')
 
     await vi.waitFor(() =>
       expect(list.get('[data-test="category-refusal"]').text()).toContain(

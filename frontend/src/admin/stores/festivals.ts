@@ -24,6 +24,7 @@ function buildFestivalRequestBody(draft: FestivalDraft): SaveFestivalRequest {
 export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
   const {
     entries: festivals,
+    hasLoaded,
     loadFailed,
     load,
     createThenReload: create,
@@ -80,6 +81,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     festivals,
     shownFestivals,
     runningFestival,
+    hasLoaded,
     loadFailed,
     findFestivalWithId,
     load,

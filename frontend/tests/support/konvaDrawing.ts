@@ -150,3 +150,52 @@ export async function liftFinger(stage: Konva.Stage, finger: Finger, stillDown: 
   stage.content.dispatchEvent(touch('touchend', stillDown, [finger]))
   await flushPromises()
 }
+
+function pointer(type: string, pointerType: 'touch' | 'mouse', id: number, at: StagePoint): PointerEvent {
+  return new PointerEvent(type, {
+    pointerId: id,
+    pointerType,
+    isPrimary: true,
+    clientX: at.x,
+    clientY: at.y,
+    button: 0,
+    bubbles: true,
+    cancelable: true,
+  })
+}
+
+function whatLiesOnTopOf(stage: Konva.Stage): Element {
+  return document.querySelector('.v-overlay--active .v-overlay__scrim') ?? stage.content
+}
+
+export async function tapAsAPhoneDoes(stage: Konva.Stage, finger: Finger): Promise<void> {
+  const slipped = { ...finger, at: { x: finger.at.x + 1, y: finger.at.y + 1 } }
+  stage.draw()
+  stage.content.dispatchEvent(pointer('pointerdown', 'touch', finger.id, finger.at))
+  stage.content.dispatchEvent(touch('touchstart', [finger], [finger]))
+  stage.content.dispatchEvent(pointer('pointermove', 'touch', finger.id, slipped.at))
+  stage.content.dispatchEvent(touch('touchmove', [slipped], [slipped]))
+  stage.content.dispatchEvent(pointer('pointerup', 'touch', finger.id, slipped.at))
+  const lifted = touch('touchend', [], [slipped])
+  stage.content.dispatchEvent(lifted)
+  await flushPromises()
+  if (lifted.defaultPrevented) {
+    return
+  }
+  const underTheFinger = whatLiesOnTopOf(stage)
+  underTheFinger.dispatchEvent(mouse('mousedown', slipped.at))
+  underTheFinger.dispatchEvent(mouse('mouseup', slipped.at))
+  underTheFinger.dispatchEvent(mouse('click', slipped.at))
+  await flushPromises()
+}
+
+export async function clickAsAMouseDoes(stage: Konva.Stage, at: StagePoint): Promise<void> {
+  stage.draw()
+  stage.content.dispatchEvent(pointer('pointerdown', 'mouse', 1, at))
+  stage.content.dispatchEvent(mouse('mousedown', at))
+  stage.content.dispatchEvent(pointer('pointerup', 'mouse', 1, at))
+  stage.content.dispatchEvent(mouse('mouseup', at))
+  await flushPromises()
+  stage.content.dispatchEvent(mouse('click', at))
+  await flushPromises()
+}

@@ -47,3 +47,15 @@ export async function saveTheIngredientDialog(
   await ingredientDialog.getComponent(VSelect).setValue(unit)
   await saveTheFormDialog(dialog)
 }
+
+export async function saveTheAreaDialog(name: string): Promise<void> {
+  const dialog = formDialogHolding('[data-test="area-name-field"]')
+  typeInto(onScreen('[data-test="area-name-field"]', dialog), name)
+  await saveTheFormDialog(dialog)
+}
+
+export async function saveTheTableDialog(name: string): Promise<void> {
+  const dialog = formDialogHolding('[data-test="table-name-field"]')
+  typeInto(onScreen('[data-test="table-name-field"]', dialog), name)
+  await saveTheFormDialog(dialog)
+}

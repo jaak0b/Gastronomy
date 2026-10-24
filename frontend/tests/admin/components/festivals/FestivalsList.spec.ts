@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import FestivalsList from '../../../../src/admin/components/festivals/FestivalsList.vue'
 import { testPlugins } from '../../../support/plugins'
-import { pressInDialog, waitForDialog, typeInto, onScreen } from '../../../support/dom'
+import { iconActionLabelsOnScreen, pressInDialog, waitForDialog, typeInto, onScreen } from '../../../support/dom'
 import { stubLaptop, answer, type StubbedLaptop, refusal } from '../../../support/laptop'
 
 const RUNNING = {
@@ -107,9 +107,35 @@ describe('the list of festivals', () => {
     expect(rows[0].find('[data-test="actions"] [data-test="copy"]').exists()).toBe(true)
     expect(rows[1].find('[data-test="actions"] [data-test="hide"]').exists()).toBe(true)
 
-    const reserved = rows[0].get('[data-test="conditional-action"] [data-test="action-measure"]')
-    expect(reserved.text()).toContain('Ausblenden')
-    expect(reserved.text()).toContain('Einblenden')
+    expect(rows[0].find('[data-test="conditional-action"] [data-test="action-measure"]').exists()).toBe(true)
+  })
+
+  it('offers to hide a festival that is over through the crossed-out eye, named "Ausblenden"', async () => {
+    festivalsLaptop([OVER])
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="hide"]').exists()).toBe(true))
+
+    await list.get('[data-test="hide"]').trigger('mouseenter')
+
+    expect(list.get('[data-test="hide"] .v-icon').classes()).toContain('mdi-eye-off')
+    await vi.waitFor(() =>
+      expect(iconActionLabelsOnScreen()).toContain('Ausblenden'),
+    )
+  })
+
+  it('offers to show a hidden festival again through the open eye, named "Einblenden"', async () => {
+    festivalsLaptop([HIDDEN])
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="show-hidden"]').exists()).toBe(true))
+    await list.get('[data-test="show-hidden"] input').setValue(true)
+    await vi.waitFor(() => expect(list.find('[data-test="show"]').exists()).toBe(true))
+
+    await list.get('[data-test="show"]').trigger('mouseenter')
+
+    expect(list.get('[data-test="show"] .v-icon').classes()).toContain('mdi-eye')
+    await vi.waitFor(() =>
+      expect(iconActionLabelsOnScreen()).toContain('Einblenden'),
+    )
   })
 
   it('offers no way to hide the festival that is running', async () => {

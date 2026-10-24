@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { AdminCategoryView, AdminItemView } from '../../../shared/api/generatedSchemas'
+import { AdminCategoryView, AdminItemView, type MoveDirection } from '../../../shared/api/generatedSchemas'
 import { letteringColourOn } from '../../../shared/core/letteringColour'
-import type { CategoryMoveDirection } from '../../stores/categories'
+import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
+import BaseMoveButtons from '../BaseMoveButtons.vue'
+import BaseTrashButton from '../BaseTrashButton.vue'
 
 const props = defineProps<{
   category: AdminCategoryView
@@ -11,7 +13,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   'rename-category': []
-  'move-category': [direction: CategoryMoveDirection]
+  'move-category': [direction: MoveDirection]
   'deactivate-category': []
   'activate-category': []
   'edit-ingredients': [item: AdminItemView]
@@ -55,18 +57,7 @@ function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
         variant="text"
         @click="emit('rename-category')"
       />
-      <v-btn
-        data-test="move-category-up"
-        icon="mdi-arrow-up"
-        variant="text"
-        @click="emit('move-category', 'up')"
-      />
-      <v-btn
-        data-test="move-category-down"
-        icon="mdi-arrow-down"
-        variant="text"
-        @click="emit('move-category', 'down')"
-      />
+      <BaseMoveButtons @move="(direction) => emit('move-category', direction)" />
       <v-btn
         v-if="category.isActive"
         data-test="deactivate-category"
@@ -103,24 +94,16 @@ function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
         <v-btn data-test="edit-item" variant="text" @click="emit('edit-item', item)">
           {{ t('admin.common.actions.edit') }}
         </v-btn>
-        <span v-if="item.isActive" class="deactivate-wrapper" data-test="deactivate-wrapper">
-          <v-btn
-            data-test="deactivate-item"
-            icon="mdi-delete"
-            variant="text"
-            color="error"
-            :disabled="isOnTheRunningFestivalsMenu(item)"
-            @click="emit('deactivate-item', item)"
-          />
-          <v-tooltip
-            data-test="festival-menu-tooltip"
-            activator="parent"
-            location="top"
-            :disabled="!isOnTheRunningFestivalsMenu(item)"
-          >
-            {{ t('errors.admin.items.isOnTheRunningFestivalsMenu') }}
-          </v-tooltip>
-        </span>
+        <BaseActionWithRefusalReason
+          v-if="item.isActive"
+          class="deactivate-wrapper"
+          data-test="deactivate-wrapper"
+          :refusal-reason="isOnTheRunningFestivalsMenu(item) ? t('errors.admin.items.isOnTheRunningFestivalsMenu') : null"
+        >
+          <template #default="{ refused }">
+            <BaseTrashButton data-test="deactivate-item" :disabled="refused" @click="emit('deactivate-item', item)" />
+          </template>
+        </BaseActionWithRefusalReason>
         <v-btn
           v-else
           data-test="reactivate-item"
@@ -133,9 +116,3 @@ function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
     </v-card>
   </section>
 </template>
-
-<style scoped>
-.deactivate-wrapper {
-  display: inline-flex;
-}
-</style>

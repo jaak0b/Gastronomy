@@ -40,12 +40,20 @@ describe('resolveRoute', () => {
     })
   })
 
-  it('reads the table plan address of one festival as its table plan editor', () => {
-    expect(resolveRoute('/admin/festivals/fest-1/table-plan')).toEqual({
+  it('reads the address of one area of a festival as the editor of that area', () => {
+    expect(resolveRoute('/admin/festivals/fest-1/areas/area-halle')).toEqual({
       name: 'admin',
       section: 'festivals',
       festivalId: 'fest-1',
-      festivalSubpage: 'tablePlan',
+      areaId: 'area-halle',
+    })
+  })
+
+  it('reads the areas address without an area as that festival page', () => {
+    expect(resolveRoute('/admin/festivals/fest-1/areas')).toEqual({
+      name: 'admin',
+      section: 'festivals',
+      festivalId: 'fest-1',
     })
   })
 

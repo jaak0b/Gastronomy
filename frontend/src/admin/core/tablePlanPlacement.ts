@@ -1,4 +1,4 @@
-import type { AreaShapeGeometry } from '../../shared/api/generatedSchemas'
+import type { AdminAreaView, AdminTableView, AreaShapeGeometry } from '../../shared/api/generatedSchemas'
 import { TABLE_PLAN_DRAWING_WIDTH, cornersOf, lowestEdgeOf } from '../../shared/core/tablePlanDrawing'
 import { SNAP_GRID } from './tablePlanSnapping'
 
@@ -16,6 +16,21 @@ interface ShapeSize {
 export const NEW_TABLE_SIZE: ShapeSize = { width: 80, height: 40 }
 
 export const NEW_STATION_SIZE: ShapeSize = { width: 120, height: 40 }
+
+export function drawnTablesOf(area: AdminAreaView): AdminTableView[] {
+  return area.tables.filter((table) => !table.isHidden)
+}
+
+export function drawnGeometriesOf(area: AdminAreaView): AreaShapeGeometry[] {
+  return [
+    ...drawnTablesOf(area).map((table) => table.geometry),
+    ...area.stationShapes.map((shape) => shape.geometry),
+  ]
+}
+
+export function geometriesOfEveryTableAndStationOf(area: AdminAreaView): AreaShapeGeometry[] {
+  return [...area.tables.map((table) => table.geometry), ...area.stationShapes.map((shape) => shape.geometry)]
+}
 
 export function geometryBelowTheLowestShape(
   shapes: readonly AreaShapeGeometry[],

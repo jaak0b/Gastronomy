@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { VAutocomplete } from 'vuetify/components'
-import { pressInDialog, onScreen, typeInto } from '../../../support/dom'
+import { pressInDialog, onScreen, refusalReasonsOnScreen, typeInto } from '../../../support/dom'
 import { FESTIVAL_ID, KITCHEN_ID, SAUSAGE_ID, FOOD_ID, SUMMER, SAUSAGE, BEER, mountPage, openPlacementDialog, stationBox, openDialogStations, festivalLaptop } from './festivalPageFixture'
 import { nextTick } from 'vue'
 import { saveTheItemDialog } from '../../../support/formDialogs'
@@ -77,9 +77,8 @@ describe('the items of this festival', () => {
     expect(tooltip.props('disabled')).toBe(false)
 
     await wrapper.trigger('mouseenter')
-    await vi.waitFor(() => expect(document.querySelector('[data-test="remove-item-tooltip"]')).not.toBeNull())
-    expect(document.querySelector('[data-test="remove-item-tooltip"]')?.textContent).toContain(
-      'Ein Artikel kann von einem aktiven Fest nicht entfernt werden.',
+    await vi.waitFor(() =>
+      expect(refusalReasonsOnScreen()).toContain('Ein Artikel kann von einem aktiven Fest nicht entfernt werden.'),
     )
   })
 

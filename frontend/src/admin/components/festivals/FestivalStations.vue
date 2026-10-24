@@ -3,20 +3,20 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AdminStationView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
+import type { AdminActionResult } from '../../core/adminActionResult'
 import { useAdminStationsStore, type StationDraft } from '../../stores/stations'
-import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
+import BaseSearchAddLine from '../BaseSearchAddLine.vue'
+import RemovableStationRows from '../stations/RemovableStationRows.vue'
 import StationDialog from '../stations/StationDialog.vue'
 
-const props = defineProps<{ festivalId: string }>()
+const props = defineProps<{ festivalId: string; isRunning: boolean }>()
 
 const { t } = useI18n()
 const stations = useAdminStationsStore()
 const chosenStationId = ref<string | null>(null)
 const isCreating = ref(false)
 const editingStation = ref<AdminStationView | null>(null)
-const removedStation = ref<AdminStationView | null>(null)
-const refusedStationId = ref<string | null>(null)
 const { refusal, refusalText } = useRefusalDisplay()
 const { refusal: stationRefusal, refusalText: stationRefusalText } = useRefusalDisplay()
 
@@ -26,13 +26,28 @@ const atTheFestival = computed(() =>
 const stillToAdd = computed(() =>
   stations.stations.filter((station) => station.isActive && !station.isAtAnyFestival),
 )
+const noStationsToAddText = computed(() =>
+  stations.stations.some((station) => station.isActive)
+    ? t('admin.festivals.messages.noStationsToAdd')
+    : t('admin.festivals.messages.noStationSwitchedOn'),
+)
+
+function removalRefusalOf(station: AdminStationView): string | null {
+  return props.isRunning && station.hasItemsToHandOut
+    ? t('errors.admin.festivals.stationHasOrdersAtTheFestival')
+    : null
+}
+
+async function removeFromTheFestival(station: AdminStationView): Promise<AdminActionResult<null>> {
+  refusal.value = null
+  return await stations.removeFromTheFestival(props.festivalId, station.stationId)
+}
 
 async function add(): Promise<void> {
   const stationId = chosenStationId.value
   if (stationId === null) {
     return
   }
-  refusedStationId.value = null
   refusal.value = null
   const added = await stations.addToTheFestival(props.festivalId, stationId)
   switch (added.kind) {
@@ -49,7 +64,6 @@ async function add(): Promise<void> {
 
 function startCreating(): void {
   refusal.value = null
-  refusedStationId.value = null
   isCreating.value = true
 }
 
@@ -98,26 +112,6 @@ async function saveStation(station: StationDraft): Promise<void> {
       assertNever(saved)
   }
 }
-
-async function remove(): Promise<void> {
-  const station = removedStation.value
-  removedStation.value = null
-  if (station === null) {
-    return
-  }
-  refusedStationId.value = station.stationId
-  refusal.value = null
-  const removed = await stations.removeFromTheFestival(props.festivalId, station.stationId)
-  switch (removed.kind) {
-    case 'ok':
-      return
-    case 'failed':
-      refusal.value = removed.message
-      return
-    default:
-      assertNever(removed)
-  }
-}
 </script>
 
 <template>
@@ -127,47 +121,27 @@ async function remove(): Promise<void> {
         <h2 class="section-heading text-h6 mb-3" data-test="section-heading">{{ t('admin.stations.title') }}</h2>
 
         <div class="rows mb-3">
-          <div
-            v-for="(station, position) in atTheFestival"
-            :key="station.stationId"
-            class="festival-station-row"
-            data-test="festival-station-row"
-            :data-test-id="station.stationId"
-            :class="{ 'tinted-row': position % 2 === 1 }"
+          <RemovableStationRows
+            :stations="atTheFestival"
+            :id-of="(station) => station.stationId"
+            :name-of="(station) => station.name"
+            :removal-refusal-of="removalRefusalOf"
+            row-test-name="festival-station-row"
+            :remove-title="t('admin.festivals.labels.removeStationTitle')"
+            :remove-body="t('admin.festivals.messages.removeStationBody')"
+            :remove-through="removeFromTheFestival"
           >
-            <div class="row-line d-flex align-center flex-wrap ga-3 py-2 px-3">
-              <span
-                class="name text-body-1"
-                data-test="station-name"
-              >
-                {{ station.name }}
-              </span>
+            <template #badges="{ station }">
               <v-chip v-if="!station.isActive" class="deactivated" data-test="deactivated" size="small" color="grey">
                 {{ t('admin.common.labels.deactivated') }}
               </v-chip>
-              <v-spacer />
+            </template>
+            <template #actions="{ station }">
               <v-btn class="edit-station" data-test="edit-station" variant="text" @click="startEditing(station)">
                 {{ t('admin.common.actions.edit') }}
               </v-btn>
-              <v-btn
-                class="remove-station"
-                data-test="remove-station"
-                icon="mdi-delete"
-                variant="text"
-                color="error"
-                @click="removedStation = station"
-              />
-            </div>
-            <v-alert
-              v-if="refusalText !== null && refusedStationId === station.stationId"
-              class="refusal mb-2"
-              data-test="refusal"
-              type="warning"
-              variant="tonal"
-            >
-              {{ refusalText }}
-            </v-alert>
-          </div>
+            </template>
+          </RemovableStationRows>
 
           <div v-if="atTheFestival.length === 0" class="festival-station-placeholder" data-test="festival-station-placeholder">
             <div class="row-line d-flex align-center flex-wrap ga-3 py-2 px-3">
@@ -176,35 +150,25 @@ async function remove(): Promise<void> {
           </div>
         </div>
 
-        <div class="add-station-line d-flex align-center flex-wrap ga-3 mt-6">
-          <v-autocomplete
-            v-model="chosenStationId"
-            class="station-search flex-grow-1"
-            data-test="station-search"
-            :items="stillToAdd"
-            item-title="name"
-            item-value="stationId"
-            density="compact"
-            hide-details
-            :label="t('admin.festivals.labels.stationName')"
-            :no-data-text="t('admin.festivals.messages.noStationsToAdd')"
-          />
-          <v-btn
-            class="add-station"
-            data-test="add-station"
-            color="primary"
-            variant="tonal"
-            :disabled="chosenStationId === null"
-            @click="add"
-          >
-            {{ t('admin.festivals.actions.addStation') }}
-          </v-btn>
+        <BaseSearchAddLine
+          v-model:chosen-id="chosenStationId"
+          class="mt-6"
+          :entries="stillToAdd"
+          entry-title="name"
+          entry-value="stationId"
+          :label="t('admin.festivals.labels.stationName')"
+          :no-entries-text="noStationsToAddText"
+          :add-label="t('admin.festivals.actions.addStation')"
+          search-test-name="station-search"
+          add-test-name="add-station"
+          @add="add"
+        >
           <v-btn class="new-station" data-test="new-station" variant="text" @click="startCreating">
             {{ t('admin.stations.actions.new') }}
           </v-btn>
-        </div>
+        </BaseSearchAddLine>
         <v-alert
-          v-if="refusalText !== null && refusedStationId === null && !isCreating"
+          v-if="refusalText !== null && !isCreating"
           class="refusal mt-3"
           data-test="refusal"
           type="warning"
@@ -230,25 +194,5 @@ async function remove(): Promise<void> {
       @save="create"
       @cancel="stopCreating"
     />
-
-    <BaseConfirmDialog
-      v-if="removedStation !== null"
-      :title="t('admin.festivals.labels.removeStationTitle')"
-      :body="t('admin.festivals.messages.removeStationBody')"
-      :confirm-label="t('admin.festivals.actions.remove')"
-      @confirm="remove"
-      @cancel="removedStation = null"
-    />
   </section>
 </template>
-
-<style scoped>
-.festival-station-row + .festival-station-row {
-  border-top: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
-}
-
-.festival-station-row.tinted-row {
-  background-color: rgba(var(--v-theme-on-surface), 0.08);
-  border-radius: 6px;
-}
-</style>

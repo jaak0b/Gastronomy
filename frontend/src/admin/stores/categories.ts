@@ -3,10 +3,12 @@ import { request } from '../../shared/api/client'
 import {
   AdminCategoryListView,
   AdminCategoryView,
+  type MoveDirection,
   type SaveCategoryRequest,
 } from '../../shared/api/generatedSchemas'
 import { adminOk, type AdminActionResult } from '../core/adminActionResult'
 import { adminFailureFrom } from '../core/adminMutation'
+import { oneAtATime } from '../core/oneAtATime'
 import { useConnectionStore } from '../../shared/stores/connection'
 import { defineAdminList } from './adminList'
 
@@ -14,8 +16,6 @@ export interface AdminCategoryDraft {
   name: string
   colourHex: string
 }
-
-export type CategoryMoveDirection = 'up' | 'down'
 
 export const useAdminCategoriesStore = defineStore('adminCategories', () => {
   const {
@@ -34,7 +34,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     idOf: (category) => category.categoryId,
     requestBodyOf: (draft: AdminCategoryDraft): SaveCategoryRequest => ({ name: draft.name, colourHex: draft.colourHex }),
   })
-  let latestMove: Promise<AdminActionResult<null>> = Promise.resolve(adminOk(null))
+  const moves = oneAtATime()
 
   async function save(
     category: AdminCategoryDraft & { categoryId: string },
@@ -42,18 +42,11 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     return await update(category.categoryId, category)
   }
 
-  async function move(
-    categoryId: string,
-    direction: CategoryMoveDirection,
-  ): Promise<AdminActionResult<null>> {
-    latestMove = latestMove.then(() => sendMove(categoryId, direction))
-    return await latestMove
+  async function move(categoryId: string, direction: MoveDirection): Promise<AdminActionResult<null>> {
+    return await moves.run(() => sendMove(categoryId, direction))
   }
 
-  async function sendMove(
-    categoryId: string,
-    direction: CategoryMoveDirection,
-  ): Promise<AdminActionResult<null>> {
+  async function sendMove(categoryId: string, direction: MoveDirection): Promise<AdminActionResult<null>> {
     const token = categoriesGate.startRequest()
     const result = await request(`/api/admin/categories/${categoryId}/move`, {
       method: 'POST',

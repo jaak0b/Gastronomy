@@ -6,7 +6,10 @@ import { AdminFestivalView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { formatFestivalMoment } from '../../../shared/core/moments'
 import { useAdminFestivalsStore, type FestivalDraft } from '../../stores/festivals'
-import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
+import BaseHideConfirmDialog from '../BaseHideConfirmDialog.vue'
+import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
+import BaseIconAction from '../BaseIconAction.vue'
+import BaseShowButton from '../BaseShowButton.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import FestivalDialog from './FestivalDialog.vue'
 
@@ -127,17 +130,14 @@ onUnmounted(() => {
 
 <template>
   <v-container class="admin-festivals">
-    <div class="admin-heading d-flex align-center flex-wrap justify-space-between ga-2 mb-4">
+    <BaseHeadingWithCheckbox
+      v-model="showsHidden"
+      class="admin-heading mb-4"
+      :checkbox-label="t('admin.festivals.actions.showHidden')"
+      checkbox-test-name="show-hidden"
+    >
       <h1 class="text-h5">{{ t('admin.festivals.title') }}</h1>
-      <v-checkbox
-        v-model="showsHidden"
-        class="show-hidden"
-        data-test="show-hidden"
-        density="compact"
-        hide-details
-        :label="t('admin.festivals.actions.showHidden')"
-      />
-    </div>
+    </BaseHeadingWithCheckbox>
 
     <v-alert
       v-if="refusalText !== null && !isCreating && copiedFestival === null"
@@ -179,29 +179,22 @@ onUnmounted(() => {
             {{ t('admin.festivals.actions.copy') }}
           </v-btn>
           <span class="conditional-action" data-test="conditional-action">
-            <v-btn
+            <BaseIconAction
               v-if="!festival.isRunning && !festival.isHidden"
               class="hide"
               data-test="hide"
-              variant="text"
+              icon="mdi-eye-off"
+              color="error"
+              :label="t('admin.festivals.actions.hide')"
               @click="hiddenFestival = festival"
-            >
-              {{ t('admin.festivals.actions.hide') }}
-            </v-btn>
-            <v-btn
+            />
+            <BaseShowButton
               v-if="festival.isHidden"
               class="show"
-              variant="text"
+              data-test="show"
               @click="show(festival.festivalId)"
-            >
-              {{ t('admin.festivals.actions.show') }}
-            </v-btn>
-            <v-btn class="action-measure" data-test="action-measure" variant="text" tabindex="-1">
-              <span class="measure-labels">
-                <span>{{ t('admin.festivals.actions.hide') }}</span>
-                <span>{{ t('admin.festivals.actions.show') }}</span>
-              </span>
-            </v-btn>
+            />
+            <v-btn class="action-measure" data-test="action-measure" icon="mdi-eye" variant="text" tabindex="-1" />
           </span>
         </div>
       </div>
@@ -247,10 +240,9 @@ onUnmounted(() => {
       @save="copy"
       @cancel="closeTheForms"
     />
-    <BaseConfirmDialog
+    <BaseHideConfirmDialog
       v-if="hiddenFestival !== null"
       :title="t('admin.festivals.labels.hideTitle')"
-      :confirm-label="t('admin.festivals.actions.hideConfirm')"
       @confirm="hide"
       @cancel="hiddenFestival = null"
     />
@@ -273,13 +265,5 @@ onUnmounted(() => {
 
 .action-measure {
   visibility: hidden;
-}
-
-.measure-labels {
-  display: grid;
-}
-
-.measure-labels > * {
-  grid-area: 1 / 1;
 }
 </style>

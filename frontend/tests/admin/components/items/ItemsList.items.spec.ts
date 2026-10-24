@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { pressInDialog, waitForDialog } from '../../../support/dom'
+import { pressInDialog, refusalReasonsOnScreen, waitForDialog } from '../../../support/dom'
 import { ITEM_ID, ONE_FESTIVAL, ONE_ITEM, DEACTIVATED_ITEM, mountList, itemsListLaptop } from './itemsListFixture'
 import { nextTick } from 'vue'
 import { cancelTheFormDialog, formDialogHolding } from '../../../support/formDialogs'
@@ -71,9 +71,10 @@ describe('deactivating an item', () => {
     expect(tooltip.props('disabled')).toBe(false)
 
     await wrapper.trigger('mouseenter')
-    await vi.waitFor(() => expect(document.querySelector('[data-test="festival-menu-tooltip"]')).not.toBeNull())
-    expect(document.querySelector('[data-test="festival-menu-tooltip"]')?.textContent).toContain(
-      'Ein Artikel auf der Karte eines aktiven Festes kann nicht abgeschaltet werden.',
+    await vi.waitFor(() =>
+      expect(refusalReasonsOnScreen()).toContain(
+        'Ein Artikel auf der Karte eines aktiven Festes kann nicht abgeschaltet werden.',
+      ),
     )
 
     onTheMenu.click()

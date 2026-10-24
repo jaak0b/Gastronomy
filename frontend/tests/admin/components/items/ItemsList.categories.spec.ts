@@ -25,8 +25,8 @@ describe('the controls beside a category name', () => {
     const heading = list.get('[data-test="category-section"]')
 
     expect(heading.find('[data-test="rename-category"]').exists()).toBe(true)
-    expect(heading.find('[data-test="move-category-up"]').exists()).toBe(true)
-    expect(heading.find('[data-test="move-category-down"]').exists()).toBe(true)
+    expect(heading.find('[data-test="move-up"]').exists()).toBe(true)
+    expect(heading.find('[data-test="move-down"]').exists()).toBe(true)
     expect(heading.find('[data-test="deactivate-category"]').exists()).toBe(true)
   })
 
@@ -35,7 +35,7 @@ describe('the controls beside a category name', () => {
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
-    await list.get('[data-test="move-category-up"]').trigger('click')
+    await list.get('[data-test="move-up"]').trigger('click')
 
     await vi.waitFor(() =>
       expect(laptop.calls).toContainEqual({
@@ -51,7 +51,7 @@ describe('the controls beside a category name', () => {
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
-    await list.get('[data-test="move-category-down"]').trigger('click')
+    await list.get('[data-test="move-down"]').trigger('click')
 
     await vi.waitFor(() =>
       expect(laptop.calls).toContainEqual({

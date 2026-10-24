@@ -9,6 +9,10 @@ class ResizeObserverStub {
 
 globalThis.ResizeObserver = globalThis.ResizeObserver ?? (ResizeObserverStub as never)
 
+if (Element.prototype.scrollIntoView === undefined) {
+  Element.prototype.scrollIntoView = () => undefined
+}
+
 if (window.visualViewport === undefined) {
   Object.defineProperty(window, 'visualViewport', {
     writable: true,

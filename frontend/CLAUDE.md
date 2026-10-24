@@ -127,6 +127,16 @@ in `src/shared/core/deviceLanguage.ts`, `DraftLine` and `DraftOrder` in `src/pho
     screen never hides a stale value by filtering it against another list. Read the `architecture`
     skill's announcements page before touching a store or the connection.
 
+11. **New features behave like the existing ones.** When a screen needs something the app already
+    does elsewhere (hiding and showing, removing, a confirmation, a list row with a name field, a
+    checkbox that reveals hidden entries), it looks, reads and behaves the same as that place.
+    Example: when the laptop would refuse to hide or remove something, the button is disabled with a
+    tooltip naming the reason, as on the article rows of the festival page, never a warning after the
+    click. Same behaviour means shared code, never a duplicate (root rule 6): the new screen uses the
+    component, composable or locale key that place already uses, and where that place's code is not
+    shared yet, it moves into a shared home both use. A brief names, for every such control, the
+    existing place it follows.
+
 ## Design constraints from the deployment
 
 - **Touch targets are large.** One thumb, in the dark, possibly with gloves.
@@ -175,11 +185,15 @@ the device, light or dark, both palettes soft (`src/shared/theme.ts`).
 - **One festival page** at `/admin/festivals/{id}` manages a festival end to end: name and dates,
   then its stations, table plan, articles and ingredient stock, each in an outlined card. It works
   the same for past, running, future and hidden festivals; nothing on it is read-only.
-- **The table plan has a page of its own** at `/admin/festivals/{id}/table-plan`, opened from the
-  festival page's "Tischplan" card, which lists each area with its number of tables and warns while
-  waiters see no area or no table. The page fills the screen height: the areas on the left, the
-  selected area's drawing in the middle, the selected table or station on the right. Everything
-  saves when it is dropped or a field is left, and deleting asks first.
+- **The table plan is edited one area at a time.** The festival page's "Tischplan" card lists the
+  areas the way its station card lists stations ("Bearbeiten" opens a dialog for the name, the
+  arrows of the category rows set the order, the trash icon hides, "Neuer Bereich" below) and warns
+  while waiters see no area or no table. "Plan öffnen" opens that area's page at `/admin/festivals/{id}/areas/{areaId}`, one block
+  centred like the festival page: the drawing at one fixed scale on every window, never shrinking,
+  with the area's tables and stations listed to its right, or below it when the window is too narrow
+  for both. Areas and tables are hidden, never deleted: hiding asks first, is disabled with the
+  reason while the laptop would refuse, and hidden rows are listed only while their checkbox is
+  ticked. A move or a resize saves when it is dropped.
 - **The festival page has no save button of its own.** Its fields (name, dates, an article's price
   and stations, an ingredient's available amount) save the moment the admin leaves them, and a field
   the laptop refuses says so on its row. The forms it opens, to create or edit a station, an article

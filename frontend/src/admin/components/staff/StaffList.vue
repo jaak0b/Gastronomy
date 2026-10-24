@@ -9,6 +9,7 @@ import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
 import InvitationPanel from '../enrolment/InvitationPanel.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import StaffRenameDialog from './StaffRenameDialog.vue'
+import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
 
 const { t } = useI18n()
 const staff = useAdminStaffStore()
@@ -89,17 +90,14 @@ onUnmounted(() => {
 
 <template>
   <v-container class="admin-staff">
-    <div class="admin-heading d-flex align-center flex-wrap justify-space-between ga-2 mb-4">
+    <BaseHeadingWithCheckbox
+      v-model="showsDeactivated"
+      class="admin-heading mb-4"
+      :checkbox-label="t('admin.common.actions.showDeactivated')"
+      checkbox-test-name="show-deactivated"
+    >
       <h1 class="text-h5">{{ t('admin.staff.title') }}</h1>
-      <v-checkbox
-        v-model="showsDeactivated"
-        class="show-deactivated"
-        data-test="show-deactivated"
-        density="compact"
-        hide-details
-        :label="t('admin.common.actions.showDeactivated')"
-      />
-    </div>
+    </BaseHeadingWithCheckbox>
 
     <v-alert
       v-if="enrolment.enrolledStaffMemberName !== null"

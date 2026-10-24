@@ -1,8 +1,33 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useConnectionStore } from '../../../../src/shared/stores/connection'
-import { FESTIVAL_ID, mountPage, festivalLaptop } from './festivalPageFixture'
+import { FESTIVAL_ID, SUMMER, mountPage, festivalLaptop } from './festivalPageFixture'
 import { nextTick } from 'vue'
+import { flushPromises } from '@vue/test-utils'
+import { aHold, answer, heldUntil, inTurn, type StubbedLaptop } from '../../../support/laptop'
+
+const FESTIVALS_PATH = '/api/admin/festivals'
+
+function festivalReadsHeldBack(): { laptop: StubbedLaptop; releaseTheFirst: () => void; releaseTheNewer: () => void } {
+  const firstRead = aHold()
+  const newerRead = aHold()
+  const festivals = answer({ festivals: [SUMMER] })
+  const laptop = festivalLaptop().answers(
+    'GET',
+    (call) => call.url === FESTIVALS_PATH,
+    inTurn(heldUntil(firstRead.released, festivals), heldUntil(newerRead.released, festivals)),
+  )
+  return { laptop, releaseTheFirst: firstRead.release, releaseTheNewer: newerRead.release }
+}
+
+async function letANewerReadOvertakeTheFirst(reads: ReturnType<typeof festivalReadsHeldBack>): Promise<void> {
+  await vi.waitFor(() => expect(reads.laptop.urls()).toContain(FESTIVALS_PATH))
+  const refetch = useConnectionStore().refetchAll()
+  reads.releaseTheFirst()
+  await flushPromises()
+  reads.releaseTheNewer()
+  await refetch
+}
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -108,6 +133,27 @@ describe('the name and the dates at the top of the page', () => {
     mountPage('fest-gone')
 
     await vi.waitFor(() => expect(window.location.pathname).toBe('/admin/overview'))
+  })
+
+  it('stays on the festival page when a newer read of the festivals overtakes the first one', async () => {
+    const reads = festivalReadsHeldBack()
+    const page = mountPage()
+
+    await letANewerReadOvertakeTheFirst(reads)
+
+    await vi.waitFor(() => expect(page.find('[data-test="festival-name"]').exists()).toBe(true))
+    expect(window.location.pathname).toBe(`/admin/festivals/${FESTIVAL_ID}`)
+  })
+
+  it('reads the table plan of the festival when a newer read of the festivals overtakes the first one', async () => {
+    const reads = festivalReadsHeldBack()
+    mountPage()
+
+    await letANewerReadOvertakeTheFirst(reads)
+
+    await vi.waitFor(() =>
+      expect(reads.laptop.urls()).toContain(`/api/admin/festivals/${FESTIVAL_ID}/table-plan`),
+    )
   })
 
   it('asks the laptop for this festival again when the connection comes back', async () => {

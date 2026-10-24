@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { enableAutoUnmount } from '@vue/test-utils'
-import type Konva from 'konva'
+import Konva from 'konva'
 import { createVuetify } from 'vuetify'
 import { appTheme } from '../../../../src/shared/theme'
 import { textOnScreen, waitUntil } from '../../../support/dom'
 import {
   centreOf,
   dragBy,
+  hasShapeWithId,
   layOutTheScreen,
   movePointerTo,
   pressAt,
@@ -26,6 +27,8 @@ import {
   editorLaptop,
   mountEditor,
   selectTheShape,
+  shapesWithTheHandles,
+  tableRow,
   theDrawing,
 } from './tablePlanEditorFixture'
 import { aGeometry, anAdminArea, anAdminTable } from '../../../support/wireViews'
@@ -46,7 +49,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('the drawing of the selected area', () => {
+describe('the drawing of the area', () => {
   it('draws a table where the laptop keeps it', async () => {
     editorLaptop()
 
@@ -80,23 +83,53 @@ describe('the drawing of the selected area', () => {
     expect(shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID).rotation()).toBe(30)
   })
 
-  it('draws a hidden table with the word hidden under its name and a dashed border', async () => {
-    const hidden = anAdminTable({ name: 'A1', isHidden: true })
-    editorLaptop({ areas: [anAdminArea({ tables: [hidden] })] })
+  it('never draws a hidden table, while the shown one beside it stays', async () => {
+    const hidden = anAdminTable({ tableId: 'table-a2', name: 'A2', isHidden: true, geometry: aGeometry({ y: 100 }) })
+    editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, hidden] }] })
 
     await mountEditor()
 
-    const table = shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID)
-    expect(table.findOne<Konva.Text>('Text')?.text()).toBe('A1\nAusgeblendet')
-    expect(table.findOne<Konva.Rect>('Rect')?.dash()).toEqual([6, 4])
+    expect([hasShapeWithId(theDrawing(), TABLE_A1_SHAPE_ID), hasShapeWithId(theDrawing(), 'table-table-a2')]).toEqual([
+      true,
+      false,
+    ])
   })
 
-  it('is the fixed width and reaches below the lowest shape so there is room to drag into', async () => {
+  it('shows the drawing width with a margin at one and a half times its units and reaches below the lowest shape', async () => {
     editorLaptop()
 
     await mountEditor()
 
-    expect([theDrawing().width(), theDrawing().height()]).toEqual([400, 270])
+    expect([theDrawing().width(), theDrawing().height(), theDrawing().scaleX()]).toEqual([612, 417, 1.5])
+  })
+
+  it('keeps its size and scale when the window narrows', async () => {
+    layOutTheScreen({ width: 300, height: 0 })
+    editorLaptop()
+
+    await mountEditor()
+
+    expect([theDrawing().width(), theDrawing().scaleX()]).toEqual([612, 1.5])
+  })
+
+  it('keeps the whole border of a table at the top left edge on screen', async () => {
+    const atTheEdge = anAdminTable({ geometry: aGeometry({ x: 0, y: 0 }) })
+    editorLaptop({ areas: [anAdminArea({ tables: [atTheEdge] })] })
+
+    await mountEditor()
+
+    const border = shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID).getClientRect()
+    expect([border.x, border.y]).toEqual([5.25, 5.25])
+  })
+
+  it('never breaks the name of a narrow table inside a word, as the phone does', async () => {
+    const narrow = anAdminTable({ name: 'Abcd', geometry: aGeometry({ width: 30, height: 80 }) })
+    editorLaptop({ areas: [anAdminArea({ tables: [narrow] })] })
+
+    await mountEditor()
+
+    const name = shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID).findOne<Konva.Text>('Text')
+    expect(name?.textArr.map((line) => line.text)).toEqual(['Abcd'])
   })
 
   it('fills a table in the colour of the light theme', async () => {
@@ -120,13 +153,30 @@ describe('the drawing of the selected area', () => {
   })
 })
 
+describe('the drawing once the editor closes', () => {
+  it('lets go of the text it measured the table names with', async () => {
+    const destroyedTexts: Konva.Text[] = []
+    const destroy = Konva.Text.prototype.destroy
+    vi.spyOn(Konva.Text.prototype, 'destroy').mockImplementation(function (this: Konva.Text) {
+      destroyedTexts.push(this)
+      return destroy.call(this)
+    })
+    editorLaptop()
+    const editor = await mountEditor()
+
+    editor.unmount()
+
+    expect(destroyedTexts.filter((text) => text.text() === '')).toHaveLength(1)
+  })
+})
+
 describe('dragging a shape', () => {
-  it('saves the table where it was dropped, on the grid, exactly as the drawing holds it', async () => {
+  it('saves the table where it was dropped, in drawing units on the grid, exactly as the drawing holds it', async () => {
     const laptop = editorLaptop()
     await mountEditor()
     const table = shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID)
 
-    await dragBy(theDrawing(), table, { x: 33, y: 117 })
+    await dragBy(theDrawing(), table, { x: 49.5, y: 175.5 })
 
     expect(laptop.writtenBodies()).toEqual([
       { areaId: 'area-halle', name: 'A1', geometry: { x: 50, y: 150, width: 80, height: 40, rotation: 0 } },
@@ -134,23 +184,11 @@ describe('dragging a shape', () => {
     expect(laptop.writtenBodies()).toEqual([{ areaId: 'area-halle', name: 'A1', geometry: geometryOfTheNode(table) }])
   })
 
-  it('saves the drop in drawing units when the drawing is shown twice as large', async () => {
-    layOutTheScreen({ width: 800, height: 0 })
-    const laptop = editorLaptop()
-    await mountEditor()
-
-    await dragBy(theDrawing(), shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID), { x: 66, y: 234 })
-
-    expect(laptop.writtenBodies()).toEqual([
-      { areaId: 'area-halle', name: 'A1', geometry: { x: 50, y: 150, width: 80, height: 40, rotation: 0 } },
-    ])
-  })
-
   it('lines the table up with the station beside it', async () => {
     const laptop = editorLaptop()
     await mountEditor()
 
-    await dragBy(theDrawing(), shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID), { x: 97, y: 0 })
+    await dragBy(theDrawing(), shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID), { x: 145.5, y: 0 })
 
     expect(laptop.writes().map((write) => write.body)).toEqual([
       { areaId: 'area-halle', name: 'A1', geometry: { x: 120, y: 30, width: 80, height: 40, rotation: 0 } },
@@ -164,13 +202,13 @@ describe('dragging a shape', () => {
     await pressAt(theDrawing(), from)
     await movePointerTo({ x: from.x + 10, y: from.y })
 
-    await movePointerTo({ x: from.x + 97, y: from.y })
+    await movePointerTo({ x: from.x + 145.5, y: from.y })
 
     expect(shapesNamed(theDrawing(), 'snap-guide').map((guide) => (guide as Konva.Line).points())).toEqual([
       [200, 0, 200, 270],
       [0, 30, 400, 30],
     ])
-    await releaseAt({ x: from.x + 97, y: from.y })
+    await releaseAt({ x: from.x + 145.5, y: from.y })
     expect(shapesNamed(theDrawing(), 'snap-guide')).toEqual([])
   })
 
@@ -178,7 +216,7 @@ describe('dragging a shape', () => {
     const laptop = editorLaptop()
     await mountEditor()
 
-    await dragBy(theDrawing(), shapeWithId(theDrawing(), SCHANK_SHAPE_ID), { x: -24, y: 93 })
+    await dragBy(theDrawing(), shapeWithId(theDrawing(), SCHANK_SHAPE_ID), { x: -36, y: 139.5 })
 
     expect(laptop.writes()).toEqual([
       {
@@ -194,7 +232,7 @@ describe('dragging a shape', () => {
     await mountEditor()
     const table = shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID)
 
-    await dragBy(theDrawing(), table, { x: 33, y: 117 })
+    await dragBy(theDrawing(), table, { x: 49.5, y: 175.5 })
 
     expect([table.x(), table.y()]).toEqual([20, 30])
     expect(textOnScreen('[data-test="table-plan-drawing-column"] [data-test="refusal"]').trim()).toBe(
@@ -204,13 +242,14 @@ describe('dragging a shape', () => {
 })
 
 describe('selecting in the drawing', () => {
-  it('shows the tapped table beside the drawing', async () => {
+  it('puts the resize handles on the tapped table and highlights its row', async () => {
     editorLaptop()
     await mountEditor()
 
     await selectTheShape(TABLE_A1_SHAPE_ID)
 
-    expect((document.querySelector('[data-test="table-name-field"] input') as HTMLInputElement).value).toBe('A1')
+    expect(shapesWithTheHandles()).toEqual([TABLE_A1_SHAPE_ID])
+    expect(tableRow('table-a1').classList.contains('selected-row')).toBe(true)
   })
 
   it('lets go of the table when the admin taps an empty spot of the drawing', async () => {
@@ -218,9 +257,10 @@ describe('selecting in the drawing', () => {
     await mountEditor()
     await selectTheShape(TABLE_A1_SHAPE_ID)
 
-    await tapAt(theDrawing(), { x: 350, y: 250 })
+    await tapAt(theDrawing(), { x: 525, y: 375 })
 
-    await waitUntil(() => expect(document.querySelector('[data-test="shape-details"]')).toBeNull())
+    await waitUntil(() => expect(tableRow('table-a1').classList.contains('selected-row')).toBe(false))
+    expect(shapesWithTheHandles()).toEqual([])
   })
 })
 
@@ -228,17 +268,17 @@ describe('the view of a long drawing', () => {
   const FAR_DOWN = anAdminTable({ tableId: 'table-b9', name: 'B9', geometry: aGeometry({ x: 20, y: 300 }) })
 
   it('scrolls a table below the visible part into view when it is selected', async () => {
-    layOutTheScreen({ width: 0, height: 100 })
+    layOutTheScreen({ width: 0, height: 150 })
     editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, FAR_DOWN] }] })
     await mountEditor()
 
     await selectTheShape('table-table-b9')
 
-    expect(drawingScrollArea().scrollTop).toBe(275.5)
+    expect(drawingScrollArea().scrollTop).toBe(431.25)
   })
 
   it('stays where it is when the selected table is already in view', async () => {
-    layOutTheScreen({ width: 0, height: 100 })
+    layOutTheScreen({ width: 0, height: 150 })
     editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, FAR_DOWN] }] })
     await mountEditor()
 

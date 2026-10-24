@@ -23,6 +23,7 @@ export interface AdminListDefinition<TEntry, TListResponse, TDraft, TBody> {
 
 export interface AdminList<TEntry, TDraft> {
   entries: Ref<TEntry[]>
+  hasLoaded: Ref<boolean>
   loadFailed: Ref<boolean>
   entriesGate: LatestRequestGate
   load: () => Promise<void>
@@ -38,6 +39,7 @@ export function defineAdminList<TEntry, TListResponse, TDraft, TBody>(
   definition: AdminListDefinition<TEntry, TListResponse, TDraft, TBody>,
 ): AdminList<TEntry, TDraft> {
   const entries = shallowRef<TEntry[]>([])
+  const hasLoaded = ref(false)
   const loadFailed = ref(false)
 
   const entriesGate = createLatestRequestGate()
@@ -53,6 +55,7 @@ export function defineAdminList<TEntry, TListResponse, TDraft, TBody>(
       itemsOf: definition.entriesOf,
       showItems: (loaded) => {
         entries.value = pendingCreatedEntries.mergeInto(loaded)
+        hasLoaded.value = true
       },
       setLoadFailed: (failed) => {
         loadFailed.value = failed
@@ -115,6 +118,7 @@ export function defineAdminList<TEntry, TListResponse, TDraft, TBody>(
 
   return {
     entries,
+    hasLoaded,
     loadFailed,
     entriesGate,
     load,

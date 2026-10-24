@@ -19,6 +19,14 @@ export function allOnScreen(selector: string, root: ParentNode = document): HTML
   return [...root.querySelectorAll<HTMLElement>(selector)]
 }
 
+export function refusalReasonsOnScreen(): string[] {
+  return allOnScreen('[data-test="refusal-reason"]').map((reason) => reason.textContent?.trim() ?? '')
+}
+
+export function iconActionLabelsOnScreen(): string[] {
+  return allOnScreen('[data-test="icon-action-label"]').map((label) => label.textContent?.trim() ?? '')
+}
+
 export function isOnScreen(selector: string, root: ParentNode = document): boolean {
   return root.querySelector(selector) !== null
 }

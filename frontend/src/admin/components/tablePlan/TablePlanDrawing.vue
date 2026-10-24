@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import type Konva from 'konva'
+import Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Box } from 'konva/lib/shapes/Transformer'
 import type { Vector2d } from 'konva/lib/types'
 import { computed, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import {
   Group as KonvaGroup,
   Layer as KonvaLayer,
@@ -16,12 +15,14 @@ import {
   type VueKonvaRef,
 } from 'vue-konva'
 import type { AdminAreaView, AreaShapeGeometry } from '../../../shared/api/generatedSchemas'
+import { useTableNameWordWidth } from '../../../shared/composables/useTableNameWordWidth'
 import { useThemedValue } from '../../../shared/composables/useThemedValue'
 import { assertNever } from '../../../shared/core/assertNever'
 import { DARK_TABLE_PLAN_COLOURS, LIGHT_TABLE_PLAN_COLOURS } from '../../../shared/core/tablePlanColours'
+import { LARGEST_NAME_FONT_SIZE, nameFontSizeKeepingWordsWhole } from '../../../shared/core/tableNameFit'
 import { TABLE_PLAN_DRAWING_WIDTH } from '../../../shared/core/tablePlanDrawing'
 import type { AdminActionResult } from '../../core/adminActionResult'
-import { editorDrawingLength, fitsTheDrawing } from '../../core/tablePlanPlacement'
+import { drawnTablesOf, editorDrawingLength, fitsTheDrawing } from '../../core/tablePlanPlacement'
 import { shapeNodeIdOf, type ShapeSelection } from '../../core/tablePlanSelection'
 import {
   snapDraggedBox,
@@ -34,11 +35,15 @@ import {
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import { useAdminTablePlanStore } from '../../stores/tablePlan'
 
+const DRAWING_SCALE = 1.5
+
+const MARGIN_AROUND_THE_DRAWING = 4
+
 const PLAN_SHAPE_NAME = 'plan-shape'
 
 const SNAP_GUIDE_NAME = 'snap-guide'
 
-const NAME_FONT_SIZE = 14
+const NAME_PADDING = 4
 
 const PIXELS_BEFORE_A_DRAG_STARTS = 3
 
@@ -61,33 +66,33 @@ interface DrawnShape {
 const props = defineProps<{ festivalId: string; area: AdminAreaView }>()
 const selectedShape = defineModel<ShapeSelection | null>('selectedShape', { required: true })
 
-const { t } = useI18n()
 const tablePlan = useAdminTablePlanStore()
 const colours = useThemedValue(LIGHT_TABLE_PLAN_COLOURS, DARK_TABLE_PLAN_COLOURS)
 const { refusal, refusalText, showRefusalOf } = useRefusalDisplay()
 const scrollArea = useTemplateRef<HTMLElement>('scrollArea')
 const layer = useTemplateRef<VueKonvaRef<Konva.Layer>>('layer')
 const transformer = useTemplateRef<VueKonvaRef<Konva.Transformer>>('transformer')
-const visibleWidth = ref(0)
 const visibleHeight = ref(0)
 const guides = ref<SnapGuide[]>([])
 let resizeObserver: ResizeObserver | null = null
 
-const scale = computed(() => (visibleWidth.value > 0 ? visibleWidth.value / TABLE_PLAN_DRAWING_WIDTH : 1))
+const widthOfANameWord = useTableNameWordWidth()
+
+const layerConfig = { x: MARGIN_AROUND_THE_DRAWING, y: MARGIN_AROUND_THE_DRAWING }
 
 const drawnShapes = computed<DrawnShape[]>(() => {
   const palette = colours.value
   const nameText = {
-    fontSize: NAME_FONT_SIZE,
+    fontSize: LARGEST_NAME_FONT_SIZE,
     align: 'center',
     verticalAlign: 'middle',
-    padding: 4,
+    padding: NAME_PADDING,
     wrap: 'word',
     ellipsis: true,
     listening: false,
   }
   return [
-    ...props.area.tables.map((table): DrawnShape => {
+    ...drawnTablesOf(props.area).map((table): DrawnShape => {
       const shape: ShapeOnThePlan = {
         selection: { kind: 'table', tableId: table.tableId },
         geometry: table.geometry,
@@ -112,18 +117,22 @@ const drawnShapes = computed<DrawnShape[]>(() => {
         rect: {
           width: table.geometry.width,
           height: table.geometry.height,
-          fill: table.isHidden ? palette.drawing : palette.table,
-          stroke: table.isHidden ? palette.muted : palette.ink,
+          fill: palette.table,
+          stroke: palette.ink,
           strokeWidth: 1,
-          dash: table.isHidden ? [6, 4] : [],
           cornerRadius: 4,
         },
         text: {
           ...nameText,
+          fontSize: nameFontSizeKeepingWordsWhole(
+            table.name,
+            table.geometry.width - 2 * NAME_PADDING,
+            widthOfANameWord,
+          ),
           width: table.geometry.width,
           height: table.geometry.height,
-          text: table.isHidden ? `${table.name}\n${t('admin.festivals.labels.hidden')}` : table.name,
-          fill: table.isHidden ? palette.muted : palette.ink,
+          text: table.name,
+          fill: palette.ink,
         },
       }
     }),
@@ -170,15 +179,15 @@ const drawnShapes = computed<DrawnShape[]>(() => {
 const drawingLength = computed(() =>
   editorDrawingLength(
     drawnShapes.value.map((shape) => shape.geometry),
-    visibleHeight.value / scale.value,
+    visibleHeight.value / DRAWING_SCALE,
   ),
 )
 
 const stageConfig = computed(() => ({
-  width: TABLE_PLAN_DRAWING_WIDTH * scale.value,
-  height: drawingLength.value * scale.value,
-  scaleX: scale.value,
-  scaleY: scale.value,
+  width: (TABLE_PLAN_DRAWING_WIDTH + 2 * MARGIN_AROUND_THE_DRAWING) * DRAWING_SCALE,
+  height: (drawingLength.value + 2 * MARGIN_AROUND_THE_DRAWING) * DRAWING_SCALE,
+  scaleX: DRAWING_SCALE,
+  scaleY: DRAWING_SCALE,
 }))
 
 function guidePointsOf(guide: SnapGuide): number[] {
@@ -225,10 +234,10 @@ function drawGeometryOn(group: Konva.Group, geometry: AreaShapeGeometry): void {
 
 function boxThatFitsTheDrawing(oldBox: Box, newBox: Box): Box {
   const fits = fitsTheDrawing({
-    x: newBox.x / scale.value,
-    y: newBox.y / scale.value,
-    width: newBox.width / scale.value,
-    height: newBox.height / scale.value,
+    x: newBox.x / DRAWING_SCALE - MARGIN_AROUND_THE_DRAWING,
+    y: newBox.y / DRAWING_SCALE - MARGIN_AROUND_THE_DRAWING,
+    width: newBox.width / DRAWING_SCALE,
+    height: newBox.height / DRAWING_SCALE,
     rotation: (newBox.rotation * 180) / Math.PI,
   })
   return fits ? newBox : oldBox
@@ -240,11 +249,17 @@ function snapTheResizedCorner(previous: Vector2d, wanted: Vector2d): Vector2d {
     return previous
   }
   const snapped = snapResizeCorner(
-    { x: wanted.x / scale.value, y: wanted.y / scale.value },
+    {
+      x: wanted.x / DRAWING_SCALE - MARGIN_AROUND_THE_DRAWING,
+      y: wanted.y / DRAWING_SCALE - MARGIN_AROUND_THE_DRAWING,
+    },
     stopsBeside(resized),
   )
   guides.value = snapped.guides
-  return { x: snapped.x * scale.value, y: snapped.y * scale.value }
+  return {
+    x: (snapped.x + MARGIN_AROUND_THE_DRAWING) * DRAWING_SCALE,
+    y: (snapped.y + MARGIN_AROUND_THE_DRAWING) * DRAWING_SCALE,
+  }
 }
 
 const transformerConfig = computed(() => ({
@@ -370,21 +385,12 @@ function scrollToTheSelectedShape(): void {
 }
 
 function measureTheView(): void {
-  visibleWidth.value = scrollArea.value?.clientWidth ?? 0
   visibleHeight.value = scrollArea.value?.clientHeight ?? 0
 }
 
 watch([selectedShape, drawnShapes], attachTheTransformer, { flush: 'post' })
 
 watch(selectedShape, scrollToTheSelectedShape, { flush: 'post' })
-
-watch(
-  () => props.area.areaId,
-  () => {
-    refusal.value = null
-    guides.value = []
-  },
-)
 
 onMounted(() => {
   measureTheView()
@@ -413,7 +419,10 @@ onUnmounted(() => {
           @click="deselectOnAnEmptySpot"
           @tap="deselectOnAnEmptySpot"
         >
-          <KonvaLayer ref="layer">
+          <KonvaLayer
+            ref="layer"
+            :config="layerConfig"
+          >
             <KonvaGroup
               v-for="shape in drawnShapes"
               :key="shape.key"
@@ -448,12 +457,10 @@ onUnmounted(() => {
 .drawing-scroll {
   border: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
   flex: 1 1 0;
-  margin: 0 auto;
-  max-width: 45rem;
   min-height: 0;
   overflow-y: auto;
   scrollbar-gutter: stable;
-  width: 100%;
+  width: fit-content;
 }
 
 .drawing-frame {

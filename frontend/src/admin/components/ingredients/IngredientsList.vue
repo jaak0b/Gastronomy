@@ -6,13 +6,15 @@ import { useAdminIngredientsStore, type IngredientDraft } from '../../stores/ing
 import { useEditSession } from '../../composables/useEditSession'
 import { useAmountUnitName } from '../../composables/useAmountUnitName'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
+import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
+import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
+import BaseTrashButton from '../BaseTrashButton.vue'
 import IngredientDialog from './IngredientDialog.vue'
 
 interface IngredientRow {
   ingredient: AdminIngredientView
   unitWord: string
-  isInAnActiveRecipe: boolean
-  usedByActiveItemsText: string
+  deactivationRefusal: string | null
 }
 
 const { t } = useI18n()
@@ -39,10 +41,10 @@ const rows = computed<IngredientRow[]>(() =>
     .map((ingredient) => ({
       ingredient,
       unitWord: unitName(ingredient.unit),
-      isInAnActiveRecipe: ingredient.activeItemNames.length > 0,
-      usedByActiveItemsText: t('admin.ingredients.messages.usedByActiveItems', {
-        items: ingredient.activeItemNames.join(', '),
-      }),
+      deactivationRefusal:
+        ingredient.activeItemNames.length > 0
+          ? t('admin.ingredients.messages.usedByActiveItems', { items: ingredient.activeItemNames.join(', ') })
+          : null,
     })),
 )
 
@@ -81,17 +83,14 @@ onUnmounted(() => {
 
 <template>
   <v-container class="admin-ingredients" data-test="admin-ingredients">
-    <div class="admin-heading d-flex align-center flex-wrap justify-space-between ga-2 mb-4">
+    <BaseHeadingWithCheckbox
+      v-model="showsDeactivated"
+      class="admin-heading mb-4"
+      :checkbox-label="t('admin.common.actions.showDeactivated')"
+      checkbox-test-name="show-deactivated"
+    >
       <h1 class="text-h5">{{ t('admin.ingredients.title') }}</h1>
-      <v-checkbox
-        v-model="showsDeactivated"
-        class="show-deactivated"
-        data-test="show-deactivated"
-        density="compact"
-        hide-details
-        :label="t('admin.common.actions.showDeactivated')"
-      />
-    </div>
+    </BaseHeadingWithCheckbox>
 
     <v-alert
       v-if="showsRefusal"
@@ -144,26 +143,21 @@ onUnmounted(() => {
         >
           {{ t('admin.common.actions.edit') }}
         </v-btn>
-        <span v-if="row.ingredient.isActive" class="deactivate-wrapper" data-test="deactivate-wrapper">
-          <v-btn
-            class="deactivate"
-            data-test="deactivate"
-            icon="mdi-delete"
-            variant="text"
-            color="error"
-            :disabled="row.isInAnActiveRecipe"
-            @click="askingAboutId = row.ingredient.ingredientId"
-          />
-          <v-tooltip
-            data-test="used-by-active-items-tooltip"
-            :data-test-id="row.ingredient.ingredientId"
-            activator="parent"
-            location="top"
-            :disabled="!row.isInAnActiveRecipe"
-          >
-            {{ row.usedByActiveItemsText }}
-          </v-tooltip>
-        </span>
+        <BaseActionWithRefusalReason
+          v-if="row.ingredient.isActive"
+          class="deactivate-wrapper"
+          data-test="deactivate-wrapper"
+          :refusal-reason="row.deactivationRefusal"
+        >
+          <template #default="{ refused }">
+            <BaseTrashButton
+              class="deactivate"
+              data-test="deactivate"
+              :disabled="refused"
+              @click="askingAboutId = row.ingredient.ingredientId"
+            />
+          </template>
+        </BaseActionWithRefusalReason>
         <v-btn
           v-else
           class="reactivate"
@@ -202,9 +196,3 @@ onUnmounted(() => {
     />
   </v-container>
 </template>
-
-<style scoped>
-.deactivate-wrapper {
-  display: inline-flex;
-}
-</style>

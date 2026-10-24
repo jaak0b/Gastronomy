@@ -5,13 +5,17 @@ import type { AdminCategoryView, AdminItemView } from '../../../shared/api/gener
 import { assertNever } from '../../../shared/core/assertNever'
 import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
 import { letteringColourOn } from '../../../shared/core/letteringColour'
-import { idsOfEverySecondRow } from '../../core/alternatingRows'
+import { numberRowsAcrossGroups } from '../../core/alternatingRows'
 import { useAdminCategoriesStore, type AdminCategoryDraft } from '../../stores/categories'
 import { useAdminItemsStore, type AdminItemDraft } from '../../stores/items'
 import { useAdminStationsStore } from '../../stores/stations'
 import { useEditSession } from '../../composables/useEditSession'
 import { useFestivalItemRows } from '../../composables/useFestivalItemRows'
-import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
+import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
+import BaseListRow from '../BaseListRow.vue'
+import BaseRemoveConfirmDialog from '../BaseRemoveConfirmDialog.vue'
+import BaseSearchAddLine from '../BaseSearchAddLine.vue'
+import BaseTrashButton from '../BaseTrashButton.vue'
 import CategoryDialog from '../categories/CategoryDialog.vue'
 import ItemDialog from '../items/ItemDialog.vue'
 import FestivalPlacementDialog from './FestivalPlacementDialog.vue'
@@ -77,16 +81,16 @@ const festivalStations = computed(() =>
 )
 
 const groups = computed(() =>
-  groupByCategorySortingItemsByName(
-    categories.categories,
-    itemsAtTheFestival.value,
-    (category) => category.categoryId,
-    (item) => item.categoryId,
-    (item) => item.name,
-  ).filter((group) => group.items.length > 0),
+  numberRowsAcrossGroups(
+    groupByCategorySortingItemsByName(
+      categories.categories,
+      itemsAtTheFestival.value,
+      (category) => category.categoryId,
+      (item) => item.categoryId,
+      (item) => item.name,
+    ).filter((group) => group.items.length > 0),
+  ),
 )
-
-const tintedItemIds = computed(() => idsOfEverySecondRow(groups.value, (item) => item.itemId))
 
 const stillToAdd = computed(() =>
   items.items
@@ -187,13 +191,13 @@ async function remove(): Promise<void> {
                 {{ t('admin.common.actions.edit') }}
               </v-btn>
             </div>
-            <div
-              v-for="item in group.items"
+            <BaseListRow
+              v-for="{ item, position } in group.rows"
               :key="item.itemId"
               class="festival-item-row"
               data-test="festival-item-row"
               :data-test-id="item.itemId"
-              :class="{ 'tinted-row': tintedItemIds.has(item.itemId) }"
+              :position="position"
             >
               <div class="item-line d-flex align-center flex-wrap ga-3 py-2 px-3">
                 <span
@@ -240,25 +244,20 @@ async function remove(): Promise<void> {
                 <v-btn class="edit-item" data-test="edit-item" variant="text" @click="itemSession.openForEdit(item)">
                   {{ t('admin.common.actions.edit') }}
                 </v-btn>
-                <span class="remove-item-wrapper" data-test="remove-item-wrapper">
-                  <v-btn
-                    class="remove-item"
-                    data-test="remove-item"
-                    icon="mdi-delete"
-                    variant="text"
-                    color="error"
-                    :disabled="isRunning"
-                    @click="removedItem = item"
-                  />
-                  <v-tooltip
-                    data-test="remove-item-tooltip"
-                    activator="parent"
-                    location="top"
-                    :disabled="!isRunning"
-                  >
-                    {{ t('errors.admin.festivals.itemStaysOnTheMenuWhileTheFestivalRuns') }}
-                  </v-tooltip>
-                </span>
+                <BaseActionWithRefusalReason
+                  class="remove-item-wrapper"
+                  data-test="remove-item-wrapper"
+                  :refusal-reason="isRunning ? t('errors.admin.festivals.itemStaysOnTheMenuWhileTheFestivalRuns') : null"
+                >
+                  <template #default="{ refused }">
+                    <BaseTrashButton
+                      class="remove-item"
+                      data-test="remove-item"
+                      :disabled="refused"
+                      @click="removedItem = item"
+                    />
+                  </template>
+                </BaseActionWithRefusalReason>
               </div>
               <v-alert
                 v-if="rowRefusalText(item.itemId) !== null"
@@ -269,36 +268,26 @@ async function remove(): Promise<void> {
               >
                 {{ rowRefusalText(item.itemId) }}
               </v-alert>
-            </div>
+            </BaseListRow>
           </section>
 
-          <div class="add-item-line d-flex align-center flex-wrap ga-3 mt-6">
-            <v-autocomplete
-              v-model="chosenItemId"
-              class="item-search flex-grow-1"
-              data-test="item-search"
-              :items="stillToAdd"
-              item-title="name"
-              item-value="itemId"
-              density="compact"
-              hide-details
-              :label="t('admin.festivals.labels.itemName')"
-              :no-data-text="t('admin.festivals.messages.noItemsToAdd')"
-            />
-            <v-btn
-              class="add-item"
-              data-test="add-item"
-              color="primary"
-              variant="tonal"
-              :disabled="chosenItemId === null"
-              @click="add"
-            >
-              {{ t('admin.festivals.actions.addItem') }}
-            </v-btn>
+          <BaseSearchAddLine
+            v-model:chosen-id="chosenItemId"
+            class="mt-6"
+            :entries="stillToAdd"
+            entry-title="name"
+            entry-value="itemId"
+            :label="t('admin.festivals.labels.itemName')"
+            :no-entries-text="t('admin.festivals.messages.noItemsToAdd')"
+            :add-label="t('admin.festivals.actions.addItem')"
+            search-test-name="item-search"
+            add-test-name="add-item"
+            @add="add"
+          >
             <v-btn class="new-item" data-test="new-item" variant="text" @click="itemSession.openForCreate()">
               {{ t('admin.items.actions.new') }}
             </v-btn>
-          </div>
+          </BaseSearchAddLine>
           <v-alert
             v-if="showsItemRefusal"
             class="refusal mt-3"
@@ -337,11 +326,10 @@ async function remove(): Promise<void> {
       @cancel="stopPlacing"
     />
 
-    <BaseConfirmDialog
+    <BaseRemoveConfirmDialog
       v-if="removedItem !== null"
       :title="t('admin.festivals.labels.removeItemTitle')"
       :body="t('admin.festivals.messages.removeItemBody')"
-      :confirm-label="t('admin.festivals.actions.remove')"
       @confirm="remove"
       @cancel="removedItem = null"
     />
@@ -349,15 +337,6 @@ async function remove(): Promise<void> {
 </template>
 
 <style scoped>
-.festival-item-row + .festival-item-row {
-  border-top: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
-}
-
-.festival-item-row.tinted-row {
-  background-color: rgba(var(--v-theme-on-surface), 0.08);
-  border-radius: 6px;
-}
-
 .festival-item-row .name {
   flex: 0 1 12rem;
 }
@@ -368,9 +347,5 @@ async function remove(): Promise<void> {
 
 .festival-item-row .station-select-field {
   flex: 0 1 auto;
-}
-
-.remove-item-wrapper {
-  display: inline-flex;
 }
 </style>

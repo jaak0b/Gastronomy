@@ -27,11 +27,11 @@ to copy. Of the global tabs only it opens its form through `useEditSession`: `St
    The component calls it in `onMounted`, then `await store.load()`, and calls the returned release in
    `onUnmounted`. Why the event, and what the entity owes the laptop side, is in the `architecture`
    skill.
-5. **The list component.** No wrapper component exists for the pieces every list shares; each list
-   wires a Vuetify control to a shared locale key. A `v-checkbox` on a `showsDeactivated` ref
-   (`data-test="show-deactivated"`, text `admin.common.actions.showDeactivated`, in German
-   "Deaktivierte anzeigen") decides whether deactivated entries are listed, so a row is listed when
-   `isActive || showsDeactivated`. A `v-chip` with `admin.common.labels.deactivated` marks a deactivated
+5. **The list component.** The heading is `BaseHeadingWithCheckbox`
+   (`admin/components/BaseHeadingWithCheckbox.vue`) with the `h1` in its slot and its checkbox on a
+   `showsDeactivated` ref (`checkbox-test-name="show-deactivated"`, text
+   `admin.common.actions.showDeactivated`, in German "Deaktivierte anzeigen"), which decides whether
+   deactivated entries are listed, so a row is listed when `isActive || showsDeactivated`. A `v-chip` with `admin.common.labels.deactivated` marks a deactivated
    entry, which offers activating in place of switching off. A `v-alert` with
    `admin.common.errors.loadFailed` reports `store.loadFailed`, and the text for an empty list shows
    only when the list is empty and the load did not fail.
@@ -51,10 +51,16 @@ to copy. Of the global tabs only it opens its form through `useEditSession`: `St
    The dialog is its own component on `BaseFormDialog` (`shared/components/BaseFormDialog.vue`), mounted
    with `v-if="session.isOpen"`, `:error-text="session.refusalText"`, `@save="session.save"` and
    `@cancel="session.close"`. The session closes on success and stays open showing the refusal.
+   `BaseFormDialog` puts the cursor into its first field once the dialog has opened (Vuetify's
+   `after-enter`), so a dialog never sets `autofocus` itself. A spec that checks this mounts with
+   Vue's real transitions (`stubs: { transition: false }`, as `BaseFormDialog.spec.ts` does), because
+   a stubbed transition never finishes entering.
 7. **Switch off.** Switching off asks first through `BaseConfirmDialog`; its confirm calls
    `store.setActive(id, false)` and hands the result to `session.showRefusalOf`. Reactivating asks
    nothing. When the entry's own data already says the laptop will refuse, the switch off is disabled
-   and a `v-tooltip` names the reason (`IngredientsList.vue` does this from `activeItemNames`). A
+   and its tooltip names the reason, through `admin/components/BaseActionWithRefusalReason.vue` around
+   `BaseTrashButton.vue` (`IngredientsList.vue` does this from `activeItemNames`; see
+   `hideable-rows.md`). A
    refusal that comes back anyway is one page level `v-alert` (`type="warning"`,
    `data-test="refusal"`), shown only while the form dialog is closed, because an open dialog shows its
    own refusal through `:error-text`.

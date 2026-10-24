@@ -84,6 +84,7 @@ export const ONE_STATION = {
       isActive: true,
       hasDevice: true,
       isAtAnyFestival: true,
+      hasItemsToHandOut: false,
     },
   ],
 }

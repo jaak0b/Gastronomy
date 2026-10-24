@@ -6,7 +6,6 @@ import {
   currentRoute,
   navigate,
   type AdminSection,
-  type FestivalSubpage,
 } from '../../shared/router/router'
 import { assertNever } from '../../shared/core/assertNever'
 import AdminOverview from '../components/overview/AdminOverview.vue'
@@ -40,14 +39,10 @@ const festivalId = computed<string | null>(() => {
   return route.name === 'admin' ? route.festivalId : null
 })
 
-const festivalSubpage = computed<FestivalSubpage | null>(() => {
+const areaId = computed<string | null>(() => {
   const route = currentRoute.value
-  return route.name === 'admin' ? (route.festivalSubpage ?? null) : null
+  return route.name === 'admin' ? (route.areaId ?? null) : null
 })
-
-const showsTablePlan = computed(
-  () => section.value === 'festivals' && festivalId.value !== null && festivalSubpage.value === 'tablePlan',
-)
 
 const sections: AdminSection[] = ADMIN_SECTIONS
 
@@ -81,7 +76,7 @@ void isThisTheLaptop().then((isLaptop) => {
     v-else
     class="admin-shell"
     data-test="admin-shell"
-    :class="{ 'fills-the-screen': showsTablePlan }"
+    :class="{ 'fills-the-screen': areaId !== null }"
   >
     <v-toolbar class="admin-nav" density="comfortable" color="surface">
       <v-tabs :model-value="section" class="admin-tabs" data-test="admin-tabs">
@@ -98,9 +93,10 @@ void isThisTheLaptop().then((isLaptop) => {
       </v-tabs>
     </v-toolbar>
     <TablePlanEditor
-      v-if="showsTablePlan && festivalId !== null"
-      :key="`${festivalId}-table-plan`"
+      v-if="festivalId !== null && areaId !== null"
+      :key="`${festivalId}-${areaId}`"
       :festival-id="festivalId"
+      :area-id="areaId"
     />
     <FestivalPage
       v-else-if="section === 'festivals' && festivalId !== null"

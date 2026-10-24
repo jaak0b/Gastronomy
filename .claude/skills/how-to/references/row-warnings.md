@@ -22,24 +22,14 @@ owns the rows; it keeps one refusal per row id.
 
 Current consumers: `admin/composables/useFestivalItemRows.ts` (rows keyed by item id),
 `admin/components/items/ItemIngredientsDialog.vue` (recipe lines keyed by ingredient id),
-`admin/components/festivals/FestivalStock.vue` (stock rows keyed by ingredient id), and in the table
-plan editor `admin/components/tablePlan/TablePlanAreas.vue` (areas keyed by area id),
-`TablePlanShapeDetails.vue` (tables and station shapes keyed by their Konva id) and
-`TablePlanAdding.vue` (stations to place keyed by station id).
+`admin/components/festivals/FestivalStock.vue` (stock rows keyed by ingredient id),
+`admin/components/HideableEntryList.vue` (the table plan's areas and tables, keyed by their id; see
+`hideable-rows.md`) and `admin/components/stations/RemovableStationRows.vue` (the station rows of the
+festival page and of the table plan editor, keyed by station id).
 
 Keep the rows' state in a component that stays mounted while the person moves between rows. A
 refusal kept by a component that is keyed on the selection is lost unseen when the person selects
 another row before the laptop answers.
-
-## A name typed on a row: `useTypedNames`
-
-`admin/composables/useTypedNames.ts` keeps what the person typed into a row's name field, per row id,
-so a refused name stays on its row while the person selects another one. `nameShownFor(rowId,
-savedName)` is the field's value, `type(rowId, savedName, typed)` records a keystroke,
-`takeNameToSend(rowId, savedName)` hands over the name once (or `null` when nothing new was typed,
-or the saved name was typed back), and `forgetTypedName(rowId)` drops it once the laptop accepted
-it. A blank name is refused on the row with `refuse(rowId, key)` instead of being sent. Consumers:
-`TablePlanAreas.vue` (areas) and `TablePlanShapeDetails.vue` (tables).
 
 ## One warning per screen: `useRefusalDisplay`
 

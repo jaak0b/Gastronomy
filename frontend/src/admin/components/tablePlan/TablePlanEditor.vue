@@ -8,46 +8,44 @@ import { useOpenedFestival } from '../../composables/useOpenedFestival'
 import { useAdminFestivalsStore } from '../../stores/festivals'
 import { useAdminStationsStore } from '../../stores/stations'
 import { useAdminTablePlanStore } from '../../stores/tablePlan'
-import TablePlanAdding from './TablePlanAdding.vue'
-import TablePlanAreas from './TablePlanAreas.vue'
 import TablePlanDrawing from './TablePlanDrawing.vue'
-import TablePlanShapeDetails from './TablePlanShapeDetails.vue'
+import TablePlanStationList from './TablePlanStationList.vue'
+import TablePlanTableList from './TablePlanTableList.vue'
 
-const props = defineProps<{ festivalId: string }>()
+const props = defineProps<{ festivalId: string; areaId: string }>()
 
 const { t } = useI18n()
 const festivals = useAdminFestivalsStore()
 const stations = useAdminStationsStore()
 const tablePlan = useAdminTablePlanStore()
-const selectedAreaId = ref<string | null>(null)
 const selectedShape = ref<ShapeSelection | null>(null)
 let stopListening: (() => void) | null = null
 
 const { festival, loadTheFestivalOrLeave } = useOpenedFestival(() => props.festivalId)
-const selectedArea = computed(
-  () => tablePlan.areas.find((area) => area.areaId === selectedAreaId.value) ?? null,
-)
-const stationsToPlace = computed(() => {
-  const placedStationIds = new Set(
-    tablePlan.areas.flatMap((area) => area.stationShapes.map((shape) => shape.stationId)),
+const area = computed(() => tablePlan.areas.find((candidate) => candidate.areaId === props.areaId) ?? null)
+const isUnknownArea = computed(() => tablePlan.loadedFestivalId === props.festivalId && area.value === null)
+const festivalHasStations = computed(() => stations.stations.some((station) => station.isAtAnyFestival))
+const stationsOnNoPlan = computed(() => {
+  const stationIdsOnAPlan = new Set(
+    tablePlan.areas.flatMap((each) => each.stationShapes.map((shape) => shape.stationId)),
   )
   return stations.stations.filter(
-    (station) => station.isAtAnyFestival && !placedStationIds.has(station.stationId),
+    (station) => station.isAtAnyFestival && !stationIdsOnAPlan.has(station.stationId),
   )
 })
 
 watch(
-  () => tablePlan.areas,
-  (areas) => {
-    if (!areas.some((area) => area.areaId === selectedAreaId.value)) {
-      selectedAreaId.value = areas[0]?.areaId ?? null
+  isUnknownArea,
+  (isUnknown) => {
+    if (isUnknown) {
+      navigate(`/admin/festivals/${props.festivalId}`)
     }
   },
   { immediate: true },
 )
 
-watch([selectedArea, selectedShape], ([area, shape]) => {
-  if (shape !== null && (area === null || !isDrawnIn(area, shape))) {
+watch([area, selectedShape], ([shownArea, shape]) => {
+  if (shape !== null && (shownArea === null || !isDrawnIn(shownArea, shape))) {
     selectedShape.value = null
   }
 })
@@ -73,59 +71,52 @@ onUnmounted(() => {
 
 <template>
   <div class="table-plan-editor" data-test="table-plan-editor">
-    <div class="editor-heading d-flex align-center flex-wrap ga-3 px-4 py-2">
-      <v-btn
-        class="back-to-festival"
-        data-test="back-to-festival"
-        variant="text"
-        prepend-icon="mdi-arrow-left"
-        @click="navigate(`/admin/festivals/${festivalId}`)"
+    <div class="editor-block" data-test="editor-block">
+      <div class="editor-heading d-flex align-center flex-wrap ga-3 py-2">
+        <v-btn
+          class="back-to-festival"
+          data-test="back-to-festival"
+          variant="text"
+          prepend-icon="mdi-arrow-left"
+          @click="navigate(`/admin/festivals/${festivalId}`)"
+        >
+          {{ t('common.actions.back') }}
+        </v-btn>
+        <h1 v-if="area !== null" class="area-name text-h5" data-test="area-name">{{ area.name }}</h1>
+      </div>
+      <v-alert
+        v-if="festivals.loadFailed || tablePlan.loadFailed || stations.loadFailed"
+        class="error mb-2"
+        data-test="load-failed"
+        type="error"
+        variant="tonal"
       >
-        {{ t('common.actions.back') }}
-      </v-btn>
-      <h1 class="text-h5">{{ t('admin.tablePlan.title') }}</h1>
-      <span v-if="festival !== null" class="festival-name text-h6 text-medium-emphasis" data-test="festival-name">
-        {{ festival.name }}
-      </span>
-    </div>
-    <v-alert
-      v-if="festivals.loadFailed || tablePlan.loadFailed || stations.loadFailed"
-      class="error mx-4 mb-2"
-      type="error"
-      variant="tonal"
-    >
-      {{ t('admin.common.errors.loadFailed') }}
-    </v-alert>
+        {{ t('admin.common.errors.loadFailed') }}
+      </v-alert>
 
-    <div v-if="festival !== null" class="editor-columns">
-      <TablePlanAreas
-        v-model:selected-area-id="selectedAreaId"
-        class="areas-column"
-        :festival-id="festivalId"
-        :areas="tablePlan.areas"
-      />
-      <TablePlanDrawing
-        v-if="selectedArea !== null"
-        v-model:selected-shape="selectedShape"
-        class="drawing-column"
-        :festival-id="festivalId"
-        :area="selectedArea"
-      />
-      <p v-else class="drawing-column no-area text-body-1 text-medium-emphasis" data-test="no-area">
-        {{ t('admin.tablePlan.messages.createAnAreaFirst') }}
-      </p>
-      <div v-if="selectedArea !== null" class="selection-column">
-        <TablePlanShapeDetails
-          :festival-id="festivalId"
-          :areas="tablePlan.areas"
-          :selection="selectedShape"
-        />
-        <TablePlanAdding
+      <div v-if="area !== null" class="editor-columns">
+        <TablePlanDrawing
           v-model:selected-shape="selectedShape"
+          class="drawing-column"
           :festival-id="festivalId"
-          :area="selectedArea"
-          :stations-to-place="stationsToPlace"
+          :area="area"
         />
+        <div class="lists-column" data-test="lists-column">
+          <TablePlanTableList
+            v-model:selected-shape="selectedShape"
+            :festival-id="festivalId"
+            :area="area"
+            :is-running="festival?.isRunning === true"
+          />
+          <TablePlanStationList
+            v-model:selected-shape="selectedShape"
+            class="mt-6"
+            :festival-id="festivalId"
+            :area="area"
+            :stations-on-no-plan="stationsOnNoPlan"
+            :festival-has-stations="festivalHasStations"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -133,29 +124,40 @@ onUnmounted(() => {
 
 <style scoped>
 .table-plan-editor {
-  display: flex;
   flex: 1 1 0;
-  flex-direction: column;
   min-height: 0;
-}
-
-.editor-columns {
-  display: grid;
-  flex: 1 1 0;
-  gap: 1rem;
-  grid-template-columns: 18rem minmax(0, 1fr) 20rem;
-  grid-template-rows: minmax(0, 1fr);
-  min-height: 0;
+  overflow-y: auto;
   padding: 0 1rem 1rem;
 }
 
-.areas-column,
-.selection-column {
+.editor-block {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin: 0 auto;
+  max-width: 1100px;
+}
+
+.editor-columns {
+  align-items: flex-start;
+  display: flex;
+  flex: 1 1 0;
+  flex-wrap: wrap;
+  gap: 1.5rem;
   min-height: 0;
-  overflow-y: auto;
 }
 
 .drawing-column {
-  min-height: 0;
+  flex: 0 0 auto;
+  height: 100%;
+  min-height: 20rem;
+}
+
+.lists-column {
+  flex: 1 1 22rem;
+  max-height: 100%;
+  max-width: 32rem;
+  min-width: 0;
+  overflow-y: auto;
 }
 </style>

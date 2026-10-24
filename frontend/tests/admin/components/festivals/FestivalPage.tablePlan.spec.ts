@@ -3,29 +3,31 @@ import { createPinia, setActivePinia } from 'pinia'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import FestivalPage from '../../../../src/admin/components/festivals/FestivalPage.vue'
 import { currentRoute } from '../../../../src/shared/router/router'
+import {
+  allOnScreen,
+  clickOn,
+  iconActionLabelsOnScreen,
+  isOnScreen,
+  onScreen,
+  refusalReasonsOnScreen,
+  textOnScreen,
+  waitUntil,
+} from '../../../support/dom'
+import { aHold, answer, heldUntil } from '../../../support/laptop'
 import { testPlugins } from '../../../support/plugins'
 import { FESTIVAL_ID, festivalLaptop, mountPage } from './festivalPageFixture'
-import { anAdminArea, anAdminTable } from '../../../support/wireViews'
+import { HALL, OLD_TABLES, TENT, areaRow, hideButtonOf } from './festivalTablePlanFixture'
+import { aFestival, anAdminArea, anAdminTable } from '../../../support/wireViews'
 
 enableAutoUnmount(afterEach)
 
-const HALL = anAdminArea({
-  areaId: 'area-halle',
-  name: 'Halle',
-  tables: [anAdminTable({ tableId: 'table-a1', name: 'A1' }), anAdminTable({ tableId: 'table-a2', name: 'A2' })],
-})
+const STILL_OPEN =
+  'Ein Bereich kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und abgerechnet ist.'
 
-const TENT = anAdminArea({
-  areaId: 'area-zelt',
-  name: 'Zelt',
-  sortOrder: 2,
-  tables: [anAdminTable({ tableId: 'table-b1', name: 'B1' })],
-})
+const TENT_WITH_ITEMS_TO_HAND_OUT = { ...TENT, hasItemsToHandOutOrSettle: true }
 
-const OLD_TABLES = anAdminArea({ areaId: 'area-alt', name: 'Bisherige Tische', sortOrder: 3, isHidden: true })
-
-function areaRow(areaId: string): HTMLElement | null {
-  return document.querySelector(`[data-test="festival-area-row"][data-test-id="${areaId}"]`)
+async function theAreasAreListed(): Promise<void> {
+  await vi.waitFor(() => expect(isOnScreen('[data-test="festival-area-row"]')).toBe(true))
 }
 
 beforeEach(() => {
@@ -38,17 +40,17 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('the table plan card of the festival page', () => {
-  it('lists every area in the order of the laptop with its number of tables', async () => {
+describe('the areas on the table plan card of the festival page', () => {
+  it('are listed by name in the order of the laptop, each with its number of tables', async () => {
     festivalLaptop({ areas: [HALL, TENT] })
 
-    const page = mountPage()
-    await vi.waitFor(() => expect(page.find('[data-test="festival-area-row"]').exists()).toBe(true))
+    mountPage()
+    await theAreasAreListed()
 
     expect(
-      page.findAll('[data-test="festival-area-row"]').map((row) => [
-        row.get('[data-test="area-name"]').text(),
-        row.get('[data-test="table-count"]').text(),
+      [areaRow('area-halle'), areaRow('area-zelt')].map((row) => [
+        textOnScreen('[data-test="entry-name"]', row).trim(),
+        textOnScreen('[data-test="table-count"]', row).trim(),
       ]),
     ).toEqual([
       ['Halle', '2 Tische'],
@@ -56,92 +58,199 @@ describe('the table plan card of the festival page', () => {
     ])
   })
 
-  it('marks a hidden area the way the festival list marks a hidden festival', async () => {
+  it('count only the tables waiters see', async () => {
+    const hiddenTable = anAdminTable({ tableId: 'table-b2', name: 'B2', isHidden: true })
+    festivalLaptop({ areas: [{ ...TENT, tables: [...TENT.tables, hiddenTable] }] })
+
+    mountPage()
+    await theAreasAreListed()
+
+    expect(textOnScreen('[data-test="table-count"]', areaRow('area-zelt')).trim()).toBe('1 Tisch')
+  })
+
+  it('leave a hidden area out until the admin asks for hidden areas', async () => {
     festivalLaptop({ areas: [HALL, OLD_TABLES] })
 
     mountPage()
-    await vi.waitFor(() => expect(areaRow('area-alt')).not.toBeNull())
+    await theAreasAreListed()
 
-    expect(areaRow('area-alt')?.querySelector('[data-test="hidden"]')?.textContent?.trim()).toBe('Ausgeblendet')
-    expect(areaRow('area-halle')?.querySelector('[data-test="hidden"]')).toBeNull()
+    expect(allOnScreen('[data-test="festival-area-row"]').map((row) => row.getAttribute('data-test-id'))).toEqual([
+      'area-halle',
+    ])
   })
 
-  it('warns when the festival has no area yet', async () => {
-    festivalLaptop({ areas: [] })
+  it('show a hidden area, marked hidden and offered to show again, once the box for hidden areas is ticked', async () => {
+    festivalLaptop({ areas: [HALL, OLD_TABLES] })
+    mountPage()
+    await theAreasAreListed()
 
-    const page = mountPage()
-    await vi.waitFor(() => expect(page.find('[data-test="no-area"]').exists()).toBe(true))
+    await clickOn('[data-test="show-hidden-entries"] input')
+    onScreen('[data-test="show-entry"]', areaRow('area-alt')).dispatchEvent(new MouseEvent('mouseenter'))
 
-    expect(page.get('[data-test="no-area"]').text()).toBe(
-      'Die Kellner sehen noch keinen Bereich. Klicken Sie auf "Tischplan bearbeiten".',
+    expect([
+      textOnScreen('[data-test="hidden"]', areaRow('area-alt')).trim(),
+      isOnScreen('[data-test="show-entry"] .mdi-eye', areaRow('area-alt')),
+    ]).toEqual(['Ausgeblendet', true])
+    await waitUntil(() =>
+      expect(iconActionLabelsOnScreen()).toContain('Einblenden'),
     )
   })
 
-  it('warns when the only area is hidden, because the waiters do not see it', async () => {
-    festivalLaptop({ areas: [{ ...OLD_TABLES, tables: [anAdminTable({ tableId: 'table-12', name: '12' })] }] })
-
-    const page = mountPage()
-    await vi.waitFor(() => expect(page.find('[data-test="festival-area-row"]').exists()).toBe(true))
-
-    expect(page.find('[data-test="no-area"]').exists()).toBe(true)
-  })
-
-  it('warns when none of its areas has a table', async () => {
-    festivalLaptop({ areas: [anAdminArea({ areaId: 'area-halle', name: 'Halle' })] })
-
-    const page = mountPage()
-    await vi.waitFor(() => expect(page.find('[data-test="no-table"]').exists()).toBe(true))
-
-    expect(page.get('[data-test="no-table"]').text()).toBe(
-      'Die Kellner sehen noch keinen Tisch. Klicken Sie auf "Tischplan bearbeiten".',
-    )
-  })
-
-  it('warns when the shown areas hold only hidden tables', async () => {
-    const hiddenTable = anAdminTable({ tableId: 'table-a1', name: 'A1', isHidden: true })
-    festivalLaptop({ areas: [anAdminArea({ areaId: 'area-halle', name: 'Halle', tables: [hiddenTable] })] })
-
-    const page = mountPage()
-    await vi.waitFor(() => expect(page.find('[data-test="festival-area-row"]').exists()).toBe(true))
-
-    expect(page.find('[data-test="no-table"]').exists()).toBe(true)
-  })
-
-  it('shows no warning once a shown area holds a shown table, whatever is hidden beside it', async () => {
-    festivalLaptop({ areas: [OLD_TABLES, TENT] })
-
-    const page = mountPage()
-    await vi.waitFor(() => expect(page.find('[data-test="festival-area-row"]').exists()).toBe(true))
-
-    expect(page.find('[data-test="no-area"]').exists()).toBe(false)
-    expect(page.find('[data-test="no-table"]').exists()).toBe(false)
-  })
-
-  it('opens the table plan editor of this festival', async () => {
+  it('offer the box for hidden areas in the heading line of the card, beside its title', async () => {
     festivalLaptop({ areas: [HALL] })
-    const page = mountPage()
-    await vi.waitFor(() => expect(page.find('[data-test="edit-table-plan"]').exists()).toBe(true))
+    mountPage()
+    await theAreasAreListed()
 
-    await page.get('[data-test="edit-table-plan"]').trigger('click')
+    const headingLine = onScreen('[data-test="section-heading"]', onScreen('[data-test="festival-table-plan"]')).parentElement
+
+    expect(headingLine?.querySelector('[data-test="show-hidden-entries"]')?.textContent?.trim()).toBe(
+      'Ausgeblendete anzeigen',
+    )
+  })
+
+  it('open the editor of the area whose plan the admin opens', async () => {
+    festivalLaptop({ areas: [HALL, TENT] })
+    mountPage()
+    await theAreasAreListed()
+
+    await clickOn('[data-test="open-plan"]', areaRow('area-zelt'))
 
     expect(currentRoute.value).toEqual({
       name: 'admin',
       section: 'festivals',
       festivalId: FESTIVAL_ID,
-      festivalSubpage: 'tablePlan',
+      areaId: 'area-zelt',
     })
   })
 
-  it('counts the tables in English too', async () => {
+  it('count the tables in English too', async () => {
     festivalLaptop({ areas: [TENT] })
 
-    const page = mount(FestivalPage, {
+    mount(FestivalPage, {
       props: { festivalId: FESTIVAL_ID },
       global: { plugins: testPlugins('en') },
       attachTo: document.body,
     })
-    await vi.waitFor(() => expect(page.find('[data-test="table-count"]').exists()).toBe(true))
+    await vi.waitFor(() => expect(isOnScreen('[data-test="table-count"]')).toBe(true))
 
-    expect(page.get('[data-test="table-count"]').text()).toBe('1 table')
+    expect(textOnScreen('[data-test="table-count"]').trim()).toBe('1 table')
+  })
+})
+
+describe('hiding an area from the table plan card', () => {
+  it('is offered as the trash icon the station rows of the festival page carry', async () => {
+    festivalLaptop({ areas: [HALL, TENT] })
+
+    mountPage()
+    await theAreasAreListed()
+
+    expect(hideButtonOf('area-zelt').querySelector('.mdi-delete')).not.toBeNull()
+  })
+
+  it('cannot be asked for while the festival runs and a table of the area has items to hand out or settle', async () => {
+    festivalLaptop({ areas: [HALL, TENT_WITH_ITEMS_TO_HAND_OUT] })
+
+    mountPage()
+    await theAreasAreListed()
+
+    expect(hideButtonOf('area-zelt').disabled).toBe(true)
+  })
+
+  it('names the reason on the disabled trash icon', async () => {
+    festivalLaptop({ areas: [HALL, TENT_WITH_ITEMS_TO_HAND_OUT] })
+    mountPage()
+    await theAreasAreListed()
+
+    onScreen('[data-test="hide-entry-wrapper"]', areaRow('area-zelt')).dispatchEvent(new MouseEvent('mouseenter'))
+
+    await waitUntil(() =>
+      expect(refusalReasonsOnScreen()).toContain(
+        STILL_OPEN,
+      ),
+    )
+  })
+
+  it('can be asked for once the festival is over, whatever its tables still have', async () => {
+    festivalLaptop({
+      festivals: [aFestival({ festivalId: FESTIVAL_ID, isRunning: false })],
+      areas: [HALL, TENT_WITH_ITEMS_TO_HAND_OUT],
+    })
+
+    mountPage()
+    await theAreasAreListed()
+
+    expect(hideButtonOf('area-zelt').disabled).toBe(false)
+  })
+})
+
+describe('the warnings of the table plan card', () => {
+  it('name the button for a new area when the festival has none', async () => {
+    festivalLaptop({ areas: [] })
+
+    mountPage()
+    await vi.waitFor(() => expect(isOnScreen('[data-test="no-area"]')).toBe(true))
+
+    expect(textOnScreen('[data-test="no-area"]').trim()).toBe(
+      'Die Kellner sehen noch keinen Bereich. Klicken Sie auf "Neuer Bereich".',
+    )
+  })
+
+  it('point to showing the areas again when every area is hidden', async () => {
+    festivalLaptop({ areas: [{ ...OLD_TABLES, tables: [anAdminTable({ tableId: 'table-12', name: '12' })] }] })
+
+    mountPage()
+    await vi.waitFor(() => expect(isOnScreen('[data-test="all-areas-hidden"]')).toBe(true))
+
+    expect(textOnScreen('[data-test="all-areas-hidden"]').trim()).toBe(
+      'Alle Bereiche sind ausgeblendet. Kreuzen Sie "Ausgeblendete anzeigen" an und blenden Sie einen Bereich wieder ein.',
+    )
+  })
+
+  it('stay away while the plan of the festival has not arrived', async () => {
+    const thePlan = aHold()
+    const laptop = festivalLaptop({ areas: [] }).answers(
+      'GET',
+      /\/table-plan$/,
+      heldUntil(thePlan.released, answer({ areas: [] })),
+    )
+
+    mountPage()
+    await vi.waitFor(() => expect(isOnScreen('[data-test="festival-name"]')).toBe(true))
+    await vi.waitFor(() => expect(laptop.urls()).toContain(`/api/admin/festivals/${FESTIVAL_ID}/table-plan`))
+
+    expect(isOnScreen('[data-test="no-area"]')).toBe(false)
+  })
+
+  it('name the button that opens a plan when no area has a table', async () => {
+    festivalLaptop({ areas: [anAdminArea({ areaId: 'area-halle', name: 'Halle' })] })
+
+    mountPage()
+    await vi.waitFor(() => expect(isOnScreen('[data-test="no-table"]')).toBe(true))
+
+    expect(textOnScreen('[data-test="no-table"]').trim()).toBe(
+      'Die Kellner sehen noch keinen Tisch. Klicken Sie bei einem Bereich auf "Plan öffnen".',
+    )
+  })
+
+  it('say so when the shown areas hold only hidden tables', async () => {
+    const hiddenTable = anAdminTable({ tableId: 'table-a1', name: 'A1', isHidden: true })
+    festivalLaptop({ areas: [anAdminArea({ areaId: 'area-halle', name: 'Halle', tables: [hiddenTable] })] })
+
+    mountPage()
+
+    await vi.waitFor(() => expect(isOnScreen('[data-test="no-table"]')).toBe(true))
+  })
+
+  it('stay away once a shown area holds a shown table, whatever is hidden beside it', async () => {
+    festivalLaptop({ areas: [OLD_TABLES, TENT] })
+
+    mountPage()
+    await theAreasAreListed()
+
+    expect([
+      isOnScreen('[data-test="no-area"]'),
+      isOnScreen('[data-test="all-areas-hidden"]'),
+      isOnScreen('[data-test="no-table"]'),
+    ]).toEqual([false, false, false])
   })
 })

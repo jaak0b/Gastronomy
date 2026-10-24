@@ -8,7 +8,7 @@ import {
 } from './backButtonTrap'
 
 export { ADMIN_SECTIONS, resolveRoute } from './route'
-export type { AdminSection, AppRoute, FestivalSubpage } from './route'
+export type { AdminSection, AppRoute } from './route'
 
 export const currentRoute: Ref<AppRoute> = ref(routeToStartAt(window.location.pathname))
 

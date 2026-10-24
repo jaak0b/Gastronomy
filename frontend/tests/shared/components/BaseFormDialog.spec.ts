@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { h } from 'vue'
 import BaseFormDialog from '../../../src/shared/components/BaseFormDialog.vue'
 import { testPlugins } from '../../support/plugins'
 import { isOnScreen, onScreen, waitUntil } from '../../support/dom'
@@ -32,5 +33,23 @@ describe('the width of a form dialog', () => {
     await openFormDialog(true)
 
     expect(widthOfTheDialog()).toBe('880px')
+  })
+})
+
+describe('a form dialog that opens', () => {
+  it('puts the cursor into its first field so the admin can type at once', async () => {
+    mount(BaseFormDialog, {
+      props: { title: 'Neue Zutat', errorText: null },
+      slots: {
+        default: () => [
+          h('input', { 'data-test': 'first-field' }),
+          h('input', { 'data-test': 'second-field' }),
+        ],
+      },
+      global: { plugins: testPlugins(), stubs: { transition: false } },
+      attachTo: document.body,
+    })
+
+    await waitUntil(() => expect(document.activeElement).toBe(onScreen('[data-test="first-field"]')))
   })
 })

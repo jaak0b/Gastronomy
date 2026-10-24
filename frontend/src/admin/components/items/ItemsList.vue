@@ -1,18 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminCategoryView, AdminItemView } from '../../../shared/api/generatedSchemas'
+import type { AdminCategoryView, AdminItemView, MoveDirection } from '../../../shared/api/generatedSchemas'
 import { combineReleases } from '../../../shared/core/combineReleases'
 import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
-import {
-  useAdminCategoriesStore,
-  type AdminCategoryDraft,
-  type CategoryMoveDirection,
-} from '../../stores/categories'
+import { useAdminCategoriesStore, type AdminCategoryDraft } from '../../stores/categories'
 import { useAdminFestivalsStore } from '../../stores/festivals'
 import { useAdminIngredientsStore } from '../../stores/ingredients'
 import { useAdminItemsStore, type AdminItemDraft } from '../../stores/items'
 import { useEditSession } from '../../composables/useEditSession'
+import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
 import CategoryDialog from '../categories/CategoryDialog.vue'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
 import ItemDialog from './ItemDialog.vue'
@@ -118,7 +115,7 @@ async function reactivate(itemId: string): Promise<void> {
   itemSession.showRefusalOf(await items.setActive(itemId, true))
 }
 
-async function moveCategory(categoryId: string, direction: CategoryMoveDirection): Promise<void> {
+async function moveCategory(categoryId: string, direction: MoveDirection): Promise<void> {
   categorySession.forgetRefusal()
   categorySession.showRefusalOf(await categories.move(categoryId, direction))
 }
@@ -180,17 +177,14 @@ onUnmounted(() => {
 
 <template>
   <v-container class="admin-items" data-test="admin-items">
-    <div class="admin-heading d-flex align-center flex-wrap justify-space-between ga-2 mb-4">
+    <BaseHeadingWithCheckbox
+      v-model="showsDeactivated"
+      class="admin-heading mb-4"
+      :checkbox-label="t('admin.common.actions.showDeactivated')"
+      checkbox-test-name="show-deactivated"
+    >
       <h1 class="text-h5">{{ t('admin.items.title') }}</h1>
-      <v-checkbox
-        v-model="showsDeactivated"
-        class="show-deactivated"
-        data-test="show-deactivated"
-        density="compact"
-        hide-details
-        :label="t('admin.common.actions.showDeactivated')"
-      />
-    </div>
+    </BaseHeadingWithCheckbox>
 
     <v-alert
       v-if="showsItemRefusal"

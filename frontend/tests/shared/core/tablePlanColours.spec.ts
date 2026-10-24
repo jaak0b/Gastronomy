@@ -9,7 +9,6 @@ describe('the colours a table plan takes from the app theme', () => {
     expect(LIGHT_TABLE_PLAN_COLOURS).toEqual({
       drawing: '#ffffff',
       ink: '#1f2328',
-      muted: 'rgba(31, 35, 40, 0.71)',
       table: '#ebedf0',
       station: '#1f2937',
       stationInk: '#ffffff',
@@ -22,7 +21,6 @@ describe('the colours a table plan takes from the app theme', () => {
     expect(DARK_TABLE_PLAN_COLOURS).toEqual({
       drawing: '#252a32',
       ink: '#e6e8eb',
-      muted: 'rgba(230, 232, 235, 0.66)',
       table: '#2e343d',
       station: '#e6e8eb',
       stationInk: '#1b1e24',

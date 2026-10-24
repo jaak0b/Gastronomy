@@ -48,6 +48,28 @@ describe('the stations of this festival', () => {
     expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('items')).toEqual([BAR])
   })
 
+  it('says that every station switched on is already here when nothing is left to add', async () => {
+    festivalLaptop({ stations: [KITCHEN, { ...BAR, isActive: false }] })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="station-search"]').exists()).toBe(true))
+
+    expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('noDataText')).toBe(
+      'Alle eingeschalteten Ausgabestellen gehören schon zu diesem Fest. Klicken Sie auf "Neue Ausgabestelle".',
+    )
+  })
+
+  it('says that no station is switched on when there is none to add', async () => {
+    festivalLaptop({ stations: [{ ...BAR, isActive: false }] })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="station-search"]').exists()).toBe(true))
+
+    expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('noDataText')).toBe(
+      'Es ist keine Ausgabestelle eingeschaltet. Klicken Sie auf "Neue Ausgabestelle".',
+    )
+  })
+
   it('waits for the button before it adds the station the admin picked', async () => {
     const laptop = festivalLaptop()
 
@@ -74,6 +96,7 @@ describe('the stations of this festival', () => {
       isActive: true,
       hasDevice: false,
       isAtAnyFestival: false,
+      hasItemsToHandOut: false,
     }
     const laptop = festivalLaptop({ created: NEW_STATION })
 
@@ -115,6 +138,15 @@ describe('the stations of this festival', () => {
       expect(sent?.body).toEqual({ name: 'Küche Nord', sortOrder: 1 })
     })
     await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).toBeNull())
+  })
+
+  it('cannot be asked to leave while the festival runs and the station has items to hand out', async () => {
+    festivalLaptop({ stations: [{ ...KITCHEN, hasItemsToHandOut: true }, BAR] })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="remove-station"]').exists()).toBe(true))
+
+    expect((stationRow(page, KITCHEN_ID).get('[data-test="remove-station"]').element as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('asks before a station leaves the festival', async () => {
@@ -174,7 +206,7 @@ describe('the stations of this festival', () => {
 
     await vi.waitFor(() =>
       expect(stationRow(page, KITCHEN_ID).get('[data-test="refusal"]').text()).toBe(
-        'Solange das Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht entfernt werden.',
+        'Eine Ausgabestelle mit offenen Bestellungen kann von einem aktiven Fest nicht entfernt werden.',
       ),
     )
   })

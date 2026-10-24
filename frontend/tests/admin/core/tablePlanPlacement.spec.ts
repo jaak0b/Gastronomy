@@ -2,11 +2,42 @@ import { describe, expect, it } from 'vitest'
 import {
   NEW_STATION_SIZE,
   NEW_TABLE_SIZE,
+  drawnGeometriesOf,
+  drawnTablesOf,
   editorDrawingLength,
   fitsTheDrawing,
+  geometriesOfEveryTableAndStationOf,
   geometryBelowTheLowestShape,
 } from '../../../src/admin/core/tablePlanPlacement'
-import { aGeometry } from '../../support/wireViews'
+import { aGeometry, anAdminArea, anAdminStationShape, anAdminTable } from '../../support/wireViews'
+
+const SHOWN_TABLE = anAdminTable({ tableId: 'table-a1', geometry: aGeometry({ y: 30 }) })
+
+const HIDDEN_TABLE = anAdminTable({ tableId: 'table-a2', isHidden: true, geometry: aGeometry({ y: 300 }) })
+
+const STATION_SHAPE = anAdminStationShape({ geometry: aGeometry({ x: 200, y: 80 }) })
+
+const HALL = anAdminArea({ tables: [SHOWN_TABLE, HIDDEN_TABLE], stationShapes: [STATION_SHAPE] })
+
+describe('what the editor draws of an area', () => {
+  it('is every shown table, never a hidden one', () => {
+    expect(drawnTablesOf(HALL)).toEqual([SHOWN_TABLE])
+  })
+
+  it('is the geometry of the shown tables and of the station shapes', () => {
+    expect(drawnGeometriesOf(HALL)).toEqual([aGeometry({ y: 30 }), aGeometry({ x: 200, y: 80 })])
+  })
+})
+
+describe('the shapes a new table keeps clear of', () => {
+  it('are every table of the area, a hidden one included, and the station shapes', () => {
+    expect(geometriesOfEveryTableAndStationOf(HALL)).toEqual([
+      aGeometry({ y: 30 }),
+      aGeometry({ y: 300 }),
+      aGeometry({ x: 200, y: 80 }),
+    ])
+  })
+})
 
 describe('where a new table or station is put', () => {
   it('is near the top left corner of an empty area', () => {

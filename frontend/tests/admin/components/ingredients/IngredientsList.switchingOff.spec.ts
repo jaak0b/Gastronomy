@@ -1,15 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import type { AdminIngredientView } from '../../../../src/shared/api/generatedSchemas'
-import { pressInDialog, waitForDialog } from '../../../support/dom'
+import { pressInDialog, refusalReasonsOnScreen, waitForDialog } from '../../../support/dom'
 import { refusal } from '../../../support/laptop'
 import { BUN, MUSTARD, OLD_MILK, ingredientsListLaptop, mountList } from './ingredientsListFixture'
 
 const MUSTARD_ROW = `[data-test="ingredient-row"][data-test-id="${MUSTARD.ingredientId}"]`
 
 const BUN_ROW = `[data-test="ingredient-row"][data-test-id="${BUN.ingredientId}"]`
-
-const MUSTARD_TOOLTIP = `[data-test="used-by-active-items-tooltip"][data-test-id="${MUSTARD.ingredientId}"]`
 
 const MUSTARD_IN_TWO_ACTIVE_ARTICLES: AdminIngredientView = { ...MUSTARD, activeItemNames: ['Bratwurst', 'Currywurst'] }
 
@@ -98,9 +96,10 @@ describe('an ingredient an active article still uses', () => {
 
     await list.get(`${MUSTARD_ROW} [data-test="deactivate-wrapper"]`).trigger('mouseenter')
 
-    await vi.waitFor(() => expect(document.querySelector(MUSTARD_TOOLTIP)).not.toBeNull())
-    expect(document.querySelector(MUSTARD_TOOLTIP)?.textContent?.trim()).toBe(
-      'Diese Zutat wird noch bei Bratwurst, Currywurst verwendet. Nehmen Sie sie dort zuerst heraus, unter "Artikel".',
+    await vi.waitFor(() =>
+      expect(refusalReasonsOnScreen()).toContain(
+        'Diese Zutat wird noch bei Bratwurst, Currywurst verwendet. Nehmen Sie sie dort zuerst heraus, unter "Artikel".',
+      ),
     )
   })
 
@@ -113,9 +112,10 @@ describe('an ingredient an active article still uses', () => {
 
     await list.get(`${MUSTARD_ROW} [data-test="deactivate-wrapper"]`).trigger('mouseenter')
 
-    await vi.waitFor(() => expect(document.querySelector(MUSTARD_TOOLTIP)).not.toBeNull())
-    expect(document.querySelector(MUSTARD_TOOLTIP)?.textContent?.trim()).toBe(
-      'This ingredient is still used in Bratwurst, Currywurst. Take it out of those items first, under "Items".',
+    await vi.waitFor(() =>
+      expect(refusalReasonsOnScreen()).toContain(
+        'This ingredient is still used in Bratwurst, Currywurst. Take it out of those items first, under "Items".',
+      ),
     )
   })
 })
