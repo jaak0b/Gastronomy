@@ -89,6 +89,7 @@ Full rules: [references/member-design.md](references/member-design.md)
 - **Do not** provide public or protected instance fields; expose properties.
 - **Do not** assign a mutable instance (an array, a list, a stream) to a readonly field and expect it to be constant.
 - **Avoid** extension methods on types you own; write instance methods instead.
+- **Avoid** an `Extensions` namespace; name the namespace after the feature.
 - **Avoid** operator overloads except on types that should feel like primitives, and **do** overload symmetrically.
 - **Do not** provide implicit conversions that can lose data or throw.
 
