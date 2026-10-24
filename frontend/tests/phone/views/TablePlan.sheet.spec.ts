@@ -36,7 +36,7 @@ function oneWasserOnTheOrderFor(table: { tableId: string; name: string }) {
 }
 
 describe('the choices a tapped table offers', () => {
-  it('names the table and offers to take an order, to settle and to cancel', async () => {
+  it('names the table and offers to take an order, to settle and to go back', async () => {
     await mountThePlan()
 
     await tapTheTable('table-12')
@@ -45,8 +45,8 @@ describe('the choices a tapped table offers', () => {
       title: textOnScreen('[data-test="table-actions-title"]').trim(),
       takeOrder: textOnScreen('[data-test="take-order"]').trim(),
       settle: textOnScreen('[data-test="settle-table"]').trim(),
-      cancel: textOnScreen('[data-test="cancel-table-actions"]').trim(),
-    }).toEqual({ title: 'Tisch 12', takeOrder: 'Bestellung aufnehmen', settle: 'Abrechnen', cancel: 'Abbrechen' })
+      back: textOnScreen('[data-test="back-from-table-actions"]').trim(),
+    }).toEqual({ title: 'Tisch 12', takeOrder: 'Bestellung aufnehmen', settle: 'Abrechnen', back: 'Zurück' })
   })
 
   it('names the choices in English on an English phone', async () => {
@@ -57,8 +57,8 @@ describe('the choices a tapped table offers', () => {
     expect({
       takeOrder: textOnScreen('[data-test="take-order"]').trim(),
       settle: textOnScreen('[data-test="settle-table"]').trim(),
-      cancel: textOnScreen('[data-test="cancel-table-actions"]').trim(),
-    }).toEqual({ takeOrder: 'Take an order', settle: 'Settle', cancel: 'Cancel' })
+      back: textOnScreen('[data-test="back-from-table-actions"]').trim(),
+    }).toEqual({ takeOrder: 'Take an order', settle: 'Settle', back: 'Back' })
   })
 
   it('takes the order for the table when nothing is waiting to be sent', async () => {
@@ -114,12 +114,12 @@ describe('the choices a tapped table offers', () => {
     }).toEqual({ asked: false, table: { tableId: 'table-3', name: '3' }, lines: 1 })
   })
 
-  it('closes and changes nothing when the waiter cancels', async () => {
+  it('closes and changes nothing when the waiter goes back', async () => {
     const order = useOrderStore()
     await mountThePlan()
     await tapTheTable('table-12')
 
-    await clickOn('[data-test="cancel-table-actions"]')
+    await clickOn('[data-test="back-from-table-actions"]')
 
     expect({ sheet: isOnScreen(TABLE_ACTIONS), table: order.draft.table, route: currentRoute.value }).toEqual({
       sheet: false,
@@ -130,26 +130,63 @@ describe('the choices a tapped table offers', () => {
 })
 
 describe('taking an order at a table while another table\'s order is not sent yet', () => {
-  async function askedAboutTheOrderForTable3() {
+  async function askedAboutTheOrderForTable3(locale: 'de' | 'en' = 'de') {
     const order = oneWasserOnTheOrderFor({ tableId: 'table-3', name: '3' })
-    await mountThePlan()
+    await mountThePlan(locale)
     await tapTheTable('table-12')
     await clickOn('[data-test="take-order"]')
     return order
   }
 
-  it('asks first, naming the table the unsent items belong to and the table that was tapped', async () => {
+  it('says which table holds the unsent item and what it costs', async () => {
+    await askedAboutTheOrderForTable3()
+
+    expect(textOnScreen('[data-test="unsent-order-text"]').trim()).toBe(
+      'Tisch 3 hat 1 Artikel für 2,00 €, der noch nicht gesendet ist.',
+    )
+  })
+
+  it('counts every unsent item and adds up their prices', async () => {
+    oneWasserOnTheOrderFor({ tableId: 'table-3', name: '3' }).addItem({
+      catalogItemId: 'item-wasser',
+      note: 'ohne Eis',
+      stationId: 'station-bar',
+      name: 'Wasser',
+    })
+    await mountThePlan()
+    await tapTheTable('table-12')
+
+    await clickOn('[data-test="take-order"]')
+
+    expect(textOnScreen('[data-test="unsent-order-text"]').trim()).toBe(
+      'Tisch 3 hat 2 Artikel für 4,00 €, die noch nicht gesendet sind.',
+    )
+  })
+
+  it('says the same in English on an English phone', async () => {
+    await askedAboutTheOrderForTable3('en')
+
+    expect(textOnScreen('[data-test="unsent-order-text"]').trim()).toBe('Table 3 has 1 unsent item for €2.00.')
+  })
+
+  it('offers to go to that table, to discard its items and to go back', async () => {
     await askedAboutTheOrderForTable3()
 
     expect({
-      question: textOnScreen('[data-test="unsent-order-title"]').trim(),
-      back: textOnScreen('[data-test="back-to-the-draft"]').trim(),
+      toTable: textOnScreen('[data-test="back-to-the-draft"]').trim(),
       discard: textOnScreen('[data-test="discard-the-draft"]').trim(),
-    }).toEqual({
-      question: 'Die Bestellung für Tisch 3 ist noch nicht gesendet.',
-      back: 'Zurück zur Bestellung für Tisch 3',
-      discard: 'Verwerfen und Bestellung für Tisch 12 aufnehmen',
-    })
+      back: textOnScreen('[data-test="stay-on-the-plan"]').trim(),
+    }).toEqual({ toTable: 'Zu Tisch 3', discard: 'Verwerfen', back: 'Zurück' })
+  })
+
+  it('names the three choices in English on an English phone', async () => {
+    await askedAboutTheOrderForTable3('en')
+
+    expect({
+      toTable: textOnScreen('[data-test="back-to-the-draft"]').trim(),
+      discard: textOnScreen('[data-test="discard-the-draft"]').trim(),
+      back: textOnScreen('[data-test="stay-on-the-plan"]').trim(),
+    }).toEqual({ toTable: 'Go to table 3', discard: 'Discard', back: 'Back' })
   })
 
   it('names the table of the unsent items by the name the plan holds now', async () => {
@@ -159,9 +196,23 @@ describe('taking an order at a table while another table\'s order is not sent ye
 
     await clickOn('[data-test="take-order"]')
 
-    expect(textOnScreen('[data-test="unsent-order-title"]').trim()).toBe(
-      'Die Bestellung für Tisch 14 ist noch nicht gesendet.',
+    expect(textOnScreen('[data-test="unsent-order-text"]').trim()).toBe(
+      'Tisch 14 hat 1 Artikel für 2,00 €, der noch nicht gesendet ist.',
     )
+  })
+
+  it('goes back to the plan and leaves the unsent items and the plan as they were', async () => {
+    const order = await askedAboutTheOrderForTable3()
+
+    await clickOn('[data-test="stay-on-the-plan"]')
+
+    expect({
+      asked: isOnScreen(UNSENT_ORDER),
+      table: order.draft.table,
+      lines: order.draft.lines.length,
+      route: currentRoute.value,
+      plan: isOnScreen('[data-test="area-plan"]'),
+    }).toEqual({ asked: false, table: { tableId: 'table-3', name: '3' }, lines: 1, route: { name: 'home' }, plan: true })
   })
 
   it('goes back to the order of its own table and keeps every item', async () => {

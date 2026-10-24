@@ -33,32 +33,6 @@ describe('the waiting time on the review screen', () => {
     expect(review.get('[data-test="station-name"]').text()).toBe('Geht an Bar (~14 Min.)')
   })
 
-  it('says above the buttons how each station hands its part out and when, in German', async () => {
-    answerTheQuoteWith(14)
-    prepareOrder()
-
-    const review = mount(Review, { global: { plugins: testPlugins() } })
-    await flushPromises()
-
-    expect({
-      station: review.get('[data-test="docked-strip"] [data-test="station-delivery-name"]').text(),
-      delivery: review.get('[data-test="docked-strip"] [data-test="station-delivery-mode"]').text(),
-    }).toEqual({ station: 'Bar:', delivery: 'Gemeinsam (~14 Min.)' })
-  })
-
-  it('says above the buttons how each station hands its part out and when, in English', async () => {
-    answerTheQuoteWith(14)
-    prepareOrder()
-
-    const review = mount(Review, { global: { plugins: testPlugins('en') } })
-    await flushPromises()
-
-    expect({
-      station: review.get('[data-test="docked-strip"] [data-test="station-delivery-name"]').text(),
-      delivery: review.get('[data-test="docked-strip"] [data-test="station-delivery-mode"]').text(),
-    }).toEqual({ station: 'Bar:', delivery: 'Combined (~14 min)' })
-  })
-
   it('shows no time for a station the laptop could not calculate', async () => {
     answerTheQuoteWith(null)
     prepareOrder()

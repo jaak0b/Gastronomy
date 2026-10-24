@@ -3,13 +3,6 @@ import { computed, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { formatPrice } from '../../shared/core/money'
 import { quoteLinesFor } from '../core/estimates'
-import { withEstimate } from '../core/estimateWording'
-import {
-  deliveriesWithAStation,
-  stationDeliveries,
-  type StationDeliveryWithStation,
-} from '../core/stationDeliveries'
-import { deliveryModeKey } from '../../shared/core/stationBoard'
 import { useEstimatesStore } from '../stores/estimates'
 import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../../shared/stores/session'
@@ -46,16 +39,6 @@ const total = computed(() => formatPrice(order.totalCents, session.language))
 const canSend = computed(
   () => order.draft.table !== null && order.basketLines.length > 0 && !order.isSending,
 )
-
-const stationLines = computed(() =>
-  deliveriesWithAStation(
-    stationDeliveries(order.basketLines, estimates.quotedStations, order.deliveryModeAt),
-  ),
-)
-
-function deliveryTextFor(station: StationDeliveryWithStation): string {
-  return withEstimate(t(deliveryModeKey(station.deliveryMode)), station.minutes, t, session.language)
-}
 
 function startTheNextOrder(): void {
   order.startNextOrderAfterWritingItDown()
@@ -140,16 +123,6 @@ function backToItems(): void {
           {{ t('phone.review.actions.removeLinesThatCannotBeOrdered') }}
         </v-btn>
         <template v-else>
-          <div
-            v-for="station in stationLines"
-            :key="station.stationId"
-            class="station-delivery"
-          >
-            <span class="station-delivery-name" data-test="station-delivery-name">
-              {{ t('phone.review.labels.stationDelivery', { name: station.stationName }) }}
-            </span>
-            <span class="station-delivery-mode" data-test="station-delivery-mode">{{ deliveryTextFor(station) }}</span>
-          </div>
           <v-btn
             class="send-and-settle send-button mt-3"
             data-test="send-and-settle"
@@ -216,27 +189,6 @@ function backToItems(): void {
   min-width: 0;
   margin: 0;
   overflow-wrap: anywhere;
-}
-
-.station-delivery {
-  display: flex;
-  align-items: baseline;
-  padding-block: 0.25rem;
-  font-size: 1.05rem;
-}
-
-.station-delivery-name {
-  flex: 0 1 auto;
-  padding-inline-end: 0.75rem;
-  overflow-wrap: anywhere;
-  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
-}
-
-.station-delivery-mode {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow-wrap: anywhere;
-  font-weight: 600;
 }
 
 .send-button {

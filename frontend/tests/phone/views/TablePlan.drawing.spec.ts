@@ -71,6 +71,15 @@ describe('the plan of one area on a waiter\'s phone', () => {
     expect(tableNode('table-12').findOne<Konva.Text>('Text')?.text()).toBe('12')
   })
 
+  it('keeps a name that is wider than its table in one piece', async () => {
+    const narrow = aPlanTable({ tableId: 'table-9', name: 'Abcd', geometry: aGeometry({ x: 20, y: 30, width: 30, height: 60 }) })
+    planLaptop([aPlanArea({ tables: [narrow] })])
+
+    await mountThePlan()
+
+    expect(tableNode('table-9').findOne<Konva.Text>('Text')?.textArr.map((line) => line.text)).toEqual(['Abcd'])
+  })
+
   it('draws the stations with their names', async () => {
     planLaptop([HALL])
 

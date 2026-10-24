@@ -2,13 +2,13 @@
 import { useI18n } from 'vue-i18n'
 
 defineProps<{ tableName: string }>()
-const emit = defineEmits<{ 'take-order': []; settle: []; cancel: [] }>()
+const emit = defineEmits<{ 'take-order': []; settle: []; back: [] }>()
 
 const { t } = useI18n()
 </script>
 
 <template>
-  <v-bottom-sheet :model-value="true" @update:model-value="emit('cancel')">
+  <v-bottom-sheet :model-value="true" @update:model-value="emit('back')">
     <v-card class="table-actions" data-test="table-actions">
       <v-card-title class="table-actions-title" data-test="table-actions-title">
         {{ t('common.labels.table', { name: tableName }) }}
@@ -37,14 +37,14 @@ const { t } = useI18n()
           {{ t('phone.openItems.actions.settle') }}
         </v-btn>
         <v-btn
-          class="cancel-table-actions"
-          data-test="cancel-table-actions"
+          class="back-from-table-actions"
+          data-test="back-from-table-actions"
           variant="text"
           size="x-large"
           block
-          @click="emit('cancel')"
+          @click="emit('back')"
         >
-          {{ t('common.actions.cancel') }}
+          {{ t('common.actions.back') }}
         </v-btn>
       </v-card-actions>
     </v-card>

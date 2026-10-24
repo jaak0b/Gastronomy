@@ -11,6 +11,7 @@ import { useCatalogStore } from '../stores/catalog'
 import { useOpenItemsStore } from '../stores/openItems'
 import { useOrderStore } from '../stores/order'
 import { useTablePlanStore } from '../stores/tablePlan'
+import { useSessionStore } from '../../shared/stores/session'
 import AreaList from '../components/tablePlan/AreaList.vue'
 import AreaPlan from '../components/tablePlan/AreaPlan.vue'
 import TableActionSheet from '../components/tablePlan/TableActionSheet.vue'
@@ -21,6 +22,7 @@ const tablePlan = useTablePlanStore()
 const catalog = useCatalogStore()
 const order = useOrderStore()
 const openItems = useOpenItemsStore()
+const session = useSessionStore()
 const { landing } = useWaiterLanding()
 const { draftTableName } = useDraftTableName()
 
@@ -156,14 +158,17 @@ function discardTheDraft(): void {
       :table-name="tappedTable.name"
       @take-order="takeTheOrder"
       @settle="settleTheTable"
-      @cancel="tappedTable = null"
+      @back="tappedTable = null"
     />
     <UnsentOrderDialog
       v-if="tableAskingAboutTheDraft !== null && draftTableName !== null"
       :draft-table-name="draftTableName"
-      :chosen-table-name="tableAskingAboutTheDraft.name"
+      :item-count="order.itemCount"
+      :total-cents="order.totalCents"
+      :language="session.language"
       @back-to-the-draft="backToTheDraft"
       @discard-the-draft="discardTheDraft"
+      @stay-on-the-plan="tableAskingAboutTheDraft = null"
     />
   </div>
 </template>

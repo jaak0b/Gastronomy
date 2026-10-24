@@ -8,7 +8,7 @@ import { useTablePlanStore } from '../../../src/phone/stores/tablePlan'
 import type { TablePlanAreaView } from '../../../src/shared/api/generatedSchemas'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
 import { isOnScreen, waitUntil } from '../../support/dom'
-import { centreOf, drawingIn, shapeWithId, tapAt } from '../../support/konvaDrawing'
+import { centreOf, drawingIn, moveFingers, putFingerDown, shapeWithId, tapAt, type Finger } from '../../support/konvaDrawing'
 import { answer, stubLaptop, type LaptopReply, type StubbedLaptop } from '../../support/laptop'
 import { testPlugins } from '../../support/plugins'
 import { aGeometry, aPlanArea, aPlanStationShape, aPlanTable } from '../../support/wireViews'
@@ -56,9 +56,10 @@ export function theCatalogNamesTheFestivalThatRuns(festival: { festivalId: strin
 export async function mountThePlan(locale: 'de' | 'en' = 'de', extraPlugins: Plugin[] = []) {
   localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
   useSessionStore().deviceToken = 'token-here'
+  useSessionStore().language = locale
   void useTablePlanStore().load()
   const view = mount(TablePlan, {
-    global: { plugins: [...testPlugins(locale), ...extraPlugins] },
+    global: { plugins: [...testPlugins(locale), ...extraPlugins], stubs: { transition: false } },
     attachTo: document.body,
   })
   await flushPromises()
@@ -76,5 +77,21 @@ export function tableNode(tableId: string): Konva.Group {
 export async function tapTheTable(tableId: string): Promise<void> {
   await tapAt(theDrawing(), centreOf(tableNode(tableId)))
   await waitUntil(() => expect(isOnScreen(TABLE_ACTIONS)).toBe(true))
+}
+
+export const ON_TISCH_12: Finger = { id: 1, at: { x: 40, y: 50 } }
+
+export const ALSO_ON_TISCH_12: Finger = { id: 2, at: { x: 80, y: 50 } }
+
+export async function aPinchThatSpreadsTwoFingersOnTisch12() {
+  const stage = theDrawing()
+  const first = { ...ON_TISCH_12, at: { x: 30, y: 50 } }
+  const second = { ...ALSO_ON_TISCH_12, at: { x: 90, y: 50 } }
+  await putFingerDown(stage, ON_TISCH_12)
+  await putFingerDown(stage, ALSO_ON_TISCH_12, [ON_TISCH_12])
+  await moveFingers(stage, [ON_TISCH_12, ALSO_ON_TISCH_12])
+  await moveFingers(stage, [first, second])
+  await moveFingers(stage, [first, second])
+  return { first, second }
 }
 

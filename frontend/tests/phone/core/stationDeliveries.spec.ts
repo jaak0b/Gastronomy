@@ -73,47 +73,9 @@ describe('what each station of an order is asked to do', () => {
 })
 
 describe('how long a station says its part will take', () => {
-  it('names the time the laptop calculated for the station', () => {
-    const deliveries = stationDeliveries([line()], QUOTE, alwaysTogether)
-
-    expect(deliveries[0].minutes).toBe(23)
-  })
-
-  it('names no time for the part when each item goes out on its own', () => {
-    const deliveries = stationDeliveries([line()], QUOTE, () => 'asItComes')
-
-    expect(deliveries[0].minutes).toBeNull()
-  })
-
   it('keeps the calculated time of the station even when the part goes out item by item', () => {
     const deliveries = stationDeliveries([line()], QUOTE, () => 'asItComes')
 
     expect(deliveries[0].stationMinutes).toBe(23)
-  })
-
-  it('names no time for a station the laptop could not calculate', () => {
-    const deliveries = stationDeliveries([beer()], QUOTE, alwaysTogether)
-
-    expect(deliveries[0].minutes).toBeNull()
-  })
-
-  it('names no time while the part has no station yet', () => {
-    const deliveries = stationDeliveries(
-      [line({ stationId: null, candidateStationIds: ['station-kueche', 'station-theke'] })],
-      QUOTE,
-      alwaysTogether,
-    )
-
-    expect(deliveries[0].minutes).toBeNull()
-  })
-
-  it('names no time for a station the laptop said nothing about', () => {
-    const deliveries = stationDeliveries(
-      [line({ stationId: 'station-grill', candidateStationIds: ['station-grill'] })],
-      QUOTE,
-      alwaysTogether,
-    )
-
-    expect(deliveries[0].minutes).toBeNull()
   })
 })

@@ -1,18 +1,38 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { AppLanguage } from '../../../shared/core/deviceLanguage'
+import { formatPrice } from '../../../shared/core/money'
 
-defineProps<{ draftTableName: string; chosenTableName: string }>()
-const emit = defineEmits<{ 'back-to-the-draft': []; 'discard-the-draft': [] }>()
+const props = defineProps<{
+  draftTableName: string
+  itemCount: number
+  totalCents: number
+  language: AppLanguage
+}>()
+const emit = defineEmits<{ 'back-to-the-draft': []; 'discard-the-draft': []; 'stay-on-the-plan': [] }>()
 
 const { t } = useI18n()
+
+const whatIsUnsent = computed(() =>
+  t(
+    'phone.tablePlan.messages.unsentOrder',
+    {
+      table: props.draftTableName,
+      count: props.itemCount,
+      total: formatPrice(props.totalCents, props.language),
+    },
+    props.itemCount,
+  ),
+)
 </script>
 
 <template>
-  <v-dialog :model-value="true" max-width="480" persistent>
+  <v-dialog :model-value="true" max-width="480" persistent scrim="background" opacity="1">
     <v-card class="unsent-order" data-test="unsent-order">
-      <v-card-title class="unsent-order-title" data-test="unsent-order-title">
-        {{ t('phone.tablePlan.messages.unsentOrder', { table: draftTableName }) }}
-      </v-card-title>
+      <v-card-text class="unsent-order-text text-body-1" data-test="unsent-order-text">
+        {{ whatIsUnsent }}
+      </v-card-text>
       <v-card-actions class="flex-column align-stretch ga-2 pb-4">
         <v-btn
           class="back-to-the-draft"
@@ -23,7 +43,7 @@ const { t } = useI18n()
           block
           @click="emit('back-to-the-draft')"
         >
-          {{ t('phone.tablePlan.actions.backToTheUnsentOrder', { table: draftTableName }) }}
+          {{ t('phone.tablePlan.actions.toTheUnsentTable', { table: draftTableName }) }}
         </v-btn>
         <v-btn
           class="discard-the-draft"
@@ -34,7 +54,17 @@ const { t } = useI18n()
           block
           @click="emit('discard-the-draft')"
         >
-          {{ t('phone.tablePlan.actions.discardAndTakeTheOrder', { table: chosenTableName }) }}
+          {{ t('phone.tablePlan.actions.discard') }}
+        </v-btn>
+        <v-btn
+          class="stay-on-the-plan"
+          data-test="stay-on-the-plan"
+          variant="text"
+          size="x-large"
+          block
+          @click="emit('stay-on-the-plan')"
+        >
+          {{ t('common.actions.back') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -42,10 +72,8 @@ const { t } = useI18n()
 </template>
 
 <style scoped>
-.unsent-order-title {
-  white-space: normal;
+.unsent-order-text {
   overflow-wrap: anywhere;
-  line-height: 1.35;
 }
 
 .unsent-order .v-btn {

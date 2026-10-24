@@ -3,14 +3,28 @@ import { enableAutoUnmount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { navigate } from '../../../src/shared/router/router'
 import { isOnScreen } from '../../support/dom'
-import { layOutTheScreen, liftFinger, moveFingers, putFingerDown, type Finger } from '../../support/konvaDrawing'
-import { HALL, TABLE_ACTIONS, mountThePlan, planLaptop, theDrawing } from './tablePlanFixture'
+import {
+  centreOf,
+  clickAsAMouseDoes,
+  layOutTheScreen,
+  liftFinger,
+  moveFingers,
+  putFingerDown,
+  tapAsAPhoneDoes,
+  type Finger,
+} from '../../support/konvaDrawing'
+import {
+  HALL,
+  ON_TISCH_12,
+  TABLE_ACTIONS,
+  aPinchThatSpreadsTwoFingersOnTisch12,
+  mountThePlan,
+  planLaptop,
+  tableNode,
+  theDrawing,
+} from './tablePlanFixture'
 
 enableAutoUnmount(afterEach)
-
-const ON_TISCH_12: Finger = { id: 1, at: { x: 40, y: 50 } }
-
-const ALSO_ON_TISCH_12: Finger = { id: 2, at: { x: 80, y: 50 } }
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -22,21 +36,10 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
-
-async function aPinchThatSpreadsTwoFingersOnTisch12() {
-  const stage = theDrawing()
-  const first = { ...ON_TISCH_12, at: { x: 30, y: 50 } }
-  const second = { ...ALSO_ON_TISCH_12, at: { x: 90, y: 50 } }
-  await putFingerDown(stage, ON_TISCH_12)
-  await putFingerDown(stage, ALSO_ON_TISCH_12, [ON_TISCH_12])
-  await moveFingers(stage, [ON_TISCH_12, ALSO_ON_TISCH_12])
-  await moveFingers(stage, [first, second])
-  await moveFingers(stage, [first, second])
-  return { first, second }
-}
 
 describe('a finger on the plan', () => {
   it('opens the table it taps', async () => {
@@ -62,6 +65,28 @@ describe('a finger on the plan', () => {
       panned: -20,
       tableOpened: false,
     })
+  })
+})
+
+describe('a table tapped the way a phone\'s browser delivers it', () => {
+  it('stays open after the click the browser sends behind a quick tap', async () => {
+    await mountThePlan()
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+
+    await tapAsAPhoneDoes(theDrawing(), ON_TISCH_12)
+    await vi.runOnlyPendingTimersAsync()
+
+    expect(isOnScreen(TABLE_ACTIONS)).toBe(true)
+  })
+
+  it('stays open after a mouse click on the laptop', async () => {
+    await mountThePlan()
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+
+    await clickAsAMouseDoes(theDrawing(), centreOf(tableNode('table-12')))
+    await vi.runOnlyPendingTimersAsync()
+
+    expect(isOnScreen(TABLE_ACTIONS)).toBe(true)
   })
 })
 

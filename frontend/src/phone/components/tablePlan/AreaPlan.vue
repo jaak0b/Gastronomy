@@ -12,6 +12,7 @@ import {
   type VueKonvaRef,
 } from 'vue-konva'
 import type { TablePlanAreaView, TablePlanTableView } from '../../../shared/api/generatedSchemas'
+import { useTableNameWordWidth } from '../../../shared/composables/useTableNameWordWidth'
 import { useThemedValue } from '../../../shared/composables/useThemedValue'
 import { DARK_TABLE_PLAN_COLOURS, LIGHT_TABLE_PLAN_COLOURS } from '../../../shared/core/tablePlanColours'
 import { TABLE_PLAN_DRAWING_WIDTH } from '../../../shared/core/tablePlanDrawing'
@@ -25,12 +26,14 @@ import {
   type PlanCamera,
   type PlanViewport,
 } from '../../core/tablePlanCamera'
+import { LARGEST_NAME_FONT_SIZE, nameFontSizeKeepingWordsWhole } from '../../../shared/core/tableNameFit'
+import { scrollBarsOf } from '../../core/tablePlanScrollBars'
 
 const TABLE_NAME = 'plan-table'
 
 const STATION_NAME = 'plan-station'
 
-const NAME_FONT_SIZE = 14
+const NAME_PADDING = 4
 
 const TABLE_BORDER_WIDTH = 4
 
@@ -67,6 +70,18 @@ function keepThePlanInView(position: Vector2d): Vector2d {
   return clampedPosition(position, camera.value.scale, viewport.value, drawingLength.value)
 }
 
+const scrollBars = computed(() => scrollBarsOf(camera.value, viewport.value, drawingLength.value))
+
+const verticalBarStyle = computed(() => {
+  const bar = scrollBars.value.vertical
+  return bar === null ? null : { top: `${bar.offset}px`, height: `${bar.length}px` }
+})
+
+const horizontalBarStyle = computed(() => {
+  const bar = scrollBars.value.horizontal
+  return bar === null ? null : { left: `${bar.offset}px`, width: `${bar.length}px` }
+})
+
 const stageConfig = computed(() => ({
   width: viewport.value.width,
   height: viewport.value.height,
@@ -80,19 +95,25 @@ const stageConfig = computed(() => ({
 }))
 
 const nameText = {
-  fontSize: NAME_FONT_SIZE,
+  fontSize: LARGEST_NAME_FONT_SIZE,
   align: 'center',
   verticalAlign: 'middle',
-  padding: 4,
+  padding: NAME_PADDING,
   wrap: 'word',
   ellipsis: true,
   listening: false,
 }
 
+const widthOfANameWord = useTableNameWordWidth()
+
 function openUnlessThisGestureIsAPinch(table: TablePlanTableView): void {
   if (!thisGestureIsAPinch) {
     emit('open-table', table)
   }
+}
+
+function stopTheClickThatFollowsTheTap(tap: KonvaEventObject<TouchEvent>): void {
+  tap.evt.preventDefault()
 }
 
 const drawnTables = computed(() => {
@@ -104,7 +125,10 @@ const drawnTables = computed(() => {
       name: TABLE_NAME,
       ...table.geometry,
       onClick: () => openUnlessThisGestureIsAPinch(table),
-      onTap: () => openUnlessThisGestureIsAPinch(table),
+      onTap: (tap: KonvaEventObject<TouchEvent>) => {
+        stopTheClickThatFollowsTheTap(tap)
+        openUnlessThisGestureIsAPinch(table)
+      },
     },
     rect: {
       width: table.geometry.width,
@@ -116,6 +140,11 @@ const drawnTables = computed(() => {
     },
     text: {
       ...nameText,
+      fontSize: nameFontSizeKeepingWordsWhole(
+        table.name,
+        table.geometry.width - 2 * NAME_PADDING,
+        widthOfANameWord,
+      ),
       width: table.geometry.width,
       height: table.geometry.height,
       text: table.name,
@@ -150,7 +179,7 @@ const drawnStations = computed(() => {
   }))
 })
 
-function rememberWhereThePanEnded(): void {
+function followThePan(): void {
   const node = stage.value?.getNode()
   if (node !== undefined) {
     camera.value = { ...camera.value, x: node.x(), y: node.y() }
@@ -229,7 +258,8 @@ onUnmounted(() => {
     <KonvaStage
       ref="stage"
       :config="stageConfig"
-      @dragend="rememberWhereThePanEnded"
+      @dragmove="followThePan"
+      @dragend="followThePan"
       @mousedown="forgetTheLastPinch"
       @touchstart="noteTheFingersDown"
       @touchmove="followTheFingers"
@@ -254,15 +284,47 @@ onUnmounted(() => {
         </KonvaGroup>
       </KonvaLayer>
     </KonvaStage>
+    <div
+      v-if="verticalBarStyle !== null"
+      class="scroll-bar scroll-bar-vertical"
+      data-test="plan-scroll-bar"
+      data-test-id="vertical"
+      :style="verticalBarStyle"
+    />
+    <div
+      v-if="horizontalBarStyle !== null"
+      class="scroll-bar scroll-bar-horizontal"
+      data-test="plan-scroll-bar"
+      data-test-id="horizontal"
+      :style="horizontalBarStyle"
+    />
   </div>
 </template>
 
 <style scoped>
 .area-plan {
+  position: relative;
   flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
   touch-action: none;
   background-color: rgb(var(--v-theme-surface));
+}
+
+.scroll-bar {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 2px;
+  background-color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+}
+
+.scroll-bar-vertical {
+  right: 2px;
+  width: 4px;
+}
+
+.scroll-bar-horizontal {
+  bottom: 2px;
+  height: 4px;
 }
 </style>
