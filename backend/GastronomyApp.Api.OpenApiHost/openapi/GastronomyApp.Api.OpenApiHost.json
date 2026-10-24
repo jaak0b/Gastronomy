@@ -53,6 +53,25 @@
         }
       }
     },
+    "/api/table-plan": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TablePlanView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/language": {
       "get": {
         "tags": [
@@ -4028,6 +4047,13 @@
           }
         }
       },
+      "ShareState": {
+        "enum": [
+          "none",
+          "some",
+          "all"
+        ]
+      },
       "StaffMemberView": {
         "required": [
           "id",
@@ -4390,6 +4416,93 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TableOrderRecordView"
+            }
+          }
+        }
+      },
+      "TablePlanAreaView": {
+        "required": [
+          "areaId",
+          "name",
+          "tables",
+          "stationShapes"
+        ],
+        "type": "object",
+        "properties": {
+          "areaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TablePlanTableView"
+            }
+          },
+          "stationShapes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TablePlanStationShapeView"
+            }
+          }
+        }
+      },
+      "TablePlanStationShapeView": {
+        "required": [
+          "stationName",
+          "geometry"
+        ],
+        "type": "object",
+        "properties": {
+          "stationName": {
+            "type": "string"
+          },
+          "geometry": {
+            "$ref": "#/components/schemas/AreaShapeGeometry"
+          }
+        }
+      },
+      "TablePlanTableView": {
+        "required": [
+          "tableId",
+          "name",
+          "geometry",
+          "handOutProgress",
+          "settlementProgress"
+        ],
+        "type": "object",
+        "properties": {
+          "tableId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "geometry": {
+            "$ref": "#/components/schemas/AreaShapeGeometry"
+          },
+          "handOutProgress": {
+            "$ref": "#/components/schemas/ShareState"
+          },
+          "settlementProgress": {
+            "$ref": "#/components/schemas/ShareState"
+          }
+        }
+      },
+      "TablePlanView": {
+        "required": [
+          "areas"
+        ],
+        "type": "object",
+        "properties": {
+          "areas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TablePlanAreaView"
             }
           }
         }

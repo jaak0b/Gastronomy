@@ -9,17 +9,32 @@ public sealed class OrderService
   {
     ArgumentNullException.ThrowIfNull(order);
 
-    List<OrderItem> items = order.StationOrders.SelectMany(stationOrder => stationOrder.Items).ToList();
+    var handOutShare = ShareOfFlaggedItems(order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Select(item => item.FulfilledAtUtc is not null));
 
-    var fulfilledItemCount = items.Count(item => item.FulfilledAtUtc is not null);
-
-    if (fulfilledItemCount == 0)
+    if (handOutShare == ShareState.None)
       return OrderStatus.Open;
 
-    if (fulfilledItemCount >= items.Count)
+    if (handOutShare == ShareState.All)
       return OrderStatus.Fulfilled;
 
     return OrderStatus.PartiallyFulfilled;
+  }
+
+  public ShareState ShareOfFlaggedItems(IEnumerable<bool> itemFlags)
+  {
+    ArgumentNullException.ThrowIfNull(itemFlags);
+
+    List<bool> flags = itemFlags.ToList();
+
+    var flaggedItemCount = flags.Count(isFlagged => isFlagged);
+
+    if (flaggedItemCount == 0)
+      return ShareState.None;
+
+    if (flaggedItemCount == flags.Count)
+      return ShareState.All;
+
+    return ShareState.Some;
   }
 
   public int TotalCentsOf(Order order)

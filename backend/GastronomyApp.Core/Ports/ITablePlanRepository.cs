@@ -1,10 +1,13 @@
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Ports;
 
 public interface ITablePlanRepository
 {
   public Task<IReadOnlyList<Area>> FindTablePlanAsync(Guid festivalId, CancellationToken cancellationToken);
+
+  public Task<IReadOnlyList<ShownArea>> FindShownAreasWithItemFlagsAsync(Guid festivalId, CancellationToken cancellationToken);
 
   public Task<Area?> FindAreaAsync(Guid festivalId, Guid areaId, CancellationToken cancellationToken);
 

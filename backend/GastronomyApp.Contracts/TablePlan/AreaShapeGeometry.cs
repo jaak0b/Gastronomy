@@ -1,4 +1,4 @@
-namespace GastronomyApp.Contracts.Admin.Festivals;
+namespace GastronomyApp.Contracts.TablePlan;
 
 public sealed record AreaShapeGeometry
 {

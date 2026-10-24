@@ -82,6 +82,7 @@ export type SetAvailabilityRequest = { isAvailable: boolean }
 export type SettleLineRequest = { orderItemId: string, paidPriceCents: (null | number), paymentNotice?: (null | string) }
 export type SettleItemsRequest = { lines: (null | Array<SettleLineRequest>), paymentMethod: (null | PaymentMethod) }
 export type SettlementView = { settledOrderItemIds: Array<string>, reappliedOrderItemIds: Array<string>, alreadySettledByOthersOrderItemIds: Array<string> }
+export type ShareState = ("none" | "some" | "all")
 export type StationQueueItemView = { orderItemId: string, itemName: string, note: (null | string), fulfilledAtUtc: (null | string) }
 export type StationOrderQueueView = { stationOrderId: string, globalOrderNumber: number, stationOrderNumber: number, tableName: string, staffMemberName: string, deliveryMode: DeliveryMode, createdAtUtc: string, isHiddenFromAsItComesQueue: boolean, itemCount: number, fulfilledItemCount: number, items: Array<StationQueueItemView> }
 export type StationFulfilledView = { stationOrders: Array<StationOrderQueueView> }
@@ -90,6 +91,10 @@ export type StationQueueView = { station: StationSummaryView, orders: Array<Stat
 export type TableOrderRecordItemView = { orderItemId: string, orderId: string, globalOrderNumber: number, itemName: string, note: (null | string), unitPriceCents: number, orderedAtUtc: string, fulfilledAtUtc: (null | string), settledAtUtc: (null | string) }
 export type TableOrderRecordView = { orderId: string, globalOrderNumber: number, createdAtUtc: string, staffMemberName: string, items: Array<TableOrderRecordItemView> }
 export type TableOrderReportView = { tableId: string, tableName: string, openAmountCents: number, orders: Array<TableOrderRecordView> }
+export type TablePlanTableView = { tableId: string, name: string, geometry: AreaShapeGeometry, handOutProgress: ShareState, settlementProgress: ShareState }
+export type TablePlanStationShapeView = { stationName: string, geometry: AreaShapeGeometry }
+export type TablePlanAreaView = { areaId: string, name: string, tables: Array<TablePlanTableView>, stationShapes: Array<TablePlanStationShapeView> }
+export type TablePlanView = { areas: Array<TablePlanAreaView> }
 
     // </Schemas>
     }
@@ -120,6 +125,16 @@ export type get__api_catalog = {
       responseFormat: "json",
       parameters: never,
       responses: {200: Schemas.CatalogView,
+},
+      
+    }
+export type get__api_tablePlan = {
+      method: "GET",
+      path: "/api/table-plan",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: never,
+      responses: {200: Schemas.TablePlanView,
 },
       
     }
@@ -1212,6 +1227,7 @@ export type post__api_admin_ingredients_IngredientId_deactivate = {
          },
 get: {
            "/api/catalog": Endpoints.get__api_catalog,
+"/api/table-plan": Endpoints.get__api_tablePlan,
 "/api/language": Endpoints.get__api_language,
 "/api/admin/enrolment/invitations/{invitationId}/qr.svg": Endpoints.get__api_admin_enrolment_invitations_InvitationId_qr_svg,
 "/api/session": Endpoints.get__api_session,

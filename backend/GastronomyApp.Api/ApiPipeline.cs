@@ -37,6 +37,7 @@ public sealed class ApiPipeline
     routesInOneTransaction.MapCatalogEndpoints();
     routesInOneTransaction.MapOrderEndpoints();
     routesInOneTransaction.MapOpenItemEndpoints();
+    routesInOneTransaction.MapTablePlanEndpoints();
     routesInOneTransaction.MapStationEndpoints();
     routesInOneTransaction.MapLanguageEndpoints();
     routesInOneTransaction.MapAdminStationEndpoints();

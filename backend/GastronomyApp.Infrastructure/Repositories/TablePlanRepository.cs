@@ -1,5 +1,6 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Results;
 using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,6 +25,22 @@ public sealed class TablePlanRepository : ITablePlanRepository
                            .Include(area => area.StationShapes.OrderBy(shape => shape.FestivalStation.Station.SortOrder).ThenBy(shape => shape.FestivalStation.Station.Name))
                            .ThenInclude(shape => shape.FestivalStation)
                            .ThenInclude(link => link.Station)
+                           .ToListAsync(cancellationToken);
+  }
+
+  public async Task<IReadOnlyList<ShownArea>> FindShownAreasWithItemFlagsAsync(Guid festivalId, CancellationToken cancellationToken)
+  {
+    return await _dbContext.Areas.AsNoTracking()
+                           .Where(area => area.FestivalId == festivalId && !area.IsHidden)
+                           .OrderBy(area => area.SortOrder)
+                           .ThenBy(area => area.Name)
+                           .Select(area => new ShownArea(area,
+                                                         area.Tables.Where(table => !table.IsHidden)
+                                                             .OrderBy(table => table.Name)
+                                                             .Select(table => new ShownTable(table,
+                                                                                             table.Orders.Select(order => order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Select(item => new OrderItemFlags(item.FulfilledAtUtc != null, item.SettledAtUtc != null)).ToList()).ToList()))
+                                                             .ToList(),
+                                                         area.StationShapes.OrderBy(shape => shape.FestivalStation.Station.SortOrder).ThenBy(shape => shape.FestivalStation.Station.Name).Select(shape => new ShownStationShape(shape, shape.FestivalStation.Station.Name)).ToList()))
                            .ToListAsync(cancellationToken);
   }
 

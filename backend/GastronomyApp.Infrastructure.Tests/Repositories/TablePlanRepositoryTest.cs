@@ -1,5 +1,6 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Results;
 using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -55,6 +56,150 @@ public sealed class TablePlanRepositoryTest
                       Assert.That(tablePlan[1].Tables.Select(table => table.Name), Is.EqualTo(new[] { "Stammtisch" }));
                       Assert.That(tablePlan[1].StationShapes, Is.Empty);
                     });
+  }
+
+  [Test]
+  public async Task FindShownAreasWithItemFlagsAsync_HiddenAreasAndTablesBesideShownOnes_AnswersTheShownOnesWithTheirStations()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var gardenId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Garten", 1, false);
+    var hallId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Halle", 2, true);
+    await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Terrasse", 3, false);
+    await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 2", false);
+    await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 3", true);
+    await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 1", false);
+    await AddTableAsync(fixture.DbContext, seeded.FestivalId, hallId, "Stammtisch", false);
+    await PlaceAsync(fixture.DbContext, seeded.FestivalId, seeded.BarStationId, gardenId);
+    await PlaceAsync(fixture.DbContext, seeded.FestivalId, seeded.KitchenStationId, gardenId);
+    var otherFestivalId = await AddFestivalAsync(fixture.DbContext);
+    await AddAreaAsync(fixture.DbContext, otherFestivalId, "Wiese", 0, false);
+    await using var readContext = fixture.CreateContext();
+
+    IReadOnlyList<ShownArea> tablePlan = await new TablePlanRepository(readContext).FindShownAreasWithItemFlagsAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(tablePlan.Select(area => area.Area.Name),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Garten",
+                                               "Terrasse"
+                                             }));
+                      Assert.That(tablePlan[0].Tables.Select(table => table.Table.Name),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Tisch 1",
+                                               "Tisch 2"
+                                             }));
+                      Assert.That(tablePlan[0].StationShapes.Select(shape => shape.StationName),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Kueche",
+                                               "Theke"
+                                             }));
+                      Assert.That(tablePlan[0].StationShapes.Select(shape => shape.Shape.Width), Is.All.EqualTo(60));
+                      Assert.That(tablePlan[1].Tables, Is.Empty);
+                      Assert.That(tablePlan[1].StationShapes, Is.Empty);
+                    });
+  }
+
+  [Test]
+  public async Task FindShownAreasWithItemFlagsAsync_ATableWithOrders_AnswersTheFlagsOfEachOrdersItems()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var gardenId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Garten", 1, false);
+    var orderedAtId = await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 1", false);
+    await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 2", false);
+    await AddOrderAsync(fixture.DbContext, seeded, orderedAtId, 1, _handedOutAtUtc, _settledAtUtc);
+    await AddOrderAsync(fixture.DbContext, seeded, orderedAtId, 2, _handedOutAtUtc, null);
+    await AddOrderAsync(fixture.DbContext, seeded, orderedAtId, 3, null, null);
+    await using var readContext = fixture.CreateContext();
+
+    IReadOnlyList<ShownArea> tablePlan = await new TablePlanRepository(readContext).FindShownAreasWithItemFlagsAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(tablePlan[0].Tables[0].ItemFlagsPerOrder, Has.All.Count.EqualTo(1));
+                      Assert.That(tablePlan[0].Tables[0].ItemFlagsPerOrder.Select(order => order[0]),
+                                  Is.EquivalentTo(new OrderItemFlags[]
+                                                  {
+                                                    new(true, true),
+                                                    new(true, false),
+                                                    new(false, false)
+                                                  }));
+                      Assert.That(tablePlan[0].Tables[1].ItemFlagsPerOrder, Is.Empty);
+                    });
+  }
+
+  [Test]
+  public async Task FindShownAreasWithItemFlagsAsync_OrdersAtTwoStationsBesideTwoStationShapesInOneArea_AnswersEveryOrderItemAndShapeOnce()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var gardenId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Garten", 1, false);
+    var splitOrderTableId = await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 1", false);
+    var finishedTableId = await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 2", false);
+    await PlaceAsync(fixture.DbContext, seeded.FestivalId, seeded.KitchenStationId, gardenId);
+    await PlaceAsync(fixture.DbContext, seeded.FestivalId, seeded.BarStationId, gardenId);
+    await AddOrderAtKitchenAndBarAsync(fixture.DbContext, seeded, splitOrderTableId, 1, _handedOutAtUtc);
+    await AddOrderAsync(fixture.DbContext, seeded, splitOrderTableId, 2, null, null);
+    await AddOrderAsync(fixture.DbContext, seeded, finishedTableId, 3, _handedOutAtUtc, _settledAtUtc);
+    await using var readContext = fixture.CreateContext();
+
+    IReadOnlyList<ShownArea> tablePlan = await new TablePlanRepository(readContext).FindShownAreasWithItemFlagsAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    var garden = tablePlan.Single();
+    var splitOrder = garden.Tables[0].ItemFlagsPerOrder.Single(order => order.Count == 2);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(garden.StationShapes.Select(shape => shape.StationName),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Kueche",
+                                               "Theke"
+                                             }));
+                      Assert.That(garden.Tables.Select(table => table.Table.Name),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Tisch 1",
+                                               "Tisch 2"
+                                             }));
+                      Assert.That(garden.Tables[0].ItemFlagsPerOrder.Select(order => order.Count),
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    2,
+                                                    1
+                                                  }));
+                      Assert.That(splitOrder,
+                                  Is.EquivalentTo(new OrderItemFlags[]
+                                                  {
+                                                    new(true, false),
+                                                    new(false, false)
+                                                  }));
+                      Assert.That(garden.Tables[1].ItemFlagsPerOrder.Single(), Is.EqualTo(new OrderItemFlags[] { new(true, true) }));
+                    });
+  }
+
+  [Test]
+  public async Task FindShownAreasWithItemFlagsAsync_APlanWithOrdersAtTwoStationsAndStationShapes_ReadsItInOneStatement()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var gardenId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Garten", 1, false);
+    var hallId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Halle", 2, false);
+    var tableId = await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 1", false);
+    await AddTableAsync(fixture.DbContext, seeded.FestivalId, hallId, "Tisch 2", false);
+    await PlaceAsync(fixture.DbContext, seeded.FestivalId, seeded.KitchenStationId, gardenId);
+    await PlaceAsync(fixture.DbContext, seeded.FestivalId, seeded.BarStationId, hallId);
+    await AddOrderAtKitchenAndBarAsync(fixture.DbContext, seeded, tableId, 1, null);
+    QueryCounter counter = new();
+    await using GastronomyAppDbContext readContext = new(new DbContextOptionsBuilder<GastronomyAppDbContext>().UseSqlite(fixture.Connection).AddInterceptors(counter).Options);
+
+    await new TablePlanRepository(readContext).FindShownAreasWithItemFlagsAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(counter.QueryCount, Is.EqualTo(1));
   }
 
   [Test]
@@ -452,6 +597,49 @@ public sealed class TablePlanRepositoryTest
     order.StationOrders.Add(stationOrder);
     dbContext.Orders.Add(order);
     await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+  }
+
+  private async Task AddOrderAtKitchenAndBarAsync(GastronomyAppDbContext dbContext, SeededDomain seeded, Guid tableId, int globalOrderNumber, DateTime? kitchenHandedOutAtUtc)
+  {
+    var orderId = Guid.NewGuid();
+    Order order = new()
+                  {
+                    Id = orderId,
+                    ClientOrderId = Guid.NewGuid(),
+                    FestivalId = seeded.FestivalId,
+                    GlobalOrderNumber = globalOrderNumber,
+                    StaffMemberId = seeded.StaffMemberId,
+                    TableId = tableId,
+                    CreatedAtUtc = _handedOutAtUtc.AddMinutes(-10)
+                  };
+    order.StationOrders.Add(StationOrderWithOneItem(seeded, orderId, globalOrderNumber, seeded.KitchenStationId, seeded.SausageItemId, "Bratwurst", kitchenHandedOutAtUtc));
+    order.StationOrders.Add(StationOrderWithOneItem(seeded, orderId, globalOrderNumber, seeded.BarStationId, seeded.LemonadeItemId, "Limonade", null));
+    dbContext.Orders.Add(order);
+    await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+  }
+
+  private StationOrder StationOrderWithOneItem(SeededDomain seeded, Guid orderId, int stationOrderNumber, Guid stationId, Guid catalogItemId, string itemName, DateTime? handedOutAtUtc)
+  {
+    StationOrder stationOrder = new()
+                                {
+                                  Id = Guid.NewGuid(),
+                                  OrderId = orderId,
+                                  FestivalId = seeded.FestivalId,
+                                  StationId = stationId,
+                                  StationOrderNumber = stationOrderNumber,
+                                  DeliveryMode = DeliveryMode.Together
+                                };
+    stationOrder.Items.Add(new()
+                           {
+                             Id = Guid.NewGuid(),
+                             StationOrderId = stationOrder.Id,
+                             CatalogItemId = catalogItemId,
+                             ItemName = itemName,
+                             UnitPriceCents = 350,
+                             FulfilledAtUtc = handedOutAtUtc
+                           });
+
+    return stationOrder;
   }
 
   private async Task PlaceAsync(GastronomyAppDbContext dbContext, Guid festivalId, Guid stationId, Guid areaId)

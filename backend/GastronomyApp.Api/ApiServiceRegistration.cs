@@ -55,6 +55,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<IMappingRegistration, SettlementMapping>();
     services.AddSingleton<IMappingRegistration, EstimateMapping>();
     services.AddSingleton<IMappingRegistration, StationQueueMapping>();
+    services.AddSingleton<IMappingRegistration, TablePlanMapping>();
 
     services.AddSingleton(serviceProvider => new MappingConfiguration(serviceProvider.GetServices<IMappingRegistration>()).Build());
     services.AddScoped<IMapper, ServiceMapper>();
@@ -98,6 +99,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<StationOrderService>();
     services.AddSingleton<StationService>();
     services.AddSingleton<FestivalService>();
+    services.AddSingleton<TableService>();
     services.AddSingleton<FestivalSchedule>();
     services.AddSingleton<AreaShapeService>();
     services.AddSingleton<OrderItemFulfillmentService>();
@@ -105,6 +107,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<OrderItemResolutionService>();
     services.AddScoped<OrderItemSettlementService>();
     services.AddScoped<OpenItemsService>();
+    services.AddScoped<TablePlanService>();
     services.AddScoped<DeviceLanguageService>();
     services.AddScoped<OrderAcceptanceService>();
     services.AddScoped<ItemOrderability>();
@@ -152,6 +155,7 @@ public sealed class ApiServiceRegistration
 
     services.AddScoped<OrderPlacementHandler>();
     services.AddScoped<OpenItemQueryHandler>();
+    services.AddScoped<TablePlanHandler>();
     services.AddScoped<OrderItemSettlementHandler>();
     services.AddScoped<SessionHandler>();
     services.AddSingleton<OutstandingInvitationCache>();

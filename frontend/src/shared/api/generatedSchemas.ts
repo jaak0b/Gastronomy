@@ -247,6 +247,9 @@ export const SettleItemsRequest = z.strictObject({ lines: z.array(SettleLineRequ
 export type SettlementView = __TypedOpenapi.Schemas.SettlementView;
 export const SettlementView = z.strictObject({ settledOrderItemIds: z.array(z.string()), reappliedOrderItemIds: z.array(z.string()), alreadySettledByOthersOrderItemIds: z.array(z.string()) });
 
+export type ShareState = __TypedOpenapi.Schemas.ShareState;
+export const ShareState = z.enum(["none", "some", "all"]);
+
 export type StationQueueItemView = __TypedOpenapi.Schemas.StationQueueItemView;
 export const StationQueueItemView = z.strictObject({ orderItemId: z.string(), itemName: z.string(), note: z.string().nullable(), fulfilledAtUtc: z.string().nullable() });
 
@@ -270,6 +273,18 @@ export const TableOrderRecordView = z.strictObject({ orderId: z.string(), global
 
 export type TableOrderReportView = __TypedOpenapi.Schemas.TableOrderReportView;
 export const TableOrderReportView = z.strictObject({ tableId: z.string(), tableName: z.string(), openAmountCents: z.number().int(), orders: z.array(TableOrderRecordView) });
+
+export type TablePlanTableView = __TypedOpenapi.Schemas.TablePlanTableView;
+export const TablePlanTableView = z.strictObject({ tableId: z.string(), name: z.string(), geometry: AreaShapeGeometry, handOutProgress: ShareState, settlementProgress: ShareState });
+
+export type TablePlanStationShapeView = __TypedOpenapi.Schemas.TablePlanStationShapeView;
+export const TablePlanStationShapeView = z.strictObject({ stationName: z.string(), geometry: AreaShapeGeometry });
+
+export type TablePlanAreaView = __TypedOpenapi.Schemas.TablePlanAreaView;
+export const TablePlanAreaView = z.strictObject({ areaId: z.string(), name: z.string(), tables: z.array(TablePlanTableView), stationShapes: z.array(TablePlanStationShapeView) });
+
+export type TablePlanView = __TypedOpenapi.Schemas.TablePlanView;
+export const TablePlanView = z.strictObject({ areas: z.array(TablePlanAreaView) });
 
 // </Schemas>
 

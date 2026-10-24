@@ -46,6 +46,49 @@ public sealed class OrderServiceTest
   }
 
   [Test]
+  public void ShareOfFlaggedItems_NoItemFlagged_IsNone()
+  {
+    Assert.That(_service.ShareOfFlaggedItems([
+                                               false,
+                                               false
+                                             ]),
+                Is.EqualTo(ShareState.None));
+  }
+
+  [Test]
+  public void ShareOfFlaggedItems_SomeItemsFlagged_IsSome()
+  {
+    Assert.That(_service.ShareOfFlaggedItems([
+                                               true,
+                                               false,
+                                               false
+                                             ]),
+                Is.EqualTo(ShareState.Some));
+  }
+
+  [Test]
+  public void ShareOfFlaggedItems_EveryItemFlagged_IsAll()
+  {
+    Assert.That(_service.ShareOfFlaggedItems([
+                                               true,
+                                               true
+                                             ]),
+                Is.EqualTo(ShareState.All));
+  }
+
+  [Test]
+  public void ShareOfFlaggedItems_NoItems_IsNone()
+  {
+    Assert.That(_service.ShareOfFlaggedItems([]), Is.EqualTo(ShareState.None));
+  }
+
+  [Test]
+  public void ShareOfFlaggedItems_NullFlags_ThrowsArgumentNullException()
+  {
+    Assert.That(() => _service.ShareOfFlaggedItems(null!), Throws.ArgumentNullException);
+  }
+
+  [Test]
   public void TotalCentsOf_AnOrderWithoutItems_CountsNothing()
   {
     Assert.That(_service.TotalCentsOf(OrderWithPrices()), Is.Zero);

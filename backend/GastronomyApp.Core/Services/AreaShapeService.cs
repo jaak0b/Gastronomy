@@ -1,4 +1,4 @@
-using GastronomyApp.Contracts.Admin.Festivals;
+using GastronomyApp.Contracts.TablePlan;
 using GastronomyApp.Core.Entities;
 
 namespace GastronomyApp.Core.Services;
