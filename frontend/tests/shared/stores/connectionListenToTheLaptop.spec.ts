@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { fireHubEvent, forgetHubEvents, hubEventsRegistered } from '../../support/hubConnection'
+import { fireHubEvent, forgetHubEvents, hubEventsOtherThanGroupsJoined } from '../../support/hubConnection'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -69,6 +69,6 @@ describe('a store listening to the laptop', () => {
     fireHubEvent('OrdersChanged')
 
     expect(reloads()).toBe(1)
-    expect(hubEventsRegistered).toEqual([])
+    expect(hubEventsOtherThanGroupsJoined()).toEqual([])
   })
 })

@@ -425,8 +425,10 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     commands `EnrolmentCompleted` and `DeviceRevoked`. The commit derives them from what was actually
     written and sends each at most once, so forgetting is impossible and a fine-grained event is never
     added. A store reloads on the event whose name says what it holds and never hides a stale value.
-    The mechanism, the bans that protect it and what a store owes are in the `architecture` skill,
-    read before touching either side.
+    A device reloads everything when the hub sends its connection `GroupsJoined`, never when the
+    connection merely starts, because only from then on does it hear those events. The mechanism,
+    the bans that protect it and what a store owes are in the `architecture` skill, read before
+    touching either side.
 
 25. **Every feature and every shared building block is written into the `features` and `how-to`
     skills before it is committed. This rule is always binding, and the owner never has to ask.**

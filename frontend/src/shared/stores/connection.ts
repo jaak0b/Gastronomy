@@ -121,7 +121,6 @@ export const useConnectionStore = defineStore('connection', () => {
       state.value = 'connected'
       showRecoveredNotice()
       stopPolling()
-      void refetchAll()
     })
     built.onclose(() => {
       state.value = 'offline'
@@ -132,7 +131,6 @@ export const useConnectionStore = defineStore('connection', () => {
       await built.start()
       state.value = 'connected'
       stopPolling()
-      await refetchAll()
     } catch {
       state.value = 'offline'
       startPolling()
@@ -152,6 +150,10 @@ export const useConnectionStore = defineStore('connection', () => {
     connection = null
     state.value = 'offline'
   }
+
+  onEvent('GroupsJoined', () => {
+    void refetchAll()
+  })
 
   return {
     state,

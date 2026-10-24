@@ -57,6 +57,8 @@ public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
                             });
 
     await base.OnConnectedAsync();
+
+    await Clients.Caller.SendAsync(Names.HubEvents.GroupsJoined);
   }
 
   override public async Task OnDisconnectedAsync(Exception? exception)

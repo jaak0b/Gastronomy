@@ -105,18 +105,6 @@ describe('the connection store', () => {
     vi.useRealTimers()
   })
 
-  it('refetches once as soon as the hub is connected, rather than working out what it missed', async () => {
-    const connection = useConnectionStore()
-    let refetchCount = 0
-    connection.registerRefetch(async () => {
-      refetchCount += 1
-    })
-
-    await connection.connect({ deviceToken: 'a-token' })
-
-    expect(refetchCount).toBe(1)
-  })
-
   it('reports itself connected once the hub is up', async () => {
     const connection = useConnectionStore()
 
@@ -135,7 +123,7 @@ describe('the connection store', () => {
     await connection.connect({ deviceToken: 'a-token' })
     await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS * 4)
 
-    expect(refetchCount).toBe(1)
+    expect(refetchCount).toBe(0)
   })
 
   it('reports itself offline when the hub never comes up', async () => {

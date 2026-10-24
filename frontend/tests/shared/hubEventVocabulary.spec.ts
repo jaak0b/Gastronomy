@@ -44,7 +44,7 @@ describe('every event the phone waits for', () => {
   it('covers every event the laptop pushes, so a store that stops listening is caught', () => {
     const pushed = eventsTheLaptopCanPush()
 
-    expect(pushed).toEqual(['ConfigurationChanged', 'DeviceRevoked', 'EnrolmentCompleted', 'OrdersChanged'])
+    expect(pushed).toEqual(['ConfigurationChanged', 'DeviceRevoked', 'EnrolmentCompleted', 'GroupsJoined', 'OrdersChanged'])
     expect(new Set(eventsThePhoneWaitsFor().keys())).toEqual(new Set(pushed))
   })
 })

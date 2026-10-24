@@ -27,12 +27,15 @@ public sealed class HubConnectionSecurityTest
   [Test]
   public async Task Connect_LoopbackCallerWithoutDeviceToken_JoinsTheAdminGroupAndHearsOrderEvents()
   {
+    TaskCompletionSource groupsJoined = new(TaskCreationOptions.RunContinuationsAsynchronously);
     TaskCompletionSource heard = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     await using var connection = Connect("hub");
+    connection.On("GroupsJoined", () => groupsJoined.TrySetResult());
     connection.On("OrdersChanged", () => heard.TrySetResult());
 
     await connection.StartAsync();
+    await AssertTheConnectionJoinedItsGroupsAsync(groupsJoined.Task);
 
     await PlaceAnOrderAsync();
     var received = await Task.WhenAny(heard.Task, Task.Delay(_patience));
@@ -47,12 +50,16 @@ public sealed class HubConnectionSecurityTest
   [Test]
   public async Task Deactivate_ConnectedPhone_IsRemovedFromEveryGroupAndClosed()
   {
+    TaskCompletionSource groupsJoined = new(TaskCreationOptions.RunContinuationsAsynchronously);
     TaskCompletionSource heardBeforeRevocation = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     await using var connection = Connect($"hub?access_token={_context.DeviceToken}");
+    connection.On("GroupsJoined", () => groupsJoined.TrySetResult());
     connection.On("ConfigurationChanged", () => heardBeforeRevocation.TrySetResult());
 
     await connection.StartAsync();
+    await AssertTheConnectionJoinedItsGroupsAsync(groupsJoined.Task);
+
     await ChangeTheCatalogAsync();
 
     var beforeRevocation = await Task.WhenAny(heardBeforeRevocation.Task, Task.Delay(_patience));
@@ -71,6 +78,13 @@ public sealed class HubConnectionSecurityTest
     using var afterRevocation = await _context.SendAsync(HttpMethod.Get, "/api/session");
 
     Assert.That(afterRevocation.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+  }
+
+  private async Task AssertTheConnectionJoinedItsGroupsAsync(Task groupsJoined)
+  {
+    var joined = await Task.WhenAny(groupsJoined, Task.Delay(_patience));
+
+    Assert.That(joined, Is.SameAs(groupsJoined), "The hub must tell a new connection once it has joined every group.");
   }
 
   private async Task ChangeTheCatalogAsync()

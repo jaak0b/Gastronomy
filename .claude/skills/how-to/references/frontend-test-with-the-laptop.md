@@ -50,6 +50,16 @@ changes on the wire is fixed in the factory once.
   `textOnScreen`, `inputOf`, `typeIn`, `clickOn`, `waitUntil`, and `testIdSelector(testId, id)`.
   `formDialogs.ts` fills and saves the admin form dialogs, and `hubConnection.ts` fakes SignalR
   (`fireHubEvent`) for a spec that proves a store reloads on an event.
+- The connection store reloads every store only when the laptop sends `GroupsJoined`, never when
+  `connect()` resolves. The fake sends `GroupsJoined` to the connection that started, right after
+  its `start` resolves, so a store registered before `connect()` begins its first load then; a spec
+  that reads what that load returned waits for it with `vi.waitFor` or `waitUntil`. The connection
+  store keeps its own `GroupsJoined` handler on the hub, so a spec that checks which handlers are
+  left reads `hubEventsOtherThanGroupsJoined()` instead of `hubEventsRegistered`.
+- `holdBackGroupsJoined()` stops that automatic delivery for the current test, and
+  `theLaptopSendsGroupsJoined()` sends it when the spec says so. `theWifiComesBack()` and
+  `theConnectionCloses()` run the `onreconnected` and `onclose` callbacks of the connection that
+  started last, and `forgetHubEvents()` resets all of these.
 - Select by `data-test`, and by `data-test-id` when a list holds several rows:
   `[data-test="ingredient-row"][data-test-id="ingredient-senf"]`. Add the attribute to the template when
   it is missing. Never select by position or by a class.
