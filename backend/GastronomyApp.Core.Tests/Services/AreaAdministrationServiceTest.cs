@@ -1,9 +1,11 @@
 using ErrorOr;
 using FakeItEasy;
 using GastronomyApp.Contracts.Admin.Festivals;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
+using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
 using Microsoft.Extensions.Time.Testing;
@@ -23,10 +25,9 @@ public sealed class AreaAdministrationServiceTest
     A.CallTo(() => _festivalRepository.ExistsAsync(A<Guid>._, A<CancellationToken>._)).Returns(true);
     A.CallTo(() => _festivalRepository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(false)));
     A.CallTo(() => _repository.FindAreaAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Area?>(null));
-    A.CallTo(() => _repository.FindAreaWithContentsAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Area?>(null));
     A.CallTo(() => _repository.IsAreaNameTakenAsync(A<Guid>._, A<string>._, A<Guid?>._, A<CancellationToken>._)).Returns(false);
 
-    _service = new(_repository, _festivalRepository, new(_festivalRepository, new(), _clock));
+    _service = new(_repository, _festivalRepository, new(_festivalRepository, new(), _clock), new());
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
@@ -43,7 +44,7 @@ public sealed class AreaAdministrationServiceTest
   {
     A.CallTo(() => _festivalRepository.ExistsAsync(_festivalId, A<CancellationToken>._)).Returns(false);
 
-    ErrorOr<IReadOnlyList<Area>> tablePlan = await _service.ListTablePlanAsync(_festivalId, CancellationToken.None);
+    ErrorOr<IReadOnlyList<ListedArea>> tablePlan = await _service.ListTablePlanAsync(_festivalId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -56,10 +57,10 @@ public sealed class AreaAdministrationServiceTest
   [Test]
   public async Task ListTablePlanAsync_AFestivalWithAreas_HandsOverWhatTheRepositoryFound()
   {
-    var garden = BuildGarden(false);
-    A.CallTo(() => _repository.FindTablePlanAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Area>>([garden]));
+    ListedArea garden = new(BuildGarden(false), true, [], []);
+    A.CallTo(() => _repository.FindTablePlanAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<ListedArea>>([garden]));
 
-    ErrorOr<IReadOnlyList<Area>> tablePlan = await _service.ListTablePlanAsync(_festivalId, CancellationToken.None);
+    ErrorOr<IReadOnlyList<ListedArea>> tablePlan = await _service.ListTablePlanAsync(_festivalId, CancellationToken.None);
 
     Assert.That(tablePlan.Value, Is.EqualTo(new[] { garden }));
   }
@@ -224,73 +225,85 @@ public sealed class AreaAdministrationServiceTest
   }
 
   [Test]
-  public async Task DeleteAsync_WhileTheFestivalRuns_IsRefusedAndRemovesNothing()
+  public async Task MoveAsync_AnAreaUp_SwapsItWithTheOneAboveAndNumbersThemFromOne()
   {
-    A.CallTo(() => _repository.FindAreaWithContentsAsync(_festivalId, _gardenId, A<CancellationToken>._)).Returns(Task.FromResult<Area?>(BuildGarden(false)));
+    var garden = BuildArea(_gardenId, "Garten", 1);
+    var hall = BuildArea(Guid.NewGuid(), "Halle", 2);
+    var tent = BuildArea(Guid.NewGuid(), "Zelt", 3);
+    A.CallTo(() => _repository.FindAreasInOrderAsync(_festivalId, A<CancellationToken>._))
+   .Returns(Task.FromResult<IReadOnlyList<Area>>([
+                                                   garden,
+                                                   hall,
+                                                   tent
+                                                 ]));
 
-    ErrorOr<Area> deleted = await _service.DeleteAsync(_festivalId, _gardenId, CancellationToken.None);
+    ErrorOr<Area> moved = await _service.MoveAsync(_festivalId, tent.Id, MoveDirection.Up, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(deleted.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
-                      Assert.That(deleted.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.areaStaysWhileTheFestivalRuns"));
-                      Assert.That(deleted.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("AreaStaysWhileTheFestivalRuns"));
+                      Assert.That(moved.Value, Is.SameAs(tent));
+                      Assert.That(new[]
+                                  {
+                                    garden.SortOrder,
+                                    hall.SortOrder,
+                                    tent.SortOrder
+                                  },
+                                  Is.EqualTo(new[]
+                                             {
+                                               1,
+                                               3,
+                                               2
+                                             }));
                     });
-
-    A.CallTo(() => _repository.RemoveArea(A<Area>._)).MustNotHaveHappened();
-    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
-  }
-
-  [Test]
-  public async Task DeleteAsync_AfterTheFestival_RemovesTheAreaWithItsTablesAndStationShapes()
-  {
-    A.CallTo(() => _festivalRepository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(true)));
-    var garden = BuildGarden(false);
-    var table = BuildTable();
-    var shape = BuildShape();
-    garden.Tables.Add(table);
-    garden.StationShapes.Add(shape);
-    A.CallTo(() => _repository.FindAreaWithContentsAsync(_festivalId, _gardenId, A<CancellationToken>._)).Returns(Task.FromResult<Area?>(garden));
-
-    ErrorOr<Area> deleted = await _service.DeleteAsync(_festivalId, _gardenId, CancellationToken.None);
-
-    Assert.That(deleted.IsError, Is.False);
-
-    A.CallTo(() => _repository.RemoveTables(A<IReadOnlyCollection<Table>>.That.IsSameSequenceAs(new[] { table }))).MustHaveHappenedOnceExactly();
-    A.CallTo(() => _repository.RemoveStationShapes(A<IReadOnlyCollection<FestivalStationShape>>.That.IsSameSequenceAs(new[] { shape }))).MustHaveHappenedOnceExactly();
-    A.CallTo(() => _repository.RemoveArea(garden)).MustHaveHappenedOnceExactly();
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
-  public async Task DeleteAsync_AnAreaWhoseTableHasOrdersAfterTheFestival_IsRefusedAndRemovesNothing()
+  public async Task MoveAsync_TheFirstAreaUp_ChangesNothing()
   {
-    A.CallTo(() => _festivalRepository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(true)));
-    var garden = BuildGarden(false);
-    garden.Tables.Add(BuildTable());
-    A.CallTo(() => _repository.FindAreaWithContentsAsync(_festivalId, _gardenId, A<CancellationToken>._)).Returns(Task.FromResult<Area?>(garden));
-    A.CallTo(() => _repository.HasOrdersInAreaAsync(_gardenId, A<CancellationToken>._)).Returns(true);
+    var garden = BuildArea(_gardenId, "Garten", 1);
+    var hall = BuildArea(Guid.NewGuid(), "Halle", 2);
+    A.CallTo(() => _repository.FindAreasInOrderAsync(_festivalId, A<CancellationToken>._))
+   .Returns(Task.FromResult<IReadOnlyList<Area>>([
+                                                   garden,
+                                                   hall
+                                                 ]));
 
-    ErrorOr<Area> deleted = await _service.DeleteAsync(_festivalId, _gardenId, CancellationToken.None);
+    ErrorOr<Area> moved = await _service.MoveAsync(_festivalId, _gardenId, MoveDirection.Up, CancellationToken.None);
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(deleted.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
-                      Assert.That(deleted.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.areaWithOrdersStays"));
-                      Assert.That(deleted.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("AreaWithOrdersStays"));
-                    });
-
-    A.CallTo(() => _repository.RemoveTables(A<IReadOnlyCollection<Table>>._)).MustNotHaveHappened();
-    A.CallTo(() => _repository.RemoveArea(A<Area>._)).MustNotHaveHappened();
+    Assert.That(new[]
+                {
+                  moved.Value.SortOrder,
+                  hall.SortOrder
+                },
+                Is.EqualTo(new[]
+                           {
+                             1,
+                             2
+                           }));
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   [Test]
-  public async Task DeleteAsync_AnAreaTheFestivalDoesNotHave_IsNotFound()
+  public async Task MoveAsync_AnAreaTheFestivalDoesNotHave_IsNotFound()
   {
-    ErrorOr<Area> deleted = await _service.DeleteAsync(_festivalId, _gardenId, CancellationToken.None);
+    A.CallTo(() => _repository.FindAreasInOrderAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Area>>([]));
 
-    Assert.That(deleted.RefusalMessageKey(), Is.EqualTo("AreaNotFound"));
+    ErrorOr<Area> moved = await _service.MoveAsync(_festivalId, _gardenId, MoveDirection.Down, CancellationToken.None);
+
+    Assert.That(moved.RefusalMessageKey(), Is.EqualTo("AreaNotFound"));
+  }
+
+  private Area BuildArea(Guid areaId, string name, int sortOrder)
+  {
+    return new()
+           {
+             Id = areaId,
+             FestivalId = _festivalId,
+             Name = name,
+             SortOrder = sortOrder,
+             IsHidden = false
+           };
   }
 
   private SaveAreaRequest BuildRequest(string name, int sortOrder)
@@ -311,38 +324,6 @@ public sealed class AreaAdministrationServiceTest
              Name = "Garten",
              SortOrder = 1,
              IsHidden = isHidden
-           };
-  }
-
-  private Table BuildTable()
-  {
-    return new()
-           {
-             Id = Guid.NewGuid(),
-             FestivalId = _festivalId,
-             AreaId = _gardenId,
-             Name = "Tisch 1",
-             X = 10,
-             Y = 20,
-             Width = 80,
-             Height = 40,
-             Rotation = 0,
-             IsHidden = false
-           };
-  }
-
-  private FestivalStationShape BuildShape()
-  {
-    return new()
-           {
-             FestivalStationId = Guid.NewGuid(),
-             FestivalId = _festivalId,
-             AreaId = _gardenId,
-             X = 200,
-             Y = 30,
-             Width = 60,
-             Height = 60,
-             Rotation = 0
            };
   }
 

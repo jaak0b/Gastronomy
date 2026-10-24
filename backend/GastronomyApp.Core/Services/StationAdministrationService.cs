@@ -2,6 +2,7 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
+using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
@@ -24,17 +25,17 @@ public sealed class StationAdministrationService
     _runningFestival = runningFestival;
   }
 
-  public async Task<ErrorOr<IReadOnlyList<Station>>> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<IReadOnlyList<ListedStation>>> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
     if (festivalId is { } askedFestivalId && !await _festivalRepository.ExistsAsync(askedFestivalId, cancellationToken))
       return Refusal.Station.FestivalNotFound(askedFestivalId);
 
-    IReadOnlyList<Station> stations = await _repository.FindAllAsync(festivalId, cancellationToken);
+    IReadOnlyList<ListedStation> stations = await _repository.FindAllAsync(festivalId, cancellationToken);
 
     return stations.ToErrorOr();
   }
 
-  public async Task<ErrorOr<Station>> CreateAsync(string? name, int sortOrder, CancellationToken cancellationToken)
+  public async Task<ErrorOr<ListedStation>> CreateAsync(string? name, int sortOrder, CancellationToken cancellationToken)
   {
     Station created = new()
                       {
@@ -48,7 +49,7 @@ public sealed class StationAdministrationService
 
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return created;
+    return new ListedStation(created, false);
   }
 
   public async Task<ErrorOr<Station>> UpdateAsync(Guid stationId, string? name, int sortOrder, CancellationToken cancellationToken)

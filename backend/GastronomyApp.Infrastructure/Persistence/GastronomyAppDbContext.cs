@@ -29,6 +29,11 @@ public sealed class GastronomyAppDbContext : DbContext
 
   public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
+  public IQueryable<OrderItem> ItemsToHandOutAt(Guid festivalId)
+  {
+    return OrderItems.AsNoTracking().Where(item => item.FulfilledAtUtc == null && item.StationOrder.FestivalId == festivalId);
+  }
+
   public DbSet<Festival> Festivals => Set<Festival>();
 
   public DbSet<FestivalStation> FestivalStations => Set<FestivalStation>();

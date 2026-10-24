@@ -49,26 +49,6 @@ public static partial class Refusal
       return Conflict("errors.admin.festivals.tableNameTaken", $"Another table of the festival {festivalId}, shown or hidden, already carries the name {name}, compared without regard to case.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "TableNameTaken" });
     }
 
-    public static Error AreaStaysWhileTheFestivalRuns(Guid festivalId, Guid areaId)
-    {
-      return Conflict("errors.admin.festivals.areaStaysWhileTheFestivalRuns", $"The festival {festivalId} is running right now, so its area {areaId} cannot be deleted.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "AreaStaysWhileTheFestivalRuns" });
-    }
-
-    public static Error TableStaysWhileTheFestivalRuns(Guid festivalId, Guid tableId)
-    {
-      return Conflict("errors.admin.festivals.tableStaysWhileTheFestivalRuns", $"The festival {festivalId} is running right now, so its table {tableId} cannot be deleted.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "TableStaysWhileTheFestivalRuns" });
-    }
-
-    public static Error TableWithOrdersStays(Guid festivalId, Guid tableId)
-    {
-      return Conflict("errors.admin.festivals.tableWithOrdersStays", $"The table {tableId} of the festival {festivalId} has orders, so it cannot be deleted.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "TableWithOrdersStays" });
-    }
-
-    public static Error AreaWithOrdersStays(Guid festivalId, Guid areaId)
-    {
-      return Conflict("errors.admin.festivals.areaWithOrdersStays", $"A table in the area {areaId} of the festival {festivalId} has orders, so the area cannot be deleted.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "AreaWithOrdersStays" });
-    }
-
     public static Error TableWithItemsToHandOutOrSettleStaysShown(Guid festivalId, Guid tableId)
     {
       return Conflict("errors.admin.festivals.tableWithItemsToHandOutOrSettleStaysShown",

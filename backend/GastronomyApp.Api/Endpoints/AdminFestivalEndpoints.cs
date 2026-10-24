@@ -45,11 +45,11 @@ public static class AdminFestivalEndpoints
 
     group.MapPut("/{festivalId:guid}/areas/{areaId:guid}", async (Guid festivalId, Guid areaId, SaveAreaRequest request, AdminAreaHandler handler, CancellationToken cancellationToken) => await handler.UpdateAsync(festivalId, areaId, request, cancellationToken));
 
+    group.MapPost("/{festivalId:guid}/areas/{areaId:guid}/move", async (Guid festivalId, Guid areaId, MoveAreaRequest request, AdminAreaHandler handler, CancellationToken cancellationToken) => await handler.MoveAsync(festivalId, areaId, request, cancellationToken));
+
     group.MapPost("/{festivalId:guid}/areas/{areaId:guid}/hide", async (Guid festivalId, Guid areaId, AdminAreaHandler handler, CancellationToken cancellationToken) => await handler.HideAsync(festivalId, areaId, cancellationToken));
 
     group.MapPost("/{festivalId:guid}/areas/{areaId:guid}/show", async (Guid festivalId, Guid areaId, AdminAreaHandler handler, CancellationToken cancellationToken) => await handler.ShowAsync(festivalId, areaId, cancellationToken));
-
-    group.MapDelete("/{festivalId:guid}/areas/{areaId:guid}", async (Guid festivalId, Guid areaId, AdminAreaHandler handler, CancellationToken cancellationToken) => await handler.DeleteAsync(festivalId, areaId, cancellationToken));
 
     group.MapPost("/{festivalId:guid}/tables", async (Guid festivalId, SaveTableRequest request, AdminTableHandler handler, CancellationToken cancellationToken) => await handler.CreateAsync(festivalId, request, cancellationToken));
 
@@ -58,8 +58,6 @@ public static class AdminFestivalEndpoints
     group.MapPost("/{festivalId:guid}/tables/{tableId:guid}/hide", async (Guid festivalId, Guid tableId, AdminTableHandler handler, CancellationToken cancellationToken) => await handler.HideAsync(festivalId, tableId, cancellationToken));
 
     group.MapPost("/{festivalId:guid}/tables/{tableId:guid}/show", async (Guid festivalId, Guid tableId, AdminTableHandler handler, CancellationToken cancellationToken) => await handler.ShowAsync(festivalId, tableId, cancellationToken));
-
-    group.MapDelete("/{festivalId:guid}/tables/{tableId:guid}", async (Guid festivalId, Guid tableId, AdminTableHandler handler, CancellationToken cancellationToken) => await handler.DeleteAsync(festivalId, tableId, cancellationToken));
 
     group.MapPut("/{festivalId:guid}/stations/{stationId:guid}/shape",
                  async (Guid festivalId, Guid stationId, SaveStationShapeRequest request, AdminFestivalStationShapeHandler handler, CancellationToken cancellationToken) => await handler.PlaceAsync(festivalId, stationId, request, cancellationToken));

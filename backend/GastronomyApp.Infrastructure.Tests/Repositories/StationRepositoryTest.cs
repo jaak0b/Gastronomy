@@ -1,5 +1,6 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -39,9 +40,9 @@ public sealed class StationRepositoryTest
 
     StationRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<Station> stations = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<ListedStation> stations = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(stations.Select(station => _stationService.IsAtAnyFestival(station)), Is.All.False);
+    Assert.That(stations.Select(listed => _stationService.IsAtAnyFestival(listed.Station)), Is.All.False);
   }
 
   [Test]
@@ -52,9 +53,53 @@ public sealed class StationRepositoryTest
 
     StationRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<Station> stations = await repository.FindAllAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<ListedStation> stations = await repository.FindAllAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(stations.Select(station => _stationService.IsAtAnyFestival(station)), Is.All.True);
+    Assert.That(stations.Select(listed => _stationService.IsAtAnyFestival(listed.Station)), Is.All.True);
+  }
+
+  [Test]
+  public async Task FindAllAsync_AStationWithAnItemNotYetHandedOutAtTheFestival_SaysSoForThatStationOnly()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    await PlaceKitchenOrderAsync(fixture, seeded);
+    StationRepository repository = new(fixture.DbContext);
+
+    IReadOnlyList<ListedStation> stations = await repository.FindAllAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(stations.Select(listed => listed.HasItemsToHandOut),
+                Is.EqualTo(new[]
+                           {
+                             true,
+                             false
+                           }));
+  }
+
+  [Test]
+  public async Task FindAllAsync_AStationThatHandedOutEverything_SaysItHasNothingToHandOut()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    await HandOutAsync(fixture, await PlaceKitchenOrderAsync(fixture, seeded));
+    StationRepository repository = new(fixture.DbContext);
+
+    IReadOnlyList<ListedStation> stations = await repository.FindAllAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(stations.Select(listed => listed.HasItemsToHandOut), Is.All.False);
+  }
+
+  [Test]
+  public async Task FindAllAsync_WithoutAFestival_SaysNoStationHasItemsToHandOut()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    await PlaceKitchenOrderAsync(fixture, seeded);
+    StationRepository repository = new(fixture.DbContext);
+
+    IReadOnlyList<ListedStation> stations = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(stations.Select(listed => listed.HasItemsToHandOut), Is.All.False);
   }
 
   [Test]

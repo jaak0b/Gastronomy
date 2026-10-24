@@ -15,16 +15,21 @@ public sealed class TablePlanRepository : ITablePlanRepository
     _dbContext = dbContext;
   }
 
-  public async Task<IReadOnlyList<Area>> FindTablePlanAsync(Guid festivalId, CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<ListedArea>> FindTablePlanAsync(Guid festivalId, CancellationToken cancellationToken)
   {
+    IQueryable<OrderItem> itemsToHandOutOrSettle = ItemsToHandOutOrSettle();
+
     return await _dbContext.Areas.AsNoTracking()
                            .Where(area => area.FestivalId == festivalId)
                            .OrderBy(area => area.SortOrder)
                            .ThenBy(area => area.Name)
-                           .Include(area => area.Tables.OrderBy(table => table.Name))
-                           .Include(area => area.StationShapes.OrderBy(shape => shape.FestivalStation.Station.SortOrder).ThenBy(shape => shape.FestivalStation.Station.Name))
-                           .ThenInclude(shape => shape.FestivalStation)
-                           .ThenInclude(link => link.Station)
+                           .Select(area => new ListedArea(area,
+                                                          itemsToHandOutOrSettle.Any(item => item.StationOrder.Order.Table.AreaId == area.Id),
+                                                          area.Tables.OrderBy(table => table.Name).Select(table => new ListedTable(table, itemsToHandOutOrSettle.Any(item => item.StationOrder.Order.TableId == table.Id))).ToList(),
+                                                          area.StationShapes.OrderBy(shape => shape.FestivalStation.Station.SortOrder)
+                                                              .ThenBy(shape => shape.FestivalStation.Station.Name)
+                                                              .Select(shape => new ShownStationShape(shape, shape.FestivalStation.StationId, shape.FestivalStation.Station.Name))
+                                                              .ToList()))
                            .ToListAsync(cancellationToken);
   }
 
@@ -40,7 +45,10 @@ public sealed class TablePlanRepository : ITablePlanRepository
                                                              .Select(table => new ShownTable(table,
                                                                                              table.Orders.Select(order => order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Select(item => new OrderItemFlags(item.FulfilledAtUtc != null, item.SettledAtUtc != null)).ToList()).ToList()))
                                                              .ToList(),
-                                                         area.StationShapes.OrderBy(shape => shape.FestivalStation.Station.SortOrder).ThenBy(shape => shape.FestivalStation.Station.Name).Select(shape => new ShownStationShape(shape, shape.FestivalStation.Station.Name)).ToList()))
+                                                         area.StationShapes.OrderBy(shape => shape.FestivalStation.Station.SortOrder)
+                                                             .ThenBy(shape => shape.FestivalStation.Station.Name)
+                                                             .Select(shape => new ShownStationShape(shape, shape.FestivalStation.StationId, shape.FestivalStation.Station.Name))
+                                                             .ToList()))
                            .ToListAsync(cancellationToken);
   }
 
@@ -49,9 +57,9 @@ public sealed class TablePlanRepository : ITablePlanRepository
     return await _dbContext.Areas.FirstOrDefaultAsync(area => area.Id == areaId && area.FestivalId == festivalId, cancellationToken);
   }
 
-  public async Task<Area?> FindAreaWithContentsAsync(Guid festivalId, Guid areaId, CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<Area>> FindAreasInOrderAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    return await _dbContext.Areas.Include(area => area.Tables).Include(area => area.StationShapes).FirstOrDefaultAsync(area => area.Id == areaId && area.FestivalId == festivalId, cancellationToken);
+    return await _dbContext.Areas.Where(area => area.FestivalId == festivalId).OrderBy(area => area.SortOrder).ThenBy(area => area.Name).ToListAsync(cancellationToken);
   }
 
   public async Task<bool> IsAreaNameTakenAsync(Guid festivalId, string name, Guid? areaBeingSaved, CancellationToken cancellationToken)
@@ -67,16 +75,6 @@ public sealed class TablePlanRepository : ITablePlanRepository
   public async Task AddAreaAsync(Area area, CancellationToken cancellationToken)
   {
     await _dbContext.Areas.AddAsync(area, cancellationToken);
-  }
-
-  public void RemoveArea(Area area)
-  {
-    _dbContext.Areas.Remove(area);
-  }
-
-  public async Task<bool> HasOrdersInAreaAsync(Guid areaId, CancellationToken cancellationToken)
-  {
-    return await _dbContext.Orders.AsNoTracking().AnyAsync(order => order.Table.AreaId == areaId, cancellationToken);
   }
 
   public async Task<bool> HasItemsToHandOutOrSettleInAreaAsync(Guid areaId, CancellationToken cancellationToken)
@@ -104,23 +102,6 @@ public sealed class TablePlanRepository : ITablePlanRepository
     await _dbContext.Tables.AddAsync(table, cancellationToken);
   }
 
-  public void RemoveTable(Table table)
-  {
-    _dbContext.Tables.Remove(table);
-  }
-
-  public void RemoveTables(IReadOnlyCollection<Table> tables)
-  {
-    ArgumentNullException.ThrowIfNull(tables);
-
-    _dbContext.Tables.RemoveRange(tables);
-  }
-
-  public async Task<bool> HasOrdersAtTableAsync(Guid tableId, CancellationToken cancellationToken)
-  {
-    return await _dbContext.Orders.AsNoTracking().AnyAsync(order => order.TableId == tableId, cancellationToken);
-  }
-
   public async Task<bool> HasItemsToHandOutOrSettleAtTableAsync(Guid tableId, CancellationToken cancellationToken)
   {
     return await ItemsToHandOutOrSettle().AnyAsync(item => item.StationOrder.Order.TableId == tableId, cancellationToken);
@@ -139,13 +120,6 @@ public sealed class TablePlanRepository : ITablePlanRepository
   public void RemoveStationShape(FestivalStationShape shape)
   {
     _dbContext.FestivalStationShapes.Remove(shape);
-  }
-
-  public void RemoveStationShapes(IReadOnlyCollection<FestivalStationShape> shapes)
-  {
-    ArgumentNullException.ThrowIfNull(shapes);
-
-    _dbContext.FestivalStationShapes.RemoveRange(shapes);
   }
 
   public async Task SaveChangesAsync(CancellationToken cancellationToken)

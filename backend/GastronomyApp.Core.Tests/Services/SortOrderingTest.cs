@@ -5,7 +5,7 @@ using GastronomyApp.Core.Services;
 namespace GastronomyApp.Core.Tests.Services;
 
 [TestFixture]
-public sealed class CatalogCategoryOrderingTest
+public sealed class SortOrderingTest
 {
   [SetUp]
   public void SetUp()
@@ -16,7 +16,7 @@ public sealed class CatalogCategoryOrderingTest
     _last = BuildCategory("Kuchen", 3);
   }
 
-  private CatalogCategoryOrdering _ordering = null!;
+  private SortOrdering _ordering = null!;
   private CatalogCategory _first = null!;
   private CatalogCategory _middle = null!;
   private CatalogCategory _last = null!;
@@ -41,7 +41,7 @@ public sealed class CatalogCategoryOrderingTest
   [Test]
   public void Move_DownFromTheFirstPosition_SwapsItWithTheOneBelow()
   {
-    IReadOnlyList<CatalogCategory> moved = _ordering.Move(AllThree(), _first.Id, CategoryMoveDirection.Down);
+    IReadOnlyList<CatalogCategory> moved = _ordering.Move(AllThree(), _first.Id, MoveDirection.Down);
 
     Assert.That(moved,
                 Is.EqualTo(new[]
@@ -55,7 +55,7 @@ public sealed class CatalogCategoryOrderingTest
   [Test]
   public void Move_UpFromTheLastPosition_SwapsItWithTheOneAbove()
   {
-    IReadOnlyList<CatalogCategory> moved = _ordering.Move(AllThree(), _last.Id, CategoryMoveDirection.Up);
+    IReadOnlyList<CatalogCategory> moved = _ordering.Move(AllThree(), _last.Id, MoveDirection.Up);
 
     Assert.That(moved,
                 Is.EqualTo(new[]
@@ -69,7 +69,7 @@ public sealed class CatalogCategoryOrderingTest
   [Test]
   public void Move_UpFromTheFirstPosition_ChangesNothing()
   {
-    IReadOnlyList<CatalogCategory> moved = _ordering.Move(AllThree(), _first.Id, CategoryMoveDirection.Up);
+    IReadOnlyList<CatalogCategory> moved = _ordering.Move(AllThree(), _first.Id, MoveDirection.Up);
 
     Assert.That(moved, Is.EqualTo(AllThree()));
   }
@@ -77,7 +77,7 @@ public sealed class CatalogCategoryOrderingTest
   [Test]
   public void Move_DownFromTheLastPosition_ChangesNothing()
   {
-    IReadOnlyList<CatalogCategory> moved = _ordering.Move(AllThree(), _last.Id, CategoryMoveDirection.Down);
+    IReadOnlyList<CatalogCategory> moved = _ordering.Move(AllThree(), _last.Id, MoveDirection.Down);
 
     Assert.That(moved, Is.EqualTo(AllThree()));
   }
@@ -85,7 +85,7 @@ public sealed class CatalogCategoryOrderingTest
   [Test]
   public void Move_TheOnlyCategory_ChangesNothing()
   {
-    IReadOnlyList<CatalogCategory> moved = _ordering.Move([_first], _first.Id, CategoryMoveDirection.Down);
+    IReadOnlyList<CatalogCategory> moved = _ordering.Move([_first], _first.Id, MoveDirection.Down);
 
     Assert.That(moved, Is.EqualTo(new[] { _first }));
   }
@@ -98,7 +98,7 @@ public sealed class CatalogCategoryOrderingTest
                                                             _middle
                                                           ],
                                                           _last.Id,
-                                                          CategoryMoveDirection.Up);
+                                                          MoveDirection.Up);
 
     Assert.That(moved,
                 Is.EqualTo(new[]
@@ -111,7 +111,7 @@ public sealed class CatalogCategoryOrderingTest
   [Test]
   public void Move_NoListOfCategories_IsRefused()
   {
-    Assert.That(() => _ordering.Move(null!, _first.Id, CategoryMoveDirection.Up), Throws.ArgumentNullException);
+    Assert.That(() => _ordering.Move<CatalogCategory>(null!, _first.Id, MoveDirection.Up), Throws.ArgumentNullException);
   }
 
   [Test]

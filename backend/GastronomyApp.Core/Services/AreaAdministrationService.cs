@@ -1,30 +1,34 @@
 using ErrorOr;
 using GastronomyApp.Contracts.Admin.Festivals;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
+using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class AreaAdministrationService
 {
   private readonly IFestivalRepository _festivalRepository;
+  private readonly SortOrdering _ordering;
   private readonly ITablePlanRepository _repository;
   private readonly RunningFestivalLookup _runningFestival;
 
-  public AreaAdministrationService(ITablePlanRepository repository, IFestivalRepository festivalRepository, RunningFestivalLookup runningFestival)
+  public AreaAdministrationService(ITablePlanRepository repository, IFestivalRepository festivalRepository, RunningFestivalLookup runningFestival, SortOrdering ordering)
   {
     _repository = repository;
     _festivalRepository = festivalRepository;
     _runningFestival = runningFestival;
+    _ordering = ordering;
   }
 
-  public async Task<ErrorOr<IReadOnlyList<Area>>> ListTablePlanAsync(Guid festivalId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<IReadOnlyList<ListedArea>>> ListTablePlanAsync(Guid festivalId, CancellationToken cancellationToken)
   {
     if (!await _festivalRepository.ExistsAsync(festivalId, cancellationToken))
       return Refusal.TablePlan.FestivalNotFound(festivalId);
 
-    IReadOnlyList<Area> areas = await _repository.FindTablePlanAsync(festivalId, cancellationToken);
+    IReadOnlyList<ListedArea> areas = await _repository.FindTablePlanAsync(festivalId, cancellationToken);
 
     return areas.ToErrorOr();
   }
@@ -73,6 +77,25 @@ public sealed class AreaAdministrationService
     return area;
   }
 
+  public async Task<ErrorOr<Area>> MoveAsync(Guid festivalId, Guid areaId, MoveDirection direction, CancellationToken cancellationToken)
+  {
+    IReadOnlyList<Area> areas = await _repository.FindAreasInOrderAsync(festivalId, cancellationToken);
+    var area = areas.FirstOrDefault(candidate => candidate.Id == areaId);
+
+    if (area is null)
+      return Refusal.TablePlan.AreaNotFound(festivalId, areaId);
+
+    IReadOnlyList<Area> reordered = _ordering.Move(areas, areaId, direction);
+
+    if (!_ordering.IsNumberedInOrder(reordered))
+    {
+      _ordering.NumberInOrder(reordered);
+      await _repository.SaveChangesAsync(cancellationToken);
+    }
+
+    return area;
+  }
+
   public async Task<ErrorOr<Area>> HideAsync(Guid festivalId, Guid areaId, CancellationToken cancellationToken)
   {
     var area = await _repository.FindAreaAsync(festivalId, areaId, cancellationToken);
@@ -109,32 +132,6 @@ public sealed class AreaAdministrationService
       area.IsHidden = false;
       await _repository.SaveChangesAsync(cancellationToken);
     }
-
-    return area;
-  }
-
-  public async Task<ErrorOr<Area>> DeleteAsync(Guid festivalId, Guid areaId, CancellationToken cancellationToken)
-  {
-    var area = await _repository.FindAreaWithContentsAsync(festivalId, areaId, cancellationToken);
-
-    if (area is null)
-      return Refusal.TablePlan.AreaNotFound(festivalId, areaId);
-
-    var festival = await _festivalRepository.FindByIdAsync(festivalId, cancellationToken);
-
-    if (festival is null)
-      return Refusal.TablePlan.FestivalNotFound(festivalId);
-
-    if (_runningFestival.IsRunning(festival))
-      return Refusal.TablePlan.AreaStaysWhileTheFestivalRuns(festivalId, areaId);
-
-    if (await _repository.HasOrdersInAreaAsync(areaId, cancellationToken))
-      return Refusal.TablePlan.AreaWithOrdersStays(festivalId, areaId);
-
-    _repository.RemoveStationShapes(area.StationShapes.ToList());
-    _repository.RemoveTables(area.Tables.ToList());
-    _repository.RemoveArea(area);
-    await _repository.SaveChangesAsync(cancellationToken);
 
     return area;
   }

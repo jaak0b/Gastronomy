@@ -8,10 +8,10 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class CatalogCategoryAdministrationService
 {
-  private readonly CatalogCategoryOrdering _ordering;
+  private readonly SortOrdering _ordering;
   private readonly ICatalogCategoryRepository _repository;
 
-  public CatalogCategoryAdministrationService(ICatalogCategoryRepository repository, CatalogCategoryOrdering ordering)
+  public CatalogCategoryAdministrationService(ICatalogCategoryRepository repository, SortOrdering ordering)
   {
     _repository = repository;
     _ordering = ordering;
@@ -62,7 +62,7 @@ public sealed class CatalogCategoryAdministrationService
     return category;
   }
 
-  public async Task<ErrorOr<IReadOnlyList<CatalogCategory>>> MoveAsync(Guid categoryId, CategoryMoveDirection direction, CancellationToken cancellationToken)
+  public async Task<ErrorOr<IReadOnlyList<CatalogCategory>>> MoveAsync(Guid categoryId, MoveDirection direction, CancellationToken cancellationToken)
   {
     IReadOnlyList<CatalogCategory> categories = await _repository.FindAllOrderedAsync(cancellationToken);
 

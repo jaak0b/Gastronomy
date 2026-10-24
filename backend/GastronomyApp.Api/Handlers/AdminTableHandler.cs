@@ -33,9 +33,4 @@ public sealed class AdminTableHandler
   {
     return await _service.ShowAsync(festivalId, tableId, cancellationToken).Then(table => new SavedTableView(table.Id));
   }
-
-  public async Task<NoContentAnswer> DeleteAsync(Guid festivalId, Guid tableId, CancellationToken cancellationToken)
-  {
-    return await _service.DeleteAsync(festivalId, tableId, cancellationToken).Then(table => Result.Success);
-  }
 }

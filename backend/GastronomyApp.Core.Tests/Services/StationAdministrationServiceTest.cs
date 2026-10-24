@@ -3,6 +3,7 @@ using FakeItEasy;
 using GastronomyApp.Core.Announcements;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
 using Microsoft.Extensions.Time.Testing;
@@ -60,7 +61,7 @@ public sealed class StationAdministrationServiceTest
   {
     A.CallTo(() => _festivalRepository.ExistsAsync(_festivalId, A<CancellationToken>._)).Returns(false);
 
-    ErrorOr<IReadOnlyList<Station>> listed = await _service.ListAsync(_festivalId, CancellationToken.None);
+    ErrorOr<IReadOnlyList<ListedStation>> listed = await _service.ListAsync(_festivalId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -72,17 +73,18 @@ public sealed class StationAdministrationServiceTest
   [Test]
   public async Task CreateAsync_AValidRequest_HandsBackTheStationTheAdminListShows()
   {
-    ErrorOr<Station> created = await _service.CreateAsync("Kueche am Zelt", 2, CancellationToken.None);
+    ErrorOr<ListedStation> created = await _service.CreateAsync("Kueche am Zelt", 2, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(created.IsSuccess, Is.True);
-                      Assert.That(created.Value.Id, Is.Not.EqualTo(Guid.Empty));
-                      Assert.That(created.Value.Name, Is.EqualTo("Kueche am Zelt"));
-                      Assert.That(created.Value.SortOrder, Is.EqualTo(2));
-                      Assert.That(created.Value.IsActive, Is.True);
-                      Assert.That(created.Value.DeviceId, Is.Null);
-                      Assert.That(_stationService.IsAtAnyFestival(created.Value), Is.False);
+                      Assert.That(created.Value.Station.Id, Is.Not.EqualTo(Guid.Empty));
+                      Assert.That(created.Value.Station.Name, Is.EqualTo("Kueche am Zelt"));
+                      Assert.That(created.Value.Station.SortOrder, Is.EqualTo(2));
+                      Assert.That(created.Value.Station.IsActive, Is.True);
+                      Assert.That(created.Value.Station.DeviceId, Is.Null);
+                      Assert.That(_stationService.IsAtAnyFestival(created.Value.Station), Is.False);
+                      Assert.That(created.Value.HasItemsToHandOut, Is.False);
                     });
   }
 

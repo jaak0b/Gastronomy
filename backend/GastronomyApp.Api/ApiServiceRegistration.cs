@@ -141,7 +141,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IDeviceTokenStore, DeviceTokenStore>();
     services.AddScoped<IEnrolmentInvitationStore, EnrolmentInvitationStore>();
 
-    services.AddSingleton<CatalogCategoryOrdering>();
+    services.AddSingleton<SortOrdering>();
     services.AddHttpContextAccessor();
     services.AddSingleton<SystemTextJsonRecordingSerializer>();
     services.AddSingleton<ResultEnvelope>();

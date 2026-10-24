@@ -1,5 +1,5 @@
 using GastronomyApp.Contracts.Admin.Festivals;
-using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Results;
 using Mapster;
 
 namespace GastronomyApp.Api.Mapping;
@@ -10,10 +10,10 @@ public sealed class AdminTablePlanMapping : IMappingRegistration
   {
     ArgumentNullException.ThrowIfNull(config);
 
-    config.NewConfig<Table, AdminTableView>().Map(view => view.TableId, table => table.Id).Map(view => view.Geometry, table => table);
+    config.NewConfig<ListedTable, AdminTableView>().Map(view => view.TableId, listed => listed.Table.Id).Map(view => view.Name, listed => listed.Table.Name).Map(view => view.Geometry, listed => listed.Table).Map(view => view.IsHidden, listed => listed.Table.IsHidden);
 
-    config.NewConfig<FestivalStationShape, AdminStationShapeView>().Map(view => view.StationId, shape => shape.FestivalStation.StationId).Map(view => view.StationName, shape => shape.FestivalStation.Station.Name).Map(view => view.Geometry, shape => shape);
+    config.NewConfig<ShownStationShape, AdminStationShapeView>().Map(view => view.Geometry, shown => shown.Shape);
 
-    config.NewConfig<Area, AdminAreaView>().Map(view => view.AreaId, area => area.Id);
+    config.NewConfig<ListedArea, AdminAreaView>().Map(view => view.AreaId, listed => listed.Area.Id).Map(view => view.Name, listed => listed.Area.Name).Map(view => view.SortOrder, listed => listed.Area.SortOrder).Map(view => view.IsHidden, listed => listed.Area.IsHidden);
   }
 }

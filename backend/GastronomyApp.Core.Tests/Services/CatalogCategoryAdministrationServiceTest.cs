@@ -72,7 +72,7 @@ public sealed class CatalogCategoryAdministrationServiceTest
   [Test]
   public async Task MoveAsync_TheLastCategoryDownwards_KeepsTheOrderAndWritesNothing()
   {
-    ErrorOr<IReadOnlyList<CatalogCategory>> moved = await _service.MoveAsync(_drinkCategoryId, CategoryMoveDirection.Down, CancellationToken.None);
+    ErrorOr<IReadOnlyList<CatalogCategory>> moved = await _service.MoveAsync(_drinkCategoryId, MoveDirection.Down, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -91,7 +91,7 @@ public sealed class CatalogCategoryAdministrationServiceTest
   [Test]
   public async Task MoveAsync_TheLastCategoryUpwards_PutsItFirstAndCommits()
   {
-    ErrorOr<IReadOnlyList<CatalogCategory>> moved = await _service.MoveAsync(_drinkCategoryId, CategoryMoveDirection.Up, CancellationToken.None);
+    ErrorOr<IReadOnlyList<CatalogCategory>> moved = await _service.MoveAsync(_drinkCategoryId, MoveDirection.Up, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {

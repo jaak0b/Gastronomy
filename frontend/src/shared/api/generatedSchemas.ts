@@ -8,13 +8,13 @@ export type AreaShapeGeometry = __TypedOpenapi.Schemas.AreaShapeGeometry;
 export const AreaShapeGeometry = z.strictObject({ x: z.number(), y: z.number(), width: z.number(), height: z.number(), rotation: z.number() });
 
 export type AdminTableView = __TypedOpenapi.Schemas.AdminTableView;
-export const AdminTableView = z.strictObject({ tableId: z.string(), name: z.string(), geometry: AreaShapeGeometry, isHidden: z.boolean() });
+export const AdminTableView = z.strictObject({ tableId: z.string(), name: z.string(), geometry: AreaShapeGeometry, isHidden: z.boolean(), hasItemsToHandOutOrSettle: z.boolean() });
 
 export type AdminStationShapeView = __TypedOpenapi.Schemas.AdminStationShapeView;
 export const AdminStationShapeView = z.strictObject({ stationId: z.string(), stationName: z.string(), geometry: AreaShapeGeometry });
 
 export type AdminAreaView = __TypedOpenapi.Schemas.AdminAreaView;
-export const AdminAreaView = z.strictObject({ areaId: z.string(), name: z.string(), sortOrder: z.number().int(), isHidden: z.boolean(), tables: z.array(AdminTableView), stationShapes: z.array(AdminStationShapeView) });
+export const AdminAreaView = z.strictObject({ areaId: z.string(), name: z.string(), sortOrder: z.number().int(), isHidden: z.boolean(), hasItemsToHandOutOrSettle: z.boolean(), tables: z.array(AdminTableView), stationShapes: z.array(AdminStationShapeView) });
 
 export type AdminCategoryView = __TypedOpenapi.Schemas.AdminCategoryView;
 export const AdminCategoryView = z.strictObject({ categoryId: z.string(), name: z.string(), colourHex: z.string(), sortOrder: z.number().int(), isActive: z.boolean() });
@@ -68,7 +68,7 @@ export type AdminStaffMemberListView = __TypedOpenapi.Schemas.AdminStaffMemberLi
 export const AdminStaffMemberListView = z.strictObject({ staffMembers: z.array(AdminStaffMemberView) });
 
 export type AdminStationView = __TypedOpenapi.Schemas.AdminStationView;
-export const AdminStationView = z.strictObject({ stationId: z.string(), name: z.string(), sortOrder: z.number().int(), isActive: z.boolean(), hasDevice: z.boolean(), isAtAnyFestival: z.boolean() });
+export const AdminStationView = z.strictObject({ stationId: z.string(), name: z.string(), sortOrder: z.number().int(), isActive: z.boolean(), hasDevice: z.boolean(), isAtAnyFestival: z.boolean(), hasItemsToHandOut: z.boolean() });
 
 export type AdminStationListView = __TypedOpenapi.Schemas.AdminStationListView;
 export const AdminStationListView = z.strictObject({ stations: z.array(AdminStationView) });
@@ -90,9 +90,6 @@ export const RunningFestivalView = z.strictObject({ festivalId: z.string(), name
 
 export type CatalogView = __TypedOpenapi.Schemas.CatalogView;
 export const CatalogView = z.strictObject({ festival: RunningFestivalView.nullable(), categories: z.array(CatalogCategoryView), items: z.array(CatalogItemView), stations: z.array(CatalogStationView) });
-
-export type CategoryMoveDirection = __TypedOpenapi.Schemas.CategoryMoveDirection;
-export const CategoryMoveDirection = z.enum(["up", "down"]);
 
 export type CreateInvitationRequest = __TypedOpenapi.Schemas.CreateInvitationRequest;
 export const CreateInvitationRequest = z.strictObject({ staffMemberId: z.string().nullable(), stationId: z.string().nullable() }).partial();
@@ -136,8 +133,14 @@ export const LanguageChangeRequest = z.strictObject({ language: z.string().nulla
 export type LanguageView = __TypedOpenapi.Schemas.LanguageView;
 export const LanguageView = z.strictObject({ language: z.string() });
 
+export type MoveDirection = __TypedOpenapi.Schemas.MoveDirection;
+export const MoveDirection = z.enum(["up", "down"]);
+
+export type MoveAreaRequest = __TypedOpenapi.Schemas.MoveAreaRequest;
+export const MoveAreaRequest = z.strictObject({ direction: MoveDirection });
+
 export type MoveCategoryRequest = __TypedOpenapi.Schemas.MoveCategoryRequest;
-export const MoveCategoryRequest = z.strictObject({ direction: CategoryMoveDirection });
+export const MoveCategoryRequest = z.strictObject({ direction: MoveDirection });
 
 export type OrderDeliveryModeRequest = __TypedOpenapi.Schemas.OrderDeliveryModeRequest;
 export const OrderDeliveryModeRequest = z.strictObject({ stationId: z.string(), deliveryMode: DeliveryMode });

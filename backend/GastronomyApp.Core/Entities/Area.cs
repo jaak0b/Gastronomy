@@ -4,7 +4,7 @@ using GastronomyApp.Core.Announcements;
 namespace GastronomyApp.Core.Entities;
 
 [Raises(HubEvent.ConfigurationChanged)]
-public sealed class Area
+public sealed class Area : ISortable
 {
   public required Guid Id { get; set; }
 

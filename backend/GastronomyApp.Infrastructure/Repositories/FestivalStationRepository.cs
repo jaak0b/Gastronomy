@@ -26,7 +26,7 @@ public sealed class FestivalStationRepository : IFestivalStationRepository
 
   public async Task<int> CountUnfulfilledItemsAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    return await _dbContext.StationOrders.AsNoTracking().Where(stationOrder => stationOrder.FestivalId == festivalId && stationOrder.StationId == stationId).SelectMany(stationOrder => stationOrder.Items).CountAsync(item => item.FulfilledAtUtc == null, cancellationToken);
+    return await _dbContext.ItemsToHandOutAt(festivalId).CountAsync(item => item.StationOrder.StationId == stationId, cancellationToken);
   }
 
   public async Task AddLinkAsync(FestivalStation link, CancellationToken cancellationToken)

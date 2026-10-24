@@ -110,28 +110,4 @@ public sealed class TableAdministrationService
 
     return table;
   }
-
-  public async Task<ErrorOr<Table>> DeleteAsync(Guid festivalId, Guid tableId, CancellationToken cancellationToken)
-  {
-    var table = await _repository.FindTableAsync(festivalId, tableId, cancellationToken);
-
-    if (table is null)
-      return Refusal.TablePlan.TableNotFound(festivalId, tableId);
-
-    var festival = await _festivalRepository.FindByIdAsync(festivalId, cancellationToken);
-
-    if (festival is null)
-      return Refusal.TablePlan.FestivalNotFound(festivalId);
-
-    if (_runningFestival.IsRunning(festival))
-      return Refusal.TablePlan.TableStaysWhileTheFestivalRuns(festivalId, tableId);
-
-    if (await _repository.HasOrdersAtTableAsync(tableId, cancellationToken))
-      return Refusal.TablePlan.TableWithOrdersStays(festivalId, tableId);
-
-    _repository.RemoveTable(table);
-    await _repository.SaveChangesAsync(cancellationToken);
-
-    return table;
-  }
 }

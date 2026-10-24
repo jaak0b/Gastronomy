@@ -650,6 +650,24 @@ public sealed class AdminFestivalEndpointsTest
   }
 
   [Test]
+  public async Task GetStationsOfTheFestival_AStationWithAnItemStillOpen_SaysItHasItemsToHandOut()
+  {
+    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
+    {
+      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    using var response = await _context.Client.GetAsync($"/api/admin/stations?festivalId={_context.World.FestivalId}");
+    var stations = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("stations").EnumerateArray().ToList();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(stations.Single(station => station.GetProperty("stationId").GetGuid() == _context.World.KitchenStationId).GetProperty("hasItemsToHandOut").GetBoolean(), Is.True);
+                      Assert.That(stations.Single(station => station.GetProperty("stationId").GetGuid() == _context.World.BarStationId).GetProperty("hasItemsToHandOut").GetBoolean(), Is.False);
+                    });
+  }
+
+  [Test]
   public async Task DeleteFestivalStation_WhenEveryItemIsAlreadyFulfilled_TakesItOffTheFestival()
   {
     using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))

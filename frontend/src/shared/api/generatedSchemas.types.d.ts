@@ -2,9 +2,9 @@
   export namespace Schemas {
     // <Schemas>
   export type AreaShapeGeometry = { x: number, y: number, width: number, height: number, rotation: number }
-export type AdminTableView = { tableId: string, name: string, geometry: AreaShapeGeometry, isHidden: boolean }
+export type AdminTableView = { tableId: string, name: string, geometry: AreaShapeGeometry, isHidden: boolean, hasItemsToHandOutOrSettle: boolean }
 export type AdminStationShapeView = { stationId: string, stationName: string, geometry: AreaShapeGeometry }
-export type AdminAreaView = { areaId: string, name: string, sortOrder: number, isHidden: boolean, tables: Array<AdminTableView>, stationShapes: Array<AdminStationShapeView> }
+export type AdminAreaView = { areaId: string, name: string, sortOrder: number, isHidden: boolean, hasItemsToHandOutOrSettle: boolean, tables: Array<AdminTableView>, stationShapes: Array<AdminStationShapeView> }
 export type AdminCategoryView = { categoryId: string, name: string, colourHex: string, sortOrder: number, isActive: boolean }
 export type AdminCategoryListView = { categories: Array<AdminCategoryView> }
 export type IngredientUnit = ("piece" | "gram" | "millilitre")
@@ -22,7 +22,7 @@ export type AdminItemView = { itemId: string, name: string, categoryId: string, 
 export type AdminItemListView = { items: Array<AdminItemView> }
 export type AdminStaffMemberView = { staffMemberId: string, name: string, isActive: boolean, hasDevice: boolean }
 export type AdminStaffMemberListView = { staffMembers: Array<AdminStaffMemberView> }
-export type AdminStationView = { stationId: string, name: string, sortOrder: number, isActive: boolean, hasDevice: boolean, isAtAnyFestival: boolean }
+export type AdminStationView = { stationId: string, name: string, sortOrder: number, isActive: boolean, hasDevice: boolean, isAtAnyFestival: boolean, hasItemsToHandOut: boolean }
 export type AdminStationListView = { stations: Array<AdminStationView> }
 export type AdminTablePlanView = { areas: Array<AdminAreaView> }
 export type CatalogCategoryView = { categoryId: string, name: string, colourHex: string, sortOrder: number }
@@ -30,7 +30,6 @@ export type CatalogItemView = { id: string, categoryId: string, name: string, pr
 export type CatalogStationView = { id: string, name: string, sortOrder: number }
 export type RunningFestivalView = { festivalId: string, name: string }
 export type CatalogView = { festival: (null | RunningFestivalView), categories: Array<CatalogCategoryView>, items: Array<CatalogItemView>, stations: Array<CatalogStationView> }
-export type CategoryMoveDirection = ("up" | "down")
 export type CreateInvitationRequest = Partial<{ staffMemberId: (null | string), stationId: (null | string) }>
 export type DeliveryMode = ("together" | "asItComes")
 export type DeviceRevokedEvent = { deviceId: string }
@@ -45,7 +44,9 @@ export type InvitationView = { invitationId: string, qrUrl: string, expiresAtUtc
 export type ItemEstimateView = { catalogItemId: string, stationId: string, readyInMinutes: number }
 export type LanguageChangeRequest = { language: (null | string) }
 export type LanguageView = { language: string }
-export type MoveCategoryRequest = { direction: CategoryMoveDirection }
+export type MoveDirection = ("up" | "down")
+export type MoveAreaRequest = { direction: MoveDirection }
+export type MoveCategoryRequest = { direction: MoveDirection }
 export type OrderDeliveryModeRequest = { stationId: string, deliveryMode: DeliveryMode }
 export type OrderItemRequest = { catalogItemId: string, unitPriceCents: number, note?: (null | string), stationId?: (null | string) }
 export type OrderStatus = ("open" | "partiallyFulfilled" | "fulfilled")
@@ -935,9 +936,9 @@ export type put__api_admin_festivals_FestivalId_areas_AreaId = {
 },
       
     }
-export type delete__api_admin_festivals_FestivalId_areas_AreaId = {
-      method: "DELETE",
-      path: "/api/admin/festivals/{festivalId}/areas/{areaId}",
+export type post__api_admin_festivals_FestivalId_areas_AreaId_move = {
+      method: "POST",
+      path: "/api/admin/festivals/{festivalId}/areas/{areaId}/move",
       requestFormat: "json",
       responseFormat: "json",
       parameters: {
@@ -945,9 +946,9 @@ export type delete__api_admin_festivals_FestivalId_areas_AreaId = {
         path:  { festivalId: string, areaId: string },
         
         
-        
+        body:  Schemas.MoveAreaRequest,
           }
-      responses: {204: unknown,
+      responses: {200: Schemas.SavedAreaView,
 },
       
     }
@@ -1012,22 +1013,6 @@ export type put__api_admin_festivals_FestivalId_tables_TableId = {
         body:  Schemas.SaveTableRequest,
           }
       responses: {200: Schemas.SavedTableView,
-},
-      
-    }
-export type delete__api_admin_festivals_FestivalId_tables_TableId = {
-      method: "DELETE",
-      path: "/api/admin/festivals/{festivalId}/tables/{tableId}",
-      requestFormat: "json",
-      responseFormat: "json",
-      parameters: {
-            
-        path:  { festivalId: string, tableId: string },
-        
-        
-        
-          }
-      responses: {204: unknown,
 },
       
     }
@@ -1203,6 +1188,7 @@ export type post__api_admin_ingredients_IngredientId_deactivate = {
 "/api/admin/festivals/{festivalId}/show": Endpoints.post__api_admin_festivals_FestivalId_show,
 "/api/admin/festivals/{festivalId}/items/{itemId}/availability": Endpoints.post__api_admin_festivals_FestivalId_items_ItemId_availability,
 "/api/admin/festivals/{festivalId}/areas": Endpoints.post__api_admin_festivals_FestivalId_areas,
+"/api/admin/festivals/{festivalId}/areas/{areaId}/move": Endpoints.post__api_admin_festivals_FestivalId_areas_AreaId_move,
 "/api/admin/festivals/{festivalId}/areas/{areaId}/hide": Endpoints.post__api_admin_festivals_FestivalId_areas_AreaId_hide,
 "/api/admin/festivals/{festivalId}/areas/{areaId}/show": Endpoints.post__api_admin_festivals_FestivalId_areas_AreaId_show,
 "/api/admin/festivals/{festivalId}/tables": Endpoints.post__api_admin_festivals_FestivalId_tables,
@@ -1251,8 +1237,6 @@ delete: {
            "/api/admin/items/{itemId}/ingredients/{ingredientId}": Endpoints.delete__api_admin_items_ItemId_ingredients_IngredientId,
 "/api/admin/festivals/{festivalId}/items/{itemId}": Endpoints.delete__api_admin_festivals_FestivalId_items_ItemId,
 "/api/admin/festivals/{festivalId}/stations/{stationId}": Endpoints.delete__api_admin_festivals_FestivalId_stations_StationId,
-"/api/admin/festivals/{festivalId}/areas/{areaId}": Endpoints.delete__api_admin_festivals_FestivalId_areas_AreaId,
-"/api/admin/festivals/{festivalId}/tables/{tableId}": Endpoints.delete__api_admin_festivals_FestivalId_tables_TableId,
 "/api/admin/festivals/{festivalId}/stations/{stationId}/shape": Endpoints.delete__api_admin_festivals_FestivalId_stations_StationId_shape
          }
      }

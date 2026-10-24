@@ -281,58 +281,6 @@ public sealed class TableAdministrationServiceTest
     Assert.That(hidden.RefusalMessageKey(), Is.EqualTo("TableNotFound"));
   }
 
-  [Test]
-  public async Task DeleteAsync_WhileTheFestivalRuns_IsRefusedAndRemovesNothing()
-  {
-    A.CallTo(() => _repository.FindTableAsync(_festivalId, _tableId, A<CancellationToken>._)).Returns(Task.FromResult<Table?>(BuildTable()));
-
-    ErrorOr<Table> deleted = await _service.DeleteAsync(_festivalId, _tableId, CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(deleted.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
-                      Assert.That(deleted.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.tableStaysWhileTheFestivalRuns"));
-                      Assert.That(deleted.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("TableStaysWhileTheFestivalRuns"));
-                    });
-
-    A.CallTo(() => _repository.RemoveTable(A<Table>._)).MustNotHaveHappened();
-  }
-
-  [Test]
-  public async Task DeleteAsync_AfterTheFestival_RemovesTheTable()
-  {
-    A.CallTo(() => _festivalRepository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(true)));
-    var table = BuildTable();
-    A.CallTo(() => _repository.FindTableAsync(_festivalId, _tableId, A<CancellationToken>._)).Returns(Task.FromResult<Table?>(table));
-
-    ErrorOr<Table> deleted = await _service.DeleteAsync(_festivalId, _tableId, CancellationToken.None);
-
-    Assert.That(deleted.IsError, Is.False);
-
-    A.CallTo(() => _repository.RemoveTable(table)).MustHaveHappenedOnceExactly();
-    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
-  }
-
-  [Test]
-  public async Task DeleteAsync_ATableWithOrdersAfterTheFestival_IsRefusedAndRemovesNothing()
-  {
-    A.CallTo(() => _festivalRepository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(true)));
-    A.CallTo(() => _repository.FindTableAsync(_festivalId, _tableId, A<CancellationToken>._)).Returns(Task.FromResult<Table?>(BuildTable()));
-    A.CallTo(() => _repository.HasOrdersAtTableAsync(_tableId, A<CancellationToken>._)).Returns(true);
-
-    ErrorOr<Table> deleted = await _service.DeleteAsync(_festivalId, _tableId, CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(deleted.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
-                      Assert.That(deleted.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.tableWithOrdersStays"));
-                      Assert.That(deleted.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("TableWithOrdersStays"));
-                    });
-
-    A.CallTo(() => _repository.RemoveTable(A<Table>._)).MustNotHaveHappened();
-    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
-  }
-
   private SaveTableRequest BuildRequest(Guid areaId, string name)
   {
     return new()

@@ -4,5 +4,5 @@ namespace GastronomyApp.Contracts.Admin.Catalog;
 
 public sealed record MoveCategoryRequest
 {
-  public required CategoryMoveDirection Direction { get; init; }
+  public required MoveDirection Direction { get; init; }
 }

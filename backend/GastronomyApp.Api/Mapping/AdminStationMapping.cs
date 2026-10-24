@@ -1,5 +1,5 @@
 using GastronomyApp.Contracts.Admin.Stations;
-using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Mapster;
 
@@ -18,6 +18,12 @@ public sealed class AdminStationMapping : IMappingRegistration
   {
     ArgumentNullException.ThrowIfNull(config);
 
-    config.NewConfig<Station, AdminStationView>().Map(view => view.StationId, station => station.Id).Map(view => view.HasDevice, station => station.DeviceId != null).Map(view => view.IsAtAnyFestival, station => _stationService.IsAtAnyFestival(station));
+    config.NewConfig<ListedStation, AdminStationView>()
+          .Map(view => view.StationId, listed => listed.Station.Id)
+          .Map(view => view.Name, listed => listed.Station.Name)
+          .Map(view => view.SortOrder, listed => listed.Station.SortOrder)
+          .Map(view => view.IsActive, listed => listed.Station.IsActive)
+          .Map(view => view.HasDevice, listed => listed.Station.DeviceId != null)
+          .Map(view => view.IsAtAnyFestival, listed => _stationService.IsAtAnyFestival(listed.Station));
   }
 }

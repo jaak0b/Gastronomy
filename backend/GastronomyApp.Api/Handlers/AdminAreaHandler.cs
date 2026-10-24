@@ -32,6 +32,11 @@ public sealed class AdminAreaHandler
     return await _service.UpdateAsync(festivalId, areaId, request, cancellationToken).Then(area => new SavedAreaView(area.Id));
   }
 
+  public async Task<ApiAnswer<SavedAreaView>> MoveAsync(Guid festivalId, Guid areaId, MoveAreaRequest request, CancellationToken cancellationToken)
+  {
+    return await _service.MoveAsync(festivalId, areaId, request.Direction, cancellationToken).Then(area => new SavedAreaView(area.Id));
+  }
+
   public async Task<ApiAnswer<SavedAreaView>> HideAsync(Guid festivalId, Guid areaId, CancellationToken cancellationToken)
   {
     return await _service.HideAsync(festivalId, areaId, cancellationToken).Then(area => new SavedAreaView(area.Id));
@@ -40,10 +45,5 @@ public sealed class AdminAreaHandler
   public async Task<ApiAnswer<SavedAreaView>> ShowAsync(Guid festivalId, Guid areaId, CancellationToken cancellationToken)
   {
     return await _service.ShowAsync(festivalId, areaId, cancellationToken).Then(area => new SavedAreaView(area.Id));
-  }
-
-  public async Task<NoContentAnswer> DeleteAsync(Guid festivalId, Guid areaId, CancellationToken cancellationToken)
-  {
-    return await _service.DeleteAsync(festivalId, areaId, cancellationToken).Then(area => Result.Success);
   }
 }

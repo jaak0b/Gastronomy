@@ -30,32 +30,93 @@ public sealed class TablePlanRepositoryTest
     await AddAreaAsync(fixture.DbContext, otherFestivalId, "Garten", 0, false);
     await using var readContext = fixture.CreateContext();
 
-    IReadOnlyList<Area> tablePlan = await new TablePlanRepository(readContext).FindTablePlanAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<ListedArea> tablePlan = await new TablePlanRepository(readContext).FindTablePlanAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(tablePlan.Select(area => area.Name),
+                      Assert.That(tablePlan.Select(listed => listed.Area.Name),
                                   Is.EqualTo(new[]
                                              {
                                                "Garten",
                                                "Halle"
                                              }));
-                      Assert.That(tablePlan[0].Tables.Select(table => table.Name),
+                      Assert.That(tablePlan[0].Tables.Select(listed => listed.Table.Name),
                                   Is.EqualTo(new[]
                                              {
                                                "Tisch 1",
                                                "Tisch 2"
                                              }));
-                      Assert.That(tablePlan[0].StationShapes.Select(shape => shape.FestivalStation.Station.Name),
+                      Assert.That(tablePlan[0].StationShapes.Select(shape => shape.StationName),
                                   Is.EqualTo(new[]
                                              {
                                                "Kueche",
                                                "Theke"
                                              }));
-                      Assert.That(tablePlan[1].IsHidden, Is.True);
-                      Assert.That(tablePlan[1].Tables.Select(table => table.Name), Is.EqualTo(new[] { "Stammtisch" }));
+                      Assert.That(tablePlan[0].StationShapes.Select(shape => shape.StationId),
+                                  Is.EqualTo(new[]
+                                             {
+                                               seeded.KitchenStationId,
+                                               seeded.BarStationId
+                                             }));
+                      Assert.That(tablePlan[1].Area.IsHidden, Is.True);
+                      Assert.That(tablePlan[1].Tables.Select(listed => listed.Table.Name), Is.EqualTo(new[] { "Stammtisch" }));
                       Assert.That(tablePlan[1].StationShapes, Is.Empty);
                     });
+  }
+
+  [Test]
+  public async Task FindTablePlanAsync_OneTableWithAnItemNotYetSettled_SaysSoForThatTableAndItsAreaOnly()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var gardenId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Garten", 1, false);
+    var hallId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Halle", 2, false);
+    var unsettledTableId = await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 1", false);
+    var finishedTableId = await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 2", false);
+    var hallTableId = await AddTableAsync(fixture.DbContext, seeded.FestivalId, hallId, "Tisch 3", false);
+    await AddOrderAsync(fixture.DbContext, seeded, unsettledTableId, 1, _handedOutAtUtc, null);
+    await AddOrderAsync(fixture.DbContext, seeded, finishedTableId, 2, _handedOutAtUtc, _settledAtUtc);
+    await AddOrderAsync(fixture.DbContext, seeded, hallTableId, 3, _handedOutAtUtc, _settledAtUtc);
+    await using var readContext = fixture.CreateContext();
+
+    IReadOnlyList<ListedArea> tablePlan = await new TablePlanRepository(readContext).FindTablePlanAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(tablePlan.Select(listed => listed.HasItemsToHandOutOrSettle),
+                                  Is.EqualTo(new[]
+                                             {
+                                               true,
+                                               false
+                                             }));
+                      Assert.That(tablePlan[0].Tables.Select(listed => listed.HasItemsToHandOutOrSettle),
+                                  Is.EqualTo(new[]
+                                             {
+                                               true,
+                                               false
+                                             }));
+                      Assert.That(tablePlan[1].Tables.Single().HasItemsToHandOutOrSettle, Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task FindTablePlanAsync_APlanWithOrdersAndStationShapesInTwoAreas_ReadsItInOneStatement()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var gardenId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Garten", 1, false);
+    var hallId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Halle", 2, true);
+    var tableId = await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 1", false);
+    await AddTableAsync(fixture.DbContext, seeded.FestivalId, hallId, "Tisch 2", true);
+    await PlaceAsync(fixture.DbContext, seeded.FestivalId, seeded.KitchenStationId, gardenId);
+    await PlaceAsync(fixture.DbContext, seeded.FestivalId, seeded.BarStationId, hallId);
+    await AddOrderAtKitchenAndBarAsync(fixture.DbContext, seeded, tableId, 1, null);
+    QueryCounter counter = new();
+    await using GastronomyAppDbContext readContext = new(new DbContextOptionsBuilder<GastronomyAppDbContext>().UseSqlite(fixture.Connection).AddInterceptors(counter).Options);
+
+    await new TablePlanRepository(readContext).FindTablePlanAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(counter.QueryCount, Is.EqualTo(1));
   }
 
   [Test]
@@ -293,38 +354,6 @@ public sealed class TablePlanRepositoryTest
   }
 
   [Test]
-  public async Task RemoveArea_WithTheTablesAndShapesItWasFoundWith_LeavesNothingOfTheAreaBehind()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var gardenId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Garten", 1, false);
-    await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 1", false);
-    await PlaceAsync(fixture.DbContext, seeded.FestivalId, seeded.KitchenStationId, gardenId);
-    await using var writeContext = fixture.CreateContext();
-    TablePlanRepository repository = new(writeContext);
-
-    var garden = (await repository.FindAreaWithContentsAsync(seeded.FestivalId, gardenId, TestContext.CurrentContext.CancellationToken))!;
-    repository.RemoveStationShapes(garden.StationShapes.ToList());
-    repository.RemoveTables(garden.Tables.ToList());
-    repository.RemoveArea(garden);
-    await repository.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
-
-    await using var readContext = fixture.CreateContext();
-    var areaCount = await readContext.Areas.CountAsync(TestContext.CurrentContext.CancellationToken);
-    var tableCount = await readContext.Tables.CountAsync(TestContext.CurrentContext.CancellationToken);
-    var shapeCount = await readContext.FestivalStationShapes.CountAsync(TestContext.CurrentContext.CancellationToken);
-    var linkCount = await readContext.FestivalStations.CountAsync(TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(areaCount, Is.Zero);
-                      Assert.That(tableCount, Is.Zero);
-                      Assert.That(shapeCount, Is.Zero);
-                      Assert.That(linkCount, Is.EqualTo(2));
-                    });
-  }
-
-  [Test]
   public async Task AddStationShapeAsync_AStationAtTheFestival_IsFoundByItsLinkAfterTheChangesAreSaved()
   {
     using SqliteInMemoryFixture fixture = new();
@@ -388,49 +417,6 @@ public sealed class TablePlanRepositoryTest
     Assert.That(shapesLeft, Is.Zero);
   }
 
-  [Test]
-  public async Task HasOrdersAtTableAsync_ATableWithAnOrder_IsTrueAndItsNeighbourWithoutOneIsFalse()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var gardenId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Garten", 1, false);
-    var orderedAtId = await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 1", false);
-    var emptyId = await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 2", false);
-    await AddOrderAsync(fixture.DbContext, seeded, orderedAtId, 1, _handedOutAtUtc, _settledAtUtc);
-    TablePlanRepository repository = new(fixture.DbContext);
-
-    var orderedAtHasOrders = await repository.HasOrdersAtTableAsync(orderedAtId, TestContext.CurrentContext.CancellationToken);
-    var emptyHasOrders = await repository.HasOrdersAtTableAsync(emptyId, TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(orderedAtHasOrders, Is.True);
-                      Assert.That(emptyHasOrders, Is.False);
-                    });
-  }
-
-  [Test]
-  public async Task HasOrdersInAreaAsync_AnOrderAtATableOfOneArea_CountsForThatAreaOnly()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var gardenId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Garten", 1, false);
-    var hallId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Halle", 2, false);
-    var gardenTableId = await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 1", false);
-    await AddTableAsync(fixture.DbContext, seeded.FestivalId, hallId, "Tisch 2", false);
-    await AddOrderAsync(fixture.DbContext, seeded, gardenTableId, 1, _handedOutAtUtc, _settledAtUtc);
-    TablePlanRepository repository = new(fixture.DbContext);
-
-    var gardenHasOrders = await repository.HasOrdersInAreaAsync(gardenId, TestContext.CurrentContext.CancellationToken);
-    var hallHasOrders = await repository.HasOrdersInAreaAsync(hallId, TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(gardenHasOrders, Is.True);
-                      Assert.That(hallHasOrders, Is.False);
-                    });
-  }
-
   [TestCase(false, false, true)]
   [TestCase(true, false, true)]
   [TestCase(false, true, true)]
@@ -484,22 +470,6 @@ public sealed class TablePlanRepositoryTest
                       Assert.That(gardenHasItemsLeft, Is.True);
                       Assert.That(hallHasItemsLeft, Is.False);
                     });
-  }
-
-  [Test]
-  public void RemoveTables_NullTables_ThrowsArgumentNullException()
-  {
-    using SqliteInMemoryFixture fixture = new();
-
-    Assert.That(() => new TablePlanRepository(fixture.DbContext).RemoveTables(null!), Throws.ArgumentNullException);
-  }
-
-  [Test]
-  public void RemoveStationShapes_NullShapes_ThrowsArgumentNullException()
-  {
-    using SqliteInMemoryFixture fixture = new();
-
-    Assert.That(() => new TablePlanRepository(fixture.DbContext).RemoveStationShapes(null!), Throws.ArgumentNullException);
   }
 
   private async Task<Guid> AddFestivalAsync(GastronomyAppDbContext dbContext)

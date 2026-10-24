@@ -1724,8 +1724,10 @@
             }
           }
         }
-      },
-      "delete": {
+      }
+    },
+    "/api/admin/festivals/{festivalId}/areas/{areaId}/move": {
+      "post": {
         "tags": [
           "GetDocument.Insider"
         ],
@@ -1749,9 +1751,26 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveAreaRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "204": {
-            "description": "No Content"
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedAreaView"
+                }
+              }
+            }
           }
         }
       }
@@ -1919,36 +1938,6 @@
                 }
               }
             }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "GetDocument.Insider"
-        ],
-        "parameters": [
-          {
-            "name": "festivalId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "tableId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
           }
         }
       }
@@ -2265,6 +2254,7 @@
           "name",
           "sortOrder",
           "isHidden",
+          "hasItemsToHandOutOrSettle",
           "tables",
           "stationShapes"
         ],
@@ -2282,6 +2272,9 @@
             "format": "int32"
           },
           "isHidden": {
+            "type": "boolean"
+          },
+          "hasItemsToHandOutOrSettle": {
             "type": "boolean"
           },
           "tables": {
@@ -2733,7 +2726,8 @@
           "sortOrder",
           "isActive",
           "hasDevice",
-          "isAtAnyFestival"
+          "isAtAnyFestival",
+          "hasItemsToHandOut"
         ],
         "type": "object",
         "properties": {
@@ -2755,6 +2749,9 @@
             "type": "boolean"
           },
           "isAtAnyFestival": {
+            "type": "boolean"
+          },
+          "hasItemsToHandOut": {
             "type": "boolean"
           }
         }
@@ -2778,7 +2775,8 @@
           "tableId",
           "name",
           "geometry",
-          "isHidden"
+          "isHidden",
+          "hasItemsToHandOutOrSettle"
         ],
         "type": "object",
         "properties": {
@@ -2793,6 +2791,9 @@
             "$ref": "#/components/schemas/AreaShapeGeometry"
           },
           "isHidden": {
+            "type": "boolean"
+          },
+          "hasItemsToHandOutOrSettle": {
             "type": "boolean"
           }
         }
@@ -2968,12 +2969,6 @@
             }
           }
         }
-      },
-      "CategoryMoveDirection": {
-        "enum": [
-          "up",
-          "down"
-        ]
       },
       "CreateInvitationRequest": {
         "type": "object",
@@ -3210,6 +3205,17 @@
           }
         }
       },
+      "MoveAreaRequest": {
+        "required": [
+          "direction"
+        ],
+        "type": "object",
+        "properties": {
+          "direction": {
+            "$ref": "#/components/schemas/MoveDirection"
+          }
+        }
+      },
       "MoveCategoryRequest": {
         "required": [
           "direction"
@@ -3217,9 +3223,15 @@
         "type": "object",
         "properties": {
           "direction": {
-            "$ref": "#/components/schemas/CategoryMoveDirection"
+            "$ref": "#/components/schemas/MoveDirection"
           }
         }
+      },
+      "MoveDirection": {
+        "enum": [
+          "up",
+          "down"
+        ]
       },
       "OrderDeliveryModeRequest": {
         "required": [
