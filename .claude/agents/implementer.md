@@ -51,7 +51,7 @@ the same for every change is written here.
   stopped: when the brief says it is, run `dotnet test
   desktop/GastronomyApp.Desktop.Tests/GastronomyApp.Desktop.Tests.csproj --filter
   "FullyQualifiedName~<Fixture>"`; when it does not, stop and report before building.
-- Every C# file you created or edited goes through the cleanup of backend rule 10 before you report,
+- Every C# file you created or edited goes through the cleanup of backend rule 9 before you report,
   as the how-to page `format-csharp.md` describes. Never format by hand.
 - A deletion follows root rule 16; quote the search it requires in your report.
 - Keep the `features` and `how-to` pages current in the same change, as root rule 24 requires.

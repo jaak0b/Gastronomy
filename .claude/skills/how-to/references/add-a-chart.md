@@ -25,7 +25,7 @@ model to copy.
    `shared/composables/useThemedValue.ts`, which the table plan's colours use too: `BaseChart` takes its `name`, and
    the chart component hands its `colours` to the option function. The option sets each colour from
    a role, never from a hex value. A second data series needs its own token in `shared/theme.ts`
-   first (frontend rule 8), checked with the `dataviz` skill's `scripts/validate_palette.js` against
+   first (frontend rule 6), checked with the `dataviz` skill's `scripts/validate_palette.js` against
    the light surface `#ffffff` and the dark surface `#252a32`.
 3. **Build the option in core.** A plain function in `admin/core/<thing>ChartOption.ts` takes the
    wire views, a wording object (the texts and formatters, filled from i18n by the component) and the

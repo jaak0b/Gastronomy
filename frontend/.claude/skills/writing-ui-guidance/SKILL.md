@@ -27,7 +27,7 @@ A refusal or a status line is not an instruction. It states the rule as a plain 
 
 ## 5. Length ceilings
 
-Helper text: at most two to three short sentences (per the repo's rule 7, and NN/g caps microcopy below three sentences). Average sentence under ~20 words. One action per sentence. If a block needs more, it has more than one job: split it across the points of action, or cut.
+Helper text: at most two to three short sentences (per the repo's rule 9, and NN/g caps microcopy below three sentences). Average sentence under ~20 words. One action per sentence. If a block needs more, it has more than one job: split it across the points of action, or cut.
 
 ## 6. Retention budget: about four items
 

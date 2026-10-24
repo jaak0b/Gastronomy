@@ -88,7 +88,7 @@ quit when the gate allows it. It never restarts the program on its own.
     `StatusRunning` for a healthy server, red `StatusDown` for a failure, amber `StatusWarning` for a
     warning, grey `StatusStarting` while the answer is still out. Green, amber and red are status
     only, never a button. When the palette changes it changes here and in `frontend/src/theme.ts`
-    together, because `frontend/CLAUDE.md` rule 8 is the same list.
+    together, because `frontend/CLAUDE.md` rule 6 is the same list.
 
 ## Avalonia gotchas (hard-won, do not relearn them)
 

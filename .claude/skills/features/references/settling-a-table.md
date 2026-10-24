@@ -55,7 +55,13 @@ Backend, under `backend/`:
 
 - **Every settlement names the amount paid.** The Abrechnen button opens the amount page for every
   selection, a free one included, and the request carries a paid price for every line
-  (`splitSettlement`).
+  (`splitSettlement`). Giving something away is that same act with the amount set to zero, never a
+  second kind of settlement.
+- **What a settlement stores.** `OrderItem.SettledAtUtc` is the paid flag (null means still open, so
+  a flag and a timestamp can never disagree), `ChargedPriceCents` is what was actually collected, and
+  `PaymentNotice` is the reason typed when less than the displayed price was collected. The phone
+  sends one price per line and the laptop stores exactly that price; it never spreads an amount
+  across items. What a table still owes is derived from these on every read, never stored.
 - **The full amount is filled in.** The amount field starts at the selected total, so the ordinary
   case is Abrechnen and then Bar or Karte.
 - **A short amount needs a typed reason.** Below the selected total the reason field appears and the
@@ -86,7 +92,8 @@ Backend, under `backend/`:
   sentence.
 - **Whoever settled first keeps it.** An item another waiter already settled stays as it was, and the
   notice names the amount to hand back to the guest (`noticeAfterSettling`). The same waiter settling
-  an item again overwrites their own price, so sending again after a lost answer settles nothing twice.
+  an item again overwrites their own price and reason, keeping the time and the collector, so sending
+  again after a lost answer settles nothing twice.
 
 ## Tests
 

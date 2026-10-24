@@ -20,15 +20,25 @@ are followed in order.
 3. **The route.** Map it in `backend/GastronomyApp.Api/Endpoints` with `group.MapGet`, `MapPost`, `MapPut` or `MapDelete`;
    `frontend/tests/shared/apiRouteVocabulary.spec.ts` reads those calls to prove that every `/api/...`
    address the frontend uses exists. The handler's return type (`ApiAnswer<T>`, `CreatedAnswer<T>`,
-   `NoContentAnswer`) is the status and the response type in the document. Hub event payloads are
-   records in `Contracts/Events`; `HubEventSchemaTransformer` adds each to the document.
+   `NoContentAnswer`) is the status and the response type in the document. The device a request came
+   from is a handler parameter, never something a handler looks up: `StaffDeviceCaller` and
+   `StationDeviceCaller` bind themselves through `BindAsync`. Hub event payloads are records in
+   `Contracts/Events`.
 4. **Regenerate the document.** Build the Api test project: `dotnet build backend/GastronomyApp.Api.Tests`.
    It references `GastronomyApp.Api.OpenApiHost`, whose build rewrites
    `backend/GastronomyApp.Api.OpenApiHost/openapi/GastronomyApp.Api.OpenApiHost.json`. That file is
-   committed, so it belongs in the same change.
-5. **Regenerate the frontend.** `npm run generate:api` in `frontend/` rewrites
-   `src/shared/api/generatedSchemas.ts` and `generatedSchemas.types.d.ts`. Never edit them by hand;
-   when the output is wrong, fix the record, the document transformer or the attribute that produced it.
+   committed, so it belongs in the same change. The host project exists only to give
+   `Microsoft.Extensions.ApiDescription.Server` an entry point (`DocumentGenerationEntryPoint.cs`)
+   that builds the web application; only the Api tests reference it, for build order. The two
+   transformers in `GastronomyApp.Api/DocumentTransformers` add the hub event payloads as component
+   schemas (`HubEventSchemaTransformer`) and describe numbers as numbers
+   (`StringEncodedNumberSchemaTransformer`).
+5. **Regenerate the frontend.** `npm run generate:api` in `frontend/` runs `typed-openapi` over that
+   document and rewrites `src/shared/api/generatedSchemas.ts` and its `generatedSchemas.types.d.ts`
+   sidecar: every request, response and SignalR event shape as a zod schema with the TypeScript type
+   beside it, under the backend's own contract names. `npm run build` runs it before `vue-tsc`. Never
+   edit them by hand; when the output is wrong, fix the record, the document transformer or the
+   attribute that produced it.
 6. **Fix what the new schema rejects.** The object schemas are `z.strictObject`, so an answer with a
    field the schema does not name, or without one it does, becomes `unreadableAnswer` and fails the
    screen. Update the factories in `frontend/tests/support/wireViews.ts` first, then any spec or
@@ -48,7 +58,9 @@ and `npx vitest run tests/admin/stores/ingredients.spec.ts`.
 
 ## When the work is split
 
-A change shared by several agents, or by the backend and the frontend, starts from the written
-contract of root rule 17: every route with its request and response, field names and types, status
-codes, message keys with their German and English text, and event names. It is copied into every
-prompt, nobody renames anything in it, and an agent that finds it cannot work stops and reports.
+A change shared by several agents, or by the backend and the frontend, follows root rule 17. The
+backend is built first, and the generated types carry every request and response shape, every field
+name and type and every enum value. The written part covers only what the generated document does
+not carry: the route paths, the refusal message keys with their German and English texts, the hub
+event names, and the few rules both sides rely on. It is copied into every prompt, nobody renames
+anything in it, and an agent that finds it cannot work stops and reports.

@@ -48,7 +48,12 @@ Frontend, under `frontend/src/`:
 ## Invariants
 
 - Stock is an estimate computed on every read. Nothing is stored and nothing polls; the store reloads
-  on `ConfigurationChanged` and `OrdersChanged`. Stock never refuses an order.
+  on `ConfigurationChanged` and `OrdersChanged`. Stock never refuses an order and may go negative.
+- Stock switches articles off and never back on. After an order is accepted, and after the admin
+  changes an amount, `StockSoldOutMarker` switches off every menu row whose article needs more of a
+  limited ingredient than is left, through the menu row's own availability switch, and nothing
+  switches it back on by itself. The stock step runs in the order's transaction without a catch, so
+  a bug there fails the order loudly and is found at once.
 - Amounts are compared through `IngredientAmountComparison.IsAtLeast` and never with `<` or `>=` on
   their own. Summing fractional portions in binary floating point misses the exact total by a few
   units in the last digit (eleven portions of 0,03 make 0,32999999999999996), so `IsAtLeast` allows a

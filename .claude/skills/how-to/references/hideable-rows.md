@@ -3,7 +3,7 @@
 Some admin lists hide their entries and show them again instead of deleting them: the festivals, a
 festival's areas and an area's tables. They look and behave the same everywhere, through shared
 pieces in `frontend/src/admin/components/`. Use these; never rebuild a row, a confirmation or a
-tooltip beside them (frontend rule 11).
+tooltip beside them (frontend rule 8).
 
 ## The shared pieces
 

@@ -1,8 +1,55 @@
 # Add a refusal
 
-A refusal is how the laptop says no. What a refusal carries, how `ResultEnvelope` answers it and what a
-handler may do with it is in the Refusals section of `backend/CLAUDE.md`; this page is the order of
-work.
+A refusal is how the laptop says no. This page says what a refusal carries, how it is answered, and
+the order of work for a new one.
+
+## What a refusal carries
+
+A refusal is an ErrorOr `Error` built by a factory in `Core/Refusals`, one partial file per area of
+the one static class `Refusal` (`Refusal.Order`, `Refusal.StationQueue`, `Refusal.Festival` and so
+on). A factory carries:
+
+- **`Code`**: the frontend's message key. A refusal the API answers with a bare status carries a
+  plain name instead, because no device ever reads it.
+- **`Description`**: one sentence naming the exact reason, written for the developer reading the log.
+- **`Metadata`**: the parameters the message needs, under the fixed keys in `Refusal.MetadataKeys`,
+  plus `ProblemCode`, the `ApiError.Code` value the frontend receives.
+- **`NumericType`**: the HTTP status the refusal answers, declared once in `RefusalType`. Every
+  factory goes through a private helper on `Refusal` named after that status; the built-in
+  `Error.Validation`, `Error.NotFound` and their siblings are not used.
+
+## How it is answered
+
+`ResultEnvelope` in the Api answers a refusal: it logs the recording of the refused lines at Warning
+with the request path, takes the status from `NumericType`, and writes an `ApiError` built from the
+`ProblemCode` metadata, the `Code` and the remaining metadata as parameters. A refusal without a
+`ProblemCode` is answered with the bare status and no body. Where a command validates a list, every
+bad line is collected into `List<Error>`; the envelope answers with the first line of that list, in the
+order the caller handed it over, and the log holds them all.
+
+A handler's body is one expression: the service call, `Then`, `ThenDo` and their async siblings for
+what follows a success, and nothing else. A handler holds no `ErrorOr` in a local, switches on no
+refusal, writes no status code and never touches `ResultEnvelope`.
+
+**The handler's return type is the status it answers with.** The three answer types in `Api/Answers`
+each take the handler's `ErrorOr<TView>` through an implicit conversion, so the body stays that one
+expression: `ApiAnswer<TView>` answers 200, `CreatedAnswer<TView>` answers 201 and `NoContentAnswer`
+answers 204. Each is an `IResult` that writes the view as JSON on success and hands a refusal to
+`ResultEnvelope`, which it resolves from the request's services; the shared part of that lives once,
+in `ViewOrRefusal<TView>`. Each is also an `IEndpointMetadataProvider` and describes its own response
+in `PopulateMetadata`, so a route that answers through one declares no `Produces` of its own and the
+OpenAPI document still carries one response per route. `ApiAnswer<TView>` also converts from a bare
+`TView`, which is what a query that cannot refuse returns. The invitation QR route answers `IResult`
+itself, because it writes an SVG image rather than a view, and declares its response with
+`Produces`.
+
+**A refused request shape** (see the `request-validation` page of `architecture`) answers 400 with the
+same `ApiError` every other refusal uses. Every DataAnnotations attribute carries the frontend's
+message key as its `ErrorMessage`, a constant in `Contracts/Validation/RefusalMessageKeys.cs`.
+`RequestShapeRefusalWriter` is the `IProblemDetailsService` the validation filter writes through, and
+it maps every refused member to `Refusal.RequestShape.MemberRefused` in the order the request record
+declares its properties, then hands that list to `ResultEnvelope` like every other refusal. A refused
+shape that names no member is a broken program and throws.
 
 ## Decide the kind first
 

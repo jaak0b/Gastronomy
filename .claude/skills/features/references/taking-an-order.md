@@ -11,8 +11,8 @@ station and take them off again.
 
 Frontend, under `frontend/src/phone/`:
 
-- `views/Catalog.vue` (route `/catalog`) is the whole ordering screen: the category buttons
-  (`labelFor` adds the portion count from `core/categoryPortions.ts`), the basket bar
+- `views/Catalog.vue` (route `/catalog`) is the whole ordering screen: the category buttons in two
+  columns (`labelFor` adds the portion count from `core/categoryPortions.ts`), the basket bar
   (`components/catalog/BasketBar.vue`, which goes on to `/review`) and, once a category is open, its
   articles in `components/catalog/ItemGrid.vue` and the button back to the categories. It decides
   where a new portion goes: `addItem` places it straight away or opens the station question, and
@@ -43,6 +43,9 @@ Frontend, under `frontend/src/phone/`:
   `stores/catalog.ts`, and
   `stores/estimates.ts`, whose `load` the screen calls when it opens. `composables/useStationChoiceQuotes.ts`
   gives the station question its waiting times.
+- `views/Review.vue` is the summary: the lines through `components/review/LineList.vue`, the delivery
+  mode per station (`order.chooseDeliveryMode`, with `core/stationOrders.ts` and
+  `core/stationDeliveries.ts`), the order total and the two send buttons.
 - After sending, `composables/useSendAndLeave.ts` closes the opened area and lands on the home
   screen for "Senden und später abrechnen", or opens the table's settle view with the new items
   ticked for "Senden und abrechnen".
@@ -95,8 +98,19 @@ Backend, under `backend/`:
   `festivals` page).
 - **The total is a calculation aid.** Once a portion is on the order, the article shows
   "{count} × {price}" and its total, and the basket bar shows the item count and the order total on the
-  categories screen only; the screen of one category leaves the order total out. `orderTotalCents`
-  adds up the unit prices of the basket lines, and a line whose article left the menu adds nothing.
+  categories screen only; the screen of one category leaves the order total out so the items own the
+  screen, and the summary shows it too. `orderTotalCents` adds up the unit prices of the basket lines, and a line whose
+  article left the menu adds nothing.
+- **An item keeps the price the phone showed.** The item name comes from the catalog; the price is
+  the one the phone displayed to the guest, and the laptop stores it untouched
+  (`OrderItem.UnitPriceCents`), also when the item is given away later.
+- **The delivery mode is chosen per station on the summary, before sending.** Each station's part of
+  the order is handed out together (the default, `DELIVERY_MODE_BEFORE_THE_SERVER_CHOOSES` in
+  `core/stationOrders.ts`) or item by item as each is ready. It is fixed once the order is sent, and
+  no screen offers to change it (see the `handing-out-at-a-station` page).
+- **An order is always sent open.** "Senden und später abrechnen" is for a table that runs a tab;
+  "Senden und abrechnen" is for a guest who pays on the spot, and only opens the settle view with the
+  new items ticked.
 - **Sold out stops adding, not removing.** Tapping the name, the price, the Note button or plus adds
   nothing, and the waiting time gives way to "Ausverkauft"; minus still takes portions off.
 - **The keyboard reaches adding once.** The name and the price add the same portion, and keyboard
@@ -128,7 +142,8 @@ Backend, under `backend/`:
   languages, each of its three buttons and what follows) and `TablePlan.landing.spec.ts` (the locked
   order leading to the summary).
 - `frontend/tests/phone/core`: `itemPositions.spec.ts`, `categoryPortions.spec.ts`,
-  `routingPreview.spec.ts`, `draftCart.editing.spec.ts` (including `openingTheOrderAt`),
+  `routingPreview.spec.ts`, `stationOrders.spec.ts`, `stationDeliveries.spec.ts`,
+  `draftCart.editing.spec.ts` (including `openingTheOrderAt`),
   `draftCart.storage.spec.ts`, `draftCart.unreadable.spec.ts` (including a draft with a typed table
   name), `submission.spec.ts`, `totals.spec.ts`, `estimates.spec.ts`, `estimateWording.spec.ts` and
   `catalogItemState.spec.ts`; `frontend/tests/shared/router/bootPath.spec.ts` (a reload starts at

@@ -1,6 +1,6 @@
 # Format the C# files you touched
 
-Backend rule 10 requires every C# file an agent created or edited to go through the ReSharper
+Backend rule 9 requires every C# file an agent created or edited to go through the ReSharper
 cleanup in the same turn. Nobody formats by hand.
 
 ## When the `resharper` MCP server is connected

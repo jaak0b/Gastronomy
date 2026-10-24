@@ -179,26 +179,26 @@ above.
 - **Do** place a new file in the folder that names both its kind and its concept, so the folder alone
   says what the file is.
 
-  In `GastronomyApp.Contracts`: one folder per area of the wire, listed in `backend/CLAUDE.md`
-  under Project structure, `Enums` for the enums the wire and the domain share, `Events`
+  In `GastronomyApp.Contracts`: one folder per area of the wire, listed on the `layers-and-projects`
+  page of the `architecture` skill, `Enums` for the enums the wire and the domain share, `Events`
   for the payloads of the hub events, and `Validation` for the shared refusal message keys and the
   `RequiredText` attribute. `ApiError` and `ProblemDescription` stay at the project root.
 
   In `GastronomyApp.Core`:
 
   - `Announcements`: the `HubEvent` enum, the `Raises` attribute an entity carries, and the port the
-    commit calls to announce a change (see `backend/CLAUDE.md`, Announcements).
+    commit calls to announce a change (see the `announcements` page of the `architecture` skill).
   - `Entities`: persisted aggregates, and `IDeviceOwner`, which a staff member and a station share.
   - `Ports`: interfaces only.
   - `Refusals`: the `Refusal` factories, one partial file per area, with `RefusalType` and the
-    metadata keys and problem codes (see `backend/CLAUDE.md`, Refusals).
+    metadata keys and problem codes (see the `add-a-refusal` page of `how-to`).
   - `Results`: the records a service hands back to its caller.
   - `Services`: classes only.
 
   In `GastronomyApp.Api`:
 
   - `Answers`: the three answer types a handler returns and `ViewOrRefusal`, the class they share
-    (see `backend/CLAUDE.md`, Refusals).
+    (see the `add-a-refusal` page of `how-to`).
   - `Auth`: device authentication, the caller identity and the loopback check for the admin routes.
   - `Auth/Conventions`: the endpoint convention extensions.
   - `Auth/Filters`: the endpoint filters that refuse a route to the wrong kind of device.

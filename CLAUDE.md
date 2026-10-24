@@ -4,97 +4,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-A self-hosted ordering system for volunteer fire department festivals. It replaces paper order slips.
+A self-hosted ordering system for volunteer fire department festivals that replaces paper order
+slips. A waiter takes the order at the table on their own phone, the order lands on a tablet at the
+station that makes it (the kitchen, a bar), the staff there work that list off, and a waiter
+settles the table on the phone later. The tool removes the walk to the kitchen and nothing else: a
+waiter with a free hand still carries the tray. The admin sets each festival up on the laptop.
 
-Today a server walks table to table writing orders on paper, carries the paper to the kitchen or bar,
-and later carries the finished food and drinks back. This tool removes the walk to the kitchen and
-nothing else: the order still lands in a list at the production location, shown on a tablet there,
-staff still work that list off, and a server with a free hand still delivers the tray.
+Everything runs on one laptop on site, operated by volunteers with little technical ability and
+often by nobody who has seen the tool before: no cloud, no internet and no IT support. The phones and
+the station tablets reach the laptop over a WiFi the fire department sets up themselves, with client
+isolation off.
 
-Flow:
+What each part of the app does is in the `features` skill, the recurring tasks are in `how-to`, and
+the decisions that span the app are in `architecture`.
 
-1. Before the festival the admin draws its areas and places its tables and stations on the laptop.
-   A server opens a web page on their own phone, picks the area, taps the guest's table on its plan
-   and chooses "Bestellung aufnehmen", picks items and quantities, sees the running total (a
-   calculation aid only, cash is handled by hand), and places the order. An order is always sent
-   open. One button sends it and returns to the plan, for a table that runs a tab; the other sends
-   it and opens the table's settle view with the new items ticked, for a guest who pays on the spot. Before sending, they choose per production location whether
-   that station order is to be produced together or handed out item by item as each is ready. That
-   choice is fixed once sent.
-2. The backend splits the order by production location (kitchen, bar indoor, bar outdoor). Each
-   location has one tablet, enrolled like a phone. Its station page shows two columns: every order
-   that still has open items, and the orders that go out as they are ready. A fully done order leaves
-   both columns and appears in the done view.
-3. Staff select the items they hand out, one or several at a time, and mark them done after a
-   confirmation that repeats the table name. A mistaken tap can be put back from the done view.
-   Each catalog item may carry a production time in minutes, and an article can be marked as
-   prepared independently of its station's queue. The phone shows the server an estimate per item
-   and per station order, computed from the station's current queue plus the item's own time, except
-   for an independent article, which shows its own time alone.
-4. On the plan each table's fill shows what has been handed out and its border what has been
-   settled, so a server sees which tables still owe something. Tapping a table and choosing
-   "Abrechnen" opens its settle view, where the server settles its items. Settling always names the
-   amount the table actually paid: the full price is
-   filled in, and the server may type any other amount, which needs a typed reason whenever it falls
-   short.
-   Giving something away is that same act with the amount set to zero, not a second kind of
-   settlement.
+## Out of scope
 
-**Stock is an estimate, computed live and never stored.** An article may list the ingredients one
-portion uses (an ingredient has a name and a unit: pieces, grams or millilitres). Per festival the
-admin may enter an available amount for an ingredient; an empty amount means unlimited, and one row
-exists for every festival and ingredient. Consumption is summed from the festival's order items and
-the recipes on every read, and the festival page shows available, used and a linear prediction of
-the moment the stock runs out, counted from the festival's start. After an order is accepted, and
-after the admin changes an amount, every menu row whose article needs more of a limited ingredient
-than is left is switched off through the existing availability switch, and nothing switches it back
-on by itself. Stock never refuses an order and may go negative. The stock step runs in the
-order's transaction without a catch: a bug there fails the order loudly so it is found at once.
+What the product deliberately does not do:
 
-**No money changes hands in the app.** It displays prices to help the server add up, and it records
-whether items have been settled so the people running the stand can see what a table still owes. It
-takes no payment, handles no cash, and never issues a receipt.
-
-**There are no printers.**
-
-## Structure
-
-| Folder | Role |
-|---|---|
-| `backend/` | .NET 10 class libraries. `GastronomyApp.Contracts` holds the wire records, `GastronomyApp.Api` configures the ASP.NET Core web application (REST, SignalR, SQLite, static frontend) and is hosted by the desktop app. |
-| `desktop/` | `GastronomyApp.Desktop`, the **only executable**: an Avalonia window that hosts the web application in-process. Launcher, status light and address display; never a second admin UI. |
-| `frontend/` | Vue 3 + TypeScript + Vite + Pinia. Server phone app, station tablet page and admin configuration UI. Builds into `backend/GastronomyApp.Api/wwwroot`. |
-
-Three source trees ship as one executable: the frontend build output is embedded, the Api library is
-hosted in-process, and the operator double-clicks the desktop app. Closing its window never stops the
-server; only an explicit confirmed quit does.
-
-## Deployment reality
-
-This shapes almost every design decision, so it is stated once here and assumed everywhere.
-
-- The server runs on **a random laptop on site**, operated by people with little technical ability. No
-  cloud, no internet on site, no IT support, and often nobody present who has seen the tool before.
-- The site network is **WiFi only**, set up by the fire department themselves. Devices can reach each
-  other (client isolation is assumed off, and is a documented setup step).
-- Transport is **plain HTTP**. Not HTTPS: a self-signed certificate means a browser warning for exactly
-  the users who cannot judge it, and it does not restore secure-context features anyway. The scheme and
-  bind address live in one place so HTTPS stays a config change, never a rewrite.
-- Because there is no secure context, there is **no service worker and no PWA install**. Phones are
-  online-only. There is no automatic retry queue: a failed submission leaves the order on screen with
-  a retry action the server taps themselves. `localStorage` holds the in-progress order as a draft
-  cart so a reload does not lose it, which is not a queue and must never grow into one. Every
-  submission carries a client-generated id so a retry after a lost response returns the original
-  order instead of creating a second one.
-- The laptop's IP address is not stable and cannot be made stable without admin rights. **The QR code
-  carries the full URL including the current IP**, which is why it solves both enrolment and
-  addressing. Never introduce a flow that depends on a phone remembering an address.
-- Phones and station tablets authenticate by scanning a **single-use, short-lived QR code** shown on
-  the laptop, which they exchange for a long-lived device token held in `localStorage`. There are no
-  usernames and no passwords anywhere in the product. Setting an owner up again signs their old
-  device out at that moment, and taking a waiter or a station off the list signs it out too.
-- **One device per owner.** A staff member owns at most one phone and a station owns at most one
-  tablet; the owner row points at its device. Setting up a device again replaces the previous one.
+- **No money changes hands in the app.** It shows prices to help the waiter add up, and it records
+  what has been settled so the people running the stand can see what a table still owes. It takes no
+  payment, handles no cash, and never issues a receipt.
+- **There are no printers.**
+- **No HTTPS and no service worker.** Transport is plain HTTP: a self-signed certificate means a
+  browser warning for exactly the users who cannot judge it, and it would not give the secure
+  context a service worker or an installed app needs anyway. The scheme and the bind address live in
+  one place, so HTTPS stays a configuration change, never a rewrite. Phones are online only.
+- **No automatic retry queue.** A failed send leaves the order on screen with a retry the waiter
+  presses. The draft kept in `localStorage` is one order so a reload does not lose it, and it must
+  never grow into a queue.
+- **No remembered address.** The laptop's IP address changes and cannot be fixed without admin
+  rights, so the QR code carries the full URL including the current IP. Never introduce a flow that
+  depends on a device remembering an address.
+- **No usernames and no passwords** anywhere in the product. A phone or a tablet is set up by
+  scanning a QR code on the laptop.
+- **One device per owner.** A waiter owns at most one phone and a station at most one tablet;
+  setting a device up again replaces the previous one.
+- **No change of delivery mode after sending.** Whether a station hands its part of an order out
+  together or item by item is chosen before sending and fixed once the order is sent.
+- **Nobody is notified when an item is done.** The station's card and its confirmation carry the
+  table name, and whichever waiter passes the station takes the tray.
 
 ## Hard rules
 
@@ -115,7 +64,8 @@ Every rule binds every agent, main or sub, with no exception it does not name.
 
    **A check the interface already enforces is a guard against a broken program, not advice to a
    user.** Keep the check on the server, because bad data must never be stored, and log the exact
-   reason so a developer can find it. But the person holding the phone gets one plain sentence saying
+   reason so a developer can find it. What the request's type already guarantees needs no check of
+   its own. But the person holding the phone gets one plain sentence saying
    the order could not be processed and naming what to do instead, never a message that asks them to
    fix something the screen never let them get wrong. Write a message of its own only where the user
    really can act: a menu that changed under them while they were ordering is the usual case, and
@@ -251,7 +201,7 @@ Every rule binds every agent, main or sub, with no exception it does not name.
     only its conclusions.
 
 15. **There is no documentation folder and no written manual.** A feature has to explain itself on
-    the screen where it is used, in the two languages, and the three `CLAUDE.md` files, the
+    the screen where it is used, in the two languages, and the four `CLAUDE.md` files, the
     root `README.md` and the skills under the `.claude/skills` folders are the only prose kept in the
     repository. A `CLAUDE.md` holds rules; a skill holds the mechanism a rule points at. Never
     recreate a spec, a checklist or a verification script under `docs/`.
@@ -295,8 +245,7 @@ Every rule binds every agent, main or sub, with no exception it does not name.
     that part of the tree, and putting it in the written part only makes a reviewer check it again and
     again. Aim for something read at one sitting.
 
-    The rule binds the main agent and every subagent, in different ways. The main agent writes the
-    contract, owns it, and is the only one allowed to change it. A subagent obeys it literally.
+    The main agent writes the contract, owns it, and is the only one allowed to change it. A subagent obeys it literally.
     **A subagent that finds the contract cannot work stops at once.** It makes no further edits, it
     invents no workaround, it does not pick the nearest name that compiles, and it does not carry on
     with the parts that would still work. It reports what it was asked to build, the exact point that
@@ -312,28 +261,9 @@ Every rule binds every agent, main or sub, with no exception it does not name.
     `apiRouteVocabulary.spec.ts` and `hubEventVocabulary.spec.ts` already do, so the check holds
     without anyone remembering it.
 
-## The fulfillment model
-
-- **Delivery mode** is chosen per station order on the review screen before sending: together (the
-  default) or as it is ready. It is fixed once the order is sent and no screen may change it later.
-- **An item is open or done.** Done is `OrderItem.FulfilledAtUtc`, set when the station hands the item
-  out and cleared again when a mistaken tap is put back. There is no in-between production state and
-  no status log.
-- **The station page shows two columns**: every order with open items, and the as-it-comes orders the
-  employee has not hidden from that column. A fully done order leaves both and appears in the done
-  view. The hide decision lives on the station order as `StationOrder.IsHiddenFromAsItComesQueue` and
-  only removes the order from the second column.
-- **Estimates** are computed, never stored. The backend reports per station the minutes still queued,
-  counted from open items' production minutes (missing values count as zero) and excluding articles
-  that are prepared independently of the queue. The phone adds the item's own minutes, and for an
-  independent article it shows that time alone. A station order set to together is done when its
-  last item is done.
-- **Nobody is notified** when an item becomes done. The card and the confirmation carry the table
-  name, and whichever server passes the station takes the tray. That is deliberate.
-
 18. **The product is installed and in use, so every update must install over what is already
     there.** Every release replaces the one before it on the same laptop, and the database a released
-    build created keeps working after any update, with its data intact. Backend rule 7 says how a
+    build created keeps working after any update, with its data intact. Backend rule 6 says how a
     schema change is made so that it does. A change that loses, breaks or silently misreads data an
     earlier release wrote is a defect and is reported as one. Only the database is covered: what a phone or
     tablet keeps in its browser storage may change shape between builds, and nothing is built to

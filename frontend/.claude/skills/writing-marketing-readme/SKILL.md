@@ -5,7 +5,7 @@ description: Use when writing or revising the README, landing text, release anno
 
 # Writing marketing text for a technical hobbyist audience
 
-These rules come from a research pass (2026-07). Sourcing, stated honestly: the correlational README/popularity study arXiv 2206.10772 backs the structural basics (a one-line purpose, usage and install sections, images, lists, license, and contribution/reference sections all correlate with repo popularity; correlation, not causation). PostHog's own developer-marketing writing backs the anti-hype and specificity rules. A third-party analysis of Tailscale's Hacker News launches (markepear.dev) backs the peer-voice tone claims. The READMEs of ripgrep and fzf are the concrete pattern examples (fzf for hero plus early screenshot, ripgrep for honest limitations and data-driven comparisons); OrcaSlicer is an example only for community-terminology and feature-list conventions. Rules not traceable to those sources are marked as heuristics. These rules apply to the README and any outward-facing text; in-app text is governed by CLAUDE.md rule 7 instead.
+These rules come from a research pass (2026-07). Sourcing, stated honestly: the correlational README/popularity study arXiv 2206.10772 backs the structural basics (a one-line purpose, usage and install sections, images, lists, license, and contribution/reference sections all correlate with repo popularity; correlation, not causation). PostHog's own developer-marketing writing backs the anti-hype and specificity rules. A third-party analysis of Tailscale's Hacker News launches (markepear.dev) backs the peer-voice tone claims. The READMEs of ripgrep and fzf are the concrete pattern examples (fzf for hero plus early screenshot, ripgrep for honest limitations and data-driven comparisons); OrcaSlicer is an example only for community-terminology and feature-list conventions. Rules not traceable to those sources are marked as heuristics. These rules apply to the README and any outward-facing text; in-app text is governed by CLAUDE.md rule 9 instead.
 
 ## The register: a knowledgeable peer, not a manual and not an ad
 
@@ -38,6 +38,6 @@ Nobody reads top to bottom. Short sections with headers, short paragraphs, bolde
 
 ## Discipline carried over from the project rules
 
-- Terminology: CLAUDE.md rule 7's terminology clause binds all outward-facing text with no exceptions (slicer and firmware setting names verbatim, one term per concept, no invented synonyms).
+- Terminology: CLAUDE.md rule 9's terminology clause (one term per concept in each language, used consistently) binds all outward-facing text with no exceptions, and no synonym is invented.
 - Honesty: no setup-specific claim stated as a general truth, no capability overclaim. Every number quoted must be a real measured one.
-- No em-dash (rule 6) and no AI attribution (rule 4) anywhere, including the README.
+- No em-dash (rule 10) and no AI attribution (rule 12) anywhere, including the README.

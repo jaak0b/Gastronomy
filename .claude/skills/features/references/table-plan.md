@@ -22,7 +22,7 @@ Backend, under `backend/`:
   table carrying these columns.
 - `Table.cs` (`Id`, `Name`, `IsHidden`, with `Orders`) and `FestivalStationShape.cs`
   (`FestivalStationId`, which is both its key and its link to `FestivalStation`; a row means the
-  station is on the plan) derive from it. All three entity types raise `ConfigurationChanged`.
+  station is on the plan, and the key keeps a station in at most one area) derive from it. All three entity types raise `ConfigurationChanged`.
 - `Order.TableId` with its `Table` navigation names the table an order belongs to; the order keeps
   no name of its own.
 - `Core/Services/AreaShapeService.cs` is the only code that writes the five geometry values

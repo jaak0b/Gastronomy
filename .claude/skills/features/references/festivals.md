@@ -128,6 +128,26 @@ Every point below is intended behaviour. A change to any of them needs the owner
 - **Running means not hidden and `StartsAtUtc <= now < EndsAtUtc`, and only `FestivalSchedule`
   decides it.** The hide flag is `IsHidden`; stations, articles, categories and ingredients use
   `IsActive`, festivals never do.
+- **What belongs to a festival is there once.** A station takes part once (`FestivalStation`, unique
+  on `(FestivalId, StationId)`, carrying the number that station shows at that festival), an article
+  is on the menu once (`FestivalCatalogItem`, unique on `(FestivalId, CatalogItemId)`, with its price
+  there and whether it has sold out tonight), and an article is assigned to a station once
+  (`ItemStationAssignment`, unique on `(FestivalId, CatalogItemId, StationId)`). `CatalogItem`
+  carries neither a price nor an availability, because both are facts about an article at one
+  festival.
+- **One page manages a festival end to end.** `/admin/festivals/{festivalId}` holds the name and
+  dates, then the stations, the table plan, the articles and the ingredient stock, each in an
+  outlined card. It works the same for past, running, future and hidden festivals; nothing on it is
+  read-only.
+- **The festival page has no save button of its own.** Its fields (name, dates, an article's price
+  and stations, an ingredient's available amount) save the moment the admin leaves them, and a field
+  the laptop refuses says so on its row. The forms it opens, to create or edit a station, an article
+  or a category and to place an article with its price and stations, have their own save button.
+- **Adding to a festival is inline:** a type-to-search field, an add button, and a "Neu…" button
+  beside them that opens the create form. A new station is then chosen for adding; a new article
+  goes straight to the form for its price and stations.
+- **Words:** the festival page says "Artikel", never "Karte", and a running festival is "Aktiv" /
+  "Active".
 
 ## Tests
 
