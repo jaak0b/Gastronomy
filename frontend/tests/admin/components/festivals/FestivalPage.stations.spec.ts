@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { VAutocomplete } from 'vuetify/components'
-import { pressInDialog, waitForDialog, onScreen, typeInto } from '../../../support/dom'
+import { pressInDialog, refusalReasonsOnScreen, waitForDialog, onScreen, typeInto } from '../../../support/dom'
 import { FESTIVAL_ID, KITCHEN_ID, BAR_ID, KITCHEN, BAR, mountPage, stationRow, festivalLaptop } from './festivalPageFixture'
 import { nextTick } from 'vue'
+
+const ONE_ARTICLE_WITHOUT_A_STATION =
+  '1 Artikel hätte dann keine Ausgabestelle mehr. Ordnen Sie ihn zuerst einer anderen Ausgabestelle zu oder entfernen Sie ihn vom Fest.'
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -96,7 +99,9 @@ describe('the stations of this festival', () => {
       isActive: true,
       hasDevice: false,
       isAtAnyFestival: false,
-      hasItemsToHandOut: false,
+      hasItemsToHandOutAtTheRunningFestival: false,
+      strandedItemCountWhenSwitchedOff: null,
+      strandedItemCountWhenRemovedFromTheFestival: null,
     }
     const laptop = festivalLaptop({ created: NEW_STATION })
 
@@ -141,12 +146,37 @@ describe('the stations of this festival', () => {
   })
 
   it('cannot be asked to leave while the festival runs and the station has items to hand out', async () => {
-    festivalLaptop({ stations: [{ ...KITCHEN, hasItemsToHandOut: true }, BAR] })
+    festivalLaptop({ stations: [{ ...KITCHEN, hasItemsToHandOutAtTheRunningFestival: true }, BAR] })
 
     const page = mountPage()
     await vi.waitFor(() => expect(page.find('[data-test="remove-station"]').exists()).toBe(true))
 
     expect((stationRow(page, KITCHEN_ID).get('[data-test="remove-station"]').element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('names how many articles would be left without a station when the admin points at the trash icon', async () => {
+    festivalLaptop({ stations: [{ ...KITCHEN, strandedItemCountWhenRemovedFromTheFestival: 1 }, BAR] })
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="remove-station-wrapper"]').exists()).toBe(true))
+
+    await stationRow(page, KITCHEN_ID).get('[data-test="remove-station-wrapper"]').trigger('mouseenter')
+
+    await vi.waitFor(() => expect(refusalReasonsOnScreen()).toContain(ONE_ARTICLE_WITHOUT_A_STATION))
+  })
+
+  it('names the open orders when both reasons apply, because the laptop refuses for those first', async () => {
+    festivalLaptop({ stations: [{ ...KITCHEN, hasItemsToHandOutAtTheRunningFestival: true, strandedItemCountWhenRemovedFromTheFestival: 1 }, BAR] })
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="remove-station-wrapper"]').exists()).toBe(true))
+
+    await stationRow(page, KITCHEN_ID).get('[data-test="remove-station-wrapper"]').trigger('mouseenter')
+
+    await vi.waitFor(() =>
+      expect(refusalReasonsOnScreen()).toContain(
+        'Eine Ausgabestelle mit offenen Bestellungen kann von einem aktiven Fest nicht entfernt werden.',
+      ),
+    )
+    expect(refusalReasonsOnScreen()).not.toContain(ONE_ARTICLE_WITHOUT_A_STATION)
   })
 
   it('asks before a station leaves the festival', async () => {

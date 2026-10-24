@@ -1,6 +1,5 @@
 using ErrorOr;
 using GastronomyApp.Contracts.Admin.Festivals;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
@@ -43,12 +42,14 @@ public sealed class AreaAdministrationService
     if (await _repository.IsAreaNameTakenAsync(festivalId, request.Name!, null, cancellationToken))
       return Refusal.TablePlan.AreaNameTaken(festivalId, request.Name!);
 
+    IReadOnlyList<Area> areas = await _repository.FindAreasInOrderAsync(festivalId, cancellationToken);
+
     Area created = new()
                    {
                      Id = Guid.NewGuid(),
                      FestivalId = festivalId,
                      Name = request.Name!,
-                     SortOrder = request.SortOrder,
+                     SortOrder = _ordering.NextSortOrder(areas.Select(area => area.SortOrder).ToList()),
                      IsHidden = false
                    };
 
@@ -71,21 +72,22 @@ public sealed class AreaAdministrationService
       return Refusal.TablePlan.AreaNameTaken(festivalId, request.Name!);
 
     area.Name = request.Name!;
-    area.SortOrder = request.SortOrder;
     await _repository.SaveChangesAsync(cancellationToken);
 
     return area;
   }
 
-  public async Task<ErrorOr<Area>> MoveAsync(Guid festivalId, Guid areaId, MoveDirection direction, CancellationToken cancellationToken)
+  public async Task<ErrorOr<Area>> MoveAsync(Guid festivalId, Guid areaId, MoveAreaRequest request, CancellationToken cancellationToken)
   {
+    ArgumentNullException.ThrowIfNull(request);
+
     IReadOnlyList<Area> areas = await _repository.FindAreasInOrderAsync(festivalId, cancellationToken);
     var area = areas.FirstOrDefault(candidate => candidate.Id == areaId);
 
     if (area is null)
       return Refusal.TablePlan.AreaNotFound(festivalId, areaId);
 
-    IReadOnlyList<Area> reordered = _ordering.Move(areas, areaId, direction);
+    IReadOnlyList<Area> reordered = _ordering.Move(areas, areaId, request.Direction, neighbour => request.ShowsHiddenAreas || !neighbour.IsHidden);
 
     if (!_ordering.IsNumberedInOrder(reordered))
     {

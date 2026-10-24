@@ -109,6 +109,34 @@ public sealed class SortOrderingTest
   }
 
   [Test]
+  public void Move_UpPastAnEntryThatCannotBeSwappedWith_SwapsWithTheNextOneThatCan()
+  {
+    IReadOnlyList<CatalogCategory> moved = _ordering.Move(AllThree(), _last.Id, MoveDirection.Up, category => category != _middle);
+
+    Assert.That(moved,
+                Is.EqualTo(new[]
+                           {
+                             _last,
+                             _middle,
+                             _first
+                           }));
+  }
+
+  [Test]
+  public void Move_DownWithNoEntryBelowThatCanBeSwappedWith_ChangesNothing()
+  {
+    IReadOnlyList<CatalogCategory> moved = _ordering.Move(AllThree(), _first.Id, MoveDirection.Down, category => category == _first);
+
+    Assert.That(moved, Is.EqualTo(AllThree()));
+  }
+
+  [Test]
+  public void Move_NoRuleForWhichEntriesCanBeSwappedWith_IsRefused()
+  {
+    Assert.That(() => _ordering.Move(AllThree(), _first.Id, MoveDirection.Up, null!), Throws.ArgumentNullException);
+  }
+
+  [Test]
   public void Move_NoListOfCategories_IsRefused()
   {
     Assert.That(() => _ordering.Move<CatalogCategory>(null!, _first.Id, MoveDirection.Up), Throws.ArgumentNullException);

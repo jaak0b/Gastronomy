@@ -34,7 +34,7 @@ public sealed class AdminAreaHandler
 
   public async Task<ApiAnswer<SavedAreaView>> MoveAsync(Guid festivalId, Guid areaId, MoveAreaRequest request, CancellationToken cancellationToken)
   {
-    return await _service.MoveAsync(festivalId, areaId, request.Direction, cancellationToken).Then(area => new SavedAreaView(area.Id));
+    return await _service.MoveAsync(festivalId, areaId, request, cancellationToken).Then(area => new SavedAreaView(area.Id));
   }
 
   public async Task<ApiAnswer<SavedAreaView>> HideAsync(Guid festivalId, Guid areaId, CancellationToken cancellationToken)

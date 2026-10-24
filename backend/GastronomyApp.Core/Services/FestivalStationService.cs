@@ -8,21 +8,21 @@ namespace GastronomyApp.Core.Services;
 public sealed class FestivalStationService
 {
   private readonly IFestivalRepository _festivalRepository;
+  private readonly ItemsToHandOutLookup _itemsToHandOut;
   private readonly INumberAllocator _numberAllocator;
   private readonly ItemOrderability _orderability;
   private readonly IFestivalStationRepository _repository;
-  private readonly RunningFestivalLookup _runningFestival;
   private readonly IStationRepository _stationRepository;
   private readonly ITablePlanRepository _tablePlanRepository;
 
-  public FestivalStationService(IFestivalStationRepository repository, IFestivalRepository festivalRepository, IStationRepository stationRepository, ItemOrderability orderability, INumberAllocator numberAllocator, RunningFestivalLookup runningFestival, ITablePlanRepository tablePlanRepository)
+  public FestivalStationService(IFestivalStationRepository repository, IFestivalRepository festivalRepository, IStationRepository stationRepository, ItemOrderability orderability, INumberAllocator numberAllocator, ItemsToHandOutLookup itemsToHandOut, ITablePlanRepository tablePlanRepository)
   {
     _repository = repository;
     _festivalRepository = festivalRepository;
     _stationRepository = stationRepository;
     _orderability = orderability;
     _numberAllocator = numberAllocator;
-    _runningFestival = runningFestival;
+    _itemsToHandOut = itemsToHandOut;
     _tablePlanRepository = tablePlanRepository;
   }
 
@@ -68,10 +68,10 @@ public sealed class FestivalStationService
     if (festival is null)
       return Refusal.FestivalStation.FestivalNotFound(festivalId);
 
-    if (_runningFestival.IsRunning(festival) && await _repository.CountUnfulfilledItemsAsync(festivalId, stationId, cancellationToken) > 0)
+    if ((await _itemsToHandOut.FindStationIdsIfRunningAsync(festival, cancellationToken)).Contains(stationId))
       return Refusal.FestivalStation.StationHasUnfulfilledItems(festivalId, stationId);
 
-    IReadOnlyList<Guid> strandedItemIds = await _orderability.FindItemsStrandedByRemovingStationsAsync(festivalId, [stationId], cancellationToken);
+    IReadOnlyList<Guid> strandedItemIds = await _orderability.FindItemsStrandedByRemovingStationAsync(festivalId, stationId, cancellationToken);
 
     if (strandedItemIds.Count > 0)
       return Refusal.FestivalStation.ItemsWouldHaveNoStation(strandedItemIds.Count);

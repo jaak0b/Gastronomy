@@ -230,12 +230,7 @@ public sealed class ConfigurationChangedAnnouncementTest
   {
     await ListenAsync();
 
-    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/areas",
-                                                               new
-                                                               {
-                                                                 name = "Garten",
-                                                                 sortOrder = 1
-                                                               });
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/areas", new { name = "Garten" });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     await AssertEveryScreenHeardOnceAsync();
@@ -292,12 +287,7 @@ public sealed class ConfigurationChangedAnnouncementTest
 
   private async Task<Guid> CreateAreaAsync()
   {
-    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/areas",
-                                                               new
-                                                               {
-                                                                 name = "Garten",
-                                                                 sortOrder = 1
-                                                               });
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/areas", new { name = "Garten" });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 

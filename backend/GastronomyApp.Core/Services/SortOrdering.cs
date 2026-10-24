@@ -19,17 +19,36 @@ public sealed class SortOrdering
 
   public IReadOnlyList<TSortable> Move<TSortable>(IReadOnlyList<TSortable> ordered, Guid movedId, MoveDirection direction) where TSortable : ISortable
   {
+    return Move(ordered, movedId, direction, entry => true);
+  }
+
+  public IReadOnlyList<TSortable> Move<TSortable>(IReadOnlyList<TSortable> ordered, Guid movedId, MoveDirection direction, Func<TSortable, bool> canSwapWith) where TSortable : ISortable
+  {
     ArgumentNullException.ThrowIfNull(ordered);
+    ArgumentNullException.ThrowIfNull(canSwapWith);
 
     List<TSortable> reordered = ordered.ToList();
     var position = reordered.FindIndex(entry => entry.Id == movedId);
-    var target = position + 1;
+
+    if (position < 0)
+      return reordered;
+
+    var step = 1;
 
     if (direction == MoveDirection.Up)
-      target = position - 1;
+      step = -1;
 
-    if (position >= 0 && target >= 0 && target < reordered.Count)
-      (reordered[position], reordered[target]) = (reordered[target], reordered[position]);
+    var target = position + step;
+
+    while (target >= 0 && target < reordered.Count && !canSwapWith(reordered[target]))
+      target += step;
+
+    if (target < 0 || target >= reordered.Count)
+      return reordered;
+
+    var moved = reordered[position];
+    reordered[position] = reordered[target];
+    reordered[target] = moved;
 
     return reordered;
   }

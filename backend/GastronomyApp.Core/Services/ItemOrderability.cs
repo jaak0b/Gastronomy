@@ -15,9 +15,12 @@ public sealed class ItemOrderability
     _timeProvider = timeProvider;
   }
 
-  public Task<IReadOnlyList<Guid>> FindOrderableItemIdsAsync(Guid festivalId, CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<Guid>> FindOrderableItemIdsAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    return FindOrderableItemIdsAsync(festivalId, [], cancellationToken);
+    IReadOnlyList<Guid> activeStations = await _repository.FindActiveStationIdsAtFestivalAsync(festivalId, cancellationToken);
+    IReadOnlyList<Guid> itemIdsOnTheMenu = await _repository.FindActiveMenuItemIdsAsync(festivalId, cancellationToken);
+
+    return await FindOrderableItemIdsAsync(festivalId, activeStations, itemIdsOnTheMenu, cancellationToken);
   }
 
   public async Task<bool> AnyOfTheseStationsPreparesAtAsync(Guid festivalId, IReadOnlyCollection<Guid> stationIds, CancellationToken cancellationToken)
@@ -29,37 +32,54 @@ public sealed class ItemOrderability
     return stationsPreparing.Any(stationIds.Contains);
   }
 
-  public async Task<IReadOnlyList<Guid>> FindItemsStrandedByRemovingStationsAsync(Guid festivalId, IReadOnlyCollection<Guid> stationsNoLongerPreparing, CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<Guid>> FindItemsStrandedByRemovingStationAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(stationsNoLongerPreparing);
+    IReadOnlyDictionary<Guid, IReadOnlyList<Guid>> stranded = await FindItemsStrandedByRemovingEachStationAsync(festivalId, [stationId], cancellationToken);
 
-    IReadOnlyList<Guid> asItIsNow = await FindOrderableItemIdsAsync(festivalId, [], cancellationToken);
-    IReadOnlyList<Guid> afterTheChange = await FindOrderableItemIdsAsync(festivalId, stationsNoLongerPreparing, cancellationToken);
+    return stranded[stationId];
+  }
 
-    return asItIsNow.Except(afterTheChange).ToList();
+  public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<Guid>>> FindItemsStrandedByRemovingEachStationAsync(Guid festivalId, IReadOnlyCollection<Guid> stationIds, CancellationToken cancellationToken)
+  {
+    ArgumentNullException.ThrowIfNull(stationIds);
+
+    IReadOnlyList<Guid> activeStations = await _repository.FindActiveStationIdsAtFestivalAsync(festivalId, cancellationToken);
+    IReadOnlyList<Guid> itemIdsOnTheMenu = await _repository.FindActiveMenuItemIdsAsync(festivalId, cancellationToken);
+    IReadOnlyList<Guid> asItIsNow = await FindOrderableItemIdsAsync(festivalId, activeStations, itemIdsOnTheMenu, cancellationToken);
+    Dictionary<Guid, IReadOnlyList<Guid>> stranded = [];
+
+    foreach (var stationId in stationIds.Distinct())
+      stranded[stationId] = activeStations.Contains(stationId) ? asItIsNow.Except(await FindOrderableItemIdsAsync(festivalId, activeStations.Where(activeStationId => activeStationId != stationId).ToList(), itemIdsOnTheMenu, cancellationToken)).ToList() : [];
+
+    return stranded;
   }
 
   public async Task<IReadOnlyList<Guid>> FindItemsStrandedBySwitchingOffStationAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    IReadOnlyList<Guid> festivalIdsStillToCome = await _festivalRepository.FindIdsNotEndedAsync(_timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
+    IReadOnlyDictionary<Guid, IReadOnlyList<Guid>> stranded = await FindItemsStrandedBySwitchingOffEachStationAsync([stationId], cancellationToken);
 
-    HashSet<Guid> stranded = [];
-
-    foreach (var festivalId in festivalIdsStillToCome)
-      stranded.UnionWith(await FindItemsStrandedByRemovingStationsAsync(festivalId, [stationId], cancellationToken));
-
-    return stranded.ToList();
+    return stranded[stationId];
   }
 
-  private async Task<IReadOnlyList<Guid>> FindOrderableItemIdsAsync(Guid festivalId, IReadOnlyCollection<Guid> stationsNoLongerPreparing, CancellationToken cancellationToken)
+  public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<Guid>>> FindItemsStrandedBySwitchingOffEachStationAsync(IReadOnlyCollection<Guid> stationIds, CancellationToken cancellationToken)
   {
-    IReadOnlyList<Guid> activeStations = await _repository.FindActiveStationIdsAtFestivalAsync(festivalId, cancellationToken);
+    ArgumentNullException.ThrowIfNull(stationIds);
 
-    List<Guid> stationsPreparing = activeStations.Where(stationId => !stationsNoLongerPreparing.Contains(stationId)).ToList();
+    IReadOnlyList<Guid> festivalIdsStillToCome = await _festivalRepository.FindIdsNotEndedAsync(_timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
+    Dictionary<Guid, HashSet<Guid>> stranded = stationIds.Distinct().ToDictionary(stationId => stationId, stationId => new HashSet<Guid>());
 
+    foreach (var festivalId in festivalIdsStillToCome)
+    {
+      foreach (var strandedAtFestival in await FindItemsStrandedByRemovingEachStationAsync(festivalId, stationIds, cancellationToken))
+        stranded[strandedAtFestival.Key].UnionWith(strandedAtFestival.Value);
+    }
+
+    return stranded.ToDictionary(entry => entry.Key, entry => (IReadOnlyList<Guid>)entry.Value.ToList());
+  }
+
+  private async Task<IReadOnlyList<Guid>> FindOrderableItemIdsAsync(Guid festivalId, IReadOnlyCollection<Guid> stationsPreparing, IReadOnlyCollection<Guid> itemIdsOnTheMenu, CancellationToken cancellationToken)
+  {
     IReadOnlyList<Guid> itemIdsWithAStation = await _repository.FindItemIdsPreparedByAsync(festivalId, stationsPreparing, cancellationToken);
-
-    IReadOnlyList<Guid> itemIdsOnTheMenu = await _repository.FindActiveMenuItemIdsAsync(festivalId, cancellationToken);
 
     HashSet<Guid> preparedSomewhere = itemIdsWithAStation.ToHashSet();
 

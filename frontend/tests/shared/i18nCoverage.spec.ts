@@ -10,6 +10,7 @@ const PLURAL_KEYS = [
   'phone.catalog.labels.basketSummary',
   'admin.overview.messages.itemsWithoutStation',
   'errors.admin.stations.itemsWouldHaveNoStation',
+  'admin.stations.messages.itemsWouldHaveNoStation',
   'admin.festivals.labels.stationCount',
   'admin.festivals.labels.menuItemCount',
   'admin.festivals.labels.orderCount',

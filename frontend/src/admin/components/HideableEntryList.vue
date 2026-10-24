@@ -27,7 +27,11 @@ const props = defineProps<{
   saveThrough: (draft: TDraft, edited: TEntry | null) => Promise<AdminActionResult<TSaved>>
   hideThrough: (entry: TEntry) => Promise<AdminActionResult<unknown>>
   showThrough: (entry: TEntry) => Promise<AdminActionResult<unknown>>
-  moveThrough?: (entry: TEntry, direction: MoveDirection) => Promise<AdminActionResult<unknown>>
+  moveThrough?: (
+    entry: TEntry,
+    direction: MoveDirection,
+    showsHiddenEntries: boolean,
+  ) => Promise<AdminActionResult<unknown>>
 }>()
 const emit = defineEmits<{ saved: [saved: TSaved, mode: EditSessionMode] }>()
 defineSlots<{
@@ -87,7 +91,7 @@ async function move(entry: TEntry, direction: MoveDirection): Promise<void> {
   if (moveThrough === undefined) {
     return
   }
-  await actOnTheRow(entry, () => moveThrough(entry, direction))
+  await actOnTheRow(entry, () => moveThrough(entry, direction, showsHidden.value))
 }
 </script>
 

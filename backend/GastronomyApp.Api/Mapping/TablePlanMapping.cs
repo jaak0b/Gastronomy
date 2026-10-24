@@ -25,7 +25,7 @@ public sealed class TablePlanMapping : IMappingRegistration
           .Map(view => view.HandOutProgress, shown => _tableService.HandOutProgressOf(shown))
           .Map(view => view.SettlementProgress, shown => _tableService.SettlementProgressOf(shown));
 
-    config.NewConfig<ShownStationShape, TablePlanStationShapeView>().Map(view => view.Geometry, shown => shown.Shape);
+    config.NewConfig<NamedStationShape, TablePlanStationShapeView>().Map(view => view.Geometry, named => named.Shape);
 
     config.NewConfig<ShownArea, TablePlanAreaView>().Map(view => view.AreaId, shown => shown.Area.Id).Map(view => view.Name, shown => shown.Area.Name);
   }

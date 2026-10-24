@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { fireHubEvent, forgetHubEvents, hubEventsOtherThanGroupsJoined, hubEventsRegistered } from '../../support/hubConnection'
-import { stubLaptop, answer, type StubbedLaptop } from '../../support/laptop'
+import { stubLaptop, answer, inTurn, type StubbedLaptop } from '../../support/laptop'
+import { anAdminStation } from '../../support/wireViews'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -89,6 +90,23 @@ describe('the station list of the admin', () => {
     fireHubEvent('ConfigurationChanged')
 
     await vi.waitFor(() => expect(laptop.urls()).toEqual(['/api/admin/stations']))
+  })
+
+  it('says a station has nothing left to hand out once the laptop reports that the orders changed', async () => {
+    const stillOpen = { stations: [anAdminStation({ hasItemsToHandOutAtTheRunningFestival: true })] }
+    const finished = { stations: [anAdminStation({ hasItemsToHandOutAtTheRunningFestival: false })] }
+    stubLaptop()
+      .answersEverythingElse(answer(EMPTY_LISTS))
+      .answers('GET', '/api/admin/stations', inTurn(answer(stillOpen), answer(stillOpen), answer(finished)))
+    const stations = useAdminStationsStore()
+    await stations.loadAtTheFestival('fest-1')
+    stations.listen()
+    await useConnectionStore().connect({})
+    await vi.waitFor(() => expect(stations.stations[0].hasItemsToHandOutAtTheRunningFestival).toBe(true))
+
+    fireHubEvent('OrdersChanged')
+
+    await vi.waitFor(() => expect(stations.stations[0].hasItemsToHandOutAtTheRunningFestival).toBe(false))
   })
 
   it('is left alone once the admin has moved to another screen', async () => {

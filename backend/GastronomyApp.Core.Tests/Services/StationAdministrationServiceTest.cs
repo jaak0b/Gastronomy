@@ -18,25 +18,23 @@ public sealed class StationAdministrationServiceTest
   {
     _repository = A.Fake<IStationRepository>();
     _festivalRepository = A.Fake<IFestivalRepository>();
-    _festivalStationRepository = A.Fake<IFestivalStationRepository>();
     _invitationStore = A.Fake<IEnrolmentInvitationStore>();
     _deviceTokenStore = A.Fake<IDeviceTokenStore>();
     _announcer = A.Fake<IDeviceRevocationAnnouncer>();
     _orderabilityRepository = A.Fake<IItemOrderabilityRepository>();
     _clock = new FakeTimeProvider(new(_now));
 
-    A.CallTo(() => _festivalRepository.ExistsAsync(A<Guid>._, A<CancellationToken>._)).Returns(true);
+    A.CallTo(() => _festivalRepository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(_now.AddHours(5))));
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
     A.CallTo(() => _festivalRepository.FindIdsNotEndedAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
     A.CallTo(() => _repository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(null));
-    A.CallTo(() => _festivalStationRepository.CountUnfulfilledItemsAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(0);
+    A.CallTo(() => _repository.FindStationIdsWithItemsToHandOutAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Guid>>([]));
 
     _service = new(_repository,
                    _festivalRepository,
-                   _festivalStationRepository,
                    new(_invitationStore, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(A.Fake<ICommittedChangeAnnouncer>()), _clock),
                    new(_orderabilityRepository, _festivalRepository, _clock),
-                   new(_festivalRepository, new(), _clock));
+                   new(_repository, new(_festivalRepository, new(), _clock)));
   }
 
   private readonly StationService _stationService = new();
@@ -50,7 +48,6 @@ public sealed class StationAdministrationServiceTest
   private TimeProvider _clock = null!;
   private IDeviceTokenStore _deviceTokenStore = null!;
   private IFestivalRepository _festivalRepository = null!;
-  private IFestivalStationRepository _festivalStationRepository = null!;
   private IEnrolmentInvitationStore _invitationStore = null!;
   private IItemOrderabilityRepository _orderabilityRepository = null!;
   private IStationRepository _repository = null!;
@@ -59,7 +56,7 @@ public sealed class StationAdministrationServiceTest
   [Test]
   public async Task ListAsync_AFestivalThatIsNotThere_FailsBecauseTheFestivalIsNotFound()
   {
-    A.CallTo(() => _festivalRepository.ExistsAsync(_festivalId, A<CancellationToken>._)).Returns(false);
+    A.CallTo(() => _festivalRepository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
     ErrorOr<IReadOnlyList<ListedStation>> listed = await _service.ListAsync(_festivalId, CancellationToken.None);
 
@@ -68,6 +65,102 @@ public sealed class StationAdministrationServiceTest
                       Assert.That(listed.IsSuccess, Is.False);
                       Assert.That(listed.RefusalMessageKey(), Is.EqualTo("FestivalNotFound"));
                     });
+  }
+
+  [Test]
+  public async Task ListAsync_AFestivalThatRuns_ReadsTheItemsToHandOutAtThatFestival()
+  {
+    GivenTheStations(_festivalId, BuildStation(true, null, null));
+    A.CallTo(() => _repository.FindStationIdsWithItemsToHandOutAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Guid>>([_kitchenId]));
+
+    ErrorOr<IReadOnlyList<ListedStation>> listed = await _service.ListAsync(_festivalId, CancellationToken.None);
+
+    Assert.That(listed.Value.Single().HasItemsToHandOutAtTheRunningFestival, Is.True);
+  }
+
+  [Test]
+  public async Task ListAsync_AFestivalThatIsOver_SaysNoStationHasItemsToHandOut()
+  {
+    GivenTheStations(_festivalId, BuildStation(true, null, null));
+    A.CallTo(() => _festivalRepository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(_now.AddHours(-1))));
+    A.CallTo(() => _repository.FindStationIdsWithItemsToHandOutAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Guid>>([_kitchenId]));
+
+    ErrorOr<IReadOnlyList<ListedStation>> listed = await _service.ListAsync(_festivalId, CancellationToken.None);
+
+    Assert.That(listed.Value.Single().HasItemsToHandOutAtTheRunningFestival, Is.False);
+  }
+
+  [Test]
+  public async Task ListAsync_NoFestivalWhileOneRuns_ReadsTheItemsToHandOutAtTheRunningFestival()
+  {
+    GivenTheStations(null, BuildStation(true, null, null));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(_now.AddHours(5))));
+    A.CallTo(() => _repository.FindStationIdsWithItemsToHandOutAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Guid>>([_kitchenId]));
+
+    ErrorOr<IReadOnlyList<ListedStation>> listed = await _service.ListAsync(null, CancellationToken.None);
+
+    Assert.That(listed.Value.Single().HasItemsToHandOutAtTheRunningFestival, Is.True);
+  }
+
+  [Test]
+  public async Task ListAsync_NoFestivalWhileNoneRuns_SaysNoStationHasItemsToHandOut()
+  {
+    GivenTheStations(null, BuildStation(true, null, null));
+
+    ErrorOr<IReadOnlyList<ListedStation>> listed = await _service.ListAsync(null, CancellationToken.None);
+
+    Assert.That(listed.Value.Single().HasItemsToHandOutAtTheRunningFestival, Is.False);
+
+    A.CallTo(() => _repository.FindStationIdsWithItemsToHandOutAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  [Test]
+  public async Task ListAsync_NoFestival_CountsTheArticlesSwitchingTheStationOffWouldStrand()
+  {
+    GivenTheStations(null, BuildStation(true, null, null));
+    GivenTheKitchenAloneMakesTheBratwurst();
+    A.CallTo(() => _festivalRepository.FindIdsNotEndedAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_festivalId]));
+
+    ErrorOr<IReadOnlyList<ListedStation>> listed = await _service.ListAsync(null, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(listed.Value.Single().StrandedItemCountWhenSwitchedOff, Is.EqualTo(1));
+                      Assert.That(listed.Value.Single().StrandedItemCountWhenRemovedFromTheFestival, Is.Null);
+                    });
+  }
+
+  [Test]
+  public async Task ListAsync_AFestival_CountsTheArticlesRemovingTheStationFromItWouldStrand()
+  {
+    GivenTheStations(_festivalId, BuildStation(true, null, null));
+    GivenTheKitchenAloneMakesTheBratwurst();
+
+    ErrorOr<IReadOnlyList<ListedStation>> listed = await _service.ListAsync(_festivalId, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(listed.Value.Single().StrandedItemCountWhenRemovedFromTheFestival, Is.EqualTo(1));
+                      Assert.That(listed.Value.Single().StrandedItemCountWhenSwitchedOff, Is.Null);
+                    });
+  }
+
+  [Test]
+  public async Task ListAsync_NoFestivalWithSeveralStations_ReadsTheFestivalsNotYetOverOnce()
+  {
+    GivenTheStations(null,
+                     BuildStation(true, null, null),
+                     new()
+                     {
+                       Id = Guid.NewGuid(),
+                       Name = "Theke",
+                       SortOrder = 2,
+                       IsActive = true
+                     });
+
+    await _service.ListAsync(null, CancellationToken.None);
+
+    A.CallTo(() => _festivalRepository.FindIdsNotEndedAsync(A<DateTime>._, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
@@ -84,7 +177,9 @@ public sealed class StationAdministrationServiceTest
                       Assert.That(created.Value.Station.IsActive, Is.True);
                       Assert.That(created.Value.Station.DeviceId, Is.Null);
                       Assert.That(_stationService.IsAtAnyFestival(created.Value.Station), Is.False);
-                      Assert.That(created.Value.HasItemsToHandOut, Is.False);
+                      Assert.That(created.Value.HasItemsToHandOutAtTheRunningFestival, Is.False);
+                      Assert.That(created.Value.StrandedItemCountWhenSwitchedOff, Is.Zero);
+                      Assert.That(created.Value.StrandedItemCountWhenRemovedFromTheFestival, Is.Zero);
                     });
   }
 
@@ -115,8 +210,8 @@ public sealed class StationAdministrationServiceTest
   {
     var station = BuildStation(true, null, null);
     A.CallTo(() => _repository.FindByIdAsync(_kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(station));
-    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival()));
-    A.CallTo(() => _festivalStationRepository.CountUnfulfilledItemsAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(2);
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(_now.AddHours(5))));
+    A.CallTo(() => _repository.FindStationIdsWithItemsToHandOutAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Guid>>([_kitchenId]));
 
     ErrorOr<Station> switchedOff = await _service.DeactivateAsync(_kitchenId, CancellationToken.None);
 
@@ -162,6 +257,20 @@ public sealed class StationAdministrationServiceTest
     A.CallTo(() => _announcer.AnnounceDeviceRevokedAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
   }
 
+  private void GivenTheStations(Guid? festivalId, params Station[] stations)
+  {
+    A.CallTo(() => _repository.FindAllAsync(festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Station>>(stations));
+  }
+
+  private void GivenTheKitchenAloneMakesTheBratwurst()
+  {
+    var bratwurstId = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001");
+    A.CallTo(() => _orderabilityRepository.FindActiveStationIdsAtFestivalAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_kitchenId]));
+    A.CallTo(() => _orderabilityRepository.FindActiveMenuItemIdsAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([bratwurstId]));
+    A.CallTo(() => _orderabilityRepository.FindItemIdsPreparedByAsync(_festivalId, A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
+    A.CallTo(() => _orderabilityRepository.FindItemIdsPreparedByAsync(_festivalId, A<IReadOnlyCollection<Guid>>.That.Contains(_kitchenId), A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([bratwurstId]));
+  }
+
   private Station BuildStation(bool isActive, Guid? deviceId, Guid? invitationId)
   {
     return new()
@@ -175,14 +284,14 @@ public sealed class StationAdministrationServiceTest
            };
   }
 
-  private Festival BuildFestival()
+  private Festival BuildFestival(DateTime endsAtUtc)
   {
     return new()
            {
              Id = _festivalId,
              Name = "Sommerfest",
-             StartsAtUtc = _now.AddHours(-1),
-             EndsAtUtc = _now.AddHours(5),
+             StartsAtUtc = _now.AddHours(-6),
+             EndsAtUtc = endsAtUtc,
              NextOrderNumber = 1,
              IsHidden = false
            };

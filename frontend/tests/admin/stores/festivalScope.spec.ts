@@ -183,7 +183,9 @@ describe('a station at a festival', () => {
         isActive: true,
         hasDevice: false,
         isAtAnyFestival: false,
-        hasItemsToHandOut: false,
+        hasItemsToHandOutAtTheRunningFestival: false,
+        strandedItemCountWhenSwitchedOff: null,
+        strandedItemCountWhenRemovedFromTheFestival: null,
       },
     })
   })

@@ -34,17 +34,20 @@ Backend, under `backend/`:
   `OrderConfiguration`. Migrations `AddTablePlan` (tables `Areas`, `Tables`,
   `FestivalStationShapes`) and `SwitchOrdersToTables` (see the invariants).
 - Services: `AreaAdministrationService` (`ListTablePlanAsync`, create, update, move, hide, show;
-  a move goes through `Core/Services/SortOrdering.cs` over `FindAreasInOrderAsync`, the same
-  ordering the categories use, hidden areas included),
+  a new area is numbered after the festival's last area, hidden ones included, through
+  `Core/Services/SortOrdering.cs` (`NextSortOrder`), the way categories are numbered, and editing
+  an area never changes its place; a move goes through `SortOrdering.Move` over
+  `FindAreasInOrderAsync` and swaps the area with the next one in that direction that
+  `MoveAreaRequest.ShowsHiddenAreas` says the admin can see),
   `TableAdministrationService` (create, update including a move to another area, hide, show)
   and `FestivalStationShapeService` (place or move, remove). Each takes its request record. Port:
   `ITablePlanRepository` (`TablePlanRepository`) owns every read and write of areas, tables and
   station shapes, and answers the order questions the hide rules ask
   (`HasItemsToHandOutOrSettleAtTableAsync`, `HasItemsToHandOutOrSettleInAreaAsync`). The admin's
   read, `FindTablePlanAsync`, answers `ListedArea` and `ListedTable` (`Core/Results`): the entity and
-  `HasItemsToHandOutOrSettle`, computed in the same single statement with the shared
-  `ItemsToHandOutOrSettle()` predicate the hide rules use, so the editor can disable hiding before
-  the click. `OrderAcceptanceService` looks the order's table up through
+  `HasItemsToHandOutOrSettle`, computed in the same single statement with
+  `WhereNotHandedOutOrNotSettled()` from `Infrastructure/Persistence/OrderItemQueriesExtensions.cs`,
+  the filter this read and the hide rules share for an item not yet handed out or not yet settled, so the editor can disable hiding before the click. `OrderAcceptanceService` looks the order's table up through
   `FindTableAsync`; the open items screen reads one table with its orders through
   `IOpenItemRepository.FindTableWithOrdersAsync` (see the `settling-a-table` page).
 - The phone's plan: `TablePlanService.ReadRunningFestivalTablePlanAsync` asks `RunningFestivalLookup`
@@ -53,7 +56,8 @@ Backend, under `backend/`:
   snapshot, which projects into the records in `Core/Results`: `ShownArea` (the `Area` with its
   `Tables` and `StationShapes`), `ShownTable` (the `Table` and `ItemFlagsPerOrder`, one list of
   `OrderItemFlags` (`IsHandedOut`, `IsSettled`) per order, over all its stations) and
-  `ShownStationShape` (the `FestivalStationShape` and its `StationName`). No order or item entity
+  `NamedStationShape` (the `FestivalStationShape` with its `StationId` and `StationName`, which the
+  admin's `ListedArea` carries too). No order or item entity
   is loaded, because every phone reads this again on every `OrdersChanged`.
   `Core/Services/TableService.cs` derives a table's two colour states, `HandOutProgressOf` and
   `SettlementProgressOf`, each through `OrderService.ShareOfFlaggedItems`, the one function that
@@ -64,7 +68,8 @@ Backend, under `backend/`:
 - Refusals: `GastronomyApp.Core/Refusals/Refusal.TablePlan.cs`.
 - Routes in `GastronomyApp.Api/Endpoints/AdminFestivalEndpoints.cs`, under
   `/api/admin/festivals/{festivalId}`: `GET /table-plan`, `POST /areas`, `PUT /areas/{areaId}`,
-  `POST /areas/{areaId}/move` (body `MoveAreaRequest`, `direction` `up` or `down`),
+  `POST /areas/{areaId}/move` (body `MoveAreaRequest`: `direction` `up` or `down`, and
+  `showsHiddenAreas`),
   `POST /areas/{areaId}/hide` and `/show` (`AdminAreaHandler`);
   `POST /tables`, `PUT /tables/{tableId}`, `POST /tables/{tableId}/hide` and `/show`
   (`AdminTableHandler`); `PUT` and `DELETE /stations/{stationId}/shape`
@@ -74,19 +79,19 @@ Backend, under `backend/`:
 - Wire records: `AreaShapeGeometry` in `GastronomyApp.Contracts/TablePlan` (`X`, `Y`, `Width`,
   `Height`, `Rotation`, nested as `Geometry` in every admin and phone request and view that carries
   a shape, so the frontend hands it straight to Konva). In `GastronomyApp.Contracts/Admin/Festivals`:
-  `SaveAreaRequest`, `MoveAreaRequest` (a `MoveDirection` from `Contracts/Enums`, shared with
-  `MoveCategoryRequest`), `SaveTableRequest` (names the area, so the
+  `SaveAreaRequest` (the name only), `MoveAreaRequest` (a `MoveDirection` from `Contracts/Enums`,
+  shared with `MoveCategoryRequest`, and `ShowsHiddenAreas`), `SaveTableRequest` (names the area, so the
   same record creates and moves a table), `SaveStationShapeRequest`, `SavedAreaView`,
-  `SavedTableView`, `AdminTablePlanView`, `AdminAreaView` and `AdminTableView` (each with
-  `HasItemsToHandOutOrSettle`), `AdminStationShapeView` (`StationName`); a station shape answers
+  `SavedTableView`, `AdminTablePlanView`, `AdminAreaView` (no sort order: the list comes in the
+  laptop's order) and `AdminTableView` (each with `HasItemsToHandOutOrSettle`), `AdminStationShapeView` (`StationName`); a station shape answers
   with `SavedStationView`. Mapping: `GastronomyApp.Api/Mapping/AdminTablePlanMapping.cs`, from the
-  `Listed*` records and `ShownStationShape` (which carries `StationId` and `StationName`). The phone's records are in
+  `Listed*` records and `NamedStationShape`. The phone's records are in
   `GastronomyApp.Contracts/TablePlan`: `TablePlanView` (`Areas`), `TablePlanAreaView` (`AreaId`,
   `Name`, `Tables`, `StationShapes`), `TablePlanTableView` (`TableId`, `Name`, `Geometry`,
   `HandOutProgress`, `SettlementProgress`) and `TablePlanStationShapeView` (`StationName`,
   `Geometry`); both states are a `ShareState` (`Contracts/Enums`: `None`, `Some`, `All`, on the
   wire `none`, `some`, `all`, the same word the phone's open items code uses). Mapping:
-  `GastronomyApp.Api/Mapping/TablePlanMapping.cs`, from the `Shown*` records, which calls
+  `GastronomyApp.Api/Mapping/TablePlanMapping.cs`, from the `Shown*` records and `NamedStationShape`, which calls
   `TableService` for the two states.
 - Texts: `errors.admin.festivals.areaNameTaken`, `tableNameTaken`,
   `areaWithItemsToHandOutOrSettleStaysShown` and `tableWithItemsToHandOutOrSettleStaysShown` in
@@ -101,10 +106,12 @@ Frontend, under `frontend/src/`:
   anzeigen" on the Artikel tab. A row has the name as text, the number of shown tables, "Plan
   öffnen", "Bearbeiten" opening `tablePlan/AreaDialog.vue` (the name only, a `BaseFormDialog` like
   `StationDialog.vue`), the up and down arrows of the category rows (`BaseMoveButtons.vue`), which
-  move the area the moment they are pressed, and the trash icon that hides, or the open eye
-  "Einblenden" (`BaseShowButton.vue`) on a hidden row. "Neuer Bereich" sits at the right below the
-  rows and opens the same dialog, empty; the new area goes after the last one, hidden ones included
-  (`admin/core/areaOrder.ts`). The trash icon is disabled with the reason as a tooltip while the
+  move the area the moment they are pressed, past the next area on screen: while "Ausgeblendete
+  anzeigen" is unticked a hidden area is passed over and keeps its place, and while it is ticked
+  every area counts. Then comes the trash icon that hides, or the open eye "Einblenden"
+  (`BaseShowButton.vue`) on a hidden row. "Neuer Bereich" sits at the right below the rows and opens
+  the same dialog, empty; the dialog sends the name only, and the laptop puts the new area after the
+  last one, hidden ones included. The trash icon is disabled with the reason as a tooltip while the
   festival runs and a table of the area has items to hand out or settle. A taken name shows in the
   dialog. The warnings appear under the heading only once the plan of this festival has arrived and
   count only what waiters see: no area at all (`noArea`, naming "Neuer Bereich"), only hidden areas
@@ -145,9 +152,9 @@ Frontend, under `frontend/src/`:
   and `loadedFestivalId` (the festival whose plan that list is, set when a read is applied), and has
   one action per admin route; every action reloads the plan through the latest request gate, and the
   store reloads on `ConfigurationChanged` (the plan) and `OrdersChanged` (the flags that disable
-  hiding). `moveArea` sends one move after the other through `admin/core/oneAtATime.ts`, as the
-  category store does. `admin/core/areaOrder.ts` (`sortOrderForANewArea`) puts a new area after the
-  last one.
+  hiding). `moveArea` sends a `MoveAreaRequest` carrying the state of "Ausgeblendete anzeigen",
+  which `HideableEntryList.vue` hands to `moveThrough`, one move after the other through
+  `admin/core/oneAtATime.ts`, as the category store does.
 - `shared/core/tablePlanDrawing.ts` holds `TABLE_PLAN_DRAWING_WIDTH` (400 units, for the phone as
   well), `cornersOf` and `lowestEdgeOf`. `admin/core/tablePlanSnapping.ts` holds the snapping
   geometry adapted from Konva's Objects Snapping demo (`snapStopsBeside`, `snapDraggedBox`,
@@ -260,7 +267,8 @@ Frontend, under `frontend/src/`:
 - **Names are typed in a dialog and never filled in.** The dialogs for an area and a table ask for
   the name only and cannot be saved while it is blank; a refusal such as a taken name keeps the
   dialog open with the reason. The order of the areas changes only through the arrows, each press
-  saved at once. A move or a resize saves when it is dropped.
+  saved at once, and each press passes over the hidden areas the admin cannot see; a new area goes
+  last, numbered by the laptop. A move or a resize saves when it is dropped.
   Hiding and taking a station off the plan ask first, showing asks nothing, and hiding is disabled
   with the reason while the laptop would refuse it. A refusal that comes back anyway shows on its row,
   under the station field, or above the drawing for a move or a resize.
@@ -316,8 +324,9 @@ Frontend, under `frontend/src/`:
 
 ## Tests
 
-- `GastronomyApp.Core.Tests/Services`: `AreaAdministrationServiceTest` (with the moves),
-  `SortOrderingTest`,
+- `GastronomyApp.Core.Tests/Services`: `AreaAdministrationServiceTest` (the number of a new area,
+  an edit that keeps the place, the moves, past a hidden area or onto it), `SortOrderingTest` (a
+  move past an entry that does not count),
   `TableAdministrationServiceTest` (including the order-dependent hide rules),
   `FestivalStationShapeServiceTest`, `AreaShapeServiceTest`, the station shape cases of
   `FestivalStationServiceTest`, and the table cases of `OrderAcceptanceServiceTest`;
@@ -337,14 +346,16 @@ Frontend, under `frontend/src/`:
   the rebuild of their table, and old orders at two festivals end up at hidden tables of their own
   festival). `TestSupport/DomainSeeder.SeedTableAsync` gives a test a table to order at.
 - `GastronomyApp.Api.Tests`: `Endpoints/AdminFestivalTablePlanEndpointsTest` for every route
-  (an area moved up, an area of another festival not found) and the order-dependent refusals; `Endpoints/TablePlanEndpointsTest` for the phone's route (the shown
+  (a new area numbered after a hidden last one, an edit that keeps the place, an area moved up, past
+  a hidden area while hidden areas are not shown and onto it while they are, an area of another
+  festival not found) and the order-dependent refusals; `Endpoints/TablePlanEndpointsTest` for the phone's route (the shown
   plan, the two states on the wire including an order given away for zero, no running festival, a
   station tablet and an unknown device refused); the plan copy and the station removal in
   `AdminFestivalEndpointsTest`; one hub test per entity type in
   `Announcers/ConfigurationChangedAnnouncementTest`. The seeded world (`ApiSeeder`) holds the table
   "Tisch 12" in a hidden area; `OrderTestContext.SeedTableAsync` adds another by name.
 - `frontend/tests`: `admin/core/tablePlanSnapping.spec.ts`, `tablePlanPlacement.spec.ts`,
-  `areaOrder.spec.ts`, `tablePlanSelection.spec.ts`, `oneAtATime.spec.ts`; `shared/core/tablePlanDrawing.spec.ts`,
+  `tablePlanSelection.spec.ts`, `oneAtATime.spec.ts`; `shared/core/tablePlanDrawing.spec.ts`,
   `tablePlanColours.spec.ts` and `themeColours.spec.ts`; the store in
   `admin/stores/tablePlan.loading.spec.ts` (the gate, `ConfigurationChanged`, `OrdersChanged`,
   the refetch),
@@ -353,8 +364,8 @@ Frontend, under `frontend/src/`:
   rows, the count of shown tables, the box for hidden areas in the heading line, the open eye,
   "Plan öffnen", the trash icon disabled with its reason, the warnings and that they wait for the
   plan) and `FestivalPage.tablePlanAreas.spec.ts` (the name-only dialog for a new area and for
-  editing one, the order a new or edited area gets, the arrows, a taken name in the dialog, hiding
-  that asks first, showing) on `festivalTablePlanFixture.ts`; the editor in
+  editing one, the name alone sent for a new or edited area, the arrows with the state of the box
+  for hidden areas, a taken name in the dialog, hiding that asks first, showing) on `festivalTablePlanFixture.ts`; the editor in
   `admin/components/tablePlan/TablePlanEditor.drawing.spec.ts` (Konva on `canvas`: a hidden table
   never drawn, the size kept when the window narrows, a border at the edge drawn whole, a name never
   broken inside a word, the measuring text let go when the editor closes, drag, snap, guide lines,

@@ -62,9 +62,15 @@ public sealed class ItemOrderabilityTest
   }
 
   [Test]
-  public void FindItemsStrandedByRemovingStationsAsync_NullStationIds_ThrowsArgumentNullException()
+  public void FindItemsStrandedByRemovingEachStationAsync_NullStationIds_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _orderability.FindItemsStrandedByRemovingStationsAsync(_festivalId, null!, CancellationToken.None), Throws.ArgumentNullException);
+    Assert.That(async () => await _orderability.FindItemsStrandedByRemovingEachStationAsync(_festivalId, null!, CancellationToken.None), Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public void FindItemsStrandedBySwitchingOffEachStationAsync_NullStationIds_ThrowsArgumentNullException()
+  {
+    Assert.That(async () => await _orderability.FindItemsStrandedBySwitchingOffEachStationAsync(null!, CancellationToken.None), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -117,15 +123,15 @@ public sealed class ItemOrderabilityTest
   }
 
   [Test]
-  public async Task FindItemsStrandedByRemovingStationsAsync_TheOnlyStationOfAnItem_NamesThatItem()
+  public async Task FindItemsStrandedByRemovingStationAsync_TheOnlyStationOfAnItem_NamesThatItem()
   {
-    IReadOnlyList<Guid> stranded = await _orderability.FindItemsStrandedByRemovingStationsAsync(_festivalId, [_kitchenId], CancellationToken.None);
+    IReadOnlyList<Guid> stranded = await _orderability.FindItemsStrandedByRemovingStationAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.That(stranded, Is.EqualTo(new[] { _bratwurstId }));
   }
 
   [Test]
-  public async Task FindItemsStrandedByRemovingStationsAsync_AStationThatSharesTheItem_NamesNothing()
+  public async Task FindItemsStrandedByRemovingStationAsync_AStationThatSharesTheItem_NamesNothing()
   {
     GivenStationsPrepare([_barId],
                          [
@@ -133,7 +139,7 @@ public sealed class ItemOrderabilityTest
                            _bratwurstId
                          ]);
 
-    IReadOnlyList<Guid> stranded = await _orderability.FindItemsStrandedByRemovingStationsAsync(_festivalId, [_kitchenId], CancellationToken.None);
+    IReadOnlyList<Guid> stranded = await _orderability.FindItemsStrandedByRemovingStationAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.That(stranded, Is.Empty);
   }
@@ -154,6 +160,45 @@ public sealed class ItemOrderabilityTest
     IReadOnlyList<Guid> stranded = await _orderability.FindItemsStrandedBySwitchingOffStationAsync(_kitchenId, CancellationToken.None);
 
     Assert.That(stranded, Is.Empty);
+  }
+
+  [Test]
+  public async Task FindItemsStrandedByRemovingEachStationAsync_TheKitchenAndTheBar_NamesWhatEachWouldStrandOnItsOwn()
+  {
+    IReadOnlyDictionary<Guid, IReadOnlyList<Guid>> stranded = await _orderability.FindItemsStrandedByRemovingEachStationAsync(_festivalId,
+                                                                                                                              [
+                                                                                                                                _kitchenId,
+                                                                                                                                _barId
+                                                                                                                              ],
+                                                                                                                              CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(stranded[_kitchenId], Is.EqualTo(new[] { _bratwurstId }));
+                      Assert.That(stranded[_barId], Is.EqualTo(new[] { _beerId }));
+                    });
+  }
+
+  [Test]
+  public async Task FindItemsStrandedByRemovingEachStationAsync_AStationThatPreparesNothingAtTheFestival_NamesNothingForIt()
+  {
+    var tentId = Guid.Parse("dddddddd-0000-0000-0000-000000000003");
+
+    IReadOnlyDictionary<Guid, IReadOnlyList<Guid>> stranded = await _orderability.FindItemsStrandedByRemovingEachStationAsync(_festivalId, [tentId], CancellationToken.None);
+
+    Assert.That(stranded[tentId], Is.Empty);
+  }
+
+  [Test]
+  public async Task FindItemsStrandedBySwitchingOffEachStationAsync_TwoStations_ReadsTheFestivalsNotYetOverOnce()
+  {
+    await _orderability.FindItemsStrandedBySwitchingOffEachStationAsync([
+                                                                          _kitchenId,
+                                                                          _barId
+                                                                        ],
+                                                                        CancellationToken.None);
+
+    A.CallTo(() => _festivalRepository.FindIdsNotEndedAsync(A<DateTime>._, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   private void GivenStationsPrepare(IReadOnlyList<Guid> stationIds, IReadOnlyList<Guid> itemIds)

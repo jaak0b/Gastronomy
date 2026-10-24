@@ -6,11 +6,12 @@ import { assertNever } from '../../../shared/core/assertNever'
 import type { AdminActionResult } from '../../core/adminActionResult'
 import { useAdminStationsStore, type StationDraft } from '../../stores/stations'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
+import { useStationRefusalReasons } from '../../composables/useStationRefusalReasons'
 import BaseSearchAddLine from '../BaseSearchAddLine.vue'
 import RemovableStationRows from '../stations/RemovableStationRows.vue'
 import StationDialog from '../stations/StationDialog.vue'
 
-const props = defineProps<{ festivalId: string; isRunning: boolean }>()
+const props = defineProps<{ festivalId: string }>()
 
 const { t } = useI18n()
 const stations = useAdminStationsStore()
@@ -19,6 +20,7 @@ const isCreating = ref(false)
 const editingStation = ref<AdminStationView | null>(null)
 const { refusal, refusalText } = useRefusalDisplay()
 const { refusal: stationRefusal, refusalText: stationRefusalText } = useRefusalDisplay()
+const { removalRefusalOf } = useStationRefusalReasons()
 
 const atTheFestival = computed(() =>
   stations.stations.filter((station) => station.isAtAnyFestival),
@@ -31,12 +33,6 @@ const noStationsToAddText = computed(() =>
     ? t('admin.festivals.messages.noStationsToAdd')
     : t('admin.festivals.messages.noStationSwitchedOn'),
 )
-
-function removalRefusalOf(station: AdminStationView): string | null {
-  return props.isRunning && station.hasItemsToHandOut
-    ? t('errors.admin.festivals.stationHasOrdersAtTheFestival')
-    : null
-}
 
 async function removeFromTheFestival(station: AdminStationView): Promise<AdminActionResult<null>> {
   refusal.value = null

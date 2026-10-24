@@ -200,15 +200,16 @@ public sealed class AdminFestivalEndpointsTest
   }
 
   [Test]
-  public async Task PostHide_AFestivalThatIsRunning_IsRefusedGenerically()
+  public async Task PostHide_AFestivalThatIsRunning_IsRefusedWithTheReason()
   {
     using var response = await _context.Client.PostAsync($"/api/admin/festivals/{_context.World.FestivalId}/hide", null);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+                      Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("RunningFestivalStaysShown"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.runningFestivalStaysShown"));
                     });
   }
 
@@ -326,8 +327,8 @@ public sealed class AdminFestivalEndpointsTest
   [Test]
   public async Task PostCopy_AFestivalWithAPlan_BringsItsShownAreasTablesAndPlacedStationsAlong()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
-    var hiddenHallId = await CreateAreaAsync("Halle", 2);
+    var gardenId = await CreateAreaAsync("Garten");
+    var hiddenHallId = await CreateAreaAsync("Halle");
     await CreateTableAsync(gardenId, "Tisch 1");
     var hiddenTableId = await CreateTableAsync(gardenId, "Tisch 2");
     await CreateTableAsync(hiddenHallId, "Stammtisch");
@@ -594,7 +595,7 @@ public sealed class AdminFestivalEndpointsTest
   public async Task DeleteFestivalStation_AStationPlacedOnThePlan_TakesItsShapeWithIt()
   {
     var stationId = await AddStationToTheFestivalAsync("Kuchenbuffet", 3);
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
     await PlaceStationAsync(stationId, gardenId);
 
     using var response = await _context.Client.DeleteAsync($"/api/admin/festivals/{_context.World.FestivalId}/stations/{stationId}");
@@ -662,8 +663,56 @@ public sealed class AdminFestivalEndpointsTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(stations.Single(station => station.GetProperty("stationId").GetGuid() == _context.World.KitchenStationId).GetProperty("hasItemsToHandOut").GetBoolean(), Is.True);
-                      Assert.That(stations.Single(station => station.GetProperty("stationId").GetGuid() == _context.World.BarStationId).GetProperty("hasItemsToHandOut").GetBoolean(), Is.False);
+                      Assert.That(stations.Single(station => station.GetProperty("stationId").GetGuid() == _context.World.KitchenStationId).GetProperty("hasItemsToHandOutAtTheRunningFestival").GetBoolean(), Is.True);
+                      Assert.That(stations.Single(station => station.GetProperty("stationId").GetGuid() == _context.World.BarStationId).GetProperty("hasItemsToHandOutAtTheRunningFestival").GetBoolean(), Is.False);
+                    });
+  }
+
+  [TestCase(-1, 5, true, HttpStatusCode.Conflict)]
+  [TestCase(24, 48, false, HttpStatusCode.NoContent)]
+  [TestCase(-48, -24, false, HttpStatusCode.NoContent)]
+  public async Task GetStationsOfTheFestivalThenRemove_TheKitchenHoldingAnOpenItem_TheListSaysWhatTheLaptopAnswers(int startsInHours, int endsInHours, bool isListedAsHoldingItems, HttpStatusCode answer)
+  {
+    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
+    {
+      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    await ShareTheBratwurstWithTheBarAsync();
+
+    await using (var database = _context.Factory.CreateContext())
+    {
+      var festival = await database.Festivals.SingleAsync(candidate => candidate.Id == _context.World.FestivalId);
+      festival.StartsAtUtc = DateTime.UtcNow.AddHours(startsInHours);
+      festival.EndsAtUtc = DateTime.UtcNow.AddHours(endsInHours);
+      await database.SaveChangesAsync();
+    }
+
+    using var listed = await _context.Client.GetAsync($"/api/admin/stations?festivalId={_context.World.FestivalId}");
+    var kitchen = JsonDocument.Parse(await listed.Content.ReadAsStringAsync()).RootElement.GetProperty("stations").EnumerateArray().Single(station => station.GetProperty("stationId").GetGuid() == _context.World.KitchenStationId);
+
+    using var response = await _context.Client.DeleteAsync($"/api/admin/festivals/{_context.World.FestivalId}/stations/{_context.World.KitchenStationId}");
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(kitchen.GetProperty("hasItemsToHandOutAtTheRunningFestival").GetBoolean(), Is.EqualTo(isListedAsHoldingItems));
+                      Assert.That(kitchen.GetProperty("strandedItemCountWhenRemovedFromTheFestival").GetInt32(), Is.Zero);
+                      Assert.That(response.StatusCode, Is.EqualTo(answer));
+                    });
+  }
+
+  [Test]
+  public async Task GetStationsOfTheFestival_TheBarMakingBothArticles_CountsWhatRemovingEachStationWouldStrand()
+  {
+    await AssignTheBratwurstToTheBarAsync();
+
+    using var response = await _context.Client.GetAsync($"/api/admin/stations?festivalId={_context.World.FestivalId}");
+    var stations = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("stations").EnumerateArray().ToList();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(stations.Single(station => station.GetProperty("stationId").GetGuid() == _context.World.KitchenStationId).GetProperty("strandedItemCountWhenRemovedFromTheFestival").GetInt32(), Is.Zero);
+                      Assert.That(stations.Single(station => station.GetProperty("stationId").GetGuid() == _context.World.BarStationId).GetProperty("strandedItemCountWhenRemovedFromTheFestival").GetInt32(), Is.EqualTo(2));
                     });
   }
 
@@ -707,6 +756,21 @@ public sealed class AdminFestivalEndpointsTest
     using var response = await _context.Client.DeleteAsync($"/api/admin/festivals/{_context.World.FestivalId}/stations/{_context.World.KitchenStationId}");
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent), $"A festival that ended must let the station go even with open orders. Body: {await response.Content.ReadAsStringAsync()}");
+  }
+
+  private async Task ShareTheBratwurstWithTheBarAsync()
+  {
+    using var response = await _context.Client.PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}",
+                                                              new
+                                                              {
+                                                                priceCents = 350,
+                                                                stationIds = new[]
+                                                                             {
+                                                                               _context.World.KitchenStationId,
+                                                                               _context.World.BarStationId
+                                                                             }
+                                                              });
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
   }
 
   private async Task AssignTheBratwurstToTheBarAsync()
@@ -840,14 +904,9 @@ public sealed class AdminFestivalEndpointsTest
                     });
   }
 
-  private async Task<Guid> CreateAreaAsync(string name, int sortOrder)
+  private async Task<Guid> CreateAreaAsync(string name)
   {
-    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/areas",
-                                                               new
-                                                               {
-                                                                 name,
-                                                                 sortOrder
-                                                               });
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/areas", new { name });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 

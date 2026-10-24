@@ -138,6 +138,58 @@ public sealed class StationDeactivationTest
   }
 
   [Test]
+  public async Task GetStations_TheKitchenOwesFoodAtTheRunningFestival_SaysWhatWouldRefuseSwitchingEachStationOff()
+  {
+    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
+    {
+      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    var tentId = await CreateStationAsync();
+
+    using var response = await _context.Client.GetAsync("/api/admin/stations");
+    var stations = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("stations").EnumerateArray().ToList();
+    var kitchen = stations.Single(station => station.GetProperty("stationId").GetGuid() == _context.World.KitchenStationId);
+    var bar = stations.Single(station => station.GetProperty("stationId").GetGuid() == _context.World.BarStationId);
+    var tent = stations.Single(station => station.GetProperty("stationId").GetGuid() == tentId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(kitchen.GetProperty("hasItemsToHandOutAtTheRunningFestival").GetBoolean(), Is.True);
+                      Assert.That(bar.GetProperty("hasItemsToHandOutAtTheRunningFestival").GetBoolean(), Is.False);
+                      Assert.That(kitchen.GetProperty("strandedItemCountWhenSwitchedOff").GetInt32(), Is.EqualTo(1));
+                      Assert.That(bar.GetProperty("strandedItemCountWhenSwitchedOff").GetInt32(), Is.EqualTo(1));
+                      Assert.That(tent.GetProperty("strandedItemCountWhenSwitchedOff").GetInt32(), Is.Zero);
+                    });
+  }
+
+  [TestCase(-1, 5, true, HttpStatusCode.Conflict)]
+  [TestCase(24, 48, false, HttpStatusCode.OK)]
+  [TestCase(-48, -24, false, HttpStatusCode.OK)]
+  public async Task GetStationsThenDeactivate_TheKitchenHoldingAnOpenItem_TheListSaysWhatTheLaptopAnswers(int startsInHours, int endsInHours, bool isListedAsHoldingItems, HttpStatusCode answer)
+  {
+    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
+    {
+      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    await ShareTheBratwurstWithTheBarAsync();
+    await MoveTheFestivalAsync(startsInHours, endsInHours);
+
+    using var listed = await _context.Client.GetAsync("/api/admin/stations");
+    var kitchen = JsonDocument.Parse(await listed.Content.ReadAsStringAsync()).RootElement.GetProperty("stations").EnumerateArray().Single(station => station.GetProperty("stationId").GetGuid() == _context.World.KitchenStationId);
+
+    using var response = await _context.Client.PostAsync($"/api/admin/stations/{_context.World.KitchenStationId}/deactivate", null);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(kitchen.GetProperty("hasItemsToHandOutAtTheRunningFestival").GetBoolean(), Is.EqualTo(isListedAsHoldingItems));
+                      Assert.That(kitchen.GetProperty("strandedItemCountWhenSwitchedOff").GetInt32(), Is.Zero);
+                      Assert.That(response.StatusCode, Is.EqualTo(answer));
+                    });
+  }
+
+  [Test]
   public async Task Activate_StationThatWasSwitchedOff_SwitchesItBackOn()
   {
     var stationId = await CreateStationAsync();
@@ -157,6 +209,31 @@ public sealed class StationDeactivationTest
     var station = await database.Stations.FirstAsync(candidate => candidate.Id == stationId);
 
     Assert.That(station.IsActive, Is.True);
+  }
+
+  private async Task ShareTheBratwurstWithTheBarAsync()
+  {
+    using var response = await _context.Client.PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}",
+                                                              new
+                                                              {
+                                                                priceCents = 350,
+                                                                stationIds = new[]
+                                                                             {
+                                                                               _context.World.KitchenStationId,
+                                                                               _context.World.BarStationId
+                                                                             }
+                                                              });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+  }
+
+  private async Task MoveTheFestivalAsync(int startsInHours, int endsInHours)
+  {
+    await using var database = _context.Factory.CreateContext();
+    var festival = await database.Festivals.SingleAsync(candidate => candidate.Id == _context.World.FestivalId);
+    festival.StartsAtUtc = DateTime.UtcNow.AddHours(startsInHours);
+    festival.EndsAtUtc = DateTime.UtcNow.AddHours(endsInHours);
+    await database.SaveChangesAsync();
   }
 
   private async Task<Guid> CreateStationAsync()

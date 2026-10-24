@@ -64,7 +64,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
 
   function listen(): () => void {
     return combineReleases(
-      useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], reload),
+      useConnectionStore().listenToTheLaptop(['ConfigurationChanged', 'OrdersChanged'], reload),
       useAdminEnrolmentStore().listen(() => {
         void reload()
       }),

@@ -28,8 +28,8 @@ public sealed class TablePlanEndpointsTest
   [Test]
   public async Task GetTablePlan_ARunningFestivalWithAPlan_AnswersTheShownAreasWithTheirTablesAndStations()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
-    var hallId = await CreateAreaAsync("Halle", 2);
+    var gardenId = await CreateAreaAsync("Garten");
+    var hallId = await CreateAreaAsync("Halle");
     await CreateTableAsync(hallId, "Stammtisch");
     var tableId = await CreateTableAsync(gardenId, "Tisch 1");
     var hiddenTableId = await CreateTableAsync(gardenId, "Tisch 2");
@@ -68,7 +68,7 @@ public sealed class TablePlanEndpointsTest
   [Test]
   public async Task GetTablePlan_TablesAtDifferentPoints_CarryHowFarTheirOrdersAreHandedOutAndSettled()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
     var partlyHandedOutId = await CreateTableAsync(gardenId, "Tisch 1");
     var untouchedId = await CreateTableAsync(gardenId, "Tisch 2");
     await CreateTableAsync(gardenId, "Tisch 3");
@@ -121,7 +121,7 @@ public sealed class TablePlanEndpointsTest
   [Test]
   public async Task GetTablePlan_NoFestivalIsRunning_AnswersNoArea()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
     await CreateTableAsync(gardenId, "Tisch 1");
     await LetTheFestivalEndAsync();
 
@@ -158,14 +158,9 @@ public sealed class TablePlanEndpointsTest
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
   }
 
-  private async Task<Guid> CreateAreaAsync(string name, int sortOrder)
+  private async Task<Guid> CreateAreaAsync(string name)
   {
-    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/areas",
-                                                               new
-                                                               {
-                                                                 name,
-                                                                 sortOrder
-                                                               });
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/areas", new { name });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created), await response.Content.ReadAsStringAsync());
 

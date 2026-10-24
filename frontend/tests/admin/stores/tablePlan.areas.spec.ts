@@ -14,14 +14,14 @@ afterEach(() => {
 })
 
 describe('creating an area', () => {
-  it('sends the typed name with its place in the order and reads the plan again', async () => {
+  it('sends the typed name and reads the plan again', async () => {
     const laptop = planLaptop(answer({ areaId: 'area-garten' }, 201))
     const plan = await planOfTheFestival(laptop)
 
-    await plan.createArea(FESTIVAL_ID, { name: 'Garten', sortOrder: 3 })
+    await plan.createArea(FESTIVAL_ID, { name: 'Garten' })
 
     expect(laptop.calls).toEqual([
-      { url: AREAS_PATH, method: 'POST', body: { name: 'Garten', sortOrder: 3 } },
+      { url: AREAS_PATH, method: 'POST', body: { name: 'Garten' } },
       { url: PLAN_PATH, method: 'GET', body: undefined },
     ])
   })
@@ -30,7 +30,7 @@ describe('creating an area', () => {
     const laptop = planLaptop(answer({ areaId: 'area-garten' }, 201))
     const plan = await planOfTheFestival(laptop)
 
-    const created = await plan.createArea(FESTIVAL_ID, { name: 'Garten', sortOrder: 3 })
+    const created = await plan.createArea(FESTIVAL_ID, { name: 'Garten' })
 
     expect(created).toEqual({ kind: 'ok', value: { areaId: 'area-garten' } })
   })
@@ -39,7 +39,7 @@ describe('creating an area', () => {
     const laptop = planLaptop(refusal('errors.admin.festivals.areaNameTaken'))
     const plan = await planOfTheFestival(laptop)
 
-    const created = await plan.createArea(FESTIVAL_ID, { name: 'halle', sortOrder: 3 })
+    const created = await plan.createArea(FESTIVAL_ID, { name: 'halle' })
 
     expect(created).toEqual({
       kind: 'failed',
@@ -49,14 +49,14 @@ describe('creating an area', () => {
 })
 
 describe('changing an area', () => {
-  it('sends a new name with the place it already has', async () => {
+  it('sends the new name and reads the plan again', async () => {
     const laptop = planLaptop(answer({ areaId: 'area-halle' }))
     const plan = await planOfTheFestival(laptop)
 
-    await plan.saveArea(FESTIVAL_ID, 'area-halle', { name: 'Große Halle', sortOrder: 1 })
+    await plan.saveArea(FESTIVAL_ID, 'area-halle', { name: 'Große Halle' })
 
     expect(laptop.calls).toEqual([
-      { url: `${AREAS_PATH}/area-halle`, method: 'PUT', body: { name: 'Große Halle', sortOrder: 1 } },
+      { url: `${AREAS_PATH}/area-halle`, method: 'PUT', body: { name: 'Große Halle' } },
       { url: PLAN_PATH, method: 'GET', body: undefined },
     ])
   })

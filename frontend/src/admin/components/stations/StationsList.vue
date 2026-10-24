@@ -8,8 +8,16 @@ import { useAdminEnrolmentStore } from '../../stores/enrolment'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
 import InvitationPanel from '../enrolment/InvitationPanel.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
+import { useStationRefusalReasons } from '../../composables/useStationRefusalReasons'
 import StationDialog from './StationDialog.vue'
+import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
+import BaseTrashButton from '../BaseTrashButton.vue'
+
+interface StationRow {
+  station: AdminStationView
+  deactivationRefusal: string | null
+}
 
 const { t } = useI18n()
 const stations = useAdminStationsStore()
@@ -19,10 +27,16 @@ const isCreating = ref(false)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
 const { refusal, refusalText, showRefusalOf } = useRefusalDisplay()
+const { switchOffRefusalOf } = useStationRefusalReasons()
 let stopListening: (() => void) | null = null
 
-const shown = computed(() =>
-  stations.stations.filter((station) => showsDeactivated.value || station.isActive),
+const rows = computed<StationRow[]>(() =>
+  stations.stations
+    .filter((station) => showsDeactivated.value || station.isActive)
+    .map((station) => ({
+      station,
+      deactivationRefusal: switchOffRefusalOf(station),
+    })),
 )
 
 const isStationDialogOpen = computed(
@@ -127,7 +141,12 @@ onUnmounted(() => {
       {{ t('admin.common.errors.loadFailed') }}
     </v-alert>
 
-    <v-card v-for="station in shown" :key="station.stationId" class="station-row mb-2" data-test="station-row">
+    <v-card
+      v-for="{ station, deactivationRefusal } in rows"
+      :key="station.stationId"
+      class="station-row mb-2"
+      data-test="station-row"
+    >
       <div class="d-flex align-center flex-wrap ga-2 px-4 py-2">
         <span class="name text-h6" data-test="name">{{ station.name }}</span>
         <v-chip v-if="!station.isActive" class="deactivated" data-test="deactivated" size="small" color="grey">
@@ -143,15 +162,21 @@ onUnmounted(() => {
         <v-btn class="edit" data-test="edit" variant="text" @click="startEditing(station)">
           {{ t('admin.common.actions.edit') }}
         </v-btn>
-        <v-btn
+        <BaseActionWithRefusalReason
           v-if="station.isActive"
-          class="deactivate"
-          data-test="deactivate"
-          icon="mdi-delete"
-          variant="text"
-          color="error"
-          @click="askingAboutId = station.stationId"
-        />
+          class="deactivate-wrapper"
+          data-test="deactivate-wrapper"
+          :refusal-reason="deactivationRefusal"
+        >
+          <template #default="{ refused }">
+            <BaseTrashButton
+              class="deactivate"
+              data-test="deactivate"
+              :disabled="refused"
+              @click="askingAboutId = station.stationId"
+            />
+          </template>
+        </BaseActionWithRefusalReason>
         <v-btn
           v-else
           class="reactivate"

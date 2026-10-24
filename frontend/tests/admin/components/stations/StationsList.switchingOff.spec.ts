@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { pressInDialog, waitForDialog } from '../../../support/dom'
+import { pressInDialog, refusalReasonsOnScreen, waitForDialog } from '../../../support/dom'
 import { stubLaptop, answer } from '../../../support/laptop'
+import { anAdminStation } from '../../../support/wireViews'
 import { STATION_ID, ONE_STATION, refuseDeactivationWith, mountList, deactivateFirstStation, ONE_STATION_SWITCHED_OFF } from './stationsListFixture'
 
 describe('switching a station off', () => {
@@ -45,6 +46,64 @@ describe('switching a station off', () => {
     await vi.waitFor(() =>
       expect(laptop.urls()).toContain(`/api/admin/stations/${STATION_ID}/deactivate`),
     )
+  })
+})
+
+const ITEMS_TO_HAND_OUT = 'Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden.'
+
+function stationsLaptop(station: Parameters<typeof anAdminStation>[0]) {
+  stubLaptop().answersEverythingElse(answer({ stations: [anAdminStation({ stationId: STATION_ID, ...station })] }))
+}
+
+async function pointAtTheTrashIcon(list: ReturnType<typeof mountList>) {
+  await vi.waitFor(() => expect(list.find('[data-test="deactivate-wrapper"]').exists()).toBe(true))
+  await list.get('[data-test="deactivate-wrapper"]').trigger('mouseenter')
+}
+
+describe('a station the laptop would refuse to switch off', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  it('cannot be switched off while it still has items to hand out at the active festival', async () => {
+    stationsLaptop({ hasItemsToHandOutAtTheRunningFestival: true })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="station-row"]').exists()).toBe(true))
+
+    expect((list.get('[data-test="deactivate"]').element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('names the open orders as the reason when the admin points at the trash icon', async () => {
+    stationsLaptop({ hasItemsToHandOutAtTheRunningFestival: true })
+    const list = mountList()
+
+    await pointAtTheTrashIcon(list)
+
+    await vi.waitFor(() => expect(refusalReasonsOnScreen()).toEqual([ITEMS_TO_HAND_OUT]))
+  })
+
+  it('names how many articles would be left without a station', async () => {
+    stationsLaptop({ strandedItemCountWhenSwitchedOff: 2 })
+    const list = mountList()
+
+    await pointAtTheTrashIcon(list)
+
+    await vi.waitFor(() =>
+      expect(refusalReasonsOnScreen()).toEqual([
+        '2 Artikel hätten dann keine Ausgabestelle mehr.',
+      ]),
+    )
+  })
+
+  it('names the open orders when both reasons apply, because the laptop refuses for those first', async () => {
+    stationsLaptop({ hasItemsToHandOutAtTheRunningFestival: true, strandedItemCountWhenSwitchedOff: 1 })
+    const list = mountList()
+
+    await pointAtTheTrashIcon(list)
+
+    await vi.waitFor(() => expect(refusalReasonsOnScreen()).toEqual([ITEMS_TO_HAND_OUT]))
   })
 })
 

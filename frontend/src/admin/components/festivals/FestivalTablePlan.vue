@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 import type { AdminAreaView, MoveDirection, SavedAreaView } from '../../../shared/api/generatedSchemas'
 import { navigate } from '../../../shared/router/router'
 import type { AdminActionResult } from '../../core/adminActionResult'
-import { sortOrderForANewArea } from '../../core/areaOrder'
 import { useAdminTablePlanStore } from '../../stores/tablePlan'
 import HideableEntryList from '../HideableEntryList.vue'
 import AreaDialog from '../tablePlan/AreaDialog.vue'
@@ -41,15 +40,16 @@ async function saveTheArea(
   area: AdminAreaView | null,
 ): Promise<AdminActionResult<SavedAreaView | null>> {
   return area === null
-    ? await tablePlan.createArea(props.festivalId, {
-        name: draft.name,
-        sortOrder: sortOrderForANewArea(tablePlan.areas),
-      })
-    : await tablePlan.saveArea(props.festivalId, area.areaId, { name: draft.name, sortOrder: area.sortOrder })
+    ? await tablePlan.createArea(props.festivalId, { name: draft.name })
+    : await tablePlan.saveArea(props.festivalId, area.areaId, { name: draft.name })
 }
 
-async function moveTheArea(area: AdminAreaView, direction: MoveDirection): Promise<AdminActionResult<null>> {
-  return await tablePlan.moveArea(props.festivalId, area.areaId, direction)
+async function moveTheArea(
+  area: AdminAreaView,
+  direction: MoveDirection,
+  showsHiddenAreas: boolean,
+): Promise<AdminActionResult<null>> {
+  return await tablePlan.moveArea(props.festivalId, area.areaId, { direction, showsHiddenAreas })
 }
 
 function hidingRefusalOf(area: AdminAreaView): string | null {

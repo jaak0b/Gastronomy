@@ -22,11 +22,18 @@ Frontend, under `frontend/src/`:
 ## Invariants
 
 - **The global tabs are plain lists** with no festival controls. The Artikel tab groups its articles
-  under their categories.
+  under their categories and lists every category, a deactivated one with its chip, whatever
+  "Deaktivierte anzeigen" says, so a category's arrows count every category.
+- **A switch off the laptop would refuse is disabled before the click**, with the refusal's text as
+  its tooltip: an article on an active festival's menu on the Artikel tab, a station with items to
+  hand out at the active festival or whose articles would be left without a station on the
+  Ausgabestellen tab, an ingredient still in a switched-on article on the Zutaten tab.
 - **Everything about one festival is on its page** (see the `festivals` page), and an unknown
   festival id returns to Übersicht without a word.
 
 ## Tests
 
 `frontend/tests/admin/views/AdminShell.spec.ts`, `shared/router/adminRoute.spec.ts`,
-`admin/components/overview/AdminOverview.spec.ts` and `shared/theme.spec.ts`.
+`admin/components/overview/AdminOverview.spec.ts` and `shared/theme.spec.ts`. The disabled switch off
+of the Ausgabestellen tab, with both reasons and the one named when both apply, is in
+`admin/components/stations/StationsList.switchingOff.spec.ts`.

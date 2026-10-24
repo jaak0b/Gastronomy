@@ -6,6 +6,7 @@ import { AdminFestivalView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { formatFestivalMoment } from '../../../shared/core/moments'
 import { useAdminFestivalsStore, type FestivalDraft } from '../../stores/festivals'
+import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseHideConfirmDialog from '../BaseHideConfirmDialog.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
 import BaseIconAction from '../BaseIconAction.vue'
@@ -161,6 +162,7 @@ onUnmounted(() => {
       :key="festival.festivalId"
       class="festival-row mb-2"
       data-test="festival-row"
+      :data-test-id="festival.festivalId"
     >
       <div class="d-flex align-center flex-wrap ga-2 px-4 py-2">
         <span class="name text-h6" data-test="name">{{ festival.name }}</span>
@@ -179,21 +181,30 @@ onUnmounted(() => {
             {{ t('admin.festivals.actions.copy') }}
           </v-btn>
           <span class="conditional-action" data-test="conditional-action">
-            <BaseIconAction
-              v-if="!festival.isRunning && !festival.isHidden"
-              class="hide"
-              data-test="hide"
-              icon="mdi-eye-off"
-              color="error"
-              :label="t('admin.festivals.actions.hide')"
-              @click="hiddenFestival = festival"
-            />
             <BaseShowButton
               v-if="festival.isHidden"
               class="show"
               data-test="show"
               @click="show(festival.festivalId)"
             />
+            <BaseActionWithRefusalReason
+              v-else
+              class="hide-wrapper"
+              data-test="hide-wrapper"
+              :refusal-reason="festival.isRunning ? t('errors.admin.festivals.runningFestivalStaysShown') : null"
+            >
+              <template #default="{ refused }">
+                <BaseIconAction
+                  class="hide"
+                  data-test="hide"
+                  icon="mdi-eye-off"
+                  color="error"
+                  :label="t('admin.festivals.actions.hide')"
+                  :disabled="refused"
+                  @click="hiddenFestival = festival"
+                />
+              </template>
+            </BaseActionWithRefusalReason>
             <v-btn class="action-measure" data-test="action-measure" icon="mdi-eye" variant="text" tabindex="-1" />
           </span>
         </div>

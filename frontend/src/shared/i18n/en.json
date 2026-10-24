@@ -459,6 +459,9 @@
         "edit": "Edit the station",
         "new": "New station",
         "setUpDevice": "Set up the tablet"
+      },
+      "messages": {
+        "itemsWouldHaveNoStation": "{count} item would be left without a station. | {count} items would be left without a station."
       }
     }
   },
@@ -480,6 +483,7 @@
         "nameMissing": "Give the festival a name.",
         "overlaps": "The festival {name} overlaps this period. Move the start or the end.",
         "periodInvalid": "The end has to come after the start. Set the end to a later time.",
+        "runningFestivalStaysShown": "An active festival cannot be hidden.",
         "stationHasOrdersAtTheFestival": "A station with open orders cannot be removed from an active festival.",
         "tableNameTaken": "A table at this festival already has this name, whether it is shown or hidden. Choose a different name.",
         "tableWithItemsToHandOutOrSettleStaysShown": "A table cannot be hidden at an active festival until everything ordered there is prepared and settled."

@@ -3,6 +3,7 @@ using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
 using Microsoft.Extensions.Time.Testing;
@@ -147,7 +148,8 @@ public sealed class FestivalAdministrationServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(hidden.IsSuccess, Is.False);
-                      Assert.That(hidden.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(hidden.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
+                      Assert.That(hidden.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.runningFestivalStaysShown"));
                       Assert.That(hidden.RefusalDescription(), Does.Contain(_festivalId.ToString()));
                     });
   }

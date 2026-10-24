@@ -12,8 +12,8 @@ public sealed class AdminTablePlanMapping : IMappingRegistration
 
     config.NewConfig<ListedTable, AdminTableView>().Map(view => view.TableId, listed => listed.Table.Id).Map(view => view.Name, listed => listed.Table.Name).Map(view => view.Geometry, listed => listed.Table).Map(view => view.IsHidden, listed => listed.Table.IsHidden);
 
-    config.NewConfig<ShownStationShape, AdminStationShapeView>().Map(view => view.Geometry, shown => shown.Shape);
+    config.NewConfig<NamedStationShape, AdminStationShapeView>().Map(view => view.Geometry, named => named.Shape);
 
-    config.NewConfig<ListedArea, AdminAreaView>().Map(view => view.AreaId, listed => listed.Area.Id).Map(view => view.Name, listed => listed.Area.Name).Map(view => view.SortOrder, listed => listed.Area.SortOrder).Map(view => view.IsHidden, listed => listed.Area.IsHidden);
+    config.NewConfig<ListedArea, AdminAreaView>().Map(view => view.AreaId, listed => listed.Area.Id).Map(view => view.Name, listed => listed.Area.Name).Map(view => view.IsHidden, listed => listed.Area.IsHidden);
   }
 }

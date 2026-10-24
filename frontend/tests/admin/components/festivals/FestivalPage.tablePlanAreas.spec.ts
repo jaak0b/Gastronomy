@@ -65,7 +65,7 @@ describe('a new area on the festival page', () => {
     ]).toEqual(['Neuer Bereich', '', 1])
   })
 
-  it('sends the typed name and puts the area last in the order, counting the hidden ones', async () => {
+  it('sends only the typed name, because the laptop puts a new area last', async () => {
     const laptop = await openThePageWith(festivalLaptop({ areas: [HALL, TENT, OLD_TABLES] }))
     await clickOn('[data-test="new-entry"]', onScreen('[data-test="festival-table-plan"]'))
     await flushPromises()
@@ -73,7 +73,7 @@ describe('a new area on the festival page', () => {
     await saveTheAreaDialog('Garten')
 
     expect(writesTo(laptop, AREAS_PATH)).toEqual([
-      { url: AREAS_PATH, method: 'POST', body: { name: 'Garten', sortOrder: 4 } },
+      { url: AREAS_PATH, method: 'POST', body: { name: 'Garten' } },
     ])
   })
 
@@ -115,7 +115,7 @@ describe('editing an area on the festival page', () => {
     ])
   })
 
-  it('sends the new name and keeps the place in the order', async () => {
+  it('sends only the new name, because the laptop keeps the area in its place', async () => {
     const laptop = await openThePageWith(festivalLaptop({ areas: [HALL, TENT] }))
     await clickOn('[data-test="edit-entry"]', areaRow('area-zelt'))
     await flushPromises()
@@ -123,7 +123,7 @@ describe('editing an area on the festival page', () => {
     await saveTheAreaDialog('Großes Zelt')
 
     expect(writesTo(laptop, AREAS_PATH)).toEqual([
-      { url: `${AREAS_PATH}/area-zelt`, method: 'PUT', body: { name: 'Großes Zelt', sortOrder: 2 } },
+      { url: `${AREAS_PATH}/area-zelt`, method: 'PUT', body: { name: 'Großes Zelt' } },
     ])
   })
 
@@ -154,7 +154,7 @@ describe('moving an area on the festival page', () => {
     await clickOn('[data-test="move-up"]', areaRow('area-zelt'))
 
     expect(writesTo(laptop, AREAS_PATH)).toEqual([
-      { url: `${AREAS_PATH}/area-zelt/move`, method: 'POST', body: { direction: 'up' } },
+      { url: `${AREAS_PATH}/area-zelt/move`, method: 'POST', body: { direction: 'up', showsHiddenAreas: false } },
     ])
   })
 
@@ -164,7 +164,18 @@ describe('moving an area on the festival page', () => {
     await clickOn('[data-test="move-down"]', areaRow('area-halle'))
 
     expect(writesTo(laptop, AREAS_PATH)).toEqual([
-      { url: `${AREAS_PATH}/area-halle/move`, method: 'POST', body: { direction: 'down' } },
+      { url: `${AREAS_PATH}/area-halle/move`, method: 'POST', body: { direction: 'down', showsHiddenAreas: false } },
+    ])
+  })
+
+  it('tells the laptop that hidden areas are on screen once the box is ticked, so the move counts them', async () => {
+    const laptop = await openThePageWith(festivalLaptop({ areas: [HALL, OLD_TABLES, TENT] }))
+    await clickOn('[data-test="show-hidden-entries"] input')
+
+    await clickOn('[data-test="move-up"]', areaRow('area-zelt'))
+
+    expect(writesTo(laptop, AREAS_PATH)).toEqual([
+      { url: `${AREAS_PATH}/area-zelt/move`, method: 'POST', body: { direction: 'up', showsHiddenAreas: true } },
     ])
   })
 

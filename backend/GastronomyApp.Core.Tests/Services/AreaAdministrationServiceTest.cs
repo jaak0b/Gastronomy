@@ -70,7 +70,7 @@ public sealed class AreaAdministrationServiceTest
   {
     A.CallTo(() => _repository.IsAreaNameTakenAsync(_festivalId, "Garten", null, A<CancellationToken>._)).Returns(true);
 
-    ErrorOr<Area> created = await _service.CreateAsync(_festivalId, BuildRequest("Garten", 1), CancellationToken.None);
+    ErrorOr<Area> created = await _service.CreateAsync(_festivalId, BuildRequest("Garten"), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -87,21 +87,20 @@ public sealed class AreaAdministrationServiceTest
   {
     A.CallTo(() => _festivalRepository.ExistsAsync(_festivalId, A<CancellationToken>._)).Returns(false);
 
-    ErrorOr<Area> created = await _service.CreateAsync(_festivalId, BuildRequest("Garten", 1), CancellationToken.None);
+    ErrorOr<Area> created = await _service.CreateAsync(_festivalId, BuildRequest("Garten"), CancellationToken.None);
 
     Assert.That(created.RefusalMessageKey(), Is.EqualTo("FestivalNotFound"));
   }
 
   [Test]
-  public async Task CreateAsync_AFreeName_AddsAShownAreaWithTheNameAndSortOrderAsGiven()
+  public async Task CreateAsync_AFreeName_AddsAShownAreaWithTheName()
   {
-    ErrorOr<Area> created = await _service.CreateAsync(_festivalId, BuildRequest("Zelt am See", 4), CancellationToken.None);
+    ErrorOr<Area> created = await _service.CreateAsync(_festivalId, BuildRequest("Zelt am See"), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(created.Value.FestivalId, Is.EqualTo(_festivalId));
                       Assert.That(created.Value.Name, Is.EqualTo("Zelt am See"));
-                      Assert.That(created.Value.SortOrder, Is.EqualTo(4));
                       Assert.That(created.Value.IsHidden, Is.False);
                     });
 
@@ -110,9 +109,40 @@ public sealed class AreaAdministrationServiceTest
   }
 
   [Test]
+  public async Task CreateAsync_AFestivalWithAHiddenAreaLast_NumbersTheNewAreaAfterIt()
+  {
+    A.CallTo(() => _repository.FindAreasInOrderAsync(_festivalId, A<CancellationToken>._))
+   .Returns(Task.FromResult<IReadOnlyList<Area>>([
+                                                   BuildArea(_gardenId, "Garten", 1),
+                                                   new()
+                                                   {
+                                                     Id = Guid.NewGuid(),
+                                                     FestivalId = _festivalId,
+                                                     Name = "Halle",
+                                                     SortOrder = 4,
+                                                     IsHidden = true
+                                                   }
+                                                 ]));
+
+    ErrorOr<Area> created = await _service.CreateAsync(_festivalId, BuildRequest("Zelt am See"), CancellationToken.None);
+
+    Assert.That(created.Value.SortOrder, Is.EqualTo(5));
+  }
+
+  [Test]
+  public async Task CreateAsync_AFestivalWithoutAreas_NumbersTheNewAreaFirst()
+  {
+    A.CallTo(() => _repository.FindAreasInOrderAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Area>>([]));
+
+    ErrorOr<Area> created = await _service.CreateAsync(_festivalId, BuildRequest("Zelt am See"), CancellationToken.None);
+
+    Assert.That(created.Value.SortOrder, Is.EqualTo(1));
+  }
+
+  [Test]
   public async Task UpdateAsync_AnAreaTheFestivalDoesNotHave_IsNotFound()
   {
-    ErrorOr<Area> updated = await _service.UpdateAsync(_festivalId, _gardenId, BuildRequest("Garten", 1), CancellationToken.None);
+    ErrorOr<Area> updated = await _service.UpdateAsync(_festivalId, _gardenId, BuildRequest("Garten"), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -123,17 +153,17 @@ public sealed class AreaAdministrationServiceTest
   }
 
   [Test]
-  public async Task UpdateAsync_ANewNameAndSortOrder_LooksForNamesakesOtherThanTheAreaItself()
+  public async Task UpdateAsync_ANewName_LooksForNamesakesOtherThanTheAreaItselfAndKeepsItsPlace()
   {
     var garden = BuildGarden(false);
     A.CallTo(() => _repository.FindAreaAsync(_festivalId, _gardenId, A<CancellationToken>._)).Returns(Task.FromResult<Area?>(garden));
 
-    ErrorOr<Area> updated = await _service.UpdateAsync(_festivalId, _gardenId, BuildRequest("garten", 7), CancellationToken.None);
+    ErrorOr<Area> updated = await _service.UpdateAsync(_festivalId, _gardenId, BuildRequest("garten"), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(updated.Value.Name, Is.EqualTo("garten"));
-                      Assert.That(updated.Value.SortOrder, Is.EqualTo(7));
+                      Assert.That(updated.Value.SortOrder, Is.EqualTo(1));
                     });
 
     A.CallTo(() => _repository.IsAreaNameTakenAsync(_festivalId, "garten", _gardenId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
@@ -146,7 +176,7 @@ public sealed class AreaAdministrationServiceTest
     A.CallTo(() => _repository.FindAreaAsync(_festivalId, _gardenId, A<CancellationToken>._)).Returns(Task.FromResult<Area?>(garden));
     A.CallTo(() => _repository.IsAreaNameTakenAsync(_festivalId, "Halle", _gardenId, A<CancellationToken>._)).Returns(true);
 
-    ErrorOr<Area> updated = await _service.UpdateAsync(_festivalId, _gardenId, BuildRequest("Halle", 1), CancellationToken.None);
+    ErrorOr<Area> updated = await _service.UpdateAsync(_festivalId, _gardenId, BuildRequest("Halle"), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -237,7 +267,7 @@ public sealed class AreaAdministrationServiceTest
                                                    tent
                                                  ]));
 
-    ErrorOr<Area> moved = await _service.MoveAsync(_festivalId, tent.Id, MoveDirection.Up, CancellationToken.None);
+    ErrorOr<Area> moved = await _service.MoveAsync(_festivalId, tent.Id, BuildMove(MoveDirection.Up, false), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -269,7 +299,7 @@ public sealed class AreaAdministrationServiceTest
                                                    hall
                                                  ]));
 
-    ErrorOr<Area> moved = await _service.MoveAsync(_festivalId, _gardenId, MoveDirection.Up, CancellationToken.None);
+    ErrorOr<Area> moved = await _service.MoveAsync(_festivalId, _gardenId, BuildMove(MoveDirection.Up, false), CancellationToken.None);
 
     Assert.That(new[]
                 {
@@ -285,11 +315,88 @@ public sealed class AreaAdministrationServiceTest
   }
 
   [Test]
+  public async Task MoveAsync_AHiddenAreaAboveWhileHiddenAreasAreNotShown_SwapsWithTheShownAreaAboveIt()
+  {
+    var garden = BuildArea(_gardenId, "Garten", 1);
+    var hall = BuildArea(Guid.NewGuid(), "Halle", 2);
+    var tent = BuildArea(Guid.NewGuid(), "Zelt", 3);
+    hall.IsHidden = true;
+    A.CallTo(() => _repository.FindAreasInOrderAsync(_festivalId, A<CancellationToken>._))
+   .Returns(Task.FromResult<IReadOnlyList<Area>>([
+                                                   garden,
+                                                   hall,
+                                                   tent
+                                                 ]));
+
+    await _service.MoveAsync(_festivalId, tent.Id, BuildMove(MoveDirection.Up, false), CancellationToken.None);
+
+    Assert.That(new[]
+                {
+                  garden.SortOrder,
+                  hall.SortOrder,
+                  tent.SortOrder
+                },
+                Is.EqualTo(new[]
+                           {
+                             3,
+                             2,
+                             1
+                           }));
+  }
+
+  [Test]
+  public async Task MoveAsync_AHiddenAreaAboveWhileHiddenAreasAreShown_SwapsWithIt()
+  {
+    var garden = BuildArea(_gardenId, "Garten", 1);
+    var hall = BuildArea(Guid.NewGuid(), "Halle", 2);
+    var tent = BuildArea(Guid.NewGuid(), "Zelt", 3);
+    hall.IsHidden = true;
+    A.CallTo(() => _repository.FindAreasInOrderAsync(_festivalId, A<CancellationToken>._))
+   .Returns(Task.FromResult<IReadOnlyList<Area>>([
+                                                   garden,
+                                                   hall,
+                                                   tent
+                                                 ]));
+
+    await _service.MoveAsync(_festivalId, tent.Id, BuildMove(MoveDirection.Up, true), CancellationToken.None);
+
+    Assert.That(new[]
+                {
+                  garden.SortOrder,
+                  hall.SortOrder,
+                  tent.SortOrder
+                },
+                Is.EqualTo(new[]
+                           {
+                             1,
+                             3,
+                             2
+                           }));
+  }
+
+  [Test]
+  public async Task MoveAsync_OnlyHiddenAreasAboveWhileHiddenAreasAreNotShown_ChangesNothing()
+  {
+    var garden = BuildArea(_gardenId, "Garten", 1);
+    var hall = BuildArea(Guid.NewGuid(), "Halle", 2);
+    garden.IsHidden = true;
+    A.CallTo(() => _repository.FindAreasInOrderAsync(_festivalId, A<CancellationToken>._))
+   .Returns(Task.FromResult<IReadOnlyList<Area>>([
+                                                   garden,
+                                                   hall
+                                                 ]));
+
+    await _service.MoveAsync(_festivalId, hall.Id, BuildMove(MoveDirection.Up, false), CancellationToken.None);
+
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  [Test]
   public async Task MoveAsync_AnAreaTheFestivalDoesNotHave_IsNotFound()
   {
     A.CallTo(() => _repository.FindAreasInOrderAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Area>>([]));
 
-    ErrorOr<Area> moved = await _service.MoveAsync(_festivalId, _gardenId, MoveDirection.Down, CancellationToken.None);
+    ErrorOr<Area> moved = await _service.MoveAsync(_festivalId, _gardenId, BuildMove(MoveDirection.Down, false), CancellationToken.None);
 
     Assert.That(moved.RefusalMessageKey(), Is.EqualTo("AreaNotFound"));
   }
@@ -306,13 +413,18 @@ public sealed class AreaAdministrationServiceTest
            };
   }
 
-  private SaveAreaRequest BuildRequest(string name, int sortOrder)
+  private MoveAreaRequest BuildMove(MoveDirection direction, bool showsHiddenAreas)
   {
     return new()
            {
-             Name = name,
-             SortOrder = sortOrder
+             Direction = direction,
+             ShowsHiddenAreas = showsHiddenAreas
            };
+  }
+
+  private SaveAreaRequest BuildRequest(string name)
+  {
+    return new() { Name = name };
   }
 
   private Area BuildGarden(bool isHidden)

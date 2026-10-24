@@ -459,6 +459,9 @@
         "edit": "Ausgabestelle bearbeiten",
         "new": "Neue Ausgabestelle",
         "setUpDevice": "Tablet einrichten"
+      },
+      "messages": {
+        "itemsWouldHaveNoStation": "{count} Artikel hätte dann keine Ausgabestelle mehr. | {count} Artikel hätten dann keine Ausgabestelle mehr."
       }
     }
   },
@@ -480,6 +483,7 @@
         "nameMissing": "Geben Sie dem Fest einen Namen.",
         "overlaps": "Das Fest {name} überschneidet sich mit diesem Zeitraum. Verschieben Sie den Beginn oder das Ende.",
         "periodInvalid": "Das Ende muss nach dem Beginn liegen. Tragen Sie beim Ende einen späteren Zeitpunkt ein.",
+        "runningFestivalStaysShown": "Ein aktives Fest kann nicht ausgeblendet werden.",
         "stationHasOrdersAtTheFestival": "Eine Ausgabestelle mit offenen Bestellungen kann von einem aktiven Fest nicht entfernt werden.",
         "tableNameTaken": "Ein Tisch dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.",
         "tableWithItemsToHandOutOrSettleStaysShown": "Ein Tisch kann bei einem aktiven Fest erst ausgeblendet werden, wenn dort alles zubereitet und abgerechnet ist."

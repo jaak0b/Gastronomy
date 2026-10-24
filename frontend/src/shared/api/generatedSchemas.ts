@@ -14,7 +14,7 @@ export type AdminStationShapeView = __TypedOpenapi.Schemas.AdminStationShapeView
 export const AdminStationShapeView = z.strictObject({ stationId: z.string(), stationName: z.string(), geometry: AreaShapeGeometry });
 
 export type AdminAreaView = __TypedOpenapi.Schemas.AdminAreaView;
-export const AdminAreaView = z.strictObject({ areaId: z.string(), name: z.string(), sortOrder: z.number().int(), isHidden: z.boolean(), hasItemsToHandOutOrSettle: z.boolean(), tables: z.array(AdminTableView), stationShapes: z.array(AdminStationShapeView) });
+export const AdminAreaView = z.strictObject({ areaId: z.string(), name: z.string(), isHidden: z.boolean(), hasItemsToHandOutOrSettle: z.boolean(), tables: z.array(AdminTableView), stationShapes: z.array(AdminStationShapeView) });
 
 export type AdminCategoryView = __TypedOpenapi.Schemas.AdminCategoryView;
 export const AdminCategoryView = z.strictObject({ categoryId: z.string(), name: z.string(), colourHex: z.string(), sortOrder: z.number().int(), isActive: z.boolean() });
@@ -68,7 +68,7 @@ export type AdminStaffMemberListView = __TypedOpenapi.Schemas.AdminStaffMemberLi
 export const AdminStaffMemberListView = z.strictObject({ staffMembers: z.array(AdminStaffMemberView) });
 
 export type AdminStationView = __TypedOpenapi.Schemas.AdminStationView;
-export const AdminStationView = z.strictObject({ stationId: z.string(), name: z.string(), sortOrder: z.number().int(), isActive: z.boolean(), hasDevice: z.boolean(), isAtAnyFestival: z.boolean(), hasItemsToHandOut: z.boolean() });
+export const AdminStationView = z.strictObject({ stationId: z.string(), name: z.string(), sortOrder: z.number().int(), isActive: z.boolean(), hasDevice: z.boolean(), isAtAnyFestival: z.boolean(), hasItemsToHandOutAtTheRunningFestival: z.boolean(), strandedItemCountWhenSwitchedOff: z.number().int().nullable(), strandedItemCountWhenRemovedFromTheFestival: z.number().int().nullable() });
 
 export type AdminStationListView = __TypedOpenapi.Schemas.AdminStationListView;
 export const AdminStationListView = z.strictObject({ stations: z.array(AdminStationView) });
@@ -137,7 +137,7 @@ export type MoveDirection = __TypedOpenapi.Schemas.MoveDirection;
 export const MoveDirection = z.enum(["up", "down"]);
 
 export type MoveAreaRequest = __TypedOpenapi.Schemas.MoveAreaRequest;
-export const MoveAreaRequest = z.strictObject({ direction: MoveDirection });
+export const MoveAreaRequest = z.strictObject({ direction: MoveDirection, showsHiddenAreas: z.boolean() });
 
 export type MoveCategoryRequest = __TypedOpenapi.Schemas.MoveCategoryRequest;
 export const MoveCategoryRequest = z.strictObject({ direction: MoveDirection });
@@ -173,7 +173,7 @@ export type RenameStaffMemberRequest = __TypedOpenapi.Schemas.RenameStaffMemberR
 export const RenameStaffMemberRequest = z.strictObject({ name: z.string().nullable() });
 
 export type SaveAreaRequest = __TypedOpenapi.Schemas.SaveAreaRequest;
-export const SaveAreaRequest = z.strictObject({ name: z.string().nullable(), sortOrder: z.number().int() });
+export const SaveAreaRequest = z.strictObject({ name: z.string().nullable() });
 
 export type SaveCategoryRequest = __TypedOpenapi.Schemas.SaveCategoryRequest;
 export const SaveCategoryRequest = z.strictObject({ name: z.string().nullable(), colourHex: z.string().nullable() });

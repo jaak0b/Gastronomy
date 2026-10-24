@@ -1,6 +1,5 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -40,9 +39,9 @@ public sealed class StationRepositoryTest
 
     StationRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<ListedStation> stations = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Station> stations = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(stations.Select(listed => _stationService.IsAtAnyFestival(listed.Station)), Is.All.False);
+    Assert.That(stations.Select(_stationService.IsAtAnyFestival), Is.All.False);
   }
 
   [Test]
@@ -53,53 +52,49 @@ public sealed class StationRepositoryTest
 
     StationRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<ListedStation> stations = await repository.FindAllAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Station> stations = await repository.FindAllAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(stations.Select(listed => _stationService.IsAtAnyFestival(listed.Station)), Is.All.True);
+    Assert.That(stations.Select(_stationService.IsAtAnyFestival), Is.All.True);
   }
 
   [Test]
-  public async Task FindAllAsync_AStationWithAnItemNotYetHandedOutAtTheFestival_SaysSoForThatStationOnly()
+  public async Task FindStationIdsWithItemsToHandOutAsync_AStationWithAnItemNotYetHandedOutAtTheFestival_NamesThatStationOnly()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    await PlaceKitchenOrderAsync(fixture, seeded);
+    await PlaceKitchenOrderAsync(fixture, seeded, seeded.FestivalId);
     StationRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<ListedStation> stations = await repository.FindAllAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyCollection<Guid> stationIds = await repository.FindStationIdsWithItemsToHandOutAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(stations.Select(listed => listed.HasItemsToHandOut),
-                Is.EqualTo(new[]
-                           {
-                             true,
-                             false
-                           }));
+    Assert.That(stationIds, Is.EqualTo(new[] { seeded.KitchenStationId }));
   }
 
   [Test]
-  public async Task FindAllAsync_AStationThatHandedOutEverything_SaysItHasNothingToHandOut()
+  public async Task FindStationIdsWithItemsToHandOutAsync_AStationThatHandedOutEverything_NamesNoStation()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    await HandOutAsync(fixture, await PlaceKitchenOrderAsync(fixture, seeded));
+    await HandOutAsync(fixture, await PlaceKitchenOrderAsync(fixture, seeded, seeded.FestivalId));
     StationRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<ListedStation> stations = await repository.FindAllAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyCollection<Guid> stationIds = await repository.FindStationIdsWithItemsToHandOutAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(stations.Select(listed => listed.HasItemsToHandOut), Is.All.False);
+    Assert.That(stationIds, Is.Empty);
   }
 
   [Test]
-  public async Task FindAllAsync_WithoutAFestival_SaysNoStationHasItemsToHandOut()
+  public async Task FindStationIdsWithItemsToHandOutAsync_AnItemNotYetHandedOutAtAnotherFestival_NamesNoStation()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    await PlaceKitchenOrderAsync(fixture, seeded);
+    var autumnFestivalId = await SeedAutumnFestivalAsync(fixture);
+    await PlaceKitchenOrderAsync(fixture, seeded, autumnFestivalId);
     StationRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<ListedStation> stations = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyCollection<Guid> stationIds = await repository.FindStationIdsWithItemsToHandOutAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(stations.Select(listed => listed.HasItemsToHandOut), Is.All.False);
+    Assert.That(stationIds, Is.Empty);
   }
 
   [Test]
@@ -165,7 +160,7 @@ public sealed class StationRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     await GiveTheSausageAProductionTimeAsync(fixture, seeded);
-    await PlaceKitchenOrderAsync(fixture, seeded);
+    await PlaceKitchenOrderAsync(fixture, seeded, seeded.FestivalId);
 
     StationRepository repository = new(fixture.DbContext);
 
@@ -184,7 +179,7 @@ public sealed class StationRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    IReadOnlyList<Guid> items = await PlaceKitchenOrderAsync(fixture, seeded);
+    IReadOnlyList<Guid> items = await PlaceKitchenOrderAsync(fixture, seeded, seeded.FestivalId);
     await HandOutAsync(fixture, items);
 
     StationRepository repository = new(fixture.DbContext);
@@ -202,6 +197,24 @@ public sealed class StationRepositoryTest
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
 
+  private async Task<Guid> SeedAutumnFestivalAsync(SqliteInMemoryFixture fixture)
+  {
+    var festivalId = Guid.NewGuid();
+
+    fixture.DbContext.Festivals.Add(new()
+                                    {
+                                      Id = festivalId,
+                                      Name = "Herbstfest",
+                                      StartsAtUtc = _now.AddDays(-60),
+                                      EndsAtUtc = _now.AddDays(-59),
+                                      NextOrderNumber = 1,
+                                      IsHidden = false
+                                    });
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    return festivalId;
+  }
+
   private async Task HandOutAsync(SqliteInMemoryFixture fixture, IReadOnlyCollection<Guid> orderItemIds)
   {
     List<Guid> ids = orderItemIds.ToList();
@@ -213,9 +226,9 @@ public sealed class StationRepositoryTest
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
 
-  private async Task<IReadOnlyList<Guid>> PlaceKitchenOrderAsync(SqliteInMemoryFixture fixture, SeededDomain seeded)
+  private async Task<IReadOnlyList<Guid>> PlaceKitchenOrderAsync(SqliteInMemoryFixture fixture, SeededDomain seeded, Guid festivalId)
   {
-    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
+    var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, festivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     var orderId = Guid.NewGuid();
     var stationOrderId = Guid.NewGuid();
 
@@ -223,7 +236,7 @@ public sealed class StationRepositoryTest
                   {
                     Id = orderId,
                     ClientOrderId = Guid.NewGuid(),
-                    FestivalId = seeded.FestivalId,
+                    FestivalId = festivalId,
                     GlobalOrderNumber = 1,
                     StaffMemberId = seeded.StaffMemberId,
                     TableId = tableId,
@@ -234,7 +247,7 @@ public sealed class StationRepositoryTest
                                 {
                                   Id = stationOrderId,
                                   OrderId = orderId,
-                                  FestivalId = seeded.FestivalId,
+                                  FestivalId = festivalId,
                                   StationId = seeded.KitchenStationId,
                                   StationOrderNumber = 1,
                                   DeliveryMode = DeliveryMode.Together

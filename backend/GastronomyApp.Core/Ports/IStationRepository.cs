@@ -1,5 +1,4 @@
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Ports;
 
@@ -9,7 +8,9 @@ public interface IStationRepository
 
   public Task<IReadOnlyList<Station>> FindAtFestivalWithOpenItemsAsync(Guid festivalId, CancellationToken cancellationToken);
 
-  public Task<IReadOnlyList<ListedStation>> FindAllAsync(Guid? festivalId, CancellationToken cancellationToken);
+  public Task<IReadOnlyList<Station>> FindAllAsync(Guid? festivalId, CancellationToken cancellationToken);
+
+  public Task<IReadOnlyCollection<Guid>> FindStationIdsWithItemsToHandOutAsync(Guid festivalId, CancellationToken cancellationToken);
 
   public Task<Station?> FindByIdAsync(Guid stationId, CancellationToken cancellationToken);
 

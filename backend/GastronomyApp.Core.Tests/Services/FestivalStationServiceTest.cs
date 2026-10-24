@@ -27,14 +27,14 @@ public sealed class FestivalStationServiceTest
     A.CallTo(() => _stationRepository.ExistsAsync(A<Guid>._, A<CancellationToken>._)).Returns(true);
     A.CallTo(() => _repository.FindLinkAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(null));
     A.CallTo(() => _repository.FindAssignmentsAtStationAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<ItemStationAssignment>>([]));
-    A.CallTo(() => _repository.CountUnfulfilledItemsAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(0);
+    A.CallTo(() => _stationRepository.FindStationIdsWithItemsToHandOutAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Guid>>([]));
     A.CallTo(() => _tablePlanRepository.FindStationShapeAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStationShape?>(null));
     A.CallTo(() => _numberAllocator.FindNextStationOrderNumberAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(7);
     A.CallTo(() => _orderabilityRepository.FindActiveStationIdsAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_kitchenId]));
     A.CallTo(() => _orderabilityRepository.FindItemIdsPreparedByAsync(A<Guid>._, A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
     A.CallTo(() => _orderabilityRepository.FindActiveMenuItemIdsAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
 
-    _service = new(_repository, _festivalRepository, _stationRepository, new(_orderabilityRepository, _festivalRepository, _clock), _numberAllocator, new(_festivalRepository, new(), _clock), _tablePlanRepository);
+    _service = new(_repository, _festivalRepository, _stationRepository, new(_orderabilityRepository, _festivalRepository, _clock), _numberAllocator, new(_stationRepository, new(_festivalRepository, new(), _clock)), _tablePlanRepository);
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
@@ -110,7 +110,7 @@ public sealed class FestivalStationServiceTest
   public async Task RemoveAsync_AStationWithOpenItemsAtTheRunningFestival_KeepsTheStationAtTheFestival()
   {
     A.CallTo(() => _repository.FindLinkAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(BuildLink()));
-    A.CallTo(() => _repository.CountUnfulfilledItemsAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(3);
+    A.CallTo(() => _stationRepository.FindStationIdsWithItemsToHandOutAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Guid>>([_kitchenId]));
 
     ErrorOr<FestivalStation> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
 
@@ -127,7 +127,7 @@ public sealed class FestivalStationServiceTest
     A.CallTo(() => _festivalRepository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(true)));
     var link = BuildLink();
     A.CallTo(() => _repository.FindLinkAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(link));
-    A.CallTo(() => _repository.CountUnfulfilledItemsAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(3);
+    A.CallTo(() => _stationRepository.FindStationIdsWithItemsToHandOutAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Guid>>([_kitchenId]));
 
     ErrorOr<FestivalStation> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
 

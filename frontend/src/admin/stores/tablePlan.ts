@@ -6,7 +6,7 @@ import {
   SavedAreaView,
   SavedTableView,
   type AdminAreaView,
-  type MoveDirection,
+  type MoveAreaRequest,
   type SaveAreaRequest,
   type SaveStationShapeRequest,
   type SaveTableRequest,
@@ -86,13 +86,13 @@ export const useAdminTablePlanStore = defineStore('adminTablePlan', () => {
   async function moveArea(
     festivalId: string,
     areaId: string,
-    direction: MoveDirection,
+    move: MoveAreaRequest,
   ): Promise<AdminActionResult<null>> {
     return await areaMoves.run(async () =>
       reloadOrFailureOf(
         await requestAction(`/api/admin/festivals/${festivalId}/areas/${areaId}/move`, {
           method: 'POST',
-          body: { direction },
+          body: move,
         }),
         reload,
       ),

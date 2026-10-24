@@ -34,8 +34,9 @@ Backend, under `backend/`:
   `FindIdsNotEndedAsync` answers "not hidden and not yet over" for `ItemOrderability` in the query
   itself (it includes festivals still to come, so it is not "running").
 - Refusals: `GastronomyApp.Core/Refusals/Refusal.Festival.cs` (`PeriodInvalid`,
-  `PeriodOverlapsAnotherFestival`, `FestivalIsRunning`), `Refusal.FestivalMenu.cs` and
-  `Refusal.FestivalStation.cs`.
+  `PeriodOverlapsAnotherFestival`, `FestivalIsRunning` with
+  `errors.admin.festivals.runningFestivalStaysShown`, which is also the tooltip of the festival
+  list's disabled eye), `Refusal.FestivalMenu.cs` and `Refusal.FestivalStation.cs`.
 - Routes: `GastronomyApp.Api/Endpoints/AdminFestivalEndpoints.cs` under `/api/admin/festivals`: list,
   create, `PUT /{festivalId}`, `POST /{festivalId}/copy`, `/hide` and `/show` with
   `Handlers/AdminFestivalHandler.cs`; `PUT` and `DELETE /{festivalId}/items/{itemId}` and
@@ -46,17 +47,32 @@ Backend, under `backend/`:
   `AdminFestivalView` with `IsHidden`, `IsRunning` and the three counts, `AdminFestivalListView`,
   `SaveFestivalItemRequest`). Mapping: `GastronomyApp.Api/Mapping/AdminFestivalMapping.cs`; the handler
   sets `IsRunning` from `FestivalAdministrationService.IsRunning`.
-- The station list read for one festival (`GET /api/admin/stations?festivalId=`) answers
-  `AdminStationView.HasItemsToHandOut`: `StationRepository.FindAllAsync` projects a `ListedStation`
-  (`Core/Results`) per station in the same statement, through `GastronomyAppDbContext.ItemsToHandOutAt`,
-  the predicate `FestivalStationRepository.CountUnfulfilledItemsAsync` uses for the removal refusal
-  (`StationHasUnfulfilledItems`). Without a festival the flag is false.
+- The station list read (`GET /api/admin/stations`, with `?festivalId=` on the festival page)
+  answers what would refuse taking each station out, so a screen disables the removal or the switch
+  off before the click. `AdminStationView.HasItemsToHandOutAtTheRunningFestival` comes from
+  `Core/Services/ItemsToHandOutLookup.cs`, the one home of that check: `FindStationIdsIfRunningAsync`
+  (a festival: its stations with an item not handed out, and none unless it runs) and
+  `FindStationIdsAtTheRunningFestivalAsync` (the same for the running festival, none when nothing
+  runs), over `StationRepository.FindStationIdsWithItemsToHandOutAsync`. The list,
+  `FestivalStationService.RemoveAsync` (`StationHasOrdersAtTheFestival`) and
+  `StationAdministrationService.DeactivateAsync` (`StationHasUnfulfilledItems`) all ask it, so
+  "only while it runs" is decided there and nowhere else. The articles left without a station
+  (`ItemsWouldHaveNoStation`) come in two fields, each filled only by the read whose screen offers
+  that action and null in the other: `StrandedItemCountWhenRemovedFromTheFestival` on the festival
+  read (`ItemOrderability.FindItemsStrandedByRemovingEachStationAsync`, which `RemoveAsync` asks for
+  one station) and `StrandedItemCountWhenSwitchedOff` on the read without a festival
+  (`FindItemsStrandedBySwitchingOffEachStationAsync`, which `DeactivateAsync` asks for one station).
+  A list reads the festivals not yet over once, and per festival its active stations and menu once,
+  then one query per station that prepares there; a station that prepares nothing at a festival
+  strands nothing there without a query. `ListAsync` returns the values in a `ListedStation`.
 
 Frontend, under `frontend/src/`:
 
 - `admin/components/festivals/FestivalsList.vue` is the Feste tab: one row per festival with the
   "Aktiv" and "Ausgeblendet" chips, open, copy, hide (the crossed-out eye of the category rows with
-  the tooltip "Ausblenden", `BaseIconAction.vue`, asking through `BaseHideConfirmDialog.vue`) and
+  the tooltip "Ausblenden", `BaseIconAction.vue`, asking through `BaseHideConfirmDialog.vue`, and on
+  the running festival disabled with `runningFestivalStaysShown` as its tooltip through
+  `BaseActionWithRefusalReason.vue`) and
   show (the open eye with the tooltip "Einblenden", `BaseShowButton.vue`), the checkbox that reveals
   the hidden ones in the heading line (`BaseHeadingWithCheckbox.vue`, as on every global tab), and
   the new festival button; the table plan's areas and tables hide and show through the same pieces
@@ -70,7 +86,12 @@ Frontend, under `frontend/src/`:
   the connection's refetch neither sends the admin away nor skips loading the page. The article
   rows' trash icon is `BaseTrashButton.vue` inside `BaseActionWithRefusalReason.vue` (disabled with
   its reason while the festival runs), and so is the station rows' trash icon, disabled with
-  `stationHasOrdersAtTheFestival` while the festival runs and the station has items to hand out. The
+  `stationHasOrdersAtTheFestival` while the station holds items to hand out at the running
+  festival, and otherwise with the full `itemsWouldHaveNoStation` refusal while removing it would
+  leave articles without a station, the order in which the laptop refuses. The full text stays here
+  because the page's article rows offer both things it names: their stations and their removal.
+  Both reasons are chosen in `admin/composables/useStationRefusalReasons.ts`, shared with the
+  Ausgabestellen tab. The
   station rows are `stations/RemovableStationRows.vue`, which the table plan editor's station list
   uses too; a refusal that comes back anyway shows on the row. The article and station removals ask
   through `BaseRemoveConfirmDialog.vue`. The station card's and the article card's search and add
@@ -85,8 +106,9 @@ Frontend, under `frontend/src/`:
 - Stores: `admin/stores/festivals.ts` (`useAdminFestivalsStore`: `save`, `copy`, `hide`, `show`,
   `runningFestival`, reloading on `ConfigurationChanged` and `OrdersChanged`). It never computes
   "running": it takes `isRunning` from the laptop. The stations and items stores read one festival
-  through `admin/stores/festivalScopedList.ts` (`loadAtTheFestival`), `festivalStock.ts` holds the
-  stock and `tablePlan.ts` the plan.
+  through `admin/stores/festivalScopedList.ts` (`loadAtTheFestival`); the stations store reloads on
+  `ConfigurationChanged` and `OrdersChanged`, because `hasItemsToHandOutAtTheRunningFestival`
+  changes with every order and every hand-out. `festivalStock.ts` holds the stock and `tablePlan.ts` the plan.
 - Phone: `phone/stores/catalog.ts` (the catalog names the running festival), `phone/stores/tablePlan.ts`
   (the running festival's plan, empty when none runs), `phone/stores/order.ts`
   (`dropTheDraftIfTheFestivalChanged`), `phone/core/draftCart.ts` (`festivalId`,
@@ -162,14 +184,26 @@ Every point below is intended behaviour. A change to any of them needs the owner
   `Configurations/OrderNumberIndexTest` (the station number index) and
   `Services/FestivalAdministrationServiceTest` (the stock rows of a new festival and of a copy).
 - `GastronomyApp.Api.Tests/Endpoints`: `AdminFestivalEndpointsTest` (the wire shape, overlap with a
-  hidden festival, show without an overlap check, hide while running, copy) and
+  hidden festival, show without an overlap check, hide while running refused with its reason, copy) and
   `FestivalScopeEndpointsTest`.
-- `GastronomyApp.Infrastructure.Tests/Repositories/StationRepositoryTest` and
-  `GastronomyApp.Api.Tests/Endpoints/AdminFestivalEndpointsTest` for `HasItemsToHandOut`.
-- `frontend/tests`: `admin/stores/festivals.spec.ts` and `festivalScope.spec.ts`;
-  `admin/components/festivals/FestivalsList.spec.ts` (the eye icons and their names) and
-  `FestivalPage.*.spec.ts` (`heading`, `refusals`, `stations` with the disabled trash icon and the
-  two sentences of the empty search, `itemChanges`, `itemPlacement`, `tablePlan`, `tablePlanAreas`) on
+- What would refuse taking a station out: `GastronomyApp.Core.Tests/Services/ItemsToHandOutLookupTest`
+  (running, over, not yet started, nothing running), `StationRepositoryTest` in
+  `GastronomyApp.Infrastructure.Tests/Repositories` (another festival's open items name no
+  station), `StationAdministrationServiceTest` (which festival the flag is read at, a festival that
+  is over, which stranded count each read fills, the festivals read once), `FestivalStationServiceTest`
+  and `ItemOrderabilityTest` (each station on its own, a station that prepares nothing). In
+  `GastronomyApp.Api.Tests/Endpoints`, `AdminFestivalEndpointsTest` and `StationDeactivationTest`
+  each read the list and then try the action for a station with an open item while the festival
+  runs, has not started and is over, and check that the flag matches the answer; they also cover
+  each read's stranded count. The filters themselves:
+  `GastronomyApp.Infrastructure.Tests/Persistence/OrderItemQueriesExtensionsTest`.
+- `frontend/tests`: `admin/stores/festivals.spec.ts` and `festivalScope.spec.ts`; the station
+  list's reload on `OrdersChanged` in `admin/stores/screenListening.spec.ts`;
+  `admin/components/festivals/FestivalsList.spec.ts` (the eye icons and their names, the eye
+  disabled on the running festival with its reason) and
+  `FestivalPage.*.spec.ts` (`heading`, `refusals`, `stations` with the disabled trash icon, its
+  two reasons and the two sentences of the empty search, `itemChanges`, `itemPlacement`,
+  `tablePlan`, `tablePlanAreas`) on
   `festivalPageFixture.ts`, the guard against an overtaken festival read in `.heading`, and the
   loaded state in `admin/stores/adminList.spec.ts`;
   `phone/stores/orderFestivalScope.spec.ts` (the silent drop and the frozen order). Fixtures come from

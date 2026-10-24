@@ -36,12 +36,11 @@ export const SCHANK_SHAPE = anAdminStationShape({
 export const HALL = anAdminArea({
   areaId: 'area-halle',
   name: 'Halle',
-  sortOrder: 1,
   tables: [TABLE_A1],
   stationShapes: [SCHANK_SHAPE],
 })
 
-export const TENT = anAdminArea({ areaId: 'area-zelt', name: 'Zelt', sortOrder: 2 })
+export const TENT = anAdminArea({ areaId: 'area-zelt', name: 'Zelt' })
 
 export const KITCHEN = anAdminStation({ stationId: 'station-kueche', name: 'Küche', isAtAnyFestival: true })
 

@@ -8,9 +8,9 @@ export const PLAN_PATH = '/api/admin/festivals/fest-1/table-plan'
 
 export const TABLE_A1 = anAdminTable({ tableId: 'table-a1', name: 'A1', geometry: aGeometry() })
 
-export const HALL = anAdminArea({ areaId: 'area-halle', name: 'Halle', sortOrder: 1, tables: [TABLE_A1] })
+export const HALL = anAdminArea({ areaId: 'area-halle', name: 'Halle', tables: [TABLE_A1] })
 
-export const TENT = anAdminArea({ areaId: 'area-zelt', name: 'Zelt', sortOrder: 2 })
+export const TENT = anAdminArea({ areaId: 'area-zelt', name: 'Zelt' })
 
 export function planLaptop(writeReply: LaptopReply = answer({})): StubbedLaptop {
   return stubLaptop()

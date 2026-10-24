@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import FestivalsList from '../../../../src/admin/components/festivals/FestivalsList.vue'
 import { testPlugins } from '../../../support/plugins'
-import { iconActionLabelsOnScreen, pressInDialog, waitForDialog, typeInto, onScreen } from '../../../support/dom'
+import { iconActionLabelsOnScreen, pressInDialog, refusalReasonsOnScreen, waitForDialog, typeInto, onScreen } from '../../../support/dom'
 import { stubLaptop, answer, type StubbedLaptop, refusal } from '../../../support/laptop'
 
 const RUNNING = {
@@ -32,6 +32,10 @@ const HIDDEN = {
   name: 'Sommerfest 2025',
   isHidden: true,
 }
+
+const RUNNING_ROW = '[data-test="festival-row"][data-test-id="fest-1"]'
+
+const OVER_ROW = '[data-test="festival-row"][data-test-id="fest-2"]'
 
 function festivalsLaptop(festivals: unknown[]): StubbedLaptop {
   return stubLaptop().answersEverythingElse(answer({ festivals }))
@@ -138,15 +142,26 @@ describe('the list of festivals', () => {
     )
   })
 
-  it('offers no way to hide the festival that is running', async () => {
+  it('switches off the crossed-out eye on the festival that is running', async () => {
     festivalsLaptop([RUNNING, OVER])
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('[data-test="festival-row"]').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find(`${RUNNING_ROW} [data-test="hide"]`).exists()).toBe(true))
 
-    const rows = list.findAll('[data-test="festival-row"]')
-    expect(rows[0].find('[data-test="hide"]').exists()).toBe(false)
-    expect(rows[1].find('[data-test="hide"]').exists()).toBe(true)
+    expect((list.get(`${RUNNING_ROW} [data-test="hide"]`).element as HTMLButtonElement).disabled).toBe(true)
+    expect((list.get(`${OVER_ROW} [data-test="hide"]`).element as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('says why the running festival cannot be hidden when the admin points at its eye', async () => {
+    festivalsLaptop([RUNNING])
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find(`${RUNNING_ROW} [data-test="hide-wrapper"]`).exists()).toBe(true))
+
+    await list.get(`${RUNNING_ROW} [data-test="hide-wrapper"]`).trigger('mouseenter')
+
+    await vi.waitFor(() =>
+      expect(refusalReasonsOnScreen()).toContain('Ein aktives Fest kann nicht ausgeblendet werden.'),
+    )
   })
 
   it('opens the page of that festival, which is where its stations and its menu live', async () => {

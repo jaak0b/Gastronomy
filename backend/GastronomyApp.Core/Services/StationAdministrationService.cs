@@ -9,30 +9,41 @@ namespace GastronomyApp.Core.Services;
 public sealed class StationAdministrationService
 {
   private readonly IFestivalRepository _festivalRepository;
-  private readonly IFestivalStationRepository _festivalStationRepository;
+  private readonly ItemsToHandOutLookup _itemsToHandOut;
   private readonly ItemOrderability _orderability;
   private readonly IStationRepository _repository;
   private readonly DeviceOwnerRetirement _retirement;
-  private readonly RunningFestivalLookup _runningFestival;
 
-  public StationAdministrationService(IStationRepository repository, IFestivalRepository festivalRepository, IFestivalStationRepository festivalStationRepository, DeviceOwnerRetirement retirement, ItemOrderability orderability, RunningFestivalLookup runningFestival)
+  public StationAdministrationService(IStationRepository repository, IFestivalRepository festivalRepository, DeviceOwnerRetirement retirement, ItemOrderability orderability, ItemsToHandOutLookup itemsToHandOut)
   {
     _repository = repository;
     _festivalRepository = festivalRepository;
-    _festivalStationRepository = festivalStationRepository;
     _retirement = retirement;
     _orderability = orderability;
-    _runningFestival = runningFestival;
+    _itemsToHandOut = itemsToHandOut;
   }
 
   public async Task<ErrorOr<IReadOnlyList<ListedStation>>> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
-    if (festivalId is { } askedFestivalId && !await _festivalRepository.ExistsAsync(askedFestivalId, cancellationToken))
+    if (festivalId is not { } askedFestivalId)
+    {
+      IReadOnlyList<Station> stations = await _repository.FindAllAsync(null, cancellationToken);
+      IReadOnlyCollection<Guid> holdingItems = await _itemsToHandOut.FindStationIdsAtTheRunningFestivalAsync(cancellationToken);
+      IReadOnlyDictionary<Guid, IReadOnlyList<Guid>> strandedBySwitchingOff = await _orderability.FindItemsStrandedBySwitchingOffEachStationAsync(stations.Select(station => station.Id).ToList(), cancellationToken);
+
+      return stations.Select(station => new ListedStation(station, holdingItems.Contains(station.Id), strandedBySwitchingOff[station.Id].Count, null)).ToList().ToErrorOr<IReadOnlyList<ListedStation>>();
+    }
+
+    var festival = await _festivalRepository.FindByIdAsync(askedFestivalId, cancellationToken);
+
+    if (festival is null)
       return Refusal.Station.FestivalNotFound(askedFestivalId);
 
-    IReadOnlyList<ListedStation> stations = await _repository.FindAllAsync(festivalId, cancellationToken);
+    IReadOnlyList<Station> festivalStations = await _repository.FindAllAsync(askedFestivalId, cancellationToken);
+    IReadOnlyCollection<Guid> holdingItemsAtTheFestival = await _itemsToHandOut.FindStationIdsIfRunningAsync(festival, cancellationToken);
+    IReadOnlyDictionary<Guid, IReadOnlyList<Guid>> strandedByRemoving = await _orderability.FindItemsStrandedByRemovingEachStationAsync(askedFestivalId, festivalStations.Select(station => station.Id).ToList(), cancellationToken);
 
-    return stations.ToErrorOr();
+    return festivalStations.Select(station => new ListedStation(station, holdingItemsAtTheFestival.Contains(station.Id), null, strandedByRemoving[station.Id].Count)).ToList().ToErrorOr<IReadOnlyList<ListedStation>>();
   }
 
   public async Task<ErrorOr<ListedStation>> CreateAsync(string? name, int sortOrder, CancellationToken cancellationToken)
@@ -49,7 +60,7 @@ public sealed class StationAdministrationService
 
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return new ListedStation(created, false);
+    return new ListedStation(created, false, 0, 0);
   }
 
   public async Task<ErrorOr<Station>> UpdateAsync(Guid stationId, string? name, int sortOrder, CancellationToken cancellationToken)
@@ -86,9 +97,7 @@ public sealed class StationAdministrationService
     if (station is null)
       return Refusal.Station.StationNotFound(stationId);
 
-    var runningFestival = await _runningFestival.FindAsync(cancellationToken);
-
-    if (runningFestival is not null && await _festivalStationRepository.CountUnfulfilledItemsAsync(runningFestival.Id, stationId, cancellationToken) > 0)
+    if ((await _itemsToHandOut.FindStationIdsAtTheRunningFestivalAsync(cancellationToken)).Contains(stationId))
       return Refusal.Station.StationHasUnfulfilledItems(stationId);
 
     IReadOnlyList<Guid> strandedItemIds = await _orderability.FindItemsStrandedBySwitchingOffStationAsync(stationId, cancellationToken);

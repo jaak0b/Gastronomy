@@ -1,6 +1,5 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,16 +41,14 @@ public sealed class StationRepository : IStationRepository
                            .ToListAsync(cancellationToken);
   }
 
-  public async Task<IReadOnlyList<ListedStation>> FindAllAsync(Guid? festivalId, CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<Station>> FindAllAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
-    IQueryable<Station> stations = _dbContext.Stations.AsNoTracking().OrderBy(station => station.SortOrder).Include(station => station.FestivalStations.Where(link => festivalId != null && link.FestivalId == festivalId.Value));
+    return await _dbContext.Stations.AsNoTracking().OrderBy(station => station.SortOrder).Include(station => station.FestivalStations.Where(link => festivalId != null && link.FestivalId == festivalId.Value)).ToListAsync(cancellationToken);
+  }
 
-    if (festivalId is not { } listedFestivalId)
-      return await stations.Select(station => new ListedStation(station, false)).ToListAsync(cancellationToken);
-
-    IQueryable<OrderItem> itemsToHandOut = _dbContext.ItemsToHandOutAt(listedFestivalId);
-
-    return await stations.Select(station => new ListedStation(station, itemsToHandOut.Any(item => item.StationOrder.StationId == station.Id))).ToListAsync(cancellationToken);
+  public async Task<IReadOnlyCollection<Guid>> FindStationIdsWithItemsToHandOutAsync(Guid festivalId, CancellationToken cancellationToken)
+  {
+    return await _dbContext.OrderItems.AsNoTracking().WhereNotHandedOut().WhereFestivalIs(festivalId).Select(item => item.StationOrder.StationId).Distinct().ToListAsync(cancellationToken);
   }
 
   public async Task<Station?> FindByIdAsync(Guid stationId, CancellationToken cancellationToken)

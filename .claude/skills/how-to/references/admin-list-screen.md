@@ -24,9 +24,11 @@ to copy. Of the global tabs only it opens its form through `useEditSession`: `St
    `POST <path>` answers the created entry, `PUT <path>/{id}`, `POST <path>/{id}/activate` and
    `POST <path>/{id}/deactivate` answer any success. Loads go through the latest request gate.
 4. **Reload.** `listen()` returns `useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], load)`.
-   The component calls it in `onMounted`, then `await store.load()`, and calls the returned release in
-   `onUnmounted`. Why the event, and what the entity owes the laptop side, is in the `architecture`
-   skill.
+   A list whose entries carry a flag derived from orders (the stations'
+   `hasItemsToHandOutAtTheRunningFestival`, the table plan's `hasItemsToHandOutOrSettle`) listens to `OrdersChanged` too, or a button the flag
+   disables stays wrong until the screen is opened again. The component calls it in `onMounted`,
+   then `await store.load()`, and calls the returned release in `onUnmounted`. Why the events, and
+   what the entity owes the laptop side, is in the `architecture` skill.
 5. **The list component.** The heading is `BaseHeadingWithCheckbox`
    (`admin/components/BaseHeadingWithCheckbox.vue`) with the `h1` in its slot and its checkbox on a
    `showsDeactivated` ref (`checkbox-test-name="show-deactivated"`, text
@@ -59,8 +61,12 @@ to copy. Of the global tabs only it opens its form through `useEditSession`: `St
    `store.setActive(id, false)` and hands the result to `session.showRefusalOf`. Reactivating asks
    nothing. When the entry's own data already says the laptop will refuse, the switch off is disabled
    and its tooltip names the reason, through `admin/components/BaseActionWithRefusalReason.vue` around
-   `BaseTrashButton.vue` (`IngredientsList.vue` does this from `activeItemNames`; see
-   `hideable-rows.md`). A
+   `BaseTrashButton.vue` (`IngredientsList.vue` does this from `activeItemNames`, and
+   `StationsList.vue` from `hasItemsToHandOutAtTheRunningFestival` and
+   `strandedItemCountWhenSwitchedOff` through `admin/composables/useStationRefusalReasons.ts`, naming
+   the reason the laptop checks first when both apply; see `hideable-rows.md`). The tooltip is the
+   text of the refusal the laptop would send, cut to its first sentence when the rest names controls
+   the screen does not have. A
    refusal that comes back anyway is one page level `v-alert` (`type="warning"`,
    `data-test="refusal"`), shown only while the form dialog is closed, because an open dialog shows its
    own refusal through `:error-text`.

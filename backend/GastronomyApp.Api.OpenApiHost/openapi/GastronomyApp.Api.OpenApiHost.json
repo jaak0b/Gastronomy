@@ -2252,7 +2252,6 @@
         "required": [
           "areaId",
           "name",
-          "sortOrder",
           "isHidden",
           "hasItemsToHandOutOrSettle",
           "tables",
@@ -2266,10 +2265,6 @@
           },
           "name": {
             "type": "string"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
           },
           "isHidden": {
             "type": "boolean"
@@ -2727,7 +2722,9 @@
           "isActive",
           "hasDevice",
           "isAtAnyFestival",
-          "hasItemsToHandOut"
+          "hasItemsToHandOutAtTheRunningFestival",
+          "strandedItemCountWhenSwitchedOff",
+          "strandedItemCountWhenRemovedFromTheFestival"
         ],
         "type": "object",
         "properties": {
@@ -2751,8 +2748,22 @@
           "isAtAnyFestival": {
             "type": "boolean"
           },
-          "hasItemsToHandOut": {
+          "hasItemsToHandOutAtTheRunningFestival": {
             "type": "boolean"
+          },
+          "strandedItemCountWhenSwitchedOff": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "strandedItemCountWhenRemovedFromTheFestival": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -3207,12 +3218,16 @@
       },
       "MoveAreaRequest": {
         "required": [
-          "direction"
+          "direction",
+          "showsHiddenAreas"
         ],
         "type": "object",
         "properties": {
           "direction": {
             "$ref": "#/components/schemas/MoveDirection"
+          },
+          "showsHiddenAreas": {
+            "type": "boolean"
           }
         }
       },
@@ -3477,8 +3492,7 @@
       },
       "SaveAreaRequest": {
         "required": [
-          "name",
-          "sortOrder"
+          "name"
         ],
         "type": "object",
         "properties": {
@@ -3487,10 +3501,6 @@
               "null",
               "string"
             ]
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
           }
         }
       },

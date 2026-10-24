@@ -8,8 +8,6 @@ public interface IFestivalStationRepository
 
   public Task<IReadOnlyList<ItemStationAssignment>> FindAssignmentsAtStationAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken);
 
-  public Task<int> CountUnfulfilledItemsAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken);
-
   public Task AddLinkAsync(FestivalStation link, CancellationToken cancellationToken);
 
   public void RemoveLink(FestivalStation link);

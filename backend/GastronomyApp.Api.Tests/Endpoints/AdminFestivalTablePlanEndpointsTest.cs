@@ -21,6 +21,8 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     await _context.DisposeAsync();
   }
 
+  private const string SeededAreaName = "Festzelt";
+
   private OrderTestContext _context = null!;
 
   private string FestivalPath => $"/api/admin/festivals/{_context.World.FestivalId}";
@@ -28,15 +30,15 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task GetTablePlan_AFestivalWithAPlan_AnswersEveryAreaInSortOrderWithItsTablesAndStationShapes()
   {
-    var hallId = await CreateAreaAsync("Halle", 2);
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
+    var hallId = await CreateAreaAsync("Halle");
     var tableId = await CreateTableAsync(gardenId, "Tisch 1");
     await HideAsync($"{FestivalPath}/areas/{hallId}/hide");
     await PlaceAsync(_context.World.KitchenStationId, gardenId);
 
     using var response = await _context.Client.GetAsync($"{FestivalPath}/table-plan");
     var areas = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("areas");
-    var garden = areas[0];
+    var garden = areas[1];
     var table = garden.GetProperty("tables")[0];
     var tableGeometry = table.GetProperty("geometry");
     var stationShape = garden.GetProperty("stationShapes")[0];
@@ -46,9 +48,9 @@ public sealed class AdminFestivalTablePlanEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(areas.GetArrayLength(), Is.EqualTo(3));
+                      Assert.That(areas[0].GetProperty("name").GetString(), Is.EqualTo(SeededAreaName));
                       Assert.That(garden.GetProperty("areaId").GetGuid(), Is.EqualTo(gardenId));
                       Assert.That(garden.GetProperty("name").GetString(), Is.EqualTo("Garten"));
-                      Assert.That(garden.GetProperty("sortOrder").GetInt32(), Is.EqualTo(1));
                       Assert.That(garden.GetProperty("isHidden").GetBoolean(), Is.False);
                       Assert.That(garden.GetProperty("hasItemsToHandOutOrSettle").GetBoolean(), Is.False);
                       Assert.That(table.GetProperty("tableId").GetGuid(), Is.EqualTo(tableId));
@@ -67,16 +69,16 @@ public sealed class AdminFestivalTablePlanEndpointsTest
                       Assert.That(stationGeometry.GetProperty("width").GetDouble(), Is.EqualTo(60));
                       Assert.That(stationGeometry.GetProperty("height").GetDouble(), Is.EqualTo(45.5));
                       Assert.That(stationGeometry.GetProperty("rotation").GetDouble(), Is.EqualTo(-135));
-                      Assert.That(areas[1].GetProperty("areaId").GetGuid(), Is.EqualTo(hallId));
-                      Assert.That(areas[1].GetProperty("isHidden").GetBoolean(), Is.True);
-                      Assert.That(areas[1].GetProperty("tables").GetArrayLength(), Is.Zero);
+                      Assert.That(areas[2].GetProperty("areaId").GetGuid(), Is.EqualTo(hallId));
+                      Assert.That(areas[2].GetProperty("isHidden").GetBoolean(), Is.True);
+                      Assert.That(areas[2].GetProperty("tables").GetArrayLength(), Is.Zero);
                     });
   }
 
   [Test]
   public async Task GetTablePlan_ATableWithAnItemNotYetHandedOut_SaysSoForThatTableAndItsArea()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
     var orderedAtId = await CreateTableAsync(gardenId, "Tisch 1");
     await CreateTableAsync(gardenId, "Tisch 2");
     await PlaceOrderAtAsync(orderedAtId);
@@ -97,10 +99,15 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task PostAreaMove_AnAreaUp_PutsItBeforeTheOneAbove()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
-    var hallId = await CreateAreaAsync("Halle", 2);
+    var gardenId = await CreateAreaAsync("Garten");
+    var hallId = await CreateAreaAsync("Halle");
 
-    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/areas/{hallId}/move", new { direction = "up" });
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/areas/{hallId}/move",
+                                                               new
+                                                               {
+                                                                 direction = "up",
+                                                                 showsHiddenAreas = false
+                                                               });
 
     await using var database = _context.Factory.CreateContext();
     var garden = await database.Areas.SingleAsync(area => area.Id == gardenId);
@@ -114,11 +121,68 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   }
 
   [Test]
+  public async Task PostAreaMove_AHiddenAreaBetweenWhileHiddenAreasAreNotShown_PassesOverIt()
+  {
+    await CreateAreaAsync("Garten");
+    var hallId = await CreateAreaAsync("Halle");
+    var tentId = await CreateAreaAsync("Zelt");
+    await HideAsync($"{FestivalPath}/areas/{hallId}/hide");
+
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/areas/{tentId}/move",
+                                                               new
+                                                               {
+                                                                 direction = "up",
+                                                                 showsHiddenAreas = false
+                                                               });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    Assert.That(await AreaNamesInOrderAsync(),
+                Is.EqualTo(new[]
+                           {
+                             SeededAreaName,
+                             "Zelt",
+                             "Halle",
+                             "Garten"
+                           }));
+  }
+
+  [Test]
+  public async Task PostAreaMove_AHiddenAreaBetweenWhileHiddenAreasAreShown_SwapsWithIt()
+  {
+    await CreateAreaAsync("Garten");
+    var hallId = await CreateAreaAsync("Halle");
+    var tentId = await CreateAreaAsync("Zelt");
+    await HideAsync($"{FestivalPath}/areas/{hallId}/hide");
+
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/areas/{tentId}/move",
+                                                               new
+                                                               {
+                                                                 direction = "up",
+                                                                 showsHiddenAreas = true
+                                                               });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    Assert.That(await AreaNamesInOrderAsync(),
+                Is.EqualTo(new[]
+                           {
+                             SeededAreaName,
+                             "Garten",
+                             "Zelt",
+                             "Halle"
+                           }));
+  }
+
+  [Test]
   public async Task PostAreaMove_AnAreaOfAnotherFestival_IsNotFound()
   {
     var strangerAreaId = await CreateAreaAtAnotherFestivalAsync();
 
-    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/areas/{strangerAreaId}/move", new { direction = "down" });
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/areas/{strangerAreaId}/move",
+                                                               new
+                                                               {
+                                                                 direction = "down",
+                                                                 showsHiddenAreas = false
+                                                               });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
   }
@@ -134,10 +198,10 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task PostArea_ANameAHiddenAreaCarriesInOtherCapitals_IsRefusedWithTheNameKey()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
     await HideAsync($"{FestivalPath}/areas/{gardenId}/hide");
 
-    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/areas", BuildArea("GARTEN", 2));
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/areas", BuildArea("GARTEN"));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
 
     Assert.Multiple(() =>
@@ -151,7 +215,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task PostArea_NameMissing_IsRefusedGenerically()
   {
-    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/areas", BuildArea("  ", 1));
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/areas", BuildArea("  "));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
 
     Assert.Multiple(() =>
@@ -162,21 +226,36 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   }
 
   [Test]
-  public async Task PutArea_ANewNameAndSortOrder_IsSaved()
+  public async Task PostArea_AFestivalWhoseLastAreaIsHidden_NumbersTheNewAreaAfterIt()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var hallId = await CreateAreaAsync("Halle");
+    await HideAsync($"{FestivalPath}/areas/{hallId}/hide");
 
-    using var response = await _context.Client.PutAsJsonAsync($"{FestivalPath}/areas/{gardenId}", BuildArea("Biergarten", 5));
+    var gardenId = await CreateAreaAsync("Garten");
 
     await using var database = _context.Factory.CreateContext();
+    var hall = await database.Areas.SingleAsync(area => area.Id == hallId);
     var garden = await database.Areas.SingleAsync(area => area.Id == gardenId);
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(garden.Name, Is.EqualTo("Biergarten"));
-                      Assert.That(garden.SortOrder, Is.EqualTo(5));
-                    });
+    Assert.That(garden.SortOrder, Is.EqualTo(hall.SortOrder + 1));
+  }
+
+  [Test]
+  public async Task PutArea_ANewName_IsSavedAndTheAreaKeepsItsPlace()
+  {
+    await CreateAreaAsync("Garten");
+    var hallId = await CreateAreaAsync("Halle");
+
+    using var response = await _context.Client.PutAsJsonAsync($"{FestivalPath}/areas/{hallId}", BuildArea("Alm"));
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    Assert.That(await AreaNamesInOrderAsync(),
+                Is.EqualTo(new[]
+                           {
+                             SeededAreaName,
+                             "Garten",
+                             "Alm"
+                           }));
   }
 
   [Test]
@@ -184,7 +263,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   {
     var strangerAreaId = await CreateAreaAtAnotherFestivalAsync();
 
-    using var response = await _context.Client.PutAsJsonAsync($"{FestivalPath}/areas/{strangerAreaId}", BuildArea("Garten", 1));
+    using var response = await _context.Client.PutAsJsonAsync($"{FestivalPath}/areas/{strangerAreaId}", BuildArea("Garten"));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
   }
@@ -192,7 +271,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task PostAreaHideAndShow_WhileTheFestivalRuns_HideTheAreaAndShowItAgain()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
 
     using var hidden = await _context.Client.PostAsync($"{FestivalPath}/areas/{gardenId}/hide", null);
     var isHiddenAfterHiding = await IsAreaHiddenAsync(gardenId);
@@ -211,7 +290,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task PostTable_AGeometryAsKonvaHandsItOver_IsStoredExactly()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
 
     using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/tables",
                                                                new
@@ -249,7 +328,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task PostTable_WithoutAGeometry_IsRefusedGenerically()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
 
     using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/tables",
                                                                new
@@ -270,8 +349,8 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task PostTable_ANameAHiddenTableInAnotherAreaCarriesInOtherCapitals_IsRefusedWithTheNameKey()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
-    var hallId = await CreateAreaAsync("Halle", 2);
+    var gardenId = await CreateAreaAsync("Garten");
+    var hallId = await CreateAreaAsync("Halle");
     var tableId = await CreateTableAsync(gardenId, "Tisch 4");
     await HideAsync($"{FestivalPath}/tables/{tableId}/hide");
 
@@ -304,8 +383,8 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task PutTable_AnotherAreaOfTheFestival_MovesTheTableThere()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
-    var hallId = await CreateAreaAsync("Halle", 2);
+    var gardenId = await CreateAreaAsync("Garten");
+    var hallId = await CreateAreaAsync("Halle");
     var tableId = await CreateTableAsync(gardenId, "Tisch 1");
 
     using var response = await _context.Client.PutAsJsonAsync($"{FestivalPath}/tables/{tableId}",
@@ -339,7 +418,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task PutTable_AnAreaOfAnotherFestival_IsRefusedGenericallyAndLeavesTheTableWhereItWas()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
     var tableId = await CreateTableAsync(gardenId, "Tisch 1");
     var strangerAreaId = await CreateAreaAtAnotherFestivalAsync();
 
@@ -360,7 +439,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task PostTableHideAndShow_WhileTheFestivalRuns_HideTheTableAndShowItAgain()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
     var tableId = await CreateTableAsync(gardenId, "Tisch 1");
 
     using var hidden = await _context.Client.PostAsync($"{FestivalPath}/tables/{tableId}/hide", null);
@@ -380,7 +459,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task PostTableHide_ATableWithAnItemNotYetHandedOutWhileTheFestivalRuns_IsRefusedAndKeepsItShown()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
     var tableId = await CreateTableAsync(gardenId, "Tisch 1");
     await PlaceOrderAtAsync(tableId);
 
@@ -400,7 +479,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task PostTableHide_ATableWithItemsToHandOutOrSettleAfterTheFestival_HidesIt()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
     var tableId = await CreateTableAsync(gardenId, "Tisch 1");
     await PlaceOrderAtAsync(tableId);
     await LetTheFestivalEndAsync();
@@ -418,7 +497,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task PostAreaHide_AnAreaWhoseTableHasAnItemNotYetSettledWhileTheFestivalRuns_IsRefusedAndKeepsItShown()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
     var tableId = await CreateTableAsync(gardenId, "Tisch 1");
     await PlaceOrderAtAsync(tableId);
 
@@ -438,8 +517,8 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task PutStationShape_AStationAtTheFestival_PlacesItAndASecondCallMovesTheSameShape()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
-    var hallId = await CreateAreaAsync("Halle", 2);
+    var gardenId = await CreateAreaAsync("Garten");
+    var hallId = await CreateAreaAsync("Halle");
     await PlaceAsync(_context.World.BarStationId, gardenId);
 
     using var response = await _context.Client.PutAsJsonAsync($"{FestivalPath}/stations/{_context.World.BarStationId}/shape",
@@ -477,7 +556,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task PutStationShape_AStationThatDoesNotTakePartInTheFestival_IsNotFound()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
 
     using var response = await _context.Client.PutAsJsonAsync($"{FestivalPath}/stations/{Guid.NewGuid()}/shape", BuildStationShape(gardenId));
 
@@ -502,7 +581,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   [Test]
   public async Task DeleteStationShape_AStationOnThePlan_TakesItOffThePlanAndKeepsItAtTheFestival()
   {
-    var gardenId = await CreateAreaAsync("Garten", 1);
+    var gardenId = await CreateAreaAsync("Garten");
     await PlaceAsync(_context.World.KitchenStationId, gardenId);
 
     using var response = await _context.Client.DeleteAsync($"{FestivalPath}/stations/{_context.World.KitchenStationId}/shape");
@@ -527,13 +606,9 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
   }
 
-  private object BuildArea(string name, int sortOrder)
+  private object BuildArea(string name)
   {
-    return new
-           {
-             name,
-             sortOrder
-           };
+    return new { name };
   }
 
   private object BuildTable(Guid areaId, string name)
@@ -569,9 +644,9 @@ public sealed class AdminFestivalTablePlanEndpointsTest
            };
   }
 
-  private async Task<Guid> CreateAreaAsync(string name, int sortOrder)
+  private async Task<Guid> CreateAreaAsync(string name)
   {
-    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/areas", BuildArea(name, sortOrder));
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/areas", BuildArea(name));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created), await response.Content.ReadAsStringAsync());
 
@@ -608,6 +683,13 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), await response.Content.ReadAsStringAsync());
   }
 
+  private async Task<IReadOnlyList<string?>> AreaNamesInOrderAsync()
+  {
+    using var response = await _context.Client.GetAsync($"{FestivalPath}/table-plan");
+
+    return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("areas").EnumerateArray().Select(area => area.GetProperty("name").GetString()).ToList();
+  }
+
   private async Task<Guid> CreateAreaAtAnotherFestivalAsync()
   {
     var startsAtUtc = DateTime.UtcNow.AddYears(2);
@@ -624,7 +706,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
 
     var otherFestivalId = JsonDocument.Parse(await created.Content.ReadAsStringAsync()).RootElement.GetProperty("festivalId").GetGuid();
 
-    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{otherFestivalId}/areas", BuildArea("Garten", 1));
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{otherFestivalId}/areas", BuildArea("Garten"));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 

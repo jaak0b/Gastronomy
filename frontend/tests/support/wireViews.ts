@@ -99,7 +99,9 @@ export function anAdminStation(overrides: Partial<AdminStationView> = {}): Admin
     isActive: true,
     hasDevice: true,
     isAtAnyFestival: true,
-    hasItemsToHandOut: false,
+    hasItemsToHandOutAtTheRunningFestival: false,
+    strandedItemCountWhenSwitchedOff: null,
+    strandedItemCountWhenRemovedFromTheFestival: null,
     ...overrides,
   }
 }
@@ -164,7 +166,6 @@ export function anAdminArea(overrides: Partial<AdminAreaView> = {}): AdminAreaVi
   return {
     areaId: 'area-halle',
     name: 'Halle',
-    sortOrder: 1,
     isHidden: false,
     hasItemsToHandOutOrSettle: false,
     tables: [],

@@ -20,7 +20,9 @@ const BACKEND_STATION = {
   isActive: true,
   hasDevice: false,
   isAtAnyFestival: true,
-  hasItemsToHandOut: false,
+  hasItemsToHandOutAtTheRunningFestival: false,
+  strandedItemCountWhenSwitchedOff: null,
+  strandedItemCountWhenRemovedFromTheFestival: null,
 }
 
 const ZELT = {
@@ -30,7 +32,9 @@ const ZELT = {
   isActive: true,
   hasDevice: false,
   isAtAnyFestival: false,
-  hasItemsToHandOut: false,
+  hasItemsToHandOutAtTheRunningFestival: false,
+  strandedItemCountWhenSwitchedOff: null,
+  strandedItemCountWhenRemovedFromTheFestival: null,
 }
 
 function laptopReplyingBy(
@@ -201,7 +205,9 @@ const CREATED_STATION = {
   isActive: true,
   hasDevice: false,
   isAtAnyFestival: false,
-  hasItemsToHandOut: false,
+  hasItemsToHandOutAtTheRunningFestival: false,
+  strandedItemCountWhenSwitchedOff: null,
+  strandedItemCountWhenRemovedFromTheFestival: null,
 }
 
 describe('a station created while a list read is on the way', () => {

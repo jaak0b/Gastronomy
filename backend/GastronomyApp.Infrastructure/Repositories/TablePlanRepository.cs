@@ -17,7 +17,7 @@ public sealed class TablePlanRepository : ITablePlanRepository
 
   public async Task<IReadOnlyList<ListedArea>> FindTablePlanAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    IQueryable<OrderItem> itemsToHandOutOrSettle = ItemsToHandOutOrSettle();
+    IQueryable<OrderItem> itemsToHandOutOrSettle = _dbContext.OrderItems.AsNoTracking().WhereNotHandedOutOrNotSettled();
 
     return await _dbContext.Areas.AsNoTracking()
                            .Where(area => area.FestivalId == festivalId)
@@ -28,7 +28,7 @@ public sealed class TablePlanRepository : ITablePlanRepository
                                                           area.Tables.OrderBy(table => table.Name).Select(table => new ListedTable(table, itemsToHandOutOrSettle.Any(item => item.StationOrder.Order.TableId == table.Id))).ToList(),
                                                           area.StationShapes.OrderBy(shape => shape.FestivalStation.Station.SortOrder)
                                                               .ThenBy(shape => shape.FestivalStation.Station.Name)
-                                                              .Select(shape => new ShownStationShape(shape, shape.FestivalStation.StationId, shape.FestivalStation.Station.Name))
+                                                              .Select(shape => new NamedStationShape(shape, shape.FestivalStation.StationId, shape.FestivalStation.Station.Name))
                                                               .ToList()))
                            .ToListAsync(cancellationToken);
   }
@@ -47,7 +47,7 @@ public sealed class TablePlanRepository : ITablePlanRepository
                                                              .ToList(),
                                                          area.StationShapes.OrderBy(shape => shape.FestivalStation.Station.SortOrder)
                                                              .ThenBy(shape => shape.FestivalStation.Station.Name)
-                                                             .Select(shape => new ShownStationShape(shape, shape.FestivalStation.StationId, shape.FestivalStation.Station.Name))
+                                                             .Select(shape => new NamedStationShape(shape, shape.FestivalStation.StationId, shape.FestivalStation.Station.Name))
                                                              .ToList()))
                            .ToListAsync(cancellationToken);
   }
@@ -79,7 +79,7 @@ public sealed class TablePlanRepository : ITablePlanRepository
 
   public async Task<bool> HasItemsToHandOutOrSettleInAreaAsync(Guid areaId, CancellationToken cancellationToken)
   {
-    return await ItemsToHandOutOrSettle().AnyAsync(item => item.StationOrder.Order.Table.AreaId == areaId, cancellationToken);
+    return await _dbContext.OrderItems.AsNoTracking().WhereNotHandedOutOrNotSettled().AnyAsync(item => item.StationOrder.Order.Table.AreaId == areaId, cancellationToken);
   }
 
   public async Task<Table?> FindTableAsync(Guid festivalId, Guid tableId, CancellationToken cancellationToken)
@@ -104,7 +104,7 @@ public sealed class TablePlanRepository : ITablePlanRepository
 
   public async Task<bool> HasItemsToHandOutOrSettleAtTableAsync(Guid tableId, CancellationToken cancellationToken)
   {
-    return await ItemsToHandOutOrSettle().AnyAsync(item => item.StationOrder.Order.TableId == tableId, cancellationToken);
+    return await _dbContext.OrderItems.AsNoTracking().WhereNotHandedOutOrNotSettled().AnyAsync(item => item.StationOrder.Order.TableId == tableId, cancellationToken);
   }
 
   public async Task<FestivalStationShape?> FindStationShapeAsync(Guid festivalStationId, CancellationToken cancellationToken)
@@ -125,10 +125,5 @@ public sealed class TablePlanRepository : ITablePlanRepository
   public async Task SaveChangesAsync(CancellationToken cancellationToken)
   {
     await _dbContext.SaveChangesAsync(cancellationToken);
-  }
-
-  private IQueryable<OrderItem> ItemsToHandOutOrSettle()
-  {
-    return _dbContext.OrderItems.AsNoTracking().Where(item => item.FulfilledAtUtc == null || item.SettledAtUtc == null);
   }
 }

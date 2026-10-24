@@ -19,14 +19,16 @@ tooltip beside them (frontend rule 8).
   `errorText`, `save` and `cancel`. It takes the entries and how to read them (`idOf`, `nameOf`,
   `isHidden`), `hidingRefusalOf` (the reason the laptop would refuse to hide, or `null`), the words
   (`newLabel`, `hideTitle`, `hideBody`), `saveThrough`, `hideThrough`, `showThrough` and the optional
-  `moveThrough` (store actions returning an `AdminActionResult`), `rowTestName` for the rows'
+  `moveThrough` (store actions returning an `AdminActionResult`; `moveThrough` also receives whether
+  "Ausgeblendete anzeigen" is ticked, which the move request carries so a move passes over the
+  hidden entries the admin cannot see), `rowTestName` for the rows'
   `data-test`, and `isSelected` to highlight a row and scroll it into view. It emits `saved` with
   the answer and the mode, for a screen that selects what was just created. Consumers:
   `festivals/FestivalTablePlan.vue` (areas, `tablePlan/AreaDialog.vue`, with the arrows) and
   `tablePlan/TablePlanTableList.vue` (tables, `tablePlan/TableDialog.vue`).
 - `stations/RemovableStationRows.vue` draws station rows that are removed, not hidden: the name, a
   `badges` and an `actions` slot, the trash icon inside `BaseActionWithRefusalReason`
-  (`removalRefusalOf`), the question before the removal, `removeThrough`, and the refusal under its
+  (`removalRefusalOf`; the festival page's comes from `admin/composables/useStationRefusalReasons.ts`), the question before the removal, `removeThrough`, and the refusal under its
   row. Consumers: `festivals/FestivalStations.vue` and `tablePlan/TablePlanStationList.vue`.
 - `BaseListRow.vue` is one row of any of these lists: the line between rows, the tint on every
   second row (`position`), the stronger tint of the selected row (`isSelected`), and scrolling a row
@@ -40,7 +42,8 @@ tooltip beside them (frontend rule 8).
   in a tooltip, as `admin-list-screen.md` step 7 describes. The slot gets `refused` for the button's
   `:disabled`; the wrapper carries the tooltip (`data-test="refusal-reason"`), because a disabled
   button sends no hover. Consumers: the article rows of `FestivalItems.vue` and of the Artikel tab,
-  the ingredient rows of the Zutaten tab, `HideableEntryList.vue` and `RemovableStationRows.vue`.
+  the ingredient rows of the Zutaten tab, the station rows of the Ausgabestellen tab, the festival
+  list's crossed-out eye, `HideableEntryList.vue` and `RemovableStationRows.vue`.
 - `BaseTrashButton.vue` is the red trash icon of the festival page, the Artikel and Zutaten tabs,
   the hiding icon of `HideableEntryList.vue` and the removal icon of `RemovableStationRows.vue`.
 - `BaseIconAction.vue` is an icon button whose name shows as a tooltip
@@ -49,7 +52,10 @@ tooltip beside them (frontend rule 8).
   and `HideableEntryList.vue`).
 - `BaseMoveButtons.vue` is the pair of arrows that emits `move` with `up` or `down`
   (`data-test="move-up"`, `"move-down"`). Consumers: the category headings of the Artikel tab and the
-  area rows. Each store sends one move after the other through `admin/core/oneAtATime.ts`.
+  area rows. Each store sends one move after the other through `admin/core/oneAtATime.ts`. A move
+  swaps the row with the next row in that direction that is on the admin's screen: an area's move
+  request carries the state of "Ausgeblendete anzeigen", and the Artikel tab shows every category,
+  deactivated ones with their chip, so a category's move counts every category.
 - `BaseHideConfirmDialog.vue` asks before hiding, with the festival list's "Ausblenden" confirm label
   and an optional sentence on what follows. Consumers: `FestivalsList.vue`, `HideableEntryList.vue`.
 - `BaseRemoveConfirmDialog.vue` asks before removing, with "Entfernen". Consumers: the article rows
@@ -63,7 +69,7 @@ tooltip beside them (frontend rule 8).
 1. The store needs `hide`, `show`, a create and a save action that reload through the latest
    request gate, and the view needs whatever says the laptop would refuse to hide (the table plan
    carries `hasItemsToHandOutOrSettle` per area and table for that). Entries the admin orders get a
-   move action as well.
+   move action as well, whose request says whether hidden entries are on screen.
 2. Write the entity's dialog on `BaseFormDialog` the way `StationDialog.vue` is written: the fields,
    `:save-disabled` while a required value is missing, `:error-text` for the laptop's refusal.
 3. Mount `HideableEntryList` with the entries, the words and the actions, put the heading in its
