@@ -188,10 +188,12 @@ Governed by its own skill in `.claude/skills/`:
 
 - **Unit tests (Vitest, `tests/`)** are the internal correctness net. Core logic first: totals, routing,
   draft cart persistence, submission identity across retries, state transitions. See
-  `writing-unittests`. A test finds an element through a `data-test` attribute the template
-  carries for it, never by its position among its siblings (`[0]`, `.at(-1)`) or by a styling class.
-  The one exception is a Vuetify-internal element that carries nothing of ours to tag, such as a
-  field's message line; there the Vuetify class is the handle.
+  `writing-unittests`. A test finds what it acts on by the name our code gave it: a page element by
+  the `data-test` attribute its template carries, a shape drawn on a Konva canvas by the `id` or
+  `name` our code set on it. Never by its position among its siblings (`[0]`, `.at(-1)`) or by a
+  styling class. What our code never names, such as a Vuetify field's message line, is found by the
+  class its library gives it. Konva drawings are tested on the `canvas` package, which jsdom uses
+  for real drawing, so a test can tap a shape at a point.
 
 ## Commands
 
