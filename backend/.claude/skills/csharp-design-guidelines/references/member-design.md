@@ -190,8 +190,6 @@ is the sponsor class, and its namespace must be imported to use them.
   interface and if the extension methods are meant to be used in most or all cases.
 - **Do not** define extension methods implementing a feature in namespaces normally associated with
   other features. Define them in the namespace associated with the feature they belong to.
-- **Avoid** generic naming of namespaces dedicated to extension methods (such as "Extensions"). Use a
-  descriptive name (such as "Routing") instead.
 
 ## Operator overloads
 
