@@ -10,7 +10,7 @@ public sealed class AdminItemMapping : IMappingRegistration
   {
     ArgumentNullException.ThrowIfNull(config);
 
-    config.NewConfig<CatalogItemIngredient, AdminItemIngredientView>().Map(view => view.Name, recipeLine => recipeLine.Ingredient.Name).Map(view => view.Unit, recipeLine => recipeLine.Ingredient.Unit);
+    config.NewConfig<CatalogItemIngredient, AdminItemIngredientView>().Map(view => view.Name, recipeLine => recipeLine.Ingredient.Name).Map(view => view.UnitId, recipeLine => recipeLine.Ingredient.UnitId).Map(view => view.UnitName, recipeLine => recipeLine.Ingredient.Unit.Name);
 
     config.NewConfig<CatalogItem, AdminItemView>()
           .Map(view => view.ItemId, item => item.Id)

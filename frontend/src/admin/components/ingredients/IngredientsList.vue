@@ -2,9 +2,10 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminIngredientView } from '../../../shared/api/generatedSchemas'
+import { combineReleases } from '../../../shared/core/combineReleases'
 import { useAdminIngredientsStore, type IngredientDraft } from '../../stores/ingredients'
+import { useAdminUnitsStore } from '../../stores/units'
 import { useEditSession } from '../../composables/useEditSession'
-import { useAmountUnitName } from '../../composables/useAmountUnitName'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseEditButton from '../BaseEditButton.vue'
@@ -15,13 +16,12 @@ import IngredientDialog from './IngredientDialog.vue'
 
 interface IngredientRow {
   ingredient: AdminIngredientView
-  unitWord: string
   deactivationRefusal: string | null
 }
 
 const { t } = useI18n()
 const ingredients = useAdminIngredientsStore()
-const unitName = useAmountUnitName()
+const units = useAdminUnitsStore()
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
 const ingredientSession = useEditSession<AdminIngredientView, IngredientDraft, AdminIngredientView | null>({
@@ -42,7 +42,6 @@ const rows = computed<IngredientRow[]>(() =>
     .filter((ingredient) => showsDeactivated.value || ingredient.isActive)
     .map((ingredient) => ({
       ingredient,
-      unitWord: unitName(ingredient.unit),
       deactivationRefusal:
         ingredient.activeItemNames.length > 0
           ? t('admin.ingredients.messages.usedByActiveItems', { items: ingredient.activeItemNames.join(', ') })
@@ -73,8 +72,8 @@ async function reactivate(ingredientId: string): Promise<void> {
 }
 
 onMounted(async () => {
-  stopListening = ingredients.listen()
-  await ingredients.load()
+  stopListening = combineReleases(ingredients.listen(), units.listen())
+  await Promise.all([ingredients.load(), units.load()])
 })
 
 onUnmounted(() => {
@@ -104,7 +103,7 @@ onUnmounted(() => {
       {{ refusalText }}
     </v-alert>
     <v-alert
-      v-if="ingredients.loadFailed"
+      v-if="ingredients.loadFailed || units.loadFailed"
       class="error"
       data-test="load-failed"
       type="error"
@@ -126,7 +125,7 @@ onUnmounted(() => {
     >
       <div class="d-flex align-center flex-wrap ga-2 px-4 py-2">
         <span class="name text-h6" data-test="name">{{ row.ingredient.name }}</span>
-        <span class="unit text-body-1 text-medium-emphasis" data-test="unit">{{ row.unitWord }}</span>
+        <span class="unit text-body-1 text-medium-emphasis" data-test="unit">{{ row.ingredient.unitName }}</span>
         <v-chip
           v-if="!row.ingredient.isActive"
           class="deactivated"

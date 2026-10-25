@@ -3,19 +3,41 @@ import { mount, type VueWrapper } from '@vue/test-utils'
 import { VAutocomplete } from 'vuetify/components'
 import ItemIngredientsDialog from '../../../../src/admin/components/items/ItemIngredientsDialog.vue'
 import { useAdminIngredientsStore } from '../../../../src/admin/stores/ingredients'
+import { useAdminUnitsStore } from '../../../../src/admin/stores/units'
 import { testPlugins } from '../../../support/plugins'
 import { answer, emptyAnswer, noConnection, stubLaptop, type StubbedLaptop } from '../../../support/laptop'
 import { inputOf, onScreen } from '../../../support/dom'
-import { anAdminIngredient, anAdminItem, anAdminItemIngredient } from '../../../support/wireViews'
+import { anAdminIngredient, anAdminItem, anAdminItemIngredient, SEEDED_UNITS } from '../../../support/wireViews'
 import { BUN } from '../ingredients/ingredientsListFixture'
 
-const FLOUR = anAdminIngredient({ ingredientId: 'ingredient-mehl', name: 'Mehl', unit: 'gram' })
+const FLOUR = anAdminIngredient({
+  ingredientId: 'ingredient-mehl',
+  name: 'Mehl',
+  unitId: 'unit-gram',
+  unitName: 'g',
+})
 
-const MILK = anAdminIngredient({ ingredientId: 'ingredient-milch', name: 'Milch', unit: 'millilitre' })
+const MILK = anAdminIngredient({
+  ingredientId: 'ingredient-milch',
+  name: 'Milch',
+  unitId: 'unit-millilitre',
+  unitName: 'ml',
+})
 
-const CREAM = anAdminIngredient({ ingredientId: 'ingredient-sahne', name: 'Sahne', unit: 'millilitre' })
+const CREAM = anAdminIngredient({
+  ingredientId: 'ingredient-sahne',
+  name: 'Sahne',
+  unitId: 'unit-millilitre',
+  unitName: 'ml',
+})
 
-const OLD_HONEY = anAdminIngredient({ ingredientId: 'ingredient-honig', name: 'Honig', unit: 'gram', isActive: false })
+const OLD_HONEY = anAdminIngredient({
+  ingredientId: 'ingredient-honig',
+  name: 'Honig',
+  unitId: 'unit-gram',
+  unitName: 'g',
+  isActive: false,
+})
 
 const CREATED_EGG = anAdminIngredient({ ingredientId: 'ingredient-ei', name: 'Ei' })
 
@@ -23,7 +45,13 @@ const PANCAKE = anAdminItem({
   itemId: 'item-pfannkuchen',
   name: 'Pfannkuchen',
   ingredients: [
-    anAdminItemIngredient({ ingredientId: 'ingredient-mehl', name: 'Mehl', unit: 'gram', amount: 1500 }),
+    anAdminItemIngredient({
+      ingredientId: 'ingredient-mehl',
+      name: 'Mehl',
+      unitId: 'unit-gram',
+      unitName: 'g',
+      amount: 1500,
+    }),
     anAdminItemIngredient({ amount: 2 }),
   ],
 })
@@ -38,6 +66,7 @@ export function recipeLaptop(): StubbedLaptop {
     .answers('GET', /./, answer({ items: [PANCAKE] }))
     .answers('DELETE', /./, emptyAnswer(204))
     .answers('GET', '/api/admin/ingredients', answer({ ingredients: [BUN, OLD_HONEY, FLOUR, MILK, CREAM] }))
+    .answers('GET', '/api/admin/units', answer({ units: SEEDED_UNITS }))
     .answers('POST', '/api/admin/ingredients', answer(CREATED_EGG, 201))
 }
 
@@ -59,6 +88,7 @@ export function mountDialog(locale: 'de' | 'en' = 'de'): VueWrapper {
 
 export async function loadIngredientsAndMountDialog(locale: 'de' | 'en' = 'de'): Promise<VueWrapper> {
   await useAdminIngredientsStore().load()
+  await useAdminUnitsStore().load()
   const dialog = mountDialog(locale)
   await vi.waitFor(() => expect(document.querySelector('[data-test="recipe-line"]')).not.toBeNull())
   return dialog

@@ -375,13 +375,15 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .UseCollation("NOCASE");
 
-                    b.Property<int>("Unit")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("UnitId")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Name")
                         .IsUnique();
+
+                    b.HasIndex("UnitId");
 
                     b.ToTable("Ingredients");
                 });
@@ -650,6 +652,27 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.ToTable("Tables");
                 });
 
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Unit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Units");
+                });
+
             modelBuilder.Entity("GastronomyApp.Core.Entities.Area", b =>
                 {
                     b.HasOne("GastronomyApp.Core.Entities.Festival", "Festival")
@@ -785,6 +808,17 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Navigation("Festival");
 
                     b.Navigation("FestivalStation");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Ingredient", b =>
+                {
+                    b.HasOne("GastronomyApp.Core.Entities.Unit", "Unit")
+                        .WithMany("Ingredients")
+                        .HasForeignKey("UnitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Unit");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.ItemStationAssignment", b =>
@@ -1015,6 +1049,11 @@ namespace GastronomyApp.Infrastructure.Migrations
             modelBuilder.Entity("GastronomyApp.Core.Entities.Table", b =>
                 {
                     b.Navigation("Orders");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Unit", b =>
+                {
+                    b.Navigation("Ingredients");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { entryUnitsFor, type ParsedAmountInput } from '../../core/ingredientAmounts'
+import type { ParsedAmountInput } from '../../core/ingredientAmounts'
 import type {
   AdminIngredientView,
   AdminItemIngredientView,
@@ -74,7 +74,7 @@ const addIsPossible = computed(
   () =>
     chosenIngredient.value !== null &&
     addedAmount.value.kind === 'amount' &&
-    addedAmount.value.baseAmount > 0,
+    addedAmount.value.amount > 0,
 )
 
 async function changeAmount(ingredientId: string, parsed: ParsedAmountInput): Promise<void> {
@@ -83,7 +83,7 @@ async function changeAmount(ingredientId: string, parsed: ParsedAmountInput): Pr
     case 'amount':
       lineRefusals.showRefusalOf(
         ingredientId,
-        await items.setIngredientAmount(props.item.itemId, ingredientId, parsed.baseAmount),
+        await items.setIngredientAmount(props.item.itemId, ingredientId, parsed.amount),
       )
       return
     case 'empty':
@@ -123,7 +123,7 @@ async function add(): Promise<void> {
   }
   addRefusal.value = null
   isAdding.value = true
-  const saved = await items.setIngredientAmount(props.item.itemId, ingredient.ingredientId, amount.baseAmount)
+  const saved = await items.setIngredientAmount(props.item.itemId, ingredient.ingredientId, amount.amount)
   isAdding.value = false
   if (!showAddRefusalOf(saved)) {
     chosenIngredientId.value = null
@@ -153,7 +153,7 @@ async function add(): Promise<void> {
         <div class="d-flex align-center flex-wrap ga-2 py-1">
           <span class="recipe-ingredient-name text-body-1 flex-grow-1" data-test="recipe-ingredient-name">{{ line.name }}</span>
           <IngredientAmountField
-            :entry-units="[line.unit]"
+            :unit-name="line.unitName"
             :saved-amount="line.amount"
             :label="t('admin.ingredients.labels.amount')"
             @amount-typed="lineRefusals.forgetRefusalOf(line.ingredientId)"
@@ -194,7 +194,7 @@ async function add(): Promise<void> {
         />
         <IngredientAmountField
           v-if="chosenIngredient !== null"
-          :entry-units="entryUnitsFor(chosenIngredient.unit)"
+          :unit-name="chosenIngredient.unitName"
           :saved-amount="null"
           :label="t('admin.ingredients.labels.amount')"
           @amount-typed="typeAmountToAdd"

@@ -21,6 +21,7 @@ public sealed class IngredientStockRepository : IIngredientStockRepository
                                            && stock.Ingredient.IsActive
                                            && _dbContext.CatalogItemIngredients.Any(recipeLine => recipeLine.IngredientId == stock.IngredientId && _dbContext.FestivalCatalogItems.Any(menuRow => menuRow.FestivalId == festivalId && menuRow.CatalogItemId == recipeLine.CatalogItemId)))
                            .Include(stock => stock.Ingredient)
+                           .ThenInclude(ingredient => ingredient.Unit)
                            .OrderBy(stock => stock.Ingredient.Name)
                            .ToListAsync(cancellationToken);
   }

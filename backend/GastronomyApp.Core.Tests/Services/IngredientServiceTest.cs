@@ -1,4 +1,3 @@
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
 
@@ -10,16 +9,24 @@ public sealed class IngredientServiceTest
   [SetUp]
   public void SetUp()
   {
+    _gram = new()
+            {
+              Id = Guid.NewGuid(),
+              Name = "g",
+              IsActive = true
+            };
     _mustard = new()
                {
                  Id = Guid.NewGuid(),
                  Name = "Senf",
-                 Unit = IngredientUnit.Gram,
+                 UnitId = _gram.Id,
+                 Unit = _gram,
                  IsActive = true
                };
   }
 
   private readonly IngredientService _service = new();
+  private Unit _gram = null!;
   private Ingredient _mustard = null!;
 
   [Test]

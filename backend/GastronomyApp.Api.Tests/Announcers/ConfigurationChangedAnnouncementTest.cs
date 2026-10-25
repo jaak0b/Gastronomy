@@ -156,6 +156,54 @@ public sealed class ConfigurationChangedAnnouncementTest
   }
 
   [Test]
+  public async Task PostUnit_ANewUnit_TellsEveryScreenOnce()
+  {
+    await ListenAsync();
+
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/units", new { name = "Portion" });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    await AssertEveryScreenHeardOnceAsync();
+  }
+
+  [Test]
+  public async Task PutUnit_ARenamedUnit_TellsEveryScreenOnce()
+  {
+    var unitId = await CreateUnitAsync("Portion");
+    await ListenAsync();
+
+    using var response = await _context.Client.PutAsJsonAsync($"/api/admin/units/{unitId}", new { name = "Packung" });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await AssertEveryScreenHeardOnceAsync();
+  }
+
+  [Test]
+  public async Task PostUnitActivate_ASwitchedOffUnit_TellsEveryScreenOnce()
+  {
+    var unitId = await CreateUnitAsync("Portion");
+    await DeactivateUnitAsync(unitId);
+    await ListenAsync();
+
+    using var response = await _context.Client.PostAsync($"/api/admin/units/{unitId}/activate", null);
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await AssertEveryScreenHeardOnceAsync();
+  }
+
+  [Test]
+  public async Task PostUnitDeactivate_AnUnusedUnit_TellsEveryScreenOnce()
+  {
+    var unitId = await CreateUnitAsync("Portion");
+    await ListenAsync();
+
+    using var response = await _context.Client.PostAsync($"/api/admin/units/{unitId}/deactivate", null);
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await AssertEveryScreenHeardOnceAsync();
+  }
+
+  [Test]
   public async Task PostIngredient_ANewIngredient_TellsEveryScreenOnce()
   {
     await ListenAsync();
@@ -164,10 +212,10 @@ public sealed class ConfigurationChangedAnnouncementTest
                                                                new
                                                                {
                                                                  name = "Senf",
-                                                                 unit = "gram"
+                                                                 unitId = await _context.FindUnitIdAsync("g")
                                                                });
 
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created), await response.Content.ReadAsStringAsync());
     await AssertEveryScreenHeardOnceAsync();
   }
 
@@ -300,12 +348,28 @@ public sealed class ConfigurationChangedAnnouncementTest
                                                                new
                                                                {
                                                                  name = "Senf",
-                                                                 unit = "gram"
+                                                                 unitId = await _context.FindUnitIdAsync("g")
                                                                });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
     return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("ingredientId").GetGuid();
+  }
+
+  private async Task<Guid> CreateUnitAsync(string name)
+  {
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/units", new { name });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+
+    return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("unitId").GetGuid();
+  }
+
+  private async Task DeactivateUnitAsync(Guid unitId)
+  {
+    using var response = await _context.Client.PostAsync($"/api/admin/units/{unitId}/deactivate", null);
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), await response.Content.ReadAsStringAsync());
   }
 
   private async Task ListenAsync()

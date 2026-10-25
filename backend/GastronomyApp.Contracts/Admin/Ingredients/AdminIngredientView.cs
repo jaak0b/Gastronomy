@@ -1,5 +1,3 @@
-using GastronomyApp.Contracts.Enums;
-
 namespace GastronomyApp.Contracts.Admin.Ingredients;
 
-public sealed record AdminIngredientView(Guid IngredientId, string Name, IngredientUnit Unit, bool IsActive, IReadOnlyList<string> ActiveItemNames);
+public sealed record AdminIngredientView(Guid IngredientId, string Name, Guid UnitId, string UnitName, bool IsActive, IReadOnlyList<string> ActiveItemNames);

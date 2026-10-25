@@ -35,6 +35,8 @@ public sealed class GastronomyAppDbContext : DbContext
 
   public DbSet<FestivalCatalogItem> FestivalCatalogItems => Set<FestivalCatalogItem>();
 
+  public DbSet<Unit> Units => Set<Unit>();
+
   public DbSet<Ingredient> Ingredients => Set<Ingredient>();
 
   public DbSet<CatalogItemIngredient> CatalogItemIngredients => Set<CatalogItemIngredient>();

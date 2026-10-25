@@ -74,11 +74,10 @@ The stock chart follows each of these; a new chart does the same.
   on every series but the measured data, so the pointer snaps only to its points. The formatter
   reads the data point nearest the pointer and states its real value, never a value the straight
   line only suggests between two points.
-- **One unit per axis.** An amount axis chooses its unit once from the axis maximum with
-  `shownEntryUnitFor` (`admin/core/ingredientAmounts.ts`, which rounds to what the screen shows
-  first) and writes every label in it through the wording's formatter, which the component fills
-  with `useAmountTextInEntryUnit`. Never format each label on its own, which mixes grams and
-  kilograms on one axis.
+- **One unit per axis.** An amount axis writes every label with the unit name the data carries,
+  through the wording's formatter, which the component fills with `useIngredientAmountText` and that
+  row's `unitName`. Never convert grams to kilograms or millilitres to litres, at any size of the
+  axis; the chart shows the number the laptop stores.
 - **Time axis.** Show only the period that matters, never the whole festival by default: from a
   fixed share of the shown span before the first data moment to the same kind of margin after the
   last moment worth seeing, clamped to the festival, with the shares named as constants
@@ -94,7 +93,7 @@ The stock chart follows each of these; a new chart does the same.
 
 - The option function gets the thorough spec; `admin/core/stockChartOption.spec.ts` is the model.
   Check which series and mark lines exist in each case, the line types, the colours, the legend
-  names, the direct labels, the shown period, the axis unit, the tick moments, and call each
+  names, the direct labels, the shown period, the amount text, the tick moments, and call each
   formatter with a literal input. A wording object and a `ChartColours` object of plain stand-in
   strings (`'teal'`, `'muted ink'`) keep every expectation a literal. `admin/core/timeAxisTicks.spec.ts`
   covers the ticks and `admin/core/chartTheme.spec.ts` the colours and themes of both modes.

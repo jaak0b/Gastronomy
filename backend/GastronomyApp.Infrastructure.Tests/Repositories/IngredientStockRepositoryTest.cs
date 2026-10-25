@@ -1,4 +1,3 @@
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Persistence;
@@ -93,6 +92,7 @@ public sealed class IngredientStockRepositoryTest
                                                "Brötchen",
                                                "Senf"
                                              }));
+                      Assert.That(stock.Select(row => row.Ingredient.Unit.Name), Is.All.EqualTo("Portion"));
                       Assert.That(stock[0].AvailableAmount, Is.EqualTo(40));
                     });
   }
@@ -173,11 +173,25 @@ public sealed class IngredientStockRepositoryTest
 
   private async Task<Ingredient> AddIngredientAsync(GastronomyAppDbContext dbContext, string name, bool isActive, Guid festivalId, double? availableAmount)
   {
+    var unit = await dbContext.Units.FirstOrDefaultAsync(candidate => candidate.Name == "Portion", TestContext.CurrentContext.CancellationToken);
+
+    if (unit is null)
+    {
+      unit = new()
+             {
+               Id = Guid.NewGuid(),
+               Name = "Portion",
+               IsActive = true
+             };
+      dbContext.Units.Add(unit);
+    }
+
     Ingredient ingredient = new()
                             {
                               Id = Guid.NewGuid(),
                               Name = name,
-                              Unit = IngredientUnit.Gram,
+                              UnitId = unit.Id,
+                              Unit = unit,
                               IsActive = isActive
                             };
     ingredient.FestivalIngredients.Add(new()

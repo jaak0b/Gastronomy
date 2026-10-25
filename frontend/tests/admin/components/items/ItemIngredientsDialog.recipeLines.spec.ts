@@ -61,7 +61,7 @@ describe('the recipe lines of an article', () => {
     expect(onScreen('[data-test="form-dialog-title"]').textContent).toBe('Ingredients for Pfannkuchen')
     expect(allOnScreen('[data-test="recipe-line"] [data-test="amount-unit"]').map((unit) => unit.textContent)).toEqual([
       'g',
-      'pieces',
+      'Stück',
     ])
   })
 

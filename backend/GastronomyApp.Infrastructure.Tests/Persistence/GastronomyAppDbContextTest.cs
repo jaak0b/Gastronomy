@@ -39,6 +39,7 @@ public sealed class GastronomyAppDbContextTest
                                   "Festivals",
                                   "FestivalStations",
                                   "FestivalCatalogItems",
+                                  "Units",
                                   "Ingredients",
                                   "CatalogItemIngredients",
                                   "FestivalIngredients",

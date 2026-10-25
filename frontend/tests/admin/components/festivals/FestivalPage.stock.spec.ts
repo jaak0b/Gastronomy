@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { VSelect } from 'vuetify/components'
 import FestivalPage from '../../../../src/admin/components/festivals/FestivalPage.vue'
 import BaseChart from '../../../../src/admin/components/BaseChart.vue'
 import { testPlugins } from '../../../support/plugins'
@@ -23,14 +22,16 @@ describe('the ingredient stock of the festival', () => {
   const FLOUR_STOCK = anAdminFestivalIngredient({
     ingredientId: 'ingredient-mehl',
     name: 'Mehl',
-    unit: 'gram',
+    unitId: 'unit-gram',
+    unitName: 'g',
     availableAmount: 25000,
     usedAmount: 1250,
   })
   const BUN_STOCK = anAdminFestivalIngredient({
     ingredientId: 'ingredient-broetchen',
     name: 'Brötchen',
-    unit: 'piece',
+    unitId: 'unit-stueck',
+    unitName: 'Stück',
     availableAmount: null,
     usedAmount: 40,
     usage: [
@@ -65,12 +66,9 @@ describe('the ingredient stock of the festival', () => {
       '25000',
     )
     expect((bunRow.get('[data-test="amount-input"] input').element as HTMLInputElement).value).toBe('')
-    expect(
-      flourRow.getComponent<typeof VSelect>('[data-test="amount-unit-select"]').props('modelValue'),
-    ).toBe('gram')
-    expect(flourRow.get('[data-test="amount-unit-select"]').text()).toContain('g')
+    expect(flourRow.get('[data-test="amount-unit"]').text()).toBe('g')
     expect(bunRow.get('[data-test="amount-unit"]').text()).toBe('Stück')
-    expect(flourRow.get('[data-test="used-amount"]').text()).toBe('Verbraucht: 1,25 kg')
+    expect(flourRow.get('[data-test="used-amount"]').text()).toBe('Verbraucht: 1.250 g')
     expect(bunRow.get('[data-test="used-amount"]').text()).toBe('Verbraucht: 40 Stück')
   })
 
@@ -78,8 +76,8 @@ describe('the ingredient stock of the festival', () => {
     const { page } = await mountWithStock([FLOUR_STOCK, { ...BUN_STOCK, usedAmount: 1 }], 'en')
 
     expect(page.findAll('[data-test="used-amount"]').map((label) => label.text())).toEqual([
-      'Used: 1.25 kg',
-      'Used: 1 piece',
+      'Used: 1,250 g',
+      'Used: 1 Stück',
     ])
   })
 
@@ -140,22 +138,19 @@ describe('the ingredient stock of the festival', () => {
     await useAdminFestivalStockStore().loadForFestival(FESTIVAL_ID)
 
     await vi.waitFor(() =>
-      expect(ingredientRow(page, 'ingredient-mehl').get('[data-test="used-amount"]').text()).toBe('Verbraucht: 1,5 kg'),
+      expect(ingredientRow(page, 'ingredient-mehl').get('[data-test="used-amount"]').text()).toBe('Verbraucht: 1.500 g'),
     )
     expect(ingredientRow(page, 'ingredient-mehl').find('[data-test="stock-chart"]').exists()).toBe(true)
   })
 
-  it('sends an amount typed in kilograms as grams', async () => {
+  it('sends a decimal amount exactly as it was typed', async () => {
     const { page, laptop } = await mountWithStock([
       BUN_STOCK,
       { ...FLOUR_STOCK, availableAmount: null },
     ])
     const flourRow = ingredientRow(page, 'ingredient-mehl')
 
-    await flourRow
-      .getComponent<typeof VSelect>('[data-test="amount-unit-select"]')
-      .setValue('kilogram')
-    await flourRow.get('[data-test="amount-input"] input').setValue('12,5')
+    await flourRow.get('[data-test="amount-input"] input').setValue('12500,5')
     await flourRow.get('[data-test="amount-input"] input').trigger('blur')
 
     await vi.waitFor(() =>
@@ -163,7 +158,7 @@ describe('the ingredient stock of the festival', () => {
         {
           url: `/api/admin/festivals/${FESTIVAL_ID}/ingredients/ingredient-mehl`,
           method: 'PUT',
-          body: { availableAmount: 12500 },
+          body: { availableAmount: 12500.5 },
         },
       ]),
     )

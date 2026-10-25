@@ -7,6 +7,7 @@ import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping
 import { useAdminCategoriesStore, type AdminCategoryDraft } from '../../stores/categories'
 import { useAdminFestivalsStore } from '../../stores/festivals'
 import { useAdminIngredientsStore } from '../../stores/ingredients'
+import { useAdminUnitsStore } from '../../stores/units'
 import { useAdminItemsStore, type AdminItemDraft } from '../../stores/items'
 import { useEditSession } from '../../composables/useEditSession'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
@@ -21,6 +22,7 @@ const items = useAdminItemsStore()
 const categories = useAdminCategoriesStore()
 const festivals = useAdminFestivalsStore()
 const ingredients = useAdminIngredientsStore()
+const units = useAdminUnitsStore()
 const recipeItemId = ref<string | null>(null)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
@@ -69,7 +71,11 @@ const showsCategoryRefusal = computed(
 
 const listsFailedToLoad = computed(
   () =>
-    items.loadFailed || categories.loadFailed || festivals.loadFailed || ingredients.loadFailed,
+    items.loadFailed
+    || categories.loadFailed
+    || festivals.loadFailed
+    || ingredients.loadFailed
+    || units.loadFailed,
 )
 
 const recipeItem = computed(
@@ -162,11 +168,12 @@ onMounted(async () => {
     items.listen(),
     festivals.listen(),
     ingredients.listen(),
+    units.listen(),
   )
   await categories.load()
   await festivals.load()
   await readItemsForTheRunningFestival()
-  await ingredients.load()
+  await Promise.all([ingredients.load(), units.load()])
 })
 
 onUnmounted(() => {

@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import {
   AdminIngredientListView,
   AdminIngredientView,
-  type IngredientUnit,
   type SaveIngredientRequest,
 } from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
@@ -11,7 +10,7 @@ import { defineAdminList } from './adminList'
 
 export interface IngredientDraft {
   name: string
-  unit: IngredientUnit
+  unitId: string
 }
 
 export const useAdminIngredientsStore = defineStore('adminIngredients', () => {
@@ -28,7 +27,10 @@ export const useAdminIngredientsStore = defineStore('adminIngredients', () => {
     entrySchema: AdminIngredientView,
     entriesOf: (response) => response.ingredients,
     idOf: (ingredient) => ingredient.ingredientId,
-    requestBodyOf: (draft: IngredientDraft): SaveIngredientRequest => ({ name: draft.name, unit: draft.unit }),
+    requestBodyOf: (draft: IngredientDraft): SaveIngredientRequest => ({
+      name: draft.name,
+      unitId: draft.unitId,
+    }),
   })
 
   async function save(

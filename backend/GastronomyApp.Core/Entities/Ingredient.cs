@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Announcements;
 
 namespace GastronomyApp.Core.Entities;
@@ -11,7 +10,9 @@ public sealed class Ingredient
 
   public required string Name { get; set; }
 
-  public required IngredientUnit Unit { get; set; }
+  public required Guid UnitId { get; set; }
+
+  public required Unit Unit { get; set; }
 
   public required bool IsActive { get; set; }
 

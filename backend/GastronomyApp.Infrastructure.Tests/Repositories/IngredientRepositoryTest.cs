@@ -1,4 +1,3 @@
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -10,12 +9,15 @@ namespace GastronomyApp.Infrastructure.Tests.Repositories;
 public sealed class IngredientRepositoryTest
 {
   [Test]
-  public async Task FindAllOrderedByNameAsync_TwoStoredIngredients_ReadsThemBackByNameWithTheirUnit()
+  public async Task FindAllOrderedByNameAsync_TwoStoredIngredients_ReadsThemBackByNameWithTheirUnitId()
   {
     using SqliteInMemoryFixture fixture = new();
     IngredientRepository repository = new(fixture.DbContext);
-    await repository.AddAsync(BuildIngredient("Senf", IngredientUnit.Gram), TestContext.CurrentContext.CancellationToken);
-    await repository.AddAsync(BuildIngredient("Apfelsaft", IngredientUnit.Millilitre), TestContext.CurrentContext.CancellationToken);
+    Unit gram = UnitNamed("Portion");
+    Unit millilitre = UnitNamed("Packung");
+    fixture.DbContext.Units.AddRange(gram, millilitre);
+    await repository.AddAsync(BuildIngredient("Senf", gram), TestContext.CurrentContext.CancellationToken);
+    await repository.AddAsync(BuildIngredient("Apfelsaft", millilitre), TestContext.CurrentContext.CancellationToken);
     await repository.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     fixture.DbContext.ChangeTracker.Clear();
 
@@ -29,11 +31,11 @@ public sealed class IngredientRepositoryTest
                                                "Apfelsaft",
                                                "Senf"
                                              }));
-                      Assert.That(ingredients.Select(ingredient => ingredient.Unit),
+                      Assert.That(ingredients.Select(ingredient => ingredient.UnitId),
                                   Is.EqualTo(new[]
                                              {
-                                               IngredientUnit.Millilitre,
-                                               IngredientUnit.Gram
+                                               millilitre.Id,
+                                               gram.Id
                                              }));
                     });
   }
@@ -43,9 +45,11 @@ public sealed class IngredientRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var mustard = BuildIngredient("Senf", IngredientUnit.Gram);
+    Unit gram = UnitNamed("Portion");
+    fixture.DbContext.Units.Add(gram);
+    var mustard = BuildIngredient("Senf", gram);
     fixture.DbContext.Ingredients.Add(mustard);
-    fixture.DbContext.Ingredients.Add(BuildIngredient("Apfelsaft", IngredientUnit.Millilitre));
+    fixture.DbContext.Ingredients.Add(BuildIngredient("Apfelsaft", gram));
     fixture.DbContext.CatalogItemIngredients.Add(BuildRecipeLine(seeded.SausageItemId, mustard.Id));
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     fixture.DbContext.ChangeTracker.Clear();
@@ -68,6 +72,7 @@ public sealed class IngredientRepositoryTest
                                                1
                                              }));
                       Assert.That(ingredients.Single(ingredient => ingredient.Name == "Senf").CatalogItems.Single().CatalogItem.Name, Is.EqualTo("Bratwurst"));
+                      Assert.That(ingredients.Select(ingredient => ingredient.Unit.Name), Is.All.EqualTo("Portion"));
                     });
   }
 
@@ -76,7 +81,9 @@ public sealed class IngredientRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var mustard = BuildIngredient("Senf", IngredientUnit.Gram);
+    Unit gram = UnitNamed("Portion");
+    fixture.DbContext.Units.Add(gram);
+    var mustard = BuildIngredient("Senf", gram);
     fixture.DbContext.Ingredients.Add(mustard);
     fixture.DbContext.CatalogItemIngredients.Add(BuildRecipeLine(seeded.SausageItemId, mustard.Id));
     fixture.DbContext.CatalogItemIngredients.Add(BuildRecipeLine(seeded.LemonadeItemId, mustard.Id));
@@ -109,10 +116,12 @@ public sealed class IngredientRepositoryTest
   public async Task SaveChangesAsync_ASecondIngredientWithTheSameNameInOtherCase_IsRejectedByTheUniqueIndex()
   {
     using SqliteInMemoryFixture fixture = new();
-    fixture.DbContext.Ingredients.Add(BuildIngredient("Senf", IngredientUnit.Gram));
+    Unit gram = UnitNamed("Portion");
+    fixture.DbContext.Units.Add(gram);
+    fixture.DbContext.Ingredients.Add(BuildIngredient("Senf", gram));
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     await using var second = fixture.CreateContext();
-    second.Ingredients.Add(BuildIngredient("SENF", IngredientUnit.Gram));
+    second.Ingredients.Add(BuildIngredient("SENF", gram));
 
     Assert.ThrowsAsync<DbUpdateException>(async () => await second.SaveChangesAsync(TestContext.CurrentContext.CancellationToken));
   }
@@ -128,13 +137,24 @@ public sealed class IngredientRepositoryTest
            };
   }
 
-  private Ingredient BuildIngredient(string name, IngredientUnit unit)
+  private Ingredient BuildIngredient(string name, Unit unit)
   {
     return new()
            {
              Id = Guid.NewGuid(),
              Name = name,
+             UnitId = unit.Id,
              Unit = unit,
+             IsActive = true
+           };
+  }
+
+  private Unit UnitNamed(string name)
+  {
+    return new()
+           {
+             Id = Guid.NewGuid(),
+             Name = name,
              IsActive = true
            };
   }

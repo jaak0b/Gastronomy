@@ -359,7 +359,6 @@
         "used": "Used: {amount}",
         "runsOutAt": "Expected to last until {moment}",
         "usedUp": "This ingredient is used up.",
-        "pieceCount": "{amount} piece | {amount} pieces",
         "deactivateTitle": "Deactivate this ingredient?",
         "editTitle": "Edit the ingredient",
         "removeFromRecipeTitle": "Remove the ingredient"
@@ -380,13 +379,6 @@
         "removeFromRecipeBody": "The ingredient is removed from {item} only.",
         "usedByActiveItems": "This ingredient is still used in {items}. Take it out of those items first, under \"Items\"."
       },
-      "units": {
-        "piece": "pieces",
-        "gram": "g",
-        "kilogram": "kg",
-        "millilitre": "ml",
-        "litre": "l"
-      },
       "history": {
         "used": "Used",
         "forecastFromLastTwoHours": "Forecast from the last 2 hours",
@@ -395,6 +387,23 @@
         "usedBy": "Used by {moment}: {amount}",
         "nothingUsedYet": "Nothing has been used yet.",
         "runsOutBeyondTheChart": "→ {moment}"
+      }
+    },
+    "units": {
+      "title": "Units",
+      "labels": {
+        "name": "Name of the unit",
+        "editTitle": "Edit the unit",
+        "deactivateTitle": "Deactivate this unit?"
+      },
+      "actions": {
+        "new": "New unit",
+        "activate": "Activate the unit",
+        "deactivateConfirm": "Deactivate the unit"
+      },
+      "messages": {
+        "noneYet": "There are no units yet. Click \"New unit\".",
+        "usedByIngredients": "This unit is still used by the ingredients {ingredients}. Change the unit of these ingredients first, under \"Ingredients\"."
       }
     },
     "items": {
@@ -511,6 +520,11 @@
         "hasUnfinishedItems": "While a festival is active, a station with open orders cannot be switched off.",
         "itemsWouldHaveNoStation": "@:admin.stations.messages.itemsWouldHaveNoStation Assign it to another station first. | @:admin.stations.messages.itemsWouldHaveNoStation Assign them to another station first.",
         "nameMissing": "Give the station a name before you save it."
+      },
+      "units": {
+        "nameMissing": "Enter a name for the unit.",
+        "nameTaken": "A unit named {name} already exists.",
+        "nameBelongsToDeactivatedUnit": "The unit {name} is deactivated. Activate it, or choose another name."
       }
     },
     "auth": {

@@ -359,7 +359,6 @@
         "used": "Verbraucht: {amount}",
         "runsOutAt": "Reicht voraussichtlich bis {moment}",
         "usedUp": "Die Zutat ist aufgebraucht.",
-        "pieceCount": "{amount} Stück | {amount} Stück",
         "deactivateTitle": "Zutat deaktivieren?",
         "editTitle": "Zutat bearbeiten",
         "removeFromRecipeTitle": "Zutat entfernen"
@@ -380,13 +379,6 @@
         "removeFromRecipeBody": "Die Zutat wird nur bei {item} entfernt.",
         "usedByActiveItems": "Diese Zutat wird noch bei {items} verwendet. Nehmen Sie sie dort zuerst heraus, unter \"Artikel\"."
       },
-      "units": {
-        "piece": "Stück",
-        "gram": "g",
-        "kilogram": "kg",
-        "millilitre": "ml",
-        "litre": "l"
-      },
       "history": {
         "used": "Verbraucht",
         "forecastFromLastTwoHours": "Vorhersage aus den letzten 2 Stunden",
@@ -395,6 +387,23 @@
         "usedBy": "Bis {moment} verbraucht: {amount}",
         "nothingUsedYet": "Bisher wurde nichts verbraucht.",
         "runsOutBeyondTheChart": "→ {moment}"
+      }
+    },
+    "units": {
+      "title": "Einheiten",
+      "labels": {
+        "name": "Name der Einheit",
+        "editTitle": "Einheit bearbeiten",
+        "deactivateTitle": "Einheit deaktivieren?"
+      },
+      "actions": {
+        "new": "Neue Einheit",
+        "activate": "Einheit aktivieren",
+        "deactivateConfirm": "Einheit deaktivieren"
+      },
+      "messages": {
+        "noneYet": "Es gibt noch keine Einheiten. Klicken Sie auf \"Neue Einheit\".",
+        "usedByIngredients": "Diese Einheit wird noch bei den Zutaten {ingredients} verwendet. Ändern Sie bei diesen Zutaten zuerst die Einheit, unter \"Zutaten\"."
       }
     },
     "items": {
@@ -511,6 +520,11 @@
         "hasUnfinishedItems": "Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden.",
         "itemsWouldHaveNoStation": "@:admin.stations.messages.itemsWouldHaveNoStation Ordnen Sie ihn zuerst einer anderen Ausgabestelle zu. | @:admin.stations.messages.itemsWouldHaveNoStation Ordnen Sie sie zuerst einer anderen Ausgabestelle zu.",
         "nameMissing": "Geben Sie der Ausgabestelle einen Namen, bevor Sie sie speichern."
+      },
+      "units": {
+        "nameMissing": "Geben Sie einen Namen für die Einheit ein.",
+        "nameTaken": "Eine Einheit mit dem Namen {name} gibt es bereits.",
+        "nameBelongsToDeactivatedUnit": "Die Einheit {name} ist deaktiviert. Aktivieren Sie sie, oder wählen Sie einen anderen Namen."
       }
     },
     "auth": {

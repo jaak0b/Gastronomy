@@ -21,7 +21,7 @@ public sealed class IngredientRepository : IIngredientRepository
 
   public async Task<IReadOnlyList<Ingredient>> FindAllWithRecipeLinesOrderedByNameAsync(CancellationToken cancellationToken)
   {
-    return await _dbContext.Ingredients.AsNoTracking().OrderBy(ingredient => ingredient.Name).Include(ingredient => ingredient.CatalogItems).ThenInclude(recipeLine => recipeLine.CatalogItem).ToListAsync(cancellationToken);
+    return await _dbContext.Ingredients.AsNoTracking().OrderBy(ingredient => ingredient.Name).Include(ingredient => ingredient.Unit).Include(ingredient => ingredient.CatalogItems).ThenInclude(recipeLine => recipeLine.CatalogItem).ToListAsync(cancellationToken);
   }
 
   public async Task<Ingredient?> FindByIdAsync(Guid ingredientId, CancellationToken cancellationToken)

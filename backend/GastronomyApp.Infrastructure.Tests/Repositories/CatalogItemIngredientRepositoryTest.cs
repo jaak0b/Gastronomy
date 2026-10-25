@@ -1,4 +1,3 @@
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -64,13 +63,21 @@ public sealed class CatalogItemIngredientRepositoryTest
 
   private async Task<Guid> AddIngredientAsync(SqliteInMemoryFixture fixture)
   {
+    Unit unit = new()
+                {
+                  Id = Guid.NewGuid(),
+                  Name = "Portion",
+                  IsActive = true
+                };
     Ingredient ingredient = new()
                             {
                               Id = Guid.NewGuid(),
                               Name = "Senf",
-                              Unit = IngredientUnit.Gram,
+                              UnitId = unit.Id,
+                              Unit = unit,
                               IsActive = true
                             };
+    fixture.DbContext.Units.Add(unit);
     fixture.DbContext.Ingredients.Add(ingredient);
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 

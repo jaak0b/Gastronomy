@@ -13,6 +13,7 @@ const { useAdminStaffStore } = await import('../../../src/admin/stores/staff')
 const { useAdminStationsStore } = await import('../../../src/admin/stores/stations')
 const { useAdminItemsStore } = await import('../../../src/admin/stores/items')
 const { useAdminIngredientsStore } = await import('../../../src/admin/stores/ingredients')
+const { useAdminUnitsStore } = await import('../../../src/admin/stores/units')
 const { useAdminFestivalStockStore } = await import('../../../src/admin/stores/festivalStock')
 
 const EMPTY_LISTS = { staffMembers: [], stations: [] }
@@ -247,6 +248,47 @@ describe('the ingredient list of the admin', () => {
   it('is left alone once the admin has moved to another screen', async () => {
     const laptop = listsLaptop()
     const stopListening = useAdminIngredientsStore().listen()
+
+    stopListening()
+    await useConnectionStore().refetchAll()
+
+    expect(laptop.urls()).toEqual([])
+  })
+})
+
+describe('the unit list of the admin', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    forgetHubEvents()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('is reloaded while the screen that asked for it is open', async () => {
+    const laptop = listsLaptop()
+    useAdminUnitsStore().listen()
+
+    await useConnectionStore().refetchAll()
+
+    expect(laptop.urls()).toEqual(['/api/admin/units'])
+  })
+
+  it('is read again when the laptop says the configuration changed', async () => {
+    const laptop = listsLaptop()
+    useAdminUnitsStore().listen()
+    await useConnectionStore().connect({})
+    laptop.forgetCalls()
+
+    fireHubEvent('ConfigurationChanged')
+
+    await vi.waitFor(() => expect(laptop.urls()).toEqual(['/api/admin/units']))
+  })
+
+  it('is left alone once the admin has moved to another screen', async () => {
+    const laptop = listsLaptop()
+    const stopListening = useAdminUnitsStore().listen()
 
     stopListening()
     await useConnectionStore().refetchAll()

@@ -2244,6 +2244,152 @@
           }
         }
       }
+    },
+    "/api/admin/units": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUnitListView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveUnitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUnitView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/units/{unitId}": {
+      "put": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "unitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveUnitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedUnitView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/units/{unitId}/activate": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "unitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedUnitView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/units/{unitId}/deactivate": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "unitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedUnitView"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2347,7 +2493,8 @@
         "required": [
           "ingredientId",
           "name",
-          "unit",
+          "unitId",
+          "unitName",
           "availableAmount",
           "usedAmount",
           "usage",
@@ -2365,8 +2512,12 @@
           "name": {
             "type": "string"
           },
-          "unit": {
-            "$ref": "#/components/schemas/IngredientUnit"
+          "unitId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "unitName": {
+            "type": "string"
           },
           "availableAmount": {
             "type": [
@@ -2492,7 +2643,8 @@
         "required": [
           "ingredientId",
           "name",
-          "unit",
+          "unitId",
+          "unitName",
           "isActive",
           "activeItemNames"
         ],
@@ -2505,8 +2657,12 @@
           "name": {
             "type": "string"
           },
-          "unit": {
-            "$ref": "#/components/schemas/IngredientUnit"
+          "unitId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "unitName": {
+            "type": "string"
           },
           "isActive": {
             "type": "boolean"
@@ -2547,7 +2703,8 @@
         "required": [
           "ingredientId",
           "name",
-          "unit",
+          "unitId",
+          "unitName",
           "amount"
         ],
         "type": "object",
@@ -2559,8 +2716,12 @@
           "name": {
             "type": "string"
           },
-          "unit": {
-            "$ref": "#/components/schemas/IngredientUnit"
+          "unitId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "unitName": {
+            "type": "string"
           },
           "amount": {
             "type": "number",
@@ -2806,6 +2967,47 @@
           },
           "hasItemsToHandOutOrSettleAtTheRunningFestival": {
             "type": "boolean"
+          }
+        }
+      },
+      "AdminUnitListView": {
+        "required": [
+          "units"
+        ],
+        "type": "object",
+        "properties": {
+          "units": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUnitView"
+            }
+          }
+        }
+      },
+      "AdminUnitView": {
+        "required": [
+          "unitId",
+          "name",
+          "isActive",
+          "usedByIngredientNames"
+        ],
+        "type": "object",
+        "properties": {
+          "unitId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "usedByIngredientNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -3101,13 +3303,6 @@
             }
           }
         }
-      },
-      "IngredientUnit": {
-        "enum": [
-          "piece",
-          "gram",
-          "millilitre"
-        ]
       },
       "IngredientUsagePoint": {
         "required": [
@@ -3610,6 +3805,18 @@
           }
         }
       },
+      "SavedUnitView": {
+        "required": [
+          "unitId"
+        ],
+        "type": "object",
+        "properties": {
+          "unitId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "SaveFestivalIngredientRequest": {
         "required": [
           "availableAmount"
@@ -3677,7 +3884,7 @@
       "SaveIngredientRequest": {
         "required": [
           "name",
-          "unit"
+          "unitId"
         ],
         "type": "object",
         "properties": {
@@ -3687,15 +3894,12 @@
               "string"
             ]
           },
-          "unit": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/IngredientUnit"
-              }
-            ]
+          "unitId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -3819,6 +4023,20 @@
               {
                 "$ref": "#/components/schemas/AreaShapeGeometry"
               }
+            ]
+          }
+        }
+      },
+      "SaveUnitRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
             ]
           }
         }

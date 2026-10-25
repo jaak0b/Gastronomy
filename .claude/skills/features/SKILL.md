@@ -8,6 +8,7 @@ description: Read before changing or reviewing a feature of the app, to learn wh
 | Feature | Read it when | Page |
 |---|---|---|
 | Ingredients and recipes | you touch the Zutaten tab, the ingredients of an article, or anything that switches an ingredient or an article on or off | [references/ingredients.md](references/ingredients.md) |
+| Units | you touch the Einheiten tab, a unit an ingredient uses, the unit names a recipe line or a stock row shows, or anything that deactivates a unit | [references/units.md](references/units.md) |
 | Festival stock | you touch the stock rows or the Verlauf chart on the festival page, the stock forecasts or warnings, or the sold-out switch the stock drives | [references/festival-stock.md](references/festival-stock.md) |
 | Taking an order | you touch the phone's categories screen, the article row with its Note button and its group rows, the station question, the table a draft belongs to and the question about another table's unsent items, the basket bar, the draft order, the landing after sending, or the route that accepts an order | [references/taking-an-order.md](references/taking-an-order.md) |
 | Settling a table | you touch the phone's settle view of one table, the Abrechnen button, the amount page, the settle notice, the one-table route or the settle route | [references/settling-a-table.md](references/settling-a-table.md) |

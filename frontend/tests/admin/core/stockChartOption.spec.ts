@@ -26,7 +26,7 @@ const WORDING: StockChartWording = {
   timeTickOf: (moment, form) => `${form} ${moment.toISOString()}`,
   crossingOf: (moment) => `crossing ${moment.toISOString()}`,
   crossingBeyondTheChartOf: (moment) => `beyond ${moment.toISOString()}`,
-  axisAmountOf: (amount, entryUnit) => `${amount} ${entryUnit}`,
+  axisAmountOf: (amount) => `${amount} unit`,
   readoutOf: (moment, usedAmount) => `${moment.toISOString()} used ${usedAmount}`,
 }
 
@@ -50,7 +50,8 @@ const FOUR_DAY_FESTIVAL = aFestival({
 })
 
 const FLOUR = anAdminFestivalIngredient({
-  unit: 'gram',
+  unitId: 'unit-gram',
+  unitName: 'g',
   availableAmount: 2000,
   usedAmount: 1000,
   usage: [
@@ -370,40 +371,11 @@ describe('the colours of the history chart', () => {
 })
 
 describe('the amount axis of the history chart', () => {
-  it('writes every amount in kilograms once the axis reaches 1000 grams', () => {
+  it('writes every amount on the axis at every size', () => {
     const option = optionOf()
 
-    expect(option.yAxis.axisLabel.formatter(500)).toBe('500 kilogram')
-    expect(option.yAxis.axisLabel.formatter(2000)).toBe('2000 kilogram')
-  })
-
-  it('writes every amount in grams while the axis stays below 1000 grams', () => {
-    const option = optionOf(
-      anAdminFestivalIngredient({
-        unit: 'gram',
-        availableAmount: 800,
-        usedAmount: 300,
-        usage: [
-          { atUtc: '2026-07-18T10:00:00Z', usedAmount: 0 },
-          { atUtc: '2026-07-18T18:00:00Z', usedAmount: 300 },
-        ],
-      }),
-    )
-
-    expect(option.yAxis.max).toBe(800)
-    expect(option.yAxis.axisLabel.formatter(800)).toBe('800 gram')
-  })
-
-  it('writes every amount in litres once the axis reaches 1000 millilitres', () => {
-    const option = optionOf({ ...FLOUR, unit: 'millilitre' })
-
-    expect(option.yAxis.axisLabel.formatter(0)).toBe('0 litre')
-  })
-
-  it('counts pieces in pieces however large the axis grows', () => {
-    const option = optionOf({ ...FLOUR, unit: 'piece', availableAmount: 5000 })
-
-    expect(option.yAxis.axisLabel.formatter(5000)).toBe('5000 piece')
+    expect(option.yAxis.axisLabel.formatter(500)).toBe('500 unit')
+    expect(option.yAxis.axisLabel.formatter(2000)).toBe('2000 unit')
   })
 })
 

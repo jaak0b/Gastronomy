@@ -2,9 +2,17 @@
 
 A global tab lists one kind of thing with a form to create and edit it and a switch off that can be
 undone. The Zutaten tab, `frontend/src/admin/components/ingredients/IngredientsList.vue`, is the one
-to copy. Of the global tabs only it opens its form through `useEditSession`: `StaffList.vue` and
-`StationsList.vue` use `useRefusalDisplay` directly, and the stations store is built on
-`defineFestivalScopedList` instead of `defineAdminList`.
+to copy. The Einheiten tab, `frontend/src/admin/components/units/UnitsList.vue` with
+`UnitDialog.vue`, is the second complete copy, and both open their form through `useEditSession`.
+`StaffList.vue` and `StationsList.vue` use `useRefusalDisplay` directly, and the stations store is
+built on `defineFestivalScopedList` instead of `defineAdminList`.
+
+The Einheiten tab reuses the same shared pieces rather than adding a new one: `defineAdminList`,
+`useEditSession`, `BaseHeadingWithCheckbox`, `BaseFormDialog`, `BaseConfirmDialog` and
+`BaseActionWithRefusalReason`. Its switch off is disabled and names the ingredients while a unit is
+still used, the same way the Zutaten tab does from `activeItemNames`; the unit row reads
+`usedByIngredientNames` and its laptop answer is `UnitUsedByIngredients` on
+`POST /api/admin/units/{unitId}/deactivate`.
 
 ## Steps
 
@@ -65,10 +73,11 @@ to copy. Of the global tabs only it opens its form through `useEditSession`: `St
    `store.setActive(id, false)` and hands the result to `session.showRefusalOf`. Reactivating asks
    nothing. When the entry's own data already says the laptop will refuse, the switch off is disabled
    and its tooltip names the reason, through `admin/components/BaseActionWithRefusalReason.vue` around
-   `BaseTrashButton.vue` (`IngredientsList.vue` does this from `activeItemNames`, and
-   `StationsList.vue` from `hasItemsToHandOutAtTheRunningFestival` and
-   `strandedItemCountWhenSwitchedOff` through `admin/composables/useStationRefusalReasons.ts`, naming
-   the reason the laptop checks first when both apply; see `hideable-rows.md`). The tooltip is the
+   `BaseTrashButton.vue` (`IngredientsList.vue` does this from `activeItemNames`, `UnitsList.vue`
+   from `usedByIngredientNames`, and `StationsList.vue` from
+   `hasItemsToHandOutAtTheRunningFestival` and `strandedItemCountWhenSwitchedOff` through
+   `admin/composables/useStationRefusalReasons.ts`, naming the reason the laptop checks first when
+   both apply; see `hideable-rows.md`). The tooltip is the
    text of the refusal the laptop would send, cut to its first sentence when the rest names controls
    the screen does not have. A
    refusal that comes back anyway is one page level `v-alert` (`type="warning"`,
@@ -84,6 +93,8 @@ to copy. Of the global tabs only it opens its form through `useEditSession`: `St
 ## Specs
 
 Copy the Zutaten set in `frontend/tests/admin`: `stores/<things>.spec.ts` for the store, a fixture module
-beside the list specs (`ingredientsListFixture.ts` gives the stubbed laptop and `mountList`), list
-specs split by scenario (`.listing`, `.editing`, `.switchingOff`), and a dialog spec. Add the store to
-`stores/screenListening.spec.ts`. How to write them is in `frontend-test-with-the-laptop`.
+beside the list specs (`ingredientsListFixture.ts` and `unitsListFixture.ts` give the stubbed laptop
+and `mountList`), list specs split by scenario (`.listing`, `.editing`, `.switchingOff`), and a
+dialog spec. Add the store to `stores/screenListening.spec.ts` and the section to
+`views/AdminShell.spec.ts` and `shared/router/adminRoute.spec.ts`. How to write them is in
+`frontend-test-with-the-laptop`.

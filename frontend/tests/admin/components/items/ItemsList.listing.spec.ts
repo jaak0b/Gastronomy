@@ -103,6 +103,17 @@ describe('the item list', () => {
       'Laden Sie die Seite neu. Die Daten konnten nicht geladen werden.',
     )
   })
+
+  it('says the list could not be loaded when the units request fails', async () => {
+    itemsListLaptop({ unitsFailed: true })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="admin-items"] [data-test="load-failed"]').exists()).toBe(true))
+
+    expect(list.get('[data-test="admin-items"] [data-test="load-failed"]').text()).toContain(
+      'Laden Sie die Seite neu. Die Daten konnten nicht geladen werden.',
+    )
+  })
 })
 
 describe('the item list while the running festival changes', () => {

@@ -7,17 +7,16 @@ export type AdminStationShapeView = { stationId: string, stationName: string, ge
 export type AdminAreaView = { areaId: string, name: string, isHidden: boolean, hasItemsToHandOutOrSettleAtTheRunningFestival: boolean, tables: Array<AdminTableView>, stationShapes: Array<AdminStationShapeView> }
 export type AdminCategoryView = { categoryId: string, name: string, colourHex: string, sortOrder: number, isActive: boolean }
 export type AdminCategoryListView = { categories: Array<AdminCategoryView> }
-export type IngredientUnit = ("piece" | "gram" | "millilitre")
 export type IngredientUsagePoint = { atUtc: string, usedAmount: number }
 export type StockWarning = ("none" | "runsOutSoon" | "usedUp")
-export type AdminFestivalIngredientView = { ingredientId: string, name: string, unit: IngredientUnit, availableAmount: (null | number), usedAmount: number, usage: Array<IngredientUsagePoint>, runsOutAtUtcSinceStart: (null | string), runsOutAtUtcFromLastTwoHours: (null | string), stockWarning: StockWarning, runsOutSoonAtUtc: (null | string) }
+export type AdminFestivalIngredientView = { ingredientId: string, name: string, unitId: string, unitName: string, availableAmount: (null | number), usedAmount: number, usage: Array<IngredientUsagePoint>, runsOutAtUtcSinceStart: (null | string), runsOutAtUtcFromLastTwoHours: (null | string), stockWarning: StockWarning, runsOutSoonAtUtc: (null | string) }
 export type AdminFestivalIngredientListView = { ingredients: Array<AdminFestivalIngredientView> }
 export type AdminFestivalView = { festivalId: string, name: string, startsAtUtc: string, endsAtUtc: string, isHidden: boolean, isRunning: boolean, stationCount: number, menuItemCount: number, orderCount: number }
 export type AdminFestivalListView = { festivals: Array<AdminFestivalView> }
-export type AdminIngredientView = { ingredientId: string, name: string, unit: IngredientUnit, isActive: boolean, activeItemNames: Array<string> }
+export type AdminIngredientView = { ingredientId: string, name: string, unitId: string, unitName: string, isActive: boolean, activeItemNames: Array<string> }
 export type AdminIngredientListView = { ingredients: Array<AdminIngredientView> }
 export type AdminItemAtFestivalView = { priceCents: number, isAvailable: boolean, stationIds: Array<string> }
-export type AdminItemIngredientView = { ingredientId: string, name: string, unit: IngredientUnit, amount: number }
+export type AdminItemIngredientView = { ingredientId: string, name: string, unitId: string, unitName: string, amount: number }
 export type AdminItemView = { itemId: string, name: string, categoryId: string, sortOrder: number, isActive: boolean, productionMinutes: (null | number), isQueueIndependent: boolean, atTheFestival: (null | AdminItemAtFestivalView), ingredients: Array<AdminItemIngredientView> }
 export type AdminItemListView = { items: Array<AdminItemView> }
 export type AdminStaffMemberView = { staffMemberId: string, name: string, isActive: boolean, hasDevice: boolean }
@@ -25,6 +24,8 @@ export type AdminStaffMemberListView = { staffMembers: Array<AdminStaffMemberVie
 export type AdminStationView = { stationId: string, name: string, sortOrder: number, isActive: boolean, hasDevice: boolean, isAtAnyFestival: boolean, hasItemsToHandOutAtTheRunningFestival: boolean, strandedItemCountWhenSwitchedOff: (null | number), strandedItemCountWhenRemovedFromTheFestival: (null | number) }
 export type AdminStationListView = { stations: Array<AdminStationView> }
 export type AdminTablePlanView = { areas: Array<AdminAreaView> }
+export type AdminUnitView = { unitId: string, name: string, isActive: boolean, usedByIngredientNames: Array<string> }
+export type AdminUnitListView = { units: Array<AdminUnitView> }
 export type CatalogCategoryView = { categoryId: string, name: string, colourHex: string, sortOrder: number }
 export type CatalogItemView = { id: string, categoryId: string, name: string, priceCents: number, sortOrder: number, isAvailable: boolean, productionMinutes: (null | number), isQueueIndependent: boolean, stationIds: Array<string> }
 export type CatalogStationView = { id: string, name: string, sortOrder: number }
@@ -66,15 +67,17 @@ export type SavedIngredientView = { ingredientId: string }
 export type SavedItemView = { itemId: string }
 export type SavedStationView = { stationId: string }
 export type SavedTableView = { tableId: string }
+export type SavedUnitView = { unitId: string }
 export type SaveFestivalIngredientRequest = { availableAmount: (null | number) }
 export type SaveFestivalItemRequest = { priceCents: number, stationIds: (null | Array<string>) }
 export type SaveFestivalRequest = { name: (null | string), startsAtUtc: string, endsAtUtc: string }
-export type SaveIngredientRequest = { name: (null | string), unit: (null | IngredientUnit) }
+export type SaveIngredientRequest = { name: (null | string), unitId: (null | string) }
 export type SaveItemIngredientRequest = { amount: (null | number) }
 export type SaveItemRequest = { name: (null | string), categoryId: (null | string), sortOrder: number, productionMinutes?: (null | number), isQueueIndependent?: boolean }
 export type SaveStationRequest = { name: (null | string), sortOrder: number }
 export type SaveStationShapeRequest = { areaId: string, geometry: (null | AreaShapeGeometry) }
 export type SaveTableRequest = { areaId: string, name: (null | string), geometry: (null | AreaShapeGeometry) }
+export type SaveUnitRequest = { name: (null | string) }
 export type SessionView = { deviceId: string, staffMember: (null | StaffMemberView), station: (null | StationSummaryView), language: string }
 export type SetAvailabilityRequest = { isAvailable: boolean }
 export type SettleLineRequest = { orderItemId: string, paidPriceCents: (null | number), paymentNotice?: (null | string) }
@@ -1154,6 +1157,80 @@ export type post__api_admin_ingredients_IngredientId_deactivate = {
 },
       
     }
+export type get__api_admin_units = {
+      method: "GET",
+      path: "/api/admin/units",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: never,
+      responses: {200: Schemas.AdminUnitListView,
+},
+      
+    }
+export type post__api_admin_units = {
+      method: "POST",
+      path: "/api/admin/units",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        
+        
+        
+        body:  Schemas.SaveUnitRequest,
+          }
+      responses: {201: Schemas.AdminUnitView,
+},
+      
+    }
+export type put__api_admin_units_UnitId = {
+      method: "PUT",
+      path: "/api/admin/units/{unitId}",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { unitId: string },
+        
+        
+        body:  Schemas.SaveUnitRequest,
+          }
+      responses: {200: Schemas.SavedUnitView,
+},
+      
+    }
+export type post__api_admin_units_UnitId_activate = {
+      method: "POST",
+      path: "/api/admin/units/{unitId}/activate",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { unitId: string },
+        
+        
+        
+          }
+      responses: {200: Schemas.SavedUnitView,
+},
+      
+    }
+export type post__api_admin_units_UnitId_deactivate = {
+      method: "POST",
+      path: "/api/admin/units/{unitId}/deactivate",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { unitId: string },
+        
+        
+        
+          }
+      responses: {200: Schemas.SavedUnitView,
+},
+      
+    }
 
   // </Endpoints>
   }
@@ -1196,7 +1273,10 @@ export type post__api_admin_ingredients_IngredientId_deactivate = {
 "/api/admin/festivals/{festivalId}/tables/{tableId}/show": Endpoints.post__api_admin_festivals_FestivalId_tables_TableId_show,
 "/api/admin/ingredients": Endpoints.post__api_admin_ingredients,
 "/api/admin/ingredients/{ingredientId}/activate": Endpoints.post__api_admin_ingredients_IngredientId_activate,
-"/api/admin/ingredients/{ingredientId}/deactivate": Endpoints.post__api_admin_ingredients_IngredientId_deactivate
+"/api/admin/ingredients/{ingredientId}/deactivate": Endpoints.post__api_admin_ingredients_IngredientId_deactivate,
+"/api/admin/units": Endpoints.post__api_admin_units,
+"/api/admin/units/{unitId}/activate": Endpoints.post__api_admin_units_UnitId_activate,
+"/api/admin/units/{unitId}/deactivate": Endpoints.post__api_admin_units_UnitId_deactivate
          },
 get: {
            "/api/catalog": Endpoints.get__api_catalog,
@@ -1215,7 +1295,8 @@ get: {
 "/api/admin/festivals": Endpoints.get__api_admin_festivals,
 "/api/admin/festivals/{festivalId}/ingredients": Endpoints.get__api_admin_festivals_FestivalId_ingredients,
 "/api/admin/festivals/{festivalId}/table-plan": Endpoints.get__api_admin_festivals_FestivalId_tablePlan,
-"/api/admin/ingredients": Endpoints.get__api_admin_ingredients
+"/api/admin/ingredients": Endpoints.get__api_admin_ingredients,
+"/api/admin/units": Endpoints.get__api_admin_units
          },
 put: {
            "/api/session/language": Endpoints.put__api_session_language,
@@ -1231,7 +1312,8 @@ put: {
 "/api/admin/festivals/{festivalId}/areas/{areaId}": Endpoints.put__api_admin_festivals_FestivalId_areas_AreaId,
 "/api/admin/festivals/{festivalId}/tables/{tableId}": Endpoints.put__api_admin_festivals_FestivalId_tables_TableId,
 "/api/admin/festivals/{festivalId}/stations/{stationId}/shape": Endpoints.put__api_admin_festivals_FestivalId_stations_StationId_shape,
-"/api/admin/ingredients/{ingredientId}": Endpoints.put__api_admin_ingredients_IngredientId
+"/api/admin/ingredients/{ingredientId}": Endpoints.put__api_admin_ingredients_IngredientId,
+"/api/admin/units/{unitId}": Endpoints.put__api_admin_units_UnitId
          },
 delete: {
            "/api/admin/items/{itemId}/ingredients/{ingredientId}": Endpoints.delete__api_admin_items_ItemId_ingredients_IngredientId,

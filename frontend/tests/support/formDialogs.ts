@@ -40,11 +40,17 @@ export async function saveTheItemDialog(
 export async function saveTheIngredientDialog(
   ingredientDialog: VueWrapper,
   name: string,
-  unit: string,
+  unitId: string,
 ): Promise<void> {
   const dialog = formDialogHolding('[data-test="ingredient-name-field"]')
   typeInto(onScreen('[data-test="ingredient-name-field"]', dialog), name)
-  await ingredientDialog.getComponent(VSelect).setValue(unit)
+  await ingredientDialog.getComponent(VSelect).setValue(unitId)
+  await saveTheFormDialog(dialog)
+}
+
+export async function saveTheUnitDialog(name: string): Promise<void> {
+  const dialog = formDialogHolding('[data-test="unit-name-field"]')
+  typeInto(onScreen('[data-test="unit-name-field"]', dialog), name)
   await saveTheFormDialog(dialog)
 }
 

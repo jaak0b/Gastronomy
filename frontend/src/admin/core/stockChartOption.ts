@@ -13,7 +13,6 @@ import type {
 import { assertNever } from '../../shared/core/assertNever'
 import type { TimeTickForm } from '../../shared/core/moments'
 import type { ChartColours } from './chartTheme'
-import { shownEntryUnitFor, type AmountEntryUnit } from './ingredientAmounts'
 import { timeAxisTicksOf, timeTickFormOf } from './timeAxisTicks'
 
 export type ForecastKind = 'fromLastTwoHours' | 'sinceStart'
@@ -27,7 +26,7 @@ export interface StockChartWording {
   timeTickOf: (moment: Date, form: TimeTickForm) => string
   crossingOf: (moment: Date) => string
   crossingBeyondTheChartOf: (moment: Date) => string
-  axisAmountOf: (amount: number, entryUnit: AmountEntryUnit) => string
+  axisAmountOf: (amount: number) => string
   readoutOf: (moment: Date, usedAmount: number) => string
 }
 
@@ -277,7 +276,6 @@ export function stockChartOptionOf(
   const largestShown = Math.max(SMALLEST_AMOUNT_STEP, availableAmount ?? 0, now.usedAmount)
   const amountStep = amountStepFor(largestShown)
   const amountAxisMax = Math.ceil(largestShown / amountStep) * amountStep
-  const amountAxisUnit = shownEntryUnitFor(amountAxisMax, ingredient.unit)
   const sentForecasts: [ForecastKind, string | null][] = [
     ['fromLastTwoHours', ingredient.runsOutAtUtcFromLastTwoHours],
     ['sinceStart', ingredient.runsOutAtUtcSinceStart],
@@ -403,7 +401,7 @@ export function stockChartOptionOf(
       min: 0,
       max: amountAxisMax,
       interval: amountStep,
-      axisLabel: { formatter: (value: number) => wording.axisAmountOf(value, amountAxisUnit) },
+      axisLabel: { formatter: (value: number) => wording.axisAmountOf(value) },
     },
     series: [usedSeries, ...availableSeries, ...forecastSeries],
   }

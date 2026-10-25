@@ -1,6 +1,5 @@
 using GastronomyApp.Api.Mapping;
 using GastronomyApp.Contracts.Admin.Catalog;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using MapsterMapper;
 
@@ -37,8 +36,10 @@ public sealed class AdminItemMappingTest
   public void Map_AnArticleWithTwoRecipeLines_CarriesTheNameAndUnitOfEveryIngredientInNameOrder()
   {
     var bratwurst = Article();
-    var mustard = IngredientNamed("Senf", IngredientUnit.Gram);
-    var bun = IngredientNamed("Brötchen", IngredientUnit.Piece);
+    var gram = UnitNamed("Gramm");
+    var piece = UnitNamed("Stück");
+    var mustard = IngredientNamed("Senf", gram);
+    var bun = IngredientNamed("Brötchen", piece);
     bratwurst.Ingredients.Add(RecipeLineOf(bratwurst, mustard, 20));
     bratwurst.Ingredients.Add(RecipeLineOf(bratwurst, bun, 1));
 
@@ -47,8 +48,8 @@ public sealed class AdminItemMappingTest
     Assert.That(view.Ingredients,
                 Is.EqualTo(new[]
                            {
-                             new AdminItemIngredientView(bun.Id, "Brötchen", IngredientUnit.Piece, 1),
-                             new AdminItemIngredientView(mustard.Id, "Senf", IngredientUnit.Gram, 20)
+                             new AdminItemIngredientView(bun.Id, "Brötchen", piece.Id, "Stück", 1),
+                             new AdminItemIngredientView(mustard.Id, "Senf", gram.Id, "Gramm", 20)
                            }));
   }
 
@@ -64,13 +65,24 @@ public sealed class AdminItemMappingTest
            };
   }
 
-  private Ingredient IngredientNamed(string name, IngredientUnit unit)
+  private Ingredient IngredientNamed(string name, Unit unit)
   {
     return new()
            {
              Id = Guid.NewGuid(),
              Name = name,
+             UnitId = unit.Id,
              Unit = unit,
+             IsActive = true
+           };
+  }
+
+  private Unit UnitNamed(string name)
+  {
+    return new()
+           {
+             Id = Guid.NewGuid(),
+             Name = name,
              IsActive = true
            };
   }

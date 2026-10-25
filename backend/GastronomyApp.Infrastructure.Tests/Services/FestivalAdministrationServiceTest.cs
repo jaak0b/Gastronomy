@@ -1,5 +1,4 @@
 using ErrorOr;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
@@ -64,23 +63,38 @@ public sealed class FestivalAdministrationServiceTest
 
   private async Task<IReadOnlyList<Guid>> AddIngredientsAsync(GastronomyAppDbContext dbContext)
   {
+    Unit gram = new()
+                {
+                  Id = Guid.NewGuid(),
+                  Name = "Portion",
+                  IsActive = true
+                };
+    Unit piece = new()
+                 {
+                   Id = Guid.NewGuid(),
+                   Name = "Packung",
+                   IsActive = true
+                 };
     List<Ingredient> ingredients =
     [
       new()
       {
         Id = Guid.NewGuid(),
         Name = "Senf",
-        Unit = IngredientUnit.Gram,
+        UnitId = gram.Id,
+        Unit = gram,
         IsActive = true
       },
       new()
       {
         Id = Guid.NewGuid(),
         Name = "Brötchen",
-        Unit = IngredientUnit.Piece,
+        UnitId = piece.Id,
+        Unit = piece,
         IsActive = false
       }
     ];
+    dbContext.Units.AddRange(gram, piece);
     dbContext.Ingredients.AddRange(ingredients);
     await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 

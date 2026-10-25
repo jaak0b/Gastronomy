@@ -16,7 +16,8 @@ const SUMMER_FESTIVAL = aFestival({
 })
 
 const FLOUR = anAdminFestivalIngredient({
-  unit: 'gram',
+  unitId: 'unit-gram',
+  unitName: 'g',
   availableAmount: 2000,
   usedAmount: 1000,
   usage: [
@@ -143,13 +144,13 @@ describe('the history chart of an ingredient', () => {
   it('labels the amount axis the way the stock section writes amounts', () => {
     const chart = mountChart()
 
-    expect(optionHandedToTheChart(chart).yAxis.axisLabel.formatter(1500)).toBe('1,5 kg')
+    expect(optionHandedToTheChart(chart).yAxis.axisLabel.formatter(1500)).toBe('1.500 g')
   })
 
-  it('labels every amount on the axis in the same unit', () => {
+  it('labels every amount on the axis in the unit the ingredient carries', () => {
     const chart = mountChart()
 
-    expect(optionHandedToTheChart(chart).yAxis.axisLabel.formatter(500)).toBe('0,5 kg')
+    expect(optionHandedToTheChart(chart).yAxis.axisLabel.formatter(500)).toBe('500 g')
   })
 
   it('reads the moment of an order and the amount used once it was in, in German', () => {

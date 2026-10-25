@@ -7,10 +7,7 @@ import type {
 } from '../../../shared/api/generatedSchemas'
 import { formatTimeOfDay, formatTimeTick, spansMoreThanOneDay } from '../../../shared/core/moments'
 import { stockChartOptionOf } from '../../core/stockChartOption'
-import {
-  useAmountTextInEntryUnit,
-  useIngredientAmountText,
-} from '../../composables/useIngredientAmountText'
+import { useIngredientAmountText } from '../../composables/useIngredientAmountText'
 import BaseChart from '../BaseChart.vue'
 import { useChartTheme } from '../../composables/useChartTheme'
 
@@ -21,7 +18,6 @@ const props = defineProps<{
 
 const { t, locale } = useI18n()
 const amountText = useIngredientAmountText()
-const amountTextIn = useAmountTextInEntryUnit()
 const { colours: chartColours } = useChartTheme()
 
 const option = computed(() => {
@@ -41,11 +37,11 @@ const option = computed(() => {
         t('admin.ingredients.history.runsOutBeyondTheChart', {
           moment: formatTimeOfDay(moment, locale.value, true),
         }),
-      axisAmountOf: (amount, entryUnit) => amountTextIn(amount, entryUnit),
+      axisAmountOf: (amount) => amountText(amount, props.ingredient.unitName),
       readoutOf: (moment, usedAmount) =>
         t('admin.ingredients.history.usedBy', {
           moment: formatTimeOfDay(moment, locale.value, showsWeekday),
-          amount: amountText(usedAmount, props.ingredient.unit),
+          amount: amountText(usedAmount, props.ingredient.unitName),
         }),
     },
     chartColours.value,

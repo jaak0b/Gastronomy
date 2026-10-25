@@ -30,13 +30,13 @@ describe('the ingredients tab', () => {
     ])
   })
 
-  it('names the unit in English', async () => {
+  it('shows the unit name as the data it is, also in English', async () => {
     ingredientsListLaptop({ ingredients: [BUN] })
 
     const list = mountList('en')
     await vi.waitFor(() => expect(list.find('[data-test="ingredient-row"]').exists()).toBe(true))
 
-    expect(list.get('[data-test="unit"]').text()).toBe('pieces')
+    expect(list.get('[data-test="unit"]').text()).toBe('Stück')
   })
 
   it('leaves a deactivated ingredient out until the admin asks to see deactivated entries', async () => {
@@ -109,5 +109,18 @@ describe('the ingredients tab', () => {
     await flushPromises()
 
     expect(list.find('[data-test="none-yet"]').exists()).toBe(false)
+  })
+
+  it('says the ingredients could not be loaded when the units request fails', async () => {
+    ingredientsListLaptop({ unitsFailed: true })
+
+    const list = mountList()
+    await vi.waitFor(() =>
+      expect(list.find('[data-test="admin-ingredients"] [data-test="load-failed"]').exists()).toBe(true),
+    )
+
+    expect(list.get('[data-test="admin-ingredients"] [data-test="load-failed"]').text()).toContain(
+      'Laden Sie die Seite neu. Die Daten konnten nicht geladen werden.',
+    )
   })
 })

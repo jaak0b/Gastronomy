@@ -4,7 +4,12 @@ import { useAdminIngredientsStore } from '../../../src/admin/stores/ingredients'
 import { aHold, answer, heldUntil, inTurn, stubLaptop, type StubbedLaptop } from '../../support/laptop'
 import { anAdminIngredient } from '../../support/wireViews'
 
-const FLOUR = anAdminIngredient({ ingredientId: 'ingredient-mehl', name: 'Mehl', unit: 'gram' })
+const FLOUR = anAdminIngredient({
+  ingredientId: 'ingredient-mehl',
+  name: 'Mehl',
+  unitId: 'unit-gram',
+  unitName: 'g',
+})
 const BUN = anAdminIngredient()
 
 
@@ -73,11 +78,11 @@ describe('writing an ingredient', () => {
     const laptop = ingredientsLaptop({ writeStatus: 201, writeAnswer: BUN })
     const ingredients = useAdminIngredientsStore()
 
-    const result = await ingredients.create({ name: 'Brötchen', unit: 'piece' })
+    const result = await ingredients.create({ name: 'Brötchen', unitId: 'unit-stueck' })
 
     expect(result).toEqual({ kind: 'ok', value: BUN })
     expect(laptop.calls).toEqual([
-      { url: '/api/admin/ingredients', method: 'POST', body: { name: 'Brötchen', unit: 'piece' } },
+      { url: '/api/admin/ingredients', method: 'POST', body: { name: 'Brötchen', unitId: 'unit-stueck' } },
     ])
     expect(ingredients.ingredients).toEqual([BUN])
   })
@@ -86,14 +91,14 @@ describe('writing an ingredient', () => {
     const laptop = ingredientsLaptop({ writeAnswer: { ingredientId: FLOUR.ingredientId } })
     const ingredients = useAdminIngredientsStore()
 
-    const result = await ingredients.save(FLOUR.ingredientId, { name: 'Weizenmehl', unit: 'gram' })
+    const result = await ingredients.save(FLOUR.ingredientId, { name: 'Weizenmehl', unitId: 'unit-gram' })
 
     expect(result).toEqual({ kind: 'ok', value: null })
     expect(laptop.calls).toEqual([
       {
         url: '/api/admin/ingredients/ingredient-mehl',
         method: 'PUT',
-        body: { name: 'Weizenmehl', unit: 'gram' },
+        body: { name: 'Weizenmehl', unitId: 'unit-gram' },
       },
       { url: '/api/admin/ingredients', method: 'GET', body: undefined },
     ])
@@ -119,7 +124,7 @@ describe('writing an ingredient', () => {
     })
     const ingredients = useAdminIngredientsStore()
 
-    const result = await ingredients.create({ name: 'Mehl', unit: 'gram' })
+    const result = await ingredients.create({ name: 'Mehl', unitId: 'unit-gram' })
 
     expect(result).toEqual({
       kind: 'failed',
@@ -132,7 +137,7 @@ describe('writing an ingredient', () => {
     ingredientsLaptop({ writeStatus: 500 })
     const ingredients = useAdminIngredientsStore()
 
-    const result = await ingredients.save(FLOUR.ingredientId, { name: 'Mehl', unit: 'gram' })
+    const result = await ingredients.save(FLOUR.ingredientId, { name: 'Mehl', unitId: 'unit-gram' })
 
     expect(result).toEqual({
       kind: 'failed',

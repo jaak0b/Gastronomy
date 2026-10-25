@@ -32,6 +32,14 @@ describe('resolveRoute', () => {
     })
   })
 
+  it('reads the units path as the units tab', () => {
+    expect(resolveRoute('/admin/units')).toEqual({
+      name: 'admin',
+      section: 'units',
+      festivalId: null,
+    })
+  })
+
   it('reads the address of one festival as that festival page', () => {
     expect(resolveRoute('/admin/festivals/fest-1')).toEqual({
       name: 'admin',

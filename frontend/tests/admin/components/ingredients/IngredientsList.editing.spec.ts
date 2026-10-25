@@ -11,7 +11,8 @@ const MUSTARD_ROW = `[data-test="ingredient-row"][data-test-id="${MUSTARD.ingred
 const CREATED_KETCHUP = {
   ingredientId: 'ingredient-ketchup',
   name: 'Ketchup',
-  unit: 'millilitre',
+  unitId: 'unit-millilitre',
+  unitName: 'ml',
   isActive: true,
   activeItemNames: [],
 }
@@ -45,11 +46,11 @@ describe('adding an ingredient', () => {
     await list.get('[data-test="new-ingredient"]').trigger('click')
     await vi.waitFor(() => expect(document.querySelector('[data-test="ingredient-name-field"]')).not.toBeNull())
 
-    await saveTheIngredientDialog(list.findComponent(IngredientDialog), 'Ketchup', 'millilitre')
+    await saveTheIngredientDialog(list.findComponent(IngredientDialog), 'Ketchup', 'unit-millilitre')
 
     await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).toBeNull())
     expect(laptop.writes()).toEqual([
-      { url: '/api/admin/ingredients', method: 'POST', body: { name: 'Ketchup', unit: 'millilitre' } },
+      { url: '/api/admin/ingredients', method: 'POST', body: { name: 'Ketchup', unitId: 'unit-millilitre' } },
     ])
   })
 
@@ -60,7 +61,7 @@ describe('adding an ingredient', () => {
     await list.get('[data-test="new-ingredient"]').trigger('click')
     await vi.waitFor(() => expect(document.querySelector('[data-test="ingredient-name-field"]')).not.toBeNull())
 
-    await saveTheIngredientDialog(list.findComponent(IngredientDialog), 'senf', 'gram')
+    await saveTheIngredientDialog(list.findComponent(IngredientDialog), 'senf', 'unit-gram')
 
     await vi.waitFor(() =>
       expect(onScreen('[data-test="form-dialog"] [data-test="refusal"]').textContent?.trim()).toBe(
@@ -82,7 +83,7 @@ describe('adding an ingredient', () => {
     await list.get('[data-test="new-ingredient"]').trigger('click')
     await vi.waitFor(() => expect(document.querySelector('[data-test="ingredient-name-field"]')).not.toBeNull())
 
-    await saveTheIngredientDialog(list.findComponent(IngredientDialog), 'milch', 'millilitre')
+    await saveTheIngredientDialog(list.findComponent(IngredientDialog), 'milch', 'unit-millilitre')
 
     await vi.waitFor(() =>
       expect(onScreen('[data-test="form-dialog"] [data-test="refusal"]').textContent?.trim()).toBe(
@@ -112,14 +113,14 @@ describe('editing an ingredient', () => {
     await list.get(`${MUSTARD_ROW} [data-test="edit"]`).trigger('click')
     await vi.waitFor(() => expect(document.querySelector('[data-test="ingredient-name-field"]')).not.toBeNull())
 
-    await saveTheIngredientDialog(list.findComponent(IngredientDialog), 'Senf mittelscharf', 'millilitre')
+    await saveTheIngredientDialog(list.findComponent(IngredientDialog), 'Senf mittelscharf', 'unit-millilitre')
 
     await vi.waitFor(() =>
       expect(laptop.writes()).toEqual([
         {
           url: '/api/admin/ingredients/ingredient-senf',
           method: 'PUT',
-          body: { name: 'Senf mittelscharf', unit: 'millilitre' },
+          body: { name: 'Senf mittelscharf', unitId: 'unit-millilitre' },
         },
       ]),
     )

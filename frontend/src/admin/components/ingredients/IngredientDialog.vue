@@ -1,23 +1,29 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminIngredientView, IngredientUnit } from '../../../shared/api/generatedSchemas'
+import type { AdminIngredientView } from '../../../shared/api/generatedSchemas'
 import type { IngredientDraft } from '../../stores/ingredients'
-import { INGREDIENT_UNITS } from '../../core/ingredientAmounts'
-import { useAmountUnitName } from '../../composables/useAmountUnitName'
+import { useAdminUnitsStore } from '../../stores/units'
 import BaseFormDialog from '../../../shared/components/BaseFormDialog.vue'
 
 const props = defineProps<{ ingredient: AdminIngredientView | null; errorText: string | null }>()
 const emit = defineEmits<{ save: [draft: IngredientDraft]; cancel: [] }>()
 
 const { t } = useI18n()
-const unitName = useAmountUnitName()
+const units = useAdminUnitsStore()
 const name = ref(props.ingredient?.name ?? '')
-const unit = ref<IngredientUnit | null>(props.ingredient?.unit ?? null)
+const unitId = ref<string | null>(props.ingredient?.unitId ?? null)
 
-const unitChoices = computed(() =>
-  INGREDIENT_UNITS.map((choice) => ({ value: choice, title: unitName(choice) })),
-)
+const unitChoices = computed(() => {
+  const activeUnits = units.units
+    .filter((unit) => unit.isActive)
+    .map((unit) => ({ value: unit.unitId, title: unit.name }))
+  const current = props.ingredient
+  if (current === null || activeUnits.some((choice) => choice.value === current.unitId)) {
+    return activeUnits
+  }
+  return [...activeUnits, { value: current.unitId, title: current.unitName }]
+})
 
 const title = computed(() =>
   props.ingredient === null
@@ -25,14 +31,14 @@ const title = computed(() =>
     : t('admin.ingredients.labels.editTitle'),
 )
 
-const isIncomplete = computed(() => name.value.trim().length === 0 || unit.value === null)
+const isIncomplete = computed(() => name.value.trim().length === 0 || unitId.value === null)
 
 function save(): void {
-  const chosenUnit = unit.value
-  if (isIncomplete.value || chosenUnit === null) {
+  const chosenUnitId = unitId.value
+  if (isIncomplete.value || chosenUnitId === null) {
     return
   }
-  emit('save', { name: name.value, unit: chosenUnit })
+  emit('save', { name: name.value, unitId: chosenUnitId })
 }
 </script>
 
@@ -52,7 +58,7 @@ function save(): void {
       :label="t('admin.ingredients.labels.name')"
     />
     <v-select
-      v-model="unit"
+      v-model="unitId"
       class="ingredient-unit-field"
       data-test="ingredient-unit-field"
       :label="t('admin.ingredients.labels.unit')"

@@ -9,13 +9,26 @@ import { inputOf, onScreen, textOnScreen, typeInto } from '../../../support/dom'
 import { anAdminIngredient, anAdminItemIngredient } from '../../../support/wireViews'
 import { mountList, itemsListLaptop, openTheRecipe, ITEM_ID, ONE_ITEM } from './itemsListFixture'
 
-const MUSTARD = anAdminIngredient({ ingredientId: 'ingredient-senf', name: 'Senf', unit: 'gram' })
+const MUSTARD = anAdminIngredient({
+  ingredientId: 'ingredient-senf',
+  name: 'Senf',
+  unitId: 'unit-gram',
+  unitName: 'g',
+})
 
 const BRATWURST_WITH_MUSTARD = {
   items: [
     {
       ...ONE_ITEM.items[0],
-      ingredients: [anAdminItemIngredient({ ingredientId: 'ingredient-senf', name: 'Senf', unit: 'gram', amount: 20 })],
+      ingredients: [
+        anAdminItemIngredient({
+          ingredientId: 'ingredient-senf',
+          name: 'Senf',
+          unitId: 'unit-gram',
+          unitName: 'g',
+          amount: 20,
+        }),
+      ],
     },
   ],
 }

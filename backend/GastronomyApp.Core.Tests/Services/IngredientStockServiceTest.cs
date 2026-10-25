@@ -30,6 +30,12 @@ public sealed class IngredientStockServiceTest
                   NextOrderNumber = 1,
                   IsHidden = false
                 };
+    _gram = new()
+            {
+              Id = Guid.NewGuid(),
+              Name = "g",
+              IsActive = true
+            };
     _mustardStock = new()
                     {
                       Id = Guid.NewGuid(),
@@ -40,7 +46,8 @@ public sealed class IngredientStockServiceTest
                                    {
                                      Id = Guid.NewGuid(),
                                      Name = "Senf",
-                                     Unit = IngredientUnit.Gram,
+                                     UnitId = _gram.Id,
+                                     Unit = _gram,
                                      IsActive = true
                                    }
                     };
@@ -70,6 +77,7 @@ public sealed class IngredientStockServiceTest
   private IFestivalRepository _festivalRepository = null!;
   private FakeTimeProvider _clock = null!;
   private Festival _festival = null!;
+  private Unit _gram = null!;
   private FestivalIngredient _mustardStock = null!;
   private IngredientStockService _service = null!;
 

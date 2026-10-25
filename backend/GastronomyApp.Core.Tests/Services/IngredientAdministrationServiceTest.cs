@@ -1,6 +1,5 @@
 using ErrorOr;
 using FakeItEasy;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
@@ -17,11 +16,31 @@ public sealed class IngredientAdministrationServiceTest
   {
     _repository = A.Fake<IIngredientRepository>();
     _festivalRepository = A.Fake<IFestivalRepository>();
+    _unitRepository = A.Fake<IUnitRepository>();
+    _gram = new()
+            {
+              Id = Guid.NewGuid(),
+              Name = "g",
+              IsActive = true
+            };
+    _millilitre = new()
+                  {
+                    Id = Guid.NewGuid(),
+                    Name = "ml",
+                    IsActive = true
+                  };
+    _switchedOffUnit = new()
+                       {
+                         Id = Guid.NewGuid(),
+                         Name = "kg",
+                         IsActive = false
+                       };
     _mustard = new()
                {
                  Id = Guid.NewGuid(),
                  Name = "Senf",
-                 Unit = IngredientUnit.Gram,
+                 UnitId = _gram.Id,
+                 Unit = _gram,
                  IsActive = true
                };
 
@@ -30,13 +49,17 @@ public sealed class IngredientAdministrationServiceTest
     A.CallTo(() => _repository.FindByIdAsync(_mustard.Id, A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult<Ingredient?>(_mustard));
     A.CallTo(() => _repository.FindWithRecipeLinesAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Ingredient?>(null));
     A.CallTo(() => _repository.FindWithRecipeLinesAsync(_mustard.Id, A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult<Ingredient?>(_mustard));
+    A.CallTo(() => _unitRepository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Unit?>(null));
+    A.CallTo(() => _unitRepository.FindByIdAsync(_gram.Id, A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult<Unit?>(_gram));
+    A.CallTo(() => _unitRepository.FindByIdAsync(_millilitre.Id, A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult<Unit?>(_millilitre));
+    A.CallTo(() => _unitRepository.FindByIdAsync(_switchedOffUnit.Id, A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult<Unit?>(_switchedOffUnit));
     A.CallTo(() => _festivalRepository.FindAllAsync(A<CancellationToken>._))
    .Returns(Task.FromResult<IReadOnlyCollection<Festival>>([
                                                              BuildFestival(_summerFestivalId),
                                                              BuildFestival(_autumnFestivalId)
                                                            ]));
 
-    _service = new(_repository, _festivalRepository, new IngredientService());
+    _service = new(_repository, _festivalRepository, new IngredientService(), _unitRepository);
   }
 
   private readonly Guid _summerFestivalId = Guid.NewGuid();
@@ -44,18 +67,23 @@ public sealed class IngredientAdministrationServiceTest
 
   private IIngredientRepository _repository = null!;
   private IFestivalRepository _festivalRepository = null!;
+  private IUnitRepository _unitRepository = null!;
   private Ingredient _mustard = null!;
+  private Unit _gram = null!;
+  private Unit _millilitre = null!;
+  private Unit _switchedOffUnit = null!;
   private IngredientAdministrationService _service = null!;
 
   [Test]
-  public async Task CreateAsync_ANewName_StoresTheNameAsTypedWithAnUnlimitedStockRowPerFestival()
+  public async Task CreateAsync_ANewName_StoresTheNameAsTypedWithItsUnitAndAnUnlimitedStockRowPerFestival()
   {
-    ErrorOr<Ingredient> created = await _service.CreateAsync("Bratwurst roh", IngredientUnit.Piece, CancellationToken.None);
+    ErrorOr<Ingredient> created = await _service.CreateAsync("Bratwurst roh", _gram.Id, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(created.Value.Name, Is.EqualTo("Bratwurst roh"));
-                      Assert.That(created.Value.Unit, Is.EqualTo(IngredientUnit.Piece));
+                      Assert.That(created.Value.UnitId, Is.EqualTo(_gram.Id));
+                      Assert.That(created.Value.Unit, Is.SameAs(_gram));
                       Assert.That(created.Value.IsActive, Is.True);
                       Assert.That(created.Value.FestivalIngredients.Select(stock => stock.FestivalId),
                                   Is.EquivalentTo(new[]
@@ -72,7 +100,7 @@ public sealed class IngredientAdministrationServiceTest
   [Test]
   public async Task CreateAsync_ANameAnotherIngredientHoldsInOtherCase_IsRefusedAsNameTaken()
   {
-    ErrorOr<Ingredient> created = await _service.CreateAsync("SENF", IngredientUnit.Gram, CancellationToken.None);
+    ErrorOr<Ingredient> created = await _service.CreateAsync("SENF", _gram.Id, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -88,7 +116,7 @@ public sealed class IngredientAdministrationServiceTest
   {
     _mustard.IsActive = false;
 
-    ErrorOr<Ingredient> created = await _service.CreateAsync("SENF", IngredientUnit.Gram, CancellationToken.None);
+    ErrorOr<Ingredient> created = await _service.CreateAsync("SENF", _gram.Id, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -101,9 +129,27 @@ public sealed class IngredientAdministrationServiceTest
   }
 
   [Test]
-  public async Task CreateAsync_AUnitOutsideTheThreeUnits_IsRefusedWithoutStoring()
+  public async Task CreateAsync_NoUnit_IsRefusedWithoutStoring()
   {
-    ErrorOr<Ingredient> created = await _service.CreateAsync("Ketchup", (IngredientUnit)9, CancellationToken.None);
+    ErrorOr<Ingredient> created = await _service.CreateAsync("Ketchup", null, CancellationToken.None);
+
+    Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  [Test]
+  public async Task CreateAsync_AnUnknownUnit_IsRefusedWithoutStoring()
+  {
+    ErrorOr<Ingredient> created = await _service.CreateAsync("Ketchup", Guid.NewGuid(), CancellationToken.None);
+
+    Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  [Test]
+  public async Task CreateAsync_ASwitchedOffUnit_IsRefusedWithoutStoring()
+  {
+    ErrorOr<Ingredient> created = await _service.CreateAsync("Ketchup", _switchedOffUnit.Id, CancellationToken.None);
 
     Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
@@ -112,14 +158,25 @@ public sealed class IngredientAdministrationServiceTest
   [Test]
   public async Task UpdateAsync_ItsOwnNameInOtherCaseAndANewUnit_RenamesAndChangesTheUnit()
   {
-    ErrorOr<Ingredient> updated = await _service.UpdateAsync(_mustard.Id, "senf", IngredientUnit.Millilitre, CancellationToken.None);
+    ErrorOr<Ingredient> updated = await _service.UpdateAsync(_mustard.Id, "senf", _millilitre.Id, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(updated.Value.Name, Is.EqualTo("senf"));
-                      Assert.That(updated.Value.Unit, Is.EqualTo(IngredientUnit.Millilitre));
+                      Assert.That(updated.Value.UnitId, Is.EqualTo(_millilitre.Id));
+                      Assert.That(updated.Value.Unit, Is.SameAs(_millilitre));
                     });
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task UpdateAsync_ANewUnit_LeavesTheAmountsOfItsRecipeLinesUnchanged()
+  {
+    _mustard.CatalogItems.Add(BuildRecipeLine("Bratwurst", true, 20));
+
+    ErrorOr<Ingredient> updated = await _service.UpdateAsync(_mustard.Id, "Senf", _millilitre.Id, CancellationToken.None);
+
+    Assert.That(updated.Value.CatalogItems.Single().Amount, Is.EqualTo(20));
   }
 
   [Test]
@@ -129,12 +186,13 @@ public sealed class IngredientAdministrationServiceTest
                          {
                            Id = Guid.NewGuid(),
                            Name = "Ketchup",
-                           Unit = IngredientUnit.Millilitre,
+                           UnitId = _millilitre.Id,
+                           Unit = _millilitre,
                            IsActive = true
                          };
     A.CallTo(() => _repository.FindByIdAsync(ketchup.Id, A<CancellationToken>._)).Returns(Task.FromResult<Ingredient?>(ketchup));
 
-    ErrorOr<Ingredient> updated = await _service.UpdateAsync(ketchup.Id, "Senf", IngredientUnit.Millilitre, CancellationToken.None);
+    ErrorOr<Ingredient> updated = await _service.UpdateAsync(ketchup.Id, "Senf", _millilitre.Id, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -151,12 +209,13 @@ public sealed class IngredientAdministrationServiceTest
                          {
                            Id = Guid.NewGuid(),
                            Name = "Ketchup",
-                           Unit = IngredientUnit.Millilitre,
+                           UnitId = _millilitre.Id,
+                           Unit = _millilitre,
                            IsActive = true
                          };
     A.CallTo(() => _repository.FindByIdAsync(ketchup.Id, A<CancellationToken>._)).Returns(Task.FromResult<Ingredient?>(ketchup));
 
-    ErrorOr<Ingredient> updated = await _service.UpdateAsync(ketchup.Id, "senf", IngredientUnit.Millilitre, CancellationToken.None);
+    ErrorOr<Ingredient> updated = await _service.UpdateAsync(ketchup.Id, "senf", _millilitre.Id, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -169,9 +228,18 @@ public sealed class IngredientAdministrationServiceTest
   [Test]
   public async Task UpdateAsync_AnUnknownIngredient_IsRefusedAsNotFound()
   {
-    ErrorOr<Ingredient> updated = await _service.UpdateAsync(Guid.NewGuid(), "Zwiebeln", IngredientUnit.Gram, CancellationToken.None);
+    ErrorOr<Ingredient> updated = await _service.UpdateAsync(Guid.NewGuid(), "Zwiebeln", _gram.Id, CancellationToken.None);
 
     Assert.That(updated.FirstError.NumericType, Is.EqualTo(RefusalType.NotFound));
+  }
+
+  [Test]
+  public async Task UpdateAsync_AnUnknownUnit_IsRefusedWithoutStoring()
+  {
+    ErrorOr<Ingredient> updated = await _service.UpdateAsync(_mustard.Id, "Senf", Guid.NewGuid(), CancellationToken.None);
+
+    Assert.That(updated.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   [Test]
@@ -186,7 +254,7 @@ public sealed class IngredientAdministrationServiceTest
   [Test]
   public async Task DeactivateAsync_AnIngredientInTheRecipeOfAnActiveArticle_IsRefusedAndStaysSwitchedOn()
   {
-    _mustard.CatalogItems.Add(BuildRecipeLine("Bratwurst", true));
+    _mustard.CatalogItems.Add(BuildRecipeLine("Bratwurst", true, 20));
 
     ErrorOr<Ingredient> deactivated = await _service.DeactivateAsync(_mustard.Id, CancellationToken.None);
 
@@ -203,7 +271,7 @@ public sealed class IngredientAdministrationServiceTest
   [Test]
   public async Task DeactivateAsync_AnIngredientOnlyInTheRecipeOfASwitchedOffArticle_SwitchesItOff()
   {
-    _mustard.CatalogItems.Add(BuildRecipeLine("Currywurst", false));
+    _mustard.CatalogItems.Add(BuildRecipeLine("Currywurst", false, 20));
 
     ErrorOr<Ingredient> deactivated = await _service.DeactivateAsync(_mustard.Id, CancellationToken.None);
 
@@ -237,7 +305,7 @@ public sealed class IngredientAdministrationServiceTest
     Assert.That(activated.FirstError.NumericType, Is.EqualTo(RefusalType.NotFound));
   }
 
-  private CatalogItemIngredient BuildRecipeLine(string itemName, bool isTheItemActive)
+  private CatalogItemIngredient BuildRecipeLine(string itemName, bool isTheItemActive, double amount)
   {
     CatalogItem item = new()
                        {
@@ -253,7 +321,7 @@ public sealed class IngredientAdministrationServiceTest
              Id = Guid.NewGuid(),
              CatalogItemId = item.Id,
              IngredientId = _mustard.Id,
-             Amount = 20,
+             Amount = amount,
              CatalogItem = item,
              Ingredient = _mustard
            };

@@ -6,7 +6,7 @@ import type {
   AdminFestivalView,
 } from '../../../shared/api/generatedSchemas'
 import { formatTimeOfDay, spansMoreThanOneDay } from '../../../shared/core/moments'
-import { entryUnitsFor, type ParsedAmountInput } from '../../core/ingredientAmounts'
+import type { ParsedAmountInput } from '../../core/ingredientAmounts'
 import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminFestivalStockStore } from '../../stores/festivalStock'
 import { useIngredientAmountText } from '../../composables/useIngredientAmountText'
@@ -47,7 +47,7 @@ async function changeAvailableAmount(
   ingredientRefusals.forgetRefusalOf(ingredientId)
   switch (parsed.kind) {
     case 'amount':
-      await saveAvailableAmount(ingredientId, parsed.baseAmount)
+      await saveAvailableAmount(ingredientId, parsed.amount)
       return
     case 'empty':
       await saveAvailableAmount(ingredientId, null)
@@ -112,7 +112,7 @@ function toggleHistory(ingredientId: string): void {
               {{ ingredient.name }}
             </span>
             <IngredientAmountField
-              :entry-units="entryUnitsFor(ingredient.unit)"
+              :unit-name="ingredient.unitName"
               :saved-amount="ingredient.availableAmount"
               :label="t('admin.ingredients.labels.available')"
               @amount-typed="ingredientRefusals.forgetRefusalOf(ingredient.ingredientId)"
@@ -124,7 +124,7 @@ function toggleHistory(ingredientId: string): void {
             >
               {{
                 t('admin.ingredients.labels.used', {
-                  amount: amountText(ingredient.usedAmount, ingredient.unit),
+                  amount: amountText(ingredient.usedAmount, ingredient.unitName),
                 })
               }}
             </span>

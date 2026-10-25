@@ -39,16 +39,18 @@ tooltip beside them (frontend rule 8).
   rows of `FestivalItems.vue` use it; a list grouped under headings numbers its rows on through the
   groups with `numberRowsAcrossGroups` (`admin/core/alternatingRows.ts`).
 - `BaseHeadingWithCheckbox.vue` is a heading with its checkbox at the right of the same line, the
-  way every global tab places "Deaktivierte anzeigen". Consumers: the five global tabs and
-  `HideableEntryList.vue`.
+  way the Ausgabestellen, Artikel, Zutaten, Einheiten and Kellner tabs place "Deaktivierte anzeigen";
+  the Feste tab places "Ausgeblendete Feste anzeigen" the same way. Consumers: the six global tabs
+  and `HideableEntryList.vue`.
 - `BaseActionWithRefusalReason.vue` disables an action the laptop would refuse and names the reason
   in a tooltip, as `admin-list-screen.md` step 7 describes. The slot gets `refused` for the button's
   `:disabled`; the wrapper carries the tooltip (`data-test="refusal-reason"`), because a disabled
   button sends no hover. Consumers: the article rows of `FestivalItems.vue` and of the Artikel tab,
-  the ingredient rows of the Zutaten tab, the station rows of the Ausgabestellen tab, the festival
-  list's crossed-out eye, `HideableEntryList.vue` and `RemovableStationRows.vue`.
-- `BaseTrashButton.vue` is the red trash icon of the festival page, the Artikel, Zutaten and
-  Kellner tabs, the recipe dialog's lines, the hiding icon of `HideableEntryList.vue` and the
+  the ingredient rows of the Zutaten tab, the unit rows of the Einheiten tab, the station rows of
+  the Ausgabestellen tab, the festival list's crossed-out eye, `HideableEntryList.vue` and
+  `RemovableStationRows.vue`.
+- `BaseTrashButton.vue` is the red trash icon of the festival page, the Artikel, Zutaten, Einheiten
+  and Kellner tabs, the recipe dialog's lines, the hiding icon of `HideableEntryList.vue` and the
   removal icon of `RemovableStationRows.vue`.
 - `BaseIconAction.vue` is an icon button whose name shows as a tooltip
   (`data-test="icon-action-label"`): the crossed-out eye "Ausblenden" of the festival list and the
@@ -56,12 +58,12 @@ tooltip beside them (frontend rule 8).
   `BaseEditButton.vue` is the pencil on it, named "Bearbeiten" (`admin.common.actions.edit`), the
   only way a row offers its edit dialog: every row of `HideableEntryList.vue`, the category
   headings and article rows of the Artikel tab and of the festival page, the station rows of the
-  festival page and of the Ausgabestellen tab, the Zutaten tab, the festival list (it opens the
-  festival page) and the Kellner tab (it changes the name).
+  festival page and of the Ausgabestellen tab, the Zutaten and Einheiten tabs, the festival list (it
+  opens the festival page) and the Kellner tab (it changes the name).
   `BaseShowButton.vue` is the open eye on it, with the word of its action as `label`: "Einblenden"
   on every hidden row (the festival list and `HideableEntryList.vue`), and "Artikel aktivieren",
-  "Kategorie einschalten", "Zutat aktivieren", "Ausgabestelle einschalten" and "Kellner wieder
-  aufnehmen" for a deactivated entry of the global tabs.
+  "Kategorie einschalten", "Zutat aktivieren", "Einheit aktivieren", "Ausgabestelle einschalten" and
+  "Kellner wieder aufnehmen" for a deactivated entry of the global tabs.
 - `BaseMoveButtons.vue` is the pair of arrows that emits `move` with `up` or `down`
   (`data-test="move-up"`, `"move-down"`). Consumers: the category headings of the Artikel tab and the
   area rows. Each store sends one move after the other through `admin/core/oneAtATime.ts`. A move
@@ -107,5 +109,6 @@ trash icon with its tooltip (hover the `hide-entry-wrapper`, then read `refusalR
 from `tests/support/dom.ts`), the pencil and the open eye (hover it, then read
 `iconActionLabelsOnScreen()`), the arrows, the confirmation and the checkbox. The pencil and the
 eye of the global tabs are in `FestivalsList.spec.ts`, `ItemsList.categories.spec.ts`,
-`ItemsList.items.spec.ts`, `IngredientsList.listing.spec.ts`, `StationsList.switchingOff.spec.ts`
-and `StaffList.spec.ts`.
+`ItemsList.items.spec.ts`, `IngredientsList.listing.spec.ts`, `UnitsList.listing.spec.ts`,
+`StationsList.switchingOff.spec.ts` and `StaffList.spec.ts`; `UnitsList.switchingOff.spec.ts` covers
+the Einheiten tab's disabled deactivation with its tooltip and its confirmation.

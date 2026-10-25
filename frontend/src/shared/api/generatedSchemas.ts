@@ -22,9 +22,6 @@ export const AdminCategoryView = z.strictObject({ categoryId: z.string(), name: 
 export type AdminCategoryListView = __TypedOpenapi.Schemas.AdminCategoryListView;
 export const AdminCategoryListView = z.strictObject({ categories: z.array(AdminCategoryView) });
 
-export type IngredientUnit = __TypedOpenapi.Schemas.IngredientUnit;
-export const IngredientUnit = z.enum(["piece", "gram", "millilitre"]);
-
 export type IngredientUsagePoint = __TypedOpenapi.Schemas.IngredientUsagePoint;
 export const IngredientUsagePoint = z.strictObject({ atUtc: z.string(), usedAmount: z.number() });
 
@@ -32,7 +29,7 @@ export type StockWarning = __TypedOpenapi.Schemas.StockWarning;
 export const StockWarning = z.enum(["none", "runsOutSoon", "usedUp"]);
 
 export type AdminFestivalIngredientView = __TypedOpenapi.Schemas.AdminFestivalIngredientView;
-export const AdminFestivalIngredientView = z.strictObject({ ingredientId: z.string(), name: z.string(), unit: IngredientUnit, availableAmount: z.number().nullable(), usedAmount: z.number(), usage: z.array(IngredientUsagePoint), runsOutAtUtcSinceStart: z.string().nullable(), runsOutAtUtcFromLastTwoHours: z.string().nullable(), stockWarning: StockWarning, runsOutSoonAtUtc: z.string().nullable() });
+export const AdminFestivalIngredientView = z.strictObject({ ingredientId: z.string(), name: z.string(), unitId: z.string(), unitName: z.string(), availableAmount: z.number().nullable(), usedAmount: z.number(), usage: z.array(IngredientUsagePoint), runsOutAtUtcSinceStart: z.string().nullable(), runsOutAtUtcFromLastTwoHours: z.string().nullable(), stockWarning: StockWarning, runsOutSoonAtUtc: z.string().nullable() });
 
 export type AdminFestivalIngredientListView = __TypedOpenapi.Schemas.AdminFestivalIngredientListView;
 export const AdminFestivalIngredientListView = z.strictObject({ ingredients: z.array(AdminFestivalIngredientView) });
@@ -44,7 +41,7 @@ export type AdminFestivalListView = __TypedOpenapi.Schemas.AdminFestivalListView
 export const AdminFestivalListView = z.strictObject({ festivals: z.array(AdminFestivalView) });
 
 export type AdminIngredientView = __TypedOpenapi.Schemas.AdminIngredientView;
-export const AdminIngredientView = z.strictObject({ ingredientId: z.string(), name: z.string(), unit: IngredientUnit, isActive: z.boolean(), activeItemNames: z.array(z.string()) });
+export const AdminIngredientView = z.strictObject({ ingredientId: z.string(), name: z.string(), unitId: z.string(), unitName: z.string(), isActive: z.boolean(), activeItemNames: z.array(z.string()) });
 
 export type AdminIngredientListView = __TypedOpenapi.Schemas.AdminIngredientListView;
 export const AdminIngredientListView = z.strictObject({ ingredients: z.array(AdminIngredientView) });
@@ -53,7 +50,7 @@ export type AdminItemAtFestivalView = __TypedOpenapi.Schemas.AdminItemAtFestival
 export const AdminItemAtFestivalView = z.strictObject({ priceCents: z.number().int(), isAvailable: z.boolean(), stationIds: z.array(z.string()) });
 
 export type AdminItemIngredientView = __TypedOpenapi.Schemas.AdminItemIngredientView;
-export const AdminItemIngredientView = z.strictObject({ ingredientId: z.string(), name: z.string(), unit: IngredientUnit, amount: z.number() });
+export const AdminItemIngredientView = z.strictObject({ ingredientId: z.string(), name: z.string(), unitId: z.string(), unitName: z.string(), amount: z.number() });
 
 export type AdminItemView = __TypedOpenapi.Schemas.AdminItemView;
 export const AdminItemView = z.strictObject({ itemId: z.string(), name: z.string(), categoryId: z.string(), sortOrder: z.number().int(), isActive: z.boolean(), productionMinutes: z.number().nullable(), isQueueIndependent: z.boolean(), atTheFestival: AdminItemAtFestivalView.nullable(), ingredients: z.array(AdminItemIngredientView) });
@@ -75,6 +72,12 @@ export const AdminStationListView = z.strictObject({ stations: z.array(AdminStat
 
 export type AdminTablePlanView = __TypedOpenapi.Schemas.AdminTablePlanView;
 export const AdminTablePlanView = z.strictObject({ areas: z.array(AdminAreaView) });
+
+export type AdminUnitView = __TypedOpenapi.Schemas.AdminUnitView;
+export const AdminUnitView = z.strictObject({ unitId: z.string(), name: z.string(), isActive: z.boolean(), usedByIngredientNames: z.array(z.string()) });
+
+export type AdminUnitListView = __TypedOpenapi.Schemas.AdminUnitListView;
+export const AdminUnitListView = z.strictObject({ units: z.array(AdminUnitView) });
 
 export type CatalogCategoryView = __TypedOpenapi.Schemas.CatalogCategoryView;
 export const CatalogCategoryView = z.strictObject({ categoryId: z.string(), name: z.string(), colourHex: z.string(), sortOrder: z.number().int() });
@@ -199,6 +202,9 @@ export const SavedStationView = z.strictObject({ stationId: z.string() });
 export type SavedTableView = __TypedOpenapi.Schemas.SavedTableView;
 export const SavedTableView = z.strictObject({ tableId: z.string() });
 
+export type SavedUnitView = __TypedOpenapi.Schemas.SavedUnitView;
+export const SavedUnitView = z.strictObject({ unitId: z.string() });
+
 export type SaveFestivalIngredientRequest = __TypedOpenapi.Schemas.SaveFestivalIngredientRequest;
 export const SaveFestivalIngredientRequest = z.strictObject({ availableAmount: z.number().nullable() });
 
@@ -209,7 +215,7 @@ export type SaveFestivalRequest = __TypedOpenapi.Schemas.SaveFestivalRequest;
 export const SaveFestivalRequest = z.strictObject({ name: z.string().nullable(), startsAtUtc: z.string(), endsAtUtc: z.string() });
 
 export type SaveIngredientRequest = __TypedOpenapi.Schemas.SaveIngredientRequest;
-export const SaveIngredientRequest = z.strictObject({ name: z.string().nullable(), unit: IngredientUnit.nullable() });
+export const SaveIngredientRequest = z.strictObject({ name: z.string().nullable(), unitId: z.string().nullable() });
 
 export type SaveItemIngredientRequest = __TypedOpenapi.Schemas.SaveItemIngredientRequest;
 export const SaveItemIngredientRequest = z.strictObject({ amount: z.number().nullable() });
@@ -225,6 +231,9 @@ export const SaveStationShapeRequest = z.strictObject({ areaId: z.string(), geom
 
 export type SaveTableRequest = __TypedOpenapi.Schemas.SaveTableRequest;
 export const SaveTableRequest = z.strictObject({ areaId: z.string(), name: z.string().nullable(), geometry: AreaShapeGeometry.nullable() });
+
+export type SaveUnitRequest = __TypedOpenapi.Schemas.SaveUnitRequest;
+export const SaveUnitRequest = z.strictObject({ name: z.string().nullable() });
 
 export type SessionView = __TypedOpenapi.Schemas.SessionView;
 export const SessionView = z.strictObject({ deviceId: z.string(), staffMember: StaffMemberView.nullable(), station: StationSummaryView.nullable(), language: z.string() });

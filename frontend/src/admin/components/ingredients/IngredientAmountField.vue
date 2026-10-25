@@ -5,58 +5,37 @@ import { assertNever } from '../../../shared/core/assertNever'
 import { appLanguageOf } from '../../../shared/core/deviceLanguage'
 import {
   amountInputFor,
-  amountInputSwitchedTo,
   parseAmountInput,
-  type AmountEntryUnit,
   type ParsedAmountInput,
 } from '../../core/ingredientAmounts'
-import { useAmountUnitName } from '../../composables/useAmountUnitName'
 
 const props = defineProps<{
-  entryUnits: readonly AmountEntryUnit[]
+  unitName: string
   savedAmount: number | null
   label: string
   errorText?: string | null
 }>()
 const emit = defineEmits<{
-  amountTyped: [parsed: ParsedAmountInput, entryUnit: AmountEntryUnit]
+  amountTyped: [parsed: ParsedAmountInput]
   amountChanged: [parsed: ParsedAmountInput]
 }>()
 
 const { locale } = useI18n()
-const unitName = useAmountUnitName()
 const language = computed(() => appLanguageOf(locale.value))
-const startingInput = amountInputFor(props.savedAmount, props.entryUnits[0], language.value)
-const typed = ref(startingInput.typed)
-const entryUnit = ref<AmountEntryUnit>(startingInput.entryUnit)
-
-const unitChoices = computed(() =>
-  props.entryUnits.map((unit) => ({ value: unit, title: unitName(unit) })),
-)
-const parsed = computed(() =>
-  parseAmountInput({ typed: typed.value, entryUnit: entryUnit.value }),
-)
+const typed = ref(amountInputFor(props.savedAmount, language.value))
+const parsed = computed(() => parseAmountInput(typed.value))
 
 watch(
   () => props.savedAmount,
   (savedAmount) => {
-    typed.value = amountInputFor(savedAmount, entryUnit.value, language.value).typed
+    typed.value = amountInputFor(savedAmount, language.value)
   },
 )
 
 watch(
-  () => props.entryUnits,
-  (entryUnits) => {
-    if (!entryUnits.includes(entryUnit.value)) {
-      switchEntryUnit(entryUnits[0])
-    }
-  },
-)
-
-watch(
-  [parsed, entryUnit],
-  ([current, currentEntryUnit]) => {
-    emit('amountTyped', current, currentEntryUnit)
+  parsed,
+  (current) => {
+    emit('amountTyped', current)
   },
   { immediate: true },
 )
@@ -64,7 +43,7 @@ watch(
 function namesTheSavedAmount(current: ParsedAmountInput): boolean {
   switch (current.kind) {
     case 'amount':
-      return current.baseAmount === props.savedAmount
+      return current.amount === props.savedAmount
     case 'empty':
       return props.savedAmount === null
     case 'unreadable':
@@ -78,16 +57,6 @@ function commitIfChanged(): void {
   if (!namesTheSavedAmount(parsed.value)) {
     emit('amountChanged', parsed.value)
   }
-}
-
-function switchEntryUnit(switchedUnit: AmountEntryUnit): void {
-  const switched = amountInputSwitchedTo(
-    { typed: typed.value, entryUnit: entryUnit.value },
-    switchedUnit,
-    language.value,
-  )
-  typed.value = switched.typed
-  entryUnit.value = switched.entryUnit
 }
 
 function leaveTheField(event: KeyboardEvent): void {
@@ -111,22 +80,11 @@ function leaveTheField(event: KeyboardEvent): void {
       @blur="commitIfChanged"
       @keydown.enter.prevent="leaveTheField"
     />
-    <v-select
-      v-if="unitChoices.length > 1"
-      :model-value="entryUnit"
-      class="amount-unit-select"
-      data-test="amount-unit-select"
-      density="compact"
-      hide-details
-      :items="unitChoices"
-      @update:model-value="switchEntryUnit"
-    />
     <span
-      v-else
       class="amount-unit text-body-1 pt-2"
       data-test="amount-unit"
     >
-      {{ unitName(entryUnit) }}
+      {{ unitName }}
     </span>
   </div>
 </template>
@@ -134,9 +92,5 @@ function leaveTheField(event: KeyboardEvent): void {
 <style scoped>
 .amount-input {
   flex: 0 0 9rem;
-}
-
-.amount-unit-select {
-  flex: 0 0 6.5rem;
 }
 </style>

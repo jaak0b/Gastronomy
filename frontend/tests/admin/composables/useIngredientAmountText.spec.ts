@@ -1,17 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
-import {
-  useAmountTextInEntryUnit,
-  useIngredientAmountText,
-} from '../../../src/admin/composables/useIngredientAmountText'
-import type { AmountEntryUnit } from '../../../src/admin/core/ingredientAmounts'
-import type { IngredientUnit } from '../../../src/shared/api/generatedSchemas'
+import { useIngredientAmountText } from '../../../src/admin/composables/useIngredientAmountText'
 import { testPlugins } from '../../support/plugins'
 
-type AmountText = (baseAmount: number, unit: IngredientUnit) => string
-
-type AmountTextInEntryUnit = (baseAmount: number, entryUnit: AmountEntryUnit) => string
+type AmountText = (amount: number, unitName: string) => string
 
 function amountTextIn(locale: 'de' | 'en'): AmountText {
   let amountText: AmountText = () => ''
@@ -27,61 +20,30 @@ function amountTextIn(locale: 'de' | 'en'): AmountText {
   return amountText
 }
 
-function amountTextInEntryUnitIn(locale: 'de' | 'en'): AmountTextInEntryUnit {
-  let amountText: AmountTextInEntryUnit = () => ''
-  mount(
-    defineComponent({
-      setup() {
-        amountText = useAmountTextInEntryUnit()
-        return () => h('div')
-      },
-    }),
-    { global: { plugins: testPlugins(locale) } },
-  )
-  return amountText
-}
-
 describe('the text of an ingredient amount', () => {
-  it('writes amounts in German', () => {
+  it('writes the stored number and the unit name in German', () => {
     const amountText = amountTextIn('de')
 
-    expect(amountText(250, 'gram')).toBe('250 g')
-    expect(amountText(1500, 'gram')).toBe('1,5 kg')
-    expect(amountText(2500, 'millilitre')).toBe('2,5 l')
-    expect(amountText(1, 'piece')).toBe('1 Stück')
-    expect(amountText(3, 'piece')).toBe('3 Stück')
+    expect(amountText(250, 'g')).toBe('250 g')
+    expect(amountText(1500, 'g')).toBe('1.500 g')
+    expect(amountText(2500, 'ml')).toBe('2.500 ml')
+    expect(amountText(0.5, 'l')).toBe('0,5 l')
   })
 
-  it('writes an amount that rounds up to a whole litre in litres', () => {
-    const amountText = amountTextIn('de')
-
-    expect(amountText(999.9996, 'millilitre')).toBe('1 l')
-  })
-
-  it('writes amounts in English', () => {
+  it('writes the stored number and the unit name in English', () => {
     const amountText = amountTextIn('en')
 
-    expect(amountText(250, 'gram')).toBe('250 g')
-    expect(amountText(1500, 'gram')).toBe('1.5 kg')
-    expect(amountText(2500, 'millilitre')).toBe('2.5 l')
-    expect(amountText(250, 'millilitre')).toBe('250 ml')
-    expect(amountText(1, 'piece')).toBe('1 piece')
-    expect(amountText(3, 'piece')).toBe('3 pieces')
-  })
-})
-
-describe('the text of an amount in a unit chosen beforehand', () => {
-  it('writes a small amount in the larger unit in German', () => {
-    const amountText = amountTextInEntryUnitIn('de')
-
-    expect(amountText(250, 'kilogram')).toBe('0,25 kg')
-    expect(amountText(500, 'litre')).toBe('0,5 l')
+    expect(amountText(250, 'g')).toBe('250 g')
+    expect(amountText(1500, 'g')).toBe('1,500 g')
+    expect(amountText(2500, 'ml')).toBe('2,500 ml')
+    expect(amountText(1.25, 'g')).toBe('1.25 g')
   })
 
-  it('writes pieces with the right plural in English', () => {
-    const amountText = amountTextInEntryUnitIn('en')
+  it('uses the unit name as data, without a plural form', () => {
+    const amountText = amountTextIn('en')
 
     expect(amountText(1, 'piece')).toBe('1 piece')
-    expect(amountText(1500, 'piece')).toBe('1,500 pieces')
+    expect(amountText(3, 'piece')).toBe('3 piece')
+    expect(amountText(3, 'Stück')).toBe('3 Stück')
   })
 })

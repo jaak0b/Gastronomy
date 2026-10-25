@@ -1,5 +1,4 @@
 ﻿using ErrorOr;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -140,11 +139,18 @@ public sealed class OrderAcceptanceServiceTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var tableId = await new DomainSeeder().SeedTableAsync(fixture.DbContext, seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
+    Unit unit = new()
+                {
+                  Id = Guid.NewGuid(),
+                  Name = "Portion",
+                  IsActive = true
+                };
     Ingredient mustard = new()
                          {
                            Id = Guid.NewGuid(),
                            Name = "Senf",
-                           Unit = IngredientUnit.Gram,
+                           UnitId = unit.Id,
+                           Unit = unit,
                            IsActive = true
                          };
     mustard.FestivalIngredients.Add(new()
@@ -154,6 +160,7 @@ public sealed class OrderAcceptanceServiceTest
                                       IngredientId = mustard.Id,
                                       AvailableAmount = 30
                                     });
+    fixture.DbContext.Units.Add(unit);
     fixture.DbContext.Ingredients.Add(mustard);
     fixture.DbContext.CatalogItemIngredients.Add(new()
                                                  {

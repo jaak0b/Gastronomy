@@ -1,5 +1,4 @@
 ﻿using ErrorOr;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Validation;
 
 namespace GastronomyApp.Core.Refusals;
@@ -73,9 +72,9 @@ public static partial class Refusal
                       new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "DeactivatedIngredientCannotJoinRecipe" });
     }
 
-    public static Error UnitUndefined(IngredientUnit? unit)
+    public static Error UnitUnavailable(Guid? unitId)
     {
-      return BadRequest(RefusalMessageKeys.AdminActionFailed, $"The unit {unit} is not one the ingredient form offers, so this call did not come from that screen.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
+      return BadRequest(RefusalMessageKeys.AdminActionFailed, $"The unit {unitId} does not exist or is switched off, so this call did not come from that screen.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
     }
   }
 }

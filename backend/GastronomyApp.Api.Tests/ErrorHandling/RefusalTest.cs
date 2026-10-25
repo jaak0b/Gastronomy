@@ -101,9 +101,6 @@ public sealed class RefusalTest
     if (parameterType == typeof(double))
       return 900d;
 
-    if (parameterType == typeof(IngredientUnit?))
-      return IngredientUnit.Gram;
-
     if (parameterType == typeof(PaymentMethod))
       return PaymentMethod.Cash;
 

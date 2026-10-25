@@ -1,6 +1,5 @@
 ﻿using ErrorOr;
 using FakeItEasy;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
@@ -240,18 +239,32 @@ public sealed class FestivalAdministrationServiceTest
   {
     mustardId = Guid.NewGuid();
     bunId = Guid.NewGuid();
+    Unit gram = new()
+                {
+                  Id = Guid.NewGuid(),
+                  Name = "g",
+                  IsActive = true
+                };
+    Unit piece = new()
+                 {
+                   Id = Guid.NewGuid(),
+                   Name = "Stück",
+                   IsActive = true
+                 };
     Ingredient mustard = new()
                          {
                            Id = mustardId,
                            Name = "Senf",
-                           Unit = IngredientUnit.Gram,
+                           UnitId = gram.Id,
+                           Unit = gram,
                            IsActive = true
                          };
     Ingredient bun = new()
                      {
                        Id = bunId,
                        Name = "Semmel",
-                       Unit = IngredientUnit.Piece,
+                       UnitId = piece.Id,
+                       Unit = piece,
                        IsActive = false
                      };
 

@@ -54,6 +54,7 @@ public sealed class ReleasedDatabaseUpgradeTest
     var ingredientCount = await context.Set<Ingredient>().CountAsync();
     var stockRowCount = await context.Set<FestivalIngredient>().CountAsync();
     var recipeLineCount = await context.Set<CatalogItemIngredient>().CountAsync();
+    var unitCount = await context.Set<Unit>().CountAsync();
 
     Assert.Multiple(() =>
                     {
@@ -74,7 +75,7 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(orderItem.SettledAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 18, 0, 0)));
                       Assert.That(orderItem.SettledByStaffMemberId, Is.EqualTo(staffMemberId));
                       Assert.That(orderItem.PaymentMethod, Is.Null);
-                      Assert.That(appliedMigrations, Has.Count.EqualTo(8));
+                      Assert.That(appliedMigrations, Has.Count.EqualTo(9));
                       Assert.That(appliedMigrations[0], Is.EqualTo(_releasedSchema.MigrationId));
                       Assert.That(appliedMigrations[1], Does.EndWith("_CollateCategoryNamesAndCapitalizeQRColumns"));
                       Assert.That(appliedMigrations[2], Does.EndWith("_DropOrderNote"));
@@ -83,9 +84,11 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(appliedMigrations[5], Does.EndWith("_AddIngredientStock"));
                       Assert.That(appliedMigrations[6], Does.EndWith("_AddTablePlan"));
                       Assert.That(appliedMigrations[7], Does.EndWith("_SwitchOrdersToTables"));
+                      Assert.That(appliedMigrations[8], Does.EndWith("_AddUnits"));
                       Assert.That(ingredientCount, Is.Zero);
                       Assert.That(stockRowCount, Is.Zero);
                       Assert.That(recipeLineCount, Is.Zero);
+                      Assert.That(unitCount, Is.EqualTo(5));
                     });
   }
 
@@ -270,6 +273,130 @@ public sealed class ReleasedDatabaseUpgradeTest
                     });
   }
 
+  [Test]
+  public async Task MigrateAsync_OnTheReleasedDatabaseWithIngredients_MapsEveryOldUnitAndKeepsNamesAmountsAndStock()
+  {
+    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
+    var categoryId = Guid.NewGuid();
+    var festivalId = Guid.NewGuid();
+    var stationId = Guid.NewGuid();
+    var catalogItemId = Guid.NewGuid();
+    var pieceIngredientId = Guid.NewGuid();
+    var gramIngredientId = Guid.NewGuid();
+    var millilitreIngredientId = Guid.NewGuid();
+    var recipeLineId = Guid.NewGuid();
+    var stockRowId = Guid.NewGuid();
+
+    var connection = fixture.OpenConnection();
+    await ExecuteAsync(connection, _releasedSchema.Sql);
+    await InsertCatalogCategoryAsync(connection, categoryId);
+    await InsertFestivalAsync(connection, festivalId);
+    await InsertStationAndCatalogItemAsync(connection, stationId, catalogItemId, categoryId);
+
+    var context = fixture.CreateContext();
+    await context.Database.MigrateAsync("20261024130330_SwitchOrdersToTables", TestContext.CurrentContext.CancellationToken);
+
+    await InsertIngredientAsync(connection, pieceIngredientId, "Brötchen", 1);
+    await InsertIngredientAsync(connection, gramIngredientId, "Senf", 2);
+    await InsertIngredientAsync(connection, millilitreIngredientId, "Ketchup", 3);
+    await InsertRecipeLineAsync(connection, recipeLineId, catalogItemId, gramIngredientId, 12.5);
+    await InsertStockRowAsync(connection, stockRowId, festivalId, millilitreIngredientId, 750.5);
+
+    await context.Database.MigrateAsync(TestContext.CurrentContext.CancellationToken);
+
+    var piece = await context.Set<Ingredient>().Include(ingredient => ingredient.Unit).SingleAsync(ingredient => ingredient.Id == pieceIngredientId);
+    var gram = await context.Set<Ingredient>().Include(ingredient => ingredient.Unit).SingleAsync(ingredient => ingredient.Id == gramIngredientId);
+    var millilitre = await context.Set<Ingredient>().Include(ingredient => ingredient.Unit).SingleAsync(ingredient => ingredient.Id == millilitreIngredientId);
+    var recipeLine = await context.Set<CatalogItemIngredient>().SingleAsync(line => line.Id == recipeLineId);
+    var stockRow = await context.Set<FestivalIngredient>().SingleAsync(stock => stock.Id == stockRowId);
+    List<string> unitNames = await context.Set<Unit>().Select(unit => unit.Name).ToListAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(piece.Name, Is.EqualTo("Brötchen"));
+                      Assert.That(piece.Unit.Name, Is.EqualTo("Stück"));
+                      Assert.That(gram.Name, Is.EqualTo("Senf"));
+                      Assert.That(gram.Unit.Name, Is.EqualTo("g"));
+                      Assert.That(millilitre.Name, Is.EqualTo("Ketchup"));
+                      Assert.That(millilitre.Unit.Name, Is.EqualTo("ml"));
+                      Assert.That(recipeLine.Amount, Is.EqualTo(12.5));
+                      Assert.That(stockRow.AvailableAmount, Is.EqualTo(750.5));
+                      Assert.That(unitNames,
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    "Stück",
+                                                    "g",
+                                                    "kg",
+                                                    "ml",
+                                                    "l"
+                                                  }));
+                    });
+  }
+
+  [Test]
+  public async Task MigrateAsync_OnReleasedDatabaseWithASeededUnit_SavesAnIngredientWithThatUnit()
+  {
+    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
+
+    var connection = fixture.OpenConnection();
+    await ExecuteAsync(connection, _releasedSchema.Sql);
+
+    var context = fixture.CreateContext();
+    await context.Database.MigrateAsync(TestContext.CurrentContext.CancellationToken);
+
+    var unit = await context.Set<Unit>().SingleAsync(seededUnit => seededUnit.Name == "g");
+    var ingredientId = Guid.NewGuid();
+    context.Set<Ingredient>()
+   .Add(new()
+        {
+          Id = ingredientId,
+          Name = "Zucker",
+          UnitId = unit.Id,
+          Unit = unit,
+          IsActive = true
+        });
+    await context.SaveChangesAsync();
+
+    var persisted = await context.Set<Ingredient>().Include(ingredient => ingredient.Unit).SingleAsync(ingredient => ingredient.Id == ingredientId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(persisted.UnitId, Is.EqualTo(unit.Id));
+                      Assert.That(persisted.Unit.Name, Is.EqualTo("g"));
+                    });
+  }
+
+  [Test]
+  public async Task MigrateAsync_BackToTheReleasedSchema_KeepsTheIngredientsAndMapsTheirUnitsBack()
+  {
+    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
+    var ingredientId = Guid.NewGuid();
+
+    var connection = fixture.OpenConnection();
+    await ExecuteAsync(connection, _releasedSchema.Sql);
+
+    var context = fixture.CreateContext();
+    await context.Database.MigrateAsync(TestContext.CurrentContext.CancellationToken);
+    await InsertIngredientWithUnitIdAsync(connection, ingredientId, "Senf", Guid.Parse("2B7C1A10-0000-4000-8000-000000000002"));
+
+    await context.Database.MigrateAsync("20261024130330_SwitchOrdersToTables", TestContext.CurrentContext.CancellationToken);
+
+    await using var unitCommand = connection.CreateCommand();
+    unitCommand.CommandText = """SELECT "Unit" FROM "Ingredients" WHERE "Id" = $id;""";
+    unitCommand.Parameters.AddWithValue("$id", ToStoredText(ingredientId));
+    var storedUnit = Convert.ToInt32(await unitCommand.ExecuteScalarAsync());
+
+    await using var unitsTableCommand = connection.CreateCommand();
+    unitsTableCommand.CommandText = """SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'Units';""";
+    var unitsTableCount = Convert.ToInt32(await unitsTableCommand.ExecuteScalarAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(storedUnit, Is.EqualTo(2));
+                      Assert.That(unitsTableCount, Is.Zero);
+                    });
+  }
+
   private string ToStoredText(Guid id)
   {
     return id.ToString("D").ToUpperInvariant();
@@ -295,6 +422,60 @@ public sealed class ReleasedDatabaseUpgradeTest
     command.Parameters.AddWithValue("$colourHex", "#3366CC");
     command.Parameters.AddWithValue("$sortOrder", 1);
     command.Parameters.AddWithValue("$isActive", 1);
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertIngredientWithUnitIdAsync(SqliteConnection connection, Guid ingredientId, string name, Guid unitId)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "Ingredients" ("Id", "Name", "UnitId", "IsActive")
+                          VALUES ($id, $name, $unitId, 1);
+                          """;
+    command.Parameters.AddWithValue("$id", ToStoredText(ingredientId));
+    command.Parameters.AddWithValue("$name", name);
+    command.Parameters.AddWithValue("$unitId", ToStoredText(unitId));
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertIngredientAsync(SqliteConnection connection, Guid ingredientId, string name, int unit)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "Ingredients" ("Id", "Name", "Unit", "IsActive")
+                          VALUES ($id, $name, $unit, 1);
+                          """;
+    command.Parameters.AddWithValue("$id", ToStoredText(ingredientId));
+    command.Parameters.AddWithValue("$name", name);
+    command.Parameters.AddWithValue("$unit", unit);
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertRecipeLineAsync(SqliteConnection connection, Guid recipeLineId, Guid catalogItemId, Guid ingredientId, double amount)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "CatalogItemIngredients" ("Id", "CatalogItemId", "IngredientId", "Amount")
+                          VALUES ($id, $catalogItemId, $ingredientId, $amount);
+                          """;
+    command.Parameters.AddWithValue("$id", ToStoredText(recipeLineId));
+    command.Parameters.AddWithValue("$catalogItemId", ToStoredText(catalogItemId));
+    command.Parameters.AddWithValue("$ingredientId", ToStoredText(ingredientId));
+    command.Parameters.AddWithValue("$amount", amount);
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertStockRowAsync(SqliteConnection connection, Guid stockRowId, Guid festivalId, Guid ingredientId, double availableAmount)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "FestivalIngredients" ("Id", "FestivalId", "IngredientId", "AvailableAmount")
+                          VALUES ($id, $festivalId, $ingredientId, $availableAmount);
+                          """;
+    command.Parameters.AddWithValue("$id", ToStoredText(stockRowId));
+    command.Parameters.AddWithValue("$festivalId", ToStoredText(festivalId));
+    command.Parameters.AddWithValue("$ingredientId", ToStoredText(ingredientId));
+    command.Parameters.AddWithValue("$availableAmount", availableAmount);
     await command.ExecuteNonQueryAsync();
   }
 

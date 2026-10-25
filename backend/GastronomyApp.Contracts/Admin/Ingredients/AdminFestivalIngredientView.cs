@@ -4,7 +4,8 @@ namespace GastronomyApp.Contracts.Admin.Ingredients;
 
 public sealed record AdminFestivalIngredientView(Guid IngredientId,
                                                  string Name,
-                                                 IngredientUnit Unit,
+                                                 Guid UnitId,
+                                                 string UnitName,
                                                  double? AvailableAmount,
                                                  double UsedAmount,
                                                  IReadOnlyList<IngredientUsagePoint> Usage,

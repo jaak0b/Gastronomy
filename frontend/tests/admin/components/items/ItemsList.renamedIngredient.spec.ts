@@ -16,7 +16,15 @@ const BRATWURST_WITH_MUSTARD = {
   items: [
     {
       ...ONE_ITEM.items[0],
-      ingredients: [anAdminItemIngredient({ ingredientId: 'ingredient-senf', name: 'Senf', unit: 'gram', amount: 20 })],
+      ingredients: [
+        anAdminItemIngredient({
+          ingredientId: 'ingredient-senf',
+          name: 'Senf',
+          unitId: 'unit-gram',
+          unitName: 'g',
+          amount: 20,
+        }),
+      ],
     },
   ],
 }
@@ -26,7 +34,13 @@ const BRATWURST_WITH_DIJON_MUSTARD = {
     {
       ...ONE_ITEM.items[0],
       ingredients: [
-        anAdminItemIngredient({ ingredientId: 'ingredient-senf', name: 'Dijonsenf', unit: 'gram', amount: 20 }),
+        anAdminItemIngredient({
+          ingredientId: 'ingredient-senf',
+          name: 'Dijonsenf',
+          unitId: 'unit-gram',
+          unitName: 'g',
+          amount: 20,
+        }),
       ],
     },
   ],

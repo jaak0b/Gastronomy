@@ -24,12 +24,12 @@ public sealed class AdminIngredientHandler
 
   public async Task<CreatedAnswer<AdminIngredientView>> CreateAsync(SaveIngredientRequest request, CancellationToken cancellationToken)
   {
-    return await _service.CreateAsync(request.Name, request.Unit, cancellationToken).Then(_mapper.Map<AdminIngredientView>);
+    return await _service.CreateAsync(request.Name, request.UnitId, cancellationToken).Then(_mapper.Map<AdminIngredientView>);
   }
 
   public async Task<ApiAnswer<SavedIngredientView>> UpdateAsync(Guid ingredientId, SaveIngredientRequest request, CancellationToken cancellationToken)
   {
-    return await _service.UpdateAsync(ingredientId, request.Name, request.Unit, cancellationToken).Then(ingredient => new SavedIngredientView(ingredient.Id));
+    return await _service.UpdateAsync(ingredientId, request.Name, request.UnitId, cancellationToken).Then(ingredient => new SavedIngredientView(ingredient.Id));
   }
 
   public async Task<ApiAnswer<SavedIngredientView>> ActivateAsync(Guid ingredientId, CancellationToken cancellationToken)

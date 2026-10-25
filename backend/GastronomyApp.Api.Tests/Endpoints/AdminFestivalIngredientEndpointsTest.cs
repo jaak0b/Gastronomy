@@ -49,7 +49,8 @@ public sealed class AdminFestivalIngredientEndpointsTest
                       Assert.That(ingredients.GetArrayLength(), Is.EqualTo(1));
                       Assert.That(mustard.GetProperty("ingredientId").GetGuid(), Is.EqualTo(mustardId));
                       Assert.That(mustard.GetProperty("name").GetString(), Is.EqualTo("Senf"));
-                      Assert.That(mustard.GetProperty("unit").GetString(), Is.EqualTo("gram"));
+                      Assert.That(mustard.GetProperty("unitId").GetGuid(), Is.Not.Empty);
+                      Assert.That(mustard.GetProperty("unitName").GetString(), Is.EqualTo("g"));
                       Assert.That(mustard.GetProperty("availableAmount").GetDouble(), Is.EqualTo(1000));
                       Assert.That(mustard.GetProperty("usedAmount").GetDouble(), Is.EqualTo(40));
                       Assert.That(usage.EnumerateArray().Select(point => point.GetProperty("usedAmount").GetDouble()),
@@ -67,6 +68,27 @@ public sealed class AdminFestivalIngredientEndpointsTest
                       Assert.That(mustard.GetProperty("runsOutAtUtcFromLastTwoHours").GetDateTime(), Is.GreaterThan(DateTime.UtcNow));
                       Assert.That(mustard.GetProperty("stockWarning").GetString(), Is.EqualTo("none"));
                       Assert.That(mustard.GetProperty("runsOutSoonAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
+                    });
+  }
+
+  [Test]
+  public async Task GetFestivalIngredients_AnIngredientWhoseUnitWasRenamed_CarriesTheNewUnitName()
+  {
+    var mustardId = await CreateIngredientAsync("Senf");
+    await PutRecipeLineAsync(mustardId, 20);
+    var unitId = await _context.FindUnitIdAsync("g");
+
+    using (var renamed = await _context.Client.PutAsJsonAsync($"/api/admin/units/{unitId}", new { name = "Gramm" }))
+    {
+      Assert.That(renamed.StatusCode, Is.EqualTo(HttpStatusCode.OK), await renamed.Content.ReadAsStringAsync());
+    }
+
+    var mustard = JsonDocument.Parse(await _context.Client.GetStringAsync($"/api/admin/festivals/{_context.World.FestivalId}/ingredients")).RootElement.GetProperty("ingredients")[0];
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(mustard.GetProperty("unitId").GetGuid(), Is.EqualTo(unitId));
+                      Assert.That(mustard.GetProperty("unitName").GetString(), Is.EqualTo("Gramm"));
                     });
   }
 
@@ -288,7 +310,7 @@ public sealed class AdminFestivalIngredientEndpointsTest
                                                                new
                                                                {
                                                                  name,
-                                                                 unit = "gram"
+                                                                 unitId = await _context.FindUnitIdAsync("g")
                                                                });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created), await response.Content.ReadAsStringAsync());

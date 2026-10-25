@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
-import { VSelect } from 'vuetify/components'
 import { createPinia, setActivePinia } from 'pinia'
 import FestivalStock from '../../../../src/admin/components/festivals/FestivalStock.vue'
 import BaseChart from '../../../../src/admin/components/BaseChart.vue'
@@ -31,7 +30,8 @@ const ONE_DAY = aFestival({
 const FLOUR = anAdminFestivalIngredient({
   ingredientId: 'ingredient-mehl',
   name: 'Mehl',
-  unit: 'gram',
+  unitId: 'unit-gram',
+  unitName: 'g',
   availableAmount: 1500,
   usedAmount: 250,
   usage: [
@@ -44,7 +44,8 @@ const FLOUR = anAdminFestivalIngredient({
 const BUN = anAdminFestivalIngredient({
   ingredientId: 'ingredient-broetchen',
   name: 'Brötchen',
-  unit: 'piece',
+  unitId: 'unit-stueck',
+  unitName: 'Stück',
   availableAmount: null,
   usedAmount: 3,
   usage: [
@@ -57,7 +58,8 @@ const BUN = anAdminFestivalIngredient({
 const MUSTARD_NOT_USED_YET = anAdminFestivalIngredient({
   ingredientId: 'ingredient-senf',
   name: 'Senf',
-  unit: 'gram',
+  unitId: 'unit-gram',
+  unitName: 'g',
   availableAmount: 500,
   usedAmount: 0,
   usage: [
@@ -119,7 +121,7 @@ describe('the stock of a festival', () => {
 
     expect(allTexts('[data-test="festival-ingredient-row"] [data-test="ingredient-name"]')).toEqual(['Mehl', 'Brötchen'])
     expect(amountInputs().map((input) => input.value)).toEqual(['1500', ''])
-    expect(allTexts('[data-test="festival-ingredient-row"] [data-test="amount-unit"]')).toEqual(['Stück'])
+    expect(allTexts('[data-test="festival-ingredient-row"] [data-test="amount-unit"]')).toEqual(['g', 'Stück'])
     expect(allTexts('[data-test="used-amount"]')).toEqual(['Verbraucht: 250 g', 'Verbraucht: 3 Stück'])
   })
 
@@ -139,8 +141,8 @@ describe('the stock of a festival', () => {
     await mountStock('en')
 
     expect(amountInputs().map((input) => input.value)).toEqual(['1500', ''])
-    expect(allTexts('[data-test="festival-ingredient-row"] [data-test="amount-unit"]')).toEqual(['pieces'])
-    expect(allTexts('[data-test="used-amount"]')).toEqual(['Used: 250 g', 'Used: 3 pieces'])
+    expect(allTexts('[data-test="festival-ingredient-row"] [data-test="amount-unit"]')).toEqual(['g', 'Stück'])
+    expect(allTexts('[data-test="used-amount"]')).toEqual(['Used: 250 g', 'Used: 3 Stück'])
   })
 
   it('is hidden when the festival has no ingredients', async () => {
@@ -189,39 +191,13 @@ describe('the stock of a festival', () => {
     )
   })
 
-  it('offers grams and kilograms for a gram ingredient and shows a saved 1500 grams in grams', async () => {
+  it('shows a saved amount in the unit the ingredient carries', async () => {
     stockLaptop([FLOUR, BUN])
 
-    const stock = await mountStock()
+    await mountStock()
 
-    const selects = stock.findAllComponents(VSelect)
-    expect(selects).toHaveLength(1)
-    expect(selects[0].props('items')).toEqual([
-      { value: 'gram', title: 'g' },
-      { value: 'kilogram', title: 'kg' },
-    ])
-    expect(selects[0].props('modelValue')).toBe('gram')
     expect(inputOf('[data-test="festival-ingredient-row"][data-test-id="ingredient-mehl"] [data-test="amount-input"]').value).toBe('1500')
-  })
-
-  it('sends 2 kilograms as 2000 grams', async () => {
-    const laptop = stockLaptop([FLOUR, BUN])
-    const stock = await mountStock()
-    await stock.getComponent(VSelect).setValue('kilogram')
-    const flourAmount = inputOf('[data-test="festival-ingredient-row"][data-test-id="ingredient-mehl"] [data-test="amount-input"]')
-
-    typeInto(flourAmount, '2')
-    leave(flourAmount)
-
-    await vi.waitFor(() =>
-      expect(laptop.writes()).toEqual([
-        {
-          url: '/api/admin/festivals/festival-sommerfest/ingredients/ingredient-mehl',
-          method: 'PUT',
-          body: { availableAmount: 2000 },
-        },
-      ]),
-    )
+    expect(textOnScreen('[data-test="festival-ingredient-row"][data-test-id="ingredient-mehl"] [data-test="amount-unit"]')).toBe('g')
   })
 })
 

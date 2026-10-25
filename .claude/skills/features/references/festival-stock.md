@@ -26,8 +26,9 @@ Backend, under `backend/`:
   in `Endpoints/AdminFestivalEndpoints.cs`, with `Handlers/AdminFestivalStockHandler.cs`.
 - Wire records: `GastronomyApp.Contracts/Admin/Ingredients` (`AdminFestivalIngredientListView`,
   `AdminFestivalIngredientView`, `IngredientUsagePoint`, `SaveFestivalIngredientRequest`,
-  `SavedFestivalIngredientView`) and `Contracts/Enums/StockWarning.cs`. Mapping:
-  `Api/Mapping/AdminIngredientMapping.cs`.
+  `SavedFestivalIngredientView`) and `Contracts/Enums/StockWarning.cs`. Every row carries the
+  ingredient's `UnitId` and current `UnitName`. Mapping: `Api/Mapping/AdminIngredientMapping.cs`;
+  `IngredientStockRepository.FindActiveUsedOnTheMenuAsync` includes the unit navigation.
 
 Frontend, under `frontend/src/`:
 
@@ -40,11 +41,13 @@ Frontend, under `frontend/src/`:
   and draws it with `admin/components/BaseChart.vue`. The time ticks come from
   `admin/core/timeAxisTicks.ts`. How the chart is drawn is on the `add-a-chart` page of `how-to`.
 - Store: `admin/stores/festivalStock.ts`. Moments: `formatTimeOfDay`, `formatTimeTick` and
-  `spansMoreThanOneDay` in `shared/core/moments.ts`. Amounts: `useIngredientAmountText` and
-  `useAmountTextInEntryUnit` in `admin/composables/useIngredientAmountText.ts`, on
-  `shownEntryUnitFor` and `displayedAmountIn` in `admin/core/ingredientAmounts.ts`. Texts:
-  `admin.ingredients.labels.{available,used,runsOutAt,usedUp}`, `admin.ingredients.actions.history`
-  and `admin.ingredients.history.*`.
+  `spansMoreThanOneDay` in `shared/core/moments.ts`. Amounts: `IngredientAmountField.vue` is a text
+  field with the row's static `unitName`, `admin/core/ingredientAmounts.ts` parses the typed text
+  without conversion, and `useIngredientAmountText` writes the stored number together with the row's
+  unit name. The chart axis and the readout use that same text, so no size turns grams into kilograms
+  or millilitres into litres. Texts:
+  `admin.ingredients.labels.{available,used,runsOutAt,usedUp}`,
+  `admin.ingredients.actions.history` and `admin.ingredients.history.*`.
 
 ## Invariants
 
@@ -96,8 +99,8 @@ Frontend, under `frontend/src/`:
   marked as a warning.
 - The readout under the pointer snaps to the usage points and states the real used amount at that
   moment, so it never reads a value between two orders that the straight line only suggests.
-- The amount axis uses one unit, chosen from the axis maximum after rounding to what the screen
-  shows: kilograms or litres once it reaches 1000, grams or millilitres below, pieces always.
+- The amount axis names the ingredient's unit at every size. It never converts grams to kilograms or
+  millilitres to litres; the row, the chart and the readout all use the number the laptop stores.
 - The time labels follow the length of the shown period, not of the festival: one day at most shows
   the time, up to three days the weekday and the time, longer the date alone, and no two neighbouring
   labels read the same, also in the night the clocks go back.
@@ -108,13 +111,16 @@ Frontend, under `frontend/src/`:
   shared points, both forecasts, the window and its start, a moment beyond the last date, fractional
   portions, the warning bounds), `StockSoldOutMarkerTest` (fractional portions too) and
   `IngredientAmountComparisonTest`.
-- `GastronomyApp.Infrastructure.Tests/Repositories`: `IngredientStockRepositoryTest`.
+- `GastronomyApp.Infrastructure.Tests/Repositories`: `IngredientStockRepositoryTest` (including the
+  unit navigation on every row).
 - `GastronomyApp.Api.Tests/Endpoints`: `AdminFestivalIngredientEndpointsTest` (the wire shape, the
-  `stockWarning` values, and an absurd amount that still answers the list).
+  `unitId` and `unitName` of every row, the `stockWarning` values, an absurd amount that still
+  answers the list, and a renamed unit that appears in the next read).
 - `frontend/tests`: `admin/stores/festivalStock.spec.ts`, `admin/core/stockChartOption.spec.ts`,
   `admin/core/timeAxisTicks.spec.ts`, `admin/core/chartTheme.spec.ts`,
   `admin/core/ingredientAmounts.spec.ts`, `admin/composables/useIngredientAmountText.spec.ts`,
   `admin/composables/useChartTheme.spec.ts`, `admin/components/BaseChart.spec.ts`,
   `admin/components/festivals/FestivalStock.spec.ts`, `FestivalStockChart.spec.ts` and
   `FestivalPage.stock.spec.ts`, `shared/core/moments.spec.ts`, `shared/theme.spec.ts`. Fixtures come
-  from `anAdminFestivalIngredient` and `aFestival` in `tests/support/wireViews.ts`.
+  from `anAdminFestivalIngredient` and `aFestival` in `tests/support/wireViews.ts`. The amount text
+  and the chart axis specs check that every amount keeps the row's unit name, including above 1000.

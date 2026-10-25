@@ -1,6 +1,5 @@
 using ErrorOr;
 using FakeItEasy;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
@@ -18,6 +17,12 @@ public sealed class CatalogItemRecipeServiceTest
     _repository = A.Fake<ICatalogItemIngredientRepository>();
     _itemRepository = A.Fake<ICatalogItemRepository>();
     _ingredientRepository = A.Fake<IIngredientRepository>();
+    _gram = new()
+            {
+              Id = Guid.NewGuid(),
+              Name = "g",
+              IsActive = true
+            };
 
     A.CallTo(() => _itemRepository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItem?>(null));
     A.CallTo(() => _itemRepository.FindByIdAsync(_itemId, A<CancellationToken>._))
@@ -35,7 +40,8 @@ public sealed class CatalogItemRecipeServiceTest
                                          {
                                            Id = _ingredientId,
                                            Name = "Senf",
-                                           Unit = IngredientUnit.Gram,
+                                           UnitId = _gram.Id,
+                                           Unit = _gram,
                                            IsActive = true
                                          }));
     A.CallTo(() => _repository.FindAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItemIngredient?>(null));
@@ -49,6 +55,7 @@ public sealed class CatalogItemRecipeServiceTest
   private ICatalogItemIngredientRepository _repository = null!;
   private ICatalogItemRepository _itemRepository = null!;
   private IIngredientRepository _ingredientRepository = null!;
+  private Unit _gram = null!;
   private CatalogItemRecipeService _service = null!;
 
   [Test]
@@ -203,7 +210,8 @@ public sealed class CatalogItemRecipeServiceTest
                                          {
                                            Id = _ingredientId,
                                            Name = "Zwiebeln",
-                                           Unit = IngredientUnit.Gram,
+                                           UnitId = _gram.Id,
+                                           Unit = _gram,
                                            IsActive = false
                                          }));
   }

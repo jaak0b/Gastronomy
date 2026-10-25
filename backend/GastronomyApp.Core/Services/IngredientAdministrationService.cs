@@ -1,5 +1,4 @@
 using ErrorOr;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
@@ -11,12 +10,14 @@ public sealed class IngredientAdministrationService
   private readonly IFestivalRepository _festivalRepository;
   private readonly IngredientService _ingredientService;
   private readonly IIngredientRepository _repository;
+  private readonly IUnitRepository _unitRepository;
 
-  public IngredientAdministrationService(IIngredientRepository repository, IFestivalRepository festivalRepository, IngredientService ingredientService)
+  public IngredientAdministrationService(IIngredientRepository repository, IFestivalRepository festivalRepository, IngredientService ingredientService, IUnitRepository unitRepository)
   {
     _repository = repository;
     _festivalRepository = festivalRepository;
     _ingredientService = ingredientService;
+    _unitRepository = unitRepository;
   }
 
   public Task<IReadOnlyList<Ingredient>> ListAsync(CancellationToken cancellationToken)
@@ -24,10 +25,15 @@ public sealed class IngredientAdministrationService
     return _repository.FindAllWithRecipeLinesOrderedByNameAsync(cancellationToken);
   }
 
-  public async Task<ErrorOr<Ingredient>> CreateAsync(string? name, IngredientUnit? unit, CancellationToken cancellationToken)
+  public async Task<ErrorOr<Ingredient>> CreateAsync(string? name, Guid? unitId, CancellationToken cancellationToken)
   {
-    if (unit is not (>= IngredientUnit.Piece and <= IngredientUnit.Millilitre))
-      return Refusal.Ingredients.UnitUndefined(unit);
+    if (unitId is not { } requestedUnitId)
+      return Refusal.Ingredients.UnitUnavailable(unitId);
+
+    var unit = await _unitRepository.FindByIdAsync(requestedUnitId, cancellationToken);
+
+    if (unit is not { IsActive: true })
+      return Refusal.Ingredients.UnitUnavailable(unitId);
 
     IReadOnlyList<Ingredient> ingredients = await _repository.FindAllOrderedByNameAsync(cancellationToken);
     var namesake = ingredients.FirstOrDefault(ingredient => string.Equals(ingredient.Name, name, StringComparison.OrdinalIgnoreCase));
@@ -42,7 +48,8 @@ public sealed class IngredientAdministrationService
                          {
                            Id = Guid.NewGuid(),
                            Name = name!,
-                           Unit = unit.Value,
+                           UnitId = unit.Id,
+                           Unit = unit,
                            IsActive = true
                          };
 
@@ -63,15 +70,25 @@ public sealed class IngredientAdministrationService
     return created;
   }
 
-  public async Task<ErrorOr<Ingredient>> UpdateAsync(Guid ingredientId, string? name, IngredientUnit? unit, CancellationToken cancellationToken)
+  public async Task<ErrorOr<Ingredient>> UpdateAsync(Guid ingredientId, string? name, Guid? unitId, CancellationToken cancellationToken)
   {
     var ingredient = await _repository.FindByIdAsync(ingredientId, cancellationToken);
 
     if (ingredient is null)
       return Refusal.Ingredients.IngredientNotFound(ingredientId);
 
-    if (unit is not (>= IngredientUnit.Piece and <= IngredientUnit.Millilitre))
-      return Refusal.Ingredients.UnitUndefined(unit);
+    if (unitId is not { } requestedUnitId)
+      return Refusal.Ingredients.UnitUnavailable(unitId);
+
+    Unit? unit = null;
+
+    if (requestedUnitId != ingredient.UnitId)
+    {
+      unit = await _unitRepository.FindByIdAsync(requestedUnitId, cancellationToken);
+
+      if (unit is not { IsActive: true })
+        return Refusal.Ingredients.UnitUnavailable(unitId);
+    }
 
     IReadOnlyList<Ingredient> ingredients = await _repository.FindAllOrderedByNameAsync(cancellationToken);
     var namesake = ingredients.FirstOrDefault(other => other.Id != ingredientId && string.Equals(other.Name, name, StringComparison.OrdinalIgnoreCase));
@@ -83,7 +100,13 @@ public sealed class IngredientAdministrationService
       return Refusal.Ingredients.NameTaken(name!);
 
     ingredient.Name = name!;
-    ingredient.Unit = unit.Value;
+
+    if (unit is not null)
+    {
+      ingredient.UnitId = unit.Id;
+      ingredient.Unit = unit;
+    }
+
     await _repository.SaveChangesAsync(cancellationToken);
 
     return ingredient;

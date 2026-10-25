@@ -62,15 +62,15 @@ public sealed class AdminItemIngredientEndpointsTest
   [Test]
   public async Task GetItems_ARecipeOfTwoIngredients_CarriesTheNameAndUnitOfEveryLine()
   {
-    var mustardId = await CreateIngredientAsync("Senf", "gram");
-    var bunId = await CreateIngredientAsync("Brötchen", "piece");
+    var mustardId = await CreateIngredientAsync("Senf", "g");
+    var bunId = await CreateIngredientAsync("Brötchen", "Stück");
     await PutRecipeLineAsync(mustardId, 20);
     await PutRecipeLineAsync(bunId, 1);
 
     var bratwurst = await FindListedBratwurstAsync();
 
     List<string?> names = bratwurst.GetProperty("ingredients").EnumerateArray().Select(line => line.GetProperty("name").GetString()).ToList();
-    List<string?> units = bratwurst.GetProperty("ingredients").EnumerateArray().Select(line => line.GetProperty("unit").GetString()).ToList();
+    List<string?> units = bratwurst.GetProperty("ingredients").EnumerateArray().Select(line => line.GetProperty("unitName").GetString()).ToList();
 
     Assert.Multiple(() =>
                     {
@@ -83,8 +83,8 @@ public sealed class AdminItemIngredientEndpointsTest
                       Assert.That(units,
                                   Is.EqualTo(new[]
                                              {
-                                               "piece",
-                                               "gram"
+                                               "Stück",
+                                               "g"
                                              }));
                     });
   }
@@ -100,6 +100,32 @@ public sealed class AdminItemIngredientEndpointsTest
 
     var line = bratwurst.GetProperty("ingredients").EnumerateArray().Single();
     Assert.That(line.GetProperty("name").GetString(), Is.EqualTo("Dijonsenf"));
+  }
+
+  [Test]
+  public async Task GetItems_AnIngredientWhoseUnitChanged_CarriesTheNewUnitAndTheSameAmount()
+  {
+    var mustardId = await CreateIngredientAsync("Senf");
+    await PutRecipeLineAsync(mustardId, 20);
+
+    using (var changed = await _context.Client.PutAsJsonAsync($"/api/admin/ingredients/{mustardId}",
+                                                              new
+                                                              {
+                                                                name = "Senf",
+                                                                unitId = await _context.FindUnitIdAsync("ml")
+                                                              }))
+    {
+      Assert.That(changed.StatusCode, Is.EqualTo(HttpStatusCode.OK), await changed.Content.ReadAsStringAsync());
+    }
+
+    var bratwurst = await FindListedBratwurstAsync();
+    var line = bratwurst.GetProperty("ingredients").EnumerateArray().Single();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(line.GetProperty("unitName").GetString(), Is.EqualTo("ml"));
+                      Assert.That(line.GetProperty("amount").GetDouble(), Is.EqualTo(20));
+                    });
   }
 
   [TestCase(0d)]
@@ -233,16 +259,16 @@ public sealed class AdminItemIngredientEndpointsTest
 
   private async Task<Guid> CreateIngredientAsync(string name)
   {
-    return await CreateIngredientAsync(name, "gram");
+    return await CreateIngredientAsync(name, "g");
   }
 
-  private async Task<Guid> CreateIngredientAsync(string name, string unit)
+  private async Task<Guid> CreateIngredientAsync(string name, string unitName)
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/ingredients",
                                                                new
                                                                {
                                                                  name,
-                                                                 unit
+                                                                 unitId = await _context.FindUnitIdAsync(unitName)
                                                                });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created), await response.Content.ReadAsStringAsync());
@@ -256,7 +282,7 @@ public sealed class AdminItemIngredientEndpointsTest
                                                               new
                                                               {
                                                                 name,
-                                                                unit = "gram"
+                                                                unitId = await _context.FindUnitIdAsync("g")
                                                               });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), await response.Content.ReadAsStringAsync());

@@ -8,6 +8,7 @@ import type {
   AdminStationShapeView,
   AdminStationView,
   AdminTableView,
+  AdminUnitView,
   AreaShapeGeometry,
   TablePlanAreaView,
   TablePlanStationShapeView,
@@ -37,7 +38,8 @@ export function anAdminItemIngredient(
   return {
     ingredientId: 'ingredient-broetchen',
     name: 'Brötchen',
-    unit: 'piece',
+    unitId: 'unit-stueck',
+    unitName: 'Stück',
     amount: 1,
     ...overrides,
   }
@@ -47,12 +49,31 @@ export function anAdminIngredient(overrides: Partial<AdminIngredientView> = {}):
   return {
     ingredientId: 'ingredient-broetchen',
     name: 'Brötchen',
-    unit: 'piece',
+    unitId: 'unit-stueck',
+    unitName: 'Stück',
     isActive: true,
     activeItemNames: [],
     ...overrides,
   }
 }
+
+export function anAdminUnit(overrides: Partial<AdminUnitView> = {}): AdminUnitView {
+  return {
+    unitId: 'unit-stueck',
+    name: 'Stück',
+    isActive: true,
+    usedByIngredientNames: [],
+    ...overrides,
+  }
+}
+
+export const SEEDED_UNITS = [
+  anAdminUnit(),
+  anAdminUnit({ unitId: 'unit-gram', name: 'g' }),
+  anAdminUnit({ unitId: 'unit-kilogram', name: 'kg' }),
+  anAdminUnit({ unitId: 'unit-millilitre', name: 'ml' }),
+  anAdminUnit({ unitId: 'unit-litre', name: 'l' }),
+]
 
 export function anAdminFestivalIngredient(
   overrides: Partial<AdminFestivalIngredientView> = {},
@@ -60,7 +81,8 @@ export function anAdminFestivalIngredient(
   return {
     ingredientId: 'ingredient-mehl',
     name: 'Mehl',
-    unit: 'gram',
+    unitId: 'unit-gram',
+    unitName: 'g',
     availableAmount: 25000,
     usedAmount: 1250,
     usage: [

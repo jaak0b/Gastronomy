@@ -1,6 +1,5 @@
 ﻿using ErrorOr;
 using FakeItEasy;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
@@ -316,11 +315,19 @@ public sealed class CatalogItemAdministrationServiceTest
 
   private Ingredient BuildIngredient(string name, bool isActive)
   {
+    Unit unit = new()
+                {
+                  Id = Guid.NewGuid(),
+                  Name = "g",
+                  IsActive = true
+                };
+
     return new()
            {
              Id = Guid.NewGuid(),
              Name = name,
-             Unit = IngredientUnit.Gram,
+             UnitId = unit.Id,
+             Unit = unit,
              IsActive = isActive
            };
   }

@@ -2,7 +2,8 @@ import { expect, vi } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import ItemsList from '../../../../src/admin/components/items/ItemsList.vue'
 import { testPlugins } from '../../../support/plugins'
-import { answer, stubLaptop, type LaptopCall, type StubbedLaptop } from '../../../support/laptop'
+import { answer, noConnection, stubLaptop, type LaptopCall, type StubbedLaptop } from '../../../support/laptop'
+import { SEEDED_UNITS } from '../../../support/wireViews'
 
 export const ITEM_ID = '22222222-2222-2222-2222-222222222222'
 
@@ -111,6 +112,7 @@ export interface ItemsListScenario {
   refusal?: { status: number; body: unknown }
   itemRefusal?: { status: number; body: unknown }
   ingredients?: unknown
+  unitsFailed?: boolean
 }
 
 export function itemsListLaptop(scenario: ItemsListScenario = {}): StubbedLaptop {
@@ -128,6 +130,11 @@ export function itemsListLaptop(scenario: ItemsListScenario = {}): StubbedLaptop
     .answers('ANY', toward('/api/admin/festivals/'), answer({}))
     .answers('ANY', toward('/api/admin/ingredients'), (call) =>
       answer(scenario.ingredients ?? { ingredients: [] })(call),
+    )
+    .answers(
+      'GET',
+      '/api/admin/units',
+      scenario.unitsFailed === true ? noConnection() : answer({ units: SEEDED_UNITS }),
     )
     .answers('ANY', toward('/api/admin/categories'), (call) =>
       answer(scenario.categories ?? TWO_CATEGORIES)(call),

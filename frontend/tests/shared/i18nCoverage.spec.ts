@@ -16,7 +16,6 @@ const PLURAL_KEYS = [
   'admin.festivals.labels.orderCount',
   'phone.openItems.messages.someWereAlreadySettled',
   'phone.tablePlan.messages.unsentOrder',
-  'admin.ingredients.labels.pieceCount',
   'admin.tablePlan.labels.tableCount',
 ]
 

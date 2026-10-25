@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Api.Tests.TestSupport;
@@ -67,6 +68,26 @@ public sealed class OrderTestContext : IAsyncDisposable
       request.Content = JsonContent.Create(body, body.GetType());
 
     return await Client.SendAsync(request);
+  }
+
+  public async Task<Guid> FindUnitIdAsync(string name)
+  {
+    await using var context = Factory.CreateContext();
+    var unit = await context.Units.FirstOrDefaultAsync(candidate => candidate.Name == name);
+
+    if (unit is not null)
+      return unit.Id;
+
+    unit = new()
+           {
+             Id = Guid.NewGuid(),
+             Name = name,
+             IsActive = true
+           };
+    context.Units.Add(unit);
+    await context.SaveChangesAsync();
+
+    return unit.Id;
   }
 
   public async Task<Guid> FindCategoryIdAsync(string name)
