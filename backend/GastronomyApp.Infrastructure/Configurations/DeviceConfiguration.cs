@@ -19,7 +19,6 @@ public sealed class DeviceConfiguration : IEntityTypeConfiguration<Device>
     builder.Property(device => device.TokenAlgorithm).IsRequired().HasMaxLength(40);
     builder.Property(device => device.TokenLookupId).IsRequired().HasMaxLength(32);
     builder.Property(device => device.CreatedAtUtc).IsRequired();
-    builder.Property(device => device.LastSeenAtUtc).IsRequired();
     builder.HasIndex(device => device.TokenLookupId).IsUnique();
   }
 }

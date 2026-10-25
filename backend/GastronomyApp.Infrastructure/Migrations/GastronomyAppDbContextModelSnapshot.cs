@@ -141,9 +141,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasMaxLength(2)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("LastSeenAtUtc")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("TokenAlgorithm")
                         .IsRequired()
                         .HasMaxLength(40)

@@ -125,8 +125,7 @@ public sealed class ChangeAnnouncementInterceptorTest
                             TokenIterations = 1,
                             TokenAlgorithm = "test",
                             TokenLookupId = "lookup",
-                            CreatedAtUtc = DateTime.UtcNow,
-                            LastSeenAtUtc = DateTime.UtcNow
+                            CreatedAtUtc = DateTime.UtcNow
                           });
 
     await _database.SaveChangesAsync();

@@ -45,8 +45,7 @@ public sealed class DeviceTokenStore : IDeviceTokenStore
                       TokenIterations = hashedSecret.Iterations,
                       TokenAlgorithm = hashedSecret.Algorithm,
                       TokenLookupId = tokenLookupId,
-                      CreatedAtUtc = now,
-                      LastSeenAtUtc = now
+                      CreatedAtUtc = now
                     };
 
     _dbContext.Devices.Add(device);
@@ -73,9 +72,6 @@ public sealed class DeviceTokenStore : IDeviceTokenStore
 
     if (owner is null)
       return null;
-
-    device.LastSeenAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
-    await _dbContext.SaveChangesAsync(cancellationToken);
 
     return owner;
   }

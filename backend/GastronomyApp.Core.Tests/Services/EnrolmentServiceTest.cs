@@ -296,8 +296,7 @@ public sealed class EnrolmentServiceTest
              TokenIterations = 1,
              TokenAlgorithm = "PBKDF2-HMAC-SHA512",
              TokenLookupId = "lookup",
-             CreatedAtUtc = _now,
-             LastSeenAtUtc = _now
+             CreatedAtUtc = _now
            };
   }
 }

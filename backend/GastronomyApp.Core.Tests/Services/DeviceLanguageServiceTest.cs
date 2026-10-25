@@ -90,8 +90,7 @@ public sealed class DeviceLanguageServiceTest
                       TokenIterations = 1,
                       TokenAlgorithm = "PBKDF2-HMAC-SHA512",
                       TokenLookupId = Guid.NewGuid().ToString(),
-                      CreatedAtUtc = new(2026, 9, 5, 18, 0, 0, DateTimeKind.Utc),
-                      LastSeenAtUtc = new(2026, 9, 5, 19, 0, 0, DateTimeKind.Utc)
+                      CreatedAtUtc = new(2026, 9, 5, 18, 0, 0, DateTimeKind.Utc)
                     };
 
     A.CallTo(() => _repository.FindByIdAsync(_deviceId, A<CancellationToken>._)).Returns(Task.FromResult<Device?>(device));

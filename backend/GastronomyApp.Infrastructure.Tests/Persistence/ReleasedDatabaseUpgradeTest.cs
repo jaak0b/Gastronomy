@@ -75,7 +75,7 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(orderItem.SettledAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 18, 0, 0)));
                       Assert.That(orderItem.SettledByStaffMemberId, Is.EqualTo(staffMemberId));
                       Assert.That(orderItem.PaymentMethod, Is.Null);
-                      Assert.That(appliedMigrations, Has.Count.EqualTo(9));
+                      Assert.That(appliedMigrations, Has.Count.EqualTo(10));
                       Assert.That(appliedMigrations[0], Is.EqualTo(_releasedSchema.MigrationId));
                       Assert.That(appliedMigrations[1], Does.EndWith("_CollateCategoryNamesAndCapitalizeQRColumns"));
                       Assert.That(appliedMigrations[2], Does.EndWith("_DropOrderNote"));
@@ -85,10 +85,53 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(appliedMigrations[6], Does.EndWith("_AddTablePlan"));
                       Assert.That(appliedMigrations[7], Does.EndWith("_SwitchOrdersToTables"));
                       Assert.That(appliedMigrations[8], Does.EndWith("_AddUnits"));
+                      Assert.That(appliedMigrations[9], Does.EndWith("_RemoveDeviceLastSeen"));
                       Assert.That(ingredientCount, Is.Zero);
                       Assert.That(stockRowCount, Is.Zero);
                       Assert.That(recipeLineCount, Is.Zero);
                       Assert.That(unitCount, Is.EqualTo(5));
+                    });
+  }
+
+  [Test]
+  public async Task MigrateAsync_OnReleasedDatabaseWithDevices_KeepsTheDeviceAndItsToken()
+  {
+    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
+    var deviceId = Guid.NewGuid();
+
+    var connection = fixture.OpenConnection();
+    await ExecuteAsync(connection, _releasedSchema.Sql);
+    await InsertDeviceAsync(connection, deviceId);
+
+    var context = fixture.CreateContext();
+    await context.Database.MigrateAsync();
+
+    var device = await context.Set<Device>().SingleAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(device.Id, Is.EqualTo(deviceId));
+                      Assert.That(device.Language, Is.EqualTo("de"));
+                      Assert.That(device.TokenHash,
+                                  Is.EqualTo(new byte[]
+                                             {
+                                               17,
+                                               18,
+                                               19,
+                                               20
+                                             }));
+                      Assert.That(device.TokenSalt,
+                                  Is.EqualTo(new byte[]
+                                             {
+                                               21,
+                                               22,
+                                               23,
+                                               24
+                                             }));
+                      Assert.That(device.TokenIterations, Is.EqualTo(210000));
+                      Assert.That(device.TokenAlgorithm, Is.EqualTo("PBKDF2-HMAC-SHA512"));
+                      Assert.That(device.TokenLookupId, Is.EqualTo(deviceId.ToString("N")));
+                      Assert.That(device.CreatedAtUtc, Is.EqualTo(new DateTime(2026, 9, 16, 18, 1, 0)));
                     });
   }
 

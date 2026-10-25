@@ -63,8 +63,7 @@ public sealed class DeviceRepositoryTest
                                     TokenIterations = 1,
                                     TokenAlgorithm = "PBKDF2-HMAC-SHA512",
                                     TokenLookupId = Guid.NewGuid().ToString(),
-                                    CreatedAtUtc = _now.AddHours(-1),
-                                    LastSeenAtUtc = _now
+                                    CreatedAtUtc = _now.AddHours(-1)
                                   });
 
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
