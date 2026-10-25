@@ -146,7 +146,7 @@ export function anAdminTable(overrides: Partial<AdminTableView> = {}): AdminTabl
     name: 'A1',
     geometry: aGeometry(),
     isHidden: false,
-    hasItemsToHandOutOrSettle: false,
+    hasItemsToHandOutOrSettleAtTheRunningFestival: false,
     ...overrides,
   }
 }
@@ -167,7 +167,7 @@ export function anAdminArea(overrides: Partial<AdminAreaView> = {}): AdminAreaVi
     areaId: 'area-halle',
     name: 'Halle',
     isHidden: false,
-    hasItemsToHandOutOrSettle: false,
+    hasItemsToHandOutOrSettleAtTheRunningFestival: false,
     tables: [],
     stationShapes: [],
     ...overrides,

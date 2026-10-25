@@ -12,6 +12,7 @@ import { useAdminStationsStore } from '../../stores/stations'
 import { useEditSession } from '../../composables/useEditSession'
 import { useFestivalItemRows } from '../../composables/useFestivalItemRows'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
+import BaseEditButton from '../BaseEditButton.vue'
 import BaseListRow from '../BaseListRow.vue'
 import BaseRemoveConfirmDialog from '../BaseRemoveConfirmDialog.vue'
 import BaseSearchAddLine from '../BaseSearchAddLine.vue'
@@ -182,14 +183,11 @@ async function remove(): Promise<void> {
               >
                 {{ group.category.name }}
               </h3>
-              <v-btn
+              <BaseEditButton
                 class="edit-category"
                 data-test="edit-category"
-                variant="text"
                 @click="categorySession.openForEdit(group.category)"
-              >
-                {{ t('admin.common.actions.edit') }}
-              </v-btn>
+              />
             </div>
             <BaseListRow
               v-for="{ item, position } in group.rows"
@@ -241,9 +239,7 @@ async function remove(): Promise<void> {
                   :label="t('common.labels.soldOut')"
                   @update:model-value="(switchedOn: boolean | null) => changeSoldOut(item, switchedOn)"
                 />
-                <v-btn class="edit-item" data-test="edit-item" variant="text" @click="itemSession.openForEdit(item)">
-                  {{ t('admin.common.actions.edit') }}
-                </v-btn>
+                <BaseEditButton class="edit-item" data-test="edit-item" @click="itemSession.openForEdit(item)" />
                 <BaseActionWithRefusalReason
                   class="remove-item-wrapper"
                   data-test="remove-item-wrapper"

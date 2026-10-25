@@ -1,6 +1,7 @@
 # Table plan
 
-A festival has areas ("Bereich" / "Area" on screen: a hall, a tent, the garden). Each area holds its
+A festival has areas ("Tischplan" / "table plan" on screen, in every sentence on the laptop and the
+phone: a hall, a tent, the garden). Each area holds its
 tables and the shapes of the festival's stations placed in it, each drawn as a rectangle the admin
 can move and resize. Every order belongs to one table of the plan. A waiter's phone reads the
 running festival's plan, where each table shows by its fill how far its orders are handed out and by
@@ -44,10 +45,16 @@ Backend, under `backend/`:
   `ITablePlanRepository` (`TablePlanRepository`) owns every read and write of areas, tables and
   station shapes, and answers the order questions the hide rules ask
   (`HasItemsToHandOutOrSettleAtTableAsync`, `HasItemsToHandOutOrSettleInAreaAsync`). The admin's
-  read, `FindTablePlanAsync`, answers `ListedArea` and `ListedTable` (`Core/Results`): the entity and
-  `HasItemsToHandOutOrSettle`, computed in the same single statement with
+  read, `FindTablePlanAsync` (with `countsItemsToHandOutOrSettle`), answers `ListedArea` and
+  `ListedTable` (`Core/Results`): the entity and `HasItemsToHandOutOrSettleAtTheRunningFestival`,
+  false unless the read was told to count, computed in the same single statement with
   `WhereNotHandedOutOrNotSettled()` from `Infrastructure/Persistence/OrderItemQueriesExtensions.cs`,
-  the filter this read and the hide rules share for an item not yet handed out or not yet settled, so the editor can disable hiding before the click. `OrderAcceptanceService` looks the order's table up through
+  the filter this read and the hide rules share for an item not yet handed out or not yet settled, so the editor can disable hiding before the click.
+  Whether the items count is decided only in `Core/Services/ItemsToHandOutLookup.cs`, the one home of
+  "only while the festival runs" that the stations use too (see the `festivals` page):
+  `ListTablePlanAsync` reads the plan through its `FindTablePlanAsync(festival)`, and the two hide
+  rules ask `HasItemsToHandOutOrSettleAtTableIfRunningAsync` and
+  `HasItemsToHandOutOrSettleInAreaIfRunningAsync`, so the flag on the wire and the refusal always agree. `OrderAcceptanceService` looks the order's table up through
   `FindTableAsync`; the open items screen reads one table with its orders through
   `IOpenItemRepository.FindTableWithOrdersAsync` (see the `settling-a-table` page).
 - The phone's plan: `TablePlanService.ReadRunningFestivalTablePlanAsync` asks `RunningFestivalLookup`
@@ -83,7 +90,7 @@ Backend, under `backend/`:
   shared with `MoveCategoryRequest`, and `ShowsHiddenAreas`), `SaveTableRequest` (names the area, so the
   same record creates and moves a table), `SaveStationShapeRequest`, `SavedAreaView`,
   `SavedTableView`, `AdminTablePlanView`, `AdminAreaView` (no sort order: the list comes in the
-  laptop's order) and `AdminTableView` (each with `HasItemsToHandOutOrSettle`), `AdminStationShapeView` (`StationName`); a station shape answers
+  laptop's order) and `AdminTableView` (each with `HasItemsToHandOutOrSettleAtTheRunningFestival`), `AdminStationShapeView` (`StationName`); a station shape answers
   with `SavedStationView`. Mapping: `GastronomyApp.Api/Mapping/AdminTablePlanMapping.cs`, from the
   `Listed*` records and `NamedStationShape`. The phone's records are in
   `GastronomyApp.Contracts/TablePlan`: `TablePlanView` (`Areas`), `TablePlanAreaView` (`AreaId`,
@@ -103,21 +110,24 @@ Frontend, under `frontend/src/`:
   Its area rows follow the festival page's station card and are drawn by the shared
   `admin/components/HideableEntryList.vue` (see the `hideable-rows` how-to page). The heading line
   carries "Tischplan" and, at its right, "Ausgeblendete anzeigen", placed like "Deaktivierte
-  anzeigen" on the Artikel tab. A row has the name as text, the number of shown tables, "Plan
-  öffnen", "Bearbeiten" opening `tablePlan/AreaDialog.vue` (the name only, a `BaseFormDialog` like
-  `StationDialog.vue`), the up and down arrows of the category rows (`BaseMoveButtons.vue`), which
-  move the area the moment they are pressed, past the next area on screen: while "Ausgeblendete
-  anzeigen" is unticked a hidden area is passed over and keeps its place, and while it is ticked
-  every area counts. Then comes the trash icon that hides, or the open eye "Einblenden"
-  (`BaseShowButton.vue`) on a hidden row. "Neuer Bereich" sits at the right below the rows and opens
-  the same dialog, empty; the dialog sends the name only, and the laptop puts the new area after the
-  last one, hidden ones included. The trash icon is disabled with the reason as a tooltip while the
+  anzeigen" on the Artikel tab. A row has the name as text, the number of shown tables (one
+  computed text per area), then "Tischplan öffnen", the up and down arrows of the category rows
+  (`BaseMoveButtons.vue`), which move the area the moment they are pressed, past the next area on
+  screen: while "Ausgeblendete anzeigen" is unticked a hidden area is passed over and keeps its
+  place, and while it is ticked every area counts. Then the pencil (`BaseEditButton.vue`) opening
+  `tablePlan/TablePlanNameDialog.vue` (the name only, at most 40 characters, a `BaseFormDialog`
+  like `StationDialog.vue`, shared with the tables), then the trash icon that hides, or the open eye
+  "Einblenden" (`BaseShowButton.vue`) on a hidden row. "Neuer Tischplan" sits at the right below
+  the rows and opens the same dialog, empty; the dialog sends the name only, and the laptop puts
+  the new area after the last one, hidden ones included. The trash icon is disabled with the reason as a tooltip while the
   festival runs and a table of the area has items to hand out or settle. A taken name shows in the
-  dialog. The warnings appear under the heading only once the plan of this festival has arrived and
-  count only what waiters see: no area at all (`noArea`, naming "Neuer Bereich"), only hidden areas
-  (`allAreasHidden`, naming the checkbox), or shown areas without a shown table (`noTable`, naming
-  "Plan öffnen").
-- "Plan öffnen" opens one area's editor on its own page at `/admin/festivals/{festivalId}/areas/{areaId}`:
+  dialog. The warnings appear under the heading only once the plan of this festival has arrived,
+  each a `BaseWarningText.vue` like the stock card's, and count only what waiters see: no area at
+  all (`noArea`, naming "Neuer Tischplan"), only hidden areas (`allAreasHiddenAndNotListed`, naming
+  the checkbox, while it is unticked; `allAreasHidden` once it is ticked, which `HideableEntryList`
+  hands its `notices` slot as `showsHidden`), or shown areas without a shown table (`noTable`,
+  naming "Tischplan öffnen").
+- "Tischplan öffnen" opens one area's editor on its own page at `/admin/festivals/{festivalId}/areas/{areaId}`:
   `shared/router/route.ts` reads it as the admin route with `areaId`, and `admin/views/AdminShell.vue`
   chooses `admin/components/tablePlan/TablePlanEditor.vue` (`festivalId`, `areaId`) and lets it fill
   the screen height. The page has a back link to the festival page and the area's name as its
@@ -131,7 +141,7 @@ Frontend, under `frontend/src/`:
   `TablePlanDrawing.vue` (the Konva drawing) with the lists to its right, at most a form column
   wide, or below it in a window too narrow for both. `TablePlanTableList.vue` draws the table rows
   with the same `HideableEntryList.vue` as the card: the heading line "Tische" with "Ausgeblendete
-  anzeigen", the name as text, "Bearbeiten" opening `TableDialog.vue`, the hiding trash icon
+  anzeigen", the name as text, the pencil opening `TablePlanNameDialog.vue`, the hiding trash icon
   (disabled with the reason while the festival runs and the table has items to hand out or settle)
   or the open eye "Einblenden", and "Neuer Tisch" at the right (the table goes below the lowest
   table of the area, hidden ones included, and below the station shapes, and is selected).
@@ -143,11 +153,11 @@ Frontend, under `frontend/src/`:
   (`noStationsToPlace`) or that the festival has no station yet (`festivalHasNoStations`).
   Tapping a shape in the drawing gives it the resize handles, highlights its row and scrolls the
   list to it, a table row and a station row alike (`BaseListRow.vue`).
-- `admin/core/tablePlanPlacement.ts` holds `drawnTablesOf` and `drawnGeometriesOf`, the one
-  definition of what the editor draws of an area: its shown tables and its station shapes, never a
-  hidden table. `isDrawnIn` in `tablePlanSelection.ts` uses it, so a selected table that gets hidden
-  loses its handles. `geometriesOfEveryTableAndStationOf` adds the hidden tables: a new table keeps
-  clear of those.
+- `admin/core/tablePlanPlacement.ts` holds `drawnTablesOf`, the one definition of the tables the
+  editor draws of an area: its shown tables, never a hidden one. `isDrawnIn` in
+  `tablePlanSelection.ts` uses it, so a selected table that gets hidden loses its handles.
+  `geometryForANewShapeIn` is the one placement of a new table and a new station alike: below every
+  table of the area, hidden ones included, and every station shape.
 - `admin/stores/tablePlan.ts` (`useAdminTablePlanStore`) holds the festival's `AdminAreaView` list
   and `loadedFestivalId` (the festival whose plan that list is, set when a read is applied), and has
   one action per admin route; every action reloads the plan through the latest request gate, and the
@@ -181,27 +191,30 @@ Frontend, under `frontend/src/`:
   `AreaPlan.vue` (the read-only Konva drawing of one area with its scroll bars), `TableActionSheet.vue`
   (the table's name, "Bestellung aufnehmen", "Abrechnen", "Zurück") and `UnsentOrderDialog.vue` (the
   question when another table's unsent items are on the phone; see the `taking-an-order` page). `phone/components/header/AppHeader.vue` carries
-  the back control ("Bereiche" from a plan when there are several areas, "Tischplan" from the
+  the back control ("Tischpläne" from a plan when there are several areas, "Tischplan" from the
   ordering screen and the settle view) and the area or table name.
 - `phone/core/tablePlanCamera.ts` is the camera of the phone's drawing: `cameraFittingTheWidth`,
   `clampedPosition`, `pinchOf`, `pinchedCamera` (zoom about the point between the fingers, from the
   width of the screen up to `DEEPEST_ZOOM`, four times that) and `waiterDrawingLength` (the lowest
   shape plus `ROOM_BELOW_THE_LOWEST_SHAPE`). Beside it, `phone/core/tablePlanScrollBars.ts`
   (`scrollBarsOf`: each bar's offset and length from the camera, the screen and the drawing's length)
-  and `shared/core/tableNameFit.ts` (`nameFontSizeKeepingWordsWhole`, the font size of a table's name,
-  used by the phone's drawing and the editor's alike).
+  and `shared/core/shapeNameFit.ts` (`nameFontSizeKeepingWordsWhole`, the font size of the name
+  inside a shape: a table's in the phone's drawing and the editor's, a station's in the phone's).
 - `phone/stores/tablePlan.ts` (`useTablePlanStore`: `areas`, `hasLoaded`, `loadFailed`,
   `openedAreaId`, `load`, `listen`, `openArea`, `closeArea`) reads `GET /api/table-plan` through the
   latest request gate and reloads on `ConfigurationChanged` (the plan) and `OrdersChanged` (the
   colours); `App.vue` starts its listeners and its first load with the catalog's, and the connection's
   refetch on `GroupsJoined` reloads it.
 - Texts: `phone.tablePlan.*`.
-- Texts: `admin.tablePlan.*` (the hide questions `hideAreaTitle`, `hideTableTitle` with
-  `hideAreaBody`, `hideTableBody`, the removal body `removeStationBody`, `noStationsToPlace` and
+- Texts: `admin.tablePlan.*` (the dialog's `areaName`, `tableName`, `newArea`, `editArea`,
+  `newTable`, `editTable`, the hide questions `hideAreaTitle`, `hideTableTitle` with
+  `hideAreaBody`, `hideTableBody`, the removal body `removeStationBody`, the warnings `noArea`,
+  `allAreasHidden`, `allAreasHiddenAndNotListed`, `noTable`, `noStationsToPlace` and
   `festivalHasNoStations`), and the shared "Einblenden", "Ausgeblendet", "Ausgeblendete anzeigen"
   (`admin.common.actions.showHidden`), "Bearbeiten", "Ausgabestelle entfernen" and "Ausgabestelle
   hinzufügen" from `admin.festivals.*`, `admin.common.*`. The two hide refusals double as the
-  tooltips of the disabled trash icons.
+  tooltips of the disabled trash icons. On screen an area is always "Tischplan" (der Tischplan, des
+  Tischplans, die Tischpläne) and "table plan" in English; code, keys and the database keep "area".
 
 ## Invariants
 
@@ -223,8 +236,10 @@ Frontend, under `frontend/src/`:
 - **Hiding waits for the table to be finished while the festival runs.** A table with an item not
   yet handed out or not yet settled is not hidden, nor is an area one of whose tables has such an
   item (`tableWithItemsToHandOutOrSettleStaysShown`, `areaWithItemsToHandOutOrSettleStaysShown`).
-  "Running" comes from `RunningFestivalLookup`. After the festival, and for a row that is hidden
-  already, hiding always succeeds. Showing and every other change stay allowed.
+  `ItemsToHandOutLookup` decides it, and the table plan read's flag says the same, so the screens
+  read the flag alone and never the festival's own running state. After the festival, before it,
+  and for a row that is hidden already, hiding always succeeds. Showing and every other change stay
+  allowed.
 - **A hidden table still takes orders.** The phone only offers the plan's tables, so placing an
   order checks only that the table belongs to the running festival.
 - **Taking a station off a festival deletes its shape through the tracker** together with its link,
@@ -261,11 +276,12 @@ Frontend, under `frontend/src/`:
   shrinks when the window narrows and a border at the edge is drawn whole; the transformer's
   bounds take the margin off before they compare. Its visible height follows the window and it
   scrolls inside for long areas. It adds 200 units below the lowest drawn shape, or more to fill its visible
-  height, and draws no hidden table. A new station goes below the lowest drawn shape; a new table
-  goes below the lowest table of the area, hidden ones included, so it never takes the place of a
+  height, and draws no hidden table. A new table and a new station both go below the lowest table
+  of the area, hidden ones included, and below the station shapes, so neither takes the place of a
   hidden table, and showing a table again moves nothing. Nothing about the length is stored.
-- **Names are typed in a dialog and never filled in.** The dialogs for an area and a table ask for
-  the name only and cannot be saved while it is blank; a refusal such as a taken name keeps the
+- **Names are typed in a dialog and never filled in.** One dialog, `TablePlanNameDialog.vue`, asks
+  for the name of an area or a table, at most 40 characters (the laptop sets no limit; 40 follows
+  the station dialog), and cannot be saved while it is blank; a refusal such as a taken name keeps the
   dialog open with the reason. The order of the areas changes only through the arrows, each press
   saved at once, and each press passes over the hidden areas the admin cannot see; a new area goes
   last, numbered by the laptop. A move or a resize saves when it is dropped.
@@ -307,11 +323,12 @@ Frontend, under `frontend/src/`:
   during a pan (`dragmove`) and a pinch, are plain elements over the canvas with
   `pointer-events: none`, so a tap near the edge reaches the table, and take `on-surface` at medium
   emphasis from the theme.
-- **A table's name never breaks inside a word.** The name wraps only between words, and when one word
-  is wider than the table, `nameFontSizeKeepingWordsWhole` shrinks the font below its largest size
-  (14 units) until that word fits, rounded down to a tenth. The words are measured with a Konva text
-  node in the drawing's own font, made by `shared/composables/useTableNameWordWidth.ts` for both
-  drawings and let go when the drawing closes. A station's name keeps the largest size.
+- **A table's name, and on the phone a station's name, never breaks inside a word.** The name wraps
+  only between words, and when one word is wider than the shape, `nameFontSizeKeepingWordsWhole`
+  shrinks the font below its largest size (14 units) until that word fits, rounded down to a tenth.
+  The words are measured with a Konva text node in the drawing's own font, made by
+  `shared/composables/useShapeNameWordWidth.ts` for both drawings and let go when the drawing
+  closes. The editor draws a station's name at the largest size.
 - **The fill shows `handOutProgress` and the border shows `settlementProgress`**: none red, some
   amber, all green, with no legend. The words are one tap away, on the settle view.
 - **Orders from before the plan keep their table.** `SwitchOrdersToTables` gives every festival
@@ -328,6 +345,8 @@ Frontend, under `frontend/src/`:
   an edit that keeps the place, the moves, past a hidden area or onto it), `SortOrderingTest` (a
   move past an entry that does not count),
   `TableAdministrationServiceTest` (including the order-dependent hide rules),
+  `ItemsToHandOutLookupTest` (the plan read counting the items left only while the festival runs,
+  and the table and area checks running, over and not yet started),
   `FestivalStationShapeServiceTest`, `AreaShapeServiceTest`, the station shape cases of
   `FestivalStationServiceTest`, and the table cases of `OrderAcceptanceServiceTest`;
   `TableServiceTest` for the two colour states (the example above, the settled side, a table
@@ -340,7 +359,7 @@ Frontend, under `frontend/src/`:
   phone's read: hidden areas and tables left out, another festival's areas left out, the flags of
   each order's items, an order at two stations beside two station shapes in one area answered once
   each, and the whole read in one statement, counted by `TestSupport/QueryCounter`; the admin's read
-  with its flags per table and area, also one statement); the plan
+  with its flags per table and area, no flag when it is told not to count, also one statement); the plan
   copy in
   `FestivalRepositoryTest`; `Persistence/ReleasedDatabaseUpgradeTest` (festival station rows survive
   the rebuild of their table, and old orders at two festivals end up at hidden tables of their own
@@ -348,7 +367,9 @@ Frontend, under `frontend/src/`:
 - `GastronomyApp.Api.Tests`: `Endpoints/AdminFestivalTablePlanEndpointsTest` for every route
   (a new area numbered after a hidden last one, an edit that keeps the place, an area moved up, past
   a hidden area while hidden areas are not shown and onto it while they are, an area of another
-  festival not found) and the order-dependent refusals; `Endpoints/TablePlanEndpointsTest` for the phone's route (the shown
+  festival not found) and the order-dependent refusals, with the plan read first and its flag checked
+  against the hide answer for a table and an area while the festival runs, before it and after it;
+  `Endpoints/TablePlanEndpointsTest` for the phone's route (the shown
   plan, the two states on the wire including an order given away for zero, no running festival, a
   station tablet and an unknown device refused); the plan copy and the station removal in
   `AdminFestivalEndpointsTest`; one hub test per entity type in
@@ -361,19 +382,23 @@ Frontend, under `frontend/src/`:
   the refetch),
   `tablePlan.areas.spec.ts` and `tablePlan.tables.spec.ts` on `tablePlanFixture.ts` (`loadedFestivalId`
   in the loading spec); the card in `admin/components/festivals/FestivalPage.tablePlan.spec.ts` (the
-  rows, the count of shown tables, the box for hidden areas in the heading line, the open eye,
-  "Plan öffnen", the trash icon disabled with its reason, the warnings and that they wait for the
-  plan) and `FestivalPage.tablePlanAreas.spec.ts` (the name-only dialog for a new area and for
-  editing one, the name alone sent for a new or edited area, the arrows with the state of the box
+  rows, the count of shown tables, the box for hidden areas in the heading line, the order of a
+  row's actions, the pencil and the open eye with their names, "Tischplan öffnen", the trash icon
+  disabled with its reason, the warnings with the stock card's look, the tick sentence only while
+  the box is unticked, and that they wait for the plan) and `FestivalPage.tablePlanAreas.spec.ts`
+  (the name-only dialog for a new area and for editing one, its limit of 40 characters, the name
+  alone sent for a new or edited area, the arrows with the state of the box
   for hidden areas, a taken name in the dialog, hiding that asks first, showing) on `festivalTablePlanFixture.ts`; the editor in
   `admin/components/tablePlan/TablePlanEditor.drawing.spec.ts` (Konva on `canvas`: a hidden table
   never drawn, the size kept when the window narrows, a border at the edge drawn whole, a name never
   broken inside a word, the measuring text let go when the editor closes, drag, snap, guide lines,
-  selecting, scrolling a selected shape into view, refusal, theme switch), `.resizing` (the 20-unit and width limits, a refused resize, a station
-  shape), `.tables` (the rows, the box for hidden tables, the row highlighted and scrolled to, the
+  selecting, scrolling a selected shape into view, refusal, theme switch, the drawing growing to
+  fill a tall window), `.resizing` (the 20-unit and width limits, a refused resize, a station
+  shape), `.tables` (the rows, the pencil before the trash icon, the box for hidden tables, the row highlighted and scrolled to, the
   dialog for a new table below the lowest table, a hidden one included, and for editing one, hiding
   that asks first, is disabled with its reason and takes the table out of the drawing, showing that
-  moves nothing), `.stations` (the rows on this plan, a row highlighted and scrolled to, the add line
+  moves nothing), `.stations` (the rows on this plan, a row highlighted and scrolled to, a new
+  station placed below a hidden table, the add line
   with the stations on no plan and its two sentences when it has none, the trash icon that asks
   first, a station offered again once its shape is gone) and `.page.spec.ts` (the heading, the way back, an unknown
   area or festival, a newer read overtaking the first) on `tablePlanEditorFixture.ts`; `shared/composables/useThemedValue.spec.ts`; the address in `shared/router/adminRoute.spec.ts` and
@@ -382,7 +407,7 @@ Frontend, under `frontend/src/`:
 - The phone: `shared/core/landing.spec.ts` (`waiterLandingFor`: one area, several, an opened area,
   none, no festival, the locked order), `shared/core/statusTints.spec.ts`, `phone/core/tablePlanCamera.spec.ts` (fit, clamped pan, pinch limits),
   `phone/core/tablePlanScrollBars.spec.ts` (fitted with nothing hidden, a long area, zoomed in,
-  panned to each end), `shared/core/tableNameFit.spec.ts`,
+  panned to each end), `shared/core/shapeNameFit.spec.ts`,
   `phone/stores/tablePlan.spec.ts` (the read, a failed read keeping the plan, the gate, the reloads
   on `GroupsJoined`, `OrdersChanged` and `ConfigurationChanged`), and on `tablePlanFixture.ts` in
   `phone/views`: `TablePlan.landing.spec.ts` (the landings, no festival, an area without tables,
@@ -390,8 +415,8 @@ Frontend, under `frontend/src/`:
   one-finger pan, a pinch that zooms and opens nothing, the tap after a pinch, the sheet staying open
   after the click a phone sends behind a quick tap and after the laptop's mouse click),
   `TablePlan.scrollBars.spec.ts` (the bars showing and hiding with the camera),
-  `TablePlan.drawing.spec.ts` (geometry, names, a name kept whole in a narrow table, stations not
-  tappable, the fit, fill and border per state in both themes, a tap, a pan that opens nothing, the
+  `TablePlan.drawing.spec.ts` (geometry, names, a name kept whole in a narrow table and in a narrow
+  station, stations not tappable, the fit, fill and border per state in both themes, a tap, a pan that opens nothing, the
   clamped pan) and `TablePlan.sheet.spec.ts` (each button, the question about unsent items with its
   three choices);
   `phone/components/header/AppHeader.spec.ts` for the back control and the names.

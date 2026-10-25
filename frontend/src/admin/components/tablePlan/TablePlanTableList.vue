@@ -4,22 +4,14 @@ import { useI18n } from 'vue-i18n'
 import type { AdminAreaView, AdminTableView, SavedTableView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import type { AdminActionResult } from '../../core/adminActionResult'
-import {
-  NEW_TABLE_SIZE,
-  geometriesOfEveryTableAndStationOf,
-  geometryBelowTheLowestShape,
-} from '../../core/tablePlanPlacement'
+import { NEW_TABLE_SIZE, geometryForANewShapeIn } from '../../core/tablePlanPlacement'
 import type { ShapeSelection } from '../../core/tablePlanSelection'
 import type { EditSessionMode } from '../../composables/useEditSession'
 import { useAdminTablePlanStore } from '../../stores/tablePlan'
 import HideableEntryList from '../HideableEntryList.vue'
-import TableDialog from './TableDialog.vue'
+import TablePlanNameDialog from './TablePlanNameDialog.vue'
 
-interface TableDraft {
-  name: string
-}
-
-const props = defineProps<{ festivalId: string; area: AdminAreaView; isRunning: boolean }>()
+const props = defineProps<{ festivalId: string; area: AdminAreaView }>()
 const selectedShape = defineModel<ShapeSelection | null>('selectedShape', { required: true })
 
 const { t } = useI18n()
@@ -41,18 +33,18 @@ const selectedTableId = computed<string | null>(() => {
 })
 
 async function saveTheTable(
-  draft: TableDraft,
+  name: string,
   table: AdminTableView | null,
 ): Promise<AdminActionResult<SavedTableView | null>> {
   return table === null
     ? await tablePlan.createTable(props.festivalId, {
         areaId: props.area.areaId,
-        name: draft.name,
-        geometry: geometryBelowTheLowestShape(geometriesOfEveryTableAndStationOf(props.area), NEW_TABLE_SIZE),
+        name,
+        geometry: geometryForANewShapeIn(props.area, NEW_TABLE_SIZE),
       })
     : await tablePlan.saveTable(props.festivalId, table.tableId, {
         areaId: props.area.areaId,
-        name: draft.name,
+        name,
         geometry: table.geometry,
       })
 }
@@ -62,7 +54,7 @@ function isSelected(table: AdminTableView): boolean {
 }
 
 function hidingRefusalOf(table: AdminTableView): string | null {
-  return props.isRunning && table.hasItemsToHandOutOrSettle
+  return table.hasItemsToHandOutOrSettleAtTheRunningFestival
     ? t('errors.admin.festivals.tableWithItemsToHandOutOrSettleStaysShown')
     : null
 }
@@ -104,7 +96,14 @@ function selectTheNewTable(saved: SavedTableView | null, mode: EditSessionMode):
         <h2 class="section-heading text-h6">{{ t('admin.tablePlan.labels.tables') }}</h2>
       </template>
       <template #dialog="{ entry: table, errorText, save, cancel }">
-        <TableDialog :table="table" :error-text="errorText" @save="save" @cancel="cancel" />
+        <TablePlanNameDialog
+          :title="table === null ? t('admin.tablePlan.actions.newTable') : t('admin.tablePlan.actions.editTable')"
+          :name-label="t('admin.tablePlan.labels.tableName')"
+          :saved-name="table?.name ?? ''"
+          :error-text="errorText"
+          @save="save"
+          @cancel="cancel"
+        />
       </template>
     </HideableEntryList>
   </section>

@@ -10,7 +10,8 @@ answer of the laptop and turn it into text the same way.
 owns the rows; it keeps one refusal per row id.
 
 - `refusalTextOf(rowId)` is the sentence to render, or `null`. Render it under the row in a
-  `v-alert` with `type="warning"`, `variant="tonal"` and `data-test="refusal"`.
+  `v-alert` with `type="warning"`, `variant="tonal"`, `class="refusal mb-2"` (flush with the row,
+  no side margin) and `data-test="refusal"`.
 - `showRefusalOf(rowId, result)` takes the `AdminActionResult` a store action returned and stores the
   refusal when the action failed. It does nothing for a success, so an old warning survives an
   accepted action unless it was forgotten first.
@@ -38,6 +39,14 @@ another row before the laptop answers.
 it was not. Clear it by setting `refusal.value = null`. `useEditSession` owns one for its dialog, and
 `ItemIngredientsDialog.vue` uses one more for the add row beside its per row warnings. Use the row
 version only where several rows can carry a warning at once.
+
+## A standing warning: `BaseWarningText`
+
+A warning that is not an answer to an action, but a gap the screen finds in its data (an
+ingredient that runs out soon, a table plan the waiters cannot use yet), is
+`admin/components/BaseWarningText.vue`: the `mdi-alert` icon beside its `text` in the `warning`
+colour, no box. Consumers: the stock rows of `festivals/FestivalStock.vue` and the warnings of the
+Tischplan card in `festivals/FestivalTablePlan.vue`. A refusal stays a `v-alert`.
 
 ## One mapping to text: `adminErrorMessageText`
 

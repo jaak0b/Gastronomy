@@ -16,7 +16,7 @@ import {
   shapesNamed,
   tapAt,
 } from '../../support/konvaDrawing'
-import { aGeometry, aPlanArea, aPlanTable } from '../../support/wireViews'
+import { aGeometry, aPlanArea, aPlanStationShape, aPlanTable } from '../../support/wireViews'
 import {
   HALL,
   TABLE_ACTIONS,
@@ -88,6 +88,16 @@ describe('the plan of one area on a waiter\'s phone', () => {
     expect(shapesNamed(theDrawing(), 'plan-station').map((node) => (node as Konva.Group).findOne<Konva.Text>('Text')?.text())).toEqual([
       'Schank',
     ])
+  })
+
+  it('keeps a station name that is wider than its shape in one piece, as it does for a table', async () => {
+    const narrow = aPlanStationShape({ stationName: 'Abcd', geometry: aGeometry({ x: 150, y: 30, width: 30, height: 60 }) })
+    planLaptop([aPlanArea({ tables: [TISCH_12], stationShapes: [narrow] })])
+
+    await mountThePlan()
+
+    const station = shapesNamed(theDrawing(), 'plan-station')[0] as Konva.Group
+    expect(station.findOne<Konva.Text>('Text')?.textArr.map((line) => line.text)).toEqual(['Abcd'])
   })
 
   it('opens nothing when the waiter taps a station', async () => {

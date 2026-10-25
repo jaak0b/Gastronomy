@@ -24,6 +24,10 @@ Frontend, under `frontend/src/`:
 - **The global tabs are plain lists** with no festival controls. The Artikel tab groups its articles
   under their categories and lists every category, a deactivated one with its chip, whatever
   "Deaktivierte anzeigen" says, so a category's arrows count every category.
+- **Every row offers its actions the same way**: text buttons first, then the pencil "Bearbeiten"
+  for the edit dialog, then switching off, hiding or removing, with the up and down arrows before
+  the pencil where a list is ordered by hand. Showing or switching on again is the open eye named
+  by its own word. The shared pieces and the order are on the `hideable-rows` page of `how-to`.
 - **A switch off the laptop would refuse is disabled before the click**, with the refusal's text as
   its tooltip: an article on an active festival's menu on the Artikel tab, a station with items to
   hand out at the active festival or whose articles would be left without a station on the

@@ -114,6 +114,27 @@ describe('the list of festivals', () => {
     expect(rows[0].find('[data-test="conditional-action"] [data-test="action-measure"]').exists()).toBe(true)
   })
 
+  it('offers copying, the pencil and the eye in that order', async () => {
+    festivalsLaptop([OVER])
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="festival-row"]').exists()).toBe(true))
+
+    const actions = list.get('[data-test="actions"]').findAll('[data-test="copy"], [data-test="open"], [data-test="hide"]')
+    expect(actions.map((action) => action.attributes('data-test'))).toEqual(['copy', 'open', 'hide'])
+  })
+
+  it('offers opening a festival through the pencil, named "Bearbeiten"', async () => {
+    festivalsLaptop([OVER])
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="open"]').exists()).toBe(true))
+
+    await list.get('[data-test="open"]').trigger('mouseenter')
+
+    expect(list.get('[data-test="open"] .v-icon').classes()).toContain('mdi-pencil')
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Bearbeiten'))
+  })
+
   it('offers to hide a festival that is over through the crossed-out eye, named "Ausblenden"', async () => {
     festivalsLaptop([OVER])
     const list = mountList()
@@ -169,7 +190,6 @@ describe('the list of festivals', () => {
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('[data-test="open"]').exists()).toBe(true))
-    expect(list.get('[data-test="open"]').text()).toBe('Fest bearbeiten')
 
     await list.get('[data-test="open"]').trigger('click')
 

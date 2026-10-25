@@ -7,6 +7,7 @@ import type { AdminActionResult } from '../../core/adminActionResult'
 import { useAdminStationsStore, type StationDraft } from '../../stores/stations'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import { useStationRefusalReasons } from '../../composables/useStationRefusalReasons'
+import BaseEditButton from '../BaseEditButton.vue'
 import BaseSearchAddLine from '../BaseSearchAddLine.vue'
 import RemovableStationRows from '../stations/RemovableStationRows.vue'
 import StationDialog from '../stations/StationDialog.vue'
@@ -133,9 +134,7 @@ async function saveStation(station: StationDraft): Promise<void> {
               </v-chip>
             </template>
             <template #actions="{ station }">
-              <v-btn class="edit-station" data-test="edit-station" variant="text" @click="startEditing(station)">
-                {{ t('admin.common.actions.edit') }}
-              </v-btn>
+              <BaseEditButton class="edit-station" data-test="edit-station" @click="startEditing(station)" />
             </template>
           </RemovableStationRows>
 

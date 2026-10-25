@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
 import {
-  allOnScreen,
   clickOn,
   dialogText,
   inputOf,
@@ -14,7 +13,7 @@ import {
   waitForDialog,
   waitUntil,
 } from '../../../support/dom'
-import { saveTheAreaDialog } from '../../../support/formDialogs'
+import { saveTheTablePlanNameDialog } from '../../../support/formDialogs'
 import { refusal, type StubbedLaptop } from '../../../support/laptop'
 import { FESTIVAL_ID, festivalLaptop, mountPage } from './festivalPageFixture'
 import { AREAS_PATH, HALL, OLD_TABLES, TENT, areaRow } from './festivalTablePlanFixture'
@@ -24,7 +23,7 @@ enableAutoUnmount(afterEach)
 const ACTION_FAILED = 'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.'
 
 const AREA_NAME_TAKEN =
-  'Ein Bereich dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.'
+  'Ein Tischplan dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.'
 
 async function openThePageWith(laptop: StubbedLaptop): Promise<StubbedLaptop> {
   mountPage()
@@ -52,17 +51,25 @@ afterEach(() => {
 })
 
 describe('a new area on the festival page', () => {
-  it('opens an empty dialog that asks only for the name', async () => {
+  it('opens an empty dialog for a new table plan', async () => {
     await openThePageWith(festivalLaptop({ areas: [HALL, TENT] }))
 
     await clickOn('[data-test="new-entry"]', onScreen('[data-test="festival-table-plan"]'))
     await flushPromises()
 
-    expect([
-      dialogText('[data-test="form-dialog-title"]'),
-      inputOf('[data-test="area-name-field"]').value,
-      allOnScreen('[data-test="form-dialog"] input').length,
-    ]).toEqual(['Neuer Bereich', '', 1])
+    expect([dialogText('[data-test="form-dialog-title"]'), inputOf('[data-test="table-plan-name-field"]').value]).toEqual([
+      'Neuer Tischplan',
+      '',
+    ])
+  })
+
+  it('takes a name of at most forty characters, like the name of a station', async () => {
+    await openThePageWith(festivalLaptop({ areas: [HALL] }))
+
+    await clickOn('[data-test="new-entry"]', onScreen('[data-test="festival-table-plan"]'))
+    await flushPromises()
+
+    expect(inputOf('[data-test="table-plan-name-field"]').getAttribute('maxlength')).toBe('40')
   })
 
   it('sends only the typed name, because the laptop puts a new area last', async () => {
@@ -70,7 +77,7 @@ describe('a new area on the festival page', () => {
     await clickOn('[data-test="new-entry"]', onScreen('[data-test="festival-table-plan"]'))
     await flushPromises()
 
-    await saveTheAreaDialog('Garten')
+    await saveTheTablePlanNameDialog('Garten')
 
     expect(writesTo(laptop, AREAS_PATH)).toEqual([
       { url: AREAS_PATH, method: 'POST', body: { name: 'Garten' } },
@@ -82,7 +89,7 @@ describe('a new area on the festival page', () => {
     await clickOn('[data-test="new-entry"]', onScreen('[data-test="festival-table-plan"]'))
     await flushPromises()
 
-    await typeIn('[data-test="area-name-field"]', '   ')
+    await typeIn('[data-test="table-plan-name-field"]', '   ')
 
     expect(onScreen('[data-test="form-save"]').hasAttribute('disabled')).toBe(true)
   })
@@ -94,7 +101,7 @@ describe('a new area on the festival page', () => {
     await clickOn('[data-test="new-entry"]', onScreen('[data-test="festival-table-plan"]'))
     await flushPromises()
 
-    await saveTheAreaDialog('halle')
+    await saveTheTablePlanNameDialog('halle')
 
     await waitUntil(() =>
       expect(textOnScreen('[data-test="form-dialog"] [data-test="refusal"]').trim()).toBe(AREA_NAME_TAKEN),
@@ -109,8 +116,8 @@ describe('editing an area on the festival page', () => {
     await clickOn('[data-test="edit-entry"]', areaRow('area-zelt'))
     await flushPromises()
 
-    expect([dialogText('[data-test="form-dialog-title"]'), inputOf('[data-test="area-name-field"]').value]).toEqual([
-      'Bereich bearbeiten',
+    expect([dialogText('[data-test="form-dialog-title"]'), inputOf('[data-test="table-plan-name-field"]').value]).toEqual([
+      'Tischplan bearbeiten',
       'Zelt',
     ])
   })
@@ -120,7 +127,7 @@ describe('editing an area on the festival page', () => {
     await clickOn('[data-test="edit-entry"]', areaRow('area-zelt'))
     await flushPromises()
 
-    await saveTheAreaDialog('Großes Zelt')
+    await saveTheTablePlanNameDialog('Großes Zelt')
 
     expect(writesTo(laptop, AREAS_PATH)).toEqual([
       { url: `${AREAS_PATH}/area-zelt`, method: 'PUT', body: { name: 'Großes Zelt' } },
@@ -138,12 +145,12 @@ describe('editing an area on the festival page', () => {
     await clickOn('[data-test="edit-entry"]', areaRow('area-zelt'))
     await flushPromises()
 
-    await saveTheAreaDialog('Halle')
+    await saveTheTablePlanNameDialog('Halle')
 
     await waitUntil(() =>
       expect(textOnScreen('[data-test="form-dialog"] [data-test="refusal"]').trim()).toBe(AREA_NAME_TAKEN),
     )
-    expect(inputOf('[data-test="area-name-field"]').value).toBe('Halle')
+    expect(inputOf('[data-test="table-plan-name-field"]').value).toBe('Halle')
   })
 })
 
@@ -202,8 +209,8 @@ describe('hiding and showing an area', () => {
     await waitForDialog()
 
     expect([dialogText('[data-test="confirm-title"]'), dialogText('[data-test="confirm-body"]')]).toEqual([
-      'Bereich ausblenden',
-      'Die Kellner sehen diesen Bereich dann nicht mehr.',
+      'Tischplan ausblenden',
+      'Die Kellner sehen diesen Tischplan dann nicht mehr.',
     ])
     expect(writesTo(laptop, AREAS_PATH)).toEqual([])
   })
@@ -233,7 +240,7 @@ describe('hiding and showing an area', () => {
 
     await waitUntil(() =>
       expect(refusalOnTheRowOf('area-zelt')).toBe(
-        'Ein Bereich kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und abgerechnet ist.',
+        'Ein Tischplan kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und abgerechnet ist.',
       ),
     )
   })

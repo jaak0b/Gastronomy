@@ -10,14 +10,14 @@ public sealed class TableAdministrationService
 {
   private readonly AreaShapeService _areaShapeService;
   private readonly IFestivalRepository _festivalRepository;
+  private readonly ItemsToHandOutLookup _itemsToHandOut;
   private readonly ITablePlanRepository _repository;
-  private readonly RunningFestivalLookup _runningFestival;
 
-  public TableAdministrationService(ITablePlanRepository repository, IFestivalRepository festivalRepository, RunningFestivalLookup runningFestival, AreaShapeService areaShapeService)
+  public TableAdministrationService(ITablePlanRepository repository, IFestivalRepository festivalRepository, ItemsToHandOutLookup itemsToHandOut, AreaShapeService areaShapeService)
   {
     _repository = repository;
     _festivalRepository = festivalRepository;
-    _runningFestival = runningFestival;
+    _itemsToHandOut = itemsToHandOut;
     _areaShapeService = areaShapeService;
   }
 
@@ -86,7 +86,7 @@ public sealed class TableAdministrationService
     if (festival is null)
       return Refusal.TablePlan.FestivalNotFound(festivalId);
 
-    if (_runningFestival.IsRunning(festival) && await _repository.HasItemsToHandOutOrSettleAtTableAsync(tableId, cancellationToken))
+    if (await _itemsToHandOut.HasItemsToHandOutOrSettleAtTableIfRunningAsync(festival, tableId, cancellationToken))
       return Refusal.TablePlan.TableWithItemsToHandOutOrSettleStaysShown(festivalId, tableId);
 
     table.IsHidden = true;

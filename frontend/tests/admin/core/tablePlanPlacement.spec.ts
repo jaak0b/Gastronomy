@@ -2,12 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   NEW_STATION_SIZE,
   NEW_TABLE_SIZE,
-  drawnGeometriesOf,
   drawnTablesOf,
   editorDrawingLength,
   fitsTheDrawing,
-  geometriesOfEveryTableAndStationOf,
-  geometryBelowTheLowestShape,
+  geometryForANewShapeIn,
 } from '../../../src/admin/core/tablePlanPlacement'
 import { aGeometry, anAdminArea, anAdminStationShape, anAdminTable } from '../../support/wireViews'
 
@@ -23,25 +21,11 @@ describe('what the editor draws of an area', () => {
   it('is every shown table, never a hidden one', () => {
     expect(drawnTablesOf(HALL)).toEqual([SHOWN_TABLE])
   })
-
-  it('is the geometry of the shown tables and of the station shapes', () => {
-    expect(drawnGeometriesOf(HALL)).toEqual([aGeometry({ y: 30 }), aGeometry({ x: 200, y: 80 })])
-  })
-})
-
-describe('the shapes a new table keeps clear of', () => {
-  it('are every table of the area, a hidden one included, and the station shapes', () => {
-    expect(geometriesOfEveryTableAndStationOf(HALL)).toEqual([
-      aGeometry({ y: 30 }),
-      aGeometry({ y: 300 }),
-      aGeometry({ x: 200, y: 80 }),
-    ])
-  })
 })
 
 describe('where a new table or station is put', () => {
   it('is near the top left corner of an empty area', () => {
-    expect(geometryBelowTheLowestShape([], NEW_TABLE_SIZE)).toEqual({
+    expect(geometryForANewShapeIn(anAdminArea(), NEW_TABLE_SIZE)).toEqual({
       x: 10,
       y: 10,
       width: 80,
@@ -50,10 +34,13 @@ describe('where a new table or station is put', () => {
     })
   })
 
-  it('is below the lowest shape, so it never covers one', () => {
-    const shapes = [aGeometry({ y: 30, height: 40 }), aGeometry({ y: 100, height: 50 })]
+  it('is below the lowest table or station shape, so it never covers one', () => {
+    const area = anAdminArea({
+      tables: [anAdminTable({ geometry: aGeometry({ y: 30, height: 40 }) })],
+      stationShapes: [anAdminStationShape({ geometry: aGeometry({ y: 100, height: 50 }) })],
+    })
 
-    expect(geometryBelowTheLowestShape(shapes, NEW_STATION_SIZE)).toEqual({
+    expect(geometryForANewShapeIn(area, NEW_STATION_SIZE)).toEqual({
       x: 10,
       y: 160,
       width: 120,
@@ -62,10 +49,14 @@ describe('where a new table or station is put', () => {
     })
   })
 
-  it('is below the lowest corner of a turned shape', () => {
-    const turned = aGeometry({ x: 100, y: 100, width: 80, height: 40, rotation: 90 })
+  it('is below a hidden table as well, so showing that table again never stacks two shapes', () => {
+    expect(geometryForANewShapeIn(HALL, NEW_STATION_SIZE).y).toBe(350)
+  })
 
-    expect(geometryBelowTheLowestShape([turned], NEW_TABLE_SIZE).y).toBeCloseTo(190)
+  it('is below the lowest corner of a turned shape', () => {
+    const turned = anAdminTable({ geometry: aGeometry({ x: 100, y: 100, width: 80, height: 40, rotation: 90 }) })
+
+    expect(geometryForANewShapeIn(anAdminArea({ tables: [turned] }), NEW_TABLE_SIZE).y).toBeCloseTo(190)
   })
 })
 

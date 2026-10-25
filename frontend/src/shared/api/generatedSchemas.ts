@@ -8,13 +8,13 @@ export type AreaShapeGeometry = __TypedOpenapi.Schemas.AreaShapeGeometry;
 export const AreaShapeGeometry = z.strictObject({ x: z.number(), y: z.number(), width: z.number(), height: z.number(), rotation: z.number() });
 
 export type AdminTableView = __TypedOpenapi.Schemas.AdminTableView;
-export const AdminTableView = z.strictObject({ tableId: z.string(), name: z.string(), geometry: AreaShapeGeometry, isHidden: z.boolean(), hasItemsToHandOutOrSettle: z.boolean() });
+export const AdminTableView = z.strictObject({ tableId: z.string(), name: z.string(), geometry: AreaShapeGeometry, isHidden: z.boolean(), hasItemsToHandOutOrSettleAtTheRunningFestival: z.boolean() });
 
 export type AdminStationShapeView = __TypedOpenapi.Schemas.AdminStationShapeView;
 export const AdminStationShapeView = z.strictObject({ stationId: z.string(), stationName: z.string(), geometry: AreaShapeGeometry });
 
 export type AdminAreaView = __TypedOpenapi.Schemas.AdminAreaView;
-export const AdminAreaView = z.strictObject({ areaId: z.string(), name: z.string(), isHidden: z.boolean(), hasItemsToHandOutOrSettle: z.boolean(), tables: z.array(AdminTableView), stationShapes: z.array(AdminStationShapeView) });
+export const AdminAreaView = z.strictObject({ areaId: z.string(), name: z.string(), isHidden: z.boolean(), hasItemsToHandOutOrSettleAtTheRunningFestival: z.boolean(), tables: z.array(AdminTableView), stationShapes: z.array(AdminStationShapeView) });
 
 export type AdminCategoryView = __TypedOpenapi.Schemas.AdminCategoryView;
 export const AdminCategoryView = z.strictObject({ categoryId: z.string(), name: z.string(), colourHex: z.string(), sortOrder: z.number().int(), isActive: z.boolean() });

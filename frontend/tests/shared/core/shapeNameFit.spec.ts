@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { nameFontSizeKeepingWordsWhole } from '../../../src/shared/core/tableNameFit'
+import { nameFontSizeKeepingWordsWhole } from '../../../src/shared/core/shapeNameFit'
 
 function sevenUnitsPerLetter(word: string): number {
   return word.length * 7
 }
 
-describe('the size of a table\'s name on the waiter\'s plan', () => {
+describe('the size of the name inside a table or a station on a plan', () => {
   it('stays at its largest when every word fits across the table', () => {
     expect(nameFontSizeKeepingWordsWhole('Tisch 12', 72, sevenUnitsPerLetter)).toBe(14)
   })

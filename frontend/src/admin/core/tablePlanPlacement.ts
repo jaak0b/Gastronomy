@@ -21,24 +21,14 @@ export function drawnTablesOf(area: AdminAreaView): AdminTableView[] {
   return area.tables.filter((table) => !table.isHidden)
 }
 
-export function drawnGeometriesOf(area: AdminAreaView): AreaShapeGeometry[] {
-  return [
-    ...drawnTablesOf(area).map((table) => table.geometry),
+export function geometryForANewShapeIn(area: AdminAreaView, size: ShapeSize): AreaShapeGeometry {
+  const everyTableAndStation = [
+    ...area.tables.map((table) => table.geometry),
     ...area.stationShapes.map((shape) => shape.geometry),
   ]
-}
-
-export function geometriesOfEveryTableAndStationOf(area: AdminAreaView): AreaShapeGeometry[] {
-  return [...area.tables.map((table) => table.geometry), ...area.stationShapes.map((shape) => shape.geometry)]
-}
-
-export function geometryBelowTheLowestShape(
-  shapes: readonly AreaShapeGeometry[],
-  size: ShapeSize,
-): AreaShapeGeometry {
   return {
     x: SNAP_GRID,
-    y: lowestEdgeOf(shapes) + SNAP_GRID,
+    y: lowestEdgeOf(everyTableAndStation) + SNAP_GRID,
     width: size.width,
     height: size.height,
     rotation: 0,

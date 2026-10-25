@@ -78,7 +78,7 @@ async function confirmRemoval(): Promise<void> {
       </div>
       <v-alert
         v-if="stationRefusals.refusalTextOf(idOf(station)) !== null"
-        class="refusal mx-3 mb-2"
+        class="refusal mb-2"
         data-test="refusal"
         type="warning"
         variant="tonal"

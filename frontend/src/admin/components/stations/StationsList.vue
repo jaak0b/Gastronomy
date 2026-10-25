@@ -11,7 +11,9 @@ import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import { useStationRefusalReasons } from '../../composables/useStationRefusalReasons'
 import StationDialog from './StationDialog.vue'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
+import BaseEditButton from '../BaseEditButton.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
+import BaseShowButton from '../BaseShowButton.vue'
 import BaseTrashButton from '../BaseTrashButton.vue'
 
 interface StationRow {
@@ -159,9 +161,7 @@ onUnmounted(() => {
         <v-btn class="set-up-device" data-test="set-up-device" variant="text" @click="inviteStation(station.stationId)">
           {{ t('admin.stations.actions.setUpDevice') }}
         </v-btn>
-        <v-btn class="edit" data-test="edit" variant="text" @click="startEditing(station)">
-          {{ t('admin.common.actions.edit') }}
-        </v-btn>
+        <BaseEditButton class="edit" data-test="edit" @click="startEditing(station)" />
         <BaseActionWithRefusalReason
           v-if="station.isActive"
           class="deactivate-wrapper"
@@ -177,15 +177,13 @@ onUnmounted(() => {
             />
           </template>
         </BaseActionWithRefusalReason>
-        <v-btn
+        <BaseShowButton
           v-else
           class="reactivate"
           data-test="reactivate"
-          variant="text"
+          :label="t('admin.stations.actions.activate')"
           @click="reactivate(station.stationId)"
-        >
-          {{ t('admin.stations.actions.activate') }}
-        </v-btn>
+        />
       </div>
       <v-expand-transition>
         <InvitationPanel

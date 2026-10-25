@@ -2253,7 +2253,7 @@
           "areaId",
           "name",
           "isHidden",
-          "hasItemsToHandOutOrSettle",
+          "hasItemsToHandOutOrSettleAtTheRunningFestival",
           "tables",
           "stationShapes"
         ],
@@ -2269,7 +2269,7 @@
           "isHidden": {
             "type": "boolean"
           },
-          "hasItemsToHandOutOrSettle": {
+          "hasItemsToHandOutOrSettleAtTheRunningFestival": {
             "type": "boolean"
           },
           "tables": {
@@ -2787,7 +2787,7 @@
           "name",
           "geometry",
           "isHidden",
-          "hasItemsToHandOutOrSettle"
+          "hasItemsToHandOutOrSettleAtTheRunningFestival"
         ],
         "type": "object",
         "properties": {
@@ -2804,7 +2804,7 @@
           "isHidden": {
             "type": "boolean"
           },
-          "hasItemsToHandOutOrSettle": {
+          "hasItemsToHandOutOrSettleAtTheRunningFestival": {
             "type": "boolean"
           }
         }

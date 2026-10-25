@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { pressInDialog, refusalReasonsOnScreen, waitForDialog } from '../../../support/dom'
+import { iconActionLabelsOnScreen, pressInDialog, refusalReasonsOnScreen, waitForDialog } from '../../../support/dom'
 import { ITEM_ID, ONE_FESTIVAL, ONE_ITEM, DEACTIVATED_ITEM, mountList, itemsListLaptop } from './itemsListFixture'
 import { nextTick } from 'vue'
 import { cancelTheFormDialog, formDialogHolding } from '../../../support/formDialogs'
@@ -129,6 +129,18 @@ describe('an item that is deactivated', () => {
         'Die Zutat Zwiebeln ist deaktiviert. Aktivieren Sie sie zuerst unter "Zutaten".',
       ),
     )
+  })
+
+  it('offers to activate it again through the open eye, named "Artikel aktivieren"', async () => {
+    itemsListLaptop({ items: DEACTIVATED_ITEM })
+    const list = mountList()
+    await list.get('[data-test="show-deactivated"] input').setValue(true)
+    await vi.waitFor(() => expect(list.find('[data-test="reactivate-item"]').exists()).toBe(true))
+
+    await list.get('[data-test="reactivate-item"]').trigger('mouseenter')
+
+    expect(list.get('[data-test="reactivate-item"] .v-icon').classes()).toContain('mdi-eye')
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Artikel aktivieren'))
   })
 
   it('offers to activate it again without asking a question first', async () => {

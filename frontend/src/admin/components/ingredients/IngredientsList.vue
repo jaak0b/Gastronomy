@@ -7,7 +7,9 @@ import { useEditSession } from '../../composables/useEditSession'
 import { useAmountUnitName } from '../../composables/useAmountUnitName'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
+import BaseEditButton from '../BaseEditButton.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
+import BaseShowButton from '../BaseShowButton.vue'
 import BaseTrashButton from '../BaseTrashButton.vue'
 import IngredientDialog from './IngredientDialog.vue'
 
@@ -135,14 +137,11 @@ onUnmounted(() => {
           {{ t('admin.common.labels.deactivated') }}
         </v-chip>
         <v-spacer />
-        <v-btn
+        <BaseEditButton
           class="edit"
           data-test="edit"
-          variant="text"
           @click="ingredientSession.openForEdit(row.ingredient)"
-        >
-          {{ t('admin.common.actions.edit') }}
-        </v-btn>
+        />
         <BaseActionWithRefusalReason
           v-if="row.ingredient.isActive"
           class="deactivate-wrapper"
@@ -158,15 +157,13 @@ onUnmounted(() => {
             />
           </template>
         </BaseActionWithRefusalReason>
-        <v-btn
+        <BaseShowButton
           v-else
           class="reactivate"
           data-test="reactivate"
-          variant="text"
+          :label="t('admin.ingredients.actions.activate')"
           @click="reactivate(row.ingredient.ingredientId)"
-        >
-          {{ t('admin.ingredients.actions.activate') }}
-        </v-btn>
+        />
       </div>
     </v-card>
 

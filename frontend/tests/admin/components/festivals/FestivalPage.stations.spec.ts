@@ -6,7 +6,7 @@ import { FESTIVAL_ID, KITCHEN_ID, BAR_ID, KITCHEN, BAR, mountPage, stationRow, f
 import { nextTick } from 'vue'
 
 const ONE_ARTICLE_WITHOUT_A_STATION =
-  '1 Artikel hätte dann keine Ausgabestelle mehr. Ordnen Sie ihn zuerst einer anderen Ausgabestelle zu oder entfernen Sie ihn vom Fest.'
+  '1 Artikel hätte dann keine Ausgabestelle mehr. Ordnen Sie ihn zuerst einer anderen Ausgabestelle zu.'
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -123,6 +123,20 @@ describe('the stations of this festival', () => {
     ])
     expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('modelValue')).toBe('station-neu')
     expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('items')).toEqual([BAR, NEW_STATION])
+  })
+
+  it('offers renaming as the pencil, before the trash icon', async () => {
+    festivalLaptop()
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="festival-station-row"]').exists()).toBe(true))
+
+    const row = stationRow(page, KITCHEN_ID)
+    expect(row.findAll('[data-test="edit-station"], [data-test="remove-station"]').map((action) => action.attributes('data-test'))).toEqual([
+      'edit-station',
+      'remove-station',
+    ])
+    expect(row.get('[data-test="edit-station"] .v-icon').classes()).toContain('mdi-pencil')
   })
 
   it('renames the station through the dialog on its row', async () => {

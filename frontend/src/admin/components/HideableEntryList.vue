@@ -6,6 +6,7 @@ import type { AdminActionResult } from '../core/adminActionResult'
 import { useEditSession, type EditSessionMode } from '../composables/useEditSession'
 import { useRowRefusals } from '../composables/useRowRefusals'
 import BaseActionWithRefusalReason from './BaseActionWithRefusalReason.vue'
+import BaseEditButton from './BaseEditButton.vue'
 import BaseHeadingWithCheckbox from './BaseHeadingWithCheckbox.vue'
 import BaseHideConfirmDialog from './BaseHideConfirmDialog.vue'
 import BaseListRow from './BaseListRow.vue'
@@ -36,7 +37,7 @@ const props = defineProps<{
 const emit = defineEmits<{ saved: [saved: TSaved, mode: EditSessionMode] }>()
 defineSlots<{
   heading: () => unknown
-  notices?: () => unknown
+  notices?: (scope: { showsHidden: boolean }) => unknown
   details?: (scope: { entry: TEntry }) => unknown
   dialog: (scope: {
     entry: TEntry | null
@@ -106,7 +107,7 @@ async function move(entry: TEntry, direction: MoveDirection): Promise<void> {
       <slot name="heading" />
     </BaseHeadingWithCheckbox>
 
-    <slot name="notices" />
+    <slot name="notices" :shows-hidden="showsHidden" />
 
     <div v-if="listedEntries.length > 0" class="rows mb-3">
       <BaseListRow
@@ -124,14 +125,13 @@ async function move(entry: TEntry, direction: MoveDirection): Promise<void> {
           </v-chip>
           <v-spacer />
           <slot name="details" :entry="entry" />
-          <v-btn class="edit-entry" data-test="edit-entry" variant="text" @click="session.openForEdit(entry)">
-            {{ t('admin.common.actions.edit') }}
-          </v-btn>
           <BaseMoveButtons v-if="moveThrough !== undefined" @move="(direction) => move(entry, direction)" />
+          <BaseEditButton class="edit-entry" data-test="edit-entry" @click="session.openForEdit(entry)" />
           <BaseShowButton
             v-if="isHidden(entry)"
             class="show-entry"
             data-test="show-entry"
+            :label="t('admin.festivals.actions.show')"
             @click="showAgain(entry)"
           />
           <BaseActionWithRefusalReason
@@ -152,7 +152,7 @@ async function move(entry: TEntry, direction: MoveDirection): Promise<void> {
         </div>
         <v-alert
           v-if="rowRefusals.refusalTextOf(idOf(entry)) !== null"
-          class="refusal mx-3 mb-2"
+          class="refusal mb-2"
           data-test="refusal"
           type="warning"
           variant="tonal"

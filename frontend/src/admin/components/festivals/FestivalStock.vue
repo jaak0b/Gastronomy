@@ -11,6 +11,8 @@ import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminFestivalStockStore } from '../../stores/festivalStock'
 import { useIngredientAmountText } from '../../composables/useIngredientAmountText'
 import { useRowRefusals } from '../../composables/useRowRefusals'
+import BaseListRow from '../BaseListRow.vue'
+import BaseWarningText from '../BaseWarningText.vue'
 import IngredientAmountField from '../ingredients/IngredientAmountField.vue'
 import FestivalStockChart from './FestivalStockChart.vue'
 
@@ -94,13 +96,13 @@ function toggleHistory(ingredientId: string): void {
     <v-card variant="outlined">
       <div class="pa-4">
         <h2 class="section-heading text-h6 mb-3" data-test="section-heading">{{ t('admin.ingredients.title') }}</h2>
-        <div
+        <BaseListRow
           v-for="({ ingredient, warningText }, position) in rows"
           :key="ingredient.ingredientId"
           class="festival-ingredient-row"
           data-test="festival-ingredient-row"
           :data-test-id="ingredient.ingredientId"
-          :class="{ 'tinted-row': position % 2 === 1 }"
+          :position="position"
         >
           <div class="row-line py-2 px-3">
             <span
@@ -127,22 +129,14 @@ function toggleHistory(ingredientId: string): void {
               }}
             </span>
             <span
-              class="stock-warning text-body-2 d-flex align-center ga-1"
+              class="stock-warning"
               data-test="stock-warning"
             >
-              <template v-if="warningText !== null">
-                <v-icon
-                  icon="mdi-alert"
-                  color="warning"
-                  size="small"
-                />
-                <span
-                  class="text-warning"
-                  data-test="stock-warning-text"
-                >
-                  {{ warningText }}
-                </span>
-              </template>
+              <BaseWarningText
+                v-if="warningText !== null"
+                data-test="stock-warning-text"
+                :text="warningText"
+              />
             </span>
             <v-btn
               class="history-toggle"
@@ -179,7 +173,7 @@ function toggleHistory(ingredientId: string): void {
               :festival="festival"
             />
           </template>
-        </div>
+        </BaseListRow>
       </div>
     </v-card>
   </section>

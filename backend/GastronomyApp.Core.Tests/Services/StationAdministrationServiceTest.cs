@@ -34,7 +34,7 @@ public sealed class StationAdministrationServiceTest
                    _festivalRepository,
                    new(_invitationStore, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(A.Fake<ICommittedChangeAnnouncer>()), _clock),
                    new(_orderabilityRepository, _festivalRepository, _clock),
-                   new(_repository, new(_festivalRepository, new(), _clock)));
+                   new(_repository, A.Fake<ITablePlanRepository>(), new(_festivalRepository, new(), _clock)));
   }
 
   private readonly StationService _stationService = new();

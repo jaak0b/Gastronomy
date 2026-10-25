@@ -52,11 +52,11 @@ public sealed class AdminFestivalTablePlanEndpointsTest
                       Assert.That(garden.GetProperty("areaId").GetGuid(), Is.EqualTo(gardenId));
                       Assert.That(garden.GetProperty("name").GetString(), Is.EqualTo("Garten"));
                       Assert.That(garden.GetProperty("isHidden").GetBoolean(), Is.False);
-                      Assert.That(garden.GetProperty("hasItemsToHandOutOrSettle").GetBoolean(), Is.False);
+                      Assert.That(garden.GetProperty("hasItemsToHandOutOrSettleAtTheRunningFestival").GetBoolean(), Is.False);
                       Assert.That(table.GetProperty("tableId").GetGuid(), Is.EqualTo(tableId));
                       Assert.That(table.GetProperty("name").GetString(), Is.EqualTo("Tisch 1"));
                       Assert.That(table.GetProperty("isHidden").GetBoolean(), Is.False);
-                      Assert.That(table.GetProperty("hasItemsToHandOutOrSettle").GetBoolean(), Is.False);
+                      Assert.That(table.GetProperty("hasItemsToHandOutOrSettleAtTheRunningFestival").GetBoolean(), Is.False);
                       Assert.That(tableGeometry.GetProperty("x").GetDouble(), Is.EqualTo(12.5));
                       Assert.That(tableGeometry.GetProperty("y").GetDouble(), Is.EqualTo(-7.25));
                       Assert.That(tableGeometry.GetProperty("width").GetDouble(), Is.EqualTo(80));
@@ -90,9 +90,52 @@ public sealed class AdminFestivalTablePlanEndpointsTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(garden.GetProperty("hasItemsToHandOutOrSettle").GetBoolean(), Is.True);
-                      Assert.That(tables[0].GetProperty("hasItemsToHandOutOrSettle").GetBoolean(), Is.True);
-                      Assert.That(tables[1].GetProperty("hasItemsToHandOutOrSettle").GetBoolean(), Is.False);
+                      Assert.That(garden.GetProperty("hasItemsToHandOutOrSettleAtTheRunningFestival").GetBoolean(), Is.True);
+                      Assert.That(tables[0].GetProperty("hasItemsToHandOutOrSettleAtTheRunningFestival").GetBoolean(), Is.True);
+                      Assert.That(tables[1].GetProperty("hasItemsToHandOutOrSettleAtTheRunningFestival").GetBoolean(), Is.False);
+                    });
+  }
+
+  [TestCase(-1, 5, true, HttpStatusCode.Conflict)]
+  [TestCase(24, 48, false, HttpStatusCode.OK)]
+  [TestCase(-48, -24, false, HttpStatusCode.OK)]
+  public async Task GetTablePlanThenHideTheTable_ATableWithAnItemNotYetHandedOut_ThePlanSaysWhatTheLaptopAnswers(int startsInHours, int endsInHours, bool isListedWithItemsLeft, HttpStatusCode answer)
+  {
+    var gardenId = await CreateAreaAsync("Garten");
+    var tableId = await CreateTableAsync(gardenId, "Tisch 1");
+    await PlaceOrderAtAsync(tableId);
+    await MoveTheFestivalAsync(startsInHours, endsInHours);
+
+    var garden = await ListedAreaAsync(gardenId);
+    var table = garden.GetProperty("tables").EnumerateArray().Single(candidate => candidate.GetProperty("tableId").GetGuid() == tableId);
+
+    using var response = await _context.Client.PostAsync($"{FestivalPath}/tables/{tableId}/hide", null);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(table.GetProperty("hasItemsToHandOutOrSettleAtTheRunningFestival").GetBoolean(), Is.EqualTo(isListedWithItemsLeft));
+                      Assert.That(response.StatusCode, Is.EqualTo(answer));
+                    });
+  }
+
+  [TestCase(-1, 5, true, HttpStatusCode.Conflict)]
+  [TestCase(24, 48, false, HttpStatusCode.OK)]
+  [TestCase(-48, -24, false, HttpStatusCode.OK)]
+  public async Task GetTablePlanThenHideTheArea_AnAreaWhoseTableHasAnItemNotYetHandedOut_ThePlanSaysWhatTheLaptopAnswers(int startsInHours, int endsInHours, bool isListedWithItemsLeft, HttpStatusCode answer)
+  {
+    var gardenId = await CreateAreaAsync("Garten");
+    var tableId = await CreateTableAsync(gardenId, "Tisch 1");
+    await PlaceOrderAtAsync(tableId);
+    await MoveTheFestivalAsync(startsInHours, endsInHours);
+
+    var garden = await ListedAreaAsync(gardenId);
+
+    using var response = await _context.Client.PostAsync($"{FestivalPath}/areas/{gardenId}/hide", null);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(garden.GetProperty("hasItemsToHandOutOrSettleAtTheRunningFestival").GetBoolean(), Is.EqualTo(isListedWithItemsLeft));
+                      Assert.That(response.StatusCode, Is.EqualTo(answer));
                     });
   }
 
@@ -725,6 +768,22 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     await using var database = _context.Factory.CreateContext();
 
     return (await database.Tables.SingleAsync(table => table.Id == tableId)).IsHidden;
+  }
+
+  private async Task<JsonElement> ListedAreaAsync(Guid areaId)
+  {
+    using var response = await _context.Client.GetAsync($"{FestivalPath}/table-plan");
+
+    return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("areas").EnumerateArray().Single(area => area.GetProperty("areaId").GetGuid() == areaId);
+  }
+
+  private async Task MoveTheFestivalAsync(int startsInHours, int endsInHours)
+  {
+    await using var database = _context.Factory.CreateContext();
+    var festival = await database.Festivals.SingleAsync(candidate => candidate.Id == _context.World.FestivalId);
+    festival.StartsAtUtc = DateTime.UtcNow.AddHours(startsInHours);
+    festival.EndsAtUtc = DateTime.UtcNow.AddHours(endsInHours);
+    await database.SaveChangesAsync();
   }
 
   private async Task LetTheFestivalEndAsync()

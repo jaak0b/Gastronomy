@@ -5,14 +5,11 @@ import type { AdminAreaView, MoveDirection, SavedAreaView } from '../../../share
 import { navigate } from '../../../shared/router/router'
 import type { AdminActionResult } from '../../core/adminActionResult'
 import { useAdminTablePlanStore } from '../../stores/tablePlan'
+import BaseWarningText from '../BaseWarningText.vue'
 import HideableEntryList from '../HideableEntryList.vue'
-import AreaDialog from '../tablePlan/AreaDialog.vue'
+import TablePlanNameDialog from '../tablePlan/TablePlanNameDialog.vue'
 
-interface AreaDraft {
-  name: string
-}
-
-const props = defineProps<{ festivalId: string; isRunning: boolean }>()
+const props = defineProps<{ festivalId: string }>()
 
 const { t } = useI18n()
 const tablePlan = useAdminTablePlanStore()
@@ -21,8 +18,14 @@ const hasLoadedThePlan = computed(
   () => tablePlan.loadedFestivalId === props.festivalId && !tablePlan.loadFailed,
 )
 const shownAreas = computed(() => tablePlan.areas.filter((area) => !area.isHidden))
-const shownTableCounts = computed(
-  () => new Map(tablePlan.areas.map((area) => [area.areaId, area.tables.filter((table) => !table.isHidden).length])),
+const tableCountTexts = computed(
+  () =>
+    new Map(
+      tablePlan.areas.map((area): [string, string] => {
+        const shownTableCount = area.tables.filter((table) => !table.isHidden).length
+        return [area.areaId, t('admin.tablePlan.labels.tableCount', { count: shownTableCount }, shownTableCount)]
+      }),
+    ),
 )
 const hasNoArea = computed(() => hasLoadedThePlan.value && tablePlan.areas.length === 0)
 const hasOnlyHiddenAreas = computed(
@@ -36,12 +39,12 @@ const hasNoShownTable = computed(
 )
 
 async function saveTheArea(
-  draft: AreaDraft,
+  name: string,
   area: AdminAreaView | null,
 ): Promise<AdminActionResult<SavedAreaView | null>> {
   return area === null
-    ? await tablePlan.createArea(props.festivalId, { name: draft.name })
-    : await tablePlan.saveArea(props.festivalId, area.areaId, { name: draft.name })
+    ? await tablePlan.createArea(props.festivalId, { name })
+    : await tablePlan.saveArea(props.festivalId, area.areaId, { name })
 }
 
 async function moveTheArea(
@@ -53,7 +56,7 @@ async function moveTheArea(
 }
 
 function hidingRefusalOf(area: AdminAreaView): string | null {
-  return props.isRunning && area.hasItemsToHandOutOrSettle
+  return area.hasItemsToHandOutOrSettleAtTheRunningFestival
     ? t('errors.admin.festivals.areaWithItemsToHandOutOrSettleStaysShown')
     : null
 }
@@ -81,32 +84,33 @@ function hidingRefusalOf(area: AdminAreaView): string | null {
           <template #heading>
             <h2 class="section-heading text-h6" data-test="section-heading">{{ t('admin.tablePlan.title') }}</h2>
           </template>
-          <template #notices>
-            <v-alert v-if="hasNoArea" class="no-area mb-3" data-test="no-area" type="warning" variant="tonal">
-              {{ t('admin.tablePlan.messages.noArea') }}
-            </v-alert>
-            <v-alert
+          <template #notices="{ showsHidden }">
+            <BaseWarningText
+              v-if="hasNoArea"
+              class="no-area mb-3"
+              data-test="no-area"
+              :text="t('admin.tablePlan.messages.noArea')"
+            />
+            <BaseWarningText
               v-else-if="hasOnlyHiddenAreas"
               class="all-areas-hidden mb-3"
               data-test="all-areas-hidden"
-              type="warning"
-              variant="tonal"
-            >
-              {{ t('admin.tablePlan.messages.allAreasHidden') }}
-            </v-alert>
-            <v-alert v-else-if="hasNoShownTable" class="no-table mb-3" data-test="no-table" type="warning" variant="tonal">
-              {{ t('admin.tablePlan.messages.noTable') }}
-            </v-alert>
+              :text="
+                showsHidden
+                  ? t('admin.tablePlan.messages.allAreasHidden')
+                  : t('admin.tablePlan.messages.allAreasHiddenAndNotListed')
+              "
+            />
+            <BaseWarningText
+              v-else-if="hasNoShownTable"
+              class="no-table mb-3"
+              data-test="no-table"
+              :text="t('admin.tablePlan.messages.noTable')"
+            />
           </template>
           <template #details="{ entry: area }">
             <span class="table-count text-body-2 text-medium-emphasis" data-test="table-count">
-              {{
-                t(
-                  'admin.tablePlan.labels.tableCount',
-                  { count: shownTableCounts.get(area.areaId) },
-                  shownTableCounts.get(area.areaId) ?? 0,
-                )
-              }}
+              {{ tableCountTexts.get(area.areaId) }}
             </span>
             <v-btn
               class="open-plan"
@@ -119,7 +123,14 @@ function hidingRefusalOf(area: AdminAreaView): string | null {
             </v-btn>
           </template>
           <template #dialog="{ entry: area, errorText, save, cancel }">
-            <AreaDialog :area="area" :error-text="errorText" @save="save" @cancel="cancel" />
+            <TablePlanNameDialog
+              :title="area === null ? t('admin.tablePlan.actions.newArea') : t('admin.tablePlan.actions.editArea')"
+              :name-label="t('admin.tablePlan.labels.areaName')"
+              :saved-name="area?.name ?? ''"
+              :error-text="errorText"
+              @save="save"
+              @cancel="cancel"
+            />
           </template>
         </HideableEntryList>
       </div>

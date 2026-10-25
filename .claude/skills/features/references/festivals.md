@@ -55,25 +55,31 @@ Backend, under `backend/`:
   `FindStationIdsAtTheRunningFestivalAsync` (the same for the running festival, none when nothing
   runs), over `StationRepository.FindStationIdsWithItemsToHandOutAsync`. The list,
   `FestivalStationService.RemoveAsync` (`StationHasOrdersAtTheFestival`) and
-  `StationAdministrationService.DeactivateAsync` (`StationHasUnfulfilledItems`) all ask it, so
-  "only while it runs" is decided there and nowhere else. The articles left without a station
+  `StationAdministrationService.DeactivateAsync` (`StationHasUnfulfilledItems`) all ask it, and so
+  do the tables and areas of the table plan: its read (`FindTablePlanAsync`, which has the
+  repository count the items left only while the festival runs) and the hiding of a table or an
+  area (`HasItemsToHandOutOrSettleAtTableIfRunningAsync`, `HasItemsToHandOutOrSettleInAreaIfRunningAsync`,
+  over items not handed out or not settled; see the `table-plan` page). So "only while it runs" is
+  decided there and nowhere else, and no screen checks it again. The articles left without a station
   (`ItemsWouldHaveNoStation`) come in two fields, each filled only by the read whose screen offers
   that action and null in the other: `StrandedItemCountWhenRemovedFromTheFestival` on the festival
   read (`ItemOrderability.FindItemsStrandedByRemovingEachStationAsync`, which `RemoveAsync` asks for
   one station) and `StrandedItemCountWhenSwitchedOff` on the read without a festival
   (`FindItemsStrandedBySwitchingOffEachStationAsync`, which `DeactivateAsync` asks for one station).
   A list reads the festivals not yet over once, and per festival its active stations and menu once,
-  then one query per station that prepares there; a station that prepares nothing at a festival
-  strands nothing there without a query. `ListAsync` returns the values in a `ListedStation`.
+  then one query for the menu as it is and one per active station of the festival; a station that
+  is not an active station of the festival strands nothing there, without a query. `ListAsync` returns the values in a `ListedStation`.
 
 Frontend, under `frontend/src/`:
 
 - `admin/components/festivals/FestivalsList.vue` is the Feste tab: one row per festival with the
-  "Aktiv" and "Ausgeblendet" chips, open, copy, hide (the crossed-out eye of the category rows with
+  "Aktiv" and "Ausgeblendet" chips, copy, the pencil "Bearbeiten" (`BaseEditButton.vue`) that opens
+  the festival page, hide (the crossed-out eye of the category rows with
   the tooltip "Ausblenden", `BaseIconAction.vue`, asking through `BaseHideConfirmDialog.vue`, and on
   the running festival disabled with `runningFestivalStaysShown` as its tooltip through
   `BaseActionWithRefusalReason.vue`) and
-  show (the open eye with the tooltip "Einblenden", `BaseShowButton.vue`), the checkbox that reveals
+  show (the open eye with the tooltip "Einblenden", `BaseShowButton.vue`), in that order, the
+  checkbox that reveals
   the hidden ones in the heading line (`BaseHeadingWithCheckbox.vue`, as on every global tab), and
   the new festival button; the table plan's areas and tables hide and show through the same pieces
   (see the `hideable-rows` how-to page). `FestivalDialog.vue` is the form for a new festival and for a copy.
@@ -88,8 +94,11 @@ Frontend, under `frontend/src/`:
   its reason while the festival runs), and so is the station rows' trash icon, disabled with
   `stationHasOrdersAtTheFestival` while the station holds items to hand out at the running
   festival, and otherwise with the full `itemsWouldHaveNoStation` refusal while removing it would
-  leave articles without a station, the order in which the laptop refuses. The full text stays here
-  because the page's article rows offer both things it names: their stations and their removal.
+  leave articles without a station, the order in which the laptop refuses. The full text, which
+  asks the admin to give the articles another station first, stays here because the page's article
+  rows offer their stations. Its German and English texts link the fact sentence
+  `admin.stations.messages.itemsWouldHaveNoStation` (`@:`), which the Ausgabestellen tab shows
+  alone, so that sentence is written once per language.
   Both reasons are chosen in `admin/composables/useStationRefusalReasons.ts`, shared with the
   Ausgabestellen tab. The
   station rows are `stations/RemovableStationRows.vue`, which the table plan editor's station list
@@ -164,7 +173,8 @@ Every point below is intended behaviour. A change to any of them needs the owner
 - **The festival page has no save button of its own.** Its fields (name, dates, an article's price
   and stations, an ingredient's available amount) save the moment the admin leaves them, and a field
   the laptop refuses says so on its row. The forms it opens, to create or edit a station, an article
-  or a category and to place an article with its price and stations, have their own save button.
+  or a category, to create or rename a table plan (`TablePlanNameDialog.vue`) and to place an
+  article with its price and stations, have their own save button.
 - **Adding to a festival is inline:** a type-to-search field, an add button, and a "Neu…" button
   beside them that opens the create form. A new station is then chosen for adding; a new article
   goes straight to the form for its price and stations.
@@ -191,16 +201,17 @@ Every point below is intended behaviour. A change to any of them needs the owner
   `GastronomyApp.Infrastructure.Tests/Repositories` (another festival's open items name no
   station), `StationAdministrationServiceTest` (which festival the flag is read at, a festival that
   is over, which stranded count each read fills, the festivals read once), `FestivalStationServiceTest`
-  and `ItemOrderabilityTest` (each station on its own, a station that prepares nothing). In
+  and `ItemOrderabilityTest` (each station on its own, a station that is not an active station of
+  the festival, the active stations and the menu read once and one query per active station). In
   `GastronomyApp.Api.Tests/Endpoints`, `AdminFestivalEndpointsTest` and `StationDeactivationTest`
   each read the list and then try the action for a station with an open item while the festival
   runs, has not started and is over, and check that the flag matches the answer; they also cover
-  each read's stranded count. The filters themselves:
+  each read's stranded count, and that each read leaves the other read's count null. The filters themselves:
   `GastronomyApp.Infrastructure.Tests/Persistence/OrderItemQueriesExtensionsTest`.
 - `frontend/tests`: `admin/stores/festivals.spec.ts` and `festivalScope.spec.ts`; the station
   list's reload on `OrdersChanged` in `admin/stores/screenListening.spec.ts`;
-  `admin/components/festivals/FestivalsList.spec.ts` (the eye icons and their names, the eye
-  disabled on the running festival with its reason) and
+  `admin/components/festivals/FestivalsList.spec.ts` (the eye icons and the pencil with their
+  names, the order of a row's actions, the eye disabled on the running festival with its reason) and
   `FestivalPage.*.spec.ts` (`heading`, `refusals`, `stations` with the disabled trash icon, its
   two reasons and the two sentences of the empty search, `itemChanges`, `itemPlacement`,
   `tablePlan`, `tablePlanAreas`) on

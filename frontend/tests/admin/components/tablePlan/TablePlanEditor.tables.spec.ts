@@ -16,7 +16,7 @@ import {
   waitForDialog,
   waitUntil,
 } from '../../../support/dom'
-import { saveTheTableDialog } from '../../../support/formDialogs'
+import { saveTheTablePlanNameDialog } from '../../../support/formDialogs'
 import { hasShapeWithId } from '../../../support/konvaDrawing'
 import { answer, inTurn, refusal } from '../../../support/laptop'
 import {
@@ -31,7 +31,7 @@ import {
   tableRow,
   theDrawing,
 } from './tablePlanEditorFixture'
-import { aFestival, aGeometry, anAdminTable } from '../../../support/wireViews'
+import { aGeometry, anAdminTable } from '../../../support/wireViews'
 
 enableAutoUnmount(afterEach)
 
@@ -47,7 +47,7 @@ const TABLE_A2 = anAdminTable({ tableId: 'table-a2', name: 'A2', geometry: aGeom
 
 const HIDDEN_A3 = anAdminTable({ tableId: 'table-a3', name: 'A3', isHidden: true, geometry: aGeometry({ y: 300 }) })
 
-const A1_WITH_ITEMS_TO_HAND_OUT = { ...TABLE_A1, hasItemsToHandOutOrSettle: true }
+const A1_WITH_ITEMS_TO_HAND_OUT = { ...TABLE_A1, hasItemsToHandOutOrSettleAtTheRunningFestival: true }
 
 const TABLE_LIST = '[data-test="table-plan-table-list"]'
 
@@ -80,6 +80,18 @@ describe('the tables of the area', () => {
       'A1',
       'A2',
     ])
+  })
+
+  it('offer the pencil and then the trash icon on each row', async () => {
+    editorLaptop()
+
+    await mountEditor()
+
+    expect(
+      allOnScreen('[data-test="edit-entry"], [data-test="hide-entry"]', tableRow('table-a1')).map((action) =>
+        action.getAttribute('data-test'),
+      ),
+    ).toEqual(['edit-entry', 'hide-entry'])
   })
 
   it('leave a hidden table out of the list until the admin asks for hidden tables', async () => {
@@ -135,7 +147,7 @@ describe('a new table', () => {
 
     await openTheNewTableDialog()
 
-    expect([dialogText('[data-test="form-dialog-title"]'), inputOf('[data-test="table-name-field"]').value]).toEqual([
+    expect([dialogText('[data-test="form-dialog-title"]'), inputOf('[data-test="table-plan-name-field"]').value]).toEqual([
       'Neuer Tisch',
       '',
     ])
@@ -146,7 +158,7 @@ describe('a new table', () => {
     await mountEditor()
     await openTheNewTableDialog()
 
-    await typeIn('[data-test="table-name-field"]', '  ')
+    await typeIn('[data-test="table-plan-name-field"]', '  ')
 
     expect(onScreen('[data-test="form-save"]').hasAttribute('disabled')).toBe(true)
   })
@@ -156,7 +168,7 @@ describe('a new table', () => {
     await mountEditor()
     await openTheNewTableDialog()
 
-    await saveTheTableDialog('A2')
+    await saveTheTablePlanNameDialog('A2')
 
     expect(laptop.writes()).toEqual([
       {
@@ -176,7 +188,7 @@ describe('a new table', () => {
     await mountEditor()
     await openTheNewTableDialog()
 
-    await saveTheTableDialog('A3')
+    await saveTheTablePlanNameDialog('A3')
 
     expect(laptop.writtenBodies()).toEqual([
       { areaId: 'area-halle', name: 'A3', geometry: { x: 10, y: 130, width: 80, height: 40, rotation: 0 } },
@@ -195,7 +207,7 @@ describe('a new table', () => {
     await mountEditor()
     await openTheNewTableDialog()
 
-    await saveTheTableDialog('A2')
+    await saveTheTablePlanNameDialog('A2')
 
     await waitUntil(() => expect(shapesWithTheHandles()).toEqual(['table-table-a2']))
   })
@@ -205,7 +217,7 @@ describe('a new table', () => {
     await mountEditor()
     await openTheNewTableDialog()
 
-    await saveTheTableDialog('a1')
+    await saveTheTablePlanNameDialog('a1')
 
     await waitUntil(() =>
       expect(textOnScreen('[data-test="form-dialog"] [data-test="refusal"]').trim()).toBe(NAME_TAKEN),
@@ -221,7 +233,7 @@ describe('editing a table', () => {
     await clickOn('[data-test="edit-entry"]', tableRow('table-a1'))
     await flushPromises()
 
-    expect([dialogText('[data-test="form-dialog-title"]'), inputOf('[data-test="table-name-field"]').value]).toEqual([
+    expect([dialogText('[data-test="form-dialog-title"]'), inputOf('[data-test="table-plan-name-field"]').value]).toEqual([
       'Tisch bearbeiten',
       'A1',
     ])
@@ -233,7 +245,7 @@ describe('editing a table', () => {
     await clickOn('[data-test="edit-entry"]', tableRow('table-a1'))
     await flushPromises()
 
-    await saveTheTableDialog('A12')
+    await saveTheTablePlanNameDialog('A12')
 
     expect(laptop.writes()).toEqual([
       {
@@ -306,17 +318,6 @@ describe('hiding and showing a table', () => {
         STILL_OPEN,
       ),
     )
-  })
-
-  it('can be asked for once the festival is over, whatever the table still has', async () => {
-    editorLaptop({
-      festival: aFestival({ festivalId: 'fest-1', isRunning: false }),
-      areas: [{ ...HALL, tables: [A1_WITH_ITEMS_TO_HAND_OUT] }, TENT],
-    })
-
-    await mountEditor()
-
-    expect(hideButtonOf('table-a1').disabled).toBe(false)
   })
 
   it('shows the reason on the row when the laptop still refuses to hide it', async () => {

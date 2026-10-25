@@ -10,13 +10,14 @@ tooltip beside them (frontend rule 8).
 - `HideableEntryList.vue` draws a whole list of named entries the way the festival page's station
   card draws its rows. Its heading line takes the list's heading through the `heading` slot and puts
   "Ausgeblendete anzeigen" at its right; the `notices` slot sits between that line and the rows, for
-  warnings about the whole list. A row has the name as text, the "Ausgeblendet" chip, a `details`
-  slot for what is particular to the entry (the area's table count and "Plan öffnen"),
-  "Bearbeiten", the up and down arrows when `moveThrough` is given, the trash icon that hides or the
-  open eye "Einblenden" on a hidden row, and a refusal under the row. "Neu…" sits at the right below
-  the rows. It owns the edit session (`useEditSession`), so "Neu…" and "Bearbeiten" open the
-  entity's own dialog through the `dialog` slot, which receives `entry` (null for a new one),
-  `errorText`, `save` and `cancel`. It takes the entries and how to read them (`idOf`, `nameOf`,
+  warnings about the whole list, and receives `showsHidden`, so a warning tells the admin to tick
+  the box only while it is unticked. A row has the name as text, the "Ausgeblendet" chip, a
+  `details` slot for what is particular to the entry (the area's table count and "Tischplan
+  öffnen"), the up and down arrows when `moveThrough` is given, the pencil, the trash icon that
+  hides or the open eye "Einblenden" on a hidden row, and a refusal under the row, flush with it.
+  "Neu…" sits at the right below the rows. It owns the edit session (`useEditSession`), so "Neu…"
+  and the pencil open the entity's dialog through the `dialog` slot, which receives `entry` (null
+  for a new one), `errorText`, `save` and `cancel`. It takes the entries and how to read them (`idOf`, `nameOf`,
   `isHidden`), `hidingRefusalOf` (the reason the laptop would refuse to hide, or `null`), the words
   (`newLabel`, `hideTitle`, `hideBody`), `saveThrough`, `hideThrough`, `showThrough` and the optional
   `moveThrough` (store actions returning an `AdminActionResult`; `moveThrough` also receives whether
@@ -24,8 +25,10 @@ tooltip beside them (frontend rule 8).
   hidden entries the admin cannot see), `rowTestName` for the rows'
   `data-test`, and `isSelected` to highlight a row and scroll it into view. It emits `saved` with
   the answer and the mode, for a screen that selects what was just created. Consumers:
-  `festivals/FestivalTablePlan.vue` (areas, `tablePlan/AreaDialog.vue`, with the arrows) and
-  `tablePlan/TablePlanTableList.vue` (tables, `tablePlan/TableDialog.vue`).
+  `festivals/FestivalTablePlan.vue` (areas, with the arrows) and `tablePlan/TablePlanTableList.vue`
+  (tables). Both put `tablePlan/TablePlanNameDialog.vue` in the slot: the name only, with the
+  title, the field's label and the saved name as props, a limit of 40 characters, and the name as
+  the draft it saves.
 - `stations/RemovableStationRows.vue` draws station rows that are removed, not hidden: the name, a
   `badges` and an `actions` slot, the trash icon inside `BaseActionWithRefusalReason`
   (`removalRefusalOf`; the festival page's comes from `admin/composables/useStationRefusalReasons.ts`), the question before the removal, `removeThrough`, and the refusal under its
@@ -47,9 +50,17 @@ tooltip beside them (frontend rule 8).
 - `BaseTrashButton.vue` is the red trash icon of the festival page, the Artikel and Zutaten tabs,
   the hiding icon of `HideableEntryList.vue` and the removal icon of `RemovableStationRows.vue`.
 - `BaseIconAction.vue` is an icon button whose name shows as a tooltip
-  (`data-test="icon-action-label"`): the festival list's crossed-out eye "Ausblenden".
-  `BaseShowButton.vue` is the open eye "Einblenden" on it, for every hidden row (the festival list
-  and `HideableEntryList.vue`).
+  (`data-test="icon-action-label"`): the crossed-out eye "Ausblenden" of the festival list and the
+  categories' crossed-out eye "Kategorie abschalten" on the Artikel tab.
+  `BaseEditButton.vue` is the pencil on it, named "Bearbeiten" (`admin.common.actions.edit`), the
+  only way a row offers its edit dialog: every row of `HideableEntryList.vue`, the category
+  headings and article rows of the Artikel tab and of the festival page, the station rows of the
+  festival page and of the Ausgabestellen tab, the Zutaten tab, the festival list (it opens the
+  festival page) and the Kellner tab (it changes the name).
+  `BaseShowButton.vue` is the open eye on it, with the word of its action as `label`: "Einblenden"
+  on every hidden row (the festival list and `HideableEntryList.vue`), and "Artikel aktivieren",
+  "Kategorie einschalten", "Zutat aktivieren", "Ausgabestelle einschalten" and "Kellner wieder
+  aufnehmen" for a deactivated entry of the global tabs.
 - `BaseMoveButtons.vue` is the pair of arrows that emits `move` with `up` or `down`
   (`data-test="move-up"`, `"move-down"`). Consumers: the category headings of the Artikel tab and the
   area rows. Each store sends one move after the other through `admin/core/oneAtATime.ts`. A move
@@ -64,14 +75,24 @@ tooltip beside them (frontend rule 8).
   for the "Neu…" button beside them. Consumers: `FestivalStations.vue`, `FestivalItems.vue` and
   `tablePlan/TablePlanStationList.vue`.
 
+## The order of a row's actions
+
+Up and down first, then the pencil, then hiding or removing (the trash icon, the crossed-out eye,
+or the open eye in their place). Text buttons, such as "Tischplan öffnen", "Zutaten bearbeiten",
+"Kopieren", "Tablet einrichten" or "Telefon neu einrichten", come before the icons. A category row
+reads up, down, pencil, crossed-out eye; an area row reads "Tischplan öffnen", up, down, pencil,
+trash.
+
 ## Steps
 
 1. The store needs `hide`, `show`, a create and a save action that reload through the latest
    request gate, and the view needs whatever says the laptop would refuse to hide (the table plan
-   carries `hasItemsToHandOutOrSettle` per area and table for that). Entries the admin orders get a
+   carries `hasItemsToHandOutOrSettleAtTheRunningFestival` per area and table for that, already
+   false unless the festival runs, so the screen reads it alone). Entries the admin orders get a
    move action as well, whose request says whether hidden entries are on screen.
 2. Write the entity's dialog on `BaseFormDialog` the way `StationDialog.vue` is written: the fields,
-   `:save-disabled` while a required value is missing, `:error-text` for the laptop's refusal.
+   `:save-disabled` while a required value is missing, `:error-text` for the laptop's refusal. An
+   entity that has only a name uses `TablePlanNameDialog.vue` instead of a dialog of its own.
 3. Mount `HideableEntryList` with the entries, the words and the actions, put the heading in its
    `heading` slot and the dialog in its `dialog` slot.
 
@@ -79,7 +100,11 @@ tooltip beside them (frontend rule 8).
 
 `tests/admin/components/festivals/FestivalPage.tablePlan.spec.ts` and `.tablePlanAreas.spec.ts`
 (areas) and `tests/admin/components/tablePlan/TablePlanEditor.tables.spec.ts` (tables) show the
-rows, the dialogs (`saveTheAreaDialog`, `saveTheTableDialog` in `tests/support/formDialogs.ts`), the
-disabled trash icon with its tooltip (hover the `hide-entry-wrapper`, then read
-`refusalReasonsOnScreen()` from `tests/support/dom.ts`), the open eye (hover it, then read
-`iconActionLabelsOnScreen()`), the arrows, the confirmation and the checkbox.
+rows and the order of their actions (read the matching `data-test` values of one row in document
+order), the dialog (`saveTheTablePlanNameDialog` in `tests/support/formDialogs.ts`), the disabled
+trash icon with its tooltip (hover the `hide-entry-wrapper`, then read `refusalReasonsOnScreen()`
+from `tests/support/dom.ts`), the pencil and the open eye (hover it, then read
+`iconActionLabelsOnScreen()`), the arrows, the confirmation and the checkbox. The pencil and the
+eye of the global tabs are in `FestivalsList.spec.ts`, `ItemsList.categories.spec.ts`,
+`ItemsList.items.spec.ts`, `IngredientsList.listing.spec.ts`, `StationsList.switchingOff.spec.ts`
+and `StaffList.spec.ts`.

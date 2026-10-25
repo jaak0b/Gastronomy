@@ -10,24 +10,26 @@ namespace GastronomyApp.Core.Services;
 public sealed class AreaAdministrationService
 {
   private readonly IFestivalRepository _festivalRepository;
+  private readonly ItemsToHandOutLookup _itemsToHandOut;
   private readonly SortOrdering _ordering;
   private readonly ITablePlanRepository _repository;
-  private readonly RunningFestivalLookup _runningFestival;
 
-  public AreaAdministrationService(ITablePlanRepository repository, IFestivalRepository festivalRepository, RunningFestivalLookup runningFestival, SortOrdering ordering)
+  public AreaAdministrationService(ITablePlanRepository repository, IFestivalRepository festivalRepository, ItemsToHandOutLookup itemsToHandOut, SortOrdering ordering)
   {
     _repository = repository;
     _festivalRepository = festivalRepository;
-    _runningFestival = runningFestival;
+    _itemsToHandOut = itemsToHandOut;
     _ordering = ordering;
   }
 
   public async Task<ErrorOr<IReadOnlyList<ListedArea>>> ListTablePlanAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    if (!await _festivalRepository.ExistsAsync(festivalId, cancellationToken))
+    var festival = await _festivalRepository.FindByIdAsync(festivalId, cancellationToken);
+
+    if (festival is null)
       return Refusal.TablePlan.FestivalNotFound(festivalId);
 
-    IReadOnlyList<ListedArea> areas = await _repository.FindTablePlanAsync(festivalId, cancellationToken);
+    IReadOnlyList<ListedArea> areas = await _itemsToHandOut.FindTablePlanAsync(festival, cancellationToken);
 
     return areas.ToErrorOr();
   }
@@ -113,7 +115,7 @@ public sealed class AreaAdministrationService
     if (festival is null)
       return Refusal.TablePlan.FestivalNotFound(festivalId);
 
-    if (_runningFestival.IsRunning(festival) && await _repository.HasItemsToHandOutOrSettleInAreaAsync(areaId, cancellationToken))
+    if (await _itemsToHandOut.HasItemsToHandOutOrSettleInAreaIfRunningAsync(festival, areaId, cancellationToken))
       return Refusal.TablePlan.AreaWithItemsToHandOutOrSettleStaysShown(festivalId, areaId);
 
     area.IsHidden = true;

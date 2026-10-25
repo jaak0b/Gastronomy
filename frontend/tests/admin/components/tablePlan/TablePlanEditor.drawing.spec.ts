@@ -103,6 +103,15 @@ describe('the drawing of the area', () => {
     expect([theDrawing().width(), theDrawing().height(), theDrawing().scaleX()]).toEqual([612, 417, 1.5])
   })
 
+  it('grows down to fill a tall window when its shapes end higher up', async () => {
+    layOutTheScreen({ width: 0, height: 900 })
+    editorLaptop()
+
+    await mountEditor()
+
+    expect(theDrawing().height()).toBe(912)
+  })
+
   it('keeps its size and scale when the window narrows', async () => {
     layOutTheScreen({ width: 300, height: 0 })
     editorLaptop()

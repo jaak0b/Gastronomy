@@ -8,7 +8,7 @@ import type {
 } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import type { AdminActionResult } from '../../core/adminActionResult'
-import { NEW_STATION_SIZE, drawnGeometriesOf, geometryBelowTheLowestShape } from '../../core/tablePlanPlacement'
+import { NEW_STATION_SIZE, geometryForANewShapeIn } from '../../core/tablePlanPlacement'
 import { shapeNodeIdOf, type ShapeSelection } from '../../core/tablePlanSelection'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import { useAdminTablePlanStore } from '../../stores/tablePlan'
@@ -54,7 +54,7 @@ async function place(): Promise<void> {
   placingRefusal.value = null
   const placed = await tablePlan.placeStation(props.festivalId, stationId, {
     areaId: props.area.areaId,
-    geometry: geometryBelowTheLowestShape(drawnGeometriesOf(props.area), NEW_STATION_SIZE),
+    geometry: geometryForANewShapeIn(props.area, NEW_STATION_SIZE),
   })
   switch (placed.kind) {
     case 'ok':

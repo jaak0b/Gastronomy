@@ -163,6 +163,15 @@ public sealed class StationDeactivationTest
                     });
   }
 
+  [Test]
+  public async Task GetStations_TheKitchen_LeavesTheCountForRemovingItFromTheFestivalEmpty()
+  {
+    using var response = await _context.Client.GetAsync("/api/admin/stations");
+    var kitchen = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("stations").EnumerateArray().Single(station => station.GetProperty("stationId").GetGuid() == _context.World.KitchenStationId);
+
+    Assert.That(kitchen.GetProperty("strandedItemCountWhenRemovedFromTheFestival").ValueKind, Is.EqualTo(JsonValueKind.Null));
+  }
+
   [TestCase(-1, 5, true, HttpStatusCode.Conflict)]
   [TestCase(24, 48, false, HttpStatusCode.OK)]
   [TestCase(-48, -24, false, HttpStatusCode.OK)]

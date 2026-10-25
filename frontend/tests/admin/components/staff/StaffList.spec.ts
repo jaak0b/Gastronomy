@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import StaffList from '../../../../src/admin/components/staff/StaffList.vue'
 import { useConnectionStore } from '../../../../src/shared/stores/connection'
 import { testPlugins } from '../../../support/plugins'
-import { pressInDialog, waitForDialog, typeInto, clickOn } from '../../../support/dom'
+import { clickOn, iconActionLabelsOnScreen, pressInDialog, typeInto, waitForDialog } from '../../../support/dom'
 import { stubLaptop, answer, refusal, type StubbedLaptop } from '../../../support/laptop'
 
 const STAFF_MEMBER_ID = '33333333-3333-3333-3333-333333333333'
@@ -123,6 +123,18 @@ describe('a staff member taken off the list', () => {
     await firstStaffMember(list)
 
     expect(list.get('[data-test="deactivated"]').text()).toBe('Deaktiviert')
+  })
+
+  it('offers to put them back through the open eye, named "Kellner wieder aufnehmen"', async () => {
+    staffLaptopListing(OFF_THE_LIST)
+    const list = mountList()
+    await list.get('[data-test="show-deactivated"] input').setValue(true)
+    await firstStaffMember(list)
+
+    await list.get('[data-test="reactivate"]').trigger('mouseenter')
+
+    expect(list.get('[data-test="reactivate"] .v-icon').classes()).toContain('mdi-eye')
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Kellner wieder aufnehmen'))
   })
 
   it('puts them back on the list without asking a question first', async () => {
@@ -346,12 +358,22 @@ describe('a staff member who already has a phone', () => {
     const list = mountList()
     await firstStaffMember(list)
 
-    const row = list.get('[data-test="staff-row-line"]')
+    const parts = list
+      .get('[data-test="staff-row-line"]')
+      .findAll('[data-test="name"], [data-test="new-code"], [data-test="rename"], [data-test="deactivate"]')
 
-    expect(row.find('[data-test="name"]').exists()).toBe(true)
-    expect(row.find('[data-test="new-code"]').exists()).toBe(true)
-    expect(row.find('[data-test="rename"]').exists()).toBe(true)
-    expect(row.find('[data-test="deactivate"]').exists()).toBe(true)
+    expect(parts.map((part) => part.attributes('data-test'))).toEqual(['name', 'new-code', 'rename', 'deactivate'])
+  })
+
+  it('offers changing the name through the pencil, named "Bearbeiten"', async () => {
+    staffLaptop()
+    const list = mountList()
+    await firstStaffMember(list)
+
+    await list.get('[data-test="rename"]').trigger('mouseenter')
+
+    expect(list.get('[data-test="rename"] .v-icon').classes()).toContain('mdi-pencil')
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Bearbeiten'))
   })
 })
 

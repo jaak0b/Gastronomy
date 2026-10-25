@@ -32,8 +32,9 @@ Backend, under `backend/`:
 Frontend, under `frontend/src/`:
 
 - `admin/components/festivals/FestivalStock.vue`: the rows, in fixed grid columns (name, available
-  amount on `IngredientAmountField.vue`, used amount, warning, "Verlauf"). `FestivalPage.vue` hands it
-  the festival.
+  amount on `IngredientAmountField.vue`, used amount, warning, "Verlauf"), each a `BaseListRow.vue`
+  tinted like every list of the festival page; the warning is `BaseWarningText.vue`, which the
+  Tischplan card's warnings share. `FestivalPage.vue` hands it the festival.
 - `admin/components/festivals/FestivalStockChart.vue` puts the texts and the colours of
   `admin/composables/useChartTheme.ts` into the option that `admin/core/stockChartOption.ts` builds,
   and draws it with `admin/components/BaseChart.vue`. The time ticks come from

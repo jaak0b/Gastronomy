@@ -9,7 +9,9 @@ import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
 import InvitationPanel from '../enrolment/InvitationPanel.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import StaffRenameDialog from './StaffRenameDialog.vue'
+import BaseEditButton from '../BaseEditButton.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
+import BaseShowButton from '../BaseShowButton.vue'
 
 const { t } = useI18n()
 const staff = useAdminStaffStore()
@@ -129,18 +131,15 @@ onUnmounted(() => {
         <v-chip v-if="!staffMember.hasDevice" class="no-phone me-2" data-test="no-phone" size="small" color="warning">
           {{ t('admin.staff.labels.noPhone') }}
         </v-chip>
+        <v-spacer />
         <v-btn class="new-code" data-test="new-code" variant="text" @click="inviteStaffMember(staffMember.staffMemberId)">
           {{ t('admin.staff.actions.newCode') }}
         </v-btn>
-        <v-btn
+        <BaseEditButton
           class="rename"
           data-test="rename"
-          variant="text"
           @click="startRenaming(staffMember)"
-        >
-          {{ t('admin.staff.actions.rename') }}
-        </v-btn>
-        <v-spacer />
+        />
         <v-btn
           v-if="staffMember.isActive"
           class="deactivate"
@@ -150,15 +149,13 @@ onUnmounted(() => {
           color="error"
           @click="askingAboutId = staffMember.staffMemberId"
         />
-        <v-btn
+        <BaseShowButton
           v-else
           class="reactivate"
           data-test="reactivate"
-          variant="text"
+          :label="t('admin.staff.actions.activate')"
           @click="reactivate(staffMember.staffMemberId)"
-        >
-          {{ t('admin.staff.actions.activate') }}
-        </v-btn>
+        />
       </v-card-actions>
       <v-expand-transition>
         <InvitationPanel

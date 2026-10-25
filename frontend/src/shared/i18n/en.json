@@ -154,7 +154,7 @@
     "tablePlan": {
       "actions": {
         "takeOrder": "Take an order",
-        "backToAreas": "Areas",
+        "backToAreas": "Table plans",
         "backToThePlan": "Table plan",
         "reload": "Reload",
         "toTheUnsentTable": "Go to table {table}",
@@ -163,7 +163,7 @@
       "messages": {
         "noFestivalIsActive": "No festival is active.",
         "noTables": "No tables have been set up yet.",
-        "noTablesInArea": "No table has been set up in this area yet.",
+        "noTablesInArea": "No table has been set up in this table plan yet.",
         "unsentOrder": "Table {table} has {count} unsent item for {total}. | Table {table} has {count} unsent items for {total}."
       },
       "errors": {
@@ -243,7 +243,7 @@
         "edit": "Edit",
         "save": "Save",
         "showDeactivated": "Show deactivated entries",
-        "showHidden": "Show hidden"
+        "showHidden": "Show hidden entries"
       },
       "messages": {
         "notOnLaptop": "The admin pages are only available on the computer."
@@ -298,7 +298,6 @@
         "addStation": "Add the station",
         "copy": "Copy",
         "copyConfirm": "Create the festival",
-        "edit": "Edit the festival",
         "hide": "Hide",
         "hideConfirm": "Hide",
         "new": "New festival",
@@ -322,28 +321,29 @@
     "tablePlan": {
       "title": "Table plan",
       "labels": {
-        "areaName": "Area name",
+        "areaName": "Table plan name",
         "tableName": "Table name",
         "tableCount": "{count} table | {count} tables",
         "tables": "Tables",
-        "hideAreaTitle": "Hide the area",
+        "hideAreaTitle": "Hide the table plan",
         "hideTableTitle": "Hide the table"
       },
       "actions": {
-        "newArea": "New area",
-        "editArea": "Edit the area",
+        "newArea": "New table plan",
+        "editArea": "Edit the table plan",
         "newTable": "New table",
         "editTable": "Edit the table",
-        "openPlan": "Open plan"
+        "openPlan": "Open table plan"
       },
       "messages": {
-        "noArea": "Waiters cannot see any area yet. Click \"New area\".",
-        "noTable": "Waiters cannot see any table yet. Click \"Open plan\" on one of the areas.",
-        "hideAreaBody": "Waiters will no longer see this area.",
+        "noArea": "Waiters cannot see any table plan yet. Click \"New table plan\".",
+        "noTable": "Waiters cannot see any table yet. Click \"Open table plan\" on one of the table plans.",
+        "hideAreaBody": "Waiters will no longer see this table plan.",
         "hideTableBody": "Waiters will no longer see this table.",
-        "removeStationBody": "This removes the station from this area only.",
-        "allAreasHidden": "Every area is hidden. Tick \"Show hidden\" and show an area again.",
-        "noStationsToPlace": "Every station of this festival is already in an area.",
+        "removeStationBody": "This removes the station from this table plan only.",
+        "allAreasHidden": "Every table plan is hidden. Show one of them again.",
+        "allAreasHiddenAndNotListed": "Every table plan is hidden. Tick \"Show hidden entries\" and show one of them again.",
+        "noStationsToPlace": "Every station of this festival is already on a table plan.",
         "festivalHasNoStations": "This festival has no stations yet."
       }
     },
@@ -475,8 +475,8 @@
         "nameTaken": "There is already a category with this name. Choose a different one."
       },
       "festivals": {
-        "areaNameTaken": "An area at this festival already has this name, whether it is shown or hidden. Choose a different name.",
-        "areaWithItemsToHandOutOrSettleStaysShown": "An area cannot be hidden at an active festival until everything ordered at its tables is prepared and settled.",
+        "areaNameTaken": "A table plan at this festival already has this name, whether it is shown or hidden. Choose a different name.",
+        "areaWithItemsToHandOutOrSettleStaysShown": "A table plan cannot be hidden at an active festival until everything ordered at its tables is prepared and settled.",
         "itemNeedsAStation": "Choose at least one station for the item.",
         "itemPriceOutOfRange": "Enter a price between 0.00 and 999.99 euros.",
         "itemStaysOnTheMenuWhileTheFestivalRuns": "An item cannot be removed from an active festival.",
@@ -509,7 +509,7 @@
       },
       "stations": {
         "hasUnfinishedItems": "While a festival is active, a station with open orders cannot be switched off.",
-        "itemsWouldHaveNoStation": "{count} item would be left without a station. Assign it to another station first or remove it from the festival. | {count} items would be left without a station. Assign them to another station first or remove them from the festival.",
+        "itemsWouldHaveNoStation": "@:admin.stations.messages.itemsWouldHaveNoStation Assign it to another station first. | @:admin.stations.messages.itemsWouldHaveNoStation Assign them to another station first.",
         "nameMissing": "Give the station a name before you save it."
       }
     },

@@ -5,7 +5,7 @@ namespace GastronomyApp.Core.Ports;
 
 public interface ITablePlanRepository
 {
-  public Task<IReadOnlyList<ListedArea>> FindTablePlanAsync(Guid festivalId, CancellationToken cancellationToken);
+  public Task<IReadOnlyList<ListedArea>> FindTablePlanAsync(Guid festivalId, bool countsItemsToHandOutOrSettle, CancellationToken cancellationToken);
 
   public Task<IReadOnlyList<ShownArea>> FindShownAreasWithItemFlagsAsync(Guid festivalId, CancellationToken cancellationToken);
 

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { iconActionLabelsOnScreen } from '../../../support/dom'
 import { BUN, OLD_MILK, ingredientsListLaptop, mountList } from './ingredientsListFixture'
 
 describe('the ingredients tab', () => {
@@ -60,8 +61,21 @@ describe('the ingredients tab', () => {
 
     const row = list.get(`[data-test="ingredient-row"][data-test-id="${OLD_MILK.ingredientId}"]`)
 
+    await row.get('[data-test="reactivate"]').trigger('mouseenter')
+
     expect(row.get('[data-test="deactivated"]').text()).toBe('Deaktiviert')
-    expect(row.get('[data-test="reactivate"]').text()).toBe('Zutat aktivieren')
+    expect(row.get('[data-test="reactivate"] .v-icon').classes()).toContain('mdi-eye')
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Zutat aktivieren'))
+  })
+
+  it('offers the pencil and then the trash icon on a row', async () => {
+    ingredientsListLaptop()
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.findAll('[data-test="ingredient-row"]').length).toBe(2))
+
+    const actions = list.get('[data-test="ingredient-row"]').findAll('[data-test="edit"], [data-test="deactivate"]')
+    expect(actions.map((action) => action.attributes('data-test'))).toEqual(['edit', 'deactivate'])
   })
 
   it('says there are no ingredients yet and names the button that adds one', async () => {

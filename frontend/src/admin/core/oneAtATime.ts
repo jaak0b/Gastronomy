@@ -1,4 +1,4 @@
-export interface OneAtATime {
+interface OneAtATime {
   run: <TResult>(action: () => Promise<TResult>) => Promise<TResult>
 }
 

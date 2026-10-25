@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import CategoryDialog from '../../../../src/admin/components/categories/CategoryDialog.vue'
-import { pressInDialog, waitForDialog } from '../../../support/dom'
+import { iconActionLabelsOnScreen, pressInDialog, waitForDialog } from '../../../support/dom'
 import { FOOD_ID, TWO_CATEGORIES, mountList, itemsListLaptop } from './itemsListFixture'
 import { saveTheCategoryDialog } from '../../../support/formDialogs'
 
@@ -16,18 +16,44 @@ describe('the controls beside a category name', () => {
     vi.unstubAllGlobals()
   })
 
-  it('offer renaming, both directions and switching off', async () => {
+  it('offer both directions, renaming and switching off, in that order', async () => {
     itemsListLaptop()
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
 
-    const heading = list.get('[data-test="category-section"]')
+    const actions = list
+      .get('[data-test="category-section"]')
+      .findAll('[data-test="move-up"], [data-test="move-down"], [data-test="rename-category"], [data-test="deactivate-category"]')
 
-    expect(heading.find('[data-test="rename-category"]').exists()).toBe(true)
-    expect(heading.find('[data-test="move-up"]').exists()).toBe(true)
-    expect(heading.find('[data-test="move-down"]').exists()).toBe(true)
-    expect(heading.find('[data-test="deactivate-category"]').exists()).toBe(true)
+    expect(actions.map((action) => action.attributes('data-test'))).toEqual([
+      'move-up',
+      'move-down',
+      'rename-category',
+      'deactivate-category',
+    ])
+  })
+
+  it('name the pencil "Bearbeiten" when the admin points at it', async () => {
+    itemsListLaptop()
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="rename-category"]').exists()).toBe(true))
+
+    await list.get('[data-test="rename-category"]').trigger('mouseenter')
+
+    expect(list.get('[data-test="rename-category"] .v-icon').classes()).toContain('mdi-pencil')
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Bearbeiten'))
+  })
+
+  it('name the crossed-out eye "Kategorie abschalten" when the admin points at it', async () => {
+    itemsListLaptop()
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="deactivate-category"]').exists()).toBe(true))
+
+    await list.get('[data-test="deactivate-category"]').trigger('mouseenter')
+
+    expect(list.get('[data-test="deactivate-category"] .v-icon').classes()).toContain('mdi-eye-off')
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Kategorie abschalten'))
   })
 
   it('move the category up at its own address', async () => {
@@ -153,6 +179,20 @@ describe('a category that is switched off', () => {
 
     expect(list.get('[data-test="category-name"]').text()).toBe('Speisen')
     expect(list.get('[data-test="category-section"] [data-test="category-deactivated"]').text()).toBe('Deaktiviert')
+  })
+
+  it('offers to switch it on again through the open eye, named "Kategorie einschalten"', async () => {
+    itemsListLaptop({
+      categories: { categories: [{ ...TWO_CATEGORIES.categories[0], isActive: false }] },
+      items: { items: [] },
+    })
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="activate-category"]').exists()).toBe(true))
+
+    await list.get('[data-test="activate-category"]').trigger('mouseenter')
+
+    expect(list.get('[data-test="activate-category"] .v-icon').classes()).toContain('mdi-eye')
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Kategorie einschalten'))
   })
 
   it('offers to switch it on again without asking a question first', async () => {

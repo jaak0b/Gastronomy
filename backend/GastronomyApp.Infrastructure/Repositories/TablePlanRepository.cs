@@ -15,7 +15,7 @@ public sealed class TablePlanRepository : ITablePlanRepository
     _dbContext = dbContext;
   }
 
-  public async Task<IReadOnlyList<ListedArea>> FindTablePlanAsync(Guid festivalId, CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<ListedArea>> FindTablePlanAsync(Guid festivalId, bool countsItemsToHandOutOrSettle, CancellationToken cancellationToken)
   {
     IQueryable<OrderItem> itemsToHandOutOrSettle = _dbContext.OrderItems.AsNoTracking().WhereNotHandedOutOrNotSettled();
 
@@ -24,8 +24,8 @@ public sealed class TablePlanRepository : ITablePlanRepository
                            .OrderBy(area => area.SortOrder)
                            .ThenBy(area => area.Name)
                            .Select(area => new ListedArea(area,
-                                                          itemsToHandOutOrSettle.Any(item => item.StationOrder.Order.Table.AreaId == area.Id),
-                                                          area.Tables.OrderBy(table => table.Name).Select(table => new ListedTable(table, itemsToHandOutOrSettle.Any(item => item.StationOrder.Order.TableId == table.Id))).ToList(),
+                                                          countsItemsToHandOutOrSettle && itemsToHandOutOrSettle.Any(item => item.StationOrder.Order.Table.AreaId == area.Id),
+                                                          area.Tables.OrderBy(table => table.Name).Select(table => new ListedTable(table, countsItemsToHandOutOrSettle && itemsToHandOutOrSettle.Any(item => item.StationOrder.Order.TableId == table.Id))).ToList(),
                                                           area.StationShapes.OrderBy(shape => shape.FestivalStation.Station.SortOrder)
                                                               .ThenBy(shape => shape.FestivalStation.Station.Name)
                                                               .Select(shape => new NamedStationShape(shape, shape.FestivalStation.StationId, shape.FestivalStation.Station.Name))

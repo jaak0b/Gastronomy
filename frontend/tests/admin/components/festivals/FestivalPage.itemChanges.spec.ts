@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { VAutocomplete } from 'vuetify/components'
 import { pressInDialog, onScreen, refusalReasonsOnScreen, typeInto } from '../../../support/dom'
-import { FESTIVAL_ID, KITCHEN_ID, SAUSAGE_ID, FOOD_ID, SUMMER, SAUSAGE, BEER, mountPage, openPlacementDialog, stationBox, openDialogStations, festivalLaptop } from './festivalPageFixture'
+import { FESTIVAL_ID, KITCHEN_ID, SAUSAGE_ID, FOOD_ID, SUMMER, SAUSAGE, BEER, mountPage, openPlacementDialog, stationBox, openDialogStations, festivalLaptop, itemRow } from './festivalPageFixture'
 import { nextTick } from 'vue'
 import { saveTheItemDialog } from '../../../support/formDialogs'
 import { aHold, answer, heldUntil } from '../../../support/laptop'
@@ -95,6 +95,23 @@ describe('the items of this festival', () => {
         (item) => item.name,
       ),
     ).toEqual(['Bier'])
+  })
+
+  it('offers editing a category and an item as the pencil, the item before its trash icon', async () => {
+    festivalLaptop()
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="festival-item-row"]').exists()).toBe(true))
+
+    const row = itemRow(page, SAUSAGE_ID)
+    expect([
+      page.get('[data-test="edit-category"] .v-icon').classes(),
+      row.get('[data-test="edit-item"] .v-icon').classes(),
+    ]).toEqual([expect.arrayContaining(['mdi-pencil']), expect.arrayContaining(['mdi-pencil'])])
+    expect(row.findAll('[data-test="edit-item"], [data-test="remove-item"]').map((action) => action.attributes('data-test'))).toEqual([
+      'edit-item',
+      'remove-item',
+    ])
   })
 
   it('renames the category through the dialog on its heading', async () => {

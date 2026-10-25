@@ -180,13 +180,34 @@ public sealed class ItemOrderabilityTest
   }
 
   [Test]
-  public async Task FindItemsStrandedByRemovingEachStationAsync_AStationThatPreparesNothingAtTheFestival_NamesNothingForIt()
+  public async Task FindItemsStrandedByRemovingEachStationAsync_AStationThatIsNotAnActiveStationOfTheFestival_NamesNothingForIt()
   {
     var tentId = Guid.Parse("dddddddd-0000-0000-0000-000000000003");
 
     IReadOnlyDictionary<Guid, IReadOnlyList<Guid>> stranded = await _orderability.FindItemsStrandedByRemovingEachStationAsync(_festivalId, [tentId], CancellationToken.None);
 
     Assert.That(stranded[tentId], Is.Empty);
+  }
+
+  [Test]
+  public async Task FindItemsStrandedByRemovingEachStationAsync_TwoActiveStationsAndAThirdThatIsNot_ReadsStationsAndMenuOnceAndOneQueryPerActiveStation()
+  {
+    var tentId = Guid.Parse("dddddddd-0000-0000-0000-000000000003");
+
+    await _orderability.FindItemsStrandedByRemovingEachStationAsync(_festivalId,
+                                                                    [
+                                                                      _kitchenId,
+                                                                      _barId,
+                                                                      tentId
+                                                                    ],
+                                                                    CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      A.CallTo(() => _repository.FindActiveStationIdsAtFestivalAsync(_festivalId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+                      A.CallTo(() => _repository.FindActiveMenuItemIdsAsync(_festivalId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+                      A.CallTo(() => _repository.FindItemIdsPreparedByAsync(_festivalId, A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).MustHaveHappened(3, Times.Exactly);
+                    });
   }
 
   [Test]

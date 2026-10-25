@@ -2,9 +2,9 @@
   export namespace Schemas {
     // <Schemas>
   export type AreaShapeGeometry = { x: number, y: number, width: number, height: number, rotation: number }
-export type AdminTableView = { tableId: string, name: string, geometry: AreaShapeGeometry, isHidden: boolean, hasItemsToHandOutOrSettle: boolean }
+export type AdminTableView = { tableId: string, name: string, geometry: AreaShapeGeometry, isHidden: boolean, hasItemsToHandOutOrSettleAtTheRunningFestival: boolean }
 export type AdminStationShapeView = { stationId: string, stationName: string, geometry: AreaShapeGeometry }
-export type AdminAreaView = { areaId: string, name: string, isHidden: boolean, hasItemsToHandOutOrSettle: boolean, tables: Array<AdminTableView>, stationShapes: Array<AdminStationShapeView> }
+export type AdminAreaView = { areaId: string, name: string, isHidden: boolean, hasItemsToHandOutOrSettleAtTheRunningFestival: boolean, tables: Array<AdminTableView>, stationShapes: Array<AdminStationShapeView> }
 export type AdminCategoryView = { categoryId: string, name: string, colourHex: string, sortOrder: number, isActive: boolean }
 export type AdminCategoryListView = { categories: Array<AdminCategoryView> }
 export type IngredientUnit = ("piece" | "gram" | "millilitre")

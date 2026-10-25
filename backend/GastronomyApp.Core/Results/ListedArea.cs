@@ -2,4 +2,4 @@
 
 namespace GastronomyApp.Core.Results;
 
-public sealed record ListedArea(Area Area, bool HasItemsToHandOutOrSettle, IReadOnlyList<ListedTable> Tables, IReadOnlyList<NamedStationShape> StationShapes);
+public sealed record ListedArea(Area Area, bool HasItemsToHandOutOrSettleAtTheRunningFestival, IReadOnlyList<ListedTable> Tables, IReadOnlyList<NamedStationShape> StationShapes);

@@ -25,7 +25,7 @@ to copy. Of the global tabs only it opens its form through `useEditSession`: `St
    `POST <path>/{id}/deactivate` answer any success. Loads go through the latest request gate.
 4. **Reload.** `listen()` returns `useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], load)`.
    A list whose entries carry a flag derived from orders (the stations'
-   `hasItemsToHandOutAtTheRunningFestival`, the table plan's `hasItemsToHandOutOrSettle`) listens to `OrdersChanged` too, or a button the flag
+   `hasItemsToHandOutAtTheRunningFestival`, the table plan's `hasItemsToHandOutOrSettleAtTheRunningFestival`) listens to `OrdersChanged` too, or a button the flag
    disables stays wrong until the screen is opened again. The component calls it in `onMounted`,
    then `await store.load()`, and calls the returned release in `onUnmounted`. Why the events, and
    what the entity owes the laptop side, is in the `architecture` skill.
@@ -34,7 +34,9 @@ to copy. Of the global tabs only it opens its form through `useEditSession`: `St
    `showsDeactivated` ref (`checkbox-test-name="show-deactivated"`, text
    `admin.common.actions.showDeactivated`, in German "Deaktivierte anzeigen"), which decides whether
    deactivated entries are listed, so a row is listed when `isActive || showsDeactivated`. A `v-chip` with `admin.common.labels.deactivated` marks a deactivated
-   entry, which offers activating in place of switching off. A `v-alert` with
+   entry, which offers activating in place of switching off: the open eye `BaseShowButton.vue` with
+   the action's own word as its `label` ("Zutat aktivieren"). A row's actions follow the order in
+   `hideable-rows.md`: text buttons, then the pencil, then switching off or on. A `v-alert` with
    `admin.common.errors.loadFailed` reports `store.loadFailed`, and the text for an empty list shows
    only when the list is empty and the load did not fail.
 6. **Create and edit.** `useEditSession` (`admin/composables/useEditSession.ts`) takes a `saveThrough`
@@ -50,6 +52,8 @@ to copy. Of the global tabs only it opens its form through `useEditSession`: `St
    })
    ```
 
+   The row offers editing through the pencil, `admin/components/BaseEditButton.vue`, never a
+   "Bearbeiten" text button.
    The dialog is its own component on `BaseFormDialog` (`shared/components/BaseFormDialog.vue`), mounted
    with `v-if="session.isOpen"`, `:error-text="session.refusalText"`, `@save="session.save"` and
    `@cancel="session.close"`. The session closes on success and stays open showing the refusal.

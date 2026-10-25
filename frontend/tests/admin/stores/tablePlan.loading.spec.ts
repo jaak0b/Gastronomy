@@ -102,8 +102,8 @@ describe('the table plan while the editor is open', () => {
   })
 
   it('says a table can be hidden again once the laptop reports that the orders changed', async () => {
-    const stillOpen = { ...HALL, tables: [{ ...HALL.tables[0], hasItemsToHandOutOrSettle: true }] }
-    const finished = { ...HALL, tables: [{ ...HALL.tables[0], hasItemsToHandOutOrSettle: false }] }
+    const stillOpen = { ...HALL, tables: [{ ...HALL.tables[0], hasItemsToHandOutOrSettleAtTheRunningFestival: true }] }
+    const finished = { ...HALL, tables: [{ ...HALL.tables[0], hasItemsToHandOutOrSettleAtTheRunningFestival: false }] }
     stubLaptop()
       .answersEverythingElse(answer({}))
       .answers('GET', PLAN_PATH, inTurn(answer({ areas: [stillOpen] }), answer({ areas: [stillOpen] }), answer({ areas: [finished] })))
@@ -111,11 +111,11 @@ describe('the table plan while the editor is open', () => {
     await plan.loadForFestival(FESTIVAL_ID)
     plan.listen()
     await useConnectionStore().connect({})
-    await vi.waitFor(() => expect(plan.areas[0].tables[0].hasItemsToHandOutOrSettle).toBe(true))
+    await vi.waitFor(() => expect(plan.areas[0].tables[0].hasItemsToHandOutOrSettleAtTheRunningFestival).toBe(true))
 
     fireHubEvent('OrdersChanged')
 
-    await vi.waitFor(() => expect(plan.areas[0].tables[0].hasItemsToHandOutOrSettle).toBe(false))
+    await vi.waitFor(() => expect(plan.areas[0].tables[0].hasItemsToHandOutOrSettleAtTheRunningFestival).toBe(false))
   })
 
   it('is read again when the connection asks every screen to reload', async () => {

@@ -98,7 +98,7 @@ describe('the waiter\'s home screen', () => {
     expect({
       sentence: view.get('[data-test="no-tables-in-area"]').text(),
       drawn: view.find(DRAWING).exists(),
-    }).toEqual({ sentence: 'In diesem Bereich ist noch kein Tisch angelegt.', drawn: true })
+    }).toEqual({ sentence: 'In diesem Tischplan ist noch kein Tisch angelegt.', drawn: true })
   })
 
   it('claims nothing about the tables before the plan has arrived', async () => {

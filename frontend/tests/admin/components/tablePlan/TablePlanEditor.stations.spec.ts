@@ -19,6 +19,7 @@ import {
   SCHANK,
   SCHANK_SHAPE,
   SCHANK_SHAPE_ID,
+  TABLE_A1,
   TENT,
   editorLaptop,
   mountEditor,
@@ -26,7 +27,7 @@ import {
   shapesWithTheHandles,
   stationRow,
 } from './tablePlanEditorFixture'
-import { anAdminStation, anAdminStationShape } from '../../../support/wireViews'
+import { aGeometry, anAdminStation, anAdminStationShape, anAdminTable } from '../../../support/wireViews'
 
 enableAutoUnmount(afterEach)
 
@@ -105,12 +106,12 @@ describe('the stations beside the drawing', () => {
     expect(scrolledIntoView.mock.contexts).toContain(stationRow('station-schank'))
   })
 
-  it('say that every station of the festival is already in an area when nothing is left to add', async () => {
+  it('say that every station of the festival is already on a table plan when nothing is left to add', async () => {
     editorLaptop({ areas: [HALL, TENT_WITH_THE_BAR], stations: [SCHANK, BAR] })
 
     const editor = await mountEditor()
 
-    expect(stationSearchOf(editor).props('noDataText')).toBe('Alle Ausgabestellen dieses Festes stehen schon in einem Bereich.')
+    expect(stationSearchOf(editor).props('noDataText')).toBe('Alle Ausgabestellen dieses Festes stehen schon in einem Tischplan.')
   })
 
   it('say that the festival has no station yet when none belongs to it', async () => {
@@ -135,6 +136,18 @@ describe('adding a station to this area', () => {
         method: 'PUT',
         body: { areaId: 'area-halle', geometry: { x: 10, y: 80, width: 120, height: 40, rotation: 0 } },
       },
+    ])
+  })
+
+  it('goes below a hidden table of the area too, the way a new table does', async () => {
+    const hiddenA2 = anAdminTable({ tableId: 'table-a2', name: 'A2', isHidden: true, geometry: aGeometry({ x: 10, y: 80 }) })
+    const laptop = editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, hiddenA2] }, TENT] })
+    const editor = await mountEditor()
+
+    await putTheKitchenHere(editor)
+
+    expect(laptop.writtenBodies()).toEqual([
+      { areaId: 'area-halle', geometry: { x: 10, y: 130, width: 120, height: 40, rotation: 0 } },
     ])
   })
 
@@ -185,7 +198,7 @@ describe('taking a station off this plan', () => {
 
     expect([dialogText('[data-test="confirm-title"]'), dialogText('[data-test="confirm-body"]')]).toEqual([
       'Ausgabestelle entfernen',
-      'Die Ausgabestelle wird nur aus diesem Bereich entfernt.',
+      'Die Ausgabestelle wird nur aus diesem Tischplan entfernt.',
     ])
     expect(laptop.writes()).toEqual([])
   })

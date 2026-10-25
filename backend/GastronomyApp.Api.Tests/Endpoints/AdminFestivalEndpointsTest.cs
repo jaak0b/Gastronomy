@@ -702,6 +702,15 @@ public sealed class AdminFestivalEndpointsTest
   }
 
   [Test]
+  public async Task GetStationsOfTheFestival_TheKitchen_LeavesTheCountForSwitchingItOffEmpty()
+  {
+    using var response = await _context.Client.GetAsync($"/api/admin/stations?festivalId={_context.World.FestivalId}");
+    var kitchen = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("stations").EnumerateArray().Single(station => station.GetProperty("stationId").GetGuid() == _context.World.KitchenStationId);
+
+    Assert.That(kitchen.GetProperty("strandedItemCountWhenSwitchedOff").ValueKind, Is.EqualTo(JsonValueKind.Null));
+  }
+
+  [Test]
   public async Task GetStationsOfTheFestival_TheBarMakingBothArticles_CountsWhatRemovingEachStationWouldStrand()
   {
     await AssignTheBratwurstToTheBarAsync();

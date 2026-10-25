@@ -154,7 +154,7 @@
     "tablePlan": {
       "actions": {
         "takeOrder": "Bestellung aufnehmen",
-        "backToAreas": "Bereiche",
+        "backToAreas": "Tischpläne",
         "backToThePlan": "Tischplan",
         "reload": "Neu laden",
         "toTheUnsentTable": "Zu Tisch {table}",
@@ -163,7 +163,7 @@
       "messages": {
         "noFestivalIsActive": "Es ist kein Fest aktiv.",
         "noTables": "Es sind noch keine Tische angelegt.",
-        "noTablesInArea": "In diesem Bereich ist noch kein Tisch angelegt.",
+        "noTablesInArea": "In diesem Tischplan ist noch kein Tisch angelegt.",
         "unsentOrder": "Tisch {table} hat {count} Artikel für {total}, der noch nicht gesendet ist. | Tisch {table} hat {count} Artikel für {total}, die noch nicht gesendet sind."
       },
       "errors": {
@@ -298,7 +298,6 @@
         "addStation": "Ausgabestelle hinzufügen",
         "copy": "Kopieren",
         "copyConfirm": "Fest anlegen",
-        "edit": "Fest bearbeiten",
         "hide": "Ausblenden",
         "hideConfirm": "Ausblenden",
         "new": "Neues Fest",
@@ -322,28 +321,29 @@
     "tablePlan": {
       "title": "Tischplan",
       "labels": {
-        "areaName": "Name des Bereichs",
+        "areaName": "Name des Tischplans",
         "tableName": "Name des Tisches",
         "tableCount": "{count} Tisch | {count} Tische",
         "tables": "Tische",
-        "hideAreaTitle": "Bereich ausblenden",
+        "hideAreaTitle": "Tischplan ausblenden",
         "hideTableTitle": "Tisch ausblenden"
       },
       "actions": {
-        "newArea": "Neuer Bereich",
-        "editArea": "Bereich bearbeiten",
+        "newArea": "Neuer Tischplan",
+        "editArea": "Tischplan bearbeiten",
         "newTable": "Neuer Tisch",
         "editTable": "Tisch bearbeiten",
-        "openPlan": "Plan öffnen"
+        "openPlan": "Tischplan öffnen"
       },
       "messages": {
-        "noArea": "Die Kellner sehen noch keinen Bereich. Klicken Sie auf \"Neuer Bereich\".",
-        "noTable": "Die Kellner sehen noch keinen Tisch. Klicken Sie bei einem Bereich auf \"Plan öffnen\".",
-        "hideAreaBody": "Die Kellner sehen diesen Bereich dann nicht mehr.",
+        "noArea": "Die Kellner sehen noch keinen Tischplan. Klicken Sie auf \"Neuer Tischplan\".",
+        "noTable": "Die Kellner sehen noch keinen Tisch. Klicken Sie bei einem Tischplan auf \"Tischplan öffnen\".",
+        "hideAreaBody": "Die Kellner sehen diesen Tischplan dann nicht mehr.",
         "hideTableBody": "Die Kellner sehen diesen Tisch dann nicht mehr.",
-        "removeStationBody": "Die Ausgabestelle wird nur aus diesem Bereich entfernt.",
-        "allAreasHidden": "Alle Bereiche sind ausgeblendet. Kreuzen Sie \"Ausgeblendete anzeigen\" an und blenden Sie einen Bereich wieder ein.",
-        "noStationsToPlace": "Alle Ausgabestellen dieses Festes stehen schon in einem Bereich.",
+        "removeStationBody": "Die Ausgabestelle wird nur aus diesem Tischplan entfernt.",
+        "allAreasHidden": "Alle Tischpläne sind ausgeblendet. Blenden Sie einen davon wieder ein.",
+        "allAreasHiddenAndNotListed": "Alle Tischpläne sind ausgeblendet. Kreuzen Sie \"Ausgeblendete anzeigen\" an und blenden Sie einen davon wieder ein.",
+        "noStationsToPlace": "Alle Ausgabestellen dieses Festes stehen schon in einem Tischplan.",
         "festivalHasNoStations": "Zu diesem Fest gehört noch keine Ausgabestelle."
       }
     },
@@ -475,8 +475,8 @@
         "nameTaken": "Es gibt schon eine Kategorie mit diesem Namen. Wählen Sie einen anderen."
       },
       "festivals": {
-        "areaNameTaken": "Ein Bereich dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.",
-        "areaWithItemsToHandOutOrSettleStaysShown": "Ein Bereich kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und abgerechnet ist.",
+        "areaNameTaken": "Ein Tischplan dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.",
+        "areaWithItemsToHandOutOrSettleStaysShown": "Ein Tischplan kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und abgerechnet ist.",
         "itemNeedsAStation": "Wählen Sie mindestens eine Ausgabestelle für den Artikel.",
         "itemPriceOutOfRange": "Tragen Sie einen Preis zwischen 0,00 und 999,99 Euro ein.",
         "itemStaysOnTheMenuWhileTheFestivalRuns": "Ein Artikel kann von einem aktiven Fest nicht entfernt werden.",
@@ -509,7 +509,7 @@
       },
       "stations": {
         "hasUnfinishedItems": "Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden.",
-        "itemsWouldHaveNoStation": "{count} Artikel hätte dann keine Ausgabestelle mehr. Ordnen Sie ihn zuerst einer anderen Ausgabestelle zu oder entfernen Sie ihn vom Fest. | {count} Artikel hätten dann keine Ausgabestelle mehr. Ordnen Sie sie zuerst einer anderen Ausgabestelle zu oder entfernen Sie sie vom Fest.",
+        "itemsWouldHaveNoStation": "@:admin.stations.messages.itemsWouldHaveNoStation Ordnen Sie ihn zuerst einer anderen Ausgabestelle zu. | @:admin.stations.messages.itemsWouldHaveNoStation Ordnen Sie sie zuerst einer anderen Ausgabestelle zu.",
         "nameMissing": "Geben Sie der Ausgabestelle einen Namen, bevor Sie sie speichern."
       }
     },

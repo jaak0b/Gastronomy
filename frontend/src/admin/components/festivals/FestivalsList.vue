@@ -7,6 +7,7 @@ import { assertNever } from '../../../shared/core/assertNever'
 import { formatFestivalMoment } from '../../../shared/core/moments'
 import { useAdminFestivalsStore, type FestivalDraft } from '../../stores/festivals'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
+import BaseEditButton from '../BaseEditButton.vue'
 import BaseHideConfirmDialog from '../BaseHideConfirmDialog.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
 import BaseIconAction from '../BaseIconAction.vue'
@@ -174,17 +175,16 @@ onUnmounted(() => {
         </v-chip>
         <v-spacer />
         <div class="actions d-flex align-center ga-2" data-test="actions">
-          <v-btn class="open" data-test="open" color="primary" variant="tonal" @click="open(festival)">
-            {{ t('admin.festivals.actions.edit') }}
-          </v-btn>
           <v-btn class="copy" data-test="copy" variant="text" @click="startCopying(festival)">
             {{ t('admin.festivals.actions.copy') }}
           </v-btn>
+          <BaseEditButton class="open" data-test="open" @click="open(festival)" />
           <span class="conditional-action" data-test="conditional-action">
             <BaseShowButton
               v-if="festival.isHidden"
               class="show"
               data-test="show"
+              :label="t('admin.festivals.actions.show')"
               @click="show(festival.festivalId)"
             />
             <BaseActionWithRefusalReason

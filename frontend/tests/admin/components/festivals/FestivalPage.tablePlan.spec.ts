@@ -17,14 +17,14 @@ import { aHold, answer, heldUntil } from '../../../support/laptop'
 import { testPlugins } from '../../../support/plugins'
 import { FESTIVAL_ID, festivalLaptop, mountPage } from './festivalPageFixture'
 import { HALL, OLD_TABLES, TENT, areaRow, hideButtonOf } from './festivalTablePlanFixture'
-import { aFestival, anAdminArea, anAdminTable } from '../../../support/wireViews'
+import { anAdminArea, anAdminTable } from '../../../support/wireViews'
 
 enableAutoUnmount(afterEach)
 
 const STILL_OPEN =
-  'Ein Bereich kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und abgerechnet ist.'
+  'Ein Tischplan kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und abgerechnet ist.'
 
-const TENT_WITH_ITEMS_TO_HAND_OUT = { ...TENT, hasItemsToHandOutOrSettle: true }
+const TENT_WITH_ITEMS_TO_HAND_OUT = { ...TENT, hasItemsToHandOutOrSettleAtTheRunningFestival: true }
 
 async function theAreasAreListed(): Promise<void> {
   await vi.waitFor(() => expect(isOnScreen('[data-test="festival-area-row"]')).toBe(true))
@@ -108,6 +108,36 @@ describe('the areas on the table plan card of the festival page', () => {
     )
   })
 
+  it('offer opening the plan, the arrows, the pencil and the trash icon in that order', async () => {
+    festivalLaptop({ areas: [HALL, TENT] })
+    mountPage()
+    await theAreasAreListed()
+
+    const actions = allOnScreen(
+      '[data-test="open-plan"], [data-test="move-up"], [data-test="move-down"], [data-test="edit-entry"], [data-test="hide-entry"]',
+      areaRow('area-zelt'),
+    )
+
+    expect(actions.map((action) => action.getAttribute('data-test'))).toEqual([
+      'open-plan',
+      'move-up',
+      'move-down',
+      'edit-entry',
+      'hide-entry',
+    ])
+  })
+
+  it('offer editing an area through the pencil, named "Bearbeiten"', async () => {
+    festivalLaptop({ areas: [HALL, TENT] })
+    mountPage()
+    await theAreasAreListed()
+
+    onScreen('[data-test="edit-entry"]', areaRow('area-zelt')).dispatchEvent(new MouseEvent('mouseenter'))
+
+    expect(isOnScreen('[data-test="edit-entry"] .mdi-pencil', areaRow('area-zelt'))).toBe(true)
+    await waitUntil(() => expect(iconActionLabelsOnScreen()).toContain('Bearbeiten'))
+  })
+
   it('open the editor of the area whose plan the admin opens', async () => {
     festivalLaptop({ areas: [HALL, TENT] })
     mountPage()
@@ -169,18 +199,6 @@ describe('hiding an area from the table plan card', () => {
       ),
     )
   })
-
-  it('can be asked for once the festival is over, whatever its tables still have', async () => {
-    festivalLaptop({
-      festivals: [aFestival({ festivalId: FESTIVAL_ID, isRunning: false })],
-      areas: [HALL, TENT_WITH_ITEMS_TO_HAND_OUT],
-    })
-
-    mountPage()
-    await theAreasAreListed()
-
-    expect(hideButtonOf('area-zelt').disabled).toBe(false)
-  })
 })
 
 describe('the warnings of the table plan card', () => {
@@ -191,18 +209,40 @@ describe('the warnings of the table plan card', () => {
     await vi.waitFor(() => expect(isOnScreen('[data-test="no-area"]')).toBe(true))
 
     expect(textOnScreen('[data-test="no-area"]').trim()).toBe(
-      'Die Kellner sehen noch keinen Bereich. Klicken Sie auf "Neuer Bereich".',
+      'Die Kellner sehen noch keinen Tischplan. Klicken Sie auf "Neuer Tischplan".',
     )
   })
 
-  it('point to showing the areas again when every area is hidden', async () => {
+  it('look like the warning of the stock card, an alert icon beside text in the warning colour', async () => {
+    festivalLaptop({ areas: [] })
+
+    mountPage()
+    await vi.waitFor(() => expect(isOnScreen('[data-test="no-area"]')).toBe(true))
+
+    const warning = onScreen('[data-test="no-area"]')
+    expect([isOnScreen('.mdi-alert', warning), warning.classList.contains('text-warning')]).toEqual([true, true])
+  })
+
+  it('point to the box for hidden areas when every area is hidden and the box is not ticked', async () => {
     festivalLaptop({ areas: [{ ...OLD_TABLES, tables: [anAdminTable({ tableId: 'table-12', name: '12' })] }] })
 
     mountPage()
     await vi.waitFor(() => expect(isOnScreen('[data-test="all-areas-hidden"]')).toBe(true))
 
     expect(textOnScreen('[data-test="all-areas-hidden"]').trim()).toBe(
-      'Alle Bereiche sind ausgeblendet. Kreuzen Sie "Ausgeblendete anzeigen" an und blenden Sie einen Bereich wieder ein.',
+      'Alle Tischpläne sind ausgeblendet. Kreuzen Sie "Ausgeblendete anzeigen" an und blenden Sie einen davon wieder ein.',
+    )
+  })
+
+  it('leave the box out of the sentence once it is ticked and the hidden areas are listed', async () => {
+    festivalLaptop({ areas: [{ ...OLD_TABLES, tables: [anAdminTable({ tableId: 'table-12', name: '12' })] }] })
+    mountPage()
+    await vi.waitFor(() => expect(isOnScreen('[data-test="all-areas-hidden"]')).toBe(true))
+
+    await clickOn('[data-test="show-hidden-entries"] input')
+
+    expect(textOnScreen('[data-test="all-areas-hidden"]').trim()).toBe(
+      'Alle Tischpläne sind ausgeblendet. Blenden Sie einen davon wieder ein.',
     )
   })
 
@@ -228,7 +268,7 @@ describe('the warnings of the table plan card', () => {
     await vi.waitFor(() => expect(isOnScreen('[data-test="no-table"]')).toBe(true))
 
     expect(textOnScreen('[data-test="no-table"]').trim()).toBe(
-      'Die Kellner sehen noch keinen Tisch. Klicken Sie bei einem Bereich auf "Plan öffnen".',
+      'Die Kellner sehen noch keinen Tisch. Klicken Sie bei einem Tischplan auf "Tischplan öffnen".',
     )
   })
 

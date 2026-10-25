@@ -27,7 +27,7 @@ public sealed class AreaAdministrationServiceTest
     A.CallTo(() => _repository.FindAreaAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Area?>(null));
     A.CallTo(() => _repository.IsAreaNameTakenAsync(A<Guid>._, A<string>._, A<Guid?>._, A<CancellationToken>._)).Returns(false);
 
-    _service = new(_repository, _festivalRepository, new(_festivalRepository, new(), _clock), new());
+    _service = new(_repository, _festivalRepository, new(A.Fake<IStationRepository>(), _repository, new(_festivalRepository, new(), _clock)), new());
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
@@ -42,7 +42,7 @@ public sealed class AreaAdministrationServiceTest
   [Test]
   public async Task ListTablePlanAsync_AFestivalThatIsNotThere_IsNotFound()
   {
-    A.CallTo(() => _festivalRepository.ExistsAsync(_festivalId, A<CancellationToken>._)).Returns(false);
+    A.CallTo(() => _festivalRepository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
     ErrorOr<IReadOnlyList<ListedArea>> tablePlan = await _service.ListTablePlanAsync(_festivalId, CancellationToken.None);
 
@@ -58,7 +58,7 @@ public sealed class AreaAdministrationServiceTest
   public async Task ListTablePlanAsync_AFestivalWithAreas_HandsOverWhatTheRepositoryFound()
   {
     ListedArea garden = new(BuildGarden(false), true, [], []);
-    A.CallTo(() => _repository.FindTablePlanAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<ListedArea>>([garden]));
+    A.CallTo(() => _repository.FindTablePlanAsync(_festivalId, A<bool>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<ListedArea>>([garden]));
 
     ErrorOr<IReadOnlyList<ListedArea>> tablePlan = await _service.ListTablePlanAsync(_festivalId, CancellationToken.None);
 

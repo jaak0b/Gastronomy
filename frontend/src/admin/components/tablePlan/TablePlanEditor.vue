@@ -21,7 +21,7 @@ const tablePlan = useAdminTablePlanStore()
 const selectedShape = ref<ShapeSelection | null>(null)
 let stopListening: (() => void) | null = null
 
-const { festival, loadTheFestivalOrLeave } = useOpenedFestival(() => props.festivalId)
+const { loadTheFestivalOrLeave } = useOpenedFestival(() => props.festivalId)
 const area = computed(() => tablePlan.areas.find((candidate) => candidate.areaId === props.areaId) ?? null)
 const isUnknownArea = computed(() => tablePlan.loadedFestivalId === props.festivalId && area.value === null)
 const festivalHasStations = computed(() => stations.stations.some((station) => station.isAtAnyFestival))
@@ -106,7 +106,6 @@ onUnmounted(() => {
             v-model:selected-shape="selectedShape"
             :festival-id="festivalId"
             :area="area"
-            :is-running="festival?.isRunning === true"
           />
           <TablePlanStationList
             v-model:selected-shape="selectedShape"

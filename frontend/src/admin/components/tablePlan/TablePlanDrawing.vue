@@ -15,11 +15,11 @@ import {
   type VueKonvaRef,
 } from 'vue-konva'
 import type { AdminAreaView, AreaShapeGeometry } from '../../../shared/api/generatedSchemas'
-import { useTableNameWordWidth } from '../../../shared/composables/useTableNameWordWidth'
+import { useShapeNameWordWidth } from '../../../shared/composables/useShapeNameWordWidth'
 import { useThemedValue } from '../../../shared/composables/useThemedValue'
 import { assertNever } from '../../../shared/core/assertNever'
 import { DARK_TABLE_PLAN_COLOURS, LIGHT_TABLE_PLAN_COLOURS } from '../../../shared/core/tablePlanColours'
-import { LARGEST_NAME_FONT_SIZE, nameFontSizeKeepingWordsWhole } from '../../../shared/core/tableNameFit'
+import { LARGEST_NAME_FONT_SIZE, nameFontSizeKeepingWordsWhole } from '../../../shared/core/shapeNameFit'
 import { TABLE_PLAN_DRAWING_WIDTH } from '../../../shared/core/tablePlanDrawing'
 import type { AdminActionResult } from '../../core/adminActionResult'
 import { drawnTablesOf, editorDrawingLength, fitsTheDrawing } from '../../core/tablePlanPlacement'
@@ -76,7 +76,7 @@ const visibleHeight = ref(0)
 const guides = ref<SnapGuide[]>([])
 let resizeObserver: ResizeObserver | null = null
 
-const widthOfANameWord = useTableNameWordWidth()
+const widthOfANameWord = useShapeNameWordWidth()
 
 const layerConfig = { x: MARGIN_AROUND_THE_DRAWING, y: MARGIN_AROUND_THE_DRAWING }
 

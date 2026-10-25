@@ -39,6 +39,22 @@ describe('the item list', () => {
     ])
   })
 
+  it('offers editing the ingredients, the pencil and the trash icon on an item row, in that order', async () => {
+    itemsListLaptop({ items: THREE_ITEMS })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="item-row"]').exists()).toBe(true))
+
+    const actions = list
+      .get('[data-test="item-row"]')
+      .findAll('[data-test="edit-ingredients"], [data-test="edit-item"], [data-test="deactivate-item"]')
+    expect(actions.map((action) => action.attributes('data-test'))).toEqual([
+      'edit-ingredients',
+      'edit-item',
+      'deactivate-item',
+    ])
+  })
+
   it('writes the category name on its colour, in lettering that stays readable', async () => {
     itemsListLaptop({ items: THREE_ITEMS })
 

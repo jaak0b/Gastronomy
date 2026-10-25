@@ -27,7 +27,7 @@ public sealed class TableAdministrationServiceTest
     A.CallTo(() => _repository.FindTableAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Table?>(null));
     A.CallTo(() => _repository.IsTableNameTakenAsync(A<Guid>._, A<string>._, A<Guid?>._, A<CancellationToken>._)).Returns(false);
 
-    _service = new(_repository, _festivalRepository, new(_festivalRepository, new(), _clock), new());
+    _service = new(_repository, _festivalRepository, new(A.Fake<IStationRepository>(), _repository, new(_festivalRepository, new(), _clock)), new());
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);

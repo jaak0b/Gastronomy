@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { pressInDialog, refusalReasonsOnScreen, waitForDialog } from '../../../support/dom'
+import { iconActionLabelsOnScreen, pressInDialog, refusalReasonsOnScreen, waitForDialog } from '../../../support/dom'
 import { stubLaptop, answer } from '../../../support/laptop'
 import { anAdminStation } from '../../../support/wireViews'
 import { STATION_ID, ONE_STATION, refuseDeactivationWith, mountList, deactivateFirstStation, ONE_STATION_SWITCHED_OFF } from './stationsListFixture'
@@ -132,15 +132,17 @@ describe('a station that is switched off', () => {
     expect(list.get('[data-test="deactivated"]').text()).toBe('Deaktiviert')
   })
 
-  it('offers to switch it back on without asking a question first', async () => {
+  it('offers to switch it back on through the open eye, named "Ausgabestelle einschalten"', async () => {
     stubLaptop().answersEverythingElse(answer(ONE_STATION_SWITCHED_OFF))
-
     const list = mountList()
     await flushPromises()
     await list.get('[data-test="show-deactivated"] input').setValue(true)
     await vi.waitFor(() => expect(list.find('[data-test="station-row"]').exists()).toBe(true))
 
-    expect(list.get('[data-test="reactivate"]').text()).toBe('Ausgabestelle einschalten')
+    await list.get('[data-test="reactivate"]').trigger('mouseenter')
+
+    expect(list.get('[data-test="reactivate"] .v-icon').classes()).toContain('mdi-eye')
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Ausgabestelle einschalten'))
   })
 
   it('switches it back on at its own address', async () => {
@@ -189,7 +191,7 @@ describe('a station the laptop refuses to switch off', () => {
     await deactivateFirstStation(list)
 
     expect(list.get('[data-test="refusal"]').text()).toBe(
-      '2 Artikel hätten dann keine Ausgabestelle mehr. Ordnen Sie sie zuerst einer anderen Ausgabestelle zu oder entfernen Sie sie vom Fest.',
+      '2 Artikel hätten dann keine Ausgabestelle mehr. Ordnen Sie sie zuerst einer anderen Ausgabestelle zu.',
     )
   })
 
@@ -209,7 +211,7 @@ describe('a station the laptop refuses to switch off', () => {
     await deactivateFirstStation(list)
 
     expect(list.get('[data-test="refusal"]').text()).toBe(
-      '1 Artikel hätte dann keine Ausgabestelle mehr. Ordnen Sie ihn zuerst einer anderen Ausgabestelle zu oder entfernen Sie ihn vom Fest.',
+      '1 Artikel hätte dann keine Ausgabestelle mehr. Ordnen Sie ihn zuerst einer anderen Ausgabestelle zu.',
     )
   })
 
@@ -220,7 +222,7 @@ describe('a station the laptop refuses to switch off', () => {
     await deactivateFirstStation(list)
 
     expect(list.get('[data-test="refusal"]').text()).toBe(
-      '2 Artikel hätten dann keine Ausgabestelle mehr. Ordnen Sie sie zuerst einer anderen Ausgabestelle zu oder entfernen Sie sie vom Fest.',
+      '2 Artikel hätten dann keine Ausgabestelle mehr. Ordnen Sie sie zuerst einer anderen Ausgabestelle zu.',
     )
   })
 

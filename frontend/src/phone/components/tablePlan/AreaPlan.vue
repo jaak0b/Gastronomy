@@ -12,7 +12,7 @@ import {
   type VueKonvaRef,
 } from 'vue-konva'
 import type { TablePlanAreaView, TablePlanTableView } from '../../../shared/api/generatedSchemas'
-import { useTableNameWordWidth } from '../../../shared/composables/useTableNameWordWidth'
+import { useShapeNameWordWidth } from '../../../shared/composables/useShapeNameWordWidth'
 import { useThemedValue } from '../../../shared/composables/useThemedValue'
 import { DARK_TABLE_PLAN_COLOURS, LIGHT_TABLE_PLAN_COLOURS } from '../../../shared/core/tablePlanColours'
 import { TABLE_PLAN_DRAWING_WIDTH } from '../../../shared/core/tablePlanDrawing'
@@ -26,7 +26,7 @@ import {
   type PlanCamera,
   type PlanViewport,
 } from '../../core/tablePlanCamera'
-import { LARGEST_NAME_FONT_SIZE, nameFontSizeKeepingWordsWhole } from '../../../shared/core/tableNameFit'
+import { LARGEST_NAME_FONT_SIZE, nameFontSizeKeepingWordsWhole } from '../../../shared/core/shapeNameFit'
 import { scrollBarsOf } from '../../core/tablePlanScrollBars'
 
 const TABLE_NAME = 'plan-table'
@@ -104,7 +104,7 @@ const nameText = {
   listening: false,
 }
 
-const widthOfANameWord = useTableNameWordWidth()
+const widthOfANameWord = useShapeNameWordWidth()
 
 function openUnlessThisGestureIsAPinch(table: TablePlanTableView): void {
   if (!thisGestureIsAPinch) {
@@ -171,6 +171,11 @@ const drawnStations = computed(() => {
     },
     text: {
       ...nameText,
+      fontSize: nameFontSizeKeepingWordsWhole(
+        stationShape.stationName,
+        stationShape.geometry.width - 2 * NAME_PADDING,
+        widthOfANameWord,
+      ),
       width: stationShape.geometry.width,
       height: stationShape.geometry.height,
       text: stationShape.stationName,

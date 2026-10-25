@@ -2,4 +2,4 @@
 
 namespace GastronomyApp.Core.Results;
 
-public sealed record ListedTable(Table Table, bool HasItemsToHandOutOrSettle);
+public sealed record ListedTable(Table Table, bool HasItemsToHandOutOrSettleAtTheRunningFestival);

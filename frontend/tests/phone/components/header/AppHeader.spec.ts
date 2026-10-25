@@ -62,7 +62,7 @@ describe('the header over the plan of one area', () => {
     tablePlan.areas = [HALL, GARDEN]
     tablePlan.openArea('area-garten')
     const header = mountHeader()
-    expect(header.get('[data-test="header-back"]').text()).toBe('Bereiche')
+    expect(header.get('[data-test="header-back"]').text()).toBe('Tischpläne')
 
     await header.get('[data-test="header-back"]').trigger('click')
 

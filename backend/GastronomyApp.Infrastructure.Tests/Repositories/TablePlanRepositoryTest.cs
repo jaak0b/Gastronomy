@@ -30,7 +30,7 @@ public sealed class TablePlanRepositoryTest
     await AddAreaAsync(fixture.DbContext, otherFestivalId, "Garten", 0, false);
     await using var readContext = fixture.CreateContext();
 
-    IReadOnlyList<ListedArea> tablePlan = await new TablePlanRepository(readContext).FindTablePlanAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<ListedArea> tablePlan = await new TablePlanRepository(readContext).FindTablePlanAsync(seeded.FestivalId, true, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -79,23 +79,43 @@ public sealed class TablePlanRepositoryTest
     await AddOrderAsync(fixture.DbContext, seeded, hallTableId, 3, _handedOutAtUtc, _settledAtUtc);
     await using var readContext = fixture.CreateContext();
 
-    IReadOnlyList<ListedArea> tablePlan = await new TablePlanRepository(readContext).FindTablePlanAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<ListedArea> tablePlan = await new TablePlanRepository(readContext).FindTablePlanAsync(seeded.FestivalId, true, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(tablePlan.Select(listed => listed.HasItemsToHandOutOrSettle),
+                      Assert.That(tablePlan.Select(listed => listed.HasItemsToHandOutOrSettleAtTheRunningFestival),
                                   Is.EqualTo(new[]
                                              {
                                                true,
                                                false
                                              }));
-                      Assert.That(tablePlan[0].Tables.Select(listed => listed.HasItemsToHandOutOrSettle),
+                      Assert.That(tablePlan[0].Tables.Select(listed => listed.HasItemsToHandOutOrSettleAtTheRunningFestival),
                                   Is.EqualTo(new[]
                                              {
                                                true,
                                                false
                                              }));
-                      Assert.That(tablePlan[1].Tables.Single().HasItemsToHandOutOrSettle, Is.False);
+                      Assert.That(tablePlan[1].Tables.Single().HasItemsToHandOutOrSettleAtTheRunningFestival, Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task FindTablePlanAsync_ATableWithAnItemNotYetSettledReadWithoutCounting_SaysNoTableOrAreaHasItemsLeft()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var gardenId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Garten", 1, false);
+    var unsettledTableId = await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 1", false);
+    await AddOrderAsync(fixture.DbContext, seeded, unsettledTableId, 1, _handedOutAtUtc, null);
+    await using var readContext = fixture.CreateContext();
+
+    IReadOnlyList<ListedArea> tablePlan = await new TablePlanRepository(readContext).FindTablePlanAsync(seeded.FestivalId, false, TestContext.CurrentContext.CancellationToken);
+    var garden = tablePlan.Single(listed => listed.Area.Id == gardenId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(garden.HasItemsToHandOutOrSettleAtTheRunningFestival, Is.False);
+                      Assert.That(garden.Tables.Single().HasItemsToHandOutOrSettleAtTheRunningFestival, Is.False);
                     });
   }
 
@@ -114,7 +134,7 @@ public sealed class TablePlanRepositoryTest
     QueryCounter counter = new();
     await using GastronomyAppDbContext readContext = new(new DbContextOptionsBuilder<GastronomyAppDbContext>().UseSqlite(fixture.Connection).AddInterceptors(counter).Options);
 
-    await new TablePlanRepository(readContext).FindTablePlanAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    await new TablePlanRepository(readContext).FindTablePlanAsync(seeded.FestivalId, true, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(counter.QueryCount, Is.EqualTo(1));
   }

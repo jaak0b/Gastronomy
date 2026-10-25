@@ -3,7 +3,10 @@ import { useI18n } from 'vue-i18n'
 import { AdminCategoryView, AdminItemView, type MoveDirection } from '../../../shared/api/generatedSchemas'
 import { letteringColourOn } from '../../../shared/core/letteringColour'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
+import BaseEditButton from '../BaseEditButton.vue'
+import BaseIconAction from '../BaseIconAction.vue'
 import BaseMoveButtons from '../BaseMoveButtons.vue'
+import BaseShowButton from '../BaseShowButton.vue'
 import BaseTrashButton from '../BaseTrashButton.vue'
 
 const props = defineProps<{
@@ -51,29 +54,22 @@ function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
         {{ t('admin.common.labels.deactivated') }}
       </v-chip>
       <v-spacer />
-      <v-btn
-        data-test="rename-category"
-        icon="mdi-pencil"
-        variant="text"
-        @click="emit('rename-category')"
-      />
       <BaseMoveButtons @move="(direction) => emit('move-category', direction)" />
-      <v-btn
+      <BaseEditButton data-test="rename-category" @click="emit('rename-category')" />
+      <BaseIconAction
         v-if="category.isActive"
         data-test="deactivate-category"
         icon="mdi-eye-off"
-        variant="text"
         color="error"
+        :label="t('admin.categories.actions.deactivateConfirm')"
         @click="emit('deactivate-category')"
       />
-      <v-btn
+      <BaseShowButton
         v-else
         data-test="activate-category"
-        variant="text"
+        :label="t('admin.categories.actions.activate')"
         @click="emit('activate-category')"
-      >
-        {{ t('admin.categories.actions.activate') }}
-      </v-btn>
+      />
     </div>
     <v-card
       v-for="item in items"
@@ -91,9 +87,7 @@ function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
         <v-btn data-test="edit-ingredients" variant="text" @click="emit('edit-ingredients', item)">
           {{ t('admin.ingredients.actions.edit') }}
         </v-btn>
-        <v-btn data-test="edit-item" variant="text" @click="emit('edit-item', item)">
-          {{ t('admin.common.actions.edit') }}
-        </v-btn>
+        <BaseEditButton data-test="edit-item" @click="emit('edit-item', item)" />
         <BaseActionWithRefusalReason
           v-if="item.isActive"
           class="deactivate-wrapper"
@@ -104,14 +98,12 @@ function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
             <BaseTrashButton data-test="deactivate-item" :disabled="refused" @click="emit('deactivate-item', item)" />
           </template>
         </BaseActionWithRefusalReason>
-        <v-btn
+        <BaseShowButton
           v-else
           data-test="reactivate-item"
-          variant="text"
+          :label="t('admin.items.actions.activate')"
           @click="emit('reactivate-item', item)"
-        >
-          {{ t('admin.items.actions.activate') }}
-        </v-btn>
+        />
       </div>
     </v-card>
   </section>
