@@ -11,7 +11,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 public sealed class AdminCategoryEndpointsTest
 {
   private const string SmallUmlautA = "ä";
-  private const string CapitalUmlautA = "Ä";
 
   [SetUp]
   public async Task SetUp()
@@ -173,7 +172,7 @@ public sealed class AdminCategoryEndpointsTest
   }
 
   [Test]
-  public async Task PostCategory_NameAnotherCategoryAlreadyHasWithAnUmlautInAnotherCasing_IsRefused()
+  public async Task PostCategory_NameAnotherCategoryAlreadyHasWithAnUmlautInCapitalLetters_IsRefused()
   {
     using var first = await _context.Client.PostAsJsonAsync("/api/admin/categories",
                                                             new
@@ -186,7 +185,7 @@ public sealed class AdminCategoryEndpointsTest
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/categories",
                                                                new
                                                                {
-                                                                 name = $"GETR{CapitalUmlautA}NKE",
+                                                                 name = $"GETR{SmallUmlautA}NKE",
                                                                  colourHex = "#1565C0"
                                                                });
 

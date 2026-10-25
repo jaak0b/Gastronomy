@@ -41,7 +41,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton(options);
     services.AddSingleton(TimeProvider.System);
 
-    services.AddSingleton<IMappingRegistration, AdminCategoryMapping>();
     services.AddSingleton<IMappingRegistration, AdminFestivalMapping>();
     services.AddSingleton<IMappingRegistration, AdminTablePlanMapping>();
     services.AddSingleton<IMappingRegistration, AdminItemMapping>();
@@ -114,7 +113,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<CatalogService>();
     services.AddScoped<SessionService>();
     services.AddScoped<CatalogItemAdministrationService>();
-    services.AddScoped<CatalogCategoryAdministrationService>();
+    services.AddScoped<CatalogCategoryService>();
     services.AddScoped<DeviceOwnerRetirement>();
     services.AddScoped<FestivalAdministrationService>();
     services.AddScoped<FestivalMenuService>();
@@ -174,7 +173,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<AdminAreaHandler>();
     services.AddScoped<AdminTableHandler>();
     services.AddScoped<AdminFestivalStationShapeHandler>();
-    services.AddScoped<AdminCategoryHandler>();
     services.AddScoped<AdminItemHandler>();
     services.AddScoped<AdminItemRecipeHandler>();
     services.AddScoped<AdminFestivalStockHandler>();

@@ -13,7 +13,6 @@ public sealed class AdminItemMappingTest
   {
     IMappingRegistration[] registrations =
     [
-      new AdminCategoryMapping(),
       new AdminFestivalMapping(new()),
       new AdminItemMapping(),
       new AdminStaffMembersMapping(),

@@ -24,6 +24,11 @@ Frontend, under `frontend/src/`:
 - **The global tabs are plain lists** with no festival controls. The Artikel tab groups its articles
   under their categories and lists every category, a deactivated one with its chip, whatever
   "Deaktivierte anzeigen" says, so a category's arrows count every category.
+  The backend for categories is `GastronomyApp.Core/Services/CatalogCategoryService.cs` (`ListAsync`, `CreateAsync`,
+  `UpdateAsync`, `MoveAsync`, `DeactivateAsync`; switching on again is `ActivationService`), mapped in
+  `Core/Mapping/CatalogCategoryMapping.cs`, with the routes in `Api/Endpoints/AdminCategoryEndpoints.cs`. A name is
+  trimmed and compared in SQL without regard to case (`NamedQueries.Namesakes`); deactivating is refused while
+  an active article is in the category.
 - **Every row offers its actions the same way**: text buttons first, then the pencil "Bearbeiten"
   for the edit dialog, then switching off, hiding or removing, with the up and down arrows before
   the pencil where a list is ordered by hand. Showing or switching on again is the open eye named

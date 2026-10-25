@@ -1,5 +1,8 @@
-﻿using GastronomyApp.Api.Handlers;
+using GastronomyApp.Api.Answers;
 using GastronomyApp.Contracts.Admin.Catalog;
+using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Refusals;
+using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 
@@ -11,17 +14,18 @@ public static class AdminCategoryEndpoints
   {
     var group = routes.MapGroup("/api/admin/categories");
 
-    group.MapGet(string.Empty, async (AdminCategoryHandler handler, CancellationToken cancellationToken) => await handler.ListAsync(cancellationToken));
+    group.MapGet(string.Empty, async Task<ApiAnswer<AdminCategoryListView>> (CatalogCategoryService service, CancellationToken cancellationToken) => await service.ListAsync(cancellationToken));
 
-    group.MapPost(string.Empty, async (SaveCategoryRequest request, AdminCategoryHandler handler, CancellationToken cancellationToken) => await handler.CreateAsync(request, cancellationToken));
+    group.MapPost(string.Empty, async Task<CreatedAnswer<AdminCategoryView>> (SaveCategoryRequest request, CatalogCategoryService service, CancellationToken cancellationToken) => await service.CreateAsync(request, cancellationToken));
 
-    group.MapPut("/{categoryId:guid}", async (Guid categoryId, SaveCategoryRequest request, AdminCategoryHandler handler, CancellationToken cancellationToken) => await handler.UpdateAsync(categoryId, request, cancellationToken));
+    group.MapPut("/{categoryId:guid}", async Task<ApiAnswer<AdminCategoryView>> (Guid categoryId, SaveCategoryRequest request, CatalogCategoryService service, CancellationToken cancellationToken) => await service.UpdateAsync(categoryId, request, cancellationToken));
 
-    group.MapPost("/{categoryId:guid}/move", async (Guid categoryId, MoveCategoryRequest request, AdminCategoryHandler handler, CancellationToken cancellationToken) => await handler.MoveAsync(categoryId, request, cancellationToken));
+    group.MapPost("/{categoryId:guid}/move", async Task<ApiAnswer<AdminCategoryListView>> (Guid categoryId, MoveCategoryRequest request, CatalogCategoryService service, CancellationToken cancellationToken) => await service.MoveAsync(categoryId, request.Direction, cancellationToken));
 
-    group.MapPost("/{categoryId:guid}/activate", async (Guid categoryId, AdminCategoryHandler handler, CancellationToken cancellationToken) => await handler.ActivateAsync(categoryId, cancellationToken));
+    group.MapPost("/{categoryId:guid}/activate",
+                  async Task<ApiAnswer<AdminCategoryView>> (Guid categoryId, ActivationService service, CancellationToken cancellationToken) => await service.ActivateAsync<CatalogCategory, AdminCategoryView>(categoryId, Refusal.CatalogCategory.CategoryNotFound, cancellationToken));
 
-    group.MapPost("/{categoryId:guid}/deactivate", async (Guid categoryId, AdminCategoryHandler handler, CancellationToken cancellationToken) => await handler.DeactivateAsync(categoryId, cancellationToken));
+    group.MapPost("/{categoryId:guid}/deactivate", async Task<ApiAnswer<AdminCategoryView>> (Guid categoryId, CatalogCategoryService service, CancellationToken cancellationToken) => await service.DeactivateAsync(categoryId, cancellationToken));
 
     return routes;
   }

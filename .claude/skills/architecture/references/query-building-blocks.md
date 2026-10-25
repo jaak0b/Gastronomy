@@ -18,8 +18,8 @@ a deactivated station is not offered any more, and a screen shows a row another 
   - `IActivatable { bool IsActive { get; set; } }` with `ActivatableQueries.Active<T>() where T : class, IActivatable`,
     for stations, items, categories, ingredients, units and staff members.
   - `IHideable` with `HideableQueries.Shown<T>()`, for festival, area and table.
-  - `INamed { Guid Id; string Name }` with `NamedQueries.Namesakes<T>(name, excludedId)`, for units and
-    ingredients (a category joins when its area is converted). It compares in SQL, so the column's
+  - `INamed { Guid Id; string Name }` with `NamedQueries.Namesakes<T>(name, excludedId)`, for units,
+    ingredients and categories. It compares in SQL, so the column's
     `NOCASE` collation decides which names are the same; an edit passes its own id as `excludedId`,
     a create passes `null`.
 - **An interface appears only when at least two entities share the same flag with the same meaning.**
