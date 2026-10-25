@@ -62,11 +62,9 @@ Backend, under `backend/`:
   runs), over `StationRepository.FindStationIdsWithItemsToHandOutAsync`. The list,
   `FestivalStationService.RemoveAsync` (`StationHasOrdersAtTheFestival`) and
   `StationService.DeactivateAsync` (`StationHasUnfulfilledItems`) all ask it, and so
-  do the tables and areas of the table plan: its read (`FindTablePlanAsync`, which has the
-  repository count the items left only while the festival runs) and the hiding of a table or an
-  area (`HasItemsToHandOutOrSettleAtTableIfRunningAsync`, `HasItemsToHandOutOrSettleInAreaIfRunningAsync`,
-  over items not handed out or not settled; see the `table-plan` page). So "only while it runs" is
-  decided there and nowhere else, and no screen checks it again. The articles left without a station
+  do the tables and areas of the table plan: its read and the hiding of a table or an area ask
+  `RunningFestivalLookup.IsRunning` before they count the items not handed out or not settled (see the
+  `table-plan` page). So "only while it runs" is decided there and nowhere else, and no screen checks it again. The articles left without a station
   (`ItemsWouldHaveNoStation`) come in two fields, each filled only by the read whose screen offers
   that action and null in the other: `StrandedItemCountWhenRemovedFromTheFestival` on the festival
   read (`ItemOrderability.FindItemsStrandedByRemovingEachStationAsync`, which `RemoveAsync` asks for
@@ -214,7 +212,7 @@ Every point below is intended behaviour. A change to any of them needs the owner
   each read the list and then try the action for a station with an open item while the festival
   runs, has not started and is over, and check that the flag matches the answer; they also cover
   each read's stranded count, and that each read leaves the other read's count null. The filters themselves:
-  `GastronomyApp.Infrastructure.Tests/Persistence/OrderItemQueriesExtensionsTest`.
+  `GastronomyApp.Infrastructure.Tests/Queries/OrderItemQueriesTest`.
 - `frontend/tests`: `admin/stores/festivals.spec.ts` and `festivalScope.spec.ts`; the station
   list's reload on `OrdersChanged` in `admin/stores/screenListening.spec.ts`;
   `admin/components/festivals/FestivalsList.spec.ts` (the eye icons and the pencil with their

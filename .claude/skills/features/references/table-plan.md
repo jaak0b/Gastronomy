@@ -34,52 +34,57 @@ Backend, under `backend/`:
   key `(Id, FestivalId)` in `FestivalStationConfiguration`, and the order's table key in
   `OrderConfiguration`. Migrations `AddTablePlan` (tables `Areas`, `Tables`,
   `FestivalStationShapes`) and `SwitchOrdersToTables` (see the invariants).
-- Services: `AreaAdministrationService` (`ListTablePlanAsync`, create, update, move, hide, show;
-  a new area is numbered after the festival's last area, hidden ones included, through
-  `Core/Services/SortOrdering.cs` (`NextSortOrder`), the way categories are numbered, and editing
-  an area never changes its place; a move goes through `SortOrdering.Move` over
-  `FindAreasInOrderAsync` and swaps the area with the next one in that direction that
-  `MoveAreaRequest.ShowsHiddenAreas` says the admin can see),
-  `TableAdministrationService` (create, update including a move to another area, hide, show, and
-  copy a selection of tables into one area and move a selection in one transaction) and
-  `FestivalStationShapeService` (place or move,
-  remove). `Core/Services/TableCopyNaming.cs` is the one home of a copy's name: it counts up the
+- Services, all over `IGastronomyDatabase` (the structure is on the `layers-and-projects` page of
+  `architecture`), split by sub-topic and never one class per action:
+  `AreaEditService` (create, update, move, hide) and `TableEditService` (create, update
+  including a move to another area, hide, copy a selection of tables into one area and move a
+  selection in one transaction) are the admin's writes; `TablePlanService` holds the two reads, the
+  admin's `ListAsync` and the phone's `ReadRunningFestivalAsync`. A new area is numbered after the
+  festival's last area, hidden ones included, through `Core/Services/SortOrdering.cs`
+  (`NextSortOrder`), the way categories are numbered, and editing an area never changes its place; a
+  move goes through `SortOrdering.Move` over the festival's areas and swaps the area with the next
+  one in that direction that `MoveAreaRequest.ShowsHiddenAreas` says the admin can see. `Area` and
+  `Table` are `INamed`, so a name that is already taken at the festival, hidden rows included, is
+  found by `NamedQueries.Namesakes` in SQL, where the column's `NOCASE` collation ignores case. Hiding
+  is one flow for both, `Core/Services/FestivalRowHiding.cs`, which each edit service calls with its own item filter and its own refusals: an area or a table that still has an item not handed out
+  or not settled stays shown while the festival runs (`WhereNotHandedOutOrNotSettled()` from
+  `Core/Queries/OrderItemQueries.cs`, the filter every "item still owed" question shares, asked only
+  when `RunningFestivalLookup.IsRunning` says the festival runs, the one home of "only while it
+  runs" that the stations use too, see the `festivals` page). Showing is the festival-scoped `ActivationService.ShowAsync<TEntity, TView>(festivalId, id, ...)`, constrained on `IHideable` and `IFestivalScoped`, which looks the row up inside the
+  festival of the route, so a row of another festival is not found. Copy and move load the
+  requested tables of the festival in one query and save once, so a selection is stored in one
+  transaction. `FestivalStationShapeService` (place or move, remove) keeps the shapes.
+  `Core/Services/TableCopyNaming.cs` is the one home of a copy's name: it counts up the
   ASCII digit run that ends the source name, keeping the text before it, the source's case and its
   digit count (`A1` to `A2`, `A09` to `A10`, `A99` to `A100`), appends ` 1`, ` 2`, ... to a name
   without a trailing digit, and takes the first free name per festival, hidden tables included,
   ignoring case. It processes one paste in ascending source name (`OrdinalIgnoreCase`, then id),
   uses `BigInteger` so a long digit run cannot overflow, and never truncates or normalises the
-  source name. Each takes its request record. Port:
-  `ITablePlanRepository` (`TablePlanRepository`) owns every read and write of areas, tables and
-  station shapes, and answers the order questions the hide rules ask
-  (`HasItemsToHandOutOrSettleAtTableAsync`, `HasItemsToHandOutOrSettleInAreaAsync`). Its read for the
-  copy and the move is `FindTablesAsync` (the requested tables of one festival, tracked because the
-  move updates them), and the copy also reads `FindTableNamesAsync`
-  (every name of the festival, hidden rows included). The admin's
-  read, `FindTablePlanAsync` (with `countsItemsToHandOutOrSettle`), answers `ListedArea` and
-  `ListedTable` (`Core/Results`): the entity and `HasItemsToHandOutOrSettleAtTheRunningFestival`,
-  false unless the read was told to count, computed in the same single statement with
-  `WhereNotHandedOutOrNotSettled()` from `Infrastructure/Persistence/OrderItemQueriesExtensions.cs`,
-  the filter this read and the hide rules share for an item not yet handed out or not yet settled, so the editor can disable hiding before the click.
-  Whether the items count is decided only in `Core/Services/ItemsToHandOutLookup.cs`, the one home of
-  "only while the festival runs" that the stations use too (see the `festivals` page):
-  `ListTablePlanAsync` reads the plan through its `FindTablePlanAsync(festival)`, and the two hide
-  rules ask `HasItemsToHandOutOrSettleAtTableIfRunningAsync` and
-  `HasItemsToHandOutOrSettleInAreaIfRunningAsync`, so the flag on the wire and the refusal always agree. `OrderAcceptanceService` looks the order's table up through
-  `FindTableAsync`; the open items screen reads one table with its orders through
-  `IOpenItemRepository.FindTableWithOrdersAsync` (see the `settling-a-table` page).
-- The phone's plan: `TablePlanService.ReadRunningFestivalTablePlanAsync` asks `RunningFestivalLookup`
-  for the running festival and reads its plan through
-  `ITablePlanRepository.FindShownAreasWithItemFlagsAsync`. That is one SQL statement, so one
-  snapshot, which projects into the records in `Core/Results`: `ShownArea` (the `Area` with its
-  `Tables` and `StationShapes`), `ShownTable` (the `Table` and `ItemFlagsPerOrder`, one list of
-  `OrderItemFlags` (`IsHandedOut`, `IsSettled`) per order, over all its stations) and
-  `NamedStationShape` (the `FestivalStationShape` with its `StationId` and `StationName`, which the
-  admin's `ListedArea` carries too). No order or item entity
-  is loaded, because every phone reads this again on every `OrdersChanged`.
-  `Core/Services/TableService.cs` derives a table's two colour states, `HandOutProgressOf` and
+  source name. Each service takes its request record and answers the wire record.
+- The admin's read, `TablePlanService.ListAsync`, projects the festival's areas into `AdminAreaView`
+  with `ProjectToType` (the mapping is `Core/Mapping/TablePlanMapping.cs`, which orders the tables
+  by name and the station shapes by their station's position and name), and, only while the festival
+  runs, fills `HasItemsToHandOutOrSettleAtTheRunningFestival` of every area and table from one
+  second query over the items still owed, so the editor can disable hiding before the click and the
+  flag always agrees with the hide refusal.
+- The phone's plan: `TablePlanService.ReadRunningFestivalAsync` asks `RunningFestivalLookup` for the
+  running festival and reads its shown plan as one SQL statement, so one snapshot: `ProjectToType`
+  into the records in `Core/Results`, `ShownArea` (the area with its `ShownTable`s and its
+  `TablePlanStationShapeView`s) and `ShownTable` (the table with `ItemFlagsPerOrder`, one list of
+  `OrderItemFlags` (`IsHandedOut`, `IsSettled`) per order, over all its stations). The flags are
+  mapped from `OrderItem` in `TablePlanMapping`, so no hand-written `Select` is left. No order or
+  item entity is loaded, because every phone reads this again on every `OrdersChanged`.
+  `Core/Services/TableProgress.cs` derives a table's two colour states, `HandOutProgressOf` and
   `SettlementProgressOf`, each through `OrderService.ShareOfFlaggedItems`, the one function that
-  turns item flags into `None`, `Some` or `All` and that `OrderService.StatusOf` uses as well.
+  turns item flags into `None`, `Some` or `All` and that `OrderService.StatusOf` uses as well; the
+  service sets them on the `TablePlanTableView`s after the read, in memory. The statement count is
+  pinned in `TablePlanServiceTest` (see the `count-sql-statements` how-to page).
+- `ITablePlanRepository` (`TablePlanRepository`) is what is left of the old repository, for the
+  areas that are not converted yet: `FindAreaAsync` and `FindStationShapeAsync`, `AddStationShapeAsync`,
+  `RemoveStationShape` and `SaveChangesAsync` for `FestivalStationShapeService` and
+  `FestivalStationService`, and `FindTableAsync` for `OrderAcceptanceService`, which looks the order's
+  table up through it; the open items screen reads one table with its orders through
+  `IOpenItemRepository.FindTableWithOrdersAsync` (see the `settling-a-table` page).
 - `FestivalStationService.RemoveAsync` deletes the station's shape together with its link through
   `ITablePlanRepository`, and `FestivalService.CopyAsync` copies the plan (see the
   invariants).
@@ -88,15 +93,15 @@ Backend, under `backend/`:
   `/api/admin/festivals/{festivalId}`: `GET /table-plan`, `POST /areas`, `PUT /areas/{areaId}`,
   `POST /areas/{areaId}/move` (body `MoveAreaRequest`: `direction` `up` or `down`, and
   `showsHiddenAreas`),
-  `POST /areas/{areaId}/hide` and `/show` (`AdminAreaHandler`);
+  `POST /areas/{areaId}/hide` and `/show` (`AreaEditService`);
   `POST /tables`, `PUT /tables/{tableId}`, `POST /tables/{tableId}/hide` and `/show`
-  (`AdminTableHandler`), `POST /tables/copy`, which creates every copy of one paste in the one
+  (`TableEditService`), `POST /tables/copy`, which creates every copy of one paste in the one
   request transaction and answers `CopiedTablesView` with the new table ids, and
   `POST /tables/move`, which moves one or more tables in one transaction and answers no content; `PUT` and
   `DELETE /stations/{stationId}/shape`
   (`AdminFestivalStationShapeHandler`, keyed by the station id, not the link id). The phone's
   `GET /api/table-plan` lives in `GastronomyApp.Api/Endpoints/TablePlanEndpoints.cs`
-  (`TablePlanHandler`), for staff phones only, like the catalog and open items routes.
+  (`TablePlanService`), for staff phones only, like the catalog and open items routes.
 - Wire records: `AreaShapeGeometry` in `GastronomyApp.Contracts/TablePlan` (`X`, `Y`, `Width`,
   `Height`, `Rotation`, nested as `Geometry` in every admin and phone request and view that carries
   a shape, so the frontend hands it straight to Konva). In `GastronomyApp.Contracts/Admin/Festivals`:
@@ -108,15 +113,13 @@ Backend, under `backend/`:
   `Geometry`, with no name and no area), `CopyTablesRequest` (the target area and one `CopyTableRequest` per table, each
   a source table id and its `Geometry`), `CopiedTablesView` (the new `TableIds`), `AdminTablePlanView`, `AdminAreaView` (no sort order: the list comes in the
   laptop's order) and `AdminTableView` (each with `HasItemsToHandOutOrSettleAtTheRunningFestival`), `AdminStationShapeView` (`StationName`); a station shape answers
-  with `SavedStationView`. Mapping: `GastronomyApp.Api/Mapping/AdminTablePlanMapping.cs`, from the
-  `Listed*` records and `NamedStationShape`. The phone's records are in
+  with `SavedStationView`. The phone's records are in
   `GastronomyApp.Contracts/TablePlan`: `TablePlanView` (`Areas`), `TablePlanAreaView` (`AreaId`,
   `Name`, `Tables`, `StationShapes`), `TablePlanTableView` (`TableId`, `Name`, `Geometry`,
   `HandOutProgress`, `SettlementProgress`) and `TablePlanStationShapeView` (`StationName`,
   `Geometry`); both states are a `ShareState` (`Contracts/Enums`: `None`, `Some`, `All`, on the
-  wire `none`, `some`, `all`, the same word the phone's open items code uses). Mapping:
-  `GastronomyApp.Api/Mapping/TablePlanMapping.cs`, from the `Shown*` records and `NamedStationShape`, which calls
-  `TableService` for the two states.
+  wire `none`, `some`, `all`, the same word the phone's open items code uses). All of these are mapped
+  in `GastronomyApp.Core/Mapping/TablePlanMapping.cs`.
 - Texts: `errors.admin.festivals.areaNameTaken`, `tableNameTaken`,
   `areaWithItemsToHandOutOrSettleStaysShown`, `tableWithItemsToHandOutOrSettleStaysShown` and
   `tableCopyNameTooLong` in
@@ -427,39 +430,35 @@ Frontend, under `frontend/src/`:
 
 ## Tests
 
-- `GastronomyApp.Core.Tests/Services`: `AreaAdministrationServiceTest` (the number of a new area,
-  an edit that keeps the place, the moves, past a hidden area or onto it), `SortOrderingTest` (a
-  move past an entry that does not count),
-  `TableAdministrationServiceTest` (including the order-dependent hide rules, the copy of a
-  table selection: names, geometry, hidden-table name collisions, a missing or foreign source, a
-  target area outside the festival, the 40-character refusal and nothing created when it refuses,
-  and the batch move: several tables reshaped and saved once, a missing table, an empty list and a
-  duplicate list),
-  `TableCopyNamingTest` (every naming example, leading zeros, a name without a trailing digit,
-  collisions with shown and hidden names, ASCII case collisions, a paste of several tables in
-  deterministic order, a very long digit run),
-  `ItemsToHandOutLookupTest` (the plan read counting the items left only while the festival runs,
-  and the table and area checks running, over and not yet started),
+- `GastronomyApp.Core.Tests/Services`: `SortOrderingTest` (a move past an entry that does not
+  count), `TableCopyNamingTest` (every naming example, leading zeros, a name without a trailing
+  digit, collisions with shown and hidden names, ASCII case collisions, a paste of several tables in
+  deterministic order, a very long digit run), `ItemsToHandOutLookupTest` (the station checks),
   `FestivalStationShapeServiceTest`, `AreaShapeServiceTest`, the station shape cases of
   `FestivalStationServiceTest`, and the table cases of `OrderAcceptanceServiceTest`;
-  `TableServiceTest` for the two colour states (the example above, the settled side, a table
-  without orders), the `ShareOfFlaggedItems` cases of `OrderServiceTest`, and `TablePlanServiceTest`
-  for the running festival.
+  `TableProgressTest` for the two colour states (the example above, the settled side, a table
+  without orders) and the `ShareOfFlaggedItems` cases of `OrderServiceTest`.
 - `GastronomyApp.Infrastructure.Tests`: `Configurations/AreaConfigurationTest`,
   `TableConfigurationTest`, `FestivalStationShapeConfigurationTest` and `OrderConfigurationTest`
   (the unique names, the database refusing a festival mix-up and the deletion of a table with an
-  order, doubles read back unchanged); `Repositories/TablePlanRepositoryTest` (including the
-  phone's read: hidden areas and tables left out, another festival's areas left out, the flags of
-  each order's items, an order at two stations beside two station shapes in one area answered once
-  each, and the whole read in one statement, counted by `TestSupport/QueryCounter`; the admin's read
-  with its flags per table and area, no flag when it is told not to count, also one statement; the
-  copy reads `FindTableNamesAsync` with hidden names and no other festival's, and `FindTablesAsync`
-  with a shown and a hidden table of the festival and another festival's id left out, and as a
-  tracked read whose changed geometry is saved); the plan
-  copy in
+  order, doubles read back unchanged); the services run on the real DbContext:
+  `Services/AreaEditServiceTest` (the number of a new area, a name taken in other capitals or by a
+  hidden area, an edit that keeps the place, the moves, past a hidden area or onto it, the hide rule
+  while the festival runs and after it, show scoped to the festival), `Services/TableEditServiceTest`
+  (the geometry stored exactly, the order-dependent hide rules, the copy of a table selection: names,
+  geometry, hidden-table name collisions, a missing or foreign source, a target area outside the
+  festival, the 40-character refusal and nothing created when it refuses, and the batch move: several
+  tables reshaped in one save, a missing table, an empty list and a duplicate list) and
+  `Services/TablePlanServiceTest` (the admin's read with its flags per table and area, no flag after
+  the festival; the phone's read: hidden areas and tables left out, another festival's areas left
+  out, the two progress states per table, an order at two stations beside two station shapes in one
+  area answered once each, and the whole phone read in one statement, counted by
+  `TestSupport/QueryCounter`); `Queries/OrderItemQueriesTest` for the filters on items;
+  `Repositories/TablePlanRepositoryTest` for what is left of the repository (another festival's area
+  and table not found, adding and removing a station shape); the plan copy in
   `FestivalServiceTest`; `Persistence/ReleasedDatabaseUpgradeTest` (festival station rows survive
   the rebuild of their table, and old orders at two festivals end up at hidden tables of their own
-  festival). `TestSupport/DomainSeeder.SeedTableAsync` gives a test a table to order at.
+  festival). `TestSupport/DomainSeeder.SeedTableAsync` gives a test a table to order at, and `TestSupport/TablePlanSeeder` adds festivals, areas, tables, placed stations and orders for the table plan tests.
 - `GastronomyApp.Api.Tests`: `Endpoints/AdminFestivalTablePlanEndpointsTest` for every route
   (a new area numbered after a hidden last one, an edit that keeps the place, an area moved up, past
   a hidden area while hidden areas are not shown and onto it while they are, an area of another

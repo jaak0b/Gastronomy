@@ -345,11 +345,7 @@ public sealed class StationServiceTest
     FestivalRepository festivalRepository = new(dbContext, new());
     RunningFestivalLookup runningFestival = new(festivalRepository, new(), _clock);
 
-    return new(dbContext,
-               new CoreMappingFactory().Create(),
-               new(_invitationStore, _deviceTokenStore, _announcer, _afterCommitActions, _clock),
-               new(new ItemOrderabilityRepository(dbContext), festivalRepository, _clock),
-               new(new StationRepository(dbContext), new TablePlanRepository(dbContext), runningFestival));
+    return new(dbContext, new CoreMappingFactory().Create(), new(_invitationStore, _deviceTokenStore, _announcer, _afterCommitActions, _clock), new(new ItemOrderabilityRepository(dbContext), festivalRepository, _clock), new(new StationRepository(dbContext), runningFestival));
   }
 
   private async Task<int> CountStatementsOfListAsync()

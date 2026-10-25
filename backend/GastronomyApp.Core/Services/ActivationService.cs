@@ -2,6 +2,7 @@ using ErrorOr;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using Mapster;
+using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Core.Services;
 
@@ -36,6 +37,21 @@ public sealed class ActivationService
     ArgumentNullException.ThrowIfNull(notFound);
 
     var row = await _database.Set<TEntity>().FindAsync([id], cancellationToken);
+
+    if (row is null)
+      return notFound(id);
+
+    row.IsHidden = false;
+    await _database.SaveChangesAsync(cancellationToken);
+
+    return row.Adapt<TView>(_mapping);
+  }
+
+  public async Task<ErrorOr<TView>> ShowAsync<TEntity, TView>(Guid festivalId, Guid id, Func<Guid, Error> notFound, CancellationToken cancellationToken) where TEntity : class, IHideable, IFestivalScoped
+  {
+    ArgumentNullException.ThrowIfNull(notFound);
+
+    var row = await _database.Set<TEntity>().FirstOrDefaultAsync(candidate => candidate.Id == id && candidate.FestivalId == festivalId, cancellationToken);
 
     if (row is null)
       return notFound(id);

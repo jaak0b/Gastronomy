@@ -1,13 +1,13 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Infrastructure.Persistence;
+using GastronomyApp.Core.Queries;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 
-namespace GastronomyApp.Infrastructure.Tests.Persistence;
+namespace GastronomyApp.Infrastructure.Tests.Queries;
 
 [TestFixture]
-public sealed class OrderItemQueriesExtensionsTest
+public sealed class OrderItemQueriesTest
 {
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
 
@@ -69,9 +69,9 @@ public sealed class OrderItemQueriesExtensionsTest
   {
     Assert.Multiple(() =>
                     {
-                      Assert.That(() => OrderItemQueriesExtensions.WhereNotHandedOut(null!), Throws.ArgumentNullException);
-                      Assert.That(() => OrderItemQueriesExtensions.WhereNotHandedOutOrNotSettled(null!), Throws.ArgumentNullException);
-                      Assert.That(() => OrderItemQueriesExtensions.WhereFestivalIs(null!, Guid.NewGuid()), Throws.ArgumentNullException);
+                      Assert.That(() => OrderItemQueries.WhereNotHandedOut(null!), Throws.ArgumentNullException);
+                      Assert.That(() => OrderItemQueries.WhereNotHandedOutOrNotSettled(null!), Throws.ArgumentNullException);
+                      Assert.That(() => OrderItemQueries.WhereFestivalIs(null!, Guid.NewGuid()), Throws.ArgumentNullException);
                     });
   }
 

@@ -43,7 +43,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton(options);
     services.AddSingleton(TimeProvider.System);
 
-    services.AddSingleton<IMappingRegistration, AdminTablePlanMapping>();
     services.AddSingleton<IMappingRegistration, CatalogMapping>();
     services.AddSingleton<IMappingRegistration, EnrolmentMapping>();
     services.AddSingleton<IMappingRegistration, OpenItemMapping>();
@@ -51,7 +50,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<IMappingRegistration, SettlementMapping>();
     services.AddSingleton<IMappingRegistration, EstimateMapping>();
     services.AddSingleton<IMappingRegistration, StationQueueMapping>();
-    services.AddSingleton<IMappingRegistration, TablePlanMapping>();
 
     services.AddSingleton(serviceProvider => new MappingConfiguration(serviceProvider.GetServices<IMappingRegistration>()).Build());
     services.AddScoped<IMapper, ServiceMapper>();
@@ -90,7 +88,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<OrderService>();
     services.AddSingleton<StationOrderService>();
     services.AddSingleton<StationWaitingTimes>();
-    services.AddSingleton<TableService>();
+    services.AddSingleton<TableProgress>();
     services.AddSingleton<FestivalSchedule>();
     services.AddSingleton<AreaShapeService>();
     services.AddSingleton<TableCopyNaming>();
@@ -111,8 +109,9 @@ public sealed class ApiServiceRegistration
     services.AddScoped<FestivalService>();
     services.AddScoped<FestivalMenuService>();
     services.AddScoped<FestivalStationService>();
-    services.AddScoped<AreaAdministrationService>();
-    services.AddScoped<TableAdministrationService>();
+    services.AddScoped<FestivalRowHiding>();
+    services.AddScoped<AreaEditService>();
+    services.AddScoped<TableEditService>();
     services.AddScoped<FestivalStationShapeService>();
     services.AddScoped<StationService>();
     services.AddScoped<StaffMemberService>();
@@ -149,7 +148,6 @@ public sealed class ApiServiceRegistration
 
     services.AddScoped<OrderPlacementHandler>();
     services.AddScoped<OpenItemQueryHandler>();
-    services.AddScoped<TablePlanHandler>();
     services.AddScoped<OrderItemSettlementHandler>();
     services.AddScoped<SessionHandler>();
     services.AddSingleton<OutstandingInvitationCache>();
@@ -160,8 +158,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<EnrolmentUrlBuilder>();
     services.AddScoped<AdminFestivalMenuHandler>();
     services.AddScoped<AdminFestivalStationHandler>();
-    services.AddScoped<AdminAreaHandler>();
-    services.AddScoped<AdminTableHandler>();
     services.AddScoped<AdminFestivalStationShapeHandler>();
     services.AddScoped<AdminFestivalStockHandler>();
     services.AddScoped<CatalogHandler>();

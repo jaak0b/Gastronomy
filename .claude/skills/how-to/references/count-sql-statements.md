@@ -28,9 +28,11 @@ belongs in the service's ordinary tests. This test only counts the statements.
 
 ## Example
 
-`TablePlanRepositoryTest.FindShownAreasWithItemFlagsAsync_APlanWithOrdersAtTwoStationsAndStationShapes_ReadsItInOneStatement`
-pins the phone's table plan read to one statement. It still calls a repository method because the
-table plan area is not converted yet; a converted area measures the read method of its service the same way.
+`TablePlanServiceTest.ReadRunningFestivalAsync_APlanWithOrdersAtTwoStationsAndStationShapes_ReadsThePlanInOneStatement`
+pins the phone's table plan read to one statement. The service under test gets the read context; the
+`RunningFestivalLookup` it asks for the running festival gets the fixture's own context, so the
+counter sees the plan statement alone. The statement is a `ProjectToType` over the shown areas, with
+the item flags of each table mapped in `Core/Mapping/TablePlanMapping.cs`.
 
 Run it on its own:
-`dotnet test backend/GastronomyApp.Infrastructure.Tests/GastronomyApp.Infrastructure.Tests.csproj --filter "FullyQualifiedName~Repositories.TablePlanRepositoryTest"`.
+`dotnet test backend/GastronomyApp.Infrastructure.Tests/GastronomyApp.Infrastructure.Tests.csproj --filter "FullyQualifiedName~Services.TablePlanServiceTest"`.

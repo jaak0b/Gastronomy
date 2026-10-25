@@ -18,8 +18,10 @@ a deactivated station is not offered any more, and a screen shows a row another 
   - `IActivatable { bool IsActive { get; set; } }` with `ActivatableQueries.Active<T>() where T : class, IActivatable`,
     for stations, items, categories, ingredients, units and staff members.
   - `IHideable` with `HideableQueries.Shown<T>()`, for festival, area and table.
+  - `IFestivalScoped : IEntity { Guid FestivalId }`, for area and table. It has no query extension: `ActivationService.ShowAsync` and `FestivalRowHiding.HideAsync` use it to look a row up inside the festival of the route, so a row of another festival is not found.
   - `INamed : IEntity { string Name }` (`IEntity` is `{ Guid Id }`, implemented by every entity with a single Guid key, and `ISortable` and `IDeviceOwner` derive from it too) with `NamedQueries.Namesakes<T>(name, excludedId)`, for units,
-    ingredients and categories. It compares in SQL, so the column's
+    ingredients, categories, areas and tables (an area or a table is looked up inside its festival first,
+    then `Namesakes` is applied). It compares in SQL, so the column's
     `NOCASE` collation decides which names are the same; an edit passes its own id as `excludedId`,
     a create passes `null`.
 - **An interface appears only when at least two entities share the same flag with the same meaning.**

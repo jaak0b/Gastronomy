@@ -43,29 +43,31 @@ public static class AdminFestivalEndpoints
     group.MapPut("/{festivalId:guid}/ingredients/{ingredientId:guid}",
                  async (Guid festivalId, Guid ingredientId, SaveFestivalIngredientRequest request, AdminFestivalStockHandler handler, CancellationToken cancellationToken) => await handler.SetAvailableAmountAsync(festivalId, ingredientId, request, cancellationToken));
 
-    group.MapGet("/{festivalId:guid}/table-plan", async (Guid festivalId, AdminAreaHandler handler, CancellationToken cancellationToken) => await handler.ListTablePlanAsync(festivalId, cancellationToken));
+    group.MapGet("/{festivalId:guid}/table-plan", async Task<ApiAnswer<AdminTablePlanView>> (Guid festivalId, TablePlanService service, CancellationToken cancellationToken) => await service.ListAsync(festivalId, cancellationToken));
 
-    group.MapPost("/{festivalId:guid}/areas", async (Guid festivalId, SaveAreaRequest request, AdminAreaHandler handler, CancellationToken cancellationToken) => await handler.CreateAsync(festivalId, request, cancellationToken));
+    group.MapPost("/{festivalId:guid}/areas", async Task<CreatedAnswer<SavedAreaView>> (Guid festivalId, SaveAreaRequest request, AreaEditService service, CancellationToken cancellationToken) => await service.CreateAsync(festivalId, request, cancellationToken));
 
-    group.MapPut("/{festivalId:guid}/areas/{areaId:guid}", async (Guid festivalId, Guid areaId, SaveAreaRequest request, AdminAreaHandler handler, CancellationToken cancellationToken) => await handler.UpdateAsync(festivalId, areaId, request, cancellationToken));
+    group.MapPut("/{festivalId:guid}/areas/{areaId:guid}", async Task<ApiAnswer<SavedAreaView>> (Guid festivalId, Guid areaId, SaveAreaRequest request, AreaEditService service, CancellationToken cancellationToken) => await service.UpdateAsync(festivalId, areaId, request, cancellationToken));
 
-    group.MapPost("/{festivalId:guid}/areas/{areaId:guid}/move", async (Guid festivalId, Guid areaId, MoveAreaRequest request, AdminAreaHandler handler, CancellationToken cancellationToken) => await handler.MoveAsync(festivalId, areaId, request, cancellationToken));
+    group.MapPost("/{festivalId:guid}/areas/{areaId:guid}/move", async Task<ApiAnswer<SavedAreaView>> (Guid festivalId, Guid areaId, MoveAreaRequest request, AreaEditService service, CancellationToken cancellationToken) => await service.MoveAsync(festivalId, areaId, request, cancellationToken));
 
-    group.MapPost("/{festivalId:guid}/areas/{areaId:guid}/hide", async (Guid festivalId, Guid areaId, AdminAreaHandler handler, CancellationToken cancellationToken) => await handler.HideAsync(festivalId, areaId, cancellationToken));
+    group.MapPost("/{festivalId:guid}/areas/{areaId:guid}/hide", async Task<ApiAnswer<SavedAreaView>> (Guid festivalId, Guid areaId, AreaEditService service, CancellationToken cancellationToken) => await service.HideAsync(festivalId, areaId, cancellationToken));
 
-    group.MapPost("/{festivalId:guid}/areas/{areaId:guid}/show", async (Guid festivalId, Guid areaId, AdminAreaHandler handler, CancellationToken cancellationToken) => await handler.ShowAsync(festivalId, areaId, cancellationToken));
+    group.MapPost("/{festivalId:guid}/areas/{areaId:guid}/show",
+                  async Task<ApiAnswer<SavedAreaView>> (Guid festivalId, Guid areaId, ActivationService service, CancellationToken cancellationToken) => await service.ShowAsync<Area, SavedAreaView>(festivalId, areaId, id => Refusal.TablePlan.AreaNotFound(festivalId, id), cancellationToken));
 
-    group.MapPost("/{festivalId:guid}/tables", async (Guid festivalId, SaveTableRequest request, AdminTableHandler handler, CancellationToken cancellationToken) => await handler.CreateAsync(festivalId, request, cancellationToken));
+    group.MapPost("/{festivalId:guid}/tables", async Task<CreatedAnswer<SavedTableView>> (Guid festivalId, SaveTableRequest request, TableEditService service, CancellationToken cancellationToken) => await service.CreateAsync(festivalId, request, cancellationToken));
 
-    group.MapPost("/{festivalId:guid}/tables/copy", async (Guid festivalId, CopyTablesRequest request, AdminTableHandler handler, CancellationToken cancellationToken) => await handler.CopyAsync(festivalId, request, cancellationToken));
+    group.MapPost("/{festivalId:guid}/tables/copy", async Task<CreatedAnswer<CopiedTablesView>> (Guid festivalId, CopyTablesRequest request, TableEditService service, CancellationToken cancellationToken) => await service.CopyAsync(festivalId, request, cancellationToken));
 
-    group.MapPost("/{festivalId:guid}/tables/move", async (Guid festivalId, MoveTablesRequest request, AdminTableHandler handler, CancellationToken cancellationToken) => await handler.MoveAsync(festivalId, request, cancellationToken));
+    group.MapPost("/{festivalId:guid}/tables/move", async Task<NoContentAnswer> (Guid festivalId, MoveTablesRequest request, TableEditService service, CancellationToken cancellationToken) => await service.MoveAsync(festivalId, request, cancellationToken));
 
-    group.MapPut("/{festivalId:guid}/tables/{tableId:guid}", async (Guid festivalId, Guid tableId, SaveTableRequest request, AdminTableHandler handler, CancellationToken cancellationToken) => await handler.UpdateAsync(festivalId, tableId, request, cancellationToken));
+    group.MapPut("/{festivalId:guid}/tables/{tableId:guid}", async Task<ApiAnswer<SavedTableView>> (Guid festivalId, Guid tableId, SaveTableRequest request, TableEditService service, CancellationToken cancellationToken) => await service.UpdateAsync(festivalId, tableId, request, cancellationToken));
 
-    group.MapPost("/{festivalId:guid}/tables/{tableId:guid}/hide", async (Guid festivalId, Guid tableId, AdminTableHandler handler, CancellationToken cancellationToken) => await handler.HideAsync(festivalId, tableId, cancellationToken));
+    group.MapPost("/{festivalId:guid}/tables/{tableId:guid}/hide", async Task<ApiAnswer<SavedTableView>> (Guid festivalId, Guid tableId, TableEditService service, CancellationToken cancellationToken) => await service.HideAsync(festivalId, tableId, cancellationToken));
 
-    group.MapPost("/{festivalId:guid}/tables/{tableId:guid}/show", async (Guid festivalId, Guid tableId, AdminTableHandler handler, CancellationToken cancellationToken) => await handler.ShowAsync(festivalId, tableId, cancellationToken));
+    group.MapPost("/{festivalId:guid}/tables/{tableId:guid}/show",
+                  async Task<ApiAnswer<SavedTableView>> (Guid festivalId, Guid tableId, ActivationService service, CancellationToken cancellationToken) => await service.ShowAsync<Table, SavedTableView>(festivalId, tableId, id => Refusal.TablePlan.TableNotFound(festivalId, id), cancellationToken));
 
     group.MapPut("/{festivalId:guid}/stations/{stationId:guid}/shape",
                  async (Guid festivalId, Guid stationId, SaveStationShapeRequest request, AdminFestivalStationShapeHandler handler, CancellationToken cancellationToken) => await handler.PlaceAsync(festivalId, stationId, request, cancellationToken));

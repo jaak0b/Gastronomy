@@ -5,9 +5,9 @@ using GastronomyApp.Core.Services;
 namespace GastronomyApp.Core.Tests.Services;
 
 [TestFixture]
-public sealed class TableServiceTest
+public sealed class TableProgressTest
 {
-  private readonly TableService _service = new(new());
+  private readonly TableProgress _service = new(new());
 
   private readonly OrderItemFlags _untouched = new(false, false);
   private readonly OrderItemFlags _handedOut = new(true, false);
@@ -119,13 +119,15 @@ public sealed class TableServiceTest
 
   private ShownTable TableWith(params IReadOnlyList<OrderItemFlags>[] itemFlagsPerOrder)
   {
-    return new(new()
+    return new(Guid.NewGuid(),
+               "Tisch 3",
+               new()
                {
-                 Id = Guid.NewGuid(),
-                 FestivalId = Guid.NewGuid(),
-                 AreaId = Guid.NewGuid(),
-                 Name = "Tisch 3",
-                 IsHidden = false
+                 X = 0,
+                 Y = 0,
+                 Width = 80,
+                 Height = 40,
+                 Rotation = 0
                },
                itemFlagsPerOrder);
   }

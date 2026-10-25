@@ -3,11 +3,11 @@ using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
-public sealed class TableService
+public sealed class TableProgress
 {
   private readonly OrderService _orderService;
 
-  public TableService(OrderService orderService)
+  public TableProgress(OrderService orderService)
   {
     _orderService = orderService;
   }

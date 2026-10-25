@@ -1,8 +1,8 @@
 using GastronomyApp.Core.Entities;
 
-namespace GastronomyApp.Infrastructure.Persistence;
+namespace GastronomyApp.Core.Queries;
 
-public static class OrderItemQueriesExtensions
+public static class OrderItemQueries
 {
   public static IQueryable<OrderItem> WhereNotHandedOut(this IQueryable<OrderItem> items)
   {

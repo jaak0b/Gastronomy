@@ -11,6 +11,8 @@ namespace GastronomyApp.Infrastructure.Tests.Services;
 [TestFixture]
 public sealed class ActivationServiceTest
 {
+  private readonly TablePlanSeeder _plan = new();
+
   [Test]
   public async Task ActivateAsync_ASwitchedOffRow_SwitchesItOnAndStoresIt()
   {
@@ -77,6 +79,82 @@ public sealed class ActivationServiceTest
     ErrorOr<SavedFestivalView> shown = await service.ShowAsync<Festival, SavedFestivalView>(Guid.NewGuid(), Refusal.Festival.FestivalNotFound, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(shown.FirstError.NumericType, Is.EqualTo(RefusalType.NotFound));
+  }
+
+  [Test]
+  public async Task ShowAsync_AHiddenAreaOfTheFestival_ShowsItAndStoresIt()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var festivalId = await _plan.AddFestivalAsync(fixture.DbContext);
+    var areaId = await _plan.AddAreaAsync(fixture.DbContext, festivalId, "Garten", 1, true);
+    ActivationService service = new(fixture.DbContext, new CoreMappingFactory().Create());
+
+    ErrorOr<SavedAreaView> shown = await service.ShowAsync<Area, SavedAreaView>(festivalId, areaId, id => Refusal.TablePlan.AreaNotFound(festivalId, id), TestContext.CurrentContext.CancellationToken);
+    fixture.DbContext.ChangeTracker.Clear();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(shown.Value.AreaId, Is.EqualTo(areaId));
+                      Assert.That(fixture.DbContext.Areas.Single().IsHidden, Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task ShowAsync_AnAreaOfAnotherFestival_IsNotFoundAndStaysHidden()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var festivalId = await _plan.AddFestivalAsync(fixture.DbContext);
+    var otherFestivalId = await _plan.AddFestivalAsync(fixture.DbContext);
+    var strangerAreaId = await _plan.AddAreaAsync(fixture.DbContext, otherFestivalId, "Garten", 1, true);
+    ActivationService service = new(fixture.DbContext, new CoreMappingFactory().Create());
+
+    ErrorOr<SavedAreaView> shown = await service.ShowAsync<Area, SavedAreaView>(festivalId, strangerAreaId, id => Refusal.TablePlan.AreaNotFound(festivalId, id), TestContext.CurrentContext.CancellationToken);
+    fixture.DbContext.ChangeTracker.Clear();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(shown.RefusalMessageKey(), Is.EqualTo("AreaNotFound"));
+                      Assert.That(fixture.DbContext.Areas.Single().IsHidden, Is.True);
+                    });
+  }
+
+  [Test]
+  public async Task ShowAsync_AHiddenTableOfTheFestival_ShowsItAndStoresIt()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var festivalId = await _plan.AddFestivalAsync(fixture.DbContext);
+    var areaId = await _plan.AddAreaAsync(fixture.DbContext, festivalId, "Garten", 1, false);
+    var tableId = await _plan.AddTableAsync(fixture.DbContext, festivalId, areaId, "Tisch 1", true);
+    ActivationService service = new(fixture.DbContext, new CoreMappingFactory().Create());
+
+    ErrorOr<SavedTableView> shown = await service.ShowAsync<Table, SavedTableView>(festivalId, tableId, id => Refusal.TablePlan.TableNotFound(festivalId, id), TestContext.CurrentContext.CancellationToken);
+    fixture.DbContext.ChangeTracker.Clear();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(shown.Value.TableId, Is.EqualTo(tableId));
+                      Assert.That(fixture.DbContext.Tables.Single().IsHidden, Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task ShowAsync_ATableOfAnotherFestival_IsNotFoundAndStaysHidden()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var festivalId = await _plan.AddFestivalAsync(fixture.DbContext);
+    var otherFestivalId = await _plan.AddFestivalAsync(fixture.DbContext);
+    var strangerAreaId = await _plan.AddAreaAsync(fixture.DbContext, otherFestivalId, "Wiese", 1, false);
+    var strangerTableId = await _plan.AddTableAsync(fixture.DbContext, otherFestivalId, strangerAreaId, "Tisch 1", true);
+    ActivationService service = new(fixture.DbContext, new CoreMappingFactory().Create());
+
+    ErrorOr<SavedTableView> shown = await service.ShowAsync<Table, SavedTableView>(festivalId, strangerTableId, id => Refusal.TablePlan.TableNotFound(festivalId, id), TestContext.CurrentContext.CancellationToken);
+    fixture.DbContext.ChangeTracker.Clear();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(shown.RefusalMessageKey(), Is.EqualTo("TableNotFound"));
+                      Assert.That(fixture.DbContext.Tables.Single().IsHidden, Is.True);
+                    });
   }
 
   private async Task<Festival> StoreFestivalAsync(SqliteInMemoryFixture fixture, bool isHidden)

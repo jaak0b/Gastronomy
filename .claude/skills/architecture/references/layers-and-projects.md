@@ -102,10 +102,10 @@ Turning a row back on is the same for most entities that carry the flag: find it
 does not exist, set the flag, save. An entity whose activation has rules of its own (an article
 refuses while its category is switched off or its recipe holds a deactivated ingredient) keeps its
 activate in its area's service. The rule-free case is written once, in `ActivationService` in `Core/Services`,
-as one generic action over `IActivatable` (activate) and one over `IHideable` (show). Turning a row
+as one generic action over `IActivatable` (activate) and one over `IHideable` (show), with a second show over `IHideable` and `IFestivalScoped` for a row that belongs to a festival of the route (area, table). Turning a row
 off is not shared: each entity refuses for its own reason (a unit an ingredient still uses, a station
 with items not yet handed out, an area with open items), so deactivate and hide stay actions of the
-area's own service.
+area's own service. The one exception is the flow that area and table hide identically (find inside the festival, nothing to do when already hidden, refuse only while the festival runs and items are still owed), which is `FestivalRowHiding` and takes each one's item filter and refusals.
 
 The routes stay one pair per entity, so the generated types name every operation and a refusal
 belongs to a route a reader can find. The frontend's shared admin list offers only the operations
