@@ -31,17 +31,6 @@ public sealed class StationRepository : IStationRepository
                            .ToListAsync(cancellationToken);
   }
 
-  public async Task<IReadOnlyList<Station>> FindAtFestivalWithOpenItemsAsync(Guid festivalId, CancellationToken cancellationToken)
-  {
-    return await _dbContext.Stations.AsNoTracking()
-                           .Where(station => station.IsActive && _dbContext.FestivalStations.Any(link => link.FestivalId == festivalId && link.StationId == station.Id))
-                           .Include(station => station.StationOrders.Where(stationOrder => stationOrder.FestivalId == festivalId))
-                           .ThenInclude(stationOrder => stationOrder.Items.Where(item => item.FulfilledAtUtc == null))
-                           .ThenInclude(item => item.CatalogItem)
-                           .OrderBy(station => station.SortOrder)
-                           .ToListAsync(cancellationToken);
-  }
-
   public async Task<IReadOnlyCollection<Guid>> FindStationIdsWithItemsToHandOutAsync(Guid festivalId, CancellationToken cancellationToken)
   {
     return await _dbContext.OrderItems.AsNoTracking().WhereNotHandedOut().WhereFestivalIs(festivalId).Select(item => item.StationOrder.StationId).Distinct().ToListAsync(cancellationToken);

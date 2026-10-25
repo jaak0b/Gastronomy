@@ -1,11 +1,12 @@
 using GastronomyApp.Contracts.Admin.Festivals;
 using GastronomyApp.Contracts.Catalog;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Results;
 using Mapster;
 
-namespace GastronomyApp.Api.Mapping;
+namespace GastronomyApp.Core.Mapping;
 
-public sealed class CatalogMapping : IMappingRegistration
+public sealed class CatalogMapping : IRegister
 {
   public void Register(TypeAdapterConfig config)
   {
@@ -22,14 +23,13 @@ public sealed class CatalogMapping : IMappingRegistration
           .Map(view => view.SortOrder, menuRow => menuRow.CatalogItem.SortOrder)
           .Map(view => view.ProductionMinutes, menuRow => menuRow.CatalogItem.ProductionMinutes)
           .Map(view => view.IsQueueIndependent, menuRow => menuRow.CatalogItem.IsQueueIndependent)
-          .Map(view => view.StationIds, menuRow => menuRow.CatalogItem.StationAssignments.Select(assignment => assignment.StationId).ToList());
+          .Map(view => view.StationIds,
+               menuRow => menuRow.CatalogItem.StationAssignments.Where(assignment => assignment.FestivalId == menuRow.FestivalId && assignment.Station.IsActive && assignment.Station.FestivalStations.Any(link => link.FestivalId == assignment.FestivalId))
+                                 .Select(assignment => assignment.StationId)
+                                 .ToList());
+
+    config.NewConfig<FestivalCatalogItem, CatalogMenuEntry>().Map(entry => entry.Category, menuRow => menuRow.CatalogItem.Category).Map(entry => entry.Item, menuRow => menuRow);
 
     config.NewConfig<Festival, RunningFestivalView>().Map(view => view.FestivalId, festival => festival.Id);
-
-    config.NewConfig<Festival, CatalogView>()
-          .Map(view => view.Festival, festival => festival)
-          .Map(view => view.Categories, festival => festival.CatalogItems.Select(menuRow => menuRow.CatalogItem.Category).DistinctBy(category => category.Id).OrderBy(category => category.SortOrder).ToList())
-          .Map(view => view.Items, festival => festival.CatalogItems.OrderBy(menuRow => menuRow.CatalogItem.SortOrder).ToList())
-          .Map(view => view.Stations, festival => festival.Stations.OrderBy(link => link.Station.SortOrder).ToList());
   }
 }

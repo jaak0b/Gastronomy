@@ -1,24 +1,24 @@
 ﻿using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Queries;
+using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class ItemOrderability
 {
+  private readonly IGastronomyDatabase _database;
   private readonly TimeProvider _timeProvider;
-  private readonly IFestivalRepository _festivalRepository;
-  private readonly IItemOrderabilityRepository _repository;
 
-  public ItemOrderability(IItemOrderabilityRepository repository, IFestivalRepository festivalRepository, TimeProvider timeProvider)
+  public ItemOrderability(IGastronomyDatabase database, TimeProvider timeProvider)
   {
-    _repository = repository;
-    _festivalRepository = festivalRepository;
+    _database = database;
     _timeProvider = timeProvider;
   }
 
   public async Task<IReadOnlyList<Guid>> FindOrderableItemIdsAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    IReadOnlyList<Guid> activeStations = await _repository.FindActiveStationIdsAtFestivalAsync(festivalId, cancellationToken);
-    IReadOnlyList<Guid> itemIdsOnTheMenu = await _repository.FindActiveMenuItemIdsAsync(festivalId, cancellationToken);
+    IReadOnlyList<Guid> activeStations = await FindActiveStationIdsAsync(festivalId, cancellationToken);
+    IReadOnlyList<Guid> itemIdsOnTheMenu = await FindActiveMenuItemIdsAsync(festivalId, cancellationToken);
 
     return await FindOrderableItemIdsAsync(festivalId, activeStations, itemIdsOnTheMenu, cancellationToken);
   }
@@ -27,7 +27,7 @@ public sealed class ItemOrderability
   {
     ArgumentNullException.ThrowIfNull(stationIds);
 
-    IReadOnlyList<Guid> stationsPreparing = await _repository.FindActiveStationIdsAtFestivalAsync(festivalId, cancellationToken);
+    IReadOnlyList<Guid> stationsPreparing = await FindActiveStationIdsAsync(festivalId, cancellationToken);
 
     return stationsPreparing.Any(stationIds.Contains);
   }
@@ -43,8 +43,8 @@ public sealed class ItemOrderability
   {
     ArgumentNullException.ThrowIfNull(stationIds);
 
-    IReadOnlyList<Guid> activeStations = await _repository.FindActiveStationIdsAtFestivalAsync(festivalId, cancellationToken);
-    IReadOnlyList<Guid> itemIdsOnTheMenu = await _repository.FindActiveMenuItemIdsAsync(festivalId, cancellationToken);
+    IReadOnlyList<Guid> activeStations = await FindActiveStationIdsAsync(festivalId, cancellationToken);
+    IReadOnlyList<Guid> itemIdsOnTheMenu = await FindActiveMenuItemIdsAsync(festivalId, cancellationToken);
     IReadOnlyList<Guid> asItIsNow = await FindOrderableItemIdsAsync(festivalId, activeStations, itemIdsOnTheMenu, cancellationToken);
     Dictionary<Guid, IReadOnlyList<Guid>> stranded = [];
 
@@ -65,7 +65,7 @@ public sealed class ItemOrderability
   {
     ArgumentNullException.ThrowIfNull(stationIds);
 
-    IReadOnlyList<Guid> festivalIdsStillToCome = await _festivalRepository.FindIdsNotEndedAsync(_timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
+    IReadOnlyList<Guid> festivalIdsStillToCome = await FindFestivalIdsNotEndedAsync(cancellationToken);
     Dictionary<Guid, HashSet<Guid>> stranded = stationIds.Distinct().ToDictionary(stationId => stationId, stationId => new HashSet<Guid>());
 
     foreach (var festivalId in festivalIdsStillToCome)
@@ -79,10 +79,34 @@ public sealed class ItemOrderability
 
   private async Task<IReadOnlyList<Guid>> FindOrderableItemIdsAsync(Guid festivalId, IReadOnlyCollection<Guid> stationsPreparing, IReadOnlyCollection<Guid> itemIdsOnTheMenu, CancellationToken cancellationToken)
   {
-    IReadOnlyList<Guid> itemIdsWithAStation = await _repository.FindItemIdsPreparedByAsync(festivalId, stationsPreparing, cancellationToken);
+    IReadOnlyList<Guid> itemIdsWithAStation = await FindItemIdsPreparedByAsync(festivalId, stationsPreparing, cancellationToken);
 
     HashSet<Guid> preparedSomewhere = itemIdsWithAStation.ToHashSet();
 
     return itemIdsOnTheMenu.Where(preparedSomewhere.Contains).ToList();
+  }
+
+  private async Task<IReadOnlyList<Guid>> FindActiveStationIdsAsync(Guid festivalId, CancellationToken cancellationToken)
+  {
+    return await _database.FestivalStations.AsNoTracking().ActiveAt(festivalId).Select(link => link.StationId).ToListAsync(cancellationToken);
+  }
+
+  private async Task<IReadOnlyList<Guid>> FindActiveMenuItemIdsAsync(Guid festivalId, CancellationToken cancellationToken)
+  {
+    return await _database.FestivalCatalogItems.AsNoTracking().Where(menuRow => menuRow.FestivalId == festivalId && menuRow.CatalogItem.IsActive).OrderBy(menuRow => menuRow.CatalogItem.SortOrder).Select(menuRow => menuRow.CatalogItemId).ToListAsync(cancellationToken);
+  }
+
+  private async Task<IReadOnlyList<Guid>> FindItemIdsPreparedByAsync(Guid festivalId, IReadOnlyCollection<Guid> stationIds, CancellationToken cancellationToken)
+  {
+    List<Guid> preparing = stationIds.ToList();
+
+    return await _database.ItemStationAssignments.AsNoTracking().Where(assignment => assignment.FestivalId == festivalId && preparing.Contains(assignment.StationId)).Select(assignment => assignment.CatalogItemId).Distinct().ToListAsync(cancellationToken);
+  }
+
+  private async Task<IReadOnlyList<Guid>> FindFestivalIdsNotEndedAsync(CancellationToken cancellationToken)
+  {
+    var nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
+
+    return await _database.Festivals.AsNoTracking().Where(festival => !festival.IsHidden && festival.EndsAtUtc > nowUtc).Select(festival => festival.Id).ToListAsync(cancellationToken);
   }
 }

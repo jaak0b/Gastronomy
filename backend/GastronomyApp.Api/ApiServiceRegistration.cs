@@ -43,12 +43,10 @@ public sealed class ApiServiceRegistration
     services.AddSingleton(options);
     services.AddSingleton(TimeProvider.System);
 
-    services.AddSingleton<IMappingRegistration, CatalogMapping>();
     services.AddSingleton<IMappingRegistration, EnrolmentMapping>();
     services.AddSingleton<IMappingRegistration, OpenItemMapping>();
     services.AddSingleton<IMappingRegistration, OrderMapping>();
     services.AddSingleton<IMappingRegistration, SettlementMapping>();
-    services.AddSingleton<IMappingRegistration, EstimateMapping>();
     services.AddSingleton<IMappingRegistration, StationQueueMapping>();
 
     services.AddSingleton(serviceProvider => new MappingConfiguration(serviceProvider.GetServices<IMappingRegistration>()).Build());
@@ -73,8 +71,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IOpenItemRepository, OpenItemRepository>();
     services.AddScoped<IDeviceRepository, DeviceRepository>();
     services.AddScoped<ICatalogItemRepository, CatalogItemRepository>();
-    services.AddScoped<ICatalogRepository, CatalogRepository>();
-    services.AddScoped<IItemOrderabilityRepository, ItemOrderabilityRepository>();
     services.AddScoped<IStationRepository, StationRepository>();
     services.AddScoped<IFestivalRepository, FestivalRepository>();
     services.AddScoped<IFestivalStationRepository, FestivalStationRepository>();
@@ -155,13 +151,11 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<LocalNetworkAddressProvider>();
     services.AddSingleton<ReachableHostResolver>();
     services.AddSingleton<EnrolmentUrlBuilder>();
-    services.AddScoped<CatalogHandler>();
     services.AddScoped<AdminEnrolmentHandler>();
     services.AddScoped<EnrolmentRedemptionHandler>();
     services.AddSingleton<StationShellResponder>();
     services.AddSingleton<ClientRouteFallbackResponder>();
     services.AddSingleton<DeviceKindGate>();
-    services.AddScoped<EstimateHandler>();
     services.AddScoped<StationQueueHandler>();
     services.AddScoped<StationFulfillmentHandler>();
 

@@ -14,12 +14,10 @@ public sealed class StationQueueMappingTest
   {
     IMappingRegistration[] registrations =
     [
-      new CatalogMapping(),
       new EnrolmentMapping(),
       new OpenItemMapping(),
       new OrderMapping(new()),
       new SettlementMapping(),
-      new EstimateMapping(new()),
       new StationQueueMapping(new())
     ];
 

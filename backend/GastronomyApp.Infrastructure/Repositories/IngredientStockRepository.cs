@@ -28,14 +28,13 @@ public sealed class IngredientStockRepository : IIngredientStockRepository
   public async Task<IReadOnlyDictionary<Guid, double>> SumConsumedAmountsAsync(Guid festivalId, CancellationToken cancellationToken)
   {
     return await _dbContext.OrderItems.AsNoTracking()
-                           .Where(orderItem => orderItem.StationOrder.Order.FestivalId == festivalId)
+                           .WhereFestivalIs(festivalId)
                            .ConsumedIngredients(_dbContext.CatalogItemIngredients)
                            .GroupBy(consumed => consumed.IngredientId)
                            .Select(group => new
                                             {
                                               IngredientId = group.Key,
-                                              ConsumedAmount
-                                                = group.Sum(consumed => consumed.Amount)
+                                              ConsumedAmount = group.Sum(consumed => consumed.Amount)
                                             })
                            .ToDictionaryAsync(consumption => consumption.IngredientId, consumption => consumption.ConsumedAmount, cancellationToken);
   }

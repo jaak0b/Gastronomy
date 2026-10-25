@@ -17,14 +17,14 @@ Backend, under `backend/`:
   `IsHiddenFromAsItComesQueue`. `OrderItem.FulfilledAtUtc` records the hand-out. An article's
   `CatalogItem.ProductionMinutes` and `IsQueueIndependent` feed the estimates.
 - `Core/Services`: `StationQueueService`, `StationQueueChangeService`, `StationQueueWriter`,
-  `OrderItemFulfillmentService`, `StationOrderService` and `EstimateService`. Refusals:
+  `OrderItemFulfillmentService` and `StationOrderService`; the estimates are `EstimateService` (`ListAsync`, `QuoteAsync`) on `IGastronomyDatabase`, with the pure `StationWaitingTimes` beside it, which sums the open work of one station (`Results/OpenWork`) for an article (`Results/ArticleTiming`). `Core/Mapping/EstimateMapping.cs` projects the timed assignments, the articles and the open work. Refusals:
   `Core/Refusals/Refusal.StationQueue.cs`. The numbers come from
   `Infrastructure/Repositories/SequenceNumberAllocator.cs`.
 - Routes in `GastronomyApp.Api/Endpoints/StationEndpoints.cs`. For the station tablet:
   `GET /api/station/orders`, `GET /api/station/orders/fulfilled`, `POST /api/station/items/fulfill`,
   `POST /api/station/items/unfulfill` and `POST /api/station/orders/{stationOrderId}/hide`
   (`StationQueueHandler`, `StationFulfillmentHandler`). For the phone: `GET /api/estimates` and
-  `POST /api/estimates/quote` (`EstimateHandler`). Wire records in `GastronomyApp.Contracts/Stations`,
+  `POST /api/estimates/quote` (`EstimateService` directly). Wire records in `GastronomyApp.Contracts/Stations`,
   the estimate records in `Contracts/Orders`, `DeliveryMode` and `OrderStatus` in `Contracts/Enums`.
 
 Frontend, under `frontend/src/`:
@@ -68,12 +68,12 @@ Frontend, under `frontend/src/`:
 
 - `GastronomyApp.Core.Tests/Services`: `StationQueueServiceTest`, `StationQueueChangeServiceTest`,
   `StationQueueWriterTest`, `OrderItemFulfillmentServiceTest`, `StationOrderServiceTest` and
-  `EstimateServiceTest`.
-- `GastronomyApp.Infrastructure.Tests`: `Configurations/StationOrderConfigurationTest`,
+  `StationWaitingTimesTest` (the pure sums).
+- `GastronomyApp.Infrastructure.Tests`: `Services/EstimateServiceTest` (the list and the quote on the real DbContext: open work of the same festival and station only, a handed-out item left out, independent articles, refusals), `Configurations/StationOrderConfigurationTest`,
   `Configurations/OrderNumberIndexTest`, `Repositories/StationOrderRepositoryTest` and
   `Repositories/SequenceNumberAllocatorTest`.
 - `GastronomyApp.Api.Tests`: `Endpoints/StationQueueEndpointsTest`, `Endpoints/EstimateEndpointsTest`,
-  `Mapping/StationQueueMappingTest` and `Mapping/EstimateMappingTest`.
+  `Mapping/StationQueueMappingTest`.
 - `frontend/tests/station`: the views `StationPage.screen`, `.markingDone`, `.doneView` and
   `.connection` on `stationPageFixture.ts`, the components, the composables and the store specs
   (`station.queue`, `station.done`, `station.staleAnswers`, `stationChangeListening`,

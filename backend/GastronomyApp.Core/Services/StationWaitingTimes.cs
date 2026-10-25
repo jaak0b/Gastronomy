@@ -1,56 +1,58 @@
 using GastronomyApp.Contracts.Orders;
-using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class StationWaitingTimes
 {
-  public double QueuedMinutesOf(Station station)
+  public double QueuedMinutesOf(IEnumerable<OpenWork> openWorkAtStation)
   {
-    ArgumentNullException.ThrowIfNull(station);
+    ArgumentNullException.ThrowIfNull(openWorkAtStation);
 
-    return Math.Round(station.StationOrders.SelectMany(stationOrder => stationOrder.Items).Where(item => item.FulfilledAtUtc == null && !item.CatalogItem.IsQueueIndependent).Sum(item => item.CatalogItem.ProductionMinutes ?? 0), 1);
+    return Math.Round(openWorkAtStation.Where(work => !work.IsQueueIndependent).Sum(work => work.ProductionMinutes), 1);
   }
 
-  public double OpenMinutesOfArticle(Station station, Guid catalogItemId)
+  public double OpenMinutesOfArticle(IEnumerable<OpenWork> openWorkAtStation, Guid catalogItemId)
   {
-    ArgumentNullException.ThrowIfNull(station);
+    ArgumentNullException.ThrowIfNull(openWorkAtStation);
 
-    return Math.Round(station.StationOrders.SelectMany(stationOrder => stationOrder.Items).Where(item => item.FulfilledAtUtc == null && item.CatalogItemId == catalogItemId).Sum(item => item.CatalogItem.ProductionMinutes ?? 0), 1);
+    return Math.Round(openWorkAtStation.Where(work => work.CatalogItemId == catalogItemId).Sum(work => work.ProductionMinutes), 1);
   }
 
-  public double ReadyInMinutesOf(ItemStationAssignment assignment)
+  public double ReadyInMinutesOf(ArticleTiming article, IEnumerable<OpenWork> openWorkAtStation)
   {
-    ArgumentNullException.ThrowIfNull(assignment);
+    ArgumentNullException.ThrowIfNull(article);
+    ArgumentNullException.ThrowIfNull(openWorkAtStation);
 
-    var queuedMinutes = assignment.CatalogItem.IsQueueIndependent ? OpenMinutesOfArticle(assignment.Station, assignment.CatalogItemId) : QueuedMinutesOf(assignment.Station);
+    var openWork = openWorkAtStation.ToList();
+    var queuedMinutes = article.IsQueueIndependent ? OpenMinutesOfArticle(openWork, article.CatalogItemId) : QueuedMinutesOf(openWork);
 
-    return Math.Round(queuedMinutes + (assignment.CatalogItem.ProductionMinutes ?? 0), 1);
+    return Math.Round(queuedMinutes + (article.ProductionMinutes ?? 0), 1);
   }
 
-  public double? QuotedReadyInMinutesOf(Station station, IEnumerable<EstimateQuoteLine> lines, IEnumerable<CatalogItem> catalogItems)
+  public double? QuotedReadyInMinutesOf(IEnumerable<OpenWork> openWorkAtStation, IEnumerable<EstimateQuoteLine> linesAtStation, IEnumerable<ArticleTiming> articles)
   {
-    ArgumentNullException.ThrowIfNull(station);
-    ArgumentNullException.ThrowIfNull(lines);
-    ArgumentNullException.ThrowIfNull(catalogItems);
+    ArgumentNullException.ThrowIfNull(openWorkAtStation);
+    ArgumentNullException.ThrowIfNull(linesAtStation);
+    ArgumentNullException.ThrowIfNull(articles);
 
-    var linesAtStation = lines.Where(line => line.StationId == station.Id)
-                              .Join(catalogItems,
-                                    line => line.CatalogItemId,
-                                    article => article.Id,
-                                    (line, article) => new
-                                                       {
-                                                         line.Units,
-                                                         Article = article
-                                                       })
-                              .ToList();
+    var openWork = openWorkAtStation.ToList();
+    var quotedLines = linesAtStation.Join(articles,
+                                          line => line.CatalogItemId,
+                                          article => article.CatalogItemId,
+                                          (line, article) => new
+                                                             {
+                                                               line.Units,
+                                                               Article = article
+                                                             })
+                                    .ToList();
 
-    if (linesAtStation.All(line => line.Article.ProductionMinutes == null))
+    if (quotedLines.All(line => line.Article.ProductionMinutes == null))
       return null;
 
-    IEnumerable<double> sharedLanes = linesAtStation.Any(line => !line.Article.IsQueueIndependent) ? [QueuedMinutesOf(station) + linesAtStation.Where(line => !line.Article.IsQueueIndependent).Sum(line => line.Units * (line.Article.ProductionMinutes ?? 0))] : [];
+    IEnumerable<double> sharedLanes = quotedLines.Any(line => !line.Article.IsQueueIndependent) ? [QueuedMinutesOf(openWork) + quotedLines.Where(line => !line.Article.IsQueueIndependent).Sum(line => line.Units * (line.Article.ProductionMinutes ?? 0))] : [];
 
-    var articleLanes = linesAtStation.Where(line => line.Article.IsQueueIndependent).GroupBy(line => line.Article).Select(articleLines => OpenMinutesOfArticle(station, articleLines.Key.Id) + articleLines.Sum(line => line.Units * (line.Article.ProductionMinutes ?? 0)));
+    var articleLanes = quotedLines.Where(line => line.Article.IsQueueIndependent).GroupBy(line => line.Article.CatalogItemId).Select(articleLines => OpenMinutesOfArticle(openWork, articleLines.Key) + articleLines.Sum(line => line.Units * (line.Article.ProductionMinutes ?? 0)));
 
     return Math.Round(sharedLanes.Concat(articleLanes).Max(), 1);
   }

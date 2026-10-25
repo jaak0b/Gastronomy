@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -40,7 +39,7 @@ public sealed class ItemOrderabilityEndpointsTest
 
     await using var readContext = _context.Factory.CreateContext();
     var clock = _context.Factory.Services.GetRequiredService<TimeProvider>();
-    ItemOrderability orderability = new(new ItemOrderabilityRepository(readContext), new FestivalRepository(readContext, new()), clock);
+    ItemOrderability orderability = new(readContext, clock);
 
     IReadOnlyList<Guid> itemIds = await orderability.FindOrderableItemIdsAsync(_context.World.FestivalId, CancellationToken.None);
 

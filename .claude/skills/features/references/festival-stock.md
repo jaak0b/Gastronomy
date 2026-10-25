@@ -24,9 +24,9 @@ Backend, under `backend/`:
 - `Services/IngredientAmountComparison.cs`: `IsAtLeast`, the one comparison of ingredient amounts.
   The used-up check, both forecasts and the sold-out marker take it as a dependency.
 - `Queries/OrderItemQueries.ConsumedIngredients` is the one join of order items and recipe lines (one
-  `Results/ConsumedIngredient` per recipe line of an ordered item, with the order time). The list
-  groups it per ingredient and order time; the sold-out marker's `SumConsumedAmountsAsync` groups it per
-  ingredient.
+  `Results/ConsumedIngredient` per recipe line of an ordered item, with the order time). Both callers
+  narrow the items with `OrderItemQueries.WhereFestivalIs` first. The list groups it per ingredient and order
+  time; the sold-out marker's `SumConsumedAmountsAsync` groups it per ingredient.
 - `Ports/IIngredientStockRepository.cs` with `Infrastructure/Repositories/IngredientStockRepository.cs`
   is what is left of the old repository, for `StockSoldOutMarker` only: it is shared with the
   unconverted `OrderAcceptanceService`, whose Core test fakes the port. It goes when the orders area is

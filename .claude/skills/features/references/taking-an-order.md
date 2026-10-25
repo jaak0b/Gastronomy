@@ -9,6 +9,18 @@ station and take them off again.
 
 ## Where the code lives
 
+Backend, the catalog the screen reads: `GET /api/catalog` in `Endpoints/CatalogEndpoints.cs` calls
+`CatalogService.ReadRunningFestivalAsync` (`Core/Services`), which answers `CatalogView.Empty` when no
+festival runs. It asks `ItemOrderability` (also in `Core/Services`, reading through
+`IGastronomyDatabase`) for the articles that are on the menu, switched on and prepared at an active
+station of the festival, then runs two projections: the festival's active stations
+(`FestivalStationQueries.ActiveAt`) and the menu rows with their category (`Core/Mapping/CatalogMapping.cs`,
+into `Results/CatalogMenuEntry`). The articles come in the admin's order, the categories are the
+ones those articles belong to, each once. The whole read is six statements including the running
+festival lookup, pinned by `Infrastructure.Tests/Services/CatalogServiceTest`, because every phone
+repeats it on every hub event. The estimates the screen shows are on the
+`handing-out-at-a-station` page.
+
 Frontend, under `frontend/src/phone/`:
 
 - `views/Catalog.vue` (route `/catalog`) is the whole ordering screen: the category buttons in two

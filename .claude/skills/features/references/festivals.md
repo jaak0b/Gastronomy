@@ -42,8 +42,7 @@ Backend, under `backend/`:
   are `FestivalStockService` (see the `festival-stock` page).
 - `Infrastructure/Repositories/FestivalRepository.cs` stays for the services of the unconverted
   sub-areas, the desktop and `RunningFestivalLookup`: `FindRunningAsync` gives the shown festivals to
-  `FestivalSchedule.FindRunningAt`, `FindAllAsync` loads all for the desktop, and `FindIdsNotEndedAsync` answers "not hidden and not yet over" for `ItemOrderability` in the query
-  itself (it includes festivals still to come, so it is not "running").
+  `FestivalSchedule.FindRunningAt` and `FindAllAsync` loads all for the desktop. `ItemOrderability` asks "not hidden and not yet over" of `IGastronomyDatabase` itself (it includes festivals still to come, so it is not "running").
 - Refusals: `GastronomyApp.Core/Refusals/Refusal.Festival.cs` (`PeriodInvalid`,
   `PeriodOverlapsAnotherFestival`, `FestivalIsRunning` with
   `errors.admin.festivals.runningFestivalStaysShown`, which is also the tooltip of the festival
@@ -194,9 +193,9 @@ Every point below is intended behaviour. A change to any of them needs the owner
 - `GastronomyApp.Core.Tests/Services`: `FestivalScheduleTest` (the start counts, the end does not, a
   hidden festival never runs, overlap with a hidden festival), `RunningFestivalLookupTest`,
   and `StationAtFestivalLookupTest`; the no running festival cases of
-  `CatalogServiceTest`, `OrderAcceptanceServiceTest`, `OrderItemSettlementServiceTest` and
+  `Infrastructure.Tests/Services/CatalogServiceTest`, `OrderAcceptanceServiceTest`, `OrderItemSettlementServiceTest` and
   `StationQueueServiceTest`.
-- `GastronomyApp.Infrastructure.Tests`: `Repositories/FestivalRepositoryTest` (running, not ended),
+- `GastronomyApp.Infrastructure.Tests`: `Repositories/FestivalRepositoryTest` (running),
   `Repositories/FestivalStationRepositoryTest`, `Services/FestivalMenuServiceTest` and
   `Services/FestivalStationServiceTest` (every action on the real DbContext, shapes included),
   `Configurations/OrderNumberIndexTest` (the station number index) and
@@ -211,7 +210,7 @@ Every point below is intended behaviour. A change to any of them needs the owner
   `GastronomyApp.Infrastructure.Tests/Repositories` (another festival's open items name no
   station), `StationServiceTest` in `GastronomyApp.Infrastructure.Tests/Services` (which festival the flag is read at, a festival that
   is over, which stranded count each read fills, the statement count not growing with the stations), `FestivalStationServiceTest`
-  and `ItemOrderabilityTest` (each station on its own, a station that is not an active station of
+  and `Services/ItemOrderabilityTest` (on the real DbContext: each station on its own, a station that is not an active station of
   the festival, the active stations and the menu read once and one query per active station). In
   `GastronomyApp.Api.Tests/Endpoints`, `AdminFestivalEndpointsTest` and `StationDeactivationTest`
   each read the list and then try the action for a station with an open item while the festival

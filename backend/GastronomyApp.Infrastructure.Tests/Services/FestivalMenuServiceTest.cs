@@ -22,7 +22,7 @@ public sealed class FestivalMenuServiceTest
     _clock = new(new(_now));
     await MoveTheFestivalAsync(_now.AddHours(-5), _now.AddHours(5));
     FestivalRepository festivalRepository = new(_fixture.DbContext, new());
-    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(new ItemOrderabilityRepository(_fixture.DbContext), festivalRepository, _clock), new(festivalRepository, new(), _clock));
+    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(_fixture.DbContext, _clock), new(festivalRepository, new(), _clock));
   }
 
   [TearDown]

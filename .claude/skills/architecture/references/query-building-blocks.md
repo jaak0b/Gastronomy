@@ -24,6 +24,7 @@ a deactivated station is not offered any more, and a screen shows a row another 
     then `Namesakes` is applied). It compares in SQL, so the column's
     `NOCASE` collation decides which names are the same; an edit passes its own id as `excludedId`,
     a create passes `null`.
+- **`FestivalStationQueries.ActiveAt(festivalId)`** keeps the festival's links whose station is switched on. `ItemOrderability`, `CatalogService` and `EstimateService` use it.
 - **A piece may take the other set it joins as a parameter.** `OrderItemQueries.ConsumedIngredients(items, recipeLines)` joins order items to recipe lines and projects `Results/ConsumedIngredient`; the festival stock list and the sold-out marker both group it.
 - **An interface appears only when at least two entities share the same flag with the same meaning.**
   A flag with another meaning gets no interface, and an entity never carries both `IsActive` and `IsHidden`.

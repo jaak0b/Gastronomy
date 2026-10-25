@@ -1,6 +1,5 @@
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Orders;
-using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 
 namespace GastronomyApp.Core.Tests.Services;
@@ -9,7 +8,7 @@ namespace GastronomyApp.Core.Tests.Services;
 public sealed class StationWaitingTimesTest
 {
   private readonly StationWaitingTimes _stationWaitingTimes = new();
-  private readonly DateTime _handedOutAtUtc = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
+  private readonly Guid _stationId = Guid.NewGuid();
 
   [Test]
   public void QueuedMinutesOf_TwoOpenArticles_SumsTheirStatedMinutes()
@@ -68,23 +67,6 @@ public sealed class StationWaitingTimesTest
   }
 
   [Test]
-  public void QueuedMinutesOf_AnItemTheStationHandedOut_StaysOutOfTheSum()
-  {
-    var station = StationWith(OpenItem(5, false), HandedOutItem(7));
-
-    Assert.That(_stationWaitingTimes.QueuedMinutesOf(station), Is.EqualTo(5));
-  }
-
-  [Test]
-  public void QueuedMinutesOf_ItemsOfTwoStationOrders_SumsAcrossBothOfThem()
-  {
-    var station = StationWith(OpenItem(5, false));
-    AddStationOrder(station, OpenItem(3, false));
-
-    Assert.That(_stationWaitingTimes.QueuedMinutesOf(station), Is.EqualTo(8));
-  }
-
-  [Test]
   public void QueuedMinutesOf_AStationWithoutOpenWork_IsZero()
   {
     Assert.That(_stationWaitingTimes.QueuedMinutesOf(StationWith()), Is.Zero);
@@ -96,7 +78,7 @@ public sealed class StationWaitingTimesTest
     var station = StationWith(OpenItem(5, false), OpenItem(30, true));
     var bratwurst = Article(4, false);
 
-    Assert.That(_stationWaitingTimes.ReadyInMinutesOf(AssignmentOf(bratwurst, station)), Is.EqualTo(9));
+    Assert.That(_stationWaitingTimes.ReadyInMinutesOf(bratwurst, station), Is.EqualTo(9));
   }
 
   [Test]
@@ -105,7 +87,7 @@ public sealed class StationWaitingTimesTest
     var fries = Article(3, true);
     var station = StationWith(OpenItem(10, false), OpenItemOf(fries), OpenItemOf(fries), OpenItem(20, true));
 
-    Assert.That(_stationWaitingTimes.ReadyInMinutesOf(AssignmentOf(fries, station)), Is.EqualTo(9));
+    Assert.That(_stationWaitingTimes.ReadyInMinutesOf(fries, station), Is.EqualTo(9));
   }
 
   [Test]
@@ -118,19 +100,19 @@ public sealed class StationWaitingTimesTest
     [
       new()
       {
-        CatalogItemId = bratwurst.Id,
-        StationId = station.Id,
+        CatalogItemId = bratwurst.CatalogItemId,
+        StationId = _stationId,
         Units = 1
       },
       new()
       {
-        CatalogItemId = pizza.Id,
-        StationId = station.Id,
+        CatalogItemId = pizza.CatalogItemId,
+        StationId = _stationId,
         Units = 1
       },
       new()
       {
-        CatalogItemId = bratwurst.Id,
+        CatalogItemId = bratwurst.CatalogItemId,
         StationId = Guid.NewGuid(),
         Units = 5
       }
@@ -155,14 +137,14 @@ public sealed class StationWaitingTimesTest
     [
       new()
       {
-        CatalogItemId = bratwurst.Id,
-        StationId = station.Id,
+        CatalogItemId = bratwurst.CatalogItemId,
+        StationId = _stationId,
         Units = 2
       },
       new()
       {
-        CatalogItemId = pizza.Id,
-        StationId = station.Id,
+        CatalogItemId = pizza.CatalogItemId,
+        StationId = _stationId,
         Units = 1
       }
     ];
@@ -185,8 +167,8 @@ public sealed class StationWaitingTimesTest
     [
       new()
       {
-        CatalogItemId = pizza.Id,
-        StationId = station.Id,
+        CatalogItemId = pizza.CatalogItemId,
+        StationId = _stationId,
         Units = 3
       }
     ];
@@ -203,8 +185,8 @@ public sealed class StationWaitingTimesTest
     [
       new()
       {
-        CatalogItemId = beer.Id,
-        StationId = station.Id,
+        CatalogItemId = beer.CatalogItemId,
+        StationId = _stationId,
         Units = 2
       }
     ];
@@ -212,109 +194,23 @@ public sealed class StationWaitingTimesTest
     Assert.That(_stationWaitingTimes.QuotedReadyInMinutesOf(station, lines, [beer]), Is.Null);
   }
 
-  private Station StationWith(params OrderItem[] items)
+  private OpenWork[] StationWith(params OpenWork[] work)
   {
-    Station station = new()
-                      {
-                        Id = Guid.NewGuid(),
-                        Name = "Kueche",
-                        SortOrder = 1,
-                        IsActive = true
-                      };
-
-    AddStationOrder(station, items);
-
-    return station;
+    return work;
   }
 
-  private void AddStationOrder(Station station, params OrderItem[] items)
+  private OpenWork OpenItem(double? productionMinutes, bool isQueueIndependent)
   {
-    StationOrder stationOrder = new()
-                                {
-                                  Id = Guid.NewGuid(),
-                                  OrderId = Guid.NewGuid(),
-                                  FestivalId = Guid.NewGuid(),
-                                  StationId = station.Id,
-                                  StationOrderNumber = station.StationOrders.Count + 1,
-                                  DeliveryMode = DeliveryMode.Together
-                                };
-
-    foreach (var item in items)
-    {
-      item.StationOrderId = stationOrder.Id;
-      stationOrder.Items.Add(item);
-    }
-
-    station.StationOrders.Add(stationOrder);
+    return new(_stationId, Guid.NewGuid(), productionMinutes ?? 0, isQueueIndependent);
   }
 
-  private OrderItem OpenItem(double? productionMinutes, bool isQueueIndependent)
+  private OpenWork OpenItemOf(ArticleTiming article)
   {
-    return new()
-           {
-             Id = Guid.NewGuid(),
-             StationOrderId = Guid.NewGuid(),
-             CatalogItemId = Guid.NewGuid(),
-             ItemName = "Artikel",
-             UnitPriceCents = 350,
-             CatalogItem = new()
-                           {
-                             Id = Guid.NewGuid(),
-                             Name = "Artikel",
-                             CategoryId = Guid.NewGuid(),
-                             SortOrder = 1,
-                             IsActive = true,
-                             ProductionMinutes = productionMinutes,
-                             IsQueueIndependent = isQueueIndependent
-                           }
-           };
+    return new(_stationId, article.CatalogItemId, article.ProductionMinutes ?? 0, article.IsQueueIndependent);
   }
 
-  private CatalogItem Article(double? productionMinutes, bool isQueueIndependent)
+  private ArticleTiming Article(double? productionMinutes, bool isQueueIndependent)
   {
-    return new()
-           {
-             Id = Guid.NewGuid(),
-             Name = "Artikel",
-             CategoryId = Guid.NewGuid(),
-             SortOrder = 1,
-             IsActive = true,
-             ProductionMinutes = productionMinutes,
-             IsQueueIndependent = isQueueIndependent
-           };
-  }
-
-  private OrderItem OpenItemOf(CatalogItem article)
-  {
-    return new()
-           {
-             Id = Guid.NewGuid(),
-             StationOrderId = Guid.NewGuid(),
-             CatalogItemId = article.Id,
-             ItemName = article.Name,
-             UnitPriceCents = 350,
-             CatalogItem = article
-           };
-  }
-
-  private ItemStationAssignment AssignmentOf(CatalogItem article, Station station)
-  {
-    return new()
-           {
-             Id = Guid.NewGuid(),
-             FestivalId = Guid.NewGuid(),
-             CatalogItemId = article.Id,
-             StationId = station.Id,
-             CatalogItem = article,
-             Station = station
-           };
-  }
-
-  private OrderItem HandedOutItem(double? productionMinutes)
-  {
-    var item = OpenItem(productionMinutes, false);
-    item.FulfilledAtUtc = _handedOutAtUtc;
-
-    return item;
+    return new(Guid.NewGuid(), productionMinutes, isQueueIndependent);
   }
 }

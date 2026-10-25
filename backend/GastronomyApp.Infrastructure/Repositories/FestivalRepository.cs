@@ -28,9 +28,4 @@ public sealed class FestivalRepository : IFestivalRepository
   {
     return await _dbContext.Festivals.AsNoTracking().OrderByDescending(festival => festival.StartsAtUtc).ToListAsync(cancellationToken);
   }
-
-  public async Task<IReadOnlyList<Guid>> FindIdsNotEndedAsync(DateTime nowUtc, CancellationToken cancellationToken)
-  {
-    return await _dbContext.Festivals.AsNoTracking().Where(festival => !festival.IsHidden && festival.EndsAtUtc > nowUtc).Select(festival => festival.Id).ToListAsync(cancellationToken);
-  }
 }

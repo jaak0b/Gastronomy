@@ -1,8 +1,11 @@
 ﻿using GastronomyApp.Api.Auth.Conventions;
+using ErrorOr;
+using GastronomyApp.Api.Answers;
 using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.Values;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Contracts.Stations;
+using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 
@@ -14,9 +17,9 @@ public static class StationEndpoints
   {
     var estimates = routes.MapGroup("/api/estimates").RequireAuthorization().RequireStaffDevice().RequireRateLimiting(Names.RateLimitPolicies.PerDevice);
 
-    estimates.MapGet(string.Empty, async (EstimateHandler handler, CancellationToken cancellationToken) => await handler.ListAsync(cancellationToken));
+    estimates.MapGet(string.Empty, async Task<ApiAnswer<IReadOnlyList<ItemEstimateView>>> (EstimateService service, CancellationToken cancellationToken) => new((await service.ListAsync(cancellationToken)).ToErrorOr()));
 
-    estimates.MapPost("/quote", async (EstimateQuoteRequest request, EstimateHandler handler, CancellationToken cancellationToken) => await handler.QuoteAsync(request, cancellationToken));
+    estimates.MapPost("/quote", async Task<ApiAnswer<EstimateQuoteView>> (EstimateQuoteRequest request, EstimateService service, CancellationToken cancellationToken) => await service.QuoteAsync(request, cancellationToken));
 
     var stationTablet = routes.MapGroup("/api/station").RequireAuthorization().RequireStationDevice().RequireRateLimiting(Names.RateLimitPolicies.PerDevice);
 

@@ -44,7 +44,7 @@ public sealed class FestivalStockService
     IReadOnlyDictionary<Guid, IReadOnlyDictionary<DateTime, double>> consumedByIngredientIdAndOrderTime = await ConsumedByOrderTimeAsync(festivalId, cancellationToken);
     var nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
-    return new AdminFestivalIngredientListView(rows.Select(row => LevelOf(festival, row, consumedByIngredientIdAndOrderTime.GetValueOrDefault(row.IngredientId, ReadOnlyDictionary<DateTime, double>.Empty), nowUtc)).ToList());
+    return new AdminFestivalIngredientListView(rows.Select(row => RowWithForecastOf(festival, row, consumedByIngredientIdAndOrderTime.GetValueOrDefault(row.IngredientId, ReadOnlyDictionary<DateTime, double>.Empty), nowUtc)).ToList());
   }
 
   public async Task<ErrorOr<SavedFestivalIngredientView>> SetAvailableAmountAsync(Guid festivalId, Guid ingredientId, SaveFestivalIngredientRequest request, CancellationToken cancellationToken)
@@ -67,7 +67,7 @@ public sealed class FestivalStockService
     return row.Adapt<SavedFestivalIngredientView>(_mapping);
   }
 
-  private AdminFestivalIngredientView LevelOf(Festival festival, AdminFestivalIngredientView row, IReadOnlyDictionary<DateTime, double> consumedAtOrderTimes, DateTime nowUtc)
+  private AdminFestivalIngredientView RowWithForecastOf(Festival festival, AdminFestivalIngredientView row, IReadOnlyDictionary<DateTime, double> consumedAtOrderTimes, DateTime nowUtc)
   {
     var usage = _forecast.UsageOf(festival, consumedAtOrderTimes, nowUtc);
     var usedAmount = usage[^1].UsedAmount;
@@ -89,7 +89,7 @@ public sealed class FestivalStockService
   private async Task<IReadOnlyDictionary<Guid, IReadOnlyDictionary<DateTime, double>>> ConsumedByOrderTimeAsync(Guid festivalId, CancellationToken cancellationToken)
   {
     var consumption = await _database.OrderItems.AsNoTracking()
-                                     .Where(orderItem => orderItem.StationOrder.Order.FestivalId == festivalId)
+                                     .WhereFestivalIs(festivalId)
                                      .ConsumedIngredients(_database.CatalogItemIngredients)
                                      .GroupBy(consumed => new
                                                           {

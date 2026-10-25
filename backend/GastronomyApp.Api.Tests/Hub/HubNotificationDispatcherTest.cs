@@ -27,12 +27,10 @@ public sealed class HubNotificationDispatcherTest
 
     IMappingRegistration[] registrations =
     [
-      new CatalogMapping(),
       new EnrolmentMapping(),
       new OpenItemMapping(),
       new OrderMapping(new()),
       new SettlementMapping(),
-      new EstimateMapping(new()),
       new StationQueueMapping(new())
     ];
 
