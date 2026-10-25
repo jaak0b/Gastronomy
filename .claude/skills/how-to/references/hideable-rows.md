@@ -47,8 +47,9 @@ tooltip beside them (frontend rule 8).
   button sends no hover. Consumers: the article rows of `FestivalItems.vue` and of the Artikel tab,
   the ingredient rows of the Zutaten tab, the station rows of the Ausgabestellen tab, the festival
   list's crossed-out eye, `HideableEntryList.vue` and `RemovableStationRows.vue`.
-- `BaseTrashButton.vue` is the red trash icon of the festival page, the Artikel and Zutaten tabs,
-  the hiding icon of `HideableEntryList.vue` and the removal icon of `RemovableStationRows.vue`.
+- `BaseTrashButton.vue` is the red trash icon of the festival page, the Artikel, Zutaten and
+  Kellner tabs, the recipe dialog's lines, the hiding icon of `HideableEntryList.vue` and the
+  removal icon of `RemovableStationRows.vue`.
 - `BaseIconAction.vue` is an icon button whose name shows as a tooltip
   (`data-test="icon-action-label"`): the crossed-out eye "Ausblenden" of the festival list and the
   categories' crossed-out eye "Kategorie abschalten" on the Artikel tab.

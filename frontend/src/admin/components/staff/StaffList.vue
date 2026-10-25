@@ -12,6 +12,7 @@ import StaffRenameDialog from './StaffRenameDialog.vue'
 import BaseEditButton from '../BaseEditButton.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
 import BaseShowButton from '../BaseShowButton.vue'
+import BaseTrashButton from '../BaseTrashButton.vue'
 
 const { t } = useI18n()
 const staff = useAdminStaffStore()
@@ -140,13 +141,10 @@ onUnmounted(() => {
           data-test="rename"
           @click="startRenaming(staffMember)"
         />
-        <v-btn
+        <BaseTrashButton
           v-if="staffMember.isActive"
           class="deactivate"
           data-test="deactivate"
-          icon="mdi-delete"
-          variant="text"
-          color="error"
           @click="askingAboutId = staffMember.staffMemberId"
         />
         <BaseShowButton

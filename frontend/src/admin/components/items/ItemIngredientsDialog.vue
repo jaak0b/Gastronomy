@@ -15,6 +15,7 @@ import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import { useRowRefusals } from '../../composables/useRowRefusals'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
 import BaseFormDialog from '../../../shared/components/BaseFormDialog.vue'
+import BaseTrashButton from '../BaseTrashButton.vue'
 import IngredientAmountField from '../ingredients/IngredientAmountField.vue'
 import IngredientDialog from '../ingredients/IngredientDialog.vue'
 
@@ -158,12 +159,9 @@ async function add(): Promise<void> {
             @amount-typed="lineRefusals.forgetRefusalOf(line.ingredientId)"
             @amount-changed="changeAmount(line.ingredientId, $event)"
           />
-          <v-btn
+          <BaseTrashButton
             class="remove-recipe-line"
             data-test="remove-recipe-line"
-            icon="mdi-delete"
-            variant="text"
-            color="error"
             @click="ingredientIdOfLineToRemove = line.ingredientId"
           />
         </div>
