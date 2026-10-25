@@ -9,7 +9,7 @@ import {
 import type { AdminActionResult } from '../core/adminActionResult'
 import { reloadOrFailureOf } from '../core/adminMutation'
 import { useConnectionStore } from '../../shared/stores/connection'
-import { defineCreatableAdminList } from './adminList'
+import { adminListDefinition, defineAdminList, withCreating } from './adminList'
 
 export interface FestivalDraft {
   name: string
@@ -22,14 +22,7 @@ function buildFestivalRequestBody(draft: FestivalDraft): SaveFestivalRequest {
 }
 
 export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
-  const {
-    entries: festivals,
-    hasLoaded,
-    loadFailed,
-    load,
-    createThenReload: create,
-    update,
-  } = defineCreatableAdminList({
+  const definition = adminListDefinition({
     path: '/api/admin/festivals',
     listSchema: AdminFestivalListView,
     entrySchema: AdminFestivalView,
@@ -37,6 +30,14 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     idOf: (festival) => festival.festivalId,
     requestBodyOf: buildFestivalRequestBody,
   })
+  const {
+    entries: festivals,
+    hasLoaded,
+    loadFailed,
+    load,
+    createThenReload: create,
+    update,
+  } = withCreating(defineAdminList(definition), definition)
 
   const shownFestivals = computed(() => festivals.value.filter((festival) => !festival.isHidden))
   const runningFestival = computed<AdminFestivalView | null>(

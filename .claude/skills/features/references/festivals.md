@@ -24,29 +24,35 @@ Backend, under `backend/`:
   `OrderItemSettlementService`, `OpenItemsService`, `EstimateService`, `StationAtFestivalLookup`,
   `FestivalMenuService`, `FestivalStationService` and the administration services of articles and
   stations all hold one.
-- `FestivalAdministrationService` lists, creates, updates, copies, hides and shows festivals.
-  `PeriodRefusalAsync` is the one period check. `FestivalService` counts the stations and menu items
-  of a festival, and `CountOrdersByFestivalAsync` counts its orders, for the list view.
+- `Core/Services/FestivalService.cs` is the service of the Feste tab and reads and writes through
+  `IGastronomyDatabase`: `ListAsync`, `CreateAsync`, `UpdateAsync`, `CopyAsync` and `HideAsync`, each
+  taking the `SaveFestivalRequest` where it has one. The list projects with
+  `ProjectToType<AdminFestivalView>()` (the station and menu counts are query expressions in
+  `Core/Mapping/FestivalMapping.cs`), counts the orders per festival in one grouped query and sets
+  `IsRunning` through `RunningFestivalLookup.IsRunning`, ordered by start, latest first.
+  `PeriodRefusalAsync` is the one period check, and `CopyContentsAsync` (private) copies the
+  configuration. Showing a festival again has no rule of its own, so it is
+  `ActivationService.ShowAsync<Festival, SavedFestivalView>`, the generic action over `IHideable`.
 - `FestivalMenuService` and `FestivalStationService` put articles and stations on one festival and
   take them off again.
-- `Infrastructure/Repositories/FestivalRepository.cs`: `FindRunningAsync` gives the shown festivals to
-  `FestivalSchedule.FindRunningAt`, `CopyContentsAsync` copies a festival's configuration, and
-  `FindIdsNotEndedAsync` answers "not hidden and not yet over" for `ItemOrderability` in the query
+- `Infrastructure/Repositories/FestivalRepository.cs` stays for the services of the unconverted
+  sub-areas, the desktop and `RunningFestivalLookup`: `FindRunningAsync` gives the shown festivals to
+  `FestivalSchedule.FindRunningAt`, `FindByIdAsync`, `ExistsAsync` and `FindAllAsync` load a festival
+  or all, and `FindIdsNotEndedAsync` answers "not hidden and not yet over" for `ItemOrderability` in the query
   itself (it includes festivals still to come, so it is not "running").
 - Refusals: `GastronomyApp.Core/Refusals/Refusal.Festival.cs` (`PeriodInvalid`,
   `PeriodOverlapsAnotherFestival`, `FestivalIsRunning` with
   `errors.admin.festivals.runningFestivalStaysShown`, which is also the tooltip of the festival
   list's disabled eye), `Refusal.FestivalMenu.cs` and `Refusal.FestivalStation.cs`.
 - Routes: `GastronomyApp.Api/Endpoints/AdminFestivalEndpoints.cs` under `/api/admin/festivals`: list,
-  create, `PUT /{festivalId}`, `POST /{festivalId}/copy`, `/hide` and `/show` with
-  `Handlers/AdminFestivalHandler.cs`; `PUT` and `DELETE /{festivalId}/items/{itemId}` and
+  create, `PUT /{festivalId}`, `POST /{festivalId}/copy`, `/hide` (all calling `FestivalService`) and
+  `/show` (calling `ActivationService`); `PUT` and `DELETE /{festivalId}/items/{itemId}` and
   `POST .../availability` with `AdminFestivalMenuHandler.cs`; `PUT` and `DELETE
   /{festivalId}/stations/{stationId}` with `AdminFestivalStationHandler.cs`, which also deletes the
   station's shape on the plan. The plan's own routes are on the `table-plan` page.
 - Wire records: `GastronomyApp.Contracts/Admin/Festivals` (`SaveFestivalRequest`, `SavedFestivalView`,
   `AdminFestivalView` with `IsHidden`, `IsRunning` and the three counts, `AdminFestivalListView`,
-  `SaveFestivalItemRequest`). Mapping: `GastronomyApp.Api/Mapping/AdminFestivalMapping.cs`; the handler
-  sets `IsRunning` from `FestivalAdministrationService.IsRunning`.
+  `SaveFestivalItemRequest`). Mapping: `GastronomyApp.Core/Mapping/FestivalMapping.cs`.
 - The station list read (`GET /api/admin/stations`, with `?festivalId=` on the festival page)
   answers what would refuse taking each station out, so a screen disables the removal or the switch
   off before the click. `AdminStationView.HasItemsToHandOutAtTheRunningFestival` comes from
@@ -136,7 +142,7 @@ Every point below is intended behaviour. A change to any of them needs the owner
   period instead: a festival open from 17:00 until 03:00 the next morning is entered as starting at
   12:00 and ending at 15:00 the next day.
 - **Festivals never overlap in time, hidden or not.** `PeriodRefusalAsync` compares a new or edited
-  period with every stored festival, hidden ones included (`FindAllAsync` filters nothing and
+  period with every stored festival, hidden ones included (the query filters nothing and
   `FindOverlapping` never reads `IsHidden`) and refuses with `errors.admin.festivals.overlaps`,
   naming the festival in the way. A period that only touches another one's end is allowed, and an
   edited festival ignores its own period. `ShowAsync` checks no period at all, so showing a hidden
@@ -185,14 +191,15 @@ Every point below is intended behaviour. A change to any of them needs the owner
 
 - `GastronomyApp.Core.Tests/Services`: `FestivalScheduleTest` (the start counts, the end does not, a
   hidden festival never runs, overlap with a hidden festival), `RunningFestivalLookupTest`,
-  `FestivalAdministrationServiceTest`, `FestivalServiceTest`, `FestivalMenuServiceTest`,
-  `FestivalStationServiceTest` and `StationAtFestivalLookupTest`; the no running festival cases of
+  `FestivalMenuServiceTest`, `FestivalStationServiceTest` and `StationAtFestivalLookupTest`; the no running festival cases of
   `CatalogServiceTest`, `OrderAcceptanceServiceTest`, `OrderItemSettlementServiceTest` and
   `StationQueueServiceTest`.
 - `GastronomyApp.Infrastructure.Tests`: `Repositories/FestivalRepositoryTest` (running, not ended,
-  copying), `FestivalMenuRepositoryTest`, `FestivalStationRepositoryTest`,
+  `FindByIdAsync`), `FestivalMenuRepositoryTest`, `FestivalStationRepositoryTest`,
   `Configurations/OrderNumberIndexTest` (the station number index) and
-  `Services/FestivalAdministrationServiceTest` (the stock rows of a new festival and of a copy).
+  `Services/FestivalServiceTest` (every festival action on the real DbContext: the list with its
+  counts and `IsRunning`, the period checks, the stock rows of a new festival and of a copy, and
+  what a copy takes across, plan included) and `Services/ActivationServiceTest` (showing).
 - `GastronomyApp.Api.Tests/Endpoints`: `AdminFestivalEndpointsTest` (the wire shape, overlap with a
   hidden festival, show without an overlap check, hide while running refused with its reason, copy) and
   `FestivalScopeEndpointsTest`.

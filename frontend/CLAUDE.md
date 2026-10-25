@@ -148,3 +148,6 @@ npm run generate:api  # regenerate the wire shapes from the backend's OpenAPI do
 npm run build      # generate:api, then vue-tsc typecheck plus production build
 npx vitest run <spec path>  # Vitest
 ```
+
+The frontend has no formatter. Never run prettier or any other tool that rewrites files: it reformats
+whole files nobody meant to touch. Edit by hand in the style of the surrounding code.

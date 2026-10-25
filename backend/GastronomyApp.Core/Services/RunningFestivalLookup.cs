@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 
 namespace GastronomyApp.Core.Services;
@@ -26,5 +26,10 @@ public sealed class RunningFestivalLookup
     ArgumentNullException.ThrowIfNull(festival);
 
     return _schedule.IsRunning(festival, _timeProvider.GetUtcNow().UtcDateTime);
+  }
+
+  public bool IsRunning(bool isHidden, DateTime startsAtUtc, DateTime endsAtUtc)
+  {
+    return _schedule.IsRunning(isHidden, startsAtUtc, endsAtUtc, _timeProvider.GetUtcNow().UtcDateTime);
   }
 }

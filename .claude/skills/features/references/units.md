@@ -38,9 +38,9 @@ Frontend, under `frontend/src/`:
 
 - `admin/components/units/UnitsList.vue` is the Einheiten tab and `UnitDialog.vue` its create and
   rename form. Both are the second complete copy of the Zutaten tab and use the same shared pieces
-  (`defineAdminList`, `useEditSession`, `BaseHeadingWithCheckbox`, `BaseFormDialog`,
+  (`defineAdminList` with its layers, `useEditSession`, `BaseHeadingWithCheckbox`, `BaseFormDialog`,
   `BaseConfirmDialog`, `BaseActionWithRefusalReason`).
-- `admin/stores/units.ts` sits on `defineAdminList` at `/api/admin/units` and reloads on
+- `admin/stores/units.ts` sits on `defineAdminList` with `withCreating` and `withActivation` at `/api/admin/units` and reloads on
   `ConfigurationChanged`. `shared/router/route.ts` carries the `units` section after `ingredients`,
   and `admin/views/AdminShell.vue` mounts the tab and its title.
 - The unit picker in `admin/components/ingredients/IngredientDialog.vue` offers the active units of
@@ -71,14 +71,13 @@ Frontend, under `frontend/src/`:
 ## Tests
 
 - `GastronomyApp.Core.Tests/Services`: the ingredient tests that construct an ingredient with a unit.
-- `GastronomyApp.Infrastructure.Tests/Repositories`: `IngredientRepositoryTest`,
-  `IngredientStockRepositoryTest` (the unit navigation) and `CatalogItemRepositoryTest`.
+- `GastronomyApp.Infrastructure.Tests/Repositories`: `IngredientStockRepositoryTest` (the unit navigation) and `CatalogItemRepositoryTest`.
 - `GastronomyApp.Infrastructure.Tests/Queries`: `NamedQueriesTest` (the namesake check of units and
   ingredients, in SQL).
 - `GastronomyApp.Infrastructure.Tests/Services`: `UnitServiceTest` (every unit action on the real
   DbContext with in-memory SQLite), `Configurations/UnitNameIndexTest` (the unique name index),
   `IngredientServiceTest` (including a unit change that
-  leaves a recipe amount unchanged) and `FestivalAdministrationServiceTest`.
+  leaves a recipe amount unchanged) and `FestivalServiceTest` (the stock rows of a new festival).
 - `GastronomyApp.Infrastructure.Tests/Persistence`: `ReleasedDatabaseUpgradeTest` covers the seeded
   units and the migration of the old unit values, and `GastronomyAppDbContextTest` covers the new
   table.

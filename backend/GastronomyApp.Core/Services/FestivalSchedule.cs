@@ -8,7 +8,12 @@ public sealed class FestivalSchedule
   {
     ArgumentNullException.ThrowIfNull(festival);
 
-    return !festival.IsHidden && nowUtc >= festival.StartsAtUtc && nowUtc < festival.EndsAtUtc;
+    return IsRunning(festival.IsHidden, festival.StartsAtUtc, festival.EndsAtUtc, nowUtc);
+  }
+
+  public bool IsRunning(bool isHidden, DateTime startsAtUtc, DateTime endsAtUtc, DateTime nowUtc)
+  {
+    return !isHidden && nowUtc >= startsAtUtc && nowUtc < endsAtUtc;
   }
 
   public Festival? FindRunningAt(IReadOnlyCollection<Festival> festivals, DateTime nowUtc)

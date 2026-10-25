@@ -45,6 +45,17 @@ public sealed class FestivalScheduleTest
   }
 
   [Test]
+  public void IsRunning_ByItsFieldsAtTheVeryStartAndTheVeryEnd_IsTrueAtTheStartAndFalseAtTheEnd()
+  {
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(_schedule.IsRunning(false, _start, _end, _start), Is.True);
+                      Assert.That(_schedule.IsRunning(false, _start, _end, _end), Is.False);
+                      Assert.That(_schedule.IsRunning(true, _start, _end, _start.AddHours(3)), Is.False);
+                    });
+  }
+
+  [Test]
   public void FindRunningAt_OneOfSeveralFestivalsCoversTheMoment_ReturnsThatOne()
   {
     var earlier = BuildFestival("Fruehlingsfest", _start.AddYears(-1), _end.AddYears(-1));

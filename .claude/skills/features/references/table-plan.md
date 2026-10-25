@@ -81,7 +81,7 @@ Backend, under `backend/`:
   `SettlementProgressOf`, each through `OrderService.ShareOfFlaggedItems`, the one function that
   turns item flags into `None`, `Some` or `All` and that `OrderService.StatusOf` uses as well.
 - `FestivalStationService.RemoveAsync` deletes the station's shape together with its link through
-  `ITablePlanRepository`, and `FestivalRepository.CopyContentsAsync` copies the plan (see the
+  `ITablePlanRepository`, and `FestivalService.CopyAsync` copies the plan (see the
   invariants).
 - Refusals: `GastronomyApp.Core/Refusals/Refusal.TablePlan.cs`.
 - Routes in `GastronomyApp.Api/Endpoints/AdminFestivalEndpoints.cs`, under
@@ -457,7 +457,7 @@ Frontend, under `frontend/src/`:
   with a shown and a hidden table of the festival and another festival's id left out, and as a
   tracked read whose changed geometry is saved); the plan
   copy in
-  `FestivalRepositoryTest`; `Persistence/ReleasedDatabaseUpgradeTest` (festival station rows survive
+  `FestivalServiceTest`; `Persistence/ReleasedDatabaseUpgradeTest` (festival station rows survive
   the rebuild of their table, and old orders at two festivals end up at hidden tables of their own
   festival). `TestSupport/DomainSeeder.SeedTableAsync` gives a test a table to order at.
 - `GastronomyApp.Api.Tests`: `Endpoints/AdminFestivalTablePlanEndpointsTest` for every route

@@ -26,9 +26,14 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
    `stores/adminList.ts`: pass `path`, the zod `listSchema` and `entrySchema` from
    `shared/api/generatedSchemas`, `entriesOf`, `idOf` and `requestBodyOf`, and return `entries`,
    `loadFailed`, `load`, `create`, `update` (the Zutaten store wraps it as `save`), `setActive` plus a
-   `listen()`. A list whose entries the laptop never creates (the waiters come in through enrolment) uses
-   `defineAdminList`, which has no `create`; a list that has a create route uses
-   `defineCreatableAdminList`, which is that list plus `create` and `createThenReload`. A list that depends on
+   `listen()`. The store writes its definition once through `adminListDefinition(...)` and hands it to
+   `defineAdminList`, which holds only what every list has (`entries`, `load`, `loadFrom`, `update`,
+   `showCreated`), and to the layers the laptop offers routes for: `withCreating(list, definition)` adds
+   `create` and `createThenReload` and belongs to a list that has a create route (the waiters come in
+   through enrolment, so the staff list has none); `withActivation(list, definition)` adds `setActive` and
+   belongs to a list that has `/activate` and `/deactivate` routes (the festivals use `/hide` and `/show`,
+   so the festivals store has none). A store applies only the layers its endpoints have, e.g.
+   `withActivation(withCreating(defineAdminList(definition), definition), definition)`. A list that depends on
    the running festival uses `defineFestivalScopedList` (`stores/festivalScopedList.ts`) instead.
    The store takes the route of each call it makes from the screen that uses it, so a route is
    whatever the laptop's service for that screen offers, and a screen without an activate call

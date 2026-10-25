@@ -31,12 +31,21 @@ export interface AdminList<TEntry, TDraft> {
   forgetCreatedEntries: () => void
   showCreated: (entry: TEntry) => void
   update: (id: string, draft: TDraft) => Promise<AdminActionResult<null>>
+}
+
+export interface Creating<TEntry, TDraft> {
+  create: (draft: TDraft) => Promise<AdminActionResult<TEntry>>
+  createThenReload: (draft: TDraft) => Promise<AdminActionResult<null>>
+}
+
+export interface Activation {
   setActive: (id: string, isActive: boolean) => Promise<AdminActionResult<null>>
 }
 
-export interface CreatableAdminList<TEntry, TDraft> extends AdminList<TEntry, TDraft> {
-  create: (draft: TDraft) => Promise<AdminActionResult<TEntry>>
-  createThenReload: (draft: TDraft) => Promise<AdminActionResult<null>>
+export function adminListDefinition<TEntry, TListResponse, TDraft, TBody>(
+  definition: AdminListDefinition<TEntry, TListResponse, TDraft, TBody>,
+): AdminListDefinition<TEntry, TListResponse, TDraft, TBody> {
+  return definition
 }
 
 export function defineAdminList<TEntry, TListResponse, TDraft, TBody>(
@@ -89,14 +98,6 @@ export function defineAdminList<TEntry, TListResponse, TDraft, TBody>(
     )
   }
 
-  async function setActive(id: string, isActive: boolean): Promise<AdminActionResult<null>> {
-    const action = isActive ? 'activate' : 'deactivate'
-    return await reloadOrFailureOf(
-      await requestAction(`${definition.path}/${id}/${action}`, { method: 'POST' }),
-      reloadAfterWriting,
-    )
-  }
-
   return {
     entries,
     hasLoaded,
@@ -107,14 +108,19 @@ export function defineAdminList<TEntry, TListResponse, TDraft, TBody>(
     forgetCreatedEntries,
     showCreated,
     update,
-    setActive,
   }
 }
 
-export function defineCreatableAdminList<TEntry, TListResponse, TDraft, TBody>(
+export function withCreating<
+  TEntry,
+  TListResponse,
+  TDraft,
+  TBody,
+  TList extends AdminList<TEntry, TDraft>,
+>(
+  list: TList,
   definition: AdminListDefinition<TEntry, TListResponse, TDraft, TBody>,
-): CreatableAdminList<TEntry, TDraft> {
-  const list = defineAdminList(definition)
+): TList & Creating<TEntry, TDraft> {
   const reloadAfterWriting = definition.reloadAfterWriting ?? list.load
   const currentView = definition.currentView ?? (() => null)
 
@@ -145,4 +151,27 @@ export function defineCreatableAdminList<TEntry, TListResponse, TDraft, TBody>(
   }
 
   return { ...list, create, createThenReload }
+}
+
+export function withActivation<
+  TEntry,
+  TListResponse,
+  TDraft,
+  TBody,
+  TList extends AdminList<TEntry, TDraft>,
+>(
+  list: TList,
+  definition: AdminListDefinition<TEntry, TListResponse, TDraft, TBody>,
+): TList & Activation {
+  const reloadAfterWriting = definition.reloadAfterWriting ?? list.load
+
+  async function setActive(id: string, isActive: boolean): Promise<AdminActionResult<null>> {
+    const action = isActive ? 'activate' : 'deactivate'
+    return await reloadOrFailureOf(
+      await requestAction(`${definition.path}/${id}/${action}`, { method: 'POST' }),
+      reloadAfterWriting,
+    )
+  }
+
+  return { ...list, setActive }
 }

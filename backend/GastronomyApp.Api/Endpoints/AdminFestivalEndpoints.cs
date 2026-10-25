@@ -1,6 +1,10 @@
-﻿using GastronomyApp.Api.Handlers;
+using GastronomyApp.Api.Answers;
+using GastronomyApp.Api.Handlers;
 using GastronomyApp.Contracts.Admin.Festivals;
 using GastronomyApp.Contracts.Admin.Ingredients;
+using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Refusals;
+using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 
@@ -12,17 +16,17 @@ public static class AdminFestivalEndpoints
   {
     var group = routes.MapGroup("/api/admin/festivals");
 
-    group.MapGet(string.Empty, async (AdminFestivalHandler handler, CancellationToken cancellationToken) => await handler.ListAsync(cancellationToken));
+    group.MapGet(string.Empty, async Task<ApiAnswer<AdminFestivalListView>> (FestivalService service, CancellationToken cancellationToken) => await service.ListAsync(cancellationToken));
 
-    group.MapPost(string.Empty, async (SaveFestivalRequest request, AdminFestivalHandler handler, CancellationToken cancellationToken) => await handler.CreateAsync(request, cancellationToken));
+    group.MapPost(string.Empty, async Task<CreatedAnswer<SavedFestivalView>> (SaveFestivalRequest request, FestivalService service, CancellationToken cancellationToken) => await service.CreateAsync(request, cancellationToken));
 
-    group.MapPut("/{festivalId:guid}", async (Guid festivalId, SaveFestivalRequest request, AdminFestivalHandler handler, CancellationToken cancellationToken) => await handler.UpdateAsync(festivalId, request, cancellationToken));
+    group.MapPut("/{festivalId:guid}", async Task<ApiAnswer<SavedFestivalView>> (Guid festivalId, SaveFestivalRequest request, FestivalService service, CancellationToken cancellationToken) => await service.UpdateAsync(festivalId, request, cancellationToken));
 
-    group.MapPost("/{festivalId:guid}/copy", async (Guid festivalId, SaveFestivalRequest request, AdminFestivalHandler handler, CancellationToken cancellationToken) => await handler.CopyAsync(festivalId, request, cancellationToken));
+    group.MapPost("/{festivalId:guid}/copy", async Task<CreatedAnswer<SavedFestivalView>> (Guid festivalId, SaveFestivalRequest request, FestivalService service, CancellationToken cancellationToken) => await service.CopyAsync(festivalId, request, cancellationToken));
 
-    group.MapPost("/{festivalId:guid}/hide", async (Guid festivalId, AdminFestivalHandler handler, CancellationToken cancellationToken) => await handler.HideAsync(festivalId, cancellationToken));
+    group.MapPost("/{festivalId:guid}/hide", async Task<ApiAnswer<SavedFestivalView>> (Guid festivalId, FestivalService service, CancellationToken cancellationToken) => await service.HideAsync(festivalId, cancellationToken));
 
-    group.MapPost("/{festivalId:guid}/show", async (Guid festivalId, AdminFestivalHandler handler, CancellationToken cancellationToken) => await handler.ShowAsync(festivalId, cancellationToken));
+    group.MapPost("/{festivalId:guid}/show", async Task<ApiAnswer<SavedFestivalView>> (Guid festivalId, ActivationService service, CancellationToken cancellationToken) => await service.ShowAsync<Festival, SavedFestivalView>(festivalId, Refusal.Festival.FestivalNotFound, cancellationToken));
 
     group.MapPut("/{festivalId:guid}/items/{itemId:guid}", async (Guid festivalId, Guid itemId, SaveFestivalItemRequest request, AdminFestivalMenuHandler handler, CancellationToken cancellationToken) => await handler.PutOnTheMenuAsync(festivalId, itemId, request, cancellationToken));
 

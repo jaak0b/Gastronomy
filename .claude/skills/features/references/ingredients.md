@@ -23,8 +23,6 @@ Backend, under `backend/`:
   the active article names (`ActiveItemNames`) are a query expression in
   `GastronomyApp.Core/Mapping/IngredientMapping.cs`, and the deactivation check asks the same question
   of the recipe lines with `Active()` from `ActivatableQueries`.
-- `IIngredientRepository` and `IngredientRepository` stay only for `FestivalAdministrationService`
-  (all names), which is not converted yet; they go with that service.
 - `GastronomyApp.Core/Services/CatalogItemService.cs` is the service of the Artikel tab and holds the
   recipe: `SetRecipeLineAsync` sets the amount of a line (and adds the line when there is none) and
   `RemoveRecipeLineAsync` removes one. Its `ActivateAsync` is the check that keeps an article off
@@ -60,7 +58,7 @@ Frontend, under `frontend/src/`:
 - `admin/components/items/ItemIngredientsDialog.vue` is the recipe, opened from an article row in
   `ItemsListCategorySection.vue` through `ItemsList.vue`. Each line and the add row show the
   `unitName` the wire view carries.
-- Stores: `admin/stores/ingredients.ts` (on `defineAdminList`) and `items.ts` (`setIngredientAmount`,
+- Stores: `admin/stores/ingredients.ts` (on `defineAdminList` with `withCreating` and `withActivation`) and `items.ts` (`setIngredientAmount`,
   `removeIngredient`). Texts: `admin.ingredients.*`, `errors.admin.ingredients.*` and
   `errors.admin.items.ingredientIsDeactivated` in `shared/i18n/de.json` and `en.json`.
 
@@ -107,8 +105,7 @@ Frontend, under `frontend/src/`:
   activation cases of an article, on the real DbContext. The unit cases live in
   `GastronomyApp.Infrastructure.Tests/Services/UnitServiceTest`.
 - `GastronomyApp.Infrastructure.Tests`: `Configurations/IngredientNameIndexTest` and
-  `CatalogItemIngredientIndexTest` (the unique indexes), `Repositories/IngredientRepositoryTest` and
-  `UnitNameIndexTest`.
+  `CatalogItemIngredientIndexTest` (the unique indexes), `UnitNameIndexTest`.
 - `GastronomyApp.Api.Tests/Endpoints`: `AdminIngredientEndpointsTest` and
   `AdminItemIngredientEndpointsTest` (including the name, unit id and unit name of every listed
   recipe line, the new name after a rename, and a unit change that keeps the amount); the

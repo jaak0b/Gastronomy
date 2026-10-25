@@ -8,20 +8,14 @@ import type { AdminActionResult } from '../core/adminActionResult'
 import { useConnectionStore } from '../../shared/stores/connection'
 import { combineReleases } from '../../shared/core/combineReleases'
 import { useAdminEnrolmentStore } from './enrolment'
-import { defineAdminList } from './adminList'
+import { adminListDefinition, defineAdminList, withActivation } from './adminList'
 
 interface StaffMemberDraft {
   name: string
 }
 
 export const useAdminStaffStore = defineStore('adminStaff', () => {
-  const {
-    entries: staffMembers,
-    loadFailed,
-    load,
-    update,
-    setActive,
-  } = defineAdminList({
+  const definition = adminListDefinition({
     path: '/api/admin/staff-members',
     listSchema: AdminStaffMemberListView,
     entrySchema: AdminStaffMemberView,
@@ -29,6 +23,13 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
     idOf: (staffMember) => staffMember.staffMemberId,
     requestBodyOf: (draft: StaffMemberDraft): RenameStaffMemberRequest => ({ name: draft.name }),
   })
+  const {
+    entries: staffMembers,
+    loadFailed,
+    load,
+    update,
+    setActive,
+  } = withActivation(defineAdminList(definition), definition)
 
   async function rename(id: string, name: string): Promise<AdminActionResult<null>> {
     return await update(id, { name })

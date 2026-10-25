@@ -33,7 +33,7 @@ public sealed class CatalogItemServiceTest
     _fixture.DbContext.CatalogCategories.Add(_switchedOffCategory);
     _fixture.DbContext.Units.Add(_gram);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
-    FestivalRepository festivalRepository = new(_fixture.DbContext, new(), new());
+    FestivalRepository festivalRepository = new(_fixture.DbContext, new());
     _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(festivalRepository, new(), TimeProvider.System));
   }
 

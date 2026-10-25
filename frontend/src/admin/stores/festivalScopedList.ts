@@ -2,7 +2,7 @@ import { ref, type Ref } from 'vue'
 import type { z } from 'zod'
 import { assertNever } from '../../shared/core/assertNever'
 import { adminFailed, adminOk, type AdminActionResult } from '../core/adminActionResult'
-import { defineCreatableAdminList } from './adminList'
+import { adminListDefinition, defineAdminList, withActivation, withCreating } from './adminList'
 
 export interface FestivalScopedListDefinition<TEntry, TListResponse, TDraft, TBody> {
   path: string
@@ -29,17 +29,18 @@ export function defineFestivalScopedList<TEntry, TListResponse, TDraft, TBody>(
   definition: FestivalScopedListDefinition<TEntry, TListResponse, TDraft, TBody>,
 ): FestivalScopedList<TEntry, TDraft> {
   const festivalInView = ref<string | null>(null)
+  const listDefinition = adminListDefinition({
+    path: definition.path,
+    listSchema: definition.listSchema,
+    entrySchema: definition.entrySchema,
+    entriesOf: definition.entriesOf,
+    idOf: definition.idOf,
+    requestBodyOf: definition.requestBodyOf,
+    reloadAfterWriting: reload,
+    currentView: () => festivalInView.value,
+  })
   const { entries, loadFailed, loadFrom, forgetCreatedEntries, create, update, setActive } =
-    defineCreatableAdminList({
-      path: definition.path,
-      listSchema: definition.listSchema,
-      entrySchema: definition.entrySchema,
-      entriesOf: definition.entriesOf,
-      idOf: definition.idOf,
-      requestBodyOf: definition.requestBodyOf,
-      reloadAfterWriting: reload,
-      currentView: () => festivalInView.value,
-    })
+    withActivation(withCreating(defineAdminList(listDefinition), listDefinition), listDefinition)
 
   async function load(): Promise<void> {
     if (festivalInView.value !== null) {

@@ -40,7 +40,7 @@ public sealed class ItemOrderabilityEndpointsTest
 
     await using var readContext = _context.Factory.CreateContext();
     var clock = _context.Factory.Services.GetRequiredService<TimeProvider>();
-    ItemOrderability orderability = new(new ItemOrderabilityRepository(readContext), new FestivalRepository(readContext, new(), new()), clock);
+    ItemOrderability orderability = new(new ItemOrderabilityRepository(readContext), new FestivalRepository(readContext, new()), clock);
 
     IReadOnlyList<Guid> itemIds = await orderability.FindOrderableItemIdsAsync(_context.World.FestivalId, CancellationToken.None);
 

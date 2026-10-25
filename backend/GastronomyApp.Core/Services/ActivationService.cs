@@ -30,4 +30,19 @@ public sealed class ActivationService
 
     return row.Adapt<TView>(_mapping);
   }
+
+  public async Task<ErrorOr<TView>> ShowAsync<TEntity, TView>(Guid id, Func<Guid, Error> notFound, CancellationToken cancellationToken) where TEntity : class, IHideable
+  {
+    ArgumentNullException.ThrowIfNull(notFound);
+
+    var row = await _database.Set<TEntity>().FindAsync([id], cancellationToken);
+
+    if (row is null)
+      return notFound(id);
+
+    row.IsHidden = false;
+    await _database.SaveChangesAsync(cancellationToken);
+
+    return row.Adapt<TView>(_mapping);
+  }
 }

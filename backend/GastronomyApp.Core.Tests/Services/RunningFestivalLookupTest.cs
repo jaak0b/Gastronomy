@@ -60,6 +60,17 @@ public sealed class RunningFestivalLookupTest
   }
 
   [Test]
+  public void IsRunning_ByItsFieldsForAFestivalCoveringThisMoment_SaysItIsRunningUnlessItIsHidden()
+  {
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(_lookup.IsRunning(false, _now.AddHours(-2), _now.AddHours(5)), Is.True);
+                      Assert.That(_lookup.IsRunning(true, _now.AddHours(-2), _now.AddHours(5)), Is.False);
+                      Assert.That(_lookup.IsRunning(false, _now.AddHours(-8), _now.AddHours(-1)), Is.False);
+                    });
+  }
+
+  [Test]
   public void IsRunning_AFestivalThatHasAlreadyEnded_SaysItIsNotRunning()
   {
     Assert.That(_lookup.IsRunning(Festival(_now.AddHours(-8), _now.AddHours(-1), false)), Is.False);

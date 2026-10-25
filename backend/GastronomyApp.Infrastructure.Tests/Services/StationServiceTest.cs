@@ -342,7 +342,7 @@ public sealed class StationServiceTest
 
   private StationService CreateService(GastronomyAppDbContext dbContext)
   {
-    FestivalRepository festivalRepository = new(dbContext, new(), new());
+    FestivalRepository festivalRepository = new(dbContext, new());
     RunningFestivalLookup runningFestival = new(festivalRepository, new(), _clock);
 
     return new(dbContext,

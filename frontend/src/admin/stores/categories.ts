@@ -10,7 +10,7 @@ import { adminOk, type AdminActionResult } from '../core/adminActionResult'
 import { adminFailureFrom } from '../core/adminMutation'
 import { oneAtATime } from '../core/oneAtATime'
 import { useConnectionStore } from '../../shared/stores/connection'
-import { defineCreatableAdminList } from './adminList'
+import { adminListDefinition, defineAdminList, withActivation, withCreating } from './adminList'
 
 export interface AdminCategoryDraft {
   name: string
@@ -18,6 +18,14 @@ export interface AdminCategoryDraft {
 }
 
 export const useAdminCategoriesStore = defineStore('adminCategories', () => {
+  const definition = adminListDefinition({
+    path: '/api/admin/categories',
+    listSchema: AdminCategoryListView,
+    entrySchema: AdminCategoryView,
+    entriesOf: (response) => response.categories,
+    idOf: (category) => category.categoryId,
+    requestBodyOf: (draft: AdminCategoryDraft): SaveCategoryRequest => ({ name: draft.name, colourHex: draft.colourHex }),
+  })
   const {
     entries: categories,
     loadFailed,
@@ -26,14 +34,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     create,
     update,
     setActive,
-  } = defineCreatableAdminList({
-    path: '/api/admin/categories',
-    listSchema: AdminCategoryListView,
-    entrySchema: AdminCategoryView,
-    entriesOf: (response) => response.categories,
-    idOf: (category) => category.categoryId,
-    requestBodyOf: (draft: AdminCategoryDraft): SaveCategoryRequest => ({ name: draft.name, colourHex: draft.colourHex }),
-  })
+  } = withActivation(withCreating(defineAdminList(definition), definition), definition)
   const moves = oneAtATime()
 
   async function save(

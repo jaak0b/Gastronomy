@@ -1,4 +1,5 @@
 using ErrorOr;
+using GastronomyApp.Contracts.Admin.Festivals;
 using GastronomyApp.Contracts.Admin.Ingredients;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Refusals;
@@ -36,6 +37,64 @@ public sealed class ActivationServiceTest
     ErrorOr<SavedIngredientView> activated = await service.ActivateAsync<Ingredient, SavedIngredientView>(Guid.NewGuid(), Refusal.Ingredients.IngredientNotFound, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(activated.FirstError.NumericType, Is.EqualTo(RefusalType.NotFound));
+  }
+
+  [Test]
+  public async Task ShowAsync_AHiddenRow_ShowsItAndStoresIt()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var festival = await StoreFestivalAsync(fixture, true);
+    ActivationService service = new(fixture.DbContext, new CoreMappingFactory().Create());
+
+    ErrorOr<SavedFestivalView> shown = await service.ShowAsync<Festival, SavedFestivalView>(festival.Id, Refusal.Festival.FestivalNotFound, TestContext.CurrentContext.CancellationToken);
+    fixture.DbContext.ChangeTracker.Clear();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(shown.Value, Is.EqualTo(new SavedFestivalView(festival.Id)));
+                      Assert.That(fixture.DbContext.Festivals.Single().IsHidden, Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task ShowAsync_ARowThatIsAlreadyShown_AnswersWithItAgain()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var festival = await StoreFestivalAsync(fixture, false);
+    ActivationService service = new(fixture.DbContext, new CoreMappingFactory().Create());
+
+    ErrorOr<SavedFestivalView> shown = await service.ShowAsync<Festival, SavedFestivalView>(festival.Id, Refusal.Festival.FestivalNotFound, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(shown.Value, Is.EqualTo(new SavedFestivalView(festival.Id)));
+  }
+
+  [Test]
+  public async Task ShowAsync_AnUnknownRow_IsRefusedWithTheNotFoundRefusalOfItsArea()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    ActivationService service = new(fixture.DbContext, new CoreMappingFactory().Create());
+
+    ErrorOr<SavedFestivalView> shown = await service.ShowAsync<Festival, SavedFestivalView>(Guid.NewGuid(), Refusal.Festival.FestivalNotFound, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(shown.FirstError.NumericType, Is.EqualTo(RefusalType.NotFound));
+  }
+
+  private async Task<Festival> StoreFestivalAsync(SqliteInMemoryFixture fixture, bool isHidden)
+  {
+    Festival festival = new()
+                        {
+                          Id = Guid.NewGuid(),
+                          Name = "Sommerfest",
+                          StartsAtUtc = new(2030, 6, 1, 14, 0, 0, DateTimeKind.Utc),
+                          EndsAtUtc = new(2030, 6, 2, 14, 0, 0, DateTimeKind.Utc),
+                          NextOrderNumber = 1,
+                          IsHidden = isHidden
+                        };
+    fixture.DbContext.Festivals.Add(festival);
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    fixture.DbContext.ChangeTracker.Clear();
+
+    return festival;
   }
 
   private async Task<Ingredient> StoreIngredientAsync(SqliteInMemoryFixture fixture, bool isActive)

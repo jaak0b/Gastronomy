@@ -13,7 +13,6 @@ public sealed class CatalogMappingTest
   {
     IMappingRegistration[] registrations =
     [
-      new AdminFestivalMapping(new()),
       new CatalogMapping(),
       new EnrolmentMapping(),
       new OpenItemMapping(),

@@ -6,21 +6,14 @@ import {
 } from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
 import { useConnectionStore } from '../../shared/stores/connection'
-import { defineCreatableAdminList } from './adminList'
+import { adminListDefinition, defineAdminList, withActivation, withCreating } from './adminList'
 
 export interface UnitDraft {
   name: string
 }
 
 export const useAdminUnitsStore = defineStore('adminUnits', () => {
-  const {
-    entries: units,
-    loadFailed,
-    load,
-    create,
-    update,
-    setActive,
-  } = defineCreatableAdminList({
+  const definition = adminListDefinition({
     path: '/api/admin/units',
     listSchema: AdminUnitListView,
     entrySchema: AdminUnitView,
@@ -28,6 +21,14 @@ export const useAdminUnitsStore = defineStore('adminUnits', () => {
     idOf: (unit) => unit.unitId,
     requestBodyOf: (draft: UnitDraft): SaveUnitRequest => ({ name: draft.name }),
   })
+  const {
+    entries: units,
+    loadFailed,
+    load,
+    create,
+    update,
+    setActive,
+  } = withActivation(withCreating(defineAdminList(definition), definition), definition)
 
   async function save(unitId: string, draft: UnitDraft): Promise<AdminActionResult<null>> {
     return await update(unitId, draft)

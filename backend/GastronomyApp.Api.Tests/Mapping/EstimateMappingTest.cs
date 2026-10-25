@@ -15,7 +15,6 @@ public sealed class EstimateMappingTest
   {
     IMappingRegistration[] registrations =
     [
-      new AdminFestivalMapping(new()),
       new CatalogMapping(),
       new EnrolmentMapping(),
       new EstimateMapping(new()),

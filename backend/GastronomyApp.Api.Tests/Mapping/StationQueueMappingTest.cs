@@ -14,7 +14,6 @@ public sealed class StationQueueMappingTest
   {
     IMappingRegistration[] registrations =
     [
-      new AdminFestivalMapping(new()),
       new CatalogMapping(),
       new EnrolmentMapping(),
       new OpenItemMapping(),

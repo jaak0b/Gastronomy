@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { defineCreatableAdminList } from '../../../src/admin/stores/adminList'
+import {
+  adminListDefinition,
+  defineAdminList,
+  withActivation,
+  withCreating,
+} from '../../../src/admin/stores/adminList'
 import {
   AdminCategoryListView,
   AdminCategoryView,
@@ -24,7 +29,7 @@ interface ListOptions {
 }
 
 function categoryList(options: ListOptions = {}) {
-  return defineCreatableAdminList({
+  const definition = adminListDefinition({
     path: '/api/admin/categories',
     listSchema: AdminCategoryListView,
     entrySchema: AdminCategoryView,
@@ -37,6 +42,7 @@ function categoryList(options: ListOptions = {}) {
     reloadAfterWriting: options.reloadAfterWriting,
     currentView: options.currentView,
   })
+  return withActivation(withCreating(defineAdminList(definition), definition), definition)
 }
 
 function laptopListing(...lists: unknown[][]): StubbedLaptop {

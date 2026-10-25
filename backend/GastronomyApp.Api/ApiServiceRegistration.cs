@@ -43,7 +43,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton(options);
     services.AddSingleton(TimeProvider.System);
 
-    services.AddSingleton<IMappingRegistration, AdminFestivalMapping>();
     services.AddSingleton<IMappingRegistration, AdminTablePlanMapping>();
     services.AddSingleton<IMappingRegistration, CatalogMapping>();
     services.AddSingleton<IMappingRegistration, EnrolmentMapping>();
@@ -85,14 +84,12 @@ public sealed class ApiServiceRegistration
     services.AddScoped<ITablePlanRepository, TablePlanRepository>();
     services.AddScoped<INumberAllocator, SequenceNumberAllocator>();
     services.AddScoped<IStationOrderRepository, StationOrderRepository>();
-    services.AddScoped<IIngredientRepository, IngredientRepository>();
     services.AddScoped<IIngredientStockRepository, IngredientStockRepository>();
 
     services.AddSingleton<OrderRoutingResolver>();
     services.AddSingleton<OrderService>();
     services.AddSingleton<StationOrderService>();
     services.AddSingleton<StationWaitingTimes>();
-    services.AddSingleton<FestivalService>();
     services.AddSingleton<TableService>();
     services.AddSingleton<FestivalSchedule>();
     services.AddSingleton<AreaShapeService>();
@@ -111,7 +108,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<CatalogCategoryService>();
     services.AddScoped<CatalogItemService>();
     services.AddScoped<DeviceOwnerRetirement>();
-    services.AddScoped<FestivalAdministrationService>();
+    services.AddScoped<FestivalService>();
     services.AddScoped<FestivalMenuService>();
     services.AddScoped<FestivalStationService>();
     services.AddScoped<AreaAdministrationService>();
@@ -161,7 +158,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<LocalNetworkAddressProvider>();
     services.AddSingleton<ReachableHostResolver>();
     services.AddSingleton<EnrolmentUrlBuilder>();
-    services.AddScoped<AdminFestivalHandler>();
     services.AddScoped<AdminFestivalMenuHandler>();
     services.AddScoped<AdminFestivalStationHandler>();
     services.AddScoped<AdminAreaHandler>();
