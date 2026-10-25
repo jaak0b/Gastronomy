@@ -127,7 +127,8 @@ Every rule binds every agent, main or sub, with no exception it does not name.
    places, unify on the single source. A concern shared across flows lives in a shared module wired
    into all consumers, never patched into one flow. **Interim solutions are forbidden in all cases:**
    deferred fixes are forgotten and the interim state becomes permanent, so the correct structure is
-   built immediately, even when it costs a schema change or a larger diff.
+   built immediately, even when it costs a schema change or a larger diff. Before writing a filter
+   over a table, look in `Core/Queries/<Entity>Queries.cs` for the piece that already exists.
 
 7. **No code comments.** Code self-explains through names and structure, in everything we author (C#,
    TypeScript, Vue, YAML, JSON, `.csproj`). Banned: what-narration (`// build the order`), divider
@@ -189,7 +190,8 @@ Every rule binds every agent, main or sub, with no exception it does not name.
     it. A review brief for a bug fix carries the implementer's quoted red and green output. Every
     finding gets one disposition in the report to the owner: fixed (name the test), false (quote the
     line that refutes it), or a question to the owner. Cost, scope or age is never a reason to drop
-    one; that trade-off is the owner's.
+    one; that trade-off is the owner's. For every change the reviewer also asks whether the new logic
+    already exists somewhere else, and lists a copy as a finding.
 
 14. **The main agent writes no code:** every change to code, tests, generated files or build and
     tool configuration goes to the `implementer` agent, however small. The main agent may itself edit
@@ -277,8 +279,12 @@ Every rule binds every agent, main or sub, with no exception it does not name.
     Grouping by name alone silently merges two instructions and sends the wrong thing to a table.
 
 20. **C# follows `csharp-design-guidelines`, TypeScript and Vue follow
-    `typescript-vue-design-guidelines`; read the one for the file before touching it.** Design rules
-    go into those skills, never into a `CLAUDE.md`.
+    `typescript-vue-design-guidelines`; read the one for the file before touching it.**
+    `csharp-design-guidelines` is a condensed copy of published guidance: the .NET Framework Design
+    Guidelines and the architecture chapters on Microsoft Learn. It changes only when the owner adds
+    a source or decides a rule, never to describe or justify the code as it stands. This app's own
+    structure (which folder holds what, how a request travels) belongs in the `architecture` skill.
+    Design rules never go into a `CLAUDE.md`.
 
 21. **A delayed answer never overwrites a newer one.** Where a read and an action share the state a
     screen shows, the read takes a number from the request gate in
@@ -327,6 +333,14 @@ Every rule binds every agent, main or sub, with no exception it does not name.
     anything rule 15 removed, and a page that no longer matches the code is a defect.
     Every agent dispatched to change code is told to update the pages it touches, and the review
     lists a missing or stale page as a finding.
+
+25. **The backend has one structure, and the `architecture` skill describes it.** `Core` reaches
+    the database only through `IGastronomyDatabase`, and a read goes through no repository. Each
+    area has one service in `Core/Services` that holds all of its actions, and an endpoint calls
+    that service directly, with no handler or mapping class in between. A filter that more than one
+    action needs lives in `Core/Queries/<Entity>Queries.cs`, or in `<Interface>Queries.cs` when
+    several entities share the flag. Read the `layers-and-projects` page before adding a backend
+    class, and never write new code the old way because the area beside it still looks like that.
 
 ## Verification bar
 

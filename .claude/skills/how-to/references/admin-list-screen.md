@@ -28,9 +28,9 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
    `loadFailed`, `load`, `create`, `update` (the Zutaten store wraps it as `save`), `setActive` plus a
    `listen()`. A list that depends on
    the running festival uses `defineFestivalScopedList` (`stores/festivalScopedList.ts`) instead.
-   The factory fixes the routes the laptop must offer: `GET <path>` answers the list view,
-   `POST <path>` answers the created entry, `PUT <path>/{id}`, `POST <path>/{id}/activate` and
-   `POST <path>/{id}/deactivate` answer any success. Loads go through the latest request gate.
+   The store takes the route of each call it makes from the screen that uses it, so a route is
+   whatever the laptop's service for that screen offers, and a screen without an activate call
+   passes none. Loads go through the latest request gate.
 4. **Reload.** `listen()` returns `useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], load)`.
    A list whose entries carry a flag derived from orders (the stations'
    `hasItemsToHandOutAtTheRunningFestival`, the table plan's `hasItemsToHandOutOrSettleAtTheRunningFestival`) listens to `OrdersChanged` too, or a button the flag
@@ -87,7 +87,7 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
    `errors.admin.<section>.*`, in `shared/i18n/de.json` and `en.json` in the same change. Read
    `no-ai-slop` and `writing-ui-guidance` first.
 9. **The laptop side.** The entity carries `[Raises(HubEvent.ConfigurationChanged)]`; the routes sit in
-   `backend/GastronomyApp.Api/Endpoints/Admin<Things>Endpoints.cs`. See the `change-a-wire-contract` and
+   `backend/GastronomyApp.Api/Endpoints/Admin<Things>Endpoints.cs` and call one method of the area's service each. See the `change-a-wire-contract` and
    `add-a-refusal` pages for the contract and the refusals.
 
 ## Specs

@@ -24,8 +24,7 @@ before a review.
 
 ## What this repository changes
 
-This repository overrides the sources on four points; the reference files already carry the first
-three.
+This repository overrides the sources on three points, and the reference files already carry them.
 
 - **No code comments and no JSDoc.** The Google guide's comment and JSDoc chapters are replaced by
   one rule: a name that needs a comment is wrong, so rename until the comment is redundant, then
@@ -38,11 +37,6 @@ three.
   after every statement and snake_case file names; this codebase's files have neither, and the
   guide's own consistency policy says to do what the surrounding code already does. New files match
   their folder: camelCase `.ts` names, PascalCase `.vue` names.
-- **No helper function for small data shaping.** Do not add a private function, or a function nested
-  in another one, whose only job is to shape data for its caller (a label, a sort key, a filter, the
-  mapping of one row). Write the inline expression where it is used. This narrows the Google guide's
-  advice to prefer a module-local function over a private static method: that advice is for
-  behaviour with a name of its own, never for a one-line shaping step.
 
 ## Source files and modules
 

@@ -20,7 +20,6 @@ Full rules: [references/naming.md](references/naming.md)
 - **Do** name classes and structs with nouns, interfaces with adjective phrases prefixed with `I`.
 - **Do** give methods verb or verb-phrase names, and properties noun, noun-phrase or adjective names.
 - **Do** name Boolean properties with an affirmative phrase, prefixed with `Is`, `Can` or `Has` only where it adds value.
-- **Do** name the flag that takes a row out of view `IsHidden` on whatever belongs to one festival (the festival itself, an area, a table), and `IsActive` on the global lists (stations, articles, categories, ingredients, waiters); **do not** give one entity both, or use the other word for the same idea.
 - **Do** name collection properties with a plural phrase, never a singular followed by `List` or `Collection`.
 - **Do not** have a property that matches the name of a `Get` method; one of them should go.
 - **Do** name events with a verb in the present tense before the change and the past tense after it: `Closing`, `Closed`.
@@ -30,17 +29,6 @@ Full rules: [references/naming.md](references/naming.md)
 - **Do not** introduce generic type names such as `Element`, `Node`, `Log` or `Message`; qualify them.
 - **Do** use `value` for the implicit parameter of a setter and `sender` and `e` for event handler parameters.
 
-**Code names and screen words.** Two concepts deliberately carry a different name in code than on
-screen; never "correct" either one into the other. These names bind the TypeScript code too.
-
-| Code | German screen | English screen | Why |
-|---|---|---|---|
-| `StaffMember` | Kellner | Waiter | In code, "server" is ambiguous, because the laptop runs the server; the old name `ServerPerson` only existed to tell the two apart. The entity is named for the person, because it may later cover cooks too, and the screen names today's role. No role field exists until something behaves differently for a cook. |
-| `Station` | Ausgabestelle | Station | The code said Station everywhere already. "Ausgabe" was rejected because its plural reads as expenses, the same flaw that ruled out "Bedienungen". |
-
-A screen word is chosen for the person holding the phone at the festival, and its plural has to read
-correctly at a glance next to the other navigation tabs.
-
 ## Structure
 
 Full rules: [references/structure.md](references/structure.md)
@@ -48,8 +36,8 @@ Full rules: [references/structure.md](references/structure.md)
 - **Do** keep a class to one kind of work and one reason to change; **do not** put route mapping, request validation and the database write in one class.
 - **Do** take every collaborator through the constructor, and **do not** reach for a static accessor or a service locator inside a method.
 - **Consider** splitting a class whose constructor takes more than about four or five dependencies; many injected dependencies signal too many responsibilities.
-- **Do** put rules and decisions in `GastronomyApp.Core`, EF Core and external access in `GastronomyApp.Infrastructure`, endpoints and hosting in `GastronomyApp.Api`; `Core` references no other project.
-- **Do not** accept an ASP.NET Core, EF Core or SQLite `using` in a `Core` file, nor an `Infrastructure` type outside the composition root in `Api`.
+- **Do** put rules, decisions and use cases in `GastronomyApp.Core`, the database engine and external access in `GastronomyApp.Infrastructure`, endpoints and hosting in `GastronomyApp.Api`, wire records in `GastronomyApp.Contracts`; `Core` references `Contracts`, EF Core and Mapster and nothing else.
+- **Do not** accept an ASP.NET Core or SQLite `using`, or the concrete `DbContext`, in a `Core` file: `Core` reaches the database only through the database interface it defines. **Do not** name an `Infrastructure` type outside the composition root in `Api`.
 - **Do** let an endpoint only map a route, bind and validate the request, call one service and build the response; business rules and persistence live in the service.
 - **Do** keep one type per file with the file named after the type, and **do not** create static helper buckets (house rules).
 
@@ -136,13 +124,6 @@ Full rules: [references/usage-and-patterns.md](references/usage-and-patterns.md)
 - **Avoid** taking `ICollection<T>` only to read `Count`.
 - **Do** use the `Collection` or `Dictionary` suffix on custom collection types, without an implementation word such as `LinkedList` in the name.
 
-## Ordering
-
-Repository rule; no source page.
-
-- **Do** order a result by a value the data carries: a sort order, a name, a number.
-- **Do not** order by a generated identifier. A `Guid` key carries no order, so `OrderBy(row => row.Id)` hands rows out in a random-looking sequence that means nothing; an id is only ever the last tiebreaker after the meaningful keys.
-
 ## Equality and operators
 
 Full rules: [references/usage-and-patterns.md](references/usage-and-patterns.md), section Equality operators
@@ -178,41 +159,39 @@ Assembly naming, serialization attributes, System.Xml usage and WPF dependency p
 summarized in one paragraph each at the end of [references/usage-and-patterns.md](references/usage-and-patterns.md)
 and do not apply to this application.
 
-## Data flow
+## Owner's decisions
 
-Inside the backend, data travels as EF entities. Wire records live in `GastronomyApp.Contracts`:
-requests are consumed by `Core`, responses are produced only by `Api`, mapped from entities with
-Mapster. A record outside `Contracts` and `Api` exists only when the alternative is a tuple or more
-than about five parameters, only after trying the entity or its id first. Two jobs are never mixed:
+These are the owner's own choices, not rules from the sources.
 
-- **Mapping** copies fields from one shape into another. It always happens in the `Api`, with
-  Mapster, and nowhere else; no code copies fields by hand.
-- **Computing** produces values no entity holds, such as a sum over orders or a prediction. It
-  happens in a `Core` service. When the result needs more than the entity, the service returns a
-  record that carries the entity itself plus the computed values, never copies of the entity's
-  fields: `IngredientStockLevel` holds the `FestivalIngredient` and the amounts computed for it.
-
-Every foreign key id property on an entity has its navigation property beside it (`FestivalId` and
-`Festival`, `AreaId` and `Area`), and the entity's configuration maps the relationship through that
-navigation (`HasOne(table => table.Festival)`), never through the id alone. A composite key maps the
-same way, with `HasPrincipalKey` naming the principal's alternate key.
-
-An EF entity carries properties only, never a method: a fact derived from an
-entity is a method on that entity type's service (`OrderService.StatusOf(order)`), and a transaction
-across entities is a method on the use-case service. A private helper that only reshapes data, and a
-local function standing in for one, is banned: write the LINQ inline at the call site.
-Names shared across call sites are constants in one static class. A rule that refuses returns
-`ErrorOr<T>`, never a nullable value standing for a refusal; the refusal is an `Error` from a factory
-in `Core/Refusals`, and its numeric type is its HTTP status, declared once in `RefusalType`. A handler
-body is one expression returning `ErrorOr<TView>`, and the handler's return type is the status it
-answers with: an Api-owned answer type converts that outcome implicitly, writes the view or hands the
-refusal to `ResultEnvelope`, and describes its own response to the OpenAPI document. The device a
-request came from is a handler parameter that binds itself. A request is one transaction, opened and closed by an endpoint filter on every mutating route, so no service
-opens one; a write that keeps losing its rows to another writer answers one refusal. No service
-announces what it changed: the commit does, as the `architecture` skill describes, and that page
-also names the bulk write and raw SQL statements that are banned because the commit cannot see them.
-Core writes its own log lines through the
-`ILogger<T>` abstractions and takes no other framework dependency.
+- **Do not** use the conditional operator (`condition ? a : b`); write an `if` with an `else`, or two
+  early returns. `??`, `??=` and `?.` stay.
+- **Do** build a list from a query with `.ToList()` or `.ToArray()`, never with a spread collection
+  expression (`[.. items.Select(...)]`); a collection expression is only for a literal list of
+  values.
+- **Do** map an EF entity to a response record with Mapster wherever Mapster can do it, and copy
+  fields by hand only where it cannot. A read that queries the database projects with
+  `ProjectToType<TView>()`, so the mapping is configured once per record and turns into the SQL
+  query.
+- **Do not** put business logic in an EF entity class. An entity carries the data and its
+  navigation properties; the rules that decide what may change live in the use case in `Core`.
+- **Do** compute a value derived from stored data (a sum over orders, a stock level, a forecast)
+  each time it is asked for. Never cache it and never store it beside the data it comes from: a
+  cached figure goes stale, and a screen then shows an outdated value as if it were current.
+- **Do** return `ErrorOr<T>` from a rule that can refuse, never a nullable value standing for a
+  refusal. The refusal is an `Error` from a factory in `Core/Refusals`, and its numeric type is its
+  HTTP status, declared once in `RefusalType`.
+- **Do** give every foreign key id property on an entity its navigation property beside it
+  (`FestivalId` and `Festival`, `AreaId` and `Area`), and map the relationship through that
+  navigation (`HasOne(table => table.Festival)`), never through the id alone. A composite key maps
+  the same way, with `HasPrincipalKey` naming the principal's alternate key.
+- **Do** name the flag that takes a row out of view `IsHidden` on whatever belongs to one festival
+  (the festival itself, an area, a table), and `IsActive` on the global lists (stations, articles,
+  categories, ingredients, waiters). **Do not** give one entity both, or use the other word for the
+  same idea.
+- **Do** order a result by a value the data carries: a sort order, a name, a number. **Do not**
+  order by a generated identifier: a `Guid` key carries no order, so `OrderBy(row => row.Id)` hands
+  rows out in a sequence that means nothing. An id is only ever the last tiebreaker after the
+  meaningful keys.
 
 ## How to use
 

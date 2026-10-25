@@ -12,16 +12,16 @@ are followed in order.
    DataAnnotations attributes whose `ErrorMessage` is a constant from
    `Validation/RefusalMessageKeys.cs`. Request shape is checked there and nowhere else; domain rules
    stay in `GastronomyApp.Core`.
-2. **The mapping.** An entity becomes a view through Mapster in `backend/GastronomyApp.Api/Mapping`
-   (`IMappingRegistration`, `config.NewConfig<Entity, View>()`). `MappingConfiguration` compiles with
-   `RequireDestinationMemberSource = true`, so a view member without a source fails
-   `MappingConfigurationTest`. A new mapping class is also registered in `ApiServiceRegistration`
-   (`MappingConfigurationTest` checks that too).
-3. **The route.** Map it in `backend/GastronomyApp.Api/Endpoints` with `group.MapGet`, `MapPost`, `MapPut` or `MapDelete`;
+2. **The service.** The record is produced and consumed by the area's service in `GastronomyApp.Core`, not
+   by a mapping file in `Api`. A read projects into the record with Mapster
+   `ProjectToType<View>()`; a view member that Mapster cannot fill from the entity is configured once
+   for that record, and a copy by hand is the exception. A write takes the request record.
+   The steps are on the `add-a-read-to-a-service` and `add-a-write-to-a-service` pages.
+3. **The route.** Map it in `backend/GastronomyApp.Api/Endpoints` with `group.MapGet`, `MapPost`, `MapPut` or `MapDelete`, calling the area's service directly;
    `frontend/tests/shared/apiRouteVocabulary.spec.ts` reads those calls to prove that every `/api/...`
-   address the frontend uses exists. The handler's return type (`ApiAnswer<T>`, `CreatedAnswer<T>`,
+   address the frontend uses exists. The endpoint's return type (`ApiAnswer<T>`, `CreatedAnswer<T>`,
    `NoContentAnswer`) is the status and the response type in the document. The device a request came
-   from is a handler parameter, never something a handler looks up: `StaffDeviceCaller` and
+   from is an endpoint parameter, never something an endpoint looks up: `StaffDeviceCaller` and
    `StationDeviceCaller` bind themselves through `BindAsync`. Hub event payloads are records in
    `Contracts/Events`.
 4. **Regenerate the document.** Build the Api test project: `dotnet build backend/GastronomyApp.Api.Tests`.
@@ -48,8 +48,8 @@ are followed in order.
 
 ## Tests
 
-Backend: the endpoint test in `GastronomyApp.Api.Tests/Endpoints` for the route; the mapping test when
-a view member needs a source of its own (`GastronomyApp.Api.Tests/Mapping`);
+Backend: the endpoint test in `GastronomyApp.Api.Tests/Endpoints` for the route; the test of the use
+case for the projection and the rules;
 `OpenApi/GeneratedOpenApiDocumentTest` only when a new kind of schema needs a rule, since it already
 pins numbers, enums and event schemas. Frontend: the store spec for the new call and the specs of
 the screens that show it. Run single files, for example

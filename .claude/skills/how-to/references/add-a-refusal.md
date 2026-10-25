@@ -27,12 +27,12 @@ with the request path, takes the status from `NumericType`, and writes an `ApiEr
 bad line is collected into `List<Error>`; the envelope answers with the first line of that list, in the
 order the caller handed it over, and the log holds them all.
 
-A handler's body is one expression: the service call, `Then`, `ThenDo` and their async siblings for
-what follows a success, and nothing else. A handler holds no `ErrorOr` in a local, switches on no
+An endpoint's body is one expression: the service call, `Then`, `ThenDo` and their async siblings for
+what follows a success, and nothing else. An endpoint holds no `ErrorOr` in a local, switches on no
 refusal, writes no status code and never touches `ResultEnvelope`.
 
-**The handler's return type is the status it answers with.** The three answer types in `Api/Answers`
-each take the handler's `ErrorOr<TView>` through an implicit conversion, so the body stays that one
+**The endpoint's return type is the status it answers with.** The three answer types in `Api/Answers`
+each take the service's `ErrorOr<TView>` through an implicit conversion, so the body stays that one
 expression: `ApiAnswer<TView>` answers 200, `CreatedAnswer<TView>` answers 201 and `NoContentAnswer`
 answers 204. Each is an `IResult` that writes the view as JSON on success and hands a refusal to
 `ResultEnvelope`, which it resolves from the request's services; the shared part of that lives once,
@@ -86,12 +86,12 @@ A refusal that only means "not there" is a bare status: `NotFound` or `Unauthori
    `frontend/src/shared/i18n/de.json` and `en.json` with the same `{placeholders}` as the metadata
    names. Read `no-ai-slop` first. An admin screen shows a key the German file lacks as
    `errors.admin.actionFailed`.
-5. **The caller.** A service returns `ErrorOr<T>` with the factory call. A list of refusals answers
+5. **The caller.** A service method returns `ErrorOr<T>` with the factory call. A list of refusals answers
    with its first entry and logs all of them.
 
 ## Tests that must change
 
-- Service test in `GastronomyApp.Core.Tests/Services`: assert `RefusalMessageKey()`,
+- Service test in `GastronomyApp.Core.Tests`: assert `RefusalMessageKey()`,
   `FirstError.NumericType` and `RefusalMetadata(...)` (`TestSupport/RefusalReading.cs`).
 - Endpoint test in `GastronomyApp.Api.Tests/Endpoints`: status, `code`, `messageKey` and `parameters`
   of the body, as `AdminIngredientEndpointsTest` does.

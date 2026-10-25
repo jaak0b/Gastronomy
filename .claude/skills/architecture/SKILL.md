@@ -14,10 +14,12 @@ is never a feature or code documentation page: features are in `features`, recur
 | Decision | Page |
 |---|---|
 | How the projects are layered and what each one may depend on | [references/layers-and-projects.md](references/layers-and-projects.md) |
+| Shared `IQueryable` extension methods in `Core/Queries`, the interfaces behind them and how they are tested | [references/query-building-blocks.md](references/query-building-blocks.md) |
 | One request, one transaction | [references/one-transaction-per-request.md](references/one-transaction-per-request.md) |
 | Where a request's shape is checked and where the domain rules live | [references/request-validation.md](references/request-validation.md) |
 | The generated types as the boundary between the backend and the frontend | [references/the-wire-boundary.md](references/the-wire-boundary.md) |
 | How screens learn that something changed | [references/announcements.md](references/announcements.md) |
+| Where a concept's name in code differs from its word on screen | [references/code-names-and-screen-words.md](references/code-names-and-screen-words.md) |
 
 ## How to use
 

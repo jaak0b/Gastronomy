@@ -3,13 +3,13 @@
 Some reads have to run as exactly one statement: a read many devices repeat on every hub event has
 to be cheap, and a read whose parts must agree with each other needs one snapshot. A test pins the
 count so a later `Include`, `AsSplitQuery` or extra lookup fails at once instead of slowing the
-festival down.
+festival down. The unit that is measured is the read method of the area's service, because that is what an endpoint
+calls and what the devices repeat.
 
 ## When to use it
 
-For a repository read that has to stay one statement (or another fixed number), in
-`GastronomyApp.Infrastructure.Tests`. Behaviour still belongs in the read's ordinary tests. This
-test only counts the statements.
+For a read of a service that has to stay one statement (or another fixed number). Behaviour still
+belongs in the service's ordinary tests. This test only counts the statements.
 
 ## Steps
 
@@ -23,13 +23,14 @@ test only counts the statements.
    await using GastronomyAppDbContext readContext = new(new DbContextOptionsBuilder<GastronomyAppDbContext>().UseSqlite(fixture.Connection).AddInterceptors(counter).Options);
    ```
 
-3. Call the repository method on that context, and nothing else on it.
+3. Run the read method of the service with that context as its `IGastronomyDatabase`, and nothing else on it.
 4. Assert the number: `Assert.That(counter.QueryCount, Is.EqualTo(1));`.
 
 ## Example
 
 `TablePlanRepositoryTest.FindShownAreasWithItemFlagsAsync_APlanWithOrdersAtTwoStationsAndStationShapes_ReadsItInOneStatement`
-pins the phone's table plan read to one statement.
+pins the phone's table plan read to one statement. It still calls a repository method because the
+table plan area is not converted yet; a converted area measures the read method of its service the same way.
 
 Run it on its own:
 `dotnet test backend/GastronomyApp.Infrastructure.Tests/GastronomyApp.Infrastructure.Tests.csproj --filter "FullyQualifiedName~Repositories.TablePlanRepositoryTest"`.

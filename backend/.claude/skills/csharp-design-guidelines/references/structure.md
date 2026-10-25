@@ -115,29 +115,31 @@ What each layer holds, per the official type lists:
   "developers should limit actual references to types in the Infrastructure project to the app's
   composition root."
 
-Mapped onto this repository:
+Mapped onto this repository (the owner's decision: EF Core is treated as the abstraction over the
+database, so `Core` may use its LINQ through an interface it defines, while the database engine
+stays in `Infrastructure`):
 
 | Layer | Project | Holds |
 |---|---|---|
-| UI | `GastronomyApp.Api` | Endpoints, handlers, answers, hub, auth, error handling, hosting, service registration (the composition root). |
-| Application Core | `GastronomyApp.Core` | Entities, announcements, refusals, results, services, and the ports the other two projects implement or call. |
-| Infrastructure | `GastronomyApp.Infrastructure` | The DbContext, entity configurations, migrations, repositories, the connection factory, token hashing and the failure translator. |
-| Shared | `GastronomyApp.Contracts` | The wire records, the enums the wire and the domain share, and the hub event payloads. |
+| UI | `GastronomyApp.Api` | Endpoints, hub, auth, error handling, hosting, service registration (the composition root). |
+| Application Core | `GastronomyApp.Core` | Entities, enums, one service per area, the database interface, and the ports the other projects implement or call. |
+| Infrastructure | `GastronomyApp.Infrastructure` | The DbContext that implements the database interface, entity configurations, migrations, the connection factory and the failure translator. |
+| Shared | `GastronomyApp.Contracts` | The wire records. |
 
-`GastronomyApp.Contracts` references no other project. `GastronomyApp.Core` references `Contracts`
-only. `GastronomyApp.Infrastructure` references `Core` and `Contracts`. `GastronomyApp.Api`
-references all three, and its use of `Infrastructure` types stays in `ApiServiceRegistration`,
-`GastronomyAppApiApplication`, the `Hosting` folder, `InfrastructureExceptionMiddleware` and
-`RequestTransactionFilter`.
+`GastronomyApp.Contracts` references no other project. `GastronomyApp.Core` references `Contracts`,
+EF Core and Mapster. `GastronomyApp.Infrastructure` references `Core` and `Contracts`.
+`GastronomyApp.Api` references all three, and its use of `Infrastructure` types stays in the
+composition root.
 
 Tests an agent runs on one file:
 
-- **Do** check that the project the file sits in matches the work it does: a rule or a decision in
-  `Core`, a query or an entity configuration in `Infrastructure`, a route in `Api`, a wire shape in
-  `Contracts`.
+- **Do** check that the project the file sits in matches the work it does: a rule, a service or a
+  query in `Core`, an entity configuration or a migration in `Infrastructure`, a route in `Api`, a
+  wire shape in `Contracts`.
 - **Do** check that the namespace matches the folder and the project, so the file's location says
   what its namespace says.
-- **Do not** accept a `using` of an ASP.NET Core, EF Core or SQLite namespace in a `Core` file.
+- **Do not** accept a `using` of an ASP.NET Core or SQLite namespace in a `Core` file, nor the
+  concrete `DbContext`; EF Core's LINQ through the database interface is allowed.
 - **Do not** accept a `using` of an `Api` namespace in `Core` or `Infrastructure`.
 - **Do not** accept an `Infrastructure` type named outside the composition root in `Api`.
 
@@ -152,7 +154,7 @@ instead of many," and the code that hands the request on "is almost one line."
   request shape, call one application service, and turn that service's result into an HTTP
   response.
 - **Do not** put a business rule, a calculation or a database call in an endpoint; those live in the
-  service and the repository behind it.
+  service of its area in `Core` that the endpoint calls.
 - **Do not** let an endpoint call two services in sequence to complete one action; if the action
   needs both, one service owns that sequence.
 - **Avoid** an endpoint whose lambda or method body runs past a screen; that length is a service that
@@ -170,79 +172,3 @@ above.
   rules in [type-design.md](type-design.md), section Static class design, say to use static classes
   sparingly and never as a miscellaneous bucket. A stateless operation that a service needs becomes a
   method on that service, or a small class the service takes as a dependency.
-- **Do not** use the conditional operator (`condition ? a : b`); write an `if` with an `else`, or two
-  early returns. `??`, `??=` and `?.` stay. **Do** build a list from a query with `.ToList()` or
-  `.ToArray()`, never with a spread collection expression (`[.. items.Select(...)]`); a collection
-  expression is only for a literal list of values. Neither of these can be enforced by the cleanup.
-- **Do** put exactly one kind of type in a folder, name the folder after that kind, and give the file
-  the namespace of its project plus its folder, so no folder is a catch-all.
-- **Do** place a new file in the folder that names both its kind and its concept, so the folder alone
-  says what the file is.
-
-  In `GastronomyApp.Contracts`: one folder per area of the wire, listed on the `layers-and-projects`
-  page of the `architecture` skill, `Enums` for the enums the wire and the domain share, `Events`
-  for the payloads of the hub events, and `Validation` for the shared refusal message keys and the
-  `RequiredText` attribute. `ApiError` and `ProblemDescription` stay at the project root.
-
-  In `GastronomyApp.Core`:
-
-  - `Announcements`: the `HubEvent` enum, the `Raises` attribute an entity carries, and the port the
-    commit calls to announce a change (see the `announcements` page of the `architecture` skill).
-  - `Entities`: persisted aggregates, and `IDeviceOwner`, which a staff member and a station share.
-  - `Ports`: interfaces only.
-  - `Refusals`: the `Refusal` factories, one partial file per area, with `RefusalType` and the
-    metadata keys and problem codes (see the `add-a-refusal` page of `how-to`).
-  - `Results`: the records a service hands back to its caller.
-  - `Services`: classes only.
-
-  In `GastronomyApp.Api`:
-
-  - `Answers`: the three answer types a handler returns and `ViewOrRefusal`, the class they share
-    (see the `add-a-refusal` page of `how-to`).
-  - `Auth`: device authentication, the caller identity and the loopback check for the admin routes.
-  - `Auth/Conventions`: the endpoint convention extensions.
-  - `Auth/Filters`: the endpoint filters that refuse a route to the wrong kind of device.
-  - `DocumentTransformers`: the transformers that shape the OpenAPI document.
-  - `Endpoints`: the route mapping classes only.
-  - `ErrorHandling`: `ResultEnvelope`, the writer for a refused request shape, the middleware for
-    the infrastructure exception and the serializer that records a refusal in the log.
-  - `Filters`: `RequestTransactionFilter`, which makes a write request one transaction.
-  - `Handlers`: the classes an endpoint calls.
-  - `Hosting`: the address a phone can reach the laptop on, the enrolment URL, the outstanding
-    invitation cache and the SQLite connection policy.
-  - `Hub`: the SignalR hub, its connection registry, the guard and the terminator for a revoked
-    device's connections, and the dispatcher that sends the announcements.
-  - `Mapping`: the Mapster registrations (`IMappingRegistration`) and the configuration that
-    compiles them.
-  - `Options`: `AppLanguage`, the language the laptop currently uses.
-  - `RateLimiting`: the rate limit policies.
-  - `Responders`: the classes that answer with a page instead of a view.
-  - `Values`: the records the Api passes around inside itself rather than over the wire.
-  - `wwwroot`: the built frontend, never edited by hand.
-
-  The composition root stays at the project root in `ApiPipeline`, `ApiServiceRegistration` and
-  `GastronomyAppApiApplication`, next to `Names`, the static class whose nested classes hold the
-  constant names of authentication schemes, device claims, hub events, hub groups and rate limit
-  policies.
-
-  In `GastronomyApp.Infrastructure`:
-
-  - `Configurations`: the entity configurations.
-  - `Enums`: its own enums.
-  - `ErrorHandling`: the infrastructure exception and the failure translator.
-  - `Migrations`: the migrations, append only (see `backend/CLAUDE.md`, Hard rules).
-  - `Persistence`: the context and its design time factory, the connection factory, the save
-    interceptor that raises the hub events, and the after-commit queue.
-  - `Repositories`: the repositories.
-  - `Security`: the device token splitter and the secret hasher.
-  - `Values`: the records its own classes hand each other.
-
-  In `GastronomyApp.Desktop`: one folder per concern (`Hosting`, `Updates`, `Settings`, `Setup`,
-  `Platform/Windows`, `Localization`, `Logging`, `ViewModels`, `Views`, `Themes` for the palette and
-  the control styles), with `Assets` for the files the window ships, such as its icon, `Converters` for the
-  Avalonia value converters, `Enums` for its enums, `Events` for its event argument classes, `Ports`
-  for the interfaces it defines and implements itself, and `Values` for its records, and never a
-  `Services` catch-all. `App`, `Program` and `ViewLocator` stay at the project root.
-
-  In a test project a support type that is not a fixture lives under `TestSupport` and the fixture
-  folders mirror the production folders.
