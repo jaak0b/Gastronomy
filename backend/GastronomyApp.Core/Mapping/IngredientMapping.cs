@@ -1,6 +1,6 @@
 using GastronomyApp.Contracts.Admin.Ingredients;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Results;
 using Mapster;
 
 namespace GastronomyApp.Core.Mapping;
@@ -17,19 +17,17 @@ public sealed class IngredientMapping : IRegister
 
     config.NewConfig<Ingredient, SavedIngredientView>().Map(view => view.IngredientId, ingredient => ingredient.Id);
 
-    config.NewConfig<IngredientUsagePointResult, IngredientUsagePoint>();
+    config.NewConfig<FestivalIngredient, AdminFestivalIngredientView>()
+          .Map(view => view.Name, stock => stock.Ingredient.Name)
+          .Map(view => view.UnitId, stock => stock.Ingredient.UnitId)
+          .Map(view => view.UnitName, stock => stock.Ingredient.Unit.Name)
+          .Map(view => view.UsedAmount, stock => 0d)
+          .Map(view => view.Usage, stock => Array.Empty<IngredientUsagePoint>())
+          .Map(view => view.RunsOutAtUtcSinceStart, stock => (DateTime?)null)
+          .Map(view => view.RunsOutAtUtcFromLastTwoHours, stock => (DateTime?)null)
+          .Map(view => view.StockWarning, stock => StockWarning.None)
+          .Map(view => view.RunsOutSoonAtUtc, stock => (DateTime?)null);
 
-    config.NewConfig<IngredientStockLevel, AdminFestivalIngredientView>()
-          .Map(view => view.IngredientId, level => level.Stock.IngredientId)
-          .Map(view => view.Name, level => level.Stock.Ingredient.Name)
-          .Map(view => view.UnitId, level => level.Stock.Ingredient.UnitId)
-          .Map(view => view.UnitName, level => level.Stock.Ingredient.Unit.Name)
-          .Map(view => view.AvailableAmount, level => level.Stock.AvailableAmount)
-          .Map(view => view.UsedAmount, level => level.UsedAmount)
-          .Map(view => view.Usage, level => level.Usage)
-          .Map(view => view.RunsOutAtUtcSinceStart, level => level.RunsOutAtUtcSinceStart)
-          .Map(view => view.RunsOutAtUtcFromLastTwoHours, level => level.RunsOutAtUtcFromLastTwoHours)
-          .Map(view => view.StockWarning, level => level.StockWarning)
-          .Map(view => view.RunsOutSoonAtUtc, level => level.RunsOutSoonAtUtc);
+    config.NewConfig<FestivalIngredient, SavedFestivalIngredientView>();
   }
 }

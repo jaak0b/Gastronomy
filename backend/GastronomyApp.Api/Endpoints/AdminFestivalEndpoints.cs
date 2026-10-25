@@ -1,7 +1,8 @@
 using GastronomyApp.Api.Answers;
-using GastronomyApp.Api.Handlers;
+using GastronomyApp.Contracts.Admin.Catalog;
 using GastronomyApp.Contracts.Admin.Festivals;
 using GastronomyApp.Contracts.Admin.Ingredients;
+using GastronomyApp.Contracts.Admin.Stations;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
@@ -28,20 +29,23 @@ public static class AdminFestivalEndpoints
 
     group.MapPost("/{festivalId:guid}/show", async Task<ApiAnswer<SavedFestivalView>> (Guid festivalId, ActivationService service, CancellationToken cancellationToken) => await service.ShowAsync<Festival, SavedFestivalView>(festivalId, Refusal.Festival.FestivalNotFound, cancellationToken));
 
-    group.MapPut("/{festivalId:guid}/items/{itemId:guid}", async (Guid festivalId, Guid itemId, SaveFestivalItemRequest request, AdminFestivalMenuHandler handler, CancellationToken cancellationToken) => await handler.PutOnTheMenuAsync(festivalId, itemId, request, cancellationToken));
+    group.MapPut("/{festivalId:guid}/items/{itemId:guid}",
+                 async Task<ApiAnswer<SavedItemView>> (Guid festivalId, Guid itemId, SaveFestivalItemRequest request, FestivalMenuService service, CancellationToken cancellationToken) => await service.PutOnTheMenuAsync(festivalId, itemId, request, cancellationToken));
 
-    group.MapDelete("/{festivalId:guid}/items/{itemId:guid}", async (Guid festivalId, Guid itemId, AdminFestivalMenuHandler handler, CancellationToken cancellationToken) => await handler.TakeOffTheMenuAsync(festivalId, itemId, cancellationToken));
+    group.MapDelete("/{festivalId:guid}/items/{itemId:guid}", async Task<NoContentAnswer> (Guid festivalId, Guid itemId, FestivalMenuService service, CancellationToken cancellationToken) => await service.TakeOffTheMenuAsync(festivalId, itemId, cancellationToken));
 
-    group.MapPost("/{festivalId:guid}/items/{itemId:guid}/availability", async (Guid festivalId, Guid itemId, SetAvailabilityRequest request, AdminFestivalMenuHandler handler, CancellationToken cancellationToken) => await handler.SetAvailabilityAsync(festivalId, itemId, request, cancellationToken));
+    group.MapPost("/{festivalId:guid}/items/{itemId:guid}/availability",
+                  async Task<ApiAnswer<SavedItemView>> (Guid festivalId, Guid itemId, SetAvailabilityRequest request, FestivalMenuService service, CancellationToken cancellationToken) => await service.SetAvailabilityAsync(festivalId, itemId, request, cancellationToken));
 
-    group.MapPut("/{festivalId:guid}/stations/{stationId:guid}", async (Guid festivalId, Guid stationId, AdminFestivalStationHandler handler, CancellationToken cancellationToken) => await handler.AddAsync(festivalId, stationId, cancellationToken));
+    group.MapPut("/{festivalId:guid}/stations/{stationId:guid}", async Task<ApiAnswer<SavedStationView>> (Guid festivalId, Guid stationId, FestivalStationService service, CancellationToken cancellationToken) => await service.AddAsync(festivalId, stationId, cancellationToken));
 
-    group.MapDelete("/{festivalId:guid}/stations/{stationId:guid}", async (Guid festivalId, Guid stationId, AdminFestivalStationHandler handler, CancellationToken cancellationToken) => await handler.RemoveAsync(festivalId, stationId, cancellationToken));
+    group.MapDelete("/{festivalId:guid}/stations/{stationId:guid}", async Task<NoContentAnswer> (Guid festivalId, Guid stationId, FestivalStationService service, CancellationToken cancellationToken) => await service.RemoveAsync(festivalId, stationId, cancellationToken));
 
-    group.MapGet("/{festivalId:guid}/ingredients", async (Guid festivalId, AdminFestivalStockHandler handler, CancellationToken cancellationToken) => await handler.ListAsync(festivalId, cancellationToken));
+    group.MapGet("/{festivalId:guid}/ingredients", async Task<ApiAnswer<AdminFestivalIngredientListView>> (Guid festivalId, FestivalStockService service, CancellationToken cancellationToken) => await service.ListAsync(festivalId, cancellationToken));
 
     group.MapPut("/{festivalId:guid}/ingredients/{ingredientId:guid}",
-                 async (Guid festivalId, Guid ingredientId, SaveFestivalIngredientRequest request, AdminFestivalStockHandler handler, CancellationToken cancellationToken) => await handler.SetAvailableAmountAsync(festivalId, ingredientId, request, cancellationToken));
+                 async Task<ApiAnswer<SavedFestivalIngredientView>> (Guid festivalId, Guid ingredientId, SaveFestivalIngredientRequest request, FestivalStockService service, CancellationToken cancellationToken) =>
+                   await service.SetAvailableAmountAsync(festivalId, ingredientId, request, cancellationToken));
 
     group.MapGet("/{festivalId:guid}/table-plan", async Task<ApiAnswer<AdminTablePlanView>> (Guid festivalId, TablePlanService service, CancellationToken cancellationToken) => await service.ListAsync(festivalId, cancellationToken));
 
@@ -70,9 +74,9 @@ public static class AdminFestivalEndpoints
                   async Task<ApiAnswer<SavedTableView>> (Guid festivalId, Guid tableId, ActivationService service, CancellationToken cancellationToken) => await service.ShowAsync<Table, SavedTableView>(festivalId, tableId, id => Refusal.TablePlan.TableNotFound(festivalId, id), cancellationToken));
 
     group.MapPut("/{festivalId:guid}/stations/{stationId:guid}/shape",
-                 async (Guid festivalId, Guid stationId, SaveStationShapeRequest request, AdminFestivalStationShapeHandler handler, CancellationToken cancellationToken) => await handler.PlaceAsync(festivalId, stationId, request, cancellationToken));
+                 async Task<ApiAnswer<SavedStationView>> (Guid festivalId, Guid stationId, SaveStationShapeRequest request, FestivalStationService service, CancellationToken cancellationToken) => await service.PlaceShapeAsync(festivalId, stationId, request, cancellationToken));
 
-    group.MapDelete("/{festivalId:guid}/stations/{stationId:guid}/shape", async (Guid festivalId, Guid stationId, AdminFestivalStationShapeHandler handler, CancellationToken cancellationToken) => await handler.RemoveAsync(festivalId, stationId, cancellationToken));
+    group.MapDelete("/{festivalId:guid}/stations/{stationId:guid}/shape", async Task<NoContentAnswer> (Guid festivalId, Guid stationId, FestivalStationService service, CancellationToken cancellationToken) => await service.RemoveShapeAsync(festivalId, stationId, cancellationToken));
 
     return routes;
   }

@@ -33,12 +33,16 @@ Backend, under `backend/`:
   `PeriodRefusalAsync` is the one period check, and `CopyContentsAsync` (private) copies the
   configuration. Showing a festival again has no rule of its own, so it is
   `ActivationService.ShowAsync<Festival, SavedFestivalView>`, the generic action over `IHideable`.
-- `FestivalMenuService` and `FestivalStationService` put articles and stations on one festival and
-  take them off again.
+- `FestivalMenuService` (put an article on the menu with its stations, take it off, set its
+  availability) and `FestivalStationService` (add a station, remove it, place or move its shape on the
+  plan, remove the shape) are the area services of the festival page's menu and stations. Both read and
+  write through `IGastronomyDatabase`, answer `SavedItemView` or `SavedStationView` through Mapster
+  (`Core/Mapping/FestivalMapping.cs`) or `Success`, and keep their refusals in order: festival, article
+  or station, the stations of the festival, an active station that prepares the item. The stock rows
+  are `FestivalStockService` (see the `festival-stock` page).
 - `Infrastructure/Repositories/FestivalRepository.cs` stays for the services of the unconverted
   sub-areas, the desktop and `RunningFestivalLookup`: `FindRunningAsync` gives the shown festivals to
-  `FestivalSchedule.FindRunningAt`, `FindByIdAsync`, `ExistsAsync` and `FindAllAsync` load a festival
-  or all, and `FindIdsNotEndedAsync` answers "not hidden and not yet over" for `ItemOrderability` in the query
+  `FestivalSchedule.FindRunningAt`, `FindAllAsync` loads all for the desktop, and `FindIdsNotEndedAsync` answers "not hidden and not yet over" for `ItemOrderability` in the query
   itself (it includes festivals still to come, so it is not "running").
 - Refusals: `GastronomyApp.Core/Refusals/Refusal.Festival.cs` (`PeriodInvalid`,
   `PeriodOverlapsAnotherFestival`, `FestivalIsRunning` with
@@ -47,8 +51,8 @@ Backend, under `backend/`:
 - Routes: `GastronomyApp.Api/Endpoints/AdminFestivalEndpoints.cs` under `/api/admin/festivals`: list,
   create, `PUT /{festivalId}`, `POST /{festivalId}/copy`, `/hide` (all calling `FestivalService`) and
   `/show` (calling `ActivationService`); `PUT` and `DELETE /{festivalId}/items/{itemId}` and
-  `POST .../availability` with `AdminFestivalMenuHandler.cs`; `PUT` and `DELETE
-  /{festivalId}/stations/{stationId}` with `AdminFestivalStationHandler.cs`, which also deletes the
+  `POST .../availability` calling `FestivalMenuService`; `PUT` and `DELETE
+  /{festivalId}/stations/{stationId}` calling `FestivalStationService`, whose removal also deletes the
   station's shape on the plan. The plan's own routes are on the `table-plan` page.
 - Wire records: `GastronomyApp.Contracts/Admin/Festivals` (`SaveFestivalRequest`, `SavedFestivalView`,
   `AdminFestivalView` with `IsHidden`, `IsRunning` and the three counts, `AdminFestivalListView`,
@@ -189,11 +193,12 @@ Every point below is intended behaviour. A change to any of them needs the owner
 
 - `GastronomyApp.Core.Tests/Services`: `FestivalScheduleTest` (the start counts, the end does not, a
   hidden festival never runs, overlap with a hidden festival), `RunningFestivalLookupTest`,
-  `FestivalMenuServiceTest`, `FestivalStationServiceTest` and `StationAtFestivalLookupTest`; the no running festival cases of
+  and `StationAtFestivalLookupTest`; the no running festival cases of
   `CatalogServiceTest`, `OrderAcceptanceServiceTest`, `OrderItemSettlementServiceTest` and
   `StationQueueServiceTest`.
-- `GastronomyApp.Infrastructure.Tests`: `Repositories/FestivalRepositoryTest` (running, not ended,
-  `FindByIdAsync`), `FestivalMenuRepositoryTest`, `FestivalStationRepositoryTest`,
+- `GastronomyApp.Infrastructure.Tests`: `Repositories/FestivalRepositoryTest` (running, not ended),
+  `Repositories/FestivalStationRepositoryTest`, `Services/FestivalMenuServiceTest` and
+  `Services/FestivalStationServiceTest` (every action on the real DbContext, shapes included),
   `Configurations/OrderNumberIndexTest` (the station number index) and
   `Services/FestivalServiceTest` (every festival action on the real DbContext: the list with its
   counts and `IsRunning`, the period checks, the stock rows of a new festival and of a copy, and

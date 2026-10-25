@@ -1,4 +1,6 @@
+using GastronomyApp.Contracts.Admin.Catalog;
 using GastronomyApp.Contracts.Admin.Festivals;
+using GastronomyApp.Contracts.Admin.Stations;
 using GastronomyApp.Core.Entities;
 using Mapster;
 
@@ -18,5 +20,9 @@ public sealed class FestivalMapping : IRegister
           .Map(view => view.OrderCount, festival => 0);
 
     config.NewConfig<Festival, SavedFestivalView>().Map(view => view.FestivalId, festival => festival.Id);
+
+    config.NewConfig<FestivalCatalogItem, SavedItemView>().Map(view => view.ItemId, menuRow => menuRow.CatalogItemId);
+
+    config.NewConfig<FestivalStation, SavedStationView>();
   }
 }

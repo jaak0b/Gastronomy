@@ -51,9 +51,4 @@ public sealed class StationRepository : IStationRepository
   {
     return await _dbContext.Stations.FirstOrDefaultAsync(station => station.Id == stationId, cancellationToken);
   }
-
-  public async Task<bool> ExistsAsync(Guid stationId, CancellationToken cancellationToken)
-  {
-    return await _dbContext.Stations.AsNoTracking().AnyAsync(station => station.Id == stationId, cancellationToken);
-  }
 }

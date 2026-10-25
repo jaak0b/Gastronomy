@@ -1,36 +1,42 @@
 ﻿using ErrorOr;
+using GastronomyApp.Contracts.Admin.Catalog;
+using GastronomyApp.Contracts.Admin.Festivals;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
+using Mapster;
+using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class FestivalMenuService
 {
-  private readonly IFestivalRepository _festivalRepository;
+  private readonly IGastronomyDatabase _database;
+  private readonly TypeAdapterConfig _mapping;
   private readonly ItemOrderability _orderability;
-  private readonly IFestivalMenuRepository _repository;
   private readonly RunningFestivalLookup _runningFestival;
 
-  public FestivalMenuService(IFestivalMenuRepository repository, IFestivalRepository festivalRepository, ItemOrderability orderability, RunningFestivalLookup runningFestival)
+  public FestivalMenuService(IGastronomyDatabase database, TypeAdapterConfig mapping, ItemOrderability orderability, RunningFestivalLookup runningFestival)
   {
-    _repository = repository;
-    _festivalRepository = festivalRepository;
+    _database = database;
+    _mapping = mapping;
     _orderability = orderability;
     _runningFestival = runningFestival;
   }
 
-  public async Task<ErrorOr<FestivalCatalogItem>> PutOnTheMenuAsync(Guid festivalId, Guid catalogItemId, int priceCents, IReadOnlyList<Guid>? stationIdsRequested, CancellationToken cancellationToken)
+  public async Task<ErrorOr<SavedItemView>> PutOnTheMenuAsync(Guid festivalId, Guid catalogItemId, SaveFestivalItemRequest request, CancellationToken cancellationToken)
   {
-    if (!await _festivalRepository.ExistsAsync(festivalId, cancellationToken))
+    ArgumentNullException.ThrowIfNull(request);
+
+    if (!await _database.Festivals.AsNoTracking().AnyAsync(festival => festival.Id == festivalId, cancellationToken))
       return Refusal.FestivalMenu.FestivalNotFound(festivalId);
 
-    if (!await _repository.CatalogItemExistsAsync(catalogItemId, cancellationToken))
+    if (!await _database.CatalogItems.AsNoTracking().AnyAsync(item => item.Id == catalogItemId, cancellationToken))
       return Refusal.FestivalMenu.CatalogItemNotFound(catalogItemId);
 
-    List<Guid> stationIds = (stationIdsRequested ?? []).ToList();
+    List<Guid> stationIds = (request.StationIds ?? []).ToList();
 
-    IReadOnlyList<Guid> stationIdsAtTheFestival = await _repository.FindStationIdsAtFestivalAsync(festivalId, cancellationToken);
+    var stationIdsAtTheFestival = await _database.FestivalStations.AsNoTracking().Where(link => link.FestivalId == festivalId).Select(link => link.StationId).ToListAsync(cancellationToken);
 
     List<Guid> strangers = stationIds.Where(stationId => !stationIdsAtTheFestival.Contains(stationId)).ToList();
 
@@ -40,7 +46,7 @@ public sealed class FestivalMenuService
     if (!await _orderability.AnyOfTheseStationsPreparesAtAsync(festivalId, stationIds, cancellationToken))
       return Refusal.FestivalMenu.NoStationPreparesTheItem(catalogItemId);
 
-    var menuRow = await _repository.FindMenuRowAsync(festivalId, catalogItemId, cancellationToken);
+    var menuRow = await FindMenuRowAsync(festivalId, catalogItemId, cancellationToken);
 
     if (menuRow is null)
     {
@@ -49,42 +55,39 @@ public sealed class FestivalMenuService
                   Id = Guid.NewGuid(),
                   FestivalId = festivalId,
                   CatalogItemId = catalogItemId,
-                  PriceCents = priceCents,
+                  PriceCents = request.PriceCents,
                   IsAvailable = true
                 };
 
-      await _repository.AddMenuRowAsync(menuRow, cancellationToken);
+      _database.FestivalCatalogItems.Add(menuRow);
     }
     else
-      menuRow.PriceCents = priceCents;
+      menuRow.PriceCents = request.PriceCents;
 
-    IReadOnlyList<ItemStationAssignment> existing = await _repository.FindAssignmentsAsync(festivalId, catalogItemId, cancellationToken);
-
-    _repository.RemoveAssignments(existing);
+    _database.ItemStationAssignments.RemoveRange(await FindAssignmentsAsync(festivalId, catalogItemId, cancellationToken));
 
     foreach (var stationId in stationIds.Distinct())
-      await _repository.AddAssignmentAsync(new()
+      _database.ItemStationAssignments.Add(new()
                                            {
                                              Id = Guid.NewGuid(),
                                              FestivalId = festivalId,
                                              CatalogItemId = catalogItemId,
                                              StationId = stationId
-                                           },
-                                           cancellationToken);
+                                           });
 
-    await _repository.SaveChangesAsync(cancellationToken);
+    await _database.SaveChangesAsync(cancellationToken);
 
-    return menuRow;
+    return menuRow.Adapt<SavedItemView>(_mapping);
   }
 
-  public async Task<ErrorOr<FestivalCatalogItem>> TakeOffTheMenuAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<Success>> TakeOffTheMenuAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
   {
-    var menuRow = await _repository.FindMenuRowAsync(festivalId, catalogItemId, cancellationToken);
+    var menuRow = await FindMenuRowAsync(festivalId, catalogItemId, cancellationToken);
 
     if (menuRow is null)
       return Refusal.FestivalMenu.MenuRowNotFound(festivalId, catalogItemId);
 
-    var festival = await _festivalRepository.FindByIdAsync(festivalId, cancellationToken);
+    var festival = await _database.Festivals.AsNoTracking().FirstOrDefaultAsync(row => row.Id == festivalId, cancellationToken);
 
     if (festival is null)
       return Refusal.FestivalMenu.FestivalNotFound(festivalId);
@@ -92,29 +95,39 @@ public sealed class FestivalMenuService
     if (_runningFestival.IsRunning(festival))
       return Refusal.FestivalMenu.FestivalIsRunning(festivalId);
 
-    IReadOnlyList<ItemStationAssignment> assignments = await _repository.FindAssignmentsAsync(festivalId, catalogItemId, cancellationToken);
+    _database.ItemStationAssignments.RemoveRange(await FindAssignmentsAsync(festivalId, catalogItemId, cancellationToken));
+    _database.FestivalCatalogItems.Remove(menuRow);
 
-    _repository.RemoveAssignments(assignments);
-    _repository.RemoveMenuRow(menuRow);
+    await _database.SaveChangesAsync(cancellationToken);
 
-    await _repository.SaveChangesAsync(cancellationToken);
-
-    return menuRow;
+    return Result.Success;
   }
 
-  public async Task<ErrorOr<FestivalCatalogItem>> SetAvailabilityAsync(Guid festivalId, Guid catalogItemId, bool isAvailable, CancellationToken cancellationToken)
+  public async Task<ErrorOr<SavedItemView>> SetAvailabilityAsync(Guid festivalId, Guid catalogItemId, SetAvailabilityRequest request, CancellationToken cancellationToken)
   {
-    var menuRow = await _repository.FindMenuRowAsync(festivalId, catalogItemId, cancellationToken);
+    ArgumentNullException.ThrowIfNull(request);
+
+    var menuRow = await FindMenuRowAsync(festivalId, catalogItemId, cancellationToken);
 
     if (menuRow is null)
       return Refusal.FestivalMenu.MenuRowNotFound(festivalId, catalogItemId);
 
-    if (menuRow.IsAvailable != isAvailable)
+    if (menuRow.IsAvailable != request.IsAvailable)
     {
-      menuRow.IsAvailable = isAvailable;
-      await _repository.SaveChangesAsync(cancellationToken);
+      menuRow.IsAvailable = request.IsAvailable;
+      await _database.SaveChangesAsync(cancellationToken);
     }
 
-    return menuRow;
+    return menuRow.Adapt<SavedItemView>(_mapping);
+  }
+
+  private async Task<FestivalCatalogItem?> FindMenuRowAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
+  {
+    return await _database.FestivalCatalogItems.FirstOrDefaultAsync(menuRow => menuRow.FestivalId == festivalId && menuRow.CatalogItemId == catalogItemId, cancellationToken);
+  }
+
+  private async Task<List<ItemStationAssignment>> FindAssignmentsAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
+  {
+    return await _database.ItemStationAssignments.Where(assignment => assignment.FestivalId == festivalId && assignment.CatalogItemId == catalogItemId).ToListAsync(cancellationToken);
   }
 }

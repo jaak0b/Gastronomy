@@ -34,24 +34,19 @@ public sealed class ActivationService
 
   public async Task<ErrorOr<TView>> ShowAsync<TEntity, TView>(Guid id, Func<Guid, Error> notFound, CancellationToken cancellationToken) where TEntity : class, IHideable
   {
-    ArgumentNullException.ThrowIfNull(notFound);
-
-    var row = await _database.Set<TEntity>().FindAsync([id], cancellationToken);
-
-    if (row is null)
-      return notFound(id);
-
-    row.IsHidden = false;
-    await _database.SaveChangesAsync(cancellationToken);
-
-    return row.Adapt<TView>(_mapping);
+    return await ShowAsync<TEntity, TView>(async () => await _database.Set<TEntity>().FindAsync([id], cancellationToken), id, notFound, cancellationToken);
   }
 
   public async Task<ErrorOr<TView>> ShowAsync<TEntity, TView>(Guid festivalId, Guid id, Func<Guid, Error> notFound, CancellationToken cancellationToken) where TEntity : class, IHideable, IFestivalScoped
   {
+    return await ShowAsync<TEntity, TView>(async () => await _database.Set<TEntity>().FirstOrDefaultAsync(candidate => candidate.Id == id && candidate.FestivalId == festivalId, cancellationToken), id, notFound, cancellationToken);
+  }
+
+  private async Task<ErrorOr<TView>> ShowAsync<TEntity, TView>(Func<Task<TEntity?>> find, Guid id, Func<Guid, Error> notFound, CancellationToken cancellationToken) where TEntity : class, IHideable
+  {
     ArgumentNullException.ThrowIfNull(notFound);
 
-    var row = await _database.Set<TEntity>().FirstOrDefaultAsync(candidate => candidate.Id == id && candidate.FestivalId == festivalId, cancellationToken);
+    var row = await find();
 
     if (row is null)
       return notFound(id);

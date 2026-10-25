@@ -70,21 +70,6 @@ public sealed class StationRepositoryTest
   }
 
   [Test]
-  public async Task ExistsAsync_AStationNobodyEverCreated_AnswersFalse()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-
-    StationRepository repository = new(fixture.DbContext);
-
-    Assert.Multiple(async () =>
-                    {
-                      Assert.That(await repository.ExistsAsync(seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken), Is.True);
-                      Assert.That(await repository.ExistsAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.False);
-                    });
-  }
-
-  [Test]
   public async Task FindAtFestivalWithOpenItemsAsync_TheStationsOfOneFestival_ReturnsThemByTheirPlaceInTheList()
   {
     using SqliteInMemoryFixture fixture = new();

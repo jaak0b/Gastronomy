@@ -1,85 +1,29 @@
-using System.Collections.ObjectModel;
-using ErrorOr;
+using GastronomyApp.Contracts.Admin.Ingredients;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Refusals;
-using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
-public sealed class IngredientStockService
+public sealed class StockForecast
 {
   private const int ForecastWindowHours = 2;
   private const int WarningHorizonHours = 2;
   private readonly IngredientAmountComparison _amountComparison;
-  private readonly IFestivalRepository _festivalRepository;
-  private readonly IIngredientStockRepository _repository;
   private readonly FestivalSchedule _schedule;
-  private readonly StockSoldOutMarker _soldOutMarker;
-  private readonly TimeProvider _timeProvider;
 
-  public IngredientStockService(IIngredientStockRepository repository, IFestivalRepository festivalRepository, StockSoldOutMarker soldOutMarker, FestivalSchedule schedule, IngredientAmountComparison amountComparison, TimeProvider timeProvider)
+  public StockForecast(FestivalSchedule schedule, IngredientAmountComparison amountComparison)
   {
-    _repository = repository;
-    _festivalRepository = festivalRepository;
-    _soldOutMarker = soldOutMarker;
     _schedule = schedule;
     _amountComparison = amountComparison;
-    _timeProvider = timeProvider;
   }
 
-  public async Task<ErrorOr<IReadOnlyList<IngredientStockLevel>>> ListAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken)
-  {
-    var festival = await _festivalRepository.FindByIdAsync(festivalId, cancellationToken);
-
-    if (festival is null)
-      return Refusal.Ingredients.FestivalNotFound(festivalId);
-
-    IReadOnlyList<FestivalIngredient> stock = await _repository.FindActiveUsedOnTheMenuAsync(festivalId, cancellationToken);
-    IReadOnlyDictionary<Guid, IReadOnlyDictionary<DateTime, double>> consumedByIngredientIdAndOrderTime = await _repository.SumConsumedAmountsByOrderTimeAsync(festivalId, cancellationToken);
-    var nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
-    List<IngredientStockLevel> levels = [];
-
-    foreach (var row in stock)
-    {
-      IReadOnlyList<IngredientUsagePointResult> usage = UsageOf(festival, consumedByIngredientIdAndOrderTime.GetValueOrDefault(row.IngredientId, ReadOnlyDictionary<DateTime, double>.Empty), nowUtc);
-      var usedAmount = usage[^1].UsedAmount;
-      var runsOutAtUtcSinceStart = RunsOutAtUtcSinceStart(festival, row.AvailableAmount, usedAmount, nowUtc);
-      var runsOutAtUtcFromLastTwoHours = RunsOutAtUtcFromLastTwoHours(festival, row.AvailableAmount, usage, nowUtc);
-      var runsOutSoonAtUtc = RunsOutSoonAtUtc(festival, runsOutAtUtcSinceStart, runsOutAtUtcFromLastTwoHours, nowUtc);
-
-      levels.Add(new(row, usedAmount, usage, runsOutAtUtcSinceStart, runsOutAtUtcFromLastTwoHours, StockWarningOf(row.AvailableAmount, usedAmount, runsOutSoonAtUtc), runsOutSoonAtUtc));
-    }
-
-    return levels;
-  }
-
-  public async Task<ErrorOr<FestivalIngredient>> SetAvailableAmountAsync(Guid festivalId, Guid ingredientId, double? availableAmount, CancellationToken cancellationToken)
-  {
-    if (availableAmount is { } amount && (!double.IsFinite(amount) || amount < 0))
-      return Refusal.Ingredients.StockInvalid(amount);
-
-    var row = await _repository.FindAsync(festivalId, ingredientId, cancellationToken);
-
-    if (row is null)
-      return Refusal.Ingredients.StockRowNotFound(festivalId, ingredientId);
-
-    row.AvailableAmount = availableAmount;
-    await _repository.SaveChangesAsync(cancellationToken);
-
-    await _soldOutMarker.MarkItemsWithoutEnoughStockSoldOutAsync(festivalId, cancellationToken);
-
-    return row;
-  }
-
-  public IReadOnlyList<IngredientUsagePointResult> UsageOf(Festival festival, IReadOnlyDictionary<DateTime, double> consumedAtOrderTimes, DateTime nowUtc)
+  public IReadOnlyList<IngredientUsagePoint> UsageOf(Festival festival, IReadOnlyDictionary<DateTime, double> consumedAtOrderTimes, DateTime nowUtc)
   {
     ArgumentNullException.ThrowIfNull(festival);
     ArgumentNullException.ThrowIfNull(consumedAtOrderTimes);
 
     var lastMomentUtc = new DateTime(Math.Clamp(nowUtc.Ticks, festival.StartsAtUtc.Ticks, festival.EndsAtUtc.Ticks), DateTimeKind.Utc);
-    List<IngredientUsagePointResult> usage = [new(festival.StartsAtUtc, 0)];
+    List<IngredientUsagePoint> usage = [new(festival.StartsAtUtc, 0)];
     var cumulativeAmount = 0d;
 
     foreach (var consumed in consumedAtOrderTimes.OrderBy(consumed => consumed.Key).Append(new KeyValuePair<DateTime, double>(lastMomentUtc, 0)))
@@ -109,7 +53,7 @@ public sealed class IngredientStockService
     return RunsOutAtUtcAtTheMeasuredRate(festival.StartsAtUtc, usedAmount, available - usedAmount, nowUtc);
   }
 
-  public DateTime? RunsOutAtUtcFromLastTwoHours(Festival festival, double? availableAmount, IReadOnlyList<IngredientUsagePointResult> usage, DateTime nowUtc)
+  public DateTime? RunsOutAtUtcFromLastTwoHours(Festival festival, double? availableAmount, IReadOnlyList<IngredientUsagePoint> usage, DateTime nowUtc)
   {
     ArgumentNullException.ThrowIfNull(festival);
     ArgumentNullException.ThrowIfNull(usage);

@@ -10,25 +10,34 @@ Backend, under `backend/`:
 
 - `GastronomyApp.Core/Entities/FestivalIngredient.cs`: the available amount of one ingredient at one
   festival, `null` for unlimited. One row exists for every festival and ingredient.
-- `IngredientStockService.ListAtFestivalAsync` builds one `Results/IngredientStockLevel` per
-  ingredient from public facts on the same service: `UsageOf` (the series of
-  `Results/IngredientUsagePointResult`), `RunsOutAtUtcSinceStart`, `RunsOutAtUtcFromLastTwoHours`
-  (both through `RunsOutAtUtcAtTheMeasuredRate`), `RunsOutSoonAtUtc` and `StockWarningOf`.
-  `SetAvailableAmountAsync` stores an amount and then runs `StockSoldOutMarker`, which
-  `OrderAcceptanceService` also runs after every order.
+- `Services/FestivalStockService.cs` is the area service of the stock rows (`ListAsync`,
+  `SetAvailableAmountAsync`), reading and writing through `IGastronomyDatabase`. `ListAsync` projects
+  the stock rows of the active ingredients the menu uses with `ProjectToType<AdminFestivalIngredientView>()`
+  (`Core/Mapping/IngredientMapping.cs` fills the computed members with empty values), reads the
+  consumption per ingredient and order time in one grouped query, and sets the computed members with
+  `with` from `StockForecast`. `SetAvailableAmountAsync` stores an amount and then runs
+  `StockSoldOutMarker`, which `OrderAcceptanceService` also runs after every order.
+- `Services/StockForecast.cs` holds the pure facts, computed on every read: `UsageOf` (the series of
+  `IngredientUsagePoint`), `RunsOutAtUtcSinceStart`, `RunsOutAtUtcFromLastTwoHours` (both through
+  `RunsOutAtUtcAtTheMeasuredRate`), `RunsOutSoonAtUtc` and `StockWarningOf`. It reads no database, which
+  is why it is a class of its own and testable without one.
 - `Services/IngredientAmountComparison.cs`: `IsAtLeast`, the one comparison of ingredient amounts.
   The used-up check, both forecasts and the sold-out marker take it as a dependency.
-- `Ports/IIngredientStockRepository.cs` with `Infrastructure/Repositories/IngredientStockRepository.cs`:
-  `SumConsumedAmountsByOrderTimeAsync` (per ingredient and order time, as UTC) feeds the list;
-  `SumConsumedAmountsAsync` (the total per ingredient) feeds only the sold-out marker. Both are the
-  same join of order items and recipe lines.
+- `Queries/OrderItemQueries.ConsumedIngredients` is the one join of order items and recipe lines (one
+  `Results/ConsumedIngredient` per recipe line of an ordered item, with the order time). The list
+  groups it per ingredient and order time; the sold-out marker's `SumConsumedAmountsAsync` groups it per
+  ingredient.
+- `Ports/IIngredientStockRepository.cs` with `Infrastructure/Repositories/IngredientStockRepository.cs`
+  is what is left of the old repository, for `StockSoldOutMarker` only: it is shared with the
+  unconverted `OrderAcceptanceService`, whose Core test fakes the port. It goes when the orders area is
+  converted and the marker reads through `IGastronomyDatabase`.
 - Routes: `GET /api/admin/festivals/{festivalId}/ingredients` and `PUT .../ingredients/{ingredientId}`
-  in `Endpoints/AdminFestivalEndpoints.cs`, with `Handlers/AdminFestivalStockHandler.cs`.
+  in `Endpoints/AdminFestivalEndpoints.cs`, calling `FestivalStockService` directly.
 - Wire records: `GastronomyApp.Contracts/Admin/Ingredients` (`AdminFestivalIngredientListView`,
   `AdminFestivalIngredientView`, `IngredientUsagePoint`, `SaveFestivalIngredientRequest`,
   `SavedFestivalIngredientView`) and `Contracts/Enums/StockWarning.cs`. Every row carries the
-  ingredient's `UnitId` and current `UnitName`. Mapping: `Core/Mapping/IngredientMapping.cs`;
-  `IngredientStockRepository.FindActiveUsedOnTheMenuAsync` includes the unit navigation.
+  ingredient's `UnitId` and current `UnitName`. Mapping: `Core/Mapping/IngredientMapping.cs`
+  (the unit name is part of the projection).
 
 Frontend, under `frontend/src/`:
 
@@ -81,7 +90,7 @@ Frontend, under `frontend/src/`:
 - `usedUp` when an amount is set and the used amount reaches it, running or not. Otherwise
   `runsOutSoon` when the earlier forecast falls before the festival end and at most two hours from
   now; `runsOutSoonAtUtc` carries that moment and is null in every other case. The forecast window and
-  the warning horizon are two separate constants in `IngredientStockService`.
+  the warning horizon are two separate constants in `StockForecast`.
 - The frontend never recomputes a forecast or the warning. A row shows text only for `runsOutSoon`
   and `usedUp`, in the `warning` colour with an alert icon, and the moment carries the weekday
   when the festival spans more than one local day.
@@ -107,12 +116,15 @@ Frontend, under `frontend/src/`:
 
 ## Tests
 
-- `GastronomyApp.Core.Tests/Services`: `IngredientStockServiceTest` (usage with both clamps and the
+- `GastronomyApp.Core.Tests/Services`: `StockForecastTest` (usage with both clamps and the
   shared points, both forecasts, the window and its start, a moment beyond the last date, fractional
   portions, the warning bounds), `StockSoldOutMarkerTest` (fractional portions too) and
   `IngredientAmountComparisonTest`.
-- `GastronomyApp.Infrastructure.Tests/Repositories`: `IngredientStockRepositoryTest` (including the
-  unit navigation on every row).
+- `GastronomyApp.Infrastructure.Tests`: `Services/FestivalStockServiceTest` (the list on the real
+  DbContext: usage, both forecasts and the warning from stored orders, the ingredients the menu uses
+  by name with their unit, orders of another festival, the amount refusals and the sold-out switch),
+  `Repositories/IngredientStockRepositoryTest` (the marker's reads) and `Queries/OrderItemQueriesTest`
+  (`ConsumedIngredients`).
 - `GastronomyApp.Api.Tests/Endpoints`: `AdminFestivalIngredientEndpointsTest` (the wire shape, the
   `unitId` and `unitName` of every row, the `stockWarning` values, an absurd amount that still
   answers the list, and a renamed unit that appears in the next read).

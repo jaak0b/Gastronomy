@@ -53,7 +53,7 @@ Backend, under `backend/`:
   runs" that the stations use too, see the `festivals` page). Showing is the festival-scoped `ActivationService.ShowAsync<TEntity, TView>(festivalId, id, ...)`, constrained on `IHideable` and `IFestivalScoped`, which looks the row up inside the
   festival of the route, so a row of another festival is not found. Copy and move load the
   requested tables of the festival in one query and save once, so a selection is stored in one
-  transaction. `FestivalStationShapeService` (place or move, remove) keeps the shapes.
+  transaction. `FestivalStationService.PlaceShapeAsync` and `RemoveShapeAsync` (place or move, remove) keep the shapes.
   `Core/Services/TableCopyNaming.cs` is the one home of a copy's name: it counts up the
   ASCII digit run that ends the source name, keeping the text before it, the source's case and its
   digit count (`A1` to `A2`, `A09` to `A10`, `A99` to `A100`), appends ` 1`, ` 2`, ... to a name
@@ -80,13 +80,11 @@ Backend, under `backend/`:
   service sets them on the `TablePlanTableView`s after the read, in memory. The statement count is
   pinned in `TablePlanServiceTest` (see the `count-sql-statements` how-to page).
 - `ITablePlanRepository` (`TablePlanRepository`) is what is left of the old repository, for the
-  areas that are not converted yet: `FindAreaAsync` and `FindStationShapeAsync`, `AddStationShapeAsync`,
-  `RemoveStationShape` and `SaveChangesAsync` for `FestivalStationShapeService` and
-  `FestivalStationService`, and `FindTableAsync` for `OrderAcceptanceService`, which looks the order's
-  table up through it; the open items screen reads one table with its orders through
+  orders area that is not converted yet: `FindTableAsync` for `OrderAcceptanceService`, which looks
+  the order's table up through it; the open items screen reads one table with its orders through
   `IOpenItemRepository.FindTableWithOrdersAsync` (see the `settling-a-table` page).
 - `FestivalStationService.RemoveAsync` deletes the station's shape together with its link through
-  `ITablePlanRepository`, and `FestivalService.CopyAsync` copies the plan (see the
+  `IGastronomyDatabase`, and `FestivalService.CopyAsync` copies the plan (see the
   invariants).
 - Refusals: `GastronomyApp.Core/Refusals/Refusal.TablePlan.cs`.
 - Routes in `GastronomyApp.Api/Endpoints/AdminFestivalEndpoints.cs`, under
@@ -99,7 +97,7 @@ Backend, under `backend/`:
   request transaction and answers `CopiedTablesView` with the new table ids, and
   `POST /tables/move`, which moves one or more tables in one transaction and answers no content; `PUT` and
   `DELETE /stations/{stationId}/shape`
-  (`AdminFestivalStationShapeHandler`, keyed by the station id, not the link id). The phone's
+  (`FestivalStationService`, keyed by the station id, not the link id). The phone's
   `GET /api/table-plan` lives in `GastronomyApp.Api/Endpoints/TablePlanEndpoints.cs`
   (`TablePlanService`), for staff phones only, like the catalog and open items routes.
 - Wire records: `AreaShapeGeometry` in `GastronomyApp.Contracts/TablePlan` (`X`, `Y`, `Width`,
@@ -434,8 +432,7 @@ Frontend, under `frontend/src/`:
   count), `TableCopyNamingTest` (every naming example, leading zeros, a name without a trailing
   digit, collisions with shown and hidden names, ASCII case collisions, a paste of several tables in
   deterministic order, a very long digit run), `ItemsToHandOutLookupTest` (the station checks),
-  `FestivalStationShapeServiceTest`, `AreaShapeServiceTest`, the station shape cases of
-  `FestivalStationServiceTest`, and the table cases of `OrderAcceptanceServiceTest`;
+  `AreaShapeServiceTest`, and the table cases of `OrderAcceptanceServiceTest`;
   `TableProgressTest` for the two colour states (the example above, the settled side, a table
   without orders) and the `ShareOfFlaggedItems` cases of `OrderServiceTest`.
 - `GastronomyApp.Infrastructure.Tests`: `Configurations/AreaConfigurationTest`,
@@ -454,8 +451,9 @@ Frontend, under `frontend/src/`:
   out, the two progress states per table, an order at two stations beside two station shapes in one
   area answered once each, and the whole phone read in one statement, counted by
   `TestSupport/QueryCounter`); `Queries/OrderItemQueriesTest` for the filters on items;
-  `Repositories/TablePlanRepositoryTest` for what is left of the repository (another festival's area
-  and table not found, adding and removing a station shape); the plan copy in
+  `Repositories/TablePlanRepositoryTest` for what is left of the repository (another festival's table
+  not found); `Services/FestivalStationServiceTest` for the station shapes (placing, moving, removing,
+  a station outside the festival, an area of another festival, the shape going with its station); the plan copy in
   `FestivalServiceTest`; `Persistence/ReleasedDatabaseUpgradeTest` (festival station rows survive
   the rebuild of their table, and old orders at two festivals end up at hidden tables of their own
   festival). `TestSupport/DomainSeeder.SeedTableAsync` gives a test a table to order at, and `TestSupport/TablePlanSeeder` adds festivals, areas, tables, placed stations and orders for the table plan tests.

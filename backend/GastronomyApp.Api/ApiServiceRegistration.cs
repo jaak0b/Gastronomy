@@ -77,7 +77,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IItemOrderabilityRepository, ItemOrderabilityRepository>();
     services.AddScoped<IStationRepository, StationRepository>();
     services.AddScoped<IFestivalRepository, FestivalRepository>();
-    services.AddScoped<IFestivalMenuRepository, FestivalMenuRepository>();
     services.AddScoped<IFestivalStationRepository, FestivalStationRepository>();
     services.AddScoped<ITablePlanRepository, TablePlanRepository>();
     services.AddScoped<INumberAllocator, SequenceNumberAllocator>();
@@ -112,7 +111,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<FestivalRowHiding>();
     services.AddScoped<AreaEditService>();
     services.AddScoped<TableEditService>();
-    services.AddScoped<FestivalStationShapeService>();
     services.AddScoped<StationService>();
     services.AddScoped<StaffMemberService>();
     services.AddScoped<EnrolmentService>();
@@ -126,9 +124,10 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IngredientService>();
     services.AddScoped<ActivationService>();
     services.AddScoped<UnitService>();
-    services.AddScoped<IngredientStockService>();
+    services.AddScoped<FestivalStockService>();
     services.AddScoped<StockSoldOutMarker>();
     services.AddSingleton<IngredientAmountComparison>();
+    services.AddSingleton<StockForecast>();
 
     services.AddScoped<IDeviceOwnerStore, DeviceOwnerStore>();
     services.AddScoped<IDeviceTokenStore, DeviceTokenStore>();
@@ -156,10 +155,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<LocalNetworkAddressProvider>();
     services.AddSingleton<ReachableHostResolver>();
     services.AddSingleton<EnrolmentUrlBuilder>();
-    services.AddScoped<AdminFestivalMenuHandler>();
-    services.AddScoped<AdminFestivalStationHandler>();
-    services.AddScoped<AdminFestivalStationShapeHandler>();
-    services.AddScoped<AdminFestivalStockHandler>();
     services.AddScoped<CatalogHandler>();
     services.AddScoped<AdminEnrolmentHandler>();
     services.AddScoped<EnrolmentRedemptionHandler>();

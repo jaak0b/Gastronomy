@@ -1,6 +1,7 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Queries;
+using GastronomyApp.Core.Results;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 
@@ -91,6 +92,68 @@ public sealed class OrderItemQueriesTest
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     return festivalId;
+  }
+
+  [Test]
+  public async Task ConsumedIngredients_AnItemWithTwoRecipeLinesBesideOneWithout_ListsOneRowPerRecipeLineWithTheOrderTime()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var stationOrderId = await PlaceOrderAsync(fixture, seeded, seeded.FestivalId);
+    await AddItemAsync(fixture, seeded, stationOrderId, "Bratwurst", null, null);
+    var unit = new Unit
+               {
+                 Id = Guid.NewGuid(),
+                 Name = "Portion",
+                 IsActive = true
+               };
+    Ingredient mustard = new()
+                         {
+                           Id = Guid.NewGuid(),
+                           Name = "Senf",
+                           UnitId = unit.Id,
+                           Unit = unit,
+                           IsActive = true
+                         };
+    Ingredient bun = new()
+                     {
+                       Id = Guid.NewGuid(),
+                       Name = "Broetchen",
+                       UnitId = unit.Id,
+                       Unit = unit,
+                       IsActive = true
+                     };
+    fixture.DbContext.Ingredients.AddRange(mustard, bun);
+    fixture.DbContext.CatalogItemIngredients.AddRange(new CatalogItemIngredient
+                                                      {
+                                                        Id = Guid.NewGuid(),
+                                                        CatalogItemId = seeded.SausageItemId,
+                                                        IngredientId = mustard.Id,
+                                                        Amount = 20
+                                                      },
+                                                      new CatalogItemIngredient
+                                                      {
+                                                        Id = Guid.NewGuid(),
+                                                        CatalogItemId = seeded.SausageItemId,
+                                                        IngredientId = bun.Id,
+                                                        Amount = 1
+                                                      });
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    await using var readContext = fixture.CreateContext();
+
+    IReadOnlyList<ConsumedIngredient> consumed = await readContext.OrderItems.ConsumedIngredients(readContext.CatalogItemIngredients).ToListAsync(TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(consumed.Select(row => row.IngredientId),
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    mustard.Id,
+                                                    bun.Id
+                                                  }));
+                      Assert.That(consumed.Single(row => row.IngredientId == mustard.Id).Amount, Is.EqualTo(20));
+                      Assert.That(consumed.Select(row => row.OrderedAtUtc), Is.All.EqualTo(_now));
+                    });
   }
 
   private async Task<Guid> PlaceOrderAsync(SqliteInMemoryFixture fixture, SeededDomain seeded, Guid festivalId)

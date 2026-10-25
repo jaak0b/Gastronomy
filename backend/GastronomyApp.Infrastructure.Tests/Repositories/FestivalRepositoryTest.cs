@@ -73,21 +73,6 @@ public sealed class FestivalRepositoryTest
   }
 
   [Test]
-  public async Task ExistsAsync_AFestivalThatWasStored_AnswersTrue()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var festivalId = await AddFestivalAsync(fixture.DbContext, "Sommerfest", _start, _start.AddDays(1), false);
-
-    FestivalRepository repository = new(fixture.DbContext, new());
-
-    Assert.Multiple(async () =>
-                    {
-                      Assert.That(await repository.ExistsAsync(festivalId, TestContext.CurrentContext.CancellationToken), Is.True);
-                      Assert.That(await repository.ExistsAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.False);
-                    });
-  }
-
-  [Test]
   public async Task FindIdsNotEndedAsync_AFestivalThatIsOverAndAHiddenOne_ReturnsOnlyTheOneStillToCome()
   {
     using SqliteInMemoryFixture fixture = new();
@@ -100,16 +85,5 @@ public sealed class FestivalRepositoryTest
     IReadOnlyList<Guid> found = await repository.FindIdsNotEndedAsync(_start.AddHours(6), TestContext.CurrentContext.CancellationToken);
 
     Assert.That(found, Is.EqualTo(new[] { wantedId }));
-  }
-
-  [Test]
-  public async Task FindByIdAsync_AFestivalThatIsNotThere_ReturnsNothing()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    await AddFestivalAsync(fixture.DbContext, "Sommerfest", _start, _start.AddDays(1), false);
-
-    FestivalRepository repository = new(fixture.DbContext, new());
-
-    Assert.That(await repository.FindByIdAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.Null);
   }
 }

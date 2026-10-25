@@ -8,9 +8,5 @@ public interface IFestivalRepository
 
   public Task<IReadOnlyCollection<Festival>> FindAllAsync(CancellationToken cancellationToken);
 
-  public Task<Festival?> FindByIdAsync(Guid festivalId, CancellationToken cancellationToken);
-
-  public Task<bool> ExistsAsync(Guid festivalId, CancellationToken cancellationToken);
-
   public Task<IReadOnlyList<Guid>> FindIdsNotEndedAsync(DateTime nowUtc, CancellationToken cancellationToken);
 }
