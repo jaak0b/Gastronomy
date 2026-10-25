@@ -262,6 +262,151 @@ public sealed class ConfigurationChangedAnnouncementTest
   }
 
   [Test]
+  public async Task PostTablesCopy_APasteOfTwoTables_TellsEveryScreenOnce()
+  {
+    var gardenId = await CreateAreaAsync();
+    using var first = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/tables",
+                                                            new
+                                                            {
+                                                              areaId = gardenId,
+                                                              name = "A1",
+                                                              geometry = new
+                                                                         {
+                                                                           x = 10,
+                                                                           y = 20,
+                                                                           width = 80,
+                                                                           height = 40,
+                                                                           rotation = 0
+                                                                         }
+                                                            });
+    using var second = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/tables",
+                                                             new
+                                                             {
+                                                               areaId = gardenId,
+                                                               name = "A2",
+                                                               geometry = new
+                                                                          {
+                                                                            x = 10,
+                                                                            y = 80,
+                                                                            width = 80,
+                                                                            height = 40,
+                                                                            rotation = 0
+                                                                          }
+                                                             });
+    var firstId = JsonDocument.Parse(await first.Content.ReadAsStringAsync()).RootElement.GetProperty("tableId").GetGuid();
+    var secondId = JsonDocument.Parse(await second.Content.ReadAsStringAsync()).RootElement.GetProperty("tableId").GetGuid();
+    await ListenAsync();
+
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/tables/copy",
+                                                               new
+                                                               {
+                                                                 areaId = gardenId,
+                                                                 tables = new[]
+                                                                          {
+                                                                            new
+                                                                            {
+                                                                              sourceTableId = firstId,
+                                                                              geometry = new
+                                                                                         {
+                                                                                           x = 20,
+                                                                                           y = 30,
+                                                                                           width = 80,
+                                                                                           height = 40,
+                                                                                           rotation = 0
+                                                                                         }
+                                                                            },
+                                                                            new
+                                                                            {
+                                                                              sourceTableId = secondId,
+                                                                              geometry = new
+                                                                                         {
+                                                                                           x = 20,
+                                                                                           y = 90,
+                                                                                           width = 80,
+                                                                                           height = 40,
+                                                                                           rotation = 0
+                                                                                         }
+                                                                            }
+                                                                          }
+                                                               });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    await AssertEveryScreenHeardOnceAsync();
+  }
+
+  [Test]
+  public async Task PostTablesMove_TwoTables_TellsEveryScreenOnce()
+  {
+    var gardenId = await CreateAreaAsync();
+    using var first = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/tables",
+                                                            new
+                                                            {
+                                                              areaId = gardenId,
+                                                              name = "A1",
+                                                              geometry = new
+                                                                         {
+                                                                           x = 10,
+                                                                           y = 20,
+                                                                           width = 80,
+                                                                           height = 40,
+                                                                           rotation = 0
+                                                                         }
+                                                            });
+    using var second = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/tables",
+                                                             new
+                                                             {
+                                                               areaId = gardenId,
+                                                               name = "A2",
+                                                               geometry = new
+                                                                          {
+                                                                            x = 10,
+                                                                            y = 80,
+                                                                            width = 80,
+                                                                            height = 40,
+                                                                            rotation = 0
+                                                                          }
+                                                             });
+    var firstId = JsonDocument.Parse(await first.Content.ReadAsStringAsync()).RootElement.GetProperty("tableId").GetGuid();
+    var secondId = JsonDocument.Parse(await second.Content.ReadAsStringAsync()).RootElement.GetProperty("tableId").GetGuid();
+    await ListenAsync();
+
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/tables/move",
+                                                               new
+                                                               {
+                                                                 tables = new[]
+                                                                          {
+                                                                            new
+                                                                            {
+                                                                              tableId = firstId,
+                                                                              geometry = new
+                                                                                         {
+                                                                                           x = 30,
+                                                                                           y = 40,
+                                                                                           width = 80,
+                                                                                           height = 40,
+                                                                                           rotation = 0
+                                                                                         }
+                                                                            },
+                                                                            new
+                                                                            {
+                                                                              tableId = secondId,
+                                                                              geometry = new
+                                                                                         {
+                                                                                           x = 30,
+                                                                                           y = 100,
+                                                                                           width = 80,
+                                                                                           height = 40,
+                                                                                           rotation = 0
+                                                                                         }
+                                                                            }
+                                                                          }
+                                                               });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+    await AssertEveryScreenHeardOnceAsync();
+  }
+
+  [Test]
   public async Task PutStationShape_AStationPlacedInAnArea_TellsEveryScreenOnce()
   {
     var gardenId = await CreateAreaAsync();

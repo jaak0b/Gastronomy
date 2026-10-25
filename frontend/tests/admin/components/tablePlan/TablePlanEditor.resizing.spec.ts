@@ -6,6 +6,7 @@ import { textOnScreen } from '../../../support/dom'
 import { anchorOf, dragAnchorBy, shapeWithId } from '../../../support/konvaDrawing'
 import { refusal } from '../../../support/laptop'
 import {
+  MOVE_PATH,
   SCHANK_SHAPE_ID,
   TABLE_A1_SHAPE_ID,
   editorLaptop,
@@ -16,15 +17,23 @@ import {
 
 enableAutoUnmount(afterEach)
 
-interface SavedShape {
-  geometry: { x: number; y: number; width: number; height: number; rotation: number }
+interface ShapeGeometry {
+  x: number
+  y: number
+  width: number
+  height: number
+  rotation: number
 }
 
-function roundedValuesOf(saved: SavedShape): number[] {
-  return Object.values(saved.geometry).map((value) => Math.round(value))
+interface SavedMoveBody {
+  tables: { tableId: string; geometry: ShapeGeometry }[]
 }
 
-function geometryOfTheNode(node: Konva.Node) {
+function roundedValuesOf(geometry: ShapeGeometry): number[] {
+  return Object.values(geometry).map((value) => Math.round(value))
+}
+
+function geometryOfTheNode(node: Konva.Node): ShapeGeometry {
   return { x: node.x(), y: node.y(), width: node.width(), height: node.height(), rotation: node.rotation() }
 }
 
@@ -46,9 +55,12 @@ describe('resizing a table', () => {
 
     await dragAnchorBy(theDrawing(), 'bottom-right', { x: 40.5, y: 19.5 })
 
-    const saved = laptop.writtenBodies()[0] as SavedShape
-    expect(roundedValuesOf(saved)).toEqual([20, 30, 110, 50, 0])
-    expect(saved.geometry).toEqual(geometryOfTheNode(table))
+    const saved = laptop.writtenBodies()[0] as SavedMoveBody
+    expect([laptop.writes()[0].url, laptop.writes()[0].method]).toEqual([MOVE_PATH, 'POST'])
+    expect(saved.tables).toHaveLength(1)
+    expect(saved.tables[0].tableId).toBe('table-a1')
+    expect(roundedValuesOf(saved.tables[0].geometry)).toEqual([20, 30, 110, 50, 0])
+    expect(saved.tables[0].geometry).toEqual(geometryOfTheNode(table))
     expect([table.scaleX(), table.scaleY(), table.findOne<Konva.Text>('Text')?.width()]).toEqual([1, 1, table.width()])
   })
 
@@ -59,7 +71,7 @@ describe('resizing a table', () => {
 
     await dragAnchorBy(theDrawing(), 'bottom-right', { x: -112.5, y: 0 })
 
-    expect(roundedValuesOf(laptop.writtenBodies()[0] as SavedShape)).toEqual([20, 30, 70, 40, 0])
+    expect(roundedValuesOf((laptop.writtenBodies()[0] as SavedMoveBody).tables[0].geometry)).toEqual([20, 30, 70, 40, 0])
   })
 
   it('keeps a table inside the right edge of the drawing', async () => {
@@ -69,7 +81,7 @@ describe('resizing a table', () => {
 
     await dragAnchorBy(theDrawing(), 'middle-right', { x: 700, y: 0 })
 
-    expect(roundedValuesOf(laptop.writtenBodies()[0] as SavedShape)).toEqual([20, 30, 90, 40, 0])
+    expect(roundedValuesOf((laptop.writtenBodies()[0] as SavedMoveBody).tables[0].geometry)).toEqual([20, 30, 90, 40, 0])
   })
 
   it('puts the table and its handles back when the laptop refuses the new size', async () => {
@@ -98,6 +110,6 @@ describe('resizing a station shape', () => {
 
     const written = laptop.writes()[0]
     expect(written.url).toBe('/api/admin/festivals/fest-1/stations/station-schank/shape')
-    expect(roundedValuesOf(written.body as SavedShape)).toEqual([200, 30, 140, 60, 0])
+    expect(roundedValuesOf((written.body as { geometry: ShapeGeometry }).geometry)).toEqual([200, 30, 140, 60, 0])
   })
 })

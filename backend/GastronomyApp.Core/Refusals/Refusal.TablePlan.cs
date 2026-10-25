@@ -62,5 +62,38 @@ public static partial class Refusal
                       $"The festival {festivalId} is running and a table in its area {areaId} has an item that is not yet handed out or not yet settled, so the area cannot be hidden.",
                       new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "AreaWithItemsToHandOutOrSettleStaysShown" });
     }
+
+    public static Error TableCopyNameTooLong(Guid festivalId, string sourceName, string generatedName)
+    {
+      return Conflict("errors.admin.festivals.tableCopyNameTooLong", $"Copying the table {sourceName} at the festival {festivalId} would need the name {generatedName}, which is longer than 40 characters.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "TableCopyNameTooLong" });
+    }
+
+    public static Error TableCopyWithoutSourceTables(Guid festivalId)
+    {
+      return BadRequest(RefusalMessageKeys.AdminActionFailed,
+                        $"The copy request for the festival {festivalId} listed no source table. The plan editor copies only a table selection, so this call did not come from that screen.",
+                        new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
+    }
+
+    public static Error TableCopyRepeatsASourceTable(Guid festivalId, Guid tableId)
+    {
+      return BadRequest(RefusalMessageKeys.AdminActionFailed,
+                        $"The copy request for the festival {festivalId} named the source table {tableId} more than once. The plan editor copies each selected table once, so this call did not come from that screen.",
+                        new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
+    }
+
+    public static Error TableMoveWithoutTables(Guid festivalId)
+    {
+      return BadRequest(RefusalMessageKeys.AdminActionFailed,
+                        $"The move request for the festival {festivalId} listed no table. The plan editor moves only a table selection, so this call did not come from that screen.",
+                        new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
+    }
+
+    public static Error TableMoveRepeatsATable(Guid festivalId, Guid tableId)
+    {
+      return BadRequest(RefusalMessageKeys.AdminActionFailed,
+                        $"The move request for the festival {festivalId} named the table {tableId} more than once. The plan editor moves each selected table once, so this call did not come from that screen.",
+                        new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
+    }
   }
 }

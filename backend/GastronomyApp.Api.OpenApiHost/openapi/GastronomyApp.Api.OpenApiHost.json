@@ -1893,6 +1893,79 @@
         }
       }
     },
+    "/api/admin/festivals/{festivalId}/tables/copy": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyTablesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopiedTablesView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/tables/move": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveTablesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/admin/festivals/{festivalId}/tables/{tableId}": {
       "put": {
         "tags": [
@@ -2981,6 +3054,66 @@
           }
         }
       },
+      "CopiedTablesView": {
+        "required": [
+          "tableIds"
+        ],
+        "type": "object",
+        "properties": {
+          "tableIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "CopyTableRequest": {
+        "required": [
+          "sourceTableId",
+          "geometry"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceTableId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "geometry": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AreaShapeGeometry"
+              }
+            ]
+          }
+        }
+      },
+      "CopyTablesRequest": {
+        "required": [
+          "areaId",
+          "tables"
+        ],
+        "type": "object",
+        "properties": {
+          "areaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tables": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CopyTableRequest"
+            }
+          }
+        }
+      },
       "CreateInvitationRequest": {
         "type": "object",
         "properties": {
@@ -3247,6 +3380,46 @@
           "up",
           "down"
         ]
+      },
+      "MoveTableRequest": {
+        "required": [
+          "tableId",
+          "geometry"
+        ],
+        "type": "object",
+        "properties": {
+          "tableId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "geometry": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AreaShapeGeometry"
+              }
+            ]
+          }
+        }
+      },
+      "MoveTablesRequest": {
+        "required": [
+          "tables"
+        ],
+        "type": "object",
+        "properties": {
+          "tables": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MoveTableRequest"
+            }
+          }
+        }
       },
       "OrderDeliveryModeRequest": {
         "required": [

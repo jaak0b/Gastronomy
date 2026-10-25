@@ -102,6 +102,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<TableService>();
     services.AddSingleton<FestivalSchedule>();
     services.AddSingleton<AreaShapeService>();
+    services.AddSingleton<TableCopyNaming>();
     services.AddSingleton<OrderItemFulfillmentService>();
 
     services.AddScoped<OrderItemResolutionService>();

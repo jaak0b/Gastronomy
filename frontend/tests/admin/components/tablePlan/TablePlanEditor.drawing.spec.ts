@@ -20,6 +20,7 @@ import {
 import { refusal } from '../../../support/laptop'
 import {
   HALL,
+  MOVE_PATH,
   SCHANK_SHAPE_ID,
   TABLE_A1,
   TABLE_A1_SHAPE_ID,
@@ -187,10 +188,14 @@ describe('dragging a shape', () => {
 
     await dragBy(theDrawing(), table, { x: 49.5, y: 175.5 })
 
-    expect(laptop.writtenBodies()).toEqual([
-      { areaId: 'area-halle', name: 'A1', geometry: { x: 50, y: 150, width: 80, height: 40, rotation: 0 } },
+    expect(laptop.writes()).toEqual([
+      {
+        url: MOVE_PATH,
+        method: 'POST',
+        body: { tables: [{ tableId: 'table-a1', geometry: { x: 50, y: 150, width: 80, height: 40, rotation: 0 } }] },
+      },
     ])
-    expect(laptop.writtenBodies()).toEqual([{ areaId: 'area-halle', name: 'A1', geometry: geometryOfTheNode(table) }])
+    expect(laptop.writtenBodies()).toEqual([{ tables: [{ tableId: 'table-a1', geometry: geometryOfTheNode(table) }] }])
   })
 
   it('lines the table up with the station beside it', async () => {
@@ -199,8 +204,8 @@ describe('dragging a shape', () => {
 
     await dragBy(theDrawing(), shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID), { x: 145.5, y: 0 })
 
-    expect(laptop.writes().map((write) => write.body)).toEqual([
-      { areaId: 'area-halle', name: 'A1', geometry: { x: 120, y: 30, width: 80, height: 40, rotation: 0 } },
+    expect(laptop.writtenBodies()).toEqual([
+      { tables: [{ tableId: 'table-a1', geometry: { x: 120, y: 30, width: 80, height: 40, rotation: 0 } }] },
     ])
   })
 
@@ -283,7 +288,7 @@ describe('the view of a long drawing', () => {
 
     await selectTheShape('table-table-b9')
 
-    expect(drawingScrollArea().scrollTop).toBe(431.25)
+    expect(drawingScrollArea().scrollTop).toBe(432)
   })
 
   it('stays where it is when the selected table is already in view', async () => {

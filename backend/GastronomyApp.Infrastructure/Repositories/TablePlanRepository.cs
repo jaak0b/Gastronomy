@@ -87,6 +87,16 @@ public sealed class TablePlanRepository : ITablePlanRepository
     return await _dbContext.Tables.FirstOrDefaultAsync(table => table.Id == tableId && table.FestivalId == festivalId, cancellationToken);
   }
 
+  public async Task<IReadOnlyList<Table>> FindTablesAsync(Guid festivalId, IReadOnlyCollection<Guid> tableIds, CancellationToken cancellationToken)
+  {
+    return await _dbContext.Tables.Where(table => table.FestivalId == festivalId && tableIds.Contains(table.Id)).ToListAsync(cancellationToken);
+  }
+
+  public async Task<IReadOnlyList<string>> FindTableNamesAsync(Guid festivalId, CancellationToken cancellationToken)
+  {
+    return await _dbContext.Tables.AsNoTracking().Where(table => table.FestivalId == festivalId).Select(table => table.Name).ToListAsync(cancellationToken);
+  }
+
   public async Task<bool> IsTableNameTakenAsync(Guid festivalId, string name, Guid? tableBeingSaved, CancellationToken cancellationToken)
   {
     IQueryable<Table> namesakes = _dbContext.Tables.AsNoTracking().Where(table => table.FestivalId == festivalId && table.Name == name);

@@ -333,7 +333,9 @@
         "editArea": "Tischplan bearbeiten",
         "newTable": "Neuer Tisch",
         "editTable": "Tisch bearbeiten",
-        "openPlan": "Tischplan öffnen"
+        "openPlan": "Tischplan öffnen",
+        "copy": "Kopieren",
+        "paste": "Einfügen"
       },
       "messages": {
         "noArea": "Die Kellner sehen noch keinen Tischplan. Klicken Sie auf \"Neuer Tischplan\".",
@@ -486,6 +488,7 @@
         "runningFestivalStaysShown": "Ein aktives Fest kann nicht ausgeblendet werden.",
         "stationHasOrdersAtTheFestival": "Eine Ausgabestelle mit offenen Bestellungen kann von einem aktiven Fest nicht entfernt werden.",
         "tableNameTaken": "Ein Tisch dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.",
+        "tableCopyNameTooLong": "Der Name einer Kopie wäre länger als 40 Zeichen. Kürzen Sie den Namen des Tisches.",
         "tableWithItemsToHandOutOrSettleStaysShown": "Ein Tisch kann bei einem aktiven Fest erst ausgeblendet werden, wenn dort alles zubereitet und abgerechnet ist."
       },
       "ingredients": {

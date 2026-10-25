@@ -21,6 +21,10 @@ public interface ITablePlanRepository
 
   public Task<Table?> FindTableAsync(Guid festivalId, Guid tableId, CancellationToken cancellationToken);
 
+  public Task<IReadOnlyList<Table>> FindTablesAsync(Guid festivalId, IReadOnlyCollection<Guid> tableIds, CancellationToken cancellationToken);
+
+  public Task<IReadOnlyList<string>> FindTableNamesAsync(Guid festivalId, CancellationToken cancellationToken);
+
   public Task<bool> IsTableNameTakenAsync(Guid festivalId, string name, Guid? tableBeingSaved, CancellationToken cancellationToken);
 
   public Task AddTableAsync(Table table, CancellationToken cancellationToken);
