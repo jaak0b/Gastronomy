@@ -41,11 +41,6 @@ public sealed class StationRepository : IStationRepository
                            .ToListAsync(cancellationToken);
   }
 
-  public async Task<IReadOnlyList<Station>> FindAllAsync(Guid? festivalId, CancellationToken cancellationToken)
-  {
-    return await _dbContext.Stations.AsNoTracking().OrderBy(station => station.SortOrder).Include(station => station.FestivalStations.Where(link => festivalId != null && link.FestivalId == festivalId.Value)).ToListAsync(cancellationToken);
-  }
-
   public async Task<IReadOnlyCollection<Guid>> FindStationIdsWithItemsToHandOutAsync(Guid festivalId, CancellationToken cancellationToken)
   {
     return await _dbContext.OrderItems.AsNoTracking().WhereNotHandedOut().WhereFestivalIs(festivalId).Select(item => item.StationOrder.StationId).Distinct().ToListAsync(cancellationToken);
@@ -59,15 +54,5 @@ public sealed class StationRepository : IStationRepository
   public async Task<bool> ExistsAsync(Guid stationId, CancellationToken cancellationToken)
   {
     return await _dbContext.Stations.AsNoTracking().AnyAsync(station => station.Id == stationId, cancellationToken);
-  }
-
-  public async Task AddAsync(Station station, CancellationToken cancellationToken)
-  {
-    await _dbContext.Stations.AddAsync(station, cancellationToken);
-  }
-
-  public async Task SaveChangesAsync(CancellationToken cancellationToken)
-  {
-    await _dbContext.SaveChangesAsync(cancellationToken);
   }
 }

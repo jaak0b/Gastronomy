@@ -6,9 +6,9 @@ using GastronomyApp.Core.Services;
 namespace GastronomyApp.Core.Tests.Services;
 
 [TestFixture]
-public sealed class StationServiceTest
+public sealed class StationWaitingTimesTest
 {
-  private readonly StationService _stationService = new();
+  private readonly StationWaitingTimes _stationWaitingTimes = new();
   private readonly DateTime _handedOutAtUtc = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
 
   [Test]
@@ -16,7 +16,7 @@ public sealed class StationServiceTest
   {
     var station = StationWith(OpenItem(5, false), OpenItem(7, false));
 
-    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(12));
+    Assert.That(_stationWaitingTimes.QueuedMinutesOf(station), Is.EqualTo(12));
   }
 
   [Test]
@@ -24,7 +24,7 @@ public sealed class StationServiceTest
   {
     var station = StationWith(OpenItem(1.5, false), OpenItem(2.5, false));
 
-    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(4));
+    Assert.That(_stationWaitingTimes.QueuedMinutesOf(station), Is.EqualTo(4));
   }
 
   [Test]
@@ -32,7 +32,7 @@ public sealed class StationServiceTest
   {
     var station = StationWith(OpenItem(0.1, false), OpenItem(0.2, false));
 
-    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(0.3));
+    Assert.That(_stationWaitingTimes.QueuedMinutesOf(station), Is.EqualTo(0.3));
   }
 
   [Test]
@@ -40,7 +40,7 @@ public sealed class StationServiceTest
   {
     var station = StationWith(OpenItem(null, false), OpenItem(3, false));
 
-    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(3));
+    Assert.That(_stationWaitingTimes.QueuedMinutesOf(station), Is.EqualTo(3));
   }
 
   [Test]
@@ -48,7 +48,7 @@ public sealed class StationServiceTest
   {
     var station = StationWith(OpenItem(5, false), OpenItem(7, true));
 
-    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(5));
+    Assert.That(_stationWaitingTimes.QueuedMinutesOf(station), Is.EqualTo(5));
   }
 
   [Test]
@@ -56,7 +56,7 @@ public sealed class StationServiceTest
   {
     var station = StationWith(OpenItem(1.5, false), OpenItem(2.5, true));
 
-    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(1.5));
+    Assert.That(_stationWaitingTimes.QueuedMinutesOf(station), Is.EqualTo(1.5));
   }
 
   [Test]
@@ -64,7 +64,7 @@ public sealed class StationServiceTest
   {
     var station = StationWith(OpenItem(4, true), OpenItem(null, true));
 
-    Assert.That(_stationService.QueuedMinutesOf(station), Is.Zero);
+    Assert.That(_stationWaitingTimes.QueuedMinutesOf(station), Is.Zero);
   }
 
   [Test]
@@ -72,7 +72,7 @@ public sealed class StationServiceTest
   {
     var station = StationWith(OpenItem(5, false), HandedOutItem(7));
 
-    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(5));
+    Assert.That(_stationWaitingTimes.QueuedMinutesOf(station), Is.EqualTo(5));
   }
 
   [Test]
@@ -81,13 +81,13 @@ public sealed class StationServiceTest
     var station = StationWith(OpenItem(5, false));
     AddStationOrder(station, OpenItem(3, false));
 
-    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(8));
+    Assert.That(_stationWaitingTimes.QueuedMinutesOf(station), Is.EqualTo(8));
   }
 
   [Test]
   public void QueuedMinutesOf_AStationWithoutOpenWork_IsZero()
   {
-    Assert.That(_stationService.QueuedMinutesOf(StationWith()), Is.Zero);
+    Assert.That(_stationWaitingTimes.QueuedMinutesOf(StationWith()), Is.Zero);
   }
 
   [Test]
@@ -96,7 +96,7 @@ public sealed class StationServiceTest
     var station = StationWith(OpenItem(5, false), OpenItem(30, true));
     var bratwurst = Article(4, false);
 
-    Assert.That(_stationService.ReadyInMinutesOf(AssignmentOf(bratwurst, station)), Is.EqualTo(9));
+    Assert.That(_stationWaitingTimes.ReadyInMinutesOf(AssignmentOf(bratwurst, station)), Is.EqualTo(9));
   }
 
   [Test]
@@ -105,7 +105,7 @@ public sealed class StationServiceTest
     var fries = Article(3, true);
     var station = StationWith(OpenItem(10, false), OpenItemOf(fries), OpenItemOf(fries), OpenItem(20, true));
 
-    Assert.That(_stationService.ReadyInMinutesOf(AssignmentOf(fries, station)), Is.EqualTo(9));
+    Assert.That(_stationWaitingTimes.ReadyInMinutesOf(AssignmentOf(fries, station)), Is.EqualTo(9));
   }
 
   [Test]
@@ -136,12 +136,12 @@ public sealed class StationServiceTest
       }
     ];
 
-    Assert.That(_stationService.QuotedReadyInMinutesOf(station,
-                                                       lines,
-                                                       [
-                                                         bratwurst,
-                                                         pizza
-                                                       ]),
+    Assert.That(_stationWaitingTimes.QuotedReadyInMinutesOf(station,
+                                                            lines,
+                                                            [
+                                                              bratwurst,
+                                                              pizza
+                                                            ]),
                 Is.EqualTo(30));
   }
 
@@ -167,12 +167,12 @@ public sealed class StationServiceTest
       }
     ];
 
-    Assert.That(_stationService.QuotedReadyInMinutesOf(station,
-                                                       lines,
-                                                       [
-                                                         bratwurst,
-                                                         pizza
-                                                       ]),
+    Assert.That(_stationWaitingTimes.QuotedReadyInMinutesOf(station,
+                                                            lines,
+                                                            [
+                                                              bratwurst,
+                                                              pizza
+                                                            ]),
                 Is.EqualTo(18));
   }
 
@@ -191,7 +191,7 @@ public sealed class StationServiceTest
       }
     ];
 
-    Assert.That(_stationService.QuotedReadyInMinutesOf(station, lines, [pizza]), Is.EqualTo(7.5));
+    Assert.That(_stationWaitingTimes.QuotedReadyInMinutesOf(station, lines, [pizza]), Is.EqualTo(7.5));
   }
 
   [Test]
@@ -209,7 +209,7 @@ public sealed class StationServiceTest
       }
     ];
 
-    Assert.That(_stationService.QuotedReadyInMinutesOf(station, lines, [beer]), Is.Null);
+    Assert.That(_stationWaitingTimes.QuotedReadyInMinutesOf(station, lines, [beer]), Is.Null);
   }
 
   private Station StationWith(params OrderItem[] items)

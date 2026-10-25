@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using GastronomyApp.Api.Auth.Filters;
@@ -46,7 +46,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<IMappingRegistration, AdminFestivalMapping>();
     services.AddSingleton<IMappingRegistration, AdminTablePlanMapping>();
     services.AddSingleton<IMappingRegistration, AdminStaffMembersMapping>();
-    services.AddSingleton<IMappingRegistration, AdminStationMapping>();
     services.AddSingleton<IMappingRegistration, CatalogMapping>();
     services.AddSingleton<IMappingRegistration, EnrolmentMapping>();
     services.AddSingleton<IMappingRegistration, OpenItemMapping>();
@@ -94,7 +93,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<OrderRoutingResolver>();
     services.AddSingleton<OrderService>();
     services.AddSingleton<StationOrderService>();
-    services.AddSingleton<StationService>();
+    services.AddSingleton<StationWaitingTimes>();
     services.AddSingleton<FestivalService>();
     services.AddSingleton<TableService>();
     services.AddSingleton<FestivalSchedule>();
@@ -120,7 +119,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<AreaAdministrationService>();
     services.AddScoped<TableAdministrationService>();
     services.AddScoped<FestivalStationShapeService>();
-    services.AddScoped<StationAdministrationService>();
+    services.AddScoped<StationService>();
     services.AddScoped<StaffMemberAdministrationService>();
     services.AddScoped<EnrolmentService>();
     services.AddScoped<RunningFestivalLookup>();
@@ -164,7 +163,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<LocalNetworkAddressProvider>();
     services.AddSingleton<ReachableHostResolver>();
     services.AddSingleton<EnrolmentUrlBuilder>();
-    services.AddScoped<AdminStationHandler>();
     services.AddScoped<AdminFestivalHandler>();
     services.AddScoped<AdminFestivalMenuHandler>();
     services.AddScoped<AdminFestivalStationHandler>();

@@ -55,7 +55,7 @@ Backend, under `backend/`:
   `FindStationIdsAtTheRunningFestivalAsync` (the same for the running festival, none when nothing
   runs), over `StationRepository.FindStationIdsWithItemsToHandOutAsync`. The list,
   `FestivalStationService.RemoveAsync` (`StationHasOrdersAtTheFestival`) and
-  `StationAdministrationService.DeactivateAsync` (`StationHasUnfulfilledItems`) all ask it, and so
+  `StationService.DeactivateAsync` (`StationHasUnfulfilledItems`) all ask it, and so
   do the tables and areas of the table plan: its read (`FindTablePlanAsync`, which has the
   repository count the items left only while the festival runs) and the hiding of a table or an
   area (`HasItemsToHandOutOrSettleAtTableIfRunningAsync`, `HasItemsToHandOutOrSettleInAreaIfRunningAsync`,
@@ -68,7 +68,7 @@ Backend, under `backend/`:
   (`FindItemsStrandedBySwitchingOffEachStationAsync`, which `DeactivateAsync` asks for one station).
   A list reads the festivals not yet over once, and per festival its active stations and menu once,
   then one query for the menu as it is and one per active station of the festival; a station that
-  is not an active station of the festival strands nothing there, without a query. `ListAsync` returns the values in a `ListedStation`.
+  is not an active station of the festival strands nothing there, without a query. `StationService.ListAsync` puts the values into the `AdminStationView` it returns.
 
 Frontend, under `frontend/src/`:
 
@@ -199,8 +199,8 @@ Every point below is intended behaviour. A change to any of them needs the owner
 - What would refuse taking a station out: `GastronomyApp.Core.Tests/Services/ItemsToHandOutLookupTest`
   (running, over, not yet started, nothing running), `StationRepositoryTest` in
   `GastronomyApp.Infrastructure.Tests/Repositories` (another festival's open items name no
-  station), `StationAdministrationServiceTest` (which festival the flag is read at, a festival that
-  is over, which stranded count each read fills, the festivals read once), `FestivalStationServiceTest`
+  station), `StationServiceTest` in `GastronomyApp.Infrastructure.Tests/Services` (which festival the flag is read at, a festival that
+  is over, which stranded count each read fills, the statement count not growing with the stations), `FestivalStationServiceTest`
   and `ItemOrderabilityTest` (each station on its own, a station that is not an active station of
   the festival, the active stations and the menu read once and one query per active station). In
   `GastronomyApp.Api.Tests/Endpoints`, `AdminFestivalEndpointsTest` and `StationDeactivationTest`

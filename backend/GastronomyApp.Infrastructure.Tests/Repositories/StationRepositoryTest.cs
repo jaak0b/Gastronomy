@@ -1,6 +1,5 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +9,6 @@ namespace GastronomyApp.Infrastructure.Tests.Repositories;
 [TestFixture]
 public sealed class StationRepositoryTest
 {
-  private readonly StationService _stationService = new();
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
 
   [Test]
@@ -29,32 +27,6 @@ public sealed class StationRepositoryTest
                              seeded.KitchenStationId,
                              seeded.BarStationId
                            }));
-  }
-
-  [Test]
-  public async Task FindAllAsync_WithoutAFestival_SaysNoStationBelongsToOne()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-
-    StationRepository repository = new(fixture.DbContext);
-
-    IReadOnlyList<Station> stations = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
-
-    Assert.That(stations.Select(_stationService.IsAtAnyFestival), Is.All.False);
-  }
-
-  [Test]
-  public async Task FindAllAsync_AFestivalTheStationTakesPartIn_SaysTheStationBelongsToIt()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-
-    StationRepository repository = new(fixture.DbContext);
-
-    IReadOnlyList<Station> stations = await repository.FindAllAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
-
-    Assert.That(stations.Select(_stationService.IsAtAnyFestival), Is.All.True);
   }
 
   [Test]
@@ -110,30 +82,6 @@ public sealed class StationRepositoryTest
                       Assert.That(await repository.ExistsAsync(seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken), Is.True);
                       Assert.That(await repository.ExistsAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.False);
                     });
-  }
-
-  [Test]
-  public async Task AddAsync_ANewStation_StoresItWhenTheChangesAreSaved()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-
-    StationRepository repository = new(fixture.DbContext);
-    var stationId = Guid.NewGuid();
-
-    await repository.AddAsync(new()
-                              {
-                                Id = stationId,
-                                Name = "Kuchenbuffet",
-                                SortOrder = 3,
-                                IsActive = true
-                              },
-                              TestContext.CurrentContext.CancellationToken);
-    await repository.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
-
-    await using var readContext = fixture.CreateContext();
-
-    Assert.That(await readContext.Stations.AnyAsync(station => station.Id == stationId, TestContext.CurrentContext.CancellationToken), Is.True);
   }
 
   [Test]

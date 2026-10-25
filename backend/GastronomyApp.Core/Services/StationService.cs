@@ -1,64 +1,136 @@
-using GastronomyApp.Contracts.Orders;
+using ErrorOr;
+using GastronomyApp.Contracts.Admin.Stations;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Refusals;
+using Mapster;
+using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class StationService
 {
-  public bool IsAtAnyFestival(Station station)
-  {
-    ArgumentNullException.ThrowIfNull(station);
+  private readonly IGastronomyDatabase _database;
+  private readonly ItemsToHandOutLookup _itemsToHandOut;
+  private readonly TypeAdapterConfig _mapping;
+  private readonly ItemOrderability _orderability;
+  private readonly DeviceOwnerRetirement _retirement;
 
-    return station.FestivalStations.Count != 0;
+  public StationService(IGastronomyDatabase database, TypeAdapterConfig mapping, DeviceOwnerRetirement retirement, ItemOrderability orderability, ItemsToHandOutLookup itemsToHandOut)
+  {
+    _database = database;
+    _mapping = mapping;
+    _retirement = retirement;
+    _orderability = orderability;
+    _itemsToHandOut = itemsToHandOut;
   }
 
-  public double QueuedMinutesOf(Station station)
+  public async Task<ErrorOr<AdminStationListView>> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(station);
+    if (festivalId is not { } askedFestivalId)
+      return await ListWithoutFestivalAsync(cancellationToken);
 
-    return Math.Round(station.StationOrders.SelectMany(stationOrder => stationOrder.Items).Where(item => item.FulfilledAtUtc == null && !item.CatalogItem.IsQueueIndependent).Sum(item => item.CatalogItem.ProductionMinutes ?? 0), 1);
+    var festival = await _database.Festivals.AsNoTracking().FirstOrDefaultAsync(row => row.Id == askedFestivalId, cancellationToken);
+
+    if (festival is null)
+      return Refusal.Station.FestivalNotFound(askedFestivalId);
+
+    var stations = await ReadStationsAsync(cancellationToken);
+    var stationIds = stations.Select(station => station.StationId).ToList();
+    var stationIdsAtTheFestival = await _database.FestivalStations.AsNoTracking().Where(link => link.FestivalId == askedFestivalId).Select(link => link.StationId).ToListAsync(cancellationToken);
+    var holdingItems = await _itemsToHandOut.FindStationIdsIfRunningAsync(festival, cancellationToken);
+    var strandedByRemoving = await _orderability.FindItemsStrandedByRemovingEachStationAsync(askedFestivalId, stationIds, cancellationToken);
+
+    return new AdminStationListView(stations.Select(station => station with
+                                                               {
+                                                                 IsAtAnyFestival = stationIdsAtTheFestival.Contains(station.StationId),
+                                                                 HasItemsToHandOutAtTheRunningFestival = holdingItems.Contains(station.StationId),
+                                                                 StrandedItemCountWhenRemovedFromTheFestival = strandedByRemoving[station.StationId].Count
+                                                               })
+                                            .ToList());
   }
 
-  public double OpenMinutesOfArticle(Station station, Guid catalogItemId)
+  public async Task<ErrorOr<AdminStationView>> CreateAsync(SaveStationRequest request, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(station);
+    ArgumentNullException.ThrowIfNull(request);
 
-    return Math.Round(station.StationOrders.SelectMany(stationOrder => stationOrder.Items).Where(item => item.FulfilledAtUtc == null && item.CatalogItemId == catalogItemId).Sum(item => item.CatalogItem.ProductionMinutes ?? 0), 1);
+    Station created = new()
+                      {
+                        Id = Guid.NewGuid(),
+                        Name = request.Name!,
+                        SortOrder = request.SortOrder,
+                        IsActive = true
+                      };
+
+    _database.Stations.Add(created);
+    await _database.SaveChangesAsync(cancellationToken);
+
+    return created.Adapt<AdminStationView>(_mapping) with
+           {
+             StrandedItemCountWhenSwitchedOff = 0,
+             StrandedItemCountWhenRemovedFromTheFestival = 0
+           };
   }
 
-  public double ReadyInMinutesOf(ItemStationAssignment assignment)
+  public async Task<ErrorOr<SavedStationView>> UpdateAsync(Guid stationId, SaveStationRequest request, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(assignment);
+    ArgumentNullException.ThrowIfNull(request);
 
-    var queuedMinutes = assignment.CatalogItem.IsQueueIndependent ? OpenMinutesOfArticle(assignment.Station, assignment.CatalogItemId) : QueuedMinutesOf(assignment.Station);
+    var station = await _database.Stations.FirstOrDefaultAsync(row => row.Id == stationId, cancellationToken);
 
-    return Math.Round(queuedMinutes + (assignment.CatalogItem.ProductionMinutes ?? 0), 1);
+    if (station is null)
+      return Refusal.Station.StationNotFound(stationId);
+
+    station.Name = request.Name!;
+    station.SortOrder = request.SortOrder;
+    await _database.SaveChangesAsync(cancellationToken);
+
+    return station.Adapt<SavedStationView>(_mapping);
   }
 
-  public double? QuotedReadyInMinutesOf(Station station, IEnumerable<EstimateQuoteLine> lines, IEnumerable<CatalogItem> catalogItems)
+  public async Task<ErrorOr<SavedStationView>> DeactivateAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(station);
-    ArgumentNullException.ThrowIfNull(lines);
-    ArgumentNullException.ThrowIfNull(catalogItems);
+    var station = await _database.Stations.FirstOrDefaultAsync(row => row.Id == stationId, cancellationToken);
 
-    var linesAtStation = lines.Where(line => line.StationId == station.Id)
-                              .Join(catalogItems,
-                                    line => line.CatalogItemId,
-                                    article => article.Id,
-                                    (line, article) => new
-                                                       {
-                                                         line.Units,
-                                                         Article = article
-                                                       })
-                              .ToList();
+    if (station is null)
+      return Refusal.Station.StationNotFound(stationId);
 
-    if (linesAtStation.All(line => line.Article.ProductionMinutes == null))
-      return null;
+    if ((await _itemsToHandOut.FindStationIdsAtTheRunningFestivalAsync(cancellationToken)).Contains(stationId))
+      return Refusal.Station.StationHasUnfulfilledItems(stationId);
 
-    IEnumerable<double> sharedLanes = linesAtStation.Any(line => !line.Article.IsQueueIndependent) ? [QueuedMinutesOf(station) + linesAtStation.Where(line => !line.Article.IsQueueIndependent).Sum(line => line.Units * (line.Article.ProductionMinutes ?? 0))] : [];
+    var strandedItemIds = await _orderability.FindItemsStrandedBySwitchingOffStationAsync(stationId, cancellationToken);
 
-    var articleLanes = linesAtStation.Where(line => line.Article.IsQueueIndependent).GroupBy(line => line.Article).Select(articleLines => OpenMinutesOfArticle(station, articleLines.Key.Id) + articleLines.Sum(line => line.Units * (line.Article.ProductionMinutes ?? 0)));
+    if (strandedItemIds.Count > 0)
+      return Refusal.Station.ItemsWouldHaveNoStation(strandedItemIds.Count);
 
-    return Math.Round(sharedLanes.Concat(articleLanes).Max(), 1);
+    var deviceId = station.DeviceId;
+
+    station.IsActive = false;
+    await _retirement.WithdrawOutstandingInvitationAsync(station.EnrolmentInvitationId, cancellationToken);
+    station.EnrolmentInvitationId = null;
+    await _database.SaveChangesAsync(cancellationToken);
+
+    await _retirement.RevokeDeviceAsync(deviceId, cancellationToken);
+
+    return station.Adapt<SavedStationView>(_mapping);
+  }
+
+  private async Task<ErrorOr<AdminStationListView>> ListWithoutFestivalAsync(CancellationToken cancellationToken)
+  {
+    var stations = await ReadStationsAsync(cancellationToken);
+    var holdingItems = await _itemsToHandOut.FindStationIdsAtTheRunningFestivalAsync(cancellationToken);
+    var strandedBySwitchingOff = await _orderability.FindItemsStrandedBySwitchingOffEachStationAsync(stations.Select(station => station.StationId).ToList(), cancellationToken);
+
+    return new AdminStationListView(stations.Select(station => station with
+                                                               {
+                                                                 HasItemsToHandOutAtTheRunningFestival = holdingItems.Contains(station.StationId),
+                                                                 StrandedItemCountWhenSwitchedOff = strandedBySwitchingOff[station.StationId].Count
+                                                               })
+                                            .ToList());
+  }
+
+  private async Task<List<AdminStationView>> ReadStationsAsync(CancellationToken cancellationToken)
+  {
+    return await _database.Stations.AsNoTracking().OrderBy(station => station.SortOrder).ProjectToType<AdminStationView>(_mapping).ToListAsync(cancellationToken);
   }
 }

@@ -15,7 +15,6 @@ public sealed class CatalogMappingTest
     [
       new AdminFestivalMapping(new()),
       new AdminStaffMembersMapping(),
-      new AdminStationMapping(new()),
       new CatalogMapping(),
       new EnrolmentMapping(),
       new OpenItemMapping(),

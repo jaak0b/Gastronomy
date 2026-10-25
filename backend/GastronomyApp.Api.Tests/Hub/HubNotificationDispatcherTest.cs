@@ -29,7 +29,6 @@ public sealed class HubNotificationDispatcherTest
     [
       new AdminFestivalMapping(new()),
       new AdminStaffMembersMapping(),
-      new AdminStationMapping(new()),
       new CatalogMapping(),
       new EnrolmentMapping(),
       new OpenItemMapping(),

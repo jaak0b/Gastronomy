@@ -12,14 +12,14 @@ public sealed class EstimateService
   private readonly ICatalogItemRepository _catalogItemRepository;
   private readonly RunningFestivalLookup _runningFestival;
   private readonly IStationRepository _stationRepository;
-  private readonly StationService _stationService;
+  private readonly StationWaitingTimes _stationWaitingTimes;
 
-  public EstimateService(IStationRepository stationRepository, ICatalogItemRepository catalogItemRepository, RunningFestivalLookup runningFestival, StationService stationService)
+  public EstimateService(IStationRepository stationRepository, ICatalogItemRepository catalogItemRepository, RunningFestivalLookup runningFestival, StationWaitingTimes stationWaitingTimes)
   {
     _stationRepository = stationRepository;
     _catalogItemRepository = catalogItemRepository;
     _runningFestival = runningFestival;
-    _stationService = stationService;
+    _stationWaitingTimes = stationWaitingTimes;
   }
 
   public async Task<IReadOnlyList<ItemStationAssignment>> ReadTimedAssignmentsAsync(CancellationToken cancellationToken)
@@ -50,6 +50,6 @@ public sealed class EstimateService
     if (refusals.Count != 0)
       return refusals;
 
-    return request.Lines.Select(line => line.StationId).Distinct().Select(stationId => new StationQuote(stationId, _stationService.QuotedReadyInMinutesOf(stations.Single(station => station.Id == stationId), request.Lines, catalogItems))).ToList().ToErrorOr<IReadOnlyList<StationQuote>>();
+    return request.Lines.Select(line => line.StationId).Distinct().Select(stationId => new StationQuote(stationId, _stationWaitingTimes.QuotedReadyInMinutesOf(stations.Single(station => station.Id == stationId), request.Lines, catalogItems))).ToList().ToErrorOr<IReadOnlyList<StationQuote>>();
   }
 }
