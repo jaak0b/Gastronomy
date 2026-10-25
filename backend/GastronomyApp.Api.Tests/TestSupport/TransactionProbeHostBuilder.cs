@@ -1,4 +1,4 @@
-﻿using ErrorOr;
+using ErrorOr;
 using FakeItEasy;
 using GastronomyApp.Api.Answers;
 using GastronomyApp.Api.ErrorHandling;
@@ -70,6 +70,8 @@ public sealed class TransactionProbeHostBuilder
     group.MapPost("/no-content",
                   async Task<NoContentAnswer> (TransactionProbe requestProbe, GastronomyAppDbContext database, IAfterCommitActions afterCommitActions, CancellationToken cancellationToken) =>
                     (await requestProbe.Handle(database, afterCommitActions, cancellationToken)).Then<Success>(_ => Result.Success));
+
+    group.MapGet("/saving", async Task<ApiAnswer<Guid>> (TransactionProbe requestProbe, GastronomyAppDbContext database, IAfterCommitActions afterCommitActions, CancellationToken cancellationToken) => await requestProbe.Handle(database, afterCommitActions, cancellationToken));
 
     group.MapGet(string.Empty, (GastronomyAppDbContext database) => Results.Text(database.Database.AutoTransactionBehavior.ToString()));
 

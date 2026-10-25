@@ -27,7 +27,7 @@ Backend, under `backend/`:
 - Wire records: `GastronomyApp.Contracts/Admin/Ingredients` (`AdminFestivalIngredientListView`,
   `AdminFestivalIngredientView`, `IngredientUsagePoint`, `SaveFestivalIngredientRequest`,
   `SavedFestivalIngredientView`) and `Contracts/Enums/StockWarning.cs`. Every row carries the
-  ingredient's `UnitId` and current `UnitName`. Mapping: `Api/Mapping/AdminIngredientMapping.cs`;
+  ingredient's `UnitId` and current `UnitName`. Mapping: `Core/Mapping/IngredientMapping.cs`;
   `IngredientStockRepository.FindActiveUsedOnTheMenuAsync` includes the unit navigation.
 
 Frontend, under `frontend/src/`:

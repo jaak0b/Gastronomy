@@ -1,4 +1,4 @@
-﻿using System.Data.Common;
+using System.Data.Common;
 using System.Globalization;
 using ErrorOr;
 using GastronomyApp.Infrastructure.Enums;
@@ -30,10 +30,15 @@ public sealed class RequestTransactionFilter : IEndpointFilter
     ArgumentNullException.ThrowIfNull(context);
     ArgumentNullException.ThrowIfNull(next);
 
-    if (!ChangesStoredData(context.HttpContext.Request.Method))
-      return await next(context);
-
     var database = context.HttpContext.RequestServices.GetRequiredService<GastronomyAppDbContext>();
+
+    if (!ChangesStoredData(context.HttpContext.Request.Method))
+    {
+      database.MarkReadOnly();
+
+      return await next(context);
+    }
+
     var afterCommitActions = context.HttpContext.RequestServices.GetRequiredService<AfterCommitActions>();
     DbUpdateConcurrencyException? lostRace = null;
 

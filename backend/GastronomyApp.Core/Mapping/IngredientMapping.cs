@@ -1,29 +1,21 @@
 using GastronomyApp.Contracts.Admin.Ingredients;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
-using GastronomyApp.Core.Services;
 using Mapster;
 
-namespace GastronomyApp.Api.Mapping;
+namespace GastronomyApp.Core.Mapping;
 
-public sealed class AdminIngredientMapping : IMappingRegistration
+public sealed class IngredientMapping : IRegister
 {
-  private readonly IngredientService _ingredientService;
-
-  public AdminIngredientMapping(IngredientService ingredientService)
-  {
-    _ingredientService = ingredientService;
-  }
-
   public void Register(TypeAdapterConfig config)
   {
     ArgumentNullException.ThrowIfNull(config);
 
     config.NewConfig<Ingredient, AdminIngredientView>()
           .Map(view => view.IngredientId, ingredient => ingredient.Id)
-          .Map(view => view.UnitId, ingredient => ingredient.UnitId)
-          .Map(view => view.UnitName, ingredient => ingredient.Unit.Name)
-          .Map(view => view.ActiveItemNames, ingredient => _ingredientService.ActiveItemNamesOf(ingredient));
+          .Map(view => view.ActiveItemNames, ingredient => ingredient.CatalogItems.Where(recipeLine => recipeLine.CatalogItem.IsActive).Select(recipeLine => recipeLine.CatalogItem.Name).OrderBy(itemName => itemName).ToList());
+
+    config.NewConfig<Ingredient, SavedIngredientView>().Map(view => view.IngredientId, ingredient => ingredient.Id);
 
     config.NewConfig<IngredientUsagePointResult, IngredientUsagePoint>();
 

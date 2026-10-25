@@ -1,3 +1,4 @@
+using GastronomyApp.Core.Ports;
 using Mapster;
 
 namespace GastronomyApp.Api.Mapping;
@@ -20,6 +21,7 @@ public sealed class MappingConfiguration
     foreach (var registration in _registrations)
       registration.Register(config);
 
+    config.Scan(typeof(IGastronomyDatabase).Assembly);
     config.Compile();
 
     return config;

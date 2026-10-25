@@ -1,4 +1,4 @@
-﻿using ErrorOr;
+using ErrorOr;
 using GastronomyApp.Api.Tests.TestSupport;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Enums;
@@ -61,6 +61,22 @@ public sealed class RequestTransactionFilterTest
                     {
                       Assert.That(storedCategories, Is.EqualTo(1));
                       Assert.That((int)response.StatusCode, Is.EqualTo(expectedStatusCode));
+                    });
+  }
+
+  [Test]
+  public async Task Get_TheHandlerTriesToSave_FailsAndStoresNothing()
+  {
+    _host.Probe.Handle = async (database, _, cancellationToken) => await WriteCategoryAsync(database, "Getraenke", cancellationToken);
+
+    using var response = await _host.Client.GetAsync("/probe/saving", TestContext.CurrentContext.CancellationToken);
+    var storedCategories = await StoredCategoriesAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That((int)response.StatusCode, Is.EqualTo(500));
+                      Assert.That(_host.Probe.Failure, Is.InstanceOf<InvalidOperationException>());
+                      Assert.That(storedCategories, Is.Zero);
                     });
   }
 

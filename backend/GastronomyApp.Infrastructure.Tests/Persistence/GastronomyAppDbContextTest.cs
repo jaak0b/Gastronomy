@@ -191,6 +191,28 @@ public sealed class GastronomyAppDbContextTest
   }
 
   [Test]
+  public void SaveChanges_Synchronously_AlwaysThrows()
+  {
+    using SqliteInMemoryFixture fixture = new();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(() => fixture.DbContext.SaveChanges(), Throws.InvalidOperationException.With.Message.Contains("SaveChangesAsync"));
+                      Assert.That(() => fixture.DbContext.SaveChanges(false), Throws.InvalidOperationException.With.Message.Contains("SaveChangesAsync"));
+                    });
+  }
+
+  [Test]
+  public void SaveChangesAsync_AfterMarkReadOnly_Throws()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    fixture.DbContext.MarkReadOnly();
+
+    Assert.That(async () => await fixture.DbContext.SaveChangesAsync(), Throws.InvalidOperationException);
+    Assert.That(fixture.DbContext.IsReadOnly, Is.True);
+  }
+
+  [Test]
   public async Task Include_OnFestival_LoadsStationsAndMenu()
   {
     using SqliteInMemoryFixture fixture = new();

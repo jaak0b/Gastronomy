@@ -24,8 +24,9 @@ on the `layers-and-projects` page of `architecture`.
 5. **What it returns.** The record the endpoint answers with, produced by Mapster from the saved
    entity, or nothing for a 204.
 6. **The endpoint.** Map the route in `Api/Endpoints` with `MapPost`, `MapPut`, `MapPatch` or
-   `MapDelete`, call the service directly and return `ApiAnswer<T>`, `CreatedAnswer<T>` or
-   `NoContentAnswer`. The calling device's identity is an endpoint parameter handed to the service as
+   `MapDelete`, call the service directly and give the lambda the answer type as its return
+   type: `ApiAnswer<T>`, `CreatedAnswer<T>` or `NoContentAnswer`. Switching a row back on is
+   `ActivationService.ActivateAsync<TEntity, TView>` instead of a method of the area's service. The calling device's identity is an endpoint parameter handed to the service as
    a plain parameter.
 7. **No transaction and no announcement of its own.** `RequestTransactionFilter` opens one
    transaction for the request and commits or rolls it back, so the service only saves. The entity

@@ -14,13 +14,15 @@ a deactivated station is not offered any more, and a screen shows a row another 
 - **One static class per entity type**, named `<Entity>Queries`. An extension on `IQueryable<Station>`
   lives only in `StationQueries`, never in a class named after a service or a screen.
 - **Behaviour shared by several entities goes through a small interface** on the entities and one class
-  `<Interface>Queries`. Two exist:
-  - `IActivatable { bool IsActive { get; } }` with `ActivatableQueries.Active<T>() where T : class, IActivatable`,
+  `<Interface>Queries`. Only `Active<T>()` exists so far; `HideableQueries.Shown<T>()` waits for its first use. Two exist:
+  - `IActivatable { bool IsActive { get; set; } }` with `ActivatableQueries.Active<T>() where T : class, IActivatable`,
     for stations, items, categories, ingredients, units and staff members.
   - `IHideable` with `HideableQueries.Shown<T>()`, for festival, area and table.
 - **An interface appears only when at least two entities share the same flag with the same meaning.**
   A flag with another meaning gets no interface, and an entity never carries both `IsActive` and `IsHidden`.
 - **A piece is extracted on its second use.** A query used once stays in its service.
+- **A piece is called on the top-level query only.** EF Core cannot translate a custom extension method
+  inside a lambda, so a filter inside a Mapster expression is written out in `Core/Mapping`.
 - **A piece returns `IQueryable`**, so it composes with the rest of the query and EF Core translates it
   into SQL. It does not load rows and does not call `SaveChangesAsync`.
 

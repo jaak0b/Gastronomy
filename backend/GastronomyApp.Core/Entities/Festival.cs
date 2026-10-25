@@ -4,7 +4,7 @@ using GastronomyApp.Core.Announcements;
 namespace GastronomyApp.Core.Entities;
 
 [Raises(HubEvent.ConfigurationChanged, HubEvent.OrdersChanged)]
-public sealed class Festival
+public sealed class Festival : IHideable
 {
   public required Guid Id { get; set; }
 

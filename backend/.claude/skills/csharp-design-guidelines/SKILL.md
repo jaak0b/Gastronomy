@@ -172,6 +172,8 @@ These are the owner's own choices, not rules from the sources.
   fields by hand only where it cannot. A read that queries the database projects with
   `ProjectToType<TView>()`, so the mapping is configured once per record and turns into the SQL
   query.
+- **Do** reach the database asynchronously only (`SaveChangesAsync`, `ToListAsync`, `FirstOrDefaultAsync`);
+  the synchronous `SaveChanges()` throws.
 - **Do not** put business logic in an EF entity class. An entity carries the data and its
   navigation properties; the rules that decide what may change live in the use case in `Core`.
 - **Do** compute a value derived from stored data (a sum over orders, a stock level, a forecast)

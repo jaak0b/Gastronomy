@@ -36,8 +36,12 @@ A read answers a question and changes nothing. It is a method of the area's serv
    only actions of this area share becomes a private method of the service instead. A query used once
    stays in its method. Test the extension against in-memory SQLite, as the `query-building-blocks`
    page says.
-6. **The endpoint.** Map the route in `Api/Endpoints` and call the service directly, returning
-   `ApiAnswer<TView>`. No handler class and no mapping file in `Api` sit between them.
+3a. **The mapping.** Mapster infers what the names match (`Unit.Name` flattens into `UnitName`). Anything
+   else goes into the area's `Core/Mapping/<Area>Mapping.cs` as a query expression, with no custom
+   method inside it, because EF Core must translate it.
+6. **The endpoint.** Map the route in `Api/Endpoints` and call the service directly, giving the lambda
+   the answer type as its return type (`async Task<ApiAnswer<TView>> (...) => await service.ListAsync(...)`),
+   which is how `ApiAnswer<TView>` converts the result and describes the route in OpenAPI. No handler class and no mapping file in `Api` sit between them.
 7. **Statement count.** A read that many devices repeat on every hub event gets a statement count
    test, as `count-sql-statements` describes.
 

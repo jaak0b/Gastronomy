@@ -44,7 +44,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<IMappingRegistration, AdminCategoryMapping>();
     services.AddSingleton<IMappingRegistration, AdminFestivalMapping>();
     services.AddSingleton<IMappingRegistration, AdminTablePlanMapping>();
-    services.AddSingleton<IMappingRegistration, AdminIngredientMapping>();
     services.AddSingleton<IMappingRegistration, AdminItemMapping>();
     services.AddSingleton<IMappingRegistration, AdminUnitMapping>();
     services.AddSingleton<IMappingRegistration, AdminStaffMembersMapping>();
@@ -68,6 +67,7 @@ public sealed class ApiServiceRegistration
 
     services.AddScoped<ChangeAnnouncementInterceptor>();
     services.AddScoped(provider => provider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext());
+    services.AddScoped<IGastronomyDatabase>(provider => provider.GetRequiredService<GastronomyAppDbContext>());
 
     services.AddSingleton<Pbkdf2SecretHasher>();
     services.AddSingleton<SqliteFailureTranslator>();
@@ -97,7 +97,6 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton<OrderRoutingResolver>();
     services.AddSingleton<OrderService>();
-    services.AddSingleton<IngredientService>();
     services.AddSingleton<UnitService>();
     services.AddSingleton<StationOrderService>();
     services.AddSingleton<StationService>();
@@ -136,7 +135,8 @@ public sealed class ApiServiceRegistration
     services.AddScoped<StationQueueWriter>();
     services.AddScoped<StationQueueChangeService>();
     services.AddScoped<EstimateService>();
-    services.AddScoped<IngredientAdministrationService>();
+    services.AddScoped<IngredientService>();
+    services.AddScoped<ActivationService>();
     services.AddScoped<UnitAdministrationService>();
     services.AddScoped<CatalogItemRecipeService>();
     services.AddScoped<IngredientStockService>();
@@ -180,7 +180,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<AdminCategoryHandler>();
     services.AddScoped<AdminItemHandler>();
     services.AddScoped<AdminItemRecipeHandler>();
-    services.AddScoped<AdminIngredientHandler>();
     services.AddScoped<AdminUnitHandler>();
     services.AddScoped<AdminFestivalStockHandler>();
     services.AddScoped<CatalogHandler>();

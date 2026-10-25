@@ -18,8 +18,7 @@ Backend, under `backend/`:
 - `GastronomyApp.Core/Services/UnitAdministrationService.cs` lists, creates, renames, activates and
   deactivates units. `UnitService.IngredientNamesOf` names the ingredients that use a unit, and both
   the list view and the deactivation check call it.
-- `GastronomyApp.Core/Services/IngredientAdministrationService.cs` takes a `Guid?` unit id on create
-  and update. A new unit must exist and be active, while changing the unit of an existing ingredient
+- `GastronomyApp.Core/Services/IngredientService.cs` takes a `Guid?` unit id on create and update. A new unit must exist and be active, while changing the unit of an existing ingredient
   is allowed at any time and leaves every stored amount untouched.
 - Refusals: `GastronomyApp.Core/Refusals/Refusal.Units.cs`, and
   `Refusal.Ingredients.UnitUnavailable(Guid?)` for a missing, unknown or switched-off unit.
@@ -28,7 +27,7 @@ Backend, under `backend/`:
   `GastronomyApp.Api/Handlers/AdminUnitHandler.cs`.
 - Wire records: `GastronomyApp.Contracts/Admin/Units` (`AdminUnitView`, `AdminUnitListView`,
   `SavedUnitView`, `SaveUnitRequest`). Mapping: `GastronomyApp.Api/Mapping/AdminUnitMapping.cs`;
-  `AdminIngredientMapping.cs` and `AdminItemMapping.cs` read the unit id and name from the
+  `Core/Mapping/IngredientMapping.cs` and `AdminItemMapping.cs` read the unit id and name from the
   navigation.
 - Migration `20261025095050_AddUnits` seeds Stück, g, kg, ml and l with fixed ids and maps the old
   ingredient unit values 1, 2 and 3 to Stück, g and ml. The released-database upgrade test builds a
@@ -71,14 +70,13 @@ Frontend, under `frontend/src/`:
 
 ## Tests
 
-- `GastronomyApp.Core.Tests/Services`: `UnitAdministrationServiceTest`, `UnitServiceTest`,
-  `IngredientAdministrationServiceTest` (including a unit change that leaves a recipe amount
-  unchanged), and the ingredient tests that construct an ingredient with a unit.
+- `GastronomyApp.Core.Tests/Services`: `UnitAdministrationServiceTest`, `UnitServiceTest`, and the
+  ingredient tests that construct an ingredient with a unit.
 - `GastronomyApp.Infrastructure.Tests/Repositories`: `UnitRepositoryTest`, `IngredientRepositoryTest`,
   `IngredientStockRepositoryTest` (the unit navigation), `CatalogItemRepositoryTest` and
   `CatalogItemIngredientRepositoryTest`.
-- `GastronomyApp.Infrastructure.Tests/Services`: `IngredientAdministrationServiceTest` and
-  `FestivalAdministrationServiceTest`.
+- `GastronomyApp.Infrastructure.Tests/Services`: `IngredientServiceTest` (including a unit change that
+  leaves a recipe amount unchanged) and `FestivalAdministrationServiceTest`.
 - `GastronomyApp.Infrastructure.Tests/Persistence`: `ReleasedDatabaseUpgradeTest` covers the seeded
   units and the migration of the old unit values, and `GastronomyAppDbContextTest` covers the new
   table.

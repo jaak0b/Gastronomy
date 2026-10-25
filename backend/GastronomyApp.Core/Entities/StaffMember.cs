@@ -4,7 +4,7 @@ using GastronomyApp.Core.Announcements;
 namespace GastronomyApp.Core.Entities;
 
 [Raises(HubEvent.ConfigurationChanged)]
-public sealed class StaffMember : IDeviceOwner
+public sealed class StaffMember : IDeviceOwner, IActivatable
 {
   public required Guid Id { get; set; }
 

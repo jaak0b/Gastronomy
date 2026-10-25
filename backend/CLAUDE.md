@@ -67,7 +67,9 @@ second faking library alongside them.
 **Conventions:** fixture is `<ClassUnderTest>Test`, method is `MethodName_State_Expected`. One fixture
 per production class, one file per fixture. Never a catch-all fixture name.
 
-**Core tests** use fakes for port interfaces. **Infrastructure and API tests** use in-memory SQLite.
+**Service tests** run against the real DbContext on in-memory SQLite, because a fake cannot show
+whether EF Core translates a query. FakeItEasy fakes the other ports, such as the clock.
+**Infrastructure and API tests** use in-memory SQLite.
 
 ## Build and run
 

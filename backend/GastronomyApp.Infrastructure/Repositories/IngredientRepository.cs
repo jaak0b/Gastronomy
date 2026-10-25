@@ -19,28 +19,8 @@ public sealed class IngredientRepository : IIngredientRepository
     return await _dbContext.Ingredients.AsNoTracking().OrderBy(ingredient => ingredient.Name).ToListAsync(cancellationToken);
   }
 
-  public async Task<IReadOnlyList<Ingredient>> FindAllWithRecipeLinesOrderedByNameAsync(CancellationToken cancellationToken)
-  {
-    return await _dbContext.Ingredients.AsNoTracking().OrderBy(ingredient => ingredient.Name).Include(ingredient => ingredient.Unit).Include(ingredient => ingredient.CatalogItems).ThenInclude(recipeLine => recipeLine.CatalogItem).ToListAsync(cancellationToken);
-  }
-
   public async Task<Ingredient?> FindByIdAsync(Guid ingredientId, CancellationToken cancellationToken)
   {
     return await _dbContext.Ingredients.FirstOrDefaultAsync(ingredient => ingredient.Id == ingredientId, cancellationToken);
-  }
-
-  public async Task<Ingredient?> FindWithRecipeLinesAsync(Guid ingredientId, CancellationToken cancellationToken)
-  {
-    return await _dbContext.Ingredients.Include(ingredient => ingredient.CatalogItems).ThenInclude(recipeLine => recipeLine.CatalogItem).FirstOrDefaultAsync(ingredient => ingredient.Id == ingredientId, cancellationToken);
-  }
-
-  public async Task AddAsync(Ingredient ingredient, CancellationToken cancellationToken)
-  {
-    await _dbContext.Ingredients.AddAsync(ingredient, cancellationToken);
-  }
-
-  public async Task SaveChangesAsync(CancellationToken cancellationToken)
-  {
-    await _dbContext.SaveChangesAsync(cancellationToken);
   }
 }

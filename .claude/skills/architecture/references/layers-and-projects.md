@@ -64,7 +64,10 @@ The endpoint in `Api` calls the service directly. There is no handler class betw
 per-area mapping file in `Api`, because each job a handler did has one home:
 
 - **Mapping an entity to a record** happens in the service: `ProjectToType<TView>()` for a read,
-  Mapster on the saved entity for the answer of a write.
+  Mapster on the saved entity for the answer of a write. Mapster's configuration for an area is one
+  `IRegister` class in `Core/Mapping` (`IngredientMapping`), found by a scan of the Core assembly
+  when `MappingConfiguration` builds the configuration; it holds only what Mapster cannot infer from
+  names, such as a filter written as a query expression.
 - **Turning `ErrorOr` into the HTTP answer** is written once, centrally, for all endpoints, in the
   answer types of `Api/Answers`.
 - **The calling device's identity** stays an endpoint parameter and is handed to the service as a plain
