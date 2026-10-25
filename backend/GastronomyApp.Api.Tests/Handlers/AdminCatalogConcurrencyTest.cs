@@ -14,10 +14,11 @@ public sealed class AdminCatalogConcurrencyTest
   private const int SimultaneousCreates = 8;
   private const int RacedSwitches = 8;
   private const string SmallUmlautA = "ä";
+  private const string CapitalUmlautA = "Ä";
 
   private string ColdDrinksName => $"Kaltgetr{SmallUmlautA}nke";
 
-  private string ColdDrinksNameWithALowercaseFirstLetter => $"kaltgetr{SmallUmlautA}nke";
+  private string ColdDrinksNameWithTheUmlautInCapitals => $"Kaltgetr{CapitalUmlautA}nke";
 
   [SetUp]
   public async Task SetUp()
@@ -80,7 +81,7 @@ public sealed class AdminCatalogConcurrencyTest
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/categories",
                                                                new
                                                                {
-                                                                 name = ColdDrinksNameWithALowercaseFirstLetter,
+                                                                 name = ColdDrinksNameWithTheUmlautInCapitals,
                                                                  colourHex = "#1565C0"
                                                                });
     var messageKey = await ReadMessageKeyAsync(response);
