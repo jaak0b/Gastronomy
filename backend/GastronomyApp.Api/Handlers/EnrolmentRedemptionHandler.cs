@@ -24,6 +24,6 @@ public sealed class EnrolmentRedemptionHandler
   {
     ArgumentNullException.ThrowIfNull(httpContext);
 
-    return await _service.RedeemAsync(request.Code!, request.Name?.Trim(), request.UserAgent ?? string.Empty, httpContext.Request.Headers[AcceptLanguageHeaderName].ToString(), request.PreviousDeviceToken, cancellationToken).Then(_mapper.Map<RedeemedEnrolmentView>);
+    return await _service.RedeemAsync(request.Code!, request.Name, request.UserAgent ?? string.Empty, httpContext.Request.Headers[AcceptLanguageHeaderName].ToString(), request.PreviousDeviceToken, cancellationToken).Then(_mapper.Map<RedeemedEnrolmentView>);
   }
 }

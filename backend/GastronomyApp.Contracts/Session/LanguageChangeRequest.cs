@@ -1,3 +1,6 @@
 namespace GastronomyApp.Contracts.Session;
 
-public sealed record LanguageChangeRequest(string? Language);
+public sealed record LanguageChangeRequest
+{
+  public required string? Language { get; init; }
+}

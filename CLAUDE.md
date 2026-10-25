@@ -302,7 +302,10 @@ Every rule binds every agent, main or sub, with no exception it does not name.
     a first or nearest candidate, a clamped number, a shortened string, or a value recomputed from
     other data. This binds every layer: the phone, the station tablet, the admin screen and the
     server. Review treats any silent substitution as a defect, however small the difference looks,
-    because the person acted on a screen that showed something else. The one deliberate exception:
+    because the person acted on a screen that showed something else. Spaces before or after a typed
+    text are not part of what the person entered: the server removes them from every text field of a request in
+    one shared place before anything checks or stores the value, because they are almost always a
+    slip and would otherwise make two names look the same while being different. The one deliberate exception:
     a phone drops an unsent order without a word once its festival is over or another one has
     started, as the `festivals` feature page describes.
 

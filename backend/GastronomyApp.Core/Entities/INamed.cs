@@ -1,8 +1,6 @@
 namespace GastronomyApp.Core.Entities;
 
-public interface INamed
+public interface INamed : IEntity
 {
-  public Guid Id { get; }
-
   public string Name { get; }
 }

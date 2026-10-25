@@ -1,9 +1,7 @@
 ﻿namespace GastronomyApp.Core.Entities;
 
-public interface IDeviceOwner
+public interface IDeviceOwner : IEntity
 {
-  public Guid Id { get; }
-
   public string Name { get; }
 
   public bool IsActive { get; }

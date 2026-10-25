@@ -1,8 +1,6 @@
 ﻿namespace GastronomyApp.Core.Entities;
 
-public interface ISortable
+public interface ISortable : IEntity
 {
-  public Guid Id { get; }
-
   public int SortOrder { get; set; }
 }

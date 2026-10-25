@@ -3,7 +3,7 @@ using GastronomyApp.Core.Announcements;
 namespace GastronomyApp.Core.Entities;
 
 [Raises]
-public sealed class EnrolmentInvitation
+public sealed class EnrolmentInvitation : IEntity
 {
   public required Guid Id { get; set; }
 

@@ -3,7 +3,7 @@ using GastronomyApp.Core.Announcements;
 namespace GastronomyApp.Core.Entities;
 
 [Raises(HubEvent.ConfigurationChanged)]
-public sealed class FestivalCatalogItem
+public sealed class FestivalCatalogItem : IEntity
 {
   public required Guid Id { get; set; }
 

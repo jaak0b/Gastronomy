@@ -51,6 +51,32 @@ public sealed class AdminUnitEndpointsTest
   }
 
   [Test]
+  public async Task PostUnit_NameTypedWithSpacesAroundIt_StoresOnlyTheName()
+  {
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/units", new { name = " Liter " });
+
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+    var listed = await FindListedUnitAsync(body.GetProperty("unitId").GetGuid());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+                      Assert.That(body.GetProperty("name").GetString(), Is.EqualTo("Liter"));
+                      Assert.That(listed.GetProperty("name").GetString(), Is.EqualTo("Liter"));
+                    });
+  }
+
+  [Test]
+  public async Task PostUnit_NameThatOnlyDiffersBySpacesAroundIt_IsRefusedWithNameTaken()
+  {
+    await CreateUnitAsync(" Liter ");
+
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/units", new { name = " Liter" });
+
+    await AssertValidationRefusalAsync(response, "errors.admin.units.nameTaken");
+  }
+
+  [Test]
   public async Task PostUnit_ANameAnActiveUnitHoldsInOtherCase_IsRefusedWithNameTaken()
   {
     await CreateUnitAsync("Portion");

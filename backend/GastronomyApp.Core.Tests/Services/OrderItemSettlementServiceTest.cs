@@ -89,21 +89,6 @@ public sealed class OrderItemSettlementServiceTest
   }
 
   [Test]
-  public void Settle_AShortLineWithAReason_KeepsTheTrimmedReason()
-  {
-    var bratwurst = OpenItem(350);
-
-    ErrorOr<SettlementResult> settlement = _service.Settle([Line(bratwurst, 150, "  Der Tisch zahlt den Rest spaeter  ")], PaymentMethod.Cash, _collectingWaiter, AtOneTable(bratwurst), _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.True);
-                      Assert.That(bratwurst.ChargedPriceCents, Is.EqualTo(150));
-                      Assert.That(bratwurst.PaymentNotice, Is.EqualTo("Der Tisch zahlt den Rest spaeter"));
-                    });
-  }
-
-  [Test]
   public void Settle_ALineTheCallerAlreadySettled_OverwritesThePriceAndTheReasonAndKeepsTimeAndCollector()
   {
     var beer = OpenItem(400);
@@ -178,7 +163,7 @@ public sealed class OrderItemSettlementServiceTest
   {
     var bratwurst = OpenItem(350);
 
-    ErrorOr<SettlementResult> settlement = _service.Settle([Line(bratwurst, 300, "   ")], PaymentMethod.Cash, _collectingWaiter, AtOneTable(bratwurst), _now);
+    ErrorOr<SettlementResult> settlement = _service.Settle([Line(bratwurst, 300, "")], PaymentMethod.Cash, _collectingWaiter, AtOneTable(bratwurst), _now);
 
     Assert.Multiple(() =>
                     {

@@ -84,9 +84,9 @@ public sealed class CatalogCategoryServiceTest
   }
 
   [Test]
-  public async Task CreateAsync_ANameNothingRefuses_StoresItTrimmedBehindTheLastCategoryAndSwitchedOn()
+  public async Task CreateAsync_ANameNothingRefuses_StoresItBehindTheLastCategoryAndSwitchedOn()
   {
-    ErrorOr<AdminCategoryView> created = await _service.CreateAsync(RequestFor("  Nachtisch  "), TestContext.CurrentContext.CancellationToken);
+    ErrorOr<AdminCategoryView> created = await _service.CreateAsync(RequestFor("Nachtisch"), TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
 
     var stored = await _fixture.DbContext.CatalogCategories.SingleAsync(category => category.Name == "Nachtisch", TestContext.CurrentContext.CancellationToken);

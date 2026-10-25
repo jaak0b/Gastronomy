@@ -170,7 +170,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
     StaffMember newStaffMember = new()
                                  {
                                    Id = Guid.NewGuid(),
-                                   Name = name.Trim(),
+                                   Name = name,
                                    IsActive = true,
                                    CreatedAtUtc = now
                                  };

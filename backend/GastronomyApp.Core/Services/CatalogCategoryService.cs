@@ -34,7 +34,7 @@ public sealed class CatalogCategoryService
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    var name = request.Name!.Trim();
+    var name = request.Name!;
 
     if (await NameIsTakenAsync(name, null, cancellationToken))
       return Refusal.CatalogCategory.NameTaken(name);
@@ -65,7 +65,7 @@ public sealed class CatalogCategoryService
     if (category is null)
       return Refusal.CatalogCategory.CategoryNotFound(categoryId);
 
-    var name = request.Name!.Trim();
+    var name = request.Name!;
 
     if (await NameIsTakenAsync(name, categoryId, cancellationToken))
       return Refusal.CatalogCategory.NameTaken(name);

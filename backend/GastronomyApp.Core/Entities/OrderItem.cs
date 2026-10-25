@@ -4,7 +4,7 @@ using GastronomyApp.Core.Announcements;
 namespace GastronomyApp.Core.Entities;
 
 [Raises(HubEvent.OrdersChanged)]
-public sealed class OrderItem
+public sealed class OrderItem : IEntity
 {
   public required Guid Id { get; set; }
 

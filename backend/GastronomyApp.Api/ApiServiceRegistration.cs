@@ -1,5 +1,6 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using GastronomyApp.Api.Auth.Filters;
 using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.DocumentTransformers;
@@ -7,6 +8,7 @@ using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
+using GastronomyApp.Api.Json;
 using GastronomyApp.Api.Mapping;
 using GastronomyApp.Api.RateLimiting;
 using GastronomyApp.Api.Responders;
@@ -192,7 +194,11 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IEnrolmentCompletionAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
     services.AddScoped<IDeviceRevocationAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
 
-    services.ConfigureHttpJsonOptions(jsonOptions => jsonOptions.SerializerOptions.Converters.Add(EnumsAsCamelCaseText()));
+    services.ConfigureHttpJsonOptions(jsonOptions =>
+                                      {
+                                        jsonOptions.SerializerOptions.Converters.Add(EnumsAsCamelCaseText());
+                                        jsonOptions.SerializerOptions.TypeInfoResolver = (jsonOptions.SerializerOptions.TypeInfoResolver ?? new DefaultJsonTypeInfoResolver()).WithAddedModifier(new TrimmedStringModifier().Trim);
+                                      });
 
     services.AddOpenApi(documentOptions =>
                         {
