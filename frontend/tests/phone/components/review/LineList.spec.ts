@@ -107,6 +107,22 @@ describe('the part of the order each station will receive', () => {
     ])
   })
 
+  it('sorts the names with capitals ignored and umlauts after Z', () => {
+    const list = mountList([
+      line({ catalogItemId: 'item-zwiebel', name: 'Zwiebel' }),
+      line({ catalogItemId: 'item-aepfel', name: 'Äpfel' }),
+      line({ catalogItemId: 'item-apfel', name: 'apfel' }),
+      line({ catalogItemId: 'item-birne', name: 'Birne' }),
+    ])
+
+    expect(list.findAll('[data-test="line"] [data-test="line-name"]').map((element) => element.text())).toEqual([
+      '1 x apfel',
+      '1 x Birne',
+      '1 x Zwiebel',
+      '1 x Äpfel',
+    ])
+  })
+
   it('keeps a noted line directly under the plain line of the same item', () => {
     const list = mountList([
       line({ catalogItemId: 'item-wasser', name: 'Wasser', note: 'mit Zitrone' }),

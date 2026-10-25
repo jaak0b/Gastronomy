@@ -12,7 +12,7 @@ public sealed class StaffMemberConfiguration : IEntityTypeConfiguration<StaffMem
 
     builder.HasKey(staffMember => staffMember.Id);
     builder.Property(staffMember => staffMember.Id).ValueGeneratedNever();
-    builder.Property(staffMember => staffMember.Name).IsRequired();
+    builder.Property(staffMember => staffMember.Name).IsRequired().UseCollation("NOCASE");
     builder.Property(staffMember => staffMember.IsActive).IsRequired();
     builder.Property(staffMember => staffMember.DeviceId).IsRequired(false);
     builder.Property(staffMember => staffMember.EnrolmentInvitationId).IsRequired(false);

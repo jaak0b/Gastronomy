@@ -2,6 +2,7 @@ using ErrorOr;
 using GastronomyApp.Contracts.Admin.Units;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Queries;
 using GastronomyApp.Core.Refusals;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
@@ -88,8 +89,7 @@ public sealed class UnitService
 
   private async Task<ErrorOr<Success>> CheckNameIsFreeAsync(string name, Guid? ownUnitId, CancellationToken cancellationToken)
   {
-    var others = await _database.Units.AsNoTracking().Where(other => other.Id != ownUnitId).ToListAsync(cancellationToken);
-    var namesake = others.FirstOrDefault(other => string.Equals(other.Name, name, StringComparison.OrdinalIgnoreCase));
+    var namesake = await _database.Units.AsNoTracking().Namesakes(name, ownUnitId).FirstOrDefaultAsync(cancellationToken);
 
     if (namesake is { IsActive: false })
       return Refusal.Units.NameBelongsToDeactivatedUnit(namesake.Name);

@@ -19,6 +19,43 @@ public sealed class StaffMemberRepositoryTest
   }
 
   [Test]
+  public async Task FindAllAsync_NamesInMixedCase_ListsThemWithCapitalsIgnoredAndUmlautsAfterZ()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+
+    foreach (var name in new[]
+                         {
+                           "Zora",
+                           "Änne",
+                           "berta",
+                           "Carl"
+                         })
+      fixture.DbContext.StaffMembers.Add(new()
+                                         {
+                                           Id = Guid.NewGuid(),
+                                           Name = name,
+                                           IsActive = true,
+                                           CreatedAtUtc = DateTime.UtcNow
+                                         });
+
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    await using var readContext = fixture.CreateContext();
+
+    var staffMembers = await new StaffMemberRepository(readContext).FindAllAsync(TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(staffMembers.Select(staffMember => staffMember.Name),
+                Is.EqualTo(new[]
+                           {
+                             "Anna",
+                             "berta",
+                             "Carl",
+                             "Zora",
+                             "Änne"
+                           }));
+  }
+
+  [Test]
   public async Task SaveChangesAsync_ANameThatWasJustChanged_StoresIt()
   {
     using SqliteInMemoryFixture fixture = new();

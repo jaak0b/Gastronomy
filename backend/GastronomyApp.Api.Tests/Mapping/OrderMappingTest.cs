@@ -110,6 +110,47 @@ public sealed class OrderMappingTest
                            }));
   }
 
+  [Test]
+  public void Map_NamesInMixedCase_AreListedWithCapitalsIgnoredAndUmlautsAfterZ()
+  {
+    var order = OrderAtOneStation(350);
+    var stationOrder = order.StationOrders[0];
+    stationOrder.Items.Clear();
+    var zwiebel = ItemOf(stationOrder.Id, "Zwiebel", null, 100);
+    var aepfel = ItemOf(stationOrder.Id, "Äpfel", null, 100);
+    var apfel = ItemOf(stationOrder.Id, "apfel", null, 100);
+    var birne = ItemOf(stationOrder.Id, "Birne", null, 100);
+    stationOrder.Items.Add(zwiebel);
+    stationOrder.Items.Add(aepfel);
+    stationOrder.Items.Add(apfel);
+    stationOrder.Items.Add(birne);
+    stationOrder.Station.SortOrder = 1;
+    stationOrder.Station.Name = "Zapfhahn";
+    order.StationOrders.Add(StationOrderAt(order.Id, Guid.NewGuid(), "grill", 1, 400));
+    order.StationOrders.Add(StationOrderAt(order.Id, Guid.NewGuid(), "Bar", 1, 400));
+
+    var view = _mapper.Map<PlacedOrderView>(order);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(view.StationOrders.Select(placed => placed.StationName),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Bar",
+                                               "grill",
+                                               "Zapfhahn"
+                                             }));
+                      Assert.That(view.StationOrders.Single(placed => placed.StationName == "Zapfhahn").ItemIds,
+                                  Is.EqualTo(new[]
+                                             {
+                                               apfel.Id,
+                                               birne.Id,
+                                               zwiebel.Id,
+                                               aepfel.Id
+                                             }));
+                    });
+  }
+
   private Order OrderAtOneStation(params int[] unitPricesCents)
   {
     Order order = new()

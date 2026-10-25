@@ -53,6 +53,33 @@ public sealed class AdminItemMappingTest
                            }));
   }
 
+  [Test]
+  public void Map_IngredientNamesInMixedCase_ComeBackWithCapitalsIgnoredAndUmlautsAfterZ()
+  {
+    var bratwurst = Article();
+    var gram = UnitNamed("Gramm");
+
+    foreach (var name in new[]
+                         {
+                           "Zwiebel",
+                           "Äpfel",
+                           "apfel",
+                           "Birne"
+                         })
+      bratwurst.Ingredients.Add(RecipeLineOf(bratwurst, IngredientNamed(name, gram), 1));
+
+    var view = _mapper.Map<AdminItemView>(bratwurst);
+
+    Assert.That(view.Ingredients.Select(ingredient => ingredient.Name),
+                Is.EqualTo(new[]
+                           {
+                             "apfel",
+                             "Birne",
+                             "Zwiebel",
+                             "Äpfel"
+                           }));
+  }
+
   private CatalogItem Article()
   {
     return new()

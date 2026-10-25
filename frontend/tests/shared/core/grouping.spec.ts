@@ -40,6 +40,20 @@ describe('groupByCategorySortingItemsByName', () => {
     expect(grouped[1].items.map((row) => row.name)).toEqual(['Schnitzel'])
   })
 
+  it('orders the items with capitals ignored and umlauts after Z', () => {
+    const grouped = group(
+      [FOOD],
+      [
+        { name: 'Zwiebel', categoryId: 'category-food' },
+        { name: 'Äpfel', categoryId: 'category-food' },
+        { name: 'apfel', categoryId: 'category-food' },
+        { name: 'Birne', categoryId: 'category-food' },
+      ],
+    )
+
+    expect(grouped[0].items.map((row) => row.name)).toEqual(['apfel', 'Birne', 'Zwiebel', 'Äpfel'])
+  })
+
   it('keeps the order the categories were handed over in', () => {
     const grouped = group(
       [FOOD, DRINKS],

@@ -74,6 +74,8 @@ Frontend, under `frontend/src/`:
 - `GastronomyApp.Infrastructure.Tests/Repositories`: `IngredientRepositoryTest`,
   `IngredientStockRepositoryTest` (the unit navigation), `CatalogItemRepositoryTest` and
   `CatalogItemIngredientRepositoryTest`.
+- `GastronomyApp.Infrastructure.Tests/Queries`: `NamedQueriesTest` (the namesake check of units and
+  ingredients, in SQL).
 - `GastronomyApp.Infrastructure.Tests/Services`: `UnitServiceTest` (every unit action on the real
   DbContext with in-memory SQLite), `Configurations/UnitNameIndexTest` (the unique name index),
   `IngredientServiceTest` (including a unit change that

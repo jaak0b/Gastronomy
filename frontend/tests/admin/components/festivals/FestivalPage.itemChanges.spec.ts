@@ -97,6 +97,27 @@ describe('the items of this festival', () => {
     ).toEqual(['Bier'])
   })
 
+  it('offers the items still to add with capitals ignored and umlauts after Z', async () => {
+    festivalLaptop({
+      items: [
+        SAUSAGE,
+        { ...BEER, itemId: 'item-zwiebel', name: 'Zwiebel' },
+        { ...BEER, itemId: 'item-aepfel', name: 'Äpfel' },
+        { ...BEER, itemId: 'item-apfel', name: 'apfel' },
+        { ...BEER, itemId: 'item-birne', name: 'Birne' },
+      ],
+    })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="item-search"]').exists()).toBe(true))
+
+    expect(
+      (page.getComponent<typeof VAutocomplete>('[data-test="item-search"]').props('items') as { name: string }[]).map(
+        (item) => item.name,
+      ),
+    ).toEqual(['apfel', 'Birne', 'Zwiebel', 'Äpfel'])
+  })
+
   it('offers editing a category and an item as the pencil, the item before its trash icon', async () => {
     festivalLaptop()
 

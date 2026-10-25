@@ -100,6 +100,23 @@ public sealed class OpenItemMappingTest
   }
 
   [Test]
+  public void Map_ThePositionsOfAnOrderInMixedCase_ComeBackWithCapitalsIgnoredAndUmlautsAfterZ()
+  {
+    var order = OrderAt("Tisch 12", Item("Zwiebel", 100), Item("Äpfel", 100), Item("apfel", 100), Item("Birne", 100));
+
+    var view = _mapper.Map<TableOrderRecordView>(order);
+
+    Assert.That(view.Items.Select(item => item.ItemName),
+                Is.EqualTo(new[]
+                           {
+                             "apfel",
+                             "Birne",
+                             "Zwiebel",
+                             "Äpfel"
+                           }));
+  }
+
+  [Test]
   public void Map_AnOrderSplitAcrossTwoStations_HoldsThePositionsOfBothStations()
   {
     var bratwurst = Item("Bratwurst", 350);

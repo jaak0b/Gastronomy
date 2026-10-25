@@ -190,6 +190,10 @@ These are the owner's own choices, not rules from the sources.
   (the festival itself, an area, a table), and `IsActive` on the global lists (stations, articles,
   categories, ingredients, waiters). **Do not** give one entity both, or use the other word for the
   same idea.
+- **Do** give every name column the `NOCASE` collation, and sort and compare names in the SQL query
+  so that collation decides: case is ignored for A to Z, umlauts sort after Z, and "Äpfel" and
+  "äpfel" are two different names. Where a name must be compared in memory, use only
+  `StringComparer.OrdinalIgnoreCase`.
 - **Do** order a result by a value the data carries: a sort order, a name, a number. **Do not**
   order by a generated identifier: a `Guid` key carries no order, so `OrderBy(row => row.Id)` hands
   rows out in a sequence that means nothing. An id is only ever the last tiebreaker after the

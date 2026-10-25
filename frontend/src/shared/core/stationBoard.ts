@@ -2,6 +2,7 @@ import type { ApiErrorBody } from '../api/apiError'
 import { DeliveryMode, StationOrderQueueView, StationQueueItemView } from '../api/generatedSchemas'
 import { assertNever } from './assertNever'
 import { mergeLinesWithSameArticleAndNote } from './collapse'
+import { compareNames } from './compareNames'
 import type { Translate } from './translation'
 
 export type StationFailure =
@@ -67,16 +68,9 @@ export function openItemsIn(stationOrder: StationOrderQueueView): StationQueueIt
   return stationOrder.items.filter((item) => !isFulfilled(item))
 }
 
-function compareItemNames(left: string, right: string): number {
-  if (left < right) {
-    return -1
-  }
-  return left > right ? 1 : 0
-}
-
 function compareLines(left: ItemLine, right: ItemLine): number {
-  const byName = compareItemNames(left.itemName, right.itemName)
-  return byName !== 0 ? byName : compareItemNames(left.note ?? '', right.note ?? '')
+  const byName = compareNames(left.itemName, right.itemName)
+  return byName !== 0 ? byName : compareNames(left.note ?? '', right.note ?? '')
 }
 
 export function itemLines(items: readonly StationQueueItemView[]): ItemLine[] {

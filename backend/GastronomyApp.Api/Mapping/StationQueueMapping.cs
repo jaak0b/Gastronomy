@@ -28,7 +28,7 @@ public sealed class StationQueueMapping : IMappingRegistration
           .Map(view => view.CreatedAtUtc, stationOrder => stationOrder.Order.CreatedAtUtc)
           .Map(view => view.ItemCount, stationOrder => stationOrder.Items.Count)
           .Map(view => view.FulfilledItemCount, stationOrder => stationOrder.Items.Count(item => item.FulfilledAtUtc != null))
-          .Map(view => view.Items, stationOrder => stationOrder.Items.OrderBy(item => item.ItemName).ThenBy(item => item.Note).ThenBy(item => item.Id).ToList());
+          .Map(view => view.Items, stationOrder => stationOrder.Items.OrderBy(item => item.ItemName, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Note, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Id).ToList());
 
     config.NewConfig<Station, StationSummaryView>();
 

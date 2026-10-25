@@ -65,6 +65,32 @@ public sealed class TablePlanRepositoryTest
   }
 
   [Test]
+  public async Task FindTablePlanAsync_StationsOfEqualPositionInMixedCase_AreListedWithCapitalsIgnored()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var gardenId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Garten", 1, false);
+    var kitchen = await fixture.DbContext.Stations.SingleAsync(station => station.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+    var bar = await fixture.DbContext.Stations.SingleAsync(station => station.Id == seeded.BarStationId, TestContext.CurrentContext.CancellationToken);
+    kitchen.Name = "Grill";
+    bar.Name = "bar";
+    bar.SortOrder = kitchen.SortOrder;
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    await PlaceAsync(fixture.DbContext, seeded.FestivalId, seeded.KitchenStationId, gardenId);
+    await PlaceAsync(fixture.DbContext, seeded.FestivalId, seeded.BarStationId, gardenId);
+    await using var readContext = fixture.CreateContext();
+
+    IReadOnlyList<ListedArea> tablePlan = await new TablePlanRepository(readContext).FindTablePlanAsync(seeded.FestivalId, false, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(tablePlan[0].StationShapes.Select(shape => shape.StationName),
+                Is.EqualTo(new[]
+                           {
+                             "bar",
+                             "Grill"
+                           }));
+  }
+
+  [Test]
   public async Task FindTablePlanAsync_OneTableWithAnItemNotYetSettled_SaysSoForThatTableAndItsAreaOnly()
   {
     using SqliteInMemoryFixture fixture = new();

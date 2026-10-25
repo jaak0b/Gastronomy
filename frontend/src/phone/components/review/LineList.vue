@@ -5,6 +5,7 @@ import { DeliveryMode, StationQuoteView } from '../../../shared/api/generatedSch
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { lineCannotBeOrdered, type BasketLineView } from '../../core/basket'
 import { mergeLinesWithSameArticleAndNote, type CollapsedLine } from '../../../shared/core/collapse'
+import { compareNames } from '../../../shared/core/compareNames'
 import { countedName } from '../../core/countedName'
 import { withEstimate } from '../../core/estimateWording'
 import { deliveryModeKey } from '../../../shared/core/stationBoard'
@@ -33,11 +34,11 @@ function readingOrder(
   left: CollapsedLine<BasketLineView>,
   right: CollapsedLine<BasketLineView>,
 ): number {
-  const byName = left.line.name.localeCompare(right.line.name)
+  const byName = compareNames(left.line.name, right.line.name)
   if (byName !== 0) {
     return byName
   }
-  return (left.line.note ?? '').localeCompare(right.line.note ?? '')
+  return compareNames(left.line.note ?? '', right.line.note ?? '')
 }
 
 const parts = computed<StationPart[]>(() =>

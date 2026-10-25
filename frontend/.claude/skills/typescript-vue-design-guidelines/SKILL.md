@@ -176,6 +176,7 @@ Repository rule; no source page.
 
 - **Do** render a list in the order the endpoint returned it when the backend already ordered it.
 - **Do** sort in the app only for a view the backend never returns as one list, such as an aggregate built from several orders.
+- **Do** compare names in the app only with the shared `compareNames` from `src/shared/core`, which orders the way the database's `NOCASE` does: case ignored for A to Z, umlauts after Z. Never `localeCompare`, `<` or `>` on a name.
 
 ## How to use
 

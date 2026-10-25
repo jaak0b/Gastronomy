@@ -1,3 +1,5 @@
+import { compareNames } from './compareNames'
+
 export interface CategoryGroup<TCategory, TItem> {
   category: TCategory
   items: TItem[]
@@ -14,6 +16,6 @@ export function groupByCategorySortingItemsByName<TCategory, TItem>(
     category,
     items: items
       .filter((item) => itemCategoryIdOf(item) === categoryIdOf(category))
-      .sort((left, right) => itemNameOf(left).localeCompare(itemNameOf(right))),
+      .sort((left, right) => compareNames(itemNameOf(left), itemNameOf(right))),
   }))
 }

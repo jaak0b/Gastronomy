@@ -175,6 +175,17 @@ describe('the open articles of the overview board', () => {
       line('Wasser', null, 1),
     ])
   })
+
+  it('orders names of equal count with capitals ignored and umlauts after Z', () => {
+    expect(
+      linesByCount([
+        line('Zwiebel', null, 1),
+        line('Äpfel', null, 1),
+        line('apfel', null, 1),
+        line('Birne', null, 1),
+      ]).map((entry) => entry.itemName),
+    ).toEqual(['apfel', 'Birne', 'Zwiebel', 'Äpfel'])
+  })
 })
 
 describe('the words on one grouped line', () => {

@@ -132,8 +132,7 @@ public sealed class IngredientService
 
   private async Task<ErrorOr<Success>> CheckNameIsFreeAsync(string name, Guid ingredientId, CancellationToken cancellationToken)
   {
-    var others = await _database.Ingredients.AsNoTracking().Where(other => other.Id != ingredientId).ToListAsync(cancellationToken);
-    var namesake = others.FirstOrDefault(other => string.Equals(other.Name, name, StringComparison.OrdinalIgnoreCase));
+    var namesake = await _database.Ingredients.AsNoTracking().Namesakes(name, ingredientId).FirstOrDefaultAsync(cancellationToken);
 
     if (namesake is { IsActive: false })
       return Refusal.Ingredients.NameBelongsToDeactivatedIngredient(namesake.Name);

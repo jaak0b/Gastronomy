@@ -143,6 +143,24 @@ public sealed class StationQueueMappingTest
   }
 
   [Test]
+  public void Map_ItemNamesInMixedCase_ComeBackWithCapitalsIgnoredAndUmlautsAfterZ()
+  {
+    var station = Kitchen();
+    AddStationOrder(station, 1, DeliveryMode.Together, Item("Zwiebel", null), Item("Äpfel", null), Item("apfel", null), Item("Birne", null));
+
+    var view = _mapper.Map<StationQueueView>(station);
+
+    Assert.That(view.Orders[0].Items.Select(item => item.ItemName),
+                Is.EqualTo(new[]
+                           {
+                             "apfel",
+                             "Birne",
+                             "Zwiebel",
+                             "Äpfel"
+                           }));
+  }
+
+  [Test]
   public void Map_AStationOrderTheStationHandedOut_CarriesEveryLineWithItsHandOverTime()
   {
     var station = Kitchen();

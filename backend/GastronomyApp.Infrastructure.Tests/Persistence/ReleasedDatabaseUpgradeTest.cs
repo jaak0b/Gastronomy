@@ -75,7 +75,7 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(orderItem.SettledAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 18, 0, 0)));
                       Assert.That(orderItem.SettledByStaffMemberId, Is.EqualTo(staffMemberId));
                       Assert.That(orderItem.PaymentMethod, Is.Null);
-                      Assert.That(appliedMigrations, Has.Count.EqualTo(10));
+                      Assert.That(appliedMigrations, Has.Count.EqualTo(11));
                       Assert.That(appliedMigrations[0], Is.EqualTo(_releasedSchema.MigrationId));
                       Assert.That(appliedMigrations[1], Does.EndWith("_CollateCategoryNamesAndCapitalizeQRColumns"));
                       Assert.That(appliedMigrations[2], Does.EndWith("_DropOrderNote"));
@@ -86,10 +86,52 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(appliedMigrations[7], Does.EndWith("_SwitchOrdersToTables"));
                       Assert.That(appliedMigrations[8], Does.EndWith("_AddUnits"));
                       Assert.That(appliedMigrations[9], Does.EndWith("_RemoveDeviceLastSeen"));
+                      Assert.That(appliedMigrations[10], Does.EndWith("_NameColumnsIgnoreCase"));
                       Assert.That(ingredientCount, Is.Zero);
                       Assert.That(stockRowCount, Is.Zero);
                       Assert.That(recipeLineCount, Is.Zero);
                       Assert.That(unitCount, Is.EqualTo(5));
+                    });
+  }
+
+  [Test]
+  public async Task MigrateAsync_OnReleasedDatabaseWithNamedRowsOtherRowsPointAt_KeepsEveryNameAndEveryLink()
+  {
+    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
+    var categoryId = Guid.NewGuid();
+    var festivalId = Guid.NewGuid();
+    var staffMemberId = Guid.NewGuid();
+    var orderId = Guid.NewGuid();
+    var orderItemId = Guid.NewGuid();
+    var barLinkId = Guid.NewGuid();
+    var barId = Guid.NewGuid();
+
+    var connection = fixture.OpenConnection();
+    await ExecuteAsync(connection, _releasedSchema.Sql);
+    await InsertCatalogCategoryAsync(connection, categoryId);
+    await InsertFestivalAsync(connection, festivalId);
+    await InsertStaffMemberAsync(connection, staffMemberId);
+    await InsertOrderAsync(connection, orderId, festivalId, staffMemberId);
+    await InsertSettledOrderItemAsync(connection, orderItemId, orderId, festivalId, categoryId, staffMemberId);
+    await InsertFestivalStationAsync(connection, barLinkId, festivalId, barId, "Theke", 3);
+
+    var context = fixture.CreateContext();
+    await context.Database.MigrateAsync();
+
+    var orderItem = await context.Set<OrderItem>().Include(persisted => persisted.CatalogItem).Include(persisted => persisted.SettledByStaffMember).Include(persisted => persisted.StationOrder).ThenInclude(stationOrder => stationOrder.Station).SingleAsync(persisted => persisted.Id == orderItemId);
+    var festivalStation = await context.Set<FestivalStation>().Include(persisted => persisted.Festival).Include(persisted => persisted.Station).SingleAsync(persisted => persisted.Id == barLinkId);
+    var brokenLinks = await context.Database.SqlQueryRaw<string>("SELECT \"table\" AS \"Value\" FROM pragma_foreign_key_check").ToListAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(orderItem.CatalogItem.Name, Is.EqualTo("Bratwurst"));
+                      Assert.That(orderItem.CatalogItem.CategoryId, Is.EqualTo(categoryId));
+                      Assert.That(orderItem.StationOrder.Station.Name, Is.EqualTo("Kueche"));
+                      Assert.That(orderItem.SettledByStaffMember!.Name, Is.EqualTo("Anna"));
+                      Assert.That(festivalStation.Station.Name, Is.EqualTo("Theke"));
+                      Assert.That(festivalStation.Festival.Name, Is.EqualTo("Sommerfest"));
+                      Assert.That(festivalStation.NextStationOrderNumber, Is.EqualTo(3));
+                      Assert.That(brokenLinks, Is.Empty);
                     });
   }
 

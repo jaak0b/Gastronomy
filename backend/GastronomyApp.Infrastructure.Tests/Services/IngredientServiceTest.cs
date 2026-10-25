@@ -73,6 +73,32 @@ public sealed class IngredientServiceTest
   }
 
   [Test]
+  public async Task ListAsync_ArticleNamesInMixedCase_AreListedWithCapitalsIgnoredAndUmlautsAfterZ()
+  {
+    foreach (var itemName in new[]
+                             {
+                               "Zwiebelkuchen",
+                               "Äpfelchen",
+                               "apfelstrudel",
+                               "Birnenkuchen"
+                             })
+      await AddRecipeLineAsync(_mustard, itemName, true);
+
+    _fixture.DbContext.ChangeTracker.Clear();
+
+    var list = await _service.ListAsync(TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(list.Ingredients.Single().ActiveItemNames,
+                Is.EqualTo(new[]
+                           {
+                             "apfelstrudel",
+                             "Birnenkuchen",
+                             "Zwiebelkuchen",
+                             "Äpfelchen"
+                           }));
+  }
+
+  [Test]
   public async Task CreateAsync_ANewName_StoresTheNameAsTypedWithItsUnitAndAnUnlimitedStockRowPerFestival()
   {
     ErrorOr<AdminIngredientView> created = await _service.CreateAsync(RequestFor("Bratwurst roh", _gram.Id), TestContext.CurrentContext.CancellationToken);

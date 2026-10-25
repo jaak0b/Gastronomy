@@ -12,7 +12,7 @@ public sealed class CatalogItemConfiguration : IEntityTypeConfiguration<CatalogI
 
     builder.HasKey(item => item.Id);
     builder.Property(item => item.Id).ValueGeneratedNever();
-    builder.Property(item => item.Name).IsRequired();
+    builder.Property(item => item.Name).IsRequired().UseCollation("NOCASE");
     builder.Property(item => item.CategoryId).IsRequired();
     builder.Property(item => item.SortOrder).IsRequired();
     builder.Property(item => item.IsActive).IsRequired();

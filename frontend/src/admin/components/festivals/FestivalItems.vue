@@ -3,6 +3,7 @@ import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminCategoryView, AdminItemView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
+import { compareNames } from '../../../shared/core/compareNames'
 import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
 import { letteringColourOn } from '../../../shared/core/letteringColour'
 import { numberRowsAcrossGroups } from '../../core/alternatingRows'
@@ -96,7 +97,7 @@ const groups = computed(() =>
 const stillToAdd = computed(() =>
   items.items
     .filter((item) => item.isActive && item.atTheFestival === null)
-    .sort((left, right) => left.name.localeCompare(right.name)),
+    .sort((left, right) => compareNames(left.name, right.name)),
 )
 
 const listsFailedToLoad = computed(() => items.loadFailed || categories.loadFailed)

@@ -72,7 +72,7 @@ Frontend, under `frontend/src/`:
 - The first two refusals are guards for what the screens already prevent, so they answer
   `errors.admin.actionFailed`: an ingredient that an active article uses cannot be switched off from
   the Zutaten tab, which names those articles, and a recipe can only add an active ingredient.
-- A name is compared without regard to case. Creating or renaming to the name of a deactivated
+- A name is compared without regard to case, in SQL through `NamedQueries.Namesakes`. Creating or renaming to the name of a deactivated
   ingredient is refused with `errors.admin.ingredients.nameBelongsToDeactivatedIngredient` and the
   parameter `name`; an active namesake gets `nameTaken`.
 - A unit must exist and be active when an ingredient is created, and when an existing ingredient

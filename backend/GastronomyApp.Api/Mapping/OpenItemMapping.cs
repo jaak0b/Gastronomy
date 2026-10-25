@@ -19,6 +19,6 @@ public sealed class OpenItemMapping : IMappingRegistration
     config.NewConfig<Order, TableOrderRecordView>()
           .Map(view => view.OrderId, order => order.Id)
           .Map(view => view.StaffMemberName, order => order.StaffMember.Name)
-          .Map(view => view.Items, order => order.StationOrders.SelectMany(stationOrder => stationOrder.Items).OrderBy(item => item.ItemName, StringComparer.Ordinal).ThenBy(item => item.Note, StringComparer.Ordinal).ThenBy(item => item.Id).ToList());
+          .Map(view => view.Items, order => order.StationOrders.SelectMany(stationOrder => stationOrder.Items).OrderBy(item => item.ItemName, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Note, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Id).ToList());
   }
 }

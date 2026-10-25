@@ -207,6 +207,23 @@ public sealed class CatalogItemAdministrationServiceTest
   }
 
   [Test]
+  public async Task ActivateAsync_DeactivatedIngredientsInMixedCase_AreNamedWithCapitalsIgnoredAndUmlautsAfterZ()
+  {
+    var currywurst = GivenASwitchedOffArticleWithTheRecipe(_foodCategoryId, BuildIngredient("Zwiebel", false), BuildIngredient("Äpfel", false), BuildIngredient("apfel", false), BuildIngredient("Birne", false));
+
+    ErrorOr<CatalogItem> switchedOn = await _service.ActivateAsync(currywurst.Id, CancellationToken.None);
+
+    Assert.That(switchedOn.RefusedLines().Select(line => line.Metadata![Refusal.MetadataKeys.Name]),
+                Is.EqualTo(new[]
+                           {
+                             "apfel",
+                             "Birne",
+                             "Zwiebel",
+                             "Äpfel"
+                           }));
+  }
+
+  [Test]
   public async Task ActivateAsync_ASwitchedOffCategoryAndADeactivatedIngredient_FailsBecauseOfTheCategoryFirst()
   {
     var currywurst = GivenASwitchedOffArticleWithTheRecipe(_switchedOffCategoryId, BuildIngredient("Zwiebeln", false));

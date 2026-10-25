@@ -91,7 +91,7 @@ public sealed class CatalogItemAdministrationService
       return categoryRefusal;
 
     List<Error> deactivatedIngredientRefusals = item.Ingredients.Where(recipeLine => !recipeLine.Ingredient.IsActive)
-                                                    .OrderBy(recipeLine => recipeLine.Ingredient.Name, StringComparer.Ordinal)
+                                                    .OrderBy(recipeLine => recipeLine.Ingredient.Name, StringComparer.OrdinalIgnoreCase)
                                                     .Select(recipeLine => Refusal.CatalogItem.RecipeHoldsDeactivatedIngredient(itemId, recipeLine.Ingredient.Name))
                                                     .ToList();
 
