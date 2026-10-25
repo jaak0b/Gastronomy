@@ -29,10 +29,14 @@ export interface AdminList<TEntry, TDraft> {
   load: () => Promise<void>
   loadFrom: (path: string) => Promise<void>
   forgetCreatedEntries: () => void
-  create: (draft: TDraft) => Promise<AdminActionResult<TEntry>>
-  createThenReload: (draft: TDraft) => Promise<AdminActionResult<null>>
+  showCreated: (entry: TEntry) => void
   update: (id: string, draft: TDraft) => Promise<AdminActionResult<null>>
   setActive: (id: string, isActive: boolean) => Promise<AdminActionResult<null>>
+}
+
+export interface CreatableAdminList<TEntry, TDraft> extends AdminList<TEntry, TDraft> {
+  create: (draft: TDraft) => Promise<AdminActionResult<TEntry>>
+  createThenReload: (draft: TDraft) => Promise<AdminActionResult<null>>
 }
 
 export function defineAdminList<TEntry, TListResponse, TDraft, TBody>(
@@ -45,7 +49,6 @@ export function defineAdminList<TEntry, TListResponse, TDraft, TBody>(
   const entriesGate = createLatestRequestGate()
   const pendingCreatedEntries = createPendingCreatedEntities<TEntry>(definition.idOf)
   const reloadAfterWriting = definition.reloadAfterWriting ?? load
-  const currentView = definition.currentView ?? (() => null)
 
   async function loadFrom(path: string): Promise<void> {
     await loadAdminList({
@@ -71,31 +74,9 @@ export function defineAdminList<TEntry, TListResponse, TDraft, TBody>(
     pendingCreatedEntries.clear()
   }
 
-  async function create(draft: TDraft): Promise<AdminActionResult<TEntry>> {
-    const viewAtStart = currentView()
-    const result = await request(definition.path, {
-      method: 'POST',
-      body: definition.requestBodyOf(draft),
-      schema: definition.entrySchema,
-    })
-    if (result.kind !== 'ok') {
-      return adminFailureFrom(result)
-    }
-    if (viewAtStart === currentView()) {
-      pendingCreatedEntries.remember(result.data)
-      entries.value = pendingCreatedEntries.mergeInto(entries.value)
-    }
-    return adminOk(result.data)
-  }
-
-  async function createThenReload(draft: TDraft): Promise<AdminActionResult<null>> {
-    return await reloadOrFailureOf(
-      await requestAction(definition.path, {
-        method: 'POST',
-        body: definition.requestBodyOf(draft),
-      }),
-      reloadAfterWriting,
-    )
+  function showCreated(entry: TEntry): void {
+    pendingCreatedEntries.remember(entry)
+    entries.value = pendingCreatedEntries.mergeInto(entries.value)
   }
 
   async function update(id: string, draft: TDraft): Promise<AdminActionResult<null>> {
@@ -124,9 +105,44 @@ export function defineAdminList<TEntry, TListResponse, TDraft, TBody>(
     load,
     loadFrom,
     forgetCreatedEntries,
-    create,
-    createThenReload,
+    showCreated,
     update,
     setActive,
   }
+}
+
+export function defineCreatableAdminList<TEntry, TListResponse, TDraft, TBody>(
+  definition: AdminListDefinition<TEntry, TListResponse, TDraft, TBody>,
+): CreatableAdminList<TEntry, TDraft> {
+  const list = defineAdminList(definition)
+  const reloadAfterWriting = definition.reloadAfterWriting ?? list.load
+  const currentView = definition.currentView ?? (() => null)
+
+  async function create(draft: TDraft): Promise<AdminActionResult<TEntry>> {
+    const viewAtStart = currentView()
+    const result = await request(definition.path, {
+      method: 'POST',
+      body: definition.requestBodyOf(draft),
+      schema: definition.entrySchema,
+    })
+    if (result.kind !== 'ok') {
+      return adminFailureFrom(result)
+    }
+    if (viewAtStart === currentView()) {
+      list.showCreated(result.data)
+    }
+    return adminOk(result.data)
+  }
+
+  async function createThenReload(draft: TDraft): Promise<AdminActionResult<null>> {
+    return await reloadOrFailureOf(
+      await requestAction(definition.path, {
+        method: 'POST',
+        body: definition.requestBodyOf(draft),
+      }),
+      reloadAfterWriting,
+    )
+  }
+
+  return { ...list, create, createThenReload }
 }

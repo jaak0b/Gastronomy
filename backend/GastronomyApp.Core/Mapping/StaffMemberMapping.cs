@@ -2,9 +2,9 @@ using GastronomyApp.Contracts.Admin.Staff;
 using GastronomyApp.Core.Entities;
 using Mapster;
 
-namespace GastronomyApp.Api.Mapping;
+namespace GastronomyApp.Core.Mapping;
 
-public sealed class AdminStaffMembersMapping : IMappingRegistration
+public sealed class StaffMemberMapping : IRegister
 {
   public void Register(TypeAdapterConfig config)
   {

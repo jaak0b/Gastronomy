@@ -45,7 +45,6 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton<IMappingRegistration, AdminFestivalMapping>();
     services.AddSingleton<IMappingRegistration, AdminTablePlanMapping>();
-    services.AddSingleton<IMappingRegistration, AdminStaffMembersMapping>();
     services.AddSingleton<IMappingRegistration, CatalogMapping>();
     services.AddSingleton<IMappingRegistration, EnrolmentMapping>();
     services.AddSingleton<IMappingRegistration, OpenItemMapping>();
@@ -80,7 +79,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<ICatalogRepository, CatalogRepository>();
     services.AddScoped<IItemOrderabilityRepository, ItemOrderabilityRepository>();
     services.AddScoped<IStationRepository, StationRepository>();
-    services.AddScoped<IStaffMemberRepository, StaffMemberRepository>();
     services.AddScoped<IFestivalRepository, FestivalRepository>();
     services.AddScoped<IFestivalMenuRepository, FestivalMenuRepository>();
     services.AddScoped<IFestivalStationRepository, FestivalStationRepository>();
@@ -120,7 +118,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<TableAdministrationService>();
     services.AddScoped<FestivalStationShapeService>();
     services.AddScoped<StationService>();
-    services.AddScoped<StaffMemberAdministrationService>();
+    services.AddScoped<StaffMemberService>();
     services.AddScoped<EnrolmentService>();
     services.AddScoped<RunningFestivalLookup>();
     services.AddScoped<ItemsToHandOutLookup>();
@@ -171,7 +169,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<AdminFestivalStationShapeHandler>();
     services.AddScoped<AdminFestivalStockHandler>();
     services.AddScoped<CatalogHandler>();
-    services.AddScoped<AdminStaffMembersHandler>();
     services.AddScoped<AdminEnrolmentHandler>();
     services.AddScoped<EnrolmentRedemptionHandler>();
     services.AddSingleton<StationShellResponder>();

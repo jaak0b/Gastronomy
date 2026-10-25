@@ -2,7 +2,7 @@ import { ref, type Ref } from 'vue'
 import type { z } from 'zod'
 import { assertNever } from '../../shared/core/assertNever'
 import { adminFailed, adminOk, type AdminActionResult } from '../core/adminActionResult'
-import { defineAdminList } from './adminList'
+import { defineCreatableAdminList } from './adminList'
 
 export interface FestivalScopedListDefinition<TEntry, TListResponse, TDraft, TBody> {
   path: string
@@ -30,7 +30,7 @@ export function defineFestivalScopedList<TEntry, TListResponse, TDraft, TBody>(
 ): FestivalScopedList<TEntry, TDraft> {
   const festivalInView = ref<string | null>(null)
   const { entries, loadFailed, loadFrom, forgetCreatedEntries, create, update, setActive } =
-    defineAdminList({
+    defineCreatableAdminList({
       path: definition.path,
       listSchema: definition.listSchema,
       entrySchema: definition.entrySchema,

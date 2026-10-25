@@ -6,7 +6,7 @@ import {
 } from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
 import { useConnectionStore } from '../../shared/stores/connection'
-import { defineAdminList } from './adminList'
+import { defineCreatableAdminList } from './adminList'
 
 export interface IngredientDraft {
   name: string
@@ -21,7 +21,7 @@ export const useAdminIngredientsStore = defineStore('adminIngredients', () => {
     create,
     update,
     setActive,
-  } = defineAdminList({
+  } = defineCreatableAdminList({
     path: '/api/admin/ingredients',
     listSchema: AdminIngredientListView,
     entrySchema: AdminIngredientView,

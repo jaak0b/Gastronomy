@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { defineAdminList } from '../../../src/admin/stores/adminList'
+import { defineCreatableAdminList } from '../../../src/admin/stores/adminList'
 import {
   AdminCategoryListView,
   AdminCategoryView,
@@ -24,7 +24,7 @@ interface ListOptions {
 }
 
 function categoryList(options: ListOptions = {}) {
-  return defineAdminList({
+  return defineCreatableAdminList({
     path: '/api/admin/categories',
     listSchema: AdminCategoryListView,
     entrySchema: AdminCategoryView,

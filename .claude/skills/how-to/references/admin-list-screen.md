@@ -26,7 +26,9 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
    `stores/adminList.ts`: pass `path`, the zod `listSchema` and `entrySchema` from
    `shared/api/generatedSchemas`, `entriesOf`, `idOf` and `requestBodyOf`, and return `entries`,
    `loadFailed`, `load`, `create`, `update` (the Zutaten store wraps it as `save`), `setActive` plus a
-   `listen()`. A list that depends on
+   `listen()`. A list whose entries the laptop never creates (the waiters come in through enrolment) uses
+   `defineAdminList`, which has no `create`; a list that has a create route uses
+   `defineCreatableAdminList`, which is that list plus `create` and `createThenReload`. A list that depends on
    the running festival uses `defineFestivalScopedList` (`stores/festivalScopedList.ts`) instead.
    The store takes the route of each call it makes from the screen that uses it, so a route is
    whatever the laptop's service for that screen offers, and a screen without an activate call

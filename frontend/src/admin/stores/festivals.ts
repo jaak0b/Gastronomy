@@ -9,7 +9,7 @@ import {
 import type { AdminActionResult } from '../core/adminActionResult'
 import { reloadOrFailureOf } from '../core/adminMutation'
 import { useConnectionStore } from '../../shared/stores/connection'
-import { defineAdminList } from './adminList'
+import { defineCreatableAdminList } from './adminList'
 
 export interface FestivalDraft {
   name: string
@@ -29,7 +29,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     load,
     createThenReload: create,
     update,
-  } = defineAdminList({
+  } = defineCreatableAdminList({
     path: '/api/admin/festivals',
     listSchema: AdminFestivalListView,
     entrySchema: AdminFestivalView,

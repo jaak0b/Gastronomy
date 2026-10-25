@@ -6,7 +6,7 @@ import {
 } from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
 import { useConnectionStore } from '../../shared/stores/connection'
-import { defineAdminList } from './adminList'
+import { defineCreatableAdminList } from './adminList'
 
 export interface UnitDraft {
   name: string
@@ -20,7 +20,7 @@ export const useAdminUnitsStore = defineStore('adminUnits', () => {
     create,
     update,
     setActive,
-  } = defineAdminList({
+  } = defineCreatableAdminList({
     path: '/api/admin/units',
     listSchema: AdminUnitListView,
     entrySchema: AdminUnitView,

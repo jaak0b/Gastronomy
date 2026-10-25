@@ -10,7 +10,7 @@ import { adminOk, type AdminActionResult } from '../core/adminActionResult'
 import { adminFailureFrom } from '../core/adminMutation'
 import { oneAtATime } from '../core/oneAtATime'
 import { useConnectionStore } from '../../shared/stores/connection'
-import { defineAdminList } from './adminList'
+import { defineCreatableAdminList } from './adminList'
 
 export interface AdminCategoryDraft {
   name: string
@@ -26,7 +26,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     create,
     update,
     setActive,
-  } = defineAdminList({
+  } = defineCreatableAdminList({
     path: '/api/admin/categories',
     listSchema: AdminCategoryListView,
     entrySchema: AdminCategoryView,
