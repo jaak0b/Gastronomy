@@ -45,4 +45,4 @@ of the Ausgabestellen tab, with both reasons and the one named when both apply, 
 `admin/components/stations/StationsList.switchingOff.spec.ts`. The Einheiten tab is covered by
 `admin/components/units/UnitsList.*.spec.ts`, `UnitDialog.spec.ts` and `admin/stores/units.spec.ts`;
 the backend rules they display are in `AdminUnitEndpointsTest` and
-`UnitAdministrationServiceTest`.
+`UnitServiceTest`.

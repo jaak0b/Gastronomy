@@ -15,18 +15,18 @@ Backend, under `backend/`:
 - `UnitConfiguration`: the key, the required name with `NOCASE` collation and its unique index, and
   the active flag. `IngredientConfiguration` carries the ingredient's unit foreign key with
   `Restrict` and the index on `UnitId`.
-- `GastronomyApp.Core/Services/UnitAdministrationService.cs` lists, creates, renames, activates and
-  deactivates units. `UnitService.IngredientNamesOf` names the ingredients that use a unit, and both
-  the list view and the deactivation check call it.
+- `GastronomyApp.Core/Services/UnitService.cs` lists, creates, renames and deactivates units through
+  `IGastronomyDatabase`; activating goes through the shared `ActivationService`. The list view and
+  the deactivation check both name the ingredients that use a unit, sorted by name.
 - `GastronomyApp.Core/Services/IngredientService.cs` takes a `Guid?` unit id on create and update. A new unit must exist and be active, while changing the unit of an existing ingredient
   is allowed at any time and leaves every stored amount untouched.
 - Refusals: `GastronomyApp.Core/Refusals/Refusal.Units.cs`, and
   `Refusal.Ingredients.UnitUnavailable(Guid?)` for a missing, unknown or switched-off unit.
 - Routes: `GastronomyApp.Api/Endpoints/AdminUnitEndpoints.cs` (`/api/admin/units`: list, create,
-  `PUT /{unitId}`, `POST /{unitId}/activate`, `POST /{unitId}/deactivate`) with
-  `GastronomyApp.Api/Handlers/AdminUnitHandler.cs`.
+  `PUT /{unitId}`, `POST /{unitId}/activate`, `POST /{unitId}/deactivate`), which call the services
+  directly.
 - Wire records: `GastronomyApp.Contracts/Admin/Units` (`AdminUnitView`, `AdminUnitListView`,
-  `SavedUnitView`, `SaveUnitRequest`). Mapping: `GastronomyApp.Api/Mapping/AdminUnitMapping.cs`;
+  `SavedUnitView`, `SaveUnitRequest`). Mapping: `GastronomyApp.Core/Mapping/UnitMapping.cs`;
   `Core/Mapping/IngredientMapping.cs` and `AdminItemMapping.cs` read the unit id and name from the
   navigation.
 - Migration `20261025095050_AddUnits` seeds Stück, g, kg, ml and l with fixed ids and maps the old
@@ -70,12 +70,13 @@ Frontend, under `frontend/src/`:
 
 ## Tests
 
-- `GastronomyApp.Core.Tests/Services`: `UnitAdministrationServiceTest`, `UnitServiceTest`, and the
-  ingredient tests that construct an ingredient with a unit.
-- `GastronomyApp.Infrastructure.Tests/Repositories`: `UnitRepositoryTest`, `IngredientRepositoryTest`,
+- `GastronomyApp.Core.Tests/Services`: the ingredient tests that construct an ingredient with a unit.
+- `GastronomyApp.Infrastructure.Tests/Repositories`: `IngredientRepositoryTest`,
   `IngredientStockRepositoryTest` (the unit navigation), `CatalogItemRepositoryTest` and
   `CatalogItemIngredientRepositoryTest`.
-- `GastronomyApp.Infrastructure.Tests/Services`: `IngredientServiceTest` (including a unit change that
+- `GastronomyApp.Infrastructure.Tests/Services`: `UnitServiceTest` (every unit action on the real
+  DbContext with in-memory SQLite), `Configurations/UnitNameIndexTest` (the unique name index),
+  `IngredientServiceTest` (including a unit change that
   leaves a recipe amount unchanged) and `FestivalAdministrationServiceTest`.
 - `GastronomyApp.Infrastructure.Tests/Persistence`: `ReleasedDatabaseUpgradeTest` covers the seeded
   units and the migration of the old unit values, and `GastronomyAppDbContextTest` covers the new

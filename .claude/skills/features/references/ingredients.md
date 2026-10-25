@@ -102,11 +102,11 @@ Frontend, under `frontend/src/`:
 - `GastronomyApp.Infrastructure.Tests/Services`: `IngredientServiceTest` and `ActivationServiceTest`,
   on the real DbContext with in-memory SQLite; `Queries/ActivatableQueriesTest`.
 - `GastronomyApp.Core.Tests/Services`: `CatalogItemRecipeServiceTest` and the recipe cases of
-  `CatalogItemAdministrationServiceTest`. The unit cases live in `UnitAdministrationServiceTest` and
-  `UnitServiceTest`.
+  `CatalogItemAdministrationServiceTest`. The unit cases live in
+  `GastronomyApp.Infrastructure.Tests/Services/UnitServiceTest`.
 - `GastronomyApp.Infrastructure.Tests`: `Configurations/IngredientNameIndexTest`,
   `Repositories/IngredientRepositoryTest` and `CatalogItemIngredientRepositoryTest` (the unique
-  indexes), and `UnitRepositoryTest`.
+  indexes), and `UnitNameIndexTest`.
 - `GastronomyApp.Api.Tests/Mapping/AdminItemMappingTest`: the name, unit id and unit name of every
   recipe line.
 - `GastronomyApp.Api.Tests/Endpoints`: `AdminIngredientEndpointsTest` and
