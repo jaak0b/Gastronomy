@@ -21,7 +21,7 @@
     "vue-i18n": "^11.4.10",
     "vue-konva": "4.0.1",
     "vuetify": "^4.1.12",
-    "zod": "^4.6.5"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
