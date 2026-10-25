@@ -58,20 +58,57 @@ export function anchorOf(stage: Konva.Stage, anchor: TransformerAnchor): StagePo
   return handle.getAbsolutePosition()
 }
 
-function mouse(type: string, at: StagePoint): MouseEvent {
-  return new MouseEvent(type, { clientX: at.x, clientY: at.y, button: 0, bubbles: true })
+interface PointerModifiers {
+  ctrlKey?: boolean
+  shiftKey?: boolean
+  button?: number
 }
 
-export async function tapAt(stage: Konva.Stage, at: StagePoint): Promise<void> {
+function mouse(type: string, at: StagePoint, modifiers: PointerModifiers = {}): MouseEvent {
+  return new MouseEvent(type, {
+    clientX: at.x,
+    clientY: at.y,
+    button: modifiers.button ?? 0,
+    bubbles: true,
+    ctrlKey: modifiers.ctrlKey ?? false,
+    shiftKey: modifiers.shiftKey ?? false,
+  })
+}
+
+export async function tapAt(
+  stage: Konva.Stage,
+  at: StagePoint,
+  modifiers: PointerModifiers = {},
+): Promise<void> {
   stage.draw()
-  stage.content.dispatchEvent(mouse('mousedown', at))
-  stage.content.dispatchEvent(mouse('mouseup', at))
+  stage.content.dispatchEvent(mouse('mousedown', at, modifiers))
+  stage.content.dispatchEvent(mouse('mouseup', at, modifiers))
   await flushPromises()
 }
 
-export async function pressAt(stage: Konva.Stage, at: StagePoint): Promise<void> {
+export async function rightClickAt(stage: Konva.Stage, at: StagePoint): Promise<void> {
   stage.draw()
-  stage.content.dispatchEvent(mouse('mousedown', at))
+  stage.content.dispatchEvent(mouse('mousedown', at, { button: 2 }))
+  stage.content.dispatchEvent(
+    new MouseEvent('contextmenu', {
+      clientX: at.x,
+      clientY: at.y,
+      button: 2,
+      bubbles: true,
+      cancelable: true,
+    }),
+  )
+  stage.content.dispatchEvent(mouse('mouseup', at, { button: 2 }))
+  await flushPromises()
+}
+
+export async function pressAt(
+  stage: Konva.Stage,
+  at: StagePoint,
+  modifiers: PointerModifiers = {},
+): Promise<void> {
+  stage.draw()
+  stage.content.dispatchEvent(mouse('mousedown', at, modifiers))
   await flushPromises()
 }
 

@@ -1,28 +1,51 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { request, requestAction } from '../../shared/api/client'
 import {
   AdminTablePlanView,
+  CopiedTablesView,
   SavedAreaView,
   SavedTableView,
   type AdminAreaView,
+  type AdminTableView,
+  type CopyTablesRequest,
   type MoveAreaRequest,
+  type MoveTableRequest,
+  type MoveTablesRequest,
   type SaveAreaRequest,
   type SaveStationShapeRequest,
   type SaveTableRequest,
 } from '../../shared/api/generatedSchemas'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
+import type { PlanPoint } from '../../shared/core/tablePlanDrawing'
 import { useConnectionStore } from '../../shared/stores/connection'
 import type { AdminActionResult } from '../core/adminActionResult'
+import { adminFailed } from '../core/adminActionResult'
+import { GENERIC_ADMIN_ERROR_KEY, adminErrorMessageForKey } from '../core/adminErrorMessage'
 import { reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/listLoading'
 import { oneAtATime } from '../core/oneAtATime'
+import {
+  pastedCopiesAt,
+  pastedCopiesBeside,
+  type TableCopy,
+} from '../core/tablePlanPlacement'
+
+interface TablePlanClipboard {
+  festivalId: string
+  areaId: string
+  tables: TableCopy[]
+}
 
 export const useAdminTablePlanStore = defineStore('adminTablePlan', () => {
   const areas = ref<AdminAreaView[]>([])
   const loadFailed = ref(false)
   const festivalInView = ref<string | null>(null)
   const loadedFestivalId = ref<string | null>(null)
+  const clipboard = ref<TablePlanClipboard | null>(null)
+  const hasCopiedTables = computed(
+    () => clipboard.value !== null && clipboard.value.tables.length > 0,
+  )
 
   const tablePlanGate = createLatestRequestGate()
   const areaMoves = oneAtATime()
@@ -31,6 +54,7 @@ export const useAdminTablePlanStore = defineStore('adminTablePlan', () => {
     if (festivalInView.value !== festivalId) {
       areas.value = []
       loadedFestivalId.value = null
+      clipboard.value = null
     }
     festivalInView.value = festivalId
     await loadAdminList({
@@ -53,6 +77,44 @@ export const useAdminTablePlanStore = defineStore('adminTablePlan', () => {
     if (festivalId !== null) {
       await loadForFestival(festivalId)
     }
+  }
+
+  function copyTables(festivalId: string, areaId: string, tables: readonly AdminTableView[]): void {
+    if (tables.length === 0) {
+      return
+    }
+    clipboard.value = {
+      festivalId,
+      areaId,
+      tables: tables.map((table) => ({
+        sourceTableId: table.tableId,
+        geometry: { ...table.geometry },
+      })),
+    }
+  }
+
+  async function pasteInto(
+    festivalId: string,
+    areaId: string,
+    at?: PlanPoint,
+  ): Promise<AdminActionResult<CopiedTablesView>> {
+    const copied = clipboard.value
+    if (copied === null || copied.festivalId !== festivalId || copied.tables.length === 0) {
+      return adminFailed(adminErrorMessageForKey(GENERIC_ADMIN_ERROR_KEY))
+    }
+    const tables =
+      at === undefined
+        ? pastedCopiesBeside(copied.tables, copied.areaId, areaId)
+        : pastedCopiesAt(copied.tables, at)
+    const body: CopyTablesRequest = { areaId, tables }
+    return await reloadOrFailureOf(
+      await request(`/api/admin/festivals/${festivalId}/tables/copy`, {
+        method: 'POST',
+        body,
+        schema: CopiedTablesView,
+      }),
+      reload,
+    )
   }
 
   async function createArea(
@@ -145,6 +207,20 @@ export const useAdminTablePlanStore = defineStore('adminTablePlan', () => {
     )
   }
 
+  async function moveTables(
+    festivalId: string,
+    tables: MoveTableRequest[],
+  ): Promise<AdminActionResult<null>> {
+    const body: MoveTablesRequest = { tables }
+    return await reloadOrFailureOf(
+      await requestAction(`/api/admin/festivals/${festivalId}/tables/move`, {
+        method: 'POST',
+        body,
+      }),
+      reload,
+    )
+  }
+
   async function hideTable(festivalId: string, tableId: string): Promise<AdminActionResult<null>> {
     return await reloadOrFailureOf(
       await requestAction(`/api/admin/festivals/${festivalId}/tables/${tableId}/hide`, {
@@ -197,7 +273,10 @@ export const useAdminTablePlanStore = defineStore('adminTablePlan', () => {
     areas,
     loadFailed,
     loadedFestivalId,
+    hasCopiedTables,
     loadForFestival,
+    copyTables,
+    pasteInto,
     createArea,
     saveArea,
     moveArea,
@@ -205,6 +284,7 @@ export const useAdminTablePlanStore = defineStore('adminTablePlan', () => {
     showArea,
     createTable,
     saveTable,
+    moveTables,
     hideTable,
     showTable,
     placeStation,

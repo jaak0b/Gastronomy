@@ -40,11 +40,22 @@ Backend, under `backend/`:
   an area never changes its place; a move goes through `SortOrdering.Move` over
   `FindAreasInOrderAsync` and swaps the area with the next one in that direction that
   `MoveAreaRequest.ShowsHiddenAreas` says the admin can see),
-  `TableAdministrationService` (create, update including a move to another area, hide, show)
-  and `FestivalStationShapeService` (place or move, remove). Each takes its request record. Port:
+  `TableAdministrationService` (create, update including a move to another area, hide, show, and
+  copy a selection of tables into one area and move a selection in one transaction) and
+  `FestivalStationShapeService` (place or move,
+  remove). `Core/Services/TableCopyNaming.cs` is the one home of a copy's name: it counts up the
+  ASCII digit run that ends the source name, keeping the text before it, the source's case and its
+  digit count (`A1` to `A2`, `A09` to `A10`, `A99` to `A100`), appends ` 1`, ` 2`, ... to a name
+  without a trailing digit, and takes the first free name per festival, hidden tables included,
+  ignoring case. It processes one paste in ascending source name (`OrdinalIgnoreCase`, then id),
+  uses `BigInteger` so a long digit run cannot overflow, and never truncates or normalises the
+  source name. Each takes its request record. Port:
   `ITablePlanRepository` (`TablePlanRepository`) owns every read and write of areas, tables and
   station shapes, and answers the order questions the hide rules ask
-  (`HasItemsToHandOutOrSettleAtTableAsync`, `HasItemsToHandOutOrSettleInAreaAsync`). The admin's
+  (`HasItemsToHandOutOrSettleAtTableAsync`, `HasItemsToHandOutOrSettleInAreaAsync`). Its read for the
+  copy and the move is `FindTablesAsync` (the requested tables of one festival, tracked because the
+  move updates them), and the copy also reads `FindTableNamesAsync`
+  (every name of the festival, hidden rows included). The admin's
   read, `FindTablePlanAsync` (with `countsItemsToHandOutOrSettle`), answers `ListedArea` and
   `ListedTable` (`Core/Results`): the entity and `HasItemsToHandOutOrSettleAtTheRunningFestival`,
   false unless the read was told to count, computed in the same single statement with
@@ -79,7 +90,10 @@ Backend, under `backend/`:
   `showsHiddenAreas`),
   `POST /areas/{areaId}/hide` and `/show` (`AdminAreaHandler`);
   `POST /tables`, `PUT /tables/{tableId}`, `POST /tables/{tableId}/hide` and `/show`
-  (`AdminTableHandler`); `PUT` and `DELETE /stations/{stationId}/shape`
+  (`AdminTableHandler`), `POST /tables/copy`, which creates every copy of one paste in the one
+  request transaction and answers `CopiedTablesView` with the new table ids, and
+  `POST /tables/move`, which moves one or more tables in one transaction and answers no content; `PUT` and
+  `DELETE /stations/{stationId}/shape`
   (`AdminFestivalStationShapeHandler`, keyed by the station id, not the link id). The phone's
   `GET /api/table-plan` lives in `GastronomyApp.Api/Endpoints/TablePlanEndpoints.cs`
   (`TablePlanHandler`), for staff phones only, like the catalog and open items routes.
@@ -88,8 +102,11 @@ Backend, under `backend/`:
   a shape, so the frontend hands it straight to Konva). In `GastronomyApp.Contracts/Admin/Festivals`:
   `SaveAreaRequest` (the name only), `MoveAreaRequest` (a `MoveDirection` from `Contracts/Enums`,
   shared with `MoveCategoryRequest`, and `ShowsHiddenAreas`), `SaveTableRequest` (names the area, so the
-  same record creates and moves a table), `SaveStationShapeRequest`, `SavedAreaView`,
-  `SavedTableView`, `AdminTablePlanView`, `AdminAreaView` (no sort order: the list comes in the
+  same record creates a table and changes a table's name or area in the dialog; the drawing moves
+  geometry through `MoveTablesRequest` instead), `SaveStationShapeRequest`, `SavedAreaView`,
+  `SavedTableView`, `MoveTablesRequest` (one `MoveTableRequest` per table, each a table id and its
+  `Geometry`, with no name and no area), `CopyTablesRequest` (the target area and one `CopyTableRequest` per table, each
+  a source table id and its `Geometry`), `CopiedTablesView` (the new `TableIds`), `AdminTablePlanView`, `AdminAreaView` (no sort order: the list comes in the
   laptop's order) and `AdminTableView` (each with `HasItemsToHandOutOrSettleAtTheRunningFestival`), `AdminStationShapeView` (`StationName`); a station shape answers
   with `SavedStationView`. Mapping: `GastronomyApp.Api/Mapping/AdminTablePlanMapping.cs`, from the
   `Listed*` records and `NamedStationShape`. The phone's records are in
@@ -101,7 +118,8 @@ Backend, under `backend/`:
   `GastronomyApp.Api/Mapping/TablePlanMapping.cs`, from the `Shown*` records and `NamedStationShape`, which calls
   `TableService` for the two states.
 - Texts: `errors.admin.festivals.areaNameTaken`, `tableNameTaken`,
-  `areaWithItemsToHandOutOrSettleStaysShown` and `tableWithItemsToHandOutOrSettleStaysShown` in
+  `areaWithItemsToHandOutOrSettleStaysShown`, `tableWithItemsToHandOutOrSettleStaysShown` and
+  `tableCopyNameTooLong` in
   `frontend/src/shared/i18n/de.json` and `en.json`.
 
 Frontend, under `frontend/src/`:
@@ -136,7 +154,13 @@ Frontend, under `frontend/src/`:
   once the festival list has arrived (`hasLoaded` of `admin/stores/adminList.ts`); an unknown area
   returns to the festival page, decided only once the store holds this festival's plan
   (`loadedFestivalId`), so a read overtaken by a newer one never sends the admin away. The editor
-  owns the selected shape (`ShapeSelection` in `admin/core/tablePlanSelection.ts`). The page is one
+  owns the selection (`TablePlanSelection` in `admin/core/tablePlanSelection.ts`): any number of
+  tables, or one station, never both. Ctrl-click and Shift-click toggle a table into or out of a
+  table selection, a plain click selects just the table under the pointer, and a station is always
+  selected alone. A press on empty space becomes a marquee once it passes the editor's 3-pixel drag
+  threshold: the dashed `marquee` rectangle with the translucent `marquee-fill` selects every table
+  its box touches, a plain marquee replaces the selection and a Ctrl or Shift marquee adds to it. A
+  press shorter than the threshold is the plain click that clears the selection. The page is one
   block centred in the window, at most 1100 pixels wide like the festival page:
   `TablePlanDrawing.vue` (the Konva drawing) with the lists to its right, at most a form column
   wide, or below it in a window too narrow for both. `TablePlanTableList.vue` draws the table rows
@@ -151,26 +175,53 @@ Frontend, under `frontend/src/`:
   `admin/components/BaseSearchAddLine.vue` offering only the festival's stations on no plan. With
   nothing to offer it says either that every station of the festival is in an area
   (`noStationsToPlace`) or that the festival has no station yet (`festivalHasNoStations`).
-  Tapping a shape in the drawing gives it the resize handles, highlights its row and scrolls the
-  list to it, a table row and a station row alike (`BaseListRow.vue`).
+  Tapping a shape in the drawing highlights its row and scrolls the list to it, a table row and a
+  station row alike (`BaseListRow.vue`). The resize handles appear only for exactly one selected
+  shape; a table selection of several shows its tables with the primary border and no handles.
+- Copy and paste live in the drawing. Ctrl+C copies the selected tables (a station is never
+  copied), Ctrl+V pastes them, and the context menu opened by a right click offers "Kopieren" on a
+  table and "Einfügen" on an empty spot. A right click keeps the current table selection when the
+  clicked table is already in it and selects just that table otherwise; it never copies by itself.
+  "Kopieren" copies whatever is selected then, so a selected table copies the whole selection and an
+  unselected one copies just itself. A station shows no menu. The browsers' own menu is suppressed only over the drawing. The keyboard shortcuts
+  are ignored from an input, textarea, select or contenteditable, and while a dialog is open;
+  the browser default is prevented only when the app handles the key. The listener is added while
+  the editor is mounted and removed when it closes. A paste reloads the plan, selects every new
+  table and scrolls the first copy into view; a refusal shows above the drawing, where a move or a
+  resize refusal appears. A group drag moves every selected table by the same delta and snaps the
+  dragged table against the shapes outside the selection. A single drag, a resize and a group drag
+  all send one `POST /tables/move` with every changed geometry, so one commit stores the whole move
+  and one reload reads the answer; a refusal puts every node back to its pre-drag geometry and shows
+  the refusal, and a half-moved group can never exist.
 - `admin/core/tablePlanPlacement.ts` holds `drawnTablesOf`, the one definition of the tables the
   editor draws of an area: its shown tables, never a hidden one. `isDrawnIn` in
-  `tablePlanSelection.ts` uses it, so a selected table that gets hidden loses its handles.
-  `geometryForANewShapeIn` is the one placement of a new table and a new station alike: below every
-  table of the area, hidden ones included, and every station shape.
+  `tablePlanSelection.ts` uses it, so a selected table that gets hidden loses its selection.
+  `tableIdsInMarquee` selects the tables whose corners meet the marquee. `geometryForANewShapeIn`
+  is the one placement of a new table and a new station alike: below every
+  table of the area, hidden ones included, and every station shape. `pastedCopiesBeside` and
+  `pastedCopiesAt` place a copied group: in the same area one `SNAP_GRID` step (10 units) right and
+  down, in another area at the coordinates the originals have, and from the menu with the group's
+  top-left bounding-box corner at the clicked drawing point. All three shift the whole group left
+  when it would cross the 400-unit drawing width and never shift its left edge below zero.
 - `admin/stores/tablePlan.ts` (`useAdminTablePlanStore`) holds the festival's `AdminAreaView` list
   and `loadedFestivalId` (the festival whose plan that list is, set when a read is applied), and has
   one action per admin route; every action reloads the plan through the latest request gate, and the
   store reloads on `ConfigurationChanged` (the plan) and `OrdersChanged` (the flags that disable
   hiding). `moveArea` sends a `MoveAreaRequest` carrying the state of "Ausgeblendete anzeigen",
   which `HideableEntryList.vue` hands to `moveThrough`, one move after the other through
-  `admin/core/oneAtATime.ts`, as the category store does.
+  `admin/core/oneAtATime.ts`, as the category store does. The clipboard lives only in this store's
+  memory: the source festival id, the source area id, and per table its source id and a geometry
+  snapshot. It survives switching areas inside one festival, clears when a different festival loads,
+  and never touches local storage. `copyTables` and `pasteInto` own it;
+  `pasteInto` sends `POST /tables/copy`, reloads the plan through the existing helper and returns
+  the new table ids or the refusal. `moveTables` sends one `POST /tables/move` for a single drag, a
+  resize or a whole group and reloads the plan once through the same helper.
 - `shared/core/tablePlanDrawing.ts` holds `TABLE_PLAN_DRAWING_WIDTH` (400 units, for the phone as
   well), `cornersOf` and `lowestEdgeOf`. `admin/core/tablePlanSnapping.ts` holds the snapping
   geometry adapted from Konva's Objects Snapping demo (`snapStopsBeside`, `snapDraggedBox`,
   `snapResizeCorner`, a grid of 10 units and a snap distance of 6), and
-  `admin/core/tablePlanPlacement.ts` where a new shape goes, the smallest size, the room below the
-  lowest shape and `fitsTheDrawing`.
+  `admin/core/tablePlanPlacement.ts` where a new shape goes, where a copied group is pasted, the
+  smallest size, the room below the lowest shape and `fitsTheDrawing`.
 - Colours: `shared/core/tablePlanColours.ts` builds the light and dark palette from tokens of
   `shared/theme.ts` through `shared/core/themeColours.ts`, and the drawing picks the one of the
   current theme with `shared/composables/useThemedValue.ts`, as the charts do. In the editor a table
@@ -207,7 +258,7 @@ Frontend, under `frontend/src/`:
   refetch on `GroupsJoined` reloads it.
 - Texts: `phone.tablePlan.*`.
 - Texts: `admin.tablePlan.*` (the dialog's `areaName`, `tableName`, `newArea`, `editArea`,
-  `newTable`, `editTable`, the hide questions `hideAreaTitle`, `hideTableTitle` with
+  `newTable`, `editTable`, `openPlan`, the menu's `copy`, `paste`, the hide questions `hideAreaTitle`, `hideTableTitle` with
   `hideAreaBody`, `hideTableBody`, the removal body `removeStationBody`, the warnings `noArea`,
   `allAreasHidden`, `allAreasHiddenAndNotListed`, `noTable`, `noStationsToPlace` and
   `festivalHasNoStations`), and the shared "Einblenden", "Ausgeblendet", "Ausgeblendete anzeigen"
@@ -248,6 +299,39 @@ Frontend, under `frontend/src/`:
   station or station shape in the route answers a bare 404; an area of another festival named in a
   body answers 400 with `RefusalMessageKeys.AdminActionFailed`, and so do a blank name and a missing
   geometry.
+- **A paste is one request and one transaction, and the laptop names every copy.** `POST
+  /tables/copy` carries the target area and, per copy, the source table id and the geometry it takes.
+  The laptop creates every copy in the target area of the same festival as new shown tables, keeps
+  size and rotation, and never copies a station. All of them are added and saved once, so a paste
+  lands whole or not at all, and the answer carries the new table ids. The frontend never computes
+  or proposes a copy name. The copies are new `Table` rows, so the one commit sends
+  `ConfigurationChanged` once and no service sends it. An unknown or foreign source table answers the existing `TableNotFound`;
+  an empty or duplicate source list is a broken-program guard that answers
+  `errors.admin.actionFailed` and names the exact reason in the developer message the screen never
+  sends.
+- **A copy's name counts up the source name's ending.** `TableCopyNaming` keeps the text before a
+  trailing ASCII digit run and that run's digit count, and counts the number up (`A1` to `A2`, `A09`
+  to `A10`, `A99` to `A100`); a source without a trailing digit gets ` 1`, then ` 2`, `...`
+  appended. It takes the first free name per festival, hidden tables included, ignoring case (at
+  least as strict as SQLite's `NOCASE`), never truncates or normalises the source name, and
+  processes one paste in ascending source name (`OrdinalIgnoreCase`, then id). A generated name
+  longer than the 40 characters the editor's name field allows refuses the whole paste as
+  `tableCopyNameTooLong` and creates nothing; the 40-character editor cap itself is unchanged and no
+  general backend or database name-length rule exists.
+- **The clipboard is in memory only.** `useAdminTablePlanStore` keeps the source festival id, the
+  source area id, and per table the source id and a geometry snapshot. It survives switching areas
+  inside one festival, clears when a different festival loads, and never touches local storage. A
+  copied station is nothing.
+- **A table move is one request and one transaction.** `POST /tables/move` carries only each table
+  id and the geometry it takes, never a name or an area. The laptop loads the tables tracked, applies
+  every geometry through `AreaShapeService` and saves once, so every table moves or none does; an
+  unknown or foreign table answers `TableNotFound`, and an empty or duplicate list is the
+  broken-program guard that names the exact reason. The table dialog keeps `PUT /tables/{tableId}`
+  for a name or area change. The dragged table
+  snaps against every shape outside the selection and the other selected tables follow by the same
+  delta. A single drag, a resize and a group drag each send one move request and cause one plan
+  reload. On a refusal every node goes back to its pre-drag geometry and the refusal shows, so a
+  half-moved group is never left looking saved.
 - **Copying a festival copies the areas that are not hidden**, with their tables that are not hidden
   (new ids, same names and geometry), and the shape of every station that sits in a copied area.
   Hidden areas and hidden tables stay behind with the old festival.
@@ -279,12 +363,14 @@ Frontend, under `frontend/src/`:
   height, and draws no hidden table. A new table and a new station both go below the lowest table
   of the area, hidden ones included, and below the station shapes, so neither takes the place of a
   hidden table, and showing a table again moves nothing. Nothing about the length is stored.
-- **Names are typed in a dialog and never filled in.** One dialog, `TablePlanNameDialog.vue`, asks
+- **Names of areas and tables are typed in a dialog and never guessed.** One dialog,
+  `TablePlanNameDialog.vue`, asks
   for the name of an area or a table, at most 40 characters (the laptop sets no limit; 40 follows
   the station dialog), and cannot be saved while it is blank; a refusal such as a taken name keeps the
-  dialog open with the reason. The order of the areas changes only through the arrows, each press
+  dialog open with the reason. The one name the laptop writes itself is a copy's, through
+  `TableCopyNaming`; the 40-character field cap stays as it is. The order of the areas changes only through the arrows, each press
   saved at once, and each press passes over the hidden areas the admin cannot see; a new area goes
-  last, numbered by the laptop. A move or a resize saves when it is dropped.
+  last, numbered by the laptop. A move, a resize and a group move save when they are dropped.
   Hiding and taking a station off the plan ask first, showing asks nothing, and hiding is disabled
   with the reason while the laptop would refuse it. A refusal that comes back anyway shows on its row,
   under the station field, or above the drawing for a move or a resize.
@@ -344,7 +430,14 @@ Frontend, under `frontend/src/`:
 - `GastronomyApp.Core.Tests/Services`: `AreaAdministrationServiceTest` (the number of a new area,
   an edit that keeps the place, the moves, past a hidden area or onto it), `SortOrderingTest` (a
   move past an entry that does not count),
-  `TableAdministrationServiceTest` (including the order-dependent hide rules),
+  `TableAdministrationServiceTest` (including the order-dependent hide rules, the copy of a
+  table selection: names, geometry, hidden-table name collisions, a missing or foreign source, a
+  target area outside the festival, the 40-character refusal and nothing created when it refuses,
+  and the batch move: several tables reshaped and saved once, a missing table, an empty list and a
+  duplicate list),
+  `TableCopyNamingTest` (every naming example, leading zeros, a name without a trailing digit,
+  collisions with shown and hidden names, ASCII case collisions, a paste of several tables in
+  deterministic order, a very long digit run),
   `ItemsToHandOutLookupTest` (the plan read counting the items left only while the festival runs,
   and the table and area checks running, over and not yet started),
   `FestivalStationShapeServiceTest`, `AreaShapeServiceTest`, the station shape cases of
@@ -359,7 +452,10 @@ Frontend, under `frontend/src/`:
   phone's read: hidden areas and tables left out, another festival's areas left out, the flags of
   each order's items, an order at two stations beside two station shapes in one area answered once
   each, and the whole read in one statement, counted by `TestSupport/QueryCounter`; the admin's read
-  with its flags per table and area, no flag when it is told not to count, also one statement); the plan
+  with its flags per table and area, no flag when it is told not to count, also one statement; the
+  copy reads `FindTableNamesAsync` with hidden names and no other festival's, and `FindTablesAsync`
+  with a shown and a hidden table of the festival and another festival's id left out, and as a
+  tracked read whose changed geometry is saved); the plan
   copy in
   `FestivalRepositoryTest`; `Persistence/ReleasedDatabaseUpgradeTest` (festival station rows survive
   the rebuild of their table, and old orders at two festivals end up at hidden tables of their own
@@ -369,19 +465,29 @@ Frontend, under `frontend/src/`:
   a hidden area while hidden areas are not shown and onto it while they are, an area of another
   festival not found) and the order-dependent refusals, with the plan read first and its flag checked
   against the hide answer for a table and an area while the festival runs, before it and after it;
+  the copy route (every copy and its ids, a second source missing creates none, the 40-character
+  refusal answers 409 and creates none, an area of another festival is refused generically, and the
+  empty and duplicate lists answer the generic key); the move route (several tables moved in one
+  request, a missing second table moves nothing, and the empty and duplicate lists answer the
+  generic key);
   `Endpoints/TablePlanEndpointsTest` for the phone's route (the shown
   plan, the two states on the wire including an order given away for zero, no running festival, a
   station tablet and an unknown device refused); the plan copy and the station removal in
   `AdminFestivalEndpointsTest`; one hub test per entity type in
-  `Announcers/ConfigurationChangedAnnouncementTest`. The seeded world (`ApiSeeder`) holds the table
+  `Announcers/ConfigurationChangedAnnouncementTest`, including one paste of two tables and one move
+  of two tables heard once.
+  The seeded world (`ApiSeeder`) holds the table
   "Tisch 12" in a hidden area; `OrderTestContext.SeedTableAsync` adds another by name.
-- `frontend/tests`: `admin/core/tablePlanSnapping.spec.ts`, `tablePlanPlacement.spec.ts`,
-  `tablePlanSelection.spec.ts`, `oneAtATime.spec.ts`; `shared/core/tablePlanDrawing.spec.ts`,
+- `frontend/tests`: `admin/core/tablePlanSnapping.spec.ts`, `tablePlanPlacement.spec.ts` (including
+  the paste placements: one grid step in the same area, unchanged coordinates in another, the menu
+  anchor, the fit-left rule and never a left edge below zero), `tablePlanSelection.spec.ts` (the
+  multi-table selection, the station, the toggle and the marquee intersection), `oneAtATime.spec.ts`;
+  `shared/core/tablePlanDrawing.spec.ts`,
   `tablePlanColours.spec.ts` and `themeColours.spec.ts`; the store in
   `admin/stores/tablePlan.loading.spec.ts` (the gate, `ConfigurationChanged`, `OrdersChanged`,
-  the refetch),
-  `tablePlan.areas.spec.ts` and `tablePlan.tables.spec.ts` on `tablePlanFixture.ts` (`loadedFestivalId`
-  in the loading spec); the card in `admin/components/festivals/FestivalPage.tablePlan.spec.ts` (the
+  the refetch), `tablePlan.areas.spec.ts` and `tablePlan.tables.spec.ts` on `tablePlanFixture.ts` (`loadedFestivalId`
+  in the loading spec, and one move request plus one reload in the tables spec), and `tablePlan.copying.spec.ts` (the in-memory clipboard and its scope, the
+  paste request, the menu placement, the refusal); the card in `admin/components/festivals/FestivalPage.tablePlan.spec.ts` (the
   rows, the count of shown tables, the box for hidden areas in the heading line, the order of a
   row's actions, the pencil and the open eye with their names, "Tischplan öffnen", the trash icon
   disabled with its reason, the warnings with the stock card's look, the tick sentence only while
@@ -400,7 +506,14 @@ Frontend, under `frontend/src/`:
   moves nothing), `.stations` (the rows on this plan, a row highlighted and scrolled to, a new
   station placed below a hidden table, the add line
   with the stations on no plan and its two sentences when it has none, the trash icon that asks
-  first, a station offered again once its shape is gone) and `.page.spec.ts` (the heading, the way back, an unknown
+  first, a station offered again once its shape is gone), `.selection.spec.ts` (Ctrl and Shift
+  clicks, the plain click, the marquee with its dashed box and translucent fill, a plain and a Ctrl
+  marquee, the short press that clears, the transformer only for one shape, a group drag sending one
+  snapped move request and causing one reload with the laptop's answer, and a refused group move
+  restoring both tables) and `.copying.spec.ts` (Ctrl+C and Ctrl+V, the context menu
+  on a table, an empty spot and a station, a selected table keeping the whole selection and copying
+  all of it, the browser menu suppressed only over the drawing, the
+  after-paste selection and scroll, the refusal) and `.page.spec.ts` (the heading, the way back, an unknown
   area or festival, a newer read overtaking the first) on `tablePlanEditorFixture.ts`; `shared/composables/useThemedValue.spec.ts`; the address in `shared/router/adminRoute.spec.ts` and
   `admin/views/AdminShell.spec.ts`. The how-to page `test-a-konva-drawing.md` describes the drawing
   helpers.

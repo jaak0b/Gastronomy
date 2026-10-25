@@ -5,32 +5,21 @@ import type { AdminAreaView, AdminTableView, SavedTableView } from '../../../sha
 import { assertNever } from '../../../shared/core/assertNever'
 import type { AdminActionResult } from '../../core/adminActionResult'
 import { NEW_TABLE_SIZE, geometryForANewShapeIn } from '../../core/tablePlanPlacement'
-import type { ShapeSelection } from '../../core/tablePlanSelection'
+import { selectionOfTables, type TablePlanSelection } from '../../core/tablePlanSelection'
 import type { EditSessionMode } from '../../composables/useEditSession'
 import { useAdminTablePlanStore } from '../../stores/tablePlan'
 import HideableEntryList from '../HideableEntryList.vue'
 import TablePlanNameDialog from './TablePlanNameDialog.vue'
 
 const props = defineProps<{ festivalId: string; area: AdminAreaView }>()
-const selectedShape = defineModel<ShapeSelection | null>('selectedShape', { required: true })
+const selection = defineModel<TablePlanSelection | null>('selection', { required: true })
 
 const { t } = useI18n()
 const tablePlan = useAdminTablePlanStore()
 
-const selectedTableId = computed<string | null>(() => {
-  const selection = selectedShape.value
-  if (selection === null) {
-    return null
-  }
-  switch (selection.kind) {
-    case 'table':
-      return selection.tableId
-    case 'station':
-      return null
-    default:
-      return assertNever(selection)
-  }
-})
+const selectedTableIds = computed<string[]>(() =>
+  selection.value?.kind === 'tables' ? [...selection.value.tableIds] : [],
+)
 
 async function saveTheTable(
   name: string,
@@ -50,7 +39,7 @@ async function saveTheTable(
 }
 
 function isSelected(table: AdminTableView): boolean {
-  return table.tableId === selectedTableId.value
+  return selectedTableIds.value.includes(table.tableId)
 }
 
 function hidingRefusalOf(table: AdminTableView): string | null {
@@ -63,7 +52,7 @@ function selectTheNewTable(saved: SavedTableView | null, mode: EditSessionMode):
   switch (mode) {
     case 'create':
       if (saved !== null) {
-        selectedShape.value = { kind: 'table', tableId: saved.tableId }
+        selection.value = selectionOfTables([saved.tableId])
       }
       return
     case 'edit':

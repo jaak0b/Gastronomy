@@ -53,6 +53,10 @@ public static class AdminFestivalEndpoints
 
     group.MapPost("/{festivalId:guid}/tables", async (Guid festivalId, SaveTableRequest request, AdminTableHandler handler, CancellationToken cancellationToken) => await handler.CreateAsync(festivalId, request, cancellationToken));
 
+    group.MapPost("/{festivalId:guid}/tables/copy", async (Guid festivalId, CopyTablesRequest request, AdminTableHandler handler, CancellationToken cancellationToken) => await handler.CopyAsync(festivalId, request, cancellationToken));
+
+    group.MapPost("/{festivalId:guid}/tables/move", async (Guid festivalId, MoveTablesRequest request, AdminTableHandler handler, CancellationToken cancellationToken) => await handler.MoveAsync(festivalId, request, cancellationToken));
+
     group.MapPut("/{festivalId:guid}/tables/{tableId:guid}", async (Guid festivalId, Guid tableId, SaveTableRequest request, AdminTableHandler handler, CancellationToken cancellationToken) => await handler.UpdateAsync(festivalId, tableId, request, cancellationToken));
 
     group.MapPost("/{festivalId:guid}/tables/{tableId:guid}/hide", async (Guid festivalId, Guid tableId, AdminTableHandler handler, CancellationToken cancellationToken) => await handler.HideAsync(festivalId, tableId, cancellationToken));

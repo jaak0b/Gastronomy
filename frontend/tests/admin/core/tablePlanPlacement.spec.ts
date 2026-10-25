@@ -6,6 +6,8 @@ import {
   editorDrawingLength,
   fitsTheDrawing,
   geometryForANewShapeIn,
+  pastedCopiesAt,
+  pastedCopiesBeside,
 } from '../../../src/admin/core/tablePlanPlacement'
 import { aGeometry, anAdminArea, anAdminStationShape, anAdminTable } from '../../support/wireViews'
 
@@ -97,5 +99,63 @@ describe('the length of the drawing in the editor', () => {
 
   it('fills the visible part of the screen when the shapes end higher up', () => {
     expect(editorDrawingLength([aGeometry({ y: 30, height: 40 })], 500)).toBe(500)
+  })
+})
+
+describe('where a copied table is pasted', () => {
+  const COPIES = [
+    { sourceTableId: 'table-a1', geometry: aGeometry({ x: 20, y: 30, width: 80, height: 40, rotation: 15 }) },
+    { sourceTableId: 'table-a2', geometry: aGeometry({ x: 150, y: 60, width: 80, height: 40 }) },
+  ]
+
+  it('moves one grid step right and down when it stays in the same area', () => {
+    expect(pastedCopiesBeside(COPIES, 'area-halle', 'area-halle')).toEqual([
+      { sourceTableId: 'table-a1', geometry: { x: 30, y: 40, width: 80, height: 40, rotation: 15 } },
+      { sourceTableId: 'table-a2', geometry: { x: 160, y: 70, width: 80, height: 40, rotation: 0 } },
+    ])
+  })
+
+  it('keeps the coordinates the originals have when it goes to another area', () => {
+    expect(pastedCopiesBeside(COPIES, 'area-halle', 'area-zelt')).toEqual(COPIES)
+  })
+
+  it('shifts the whole group left when it would cross the right edge', () => {
+    const nearTheEdge = [
+      { sourceTableId: 'table-a1', geometry: aGeometry({ x: 340, y: 30, width: 80, height: 40 }) },
+      { sourceTableId: 'table-a2', geometry: aGeometry({ x: 250, y: 90, width: 80, height: 40 }) },
+    ]
+
+    expect(pastedCopiesBeside(nearTheEdge, 'area-halle', 'area-zelt').map((copy) => copy.geometry)).toEqual([
+      { x: 320, y: 30, width: 80, height: 40, rotation: 0 },
+      { x: 230, y: 90, width: 80, height: 40, rotation: 0 },
+    ])
+  })
+
+  it('never shifts the left edge below zero', () => {
+    const widerThanTheDrawing = [
+      { sourceTableId: 'table-a1', geometry: aGeometry({ x: 0, y: 30, width: 300, height: 40 }) },
+      { sourceTableId: 'table-a2', geometry: aGeometry({ x: 250, y: 90, width: 300, height: 40 }) },
+    ]
+
+    expect(pastedCopiesBeside(widerThanTheDrawing, 'area-halle', 'area-zelt').map((copy) => copy.geometry.x)).toEqual([
+      0,
+      250,
+    ])
+  })
+
+  const FLAT_COPIES = [
+    { sourceTableId: 'table-a1', geometry: aGeometry({ x: 20, y: 30, width: 80, height: 40 }) },
+    { sourceTableId: 'table-a2', geometry: aGeometry({ x: 150, y: 60, width: 80, height: 40 }) },
+  ]
+
+  it('puts the top left of the group at the clicked point', () => {
+    expect(pastedCopiesAt(FLAT_COPIES, { x: 100, y: 200 })).toEqual([
+      { sourceTableId: 'table-a1', geometry: { x: 100, y: 200, width: 80, height: 40, rotation: 0 } },
+      { sourceTableId: 'table-a2', geometry: { x: 230, y: 230, width: 80, height: 40, rotation: 0 } },
+    ])
+  })
+
+  it('keeps the group inside the drawing width when it is put near the right edge', () => {
+    expect(pastedCopiesAt(FLAT_COPIES, { x: 390, y: 200 }).map((copy) => copy.geometry.x)).toEqual([190, 320])
   })
 })

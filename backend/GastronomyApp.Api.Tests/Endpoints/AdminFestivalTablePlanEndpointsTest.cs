@@ -649,6 +649,395 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
   }
 
+  [Test]
+  public async Task PostTablesCopy_TwoTablesOfTheFestival_CreatesBothWithTheNextFreeNamesAndAnswersTheirIds()
+  {
+    var gardenId = await CreateAreaAsync("Garten");
+    var hallId = await CreateAreaAsync("Halle");
+    var tableA1Id = await CreateTableAsync(gardenId, "A1");
+    var tableA2Id = await CreateTableAsync(gardenId, "A2");
+
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/tables/copy",
+                                                               new
+                                                               {
+                                                                 areaId = hallId,
+                                                                 tables = new[]
+                                                                          {
+                                                                            new
+                                                                            {
+                                                                              sourceTableId = tableA2Id,
+                                                                              geometry = new
+                                                                                         {
+                                                                                           x = 100.25,
+                                                                                           y = 200.5,
+                                                                                           width = 90.75,
+                                                                                           height = 45.25,
+                                                                                           rotation = -30.5
+                                                                                         }
+                                                                            },
+                                                                            new
+                                                                            {
+                                                                              sourceTableId = tableA1Id,
+                                                                              geometry = new
+                                                                                         {
+                                                                                           x = 10.125,
+                                                                                           y = 20.375,
+                                                                                           width = 80.5,
+                                                                                           height = 40.25,
+                                                                                           rotation = 15.75
+                                                                                         }
+                                                                            }
+                                                                          }
+                                                               });
+    var tableIds = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("tableIds").EnumerateArray().Select(id => id.GetGuid()).ToList();
+
+    await using var database = _context.Factory.CreateContext();
+    var copies = await database.Tables.Where(table => tableIds.Contains(table.Id)).OrderBy(table => table.Name).ToListAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+                      Assert.That(tableIds, Has.Count.EqualTo(2));
+                      Assert.That(copies.Select(table => table.Name),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "A3",
+                                               "A4"
+                                             }));
+                      Assert.That(copies.Select(table => table.AreaId), Is.All.EqualTo(hallId));
+                      Assert.That(copies.Select(table => table.FestivalId), Is.All.EqualTo(_context.World.FestivalId));
+                      Assert.That(copies.Select(table => table.IsHidden), Is.All.False);
+                      Assert.That(copies.Single(table => table.Name == "A3").X, Is.EqualTo(10.125));
+                      Assert.That(copies.Single(table => table.Name == "A3").Y, Is.EqualTo(20.375));
+                      Assert.That(copies.Single(table => table.Name == "A3").Width, Is.EqualTo(80.5));
+                      Assert.That(copies.Single(table => table.Name == "A3").Height, Is.EqualTo(40.25));
+                      Assert.That(copies.Single(table => table.Name == "A3").Rotation, Is.EqualTo(15.75));
+                      Assert.That(copies.Single(table => table.Name == "A4").X, Is.EqualTo(100.25));
+                      Assert.That(copies.Single(table => table.Name == "A4").Rotation, Is.EqualTo(-30.5));
+                    });
+  }
+
+  [Test]
+  public async Task PostTablesCopy_ASecondSourceTheFestivalDoesNotHave_CreatesNoTable()
+  {
+    var gardenId = await CreateAreaAsync("Garten");
+    var tableId = await CreateTableAsync(gardenId, "A1");
+
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/tables/copy",
+                                                               new
+                                                               {
+                                                                 areaId = gardenId,
+                                                                 tables = new[]
+                                                                          {
+                                                                            new
+                                                                            {
+                                                                              sourceTableId = tableId,
+                                                                              geometry = new
+                                                                                         {
+                                                                                           x = 50,
+                                                                                           y = 60,
+                                                                                           width = 80,
+                                                                                           height = 40,
+                                                                                           rotation = 0
+                                                                                         }
+                                                                            },
+                                                                            new
+                                                                            {
+                                                                              sourceTableId = Guid.NewGuid(),
+                                                                              geometry = new
+                                                                                         {
+                                                                                           x = 50,
+                                                                                           y = 120,
+                                                                                           width = 80,
+                                                                                           height = 40,
+                                                                                           rotation = 0
+                                                                                         }
+                                                                            }
+                                                                          }
+                                                               });
+
+    await using var database = _context.Factory.CreateContext();
+    var tableCount = await database.Tables.CountAsync(table => table.FestivalId == _context.World.FestivalId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+                      Assert.That(tableCount, Is.EqualTo(2));
+                    });
+  }
+
+  [Test]
+  public async Task PostTablesCopy_AGeneratedNameLongerThanFortyCharacters_IsRefusedAndCreatesNoTable()
+  {
+    var gardenId = await CreateAreaAsync("Garten");
+    var tableId = await CreateTableAsync(gardenId, new string('T', 40));
+
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/tables/copy",
+                                                               new
+                                                               {
+                                                                 areaId = gardenId,
+                                                                 tables = new[]
+                                                                          {
+                                                                            new
+                                                                            {
+                                                                              sourceTableId = tableId,
+                                                                              geometry = new
+                                                                                         {
+                                                                                           x = 50,
+                                                                                           y = 60,
+                                                                                           width = 80,
+                                                                                           height = 40,
+                                                                                           rotation = 0
+                                                                                         }
+                                                                            }
+                                                                          }
+                                                               });
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+    await using var database = _context.Factory.CreateContext();
+    var tableCount = await database.Tables.CountAsync(table => table.FestivalId == _context.World.FestivalId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+                      Assert.That(body.GetProperty("code").GetString(), Is.EqualTo("TableCopyNameTooLong"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.tableCopyNameTooLong"));
+                      Assert.That(tableCount, Is.EqualTo(2));
+                    });
+  }
+
+  [Test]
+  public async Task PostTablesCopy_AnAreaOfAnotherFestival_IsRefusedGenericallyAndCreatesNoTable()
+  {
+    var gardenId = await CreateAreaAsync("Garten");
+    var tableId = await CreateTableAsync(gardenId, "A1");
+    var strangerAreaId = await CreateAreaAtAnotherFestivalAsync();
+
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/tables/copy",
+                                                               new
+                                                               {
+                                                                 areaId = strangerAreaId,
+                                                                 tables = new[]
+                                                                          {
+                                                                            new
+                                                                            {
+                                                                              sourceTableId = tableId,
+                                                                              geometry = new
+                                                                                         {
+                                                                                           x = 50,
+                                                                                           y = 60,
+                                                                                           width = 80,
+                                                                                           height = 40,
+                                                                                           rotation = 0
+                                                                                         }
+                                                                            }
+                                                                          }
+                                                               });
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+    await using var database = _context.Factory.CreateContext();
+    var tableCount = await database.Tables.CountAsync(table => table.FestivalId == _context.World.FestivalId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(tableCount, Is.EqualTo(2));
+                    });
+  }
+
+  [Test]
+  public async Task PostTablesCopy_NoTable_IsRefusedGenerically()
+  {
+    var gardenId = await CreateAreaAsync("Garten");
+
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/tables/copy",
+                                                               new
+                                                               {
+                                                                 areaId = gardenId,
+                                                                 tables = Array.Empty<object>()
+                                                               });
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("parameters").TryGetProperty("member", out _), Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task PostTablesCopy_TheSameSourceTableTwice_IsRefusedGenericallyAndCreatesNoTable()
+  {
+    var gardenId = await CreateAreaAsync("Garten");
+    var tableId = await CreateTableAsync(gardenId, "A1");
+
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/tables/copy",
+                                                               new
+                                                               {
+                                                                 areaId = gardenId,
+                                                                 tables = new[]
+                                                                          {
+                                                                            BuildCopySource(tableId, 50, 60, 0),
+                                                                            BuildCopySource(tableId, 50, 120, 0)
+                                                                          }
+                                                               });
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+    await using var database = _context.Factory.CreateContext();
+    var tableCount = await database.Tables.CountAsync(table => table.FestivalId == _context.World.FestivalId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("parameters").TryGetProperty("member", out _), Is.False);
+                      Assert.That(tableCount, Is.EqualTo(2));
+                    });
+  }
+
+  [Test]
+  public async Task PostTablesMove_TwoTablesOfTheFestival_MovesBothAndAnswersNoContent()
+  {
+    var gardenId = await CreateAreaAsync("Garten");
+    var tableA1Id = await CreateTableAsync(gardenId, "A1");
+    var tableA2Id = await CreateTableAsync(gardenId, "A2");
+
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/tables/move",
+                                                               new
+                                                               {
+                                                                 tables = new[]
+                                                                          {
+                                                                            BuildMoveTable(tableA1Id, 110.125, 210.375, -30.5),
+                                                                            BuildMoveTable(tableA2Id, 120.25, 220.5, 45.75)
+                                                                          }
+                                                               });
+
+    await using var database = _context.Factory.CreateContext();
+    var tableA1 = await database.Tables.SingleAsync(table => table.Id == tableA1Id);
+    var tableA2 = await database.Tables.SingleAsync(table => table.Id == tableA2Id);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+                      Assert.That(tableA1.X, Is.EqualTo(110.125));
+                      Assert.That(tableA1.Y, Is.EqualTo(210.375));
+                      Assert.That(tableA1.Width, Is.EqualTo(80));
+                      Assert.That(tableA1.Height, Is.EqualTo(40));
+                      Assert.That(tableA1.Rotation, Is.EqualTo(-30.5));
+                      Assert.That(tableA1.Name, Is.EqualTo("A1"));
+                      Assert.That(tableA1.AreaId, Is.EqualTo(gardenId));
+                      Assert.That(tableA2.X, Is.EqualTo(120.25));
+                      Assert.That(tableA2.Y, Is.EqualTo(220.5));
+                      Assert.That(tableA2.Rotation, Is.EqualTo(45.75));
+                      Assert.That(tableA2.Name, Is.EqualTo("A2"));
+                    });
+  }
+
+  [Test]
+  public async Task PostTablesMove_ASecondTableTheFestivalDoesNotHave_IsNotFoundAndMovesNothing()
+  {
+    var gardenId = await CreateAreaAsync("Garten");
+    var tableId = await CreateTableAsync(gardenId, "A1");
+
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/tables/move",
+                                                               new
+                                                               {
+                                                                 tables = new[]
+                                                                          {
+                                                                            BuildMoveTable(tableId, 50, 60, 0),
+                                                                            BuildMoveTable(Guid.NewGuid(), 50, 120, 0)
+                                                                          }
+                                                               });
+
+    await using var database = _context.Factory.CreateContext();
+    var table = await database.Tables.SingleAsync(candidate => candidate.Id == tableId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+                      Assert.That(table.X, Is.EqualTo(12.5));
+                      Assert.That(table.Y, Is.EqualTo(-7.25));
+                    });
+  }
+
+  [Test]
+  public async Task PostTablesMove_NoTable_IsRefusedGenerically()
+  {
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/tables/move", new { tables = Array.Empty<object>() });
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("parameters").TryGetProperty("member", out _), Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task PostTablesMove_TheSameTableTwice_IsRefusedGenericallyAndMovesNothing()
+  {
+    var gardenId = await CreateAreaAsync("Garten");
+    var tableId = await CreateTableAsync(gardenId, "A1");
+
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/tables/move",
+                                                               new
+                                                               {
+                                                                 tables = new[]
+                                                                          {
+                                                                            BuildMoveTable(tableId, 50, 60, 0),
+                                                                            BuildMoveTable(tableId, 50, 120, 0)
+                                                                          }
+                                                               });
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+    await using var database = _context.Factory.CreateContext();
+    var table = await database.Tables.SingleAsync(candidate => candidate.Id == tableId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("parameters").TryGetProperty("member", out _), Is.False);
+                      Assert.That(table.X, Is.EqualTo(12.5));
+                      Assert.That(table.Y, Is.EqualTo(-7.25));
+                    });
+  }
+
+  private object BuildCopySource(Guid sourceTableId, double x, double y, double rotation)
+  {
+    return new
+           {
+             sourceTableId,
+             geometry = new
+                        {
+                          x,
+                          y,
+                          width = 80,
+                          height = 40,
+                          rotation
+                        }
+           };
+  }
+
+  private object BuildMoveTable(Guid tableId, double x, double y, double rotation)
+  {
+    return new
+           {
+             tableId,
+             geometry = new
+                        {
+                          x,
+                          y,
+                          width = 80,
+                          height = 40,
+                          rotation
+                        }
+           };
+  }
+
   private object BuildArea(string name)
   {
     return new { name };

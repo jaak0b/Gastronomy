@@ -96,6 +96,33 @@ describe('changing a table', () => {
   })
 })
 
+describe('moving tables together', () => {
+  it('sends one move request and reads the plan once', async () => {
+    const laptop = planLaptop(emptyAnswer(204))
+    const plan = await planOfTheFestival(laptop)
+
+    const moved = await plan.moveTables(FESTIVAL_ID, [
+      { tableId: 'table-a1', geometry: aGeometry({ x: 50, y: 60 }) },
+      { tableId: 'table-a2', geometry: aGeometry({ x: 50, y: 120 }) },
+    ])
+
+    expect(moved).toEqual({ kind: 'ok', value: null })
+    expect(laptop.calls).toEqual([
+      {
+        url: '/api/admin/festivals/fest-1/tables/move',
+        method: 'POST',
+        body: {
+          tables: [
+            { tableId: 'table-a1', geometry: { x: 50, y: 60, width: 80, height: 40, rotation: 0 } },
+            { tableId: 'table-a2', geometry: { x: 50, y: 120, width: 80, height: 40, rotation: 0 } },
+          ],
+        },
+      },
+      { url: PLAN_PATH, method: 'GET', body: undefined },
+    ])
+  })
+})
+
 describe('a station on the plan', () => {
   it('is put in an area with where it is drawn', async () => {
     const laptop = planLaptop(answer({ stationId: 'station-schank' }))

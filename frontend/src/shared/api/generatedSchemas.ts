@@ -94,6 +94,15 @@ export const RunningFestivalView = z.strictObject({ festivalId: z.string(), name
 export type CatalogView = __TypedOpenapi.Schemas.CatalogView;
 export const CatalogView = z.strictObject({ festival: RunningFestivalView.nullable(), categories: z.array(CatalogCategoryView), items: z.array(CatalogItemView), stations: z.array(CatalogStationView) });
 
+export type CopiedTablesView = __TypedOpenapi.Schemas.CopiedTablesView;
+export const CopiedTablesView = z.strictObject({ tableIds: z.array(z.string()) });
+
+export type CopyTableRequest = __TypedOpenapi.Schemas.CopyTableRequest;
+export const CopyTableRequest = z.strictObject({ sourceTableId: z.string(), geometry: AreaShapeGeometry.nullable() });
+
+export type CopyTablesRequest = __TypedOpenapi.Schemas.CopyTablesRequest;
+export const CopyTablesRequest = z.strictObject({ areaId: z.string(), tables: z.array(CopyTableRequest).nullable() });
+
 export type CreateInvitationRequest = __TypedOpenapi.Schemas.CreateInvitationRequest;
 export const CreateInvitationRequest = z.strictObject({ staffMemberId: z.string().nullable(), stationId: z.string().nullable() }).partial();
 
@@ -144,6 +153,12 @@ export const MoveAreaRequest = z.strictObject({ direction: MoveDirection, showsH
 
 export type MoveCategoryRequest = __TypedOpenapi.Schemas.MoveCategoryRequest;
 export const MoveCategoryRequest = z.strictObject({ direction: MoveDirection });
+
+export type MoveTableRequest = __TypedOpenapi.Schemas.MoveTableRequest;
+export const MoveTableRequest = z.strictObject({ tableId: z.string(), geometry: AreaShapeGeometry.nullable() });
+
+export type MoveTablesRequest = __TypedOpenapi.Schemas.MoveTablesRequest;
+export const MoveTablesRequest = z.strictObject({ tables: z.array(MoveTableRequest).nullable() });
 
 export type OrderDeliveryModeRequest = __TypedOpenapi.Schemas.OrderDeliveryModeRequest;
 export const OrderDeliveryModeRequest = z.strictObject({ stationId: z.string(), deliveryMode: DeliveryMode });

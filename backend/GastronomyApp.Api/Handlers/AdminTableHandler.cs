@@ -19,6 +19,16 @@ public sealed class AdminTableHandler
     return await _service.CreateAsync(festivalId, request, cancellationToken).Then(table => new SavedTableView(table.Id));
   }
 
+  public async Task<CreatedAnswer<CopiedTablesView>> CopyAsync(Guid festivalId, CopyTablesRequest request, CancellationToken cancellationToken)
+  {
+    return await _service.CopyAsync(festivalId, request, cancellationToken).Then(tables => new CopiedTablesView(tables.Select(table => table.Id).ToList()));
+  }
+
+  public async Task<NoContentAnswer> MoveAsync(Guid festivalId, MoveTablesRequest request, CancellationToken cancellationToken)
+  {
+    return await _service.MoveAsync(festivalId, request, cancellationToken).Then(_ => Result.Success);
+  }
+
   public async Task<ApiAnswer<SavedTableView>> UpdateAsync(Guid festivalId, Guid tableId, SaveTableRequest request, CancellationToken cancellationToken)
   {
     return await _service.UpdateAsync(festivalId, tableId, request, cancellationToken).Then(table => new SavedTableView(table.Id));

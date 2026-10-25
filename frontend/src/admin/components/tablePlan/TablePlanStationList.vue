@@ -9,7 +9,7 @@ import type {
 import { assertNever } from '../../../shared/core/assertNever'
 import type { AdminActionResult } from '../../core/adminActionResult'
 import { NEW_STATION_SIZE, geometryForANewShapeIn } from '../../core/tablePlanPlacement'
-import { shapeNodeIdOf, type ShapeSelection } from '../../core/tablePlanSelection'
+import type { TablePlanSelection } from '../../core/tablePlanSelection'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import { useAdminTablePlanStore } from '../../stores/tablePlan'
 import BaseSearchAddLine from '../BaseSearchAddLine.vue'
@@ -21,7 +21,7 @@ const props = defineProps<{
   stationsOnNoPlan: AdminStationView[]
   festivalHasStations: boolean
 }>()
-const selectedShape = defineModel<ShapeSelection | null>('selectedShape', { required: true })
+const selection = defineModel<TablePlanSelection | null>('selection', { required: true })
 
 const { t } = useI18n()
 const tablePlan = useAdminTablePlanStore()
@@ -29,9 +29,6 @@ const { refusal: placingRefusal, refusalText: placingRefusalText, showRefusalOf:
   useRefusalDisplay()
 const chosenStationId = ref<string | null>(null)
 
-const selectedNodeId = computed(() =>
-  selectedShape.value === null ? null : shapeNodeIdOf(selectedShape.value),
-)
 const noStationsToPlaceText = computed(() =>
   props.festivalHasStations
     ? t('admin.tablePlan.messages.noStationsToPlace')
@@ -39,7 +36,7 @@ const noStationsToPlaceText = computed(() =>
 )
 
 function isSelected(stationShape: AdminStationShapeView): boolean {
-  return shapeNodeIdOf({ kind: 'station', stationId: stationShape.stationId }) === selectedNodeId.value
+  return selection.value?.kind === 'station' && selection.value.stationId === stationShape.stationId
 }
 
 async function takeOffThePlan(stationShape: AdminStationShapeView): Promise<AdminActionResult<null>> {
@@ -59,7 +56,7 @@ async function place(): Promise<void> {
   switch (placed.kind) {
     case 'ok':
       chosenStationId.value = null
-      selectedShape.value = { kind: 'station', stationId }
+      selection.value = { kind: 'station', stationId }
       return
     case 'failed':
       showThePlacingRefusalOf(placed)

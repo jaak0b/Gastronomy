@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { navigate } from '../../../shared/router/router'
 import { combineReleases } from '../../../shared/core/combineReleases'
-import { isDrawnIn, type ShapeSelection } from '../../core/tablePlanSelection'
+import { isDrawnIn, type TablePlanSelection } from '../../core/tablePlanSelection'
 import { useOpenedFestival } from '../../composables/useOpenedFestival'
 import { useAdminFestivalsStore } from '../../stores/festivals'
 import { useAdminStationsStore } from '../../stores/stations'
@@ -18,7 +18,7 @@ const { t } = useI18n()
 const festivals = useAdminFestivalsStore()
 const stations = useAdminStationsStore()
 const tablePlan = useAdminTablePlanStore()
-const selectedShape = ref<ShapeSelection | null>(null)
+const selection = ref<TablePlanSelection | null>(null)
 let stopListening: (() => void) | null = null
 
 const { loadTheFestivalOrLeave } = useOpenedFestival(() => props.festivalId)
@@ -44,9 +44,9 @@ watch(
   { immediate: true },
 )
 
-watch([area, selectedShape], ([shownArea, shape]) => {
-  if (shape !== null && (shownArea === null || !isDrawnIn(shownArea, shape))) {
-    selectedShape.value = null
+watch([area, selection], ([shownArea, selected]) => {
+  if (selected !== null && (shownArea === null || !isDrawnIn(shownArea, selected))) {
+    selection.value = null
   }
 })
 
@@ -96,19 +96,19 @@ onUnmounted(() => {
 
       <div v-if="area !== null" class="editor-columns">
         <TablePlanDrawing
-          v-model:selected-shape="selectedShape"
+          v-model:selection="selection"
           class="drawing-column"
           :festival-id="festivalId"
           :area="area"
         />
         <div class="lists-column" data-test="lists-column">
           <TablePlanTableList
-            v-model:selected-shape="selectedShape"
+            v-model:selection="selection"
             :festival-id="festivalId"
             :area="area"
           />
           <TablePlanStationList
-            v-model:selected-shape="selectedShape"
+            v-model:selection="selection"
             class="mt-6"
             :festival-id="festivalId"
             :area="area"

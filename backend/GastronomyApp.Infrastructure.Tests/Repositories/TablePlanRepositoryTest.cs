@@ -492,6 +492,76 @@ public sealed class TablePlanRepositoryTest
                     });
   }
 
+  [Test]
+  public async Task FindTableNamesAsync_TablesShownAndHiddenAtTheFestival_AnswersEveryNameAndNoOtherFestivalsNames()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var gardenId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Garten", 1, false);
+    await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 1", false);
+    await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 2", true);
+    var otherFestivalId = await AddFestivalAsync(fixture.DbContext);
+    var otherAreaId = await AddAreaAsync(fixture.DbContext, otherFestivalId, "Wiese", 1, false);
+    await AddTableAsync(fixture.DbContext, otherFestivalId, otherAreaId, "Tisch 3", false);
+
+    IReadOnlyList<string> names = await new TablePlanRepository(fixture.DbContext).FindTableNamesAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(names,
+                Is.EquivalentTo(new[]
+                                {
+                                  "Tisch 1",
+                                  "Tisch 2"
+                                }));
+  }
+
+  [Test]
+  public async Task FindTablesAsync_TheRequestedTablesOfTheFestival_AnswersShownHiddenAndIgnoresAnotherFestival()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var gardenId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Garten", 1, false);
+    var shownId = await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 1", false);
+    var hiddenId = await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 2", true);
+    await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 3", false);
+    var otherFestivalId = await AddFestivalAsync(fixture.DbContext);
+    var otherAreaId = await AddAreaAsync(fixture.DbContext, otherFestivalId, "Wiese", 1, false);
+    var foreignId = await AddTableAsync(fixture.DbContext, otherFestivalId, otherAreaId, "Tisch 4", false);
+
+    IReadOnlyList<Table> tables = await new TablePlanRepository(fixture.DbContext).FindTablesAsync(seeded.FestivalId,
+                                                                                                   [
+                                                                                                     shownId,
+                                                                                                     hiddenId,
+                                                                                                     foreignId
+                                                                                                   ],
+                                                                                                   TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(tables.Select(table => table.Id),
+                Is.EquivalentTo(new[]
+                                {
+                                  shownId,
+                                  hiddenId
+                                }));
+  }
+
+  [Test]
+  public async Task FindTablesAsync_TablesItAnswers_StayTrackedSoAMoveIsSaved()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var gardenId = await AddAreaAsync(fixture.DbContext, seeded.FestivalId, "Garten", 1, false);
+    var tableId = await AddTableAsync(fixture.DbContext, seeded.FestivalId, gardenId, "Tisch 1", false);
+    TablePlanRepository repository = new(fixture.DbContext);
+    IReadOnlyList<Table> tables = await repository.FindTablesAsync(seeded.FestivalId, [tableId], TestContext.CurrentContext.CancellationToken);
+
+    tables.Single().X = 123.5;
+    await repository.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    await using var readContext = fixture.CreateContext();
+    var stored = await readContext.Tables.SingleAsync(table => table.Id == tableId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(stored.X, Is.EqualTo(123.5));
+  }
+
   private async Task<Guid> AddFestivalAsync(GastronomyAppDbContext dbContext)
   {
     var festivalId = Guid.NewGuid();

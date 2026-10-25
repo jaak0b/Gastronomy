@@ -31,6 +31,9 @@ export type CatalogItemView = { id: string, categoryId: string, name: string, pr
 export type CatalogStationView = { id: string, name: string, sortOrder: number }
 export type RunningFestivalView = { festivalId: string, name: string }
 export type CatalogView = { festival: (null | RunningFestivalView), categories: Array<CatalogCategoryView>, items: Array<CatalogItemView>, stations: Array<CatalogStationView> }
+export type CopiedTablesView = { tableIds: Array<string> }
+export type CopyTableRequest = { sourceTableId: string, geometry: (null | AreaShapeGeometry) }
+export type CopyTablesRequest = { areaId: string, tables: (null | Array<CopyTableRequest>) }
 export type CreateInvitationRequest = Partial<{ staffMemberId: (null | string), stationId: (null | string) }>
 export type DeliveryMode = ("together" | "asItComes")
 export type DeviceRevokedEvent = { deviceId: string }
@@ -48,6 +51,8 @@ export type LanguageView = { language: string }
 export type MoveDirection = ("up" | "down")
 export type MoveAreaRequest = { direction: MoveDirection, showsHiddenAreas: boolean }
 export type MoveCategoryRequest = { direction: MoveDirection }
+export type MoveTableRequest = { tableId: string, geometry: (null | AreaShapeGeometry) }
+export type MoveTablesRequest = { tables: (null | Array<MoveTableRequest>) }
 export type OrderDeliveryModeRequest = { stationId: string, deliveryMode: DeliveryMode }
 export type OrderItemRequest = { catalogItemId: string, unitPriceCents: number, note?: (null | string), stationId?: (null | string) }
 export type OrderStatus = ("open" | "partiallyFulfilled" | "fulfilled")
@@ -1003,6 +1008,38 @@ export type post__api_admin_festivals_FestivalId_tables = {
 },
       
     }
+export type post__api_admin_festivals_FestivalId_tables_copy = {
+      method: "POST",
+      path: "/api/admin/festivals/{festivalId}/tables/copy",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string },
+        
+        
+        body:  Schemas.CopyTablesRequest,
+          }
+      responses: {201: Schemas.CopiedTablesView,
+},
+      
+    }
+export type post__api_admin_festivals_FestivalId_tables_move = {
+      method: "POST",
+      path: "/api/admin/festivals/{festivalId}/tables/move",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string },
+        
+        
+        body:  Schemas.MoveTablesRequest,
+          }
+      responses: {204: unknown,
+},
+      
+    }
 export type put__api_admin_festivals_FestivalId_tables_TableId = {
       method: "PUT",
       path: "/api/admin/festivals/{festivalId}/tables/{tableId}",
@@ -1269,6 +1306,8 @@ export type post__api_admin_units_UnitId_deactivate = {
 "/api/admin/festivals/{festivalId}/areas/{areaId}/hide": Endpoints.post__api_admin_festivals_FestivalId_areas_AreaId_hide,
 "/api/admin/festivals/{festivalId}/areas/{areaId}/show": Endpoints.post__api_admin_festivals_FestivalId_areas_AreaId_show,
 "/api/admin/festivals/{festivalId}/tables": Endpoints.post__api_admin_festivals_FestivalId_tables,
+"/api/admin/festivals/{festivalId}/tables/copy": Endpoints.post__api_admin_festivals_FestivalId_tables_copy,
+"/api/admin/festivals/{festivalId}/tables/move": Endpoints.post__api_admin_festivals_FestivalId_tables_move,
 "/api/admin/festivals/{festivalId}/tables/{tableId}/hide": Endpoints.post__api_admin_festivals_FestivalId_tables_TableId_hide,
 "/api/admin/festivals/{festivalId}/tables/{tableId}/show": Endpoints.post__api_admin_festivals_FestivalId_tables_TableId_show,
 "/api/admin/ingredients": Endpoints.post__api_admin_ingredients,

@@ -27,6 +27,12 @@ export const TABLE_A1 = anAdminTable({
   geometry: aGeometry({ x: 20, y: 30, width: 80, height: 40 }),
 })
 
+export const TABLE_A2 = anAdminTable({
+  tableId: 'table-a2',
+  name: 'A2',
+  geometry: aGeometry({ x: 20, y: 100, width: 80, height: 40 }),
+})
+
 export const SCHANK_SHAPE = anAdminStationShape({
   stationId: 'station-schank',
   stationName: 'Schank',
@@ -37,6 +43,13 @@ export const HALL = anAdminArea({
   areaId: 'area-halle',
   name: 'Halle',
   tables: [TABLE_A1],
+  stationShapes: [SCHANK_SHAPE],
+})
+
+export const HALL_WITH_TWO_TABLES = anAdminArea({
+  areaId: 'area-halle',
+  name: 'Halle',
+  tables: [TABLE_A1, TABLE_A2],
   stationShapes: [SCHANK_SHAPE],
 })
 
@@ -53,7 +66,13 @@ export const SCHANK = anAdminStation({
 
 export const TABLE_A1_SHAPE_ID = 'table-table-a1'
 
+export const TABLE_A2_SHAPE_ID = 'table-table-a2'
+
 export const SCHANK_SHAPE_ID = 'station-station-schank'
+
+export const COPY_PATH = '/api/admin/festivals/fest-1/tables/copy'
+
+export const MOVE_PATH = '/api/admin/festivals/fest-1/tables/move'
 
 export const DRAWING = '[data-test="table-plan-drawing"]'
 

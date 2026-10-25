@@ -333,7 +333,9 @@
         "editArea": "Edit the table plan",
         "newTable": "New table",
         "editTable": "Edit the table",
-        "openPlan": "Open table plan"
+        "openPlan": "Open table plan",
+        "copy": "Copy",
+        "paste": "Paste"
       },
       "messages": {
         "noArea": "Waiters cannot see any table plan yet. Click \"New table plan\".",
@@ -495,6 +497,7 @@
         "runningFestivalStaysShown": "An active festival cannot be hidden.",
         "stationHasOrdersAtTheFestival": "A station with open orders cannot be removed from an active festival.",
         "tableNameTaken": "A table at this festival already has this name, whether it is shown or hidden. Choose a different name.",
+        "tableCopyNameTooLong": "The name of a copy would be longer than 40 characters. Shorten the table's name.",
         "tableWithItemsToHandOutOrSettleStaysShown": "A table cannot be hidden at an active festival until everything ordered there is prepared and settled."
       },
       "ingredients": {
