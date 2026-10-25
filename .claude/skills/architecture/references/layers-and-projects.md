@@ -98,8 +98,10 @@ how they are tested are on the `query-building-blocks` page.
 
 ## Switching a row on and off
 
-Turning a row back on is the same for every entity that carries the flag: find it, refuse when it
-does not exist, set the flag, save. That is written once, in `ActivationService` in `Core/Services`,
+Turning a row back on is the same for most entities that carry the flag: find it, refuse when it
+does not exist, set the flag, save. An entity whose activation has rules of its own (an article
+refuses while its category is switched off or its recipe holds a deactivated ingredient) keeps its
+activate in its area's service. The rule-free case is written once, in `ActivationService` in `Core/Services`,
 as one generic action over `IActivatable` (activate) and one over `IHideable` (show). Turning a row
 off is not shared: each entity refuses for its own reason (a unit an ingredient still uses, a station
 with items not yet handed out, an area with open items), so deactivate and hide stay actions of the

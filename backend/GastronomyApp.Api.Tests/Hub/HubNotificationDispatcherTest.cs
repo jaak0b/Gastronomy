@@ -28,7 +28,6 @@ public sealed class HubNotificationDispatcherTest
     IMappingRegistration[] registrations =
     [
       new AdminFestivalMapping(new()),
-      new AdminItemMapping(),
       new AdminStaffMembersMapping(),
       new AdminStationMapping(new()),
       new CatalogMapping(),

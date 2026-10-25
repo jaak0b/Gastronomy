@@ -43,7 +43,6 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton<IMappingRegistration, AdminFestivalMapping>();
     services.AddSingleton<IMappingRegistration, AdminTablePlanMapping>();
-    services.AddSingleton<IMappingRegistration, AdminItemMapping>();
     services.AddSingleton<IMappingRegistration, AdminStaffMembersMapping>();
     services.AddSingleton<IMappingRegistration, AdminStationMapping>();
     services.AddSingleton<IMappingRegistration, CatalogMapping>();
@@ -77,7 +76,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IOpenItemRepository, OpenItemRepository>();
     services.AddScoped<IDeviceRepository, DeviceRepository>();
     services.AddScoped<ICatalogItemRepository, CatalogItemRepository>();
-    services.AddScoped<ICatalogCategoryRepository, CatalogCategoryRepository>();
     services.AddScoped<ICatalogRepository, CatalogRepository>();
     services.AddScoped<IItemOrderabilityRepository, ItemOrderabilityRepository>();
     services.AddScoped<IStationRepository, StationRepository>();
@@ -89,7 +87,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<INumberAllocator, SequenceNumberAllocator>();
     services.AddScoped<IStationOrderRepository, StationOrderRepository>();
     services.AddScoped<IIngredientRepository, IngredientRepository>();
-    services.AddScoped<ICatalogItemIngredientRepository, CatalogItemIngredientRepository>();
     services.AddScoped<IIngredientStockRepository, IngredientStockRepository>();
 
     services.AddSingleton<OrderRoutingResolver>();
@@ -112,8 +109,8 @@ public sealed class ApiServiceRegistration
     services.AddScoped<ItemOrderability>();
     services.AddScoped<CatalogService>();
     services.AddScoped<SessionService>();
-    services.AddScoped<CatalogItemAdministrationService>();
     services.AddScoped<CatalogCategoryService>();
+    services.AddScoped<CatalogItemService>();
     services.AddScoped<DeviceOwnerRetirement>();
     services.AddScoped<FestivalAdministrationService>();
     services.AddScoped<FestivalMenuService>();
@@ -134,7 +131,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IngredientService>();
     services.AddScoped<ActivationService>();
     services.AddScoped<UnitService>();
-    services.AddScoped<CatalogItemRecipeService>();
     services.AddScoped<IngredientStockService>();
     services.AddScoped<StockSoldOutMarker>();
     services.AddSingleton<IngredientAmountComparison>();
@@ -173,8 +169,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<AdminAreaHandler>();
     services.AddScoped<AdminTableHandler>();
     services.AddScoped<AdminFestivalStationShapeHandler>();
-    services.AddScoped<AdminItemHandler>();
-    services.AddScoped<AdminItemRecipeHandler>();
     services.AddScoped<AdminFestivalStockHandler>();
     services.AddScoped<CatalogHandler>();
     services.AddScoped<AdminStaffMembersHandler>();

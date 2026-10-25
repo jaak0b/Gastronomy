@@ -27,7 +27,7 @@ Backend, under `backend/`:
   directly.
 - Wire records: `GastronomyApp.Contracts/Admin/Units` (`AdminUnitView`, `AdminUnitListView`,
   `SavedUnitView`, `SaveUnitRequest`). Mapping: `GastronomyApp.Core/Mapping/UnitMapping.cs`;
-  `Core/Mapping/IngredientMapping.cs` and `AdminItemMapping.cs` read the unit id and name from the
+  `Core/Mapping/IngredientMapping.cs` and `CatalogItemMapping.cs` read the unit id and name from the
   navigation.
 - Migration `20261025095050_AddUnits` seeds Stück, g, kg, ml and l with fixed ids and maps the old
   ingredient unit values 1, 2 and 3 to Stück, g and ml. The released-database upgrade test builds a
@@ -72,8 +72,7 @@ Frontend, under `frontend/src/`:
 
 - `GastronomyApp.Core.Tests/Services`: the ingredient tests that construct an ingredient with a unit.
 - `GastronomyApp.Infrastructure.Tests/Repositories`: `IngredientRepositoryTest`,
-  `IngredientStockRepositoryTest` (the unit navigation), `CatalogItemRepositoryTest` and
-  `CatalogItemIngredientRepositoryTest`.
+  `IngredientStockRepositoryTest` (the unit navigation) and `CatalogItemRepositoryTest`.
 - `GastronomyApp.Infrastructure.Tests/Queries`: `NamedQueriesTest` (the namesake check of units and
   ingredients, in SQL).
 - `GastronomyApp.Infrastructure.Tests/Services`: `UnitServiceTest` (every unit action on the real
@@ -87,8 +86,9 @@ Frontend, under `frontend/src/`:
   `AdminItemIngredientEndpointsTest` and `AdminFestivalIngredientEndpointsTest` cover the routes, the
   unit id and name on every view, the deactivation guard and an ingredient unit change that keeps
   the amounts.
-- `GastronomyApp.Api.Tests/Mapping`: `AdminItemMappingTest` covers the unit id and name of a recipe
-  line; `MappingConfigurationTest` covers the new mapping registration.
+- `GastronomyApp.Infrastructure.Tests/Services/CatalogItemServiceTest` covers the unit id and name of
+  a recipe line; `GastronomyApp.Api.Tests/Mapping/MappingConfigurationTest` covers the new mapping
+  registration.
 - `GastronomyApp.Api.Tests/Announcers`: `ConfigurationChangedAnnouncementTest` covers create, update,
   activate and deactivate on the units routes.
 - `frontend/tests`: `admin/stores/units.spec.ts`, `admin/components/units/` (`UnitsList.listing.spec.ts`,

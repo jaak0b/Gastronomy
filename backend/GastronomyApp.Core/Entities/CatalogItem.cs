@@ -4,7 +4,7 @@ using GastronomyApp.Core.Announcements;
 namespace GastronomyApp.Core.Entities;
 
 [Raises(HubEvent.ConfigurationChanged)]
-public sealed class CatalogItem : IActivatable
+public sealed class CatalogItem : INamed, IActivatable
 {
   public required Guid Id { get; set; }
 

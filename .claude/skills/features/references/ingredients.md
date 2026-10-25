@@ -24,26 +24,28 @@ Backend, under `backend/`:
   `GastronomyApp.Core/Mapping/IngredientMapping.cs`, and the deactivation check asks the same question
   of the recipe lines with `Active()` from `ActivatableQueries`.
 - `IIngredientRepository` and `IngredientRepository` stay only for `FestivalAdministrationService`
-  (all names) and `CatalogItemRecipeService` (one by id), which are not converted yet; they go with
-  those services.
-- `CatalogItemRecipeService` sets the amount of a line (`SetAmountAsync`, which adds the line when
-  there is none) and removes one (`RemoveAsync`).
-- `CatalogItemAdministrationService.ActivateAsync` is the check that keeps an article off while its
-  recipe holds a deactivated ingredient.
+  (all names), which is not converted yet; they go with that service.
+- `GastronomyApp.Core/Services/CatalogItemService.cs` is the service of the Artikel tab and holds the
+  recipe: `SetRecipeLineAsync` sets the amount of a line (and adds the line when there is none) and
+  `RemoveRecipeLineAsync` removes one. Its `ActivateAsync` is the check that keeps an article off
+  while its category is switched off or its recipe holds a deactivated ingredient (so it is not the
+  generic `ActivationService` action). `ListAsync(festivalId)` reads the articles with their recipe
+  lines, then the festival's menu rows as `ItemMenuEntry` (a second query, because a menu row with its
+  station list cannot be a subquery of the article on SQLite) and fills `AtTheFestival`.
 - Refusals: `GastronomyApp.Core/Refusals/Refusal.Ingredients.cs` and `Refusal.CatalogItem.cs`.
 - Routes: `GastronomyApp.Api/Endpoints/AdminIngredientEndpoints.cs` (`/api/admin/ingredients`: list,
   create, `PUT /{id}`, `POST /{id}/activate`, `POST /{id}/deactivate`), which call the services
   directly, and `PUT` and `DELETE
-  /api/admin/items/{itemId}/ingredients/{ingredientId}` in `AdminItemEndpoints.cs` with
-  `AdminItemRecipeHandler.cs` beside them.
+  /api/admin/items/{itemId}/ingredients/{ingredientId}` in `AdminItemEndpoints.cs`, which call
+  `CatalogItemService` directly.
 - Wire records: `GastronomyApp.Contracts/Admin/Ingredients` (`SaveIngredientRequest`,
   `AdminIngredientView`, `AdminIngredientListView`, `SavedIngredientView`) and `Admin/Catalog`
   (`SaveItemIngredientRequest`, `AdminItemIngredientView`, carried in `AdminItemView.Ingredients`
   ordered by ingredient name). A recipe line carries the ingredient's current name and its unit id
   and unit name beside its id and amount. Mapping:
   `GastronomyApp.Core/Mapping/IngredientMapping.cs` (the ingredient views and the festival stock
-  view) and `GastronomyApp.Api/Mapping/AdminItemMapping.cs`, which maps a
-  `CatalogItemIngredient` to its line. The queries behind those views include the unit navigation.
+  view) and `GastronomyApp.Core/Mapping/CatalogItemMapping.cs`, which maps a
+  `CatalogItemIngredient` to its line and orders the lines by ingredient name in SQL. The queries behind those views include the unit navigation.
 
 Frontend, under `frontend/src/`:
 
@@ -101,14 +103,12 @@ Frontend, under `frontend/src/`:
 
 - `GastronomyApp.Infrastructure.Tests/Services`: `IngredientServiceTest` and `ActivationServiceTest`,
   on the real DbContext with in-memory SQLite; `Queries/ActivatableQueriesTest`.
-- `GastronomyApp.Core.Tests/Services`: `CatalogItemRecipeServiceTest` and the recipe cases of
-  `CatalogItemAdministrationServiceTest`. The unit cases live in
+- `GastronomyApp.Infrastructure.Tests/Services/CatalogItemServiceTest`: the recipe cases and the
+  activation cases of an article, on the real DbContext. The unit cases live in
   `GastronomyApp.Infrastructure.Tests/Services/UnitServiceTest`.
-- `GastronomyApp.Infrastructure.Tests`: `Configurations/IngredientNameIndexTest`,
-  `Repositories/IngredientRepositoryTest` and `CatalogItemIngredientRepositoryTest` (the unique
-  indexes), and `UnitNameIndexTest`.
-- `GastronomyApp.Api.Tests/Mapping/AdminItemMappingTest`: the name, unit id and unit name of every
-  recipe line.
+- `GastronomyApp.Infrastructure.Tests`: `Configurations/IngredientNameIndexTest` and
+  `CatalogItemIngredientIndexTest` (the unique indexes), `Repositories/IngredientRepositoryTest` and
+  `UnitNameIndexTest`.
 - `GastronomyApp.Api.Tests/Endpoints`: `AdminIngredientEndpointsTest` and
   `AdminItemIngredientEndpointsTest` (including the name, unit id and unit name of every listed
   recipe line, the new name after a rename, and a unit change that keeps the amount); the

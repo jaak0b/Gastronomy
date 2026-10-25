@@ -18,9 +18,4 @@ public sealed class IngredientRepository : IIngredientRepository
   {
     return await _dbContext.Ingredients.AsNoTracking().OrderBy(ingredient => ingredient.Name).ToListAsync(cancellationToken);
   }
-
-  public async Task<Ingredient?> FindByIdAsync(Guid ingredientId, CancellationToken cancellationToken)
-  {
-    return await _dbContext.Ingredients.FirstOrDefaultAsync(ingredient => ingredient.Id == ingredientId, cancellationToken);
-  }
 }

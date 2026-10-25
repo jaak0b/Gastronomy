@@ -19,11 +19,6 @@ public sealed class CatalogItemRepository : ICatalogItemRepository
     return await _dbContext.CatalogItems.FirstOrDefaultAsync(item => item.Id == catalogItemId, cancellationToken);
   }
 
-  public async Task<CatalogItem?> FindWithRecipeAsync(Guid catalogItemId, CancellationToken cancellationToken)
-  {
-    return await _dbContext.CatalogItems.Include(item => item.Ingredients).ThenInclude(recipeLine => recipeLine.Ingredient).FirstOrDefaultAsync(item => item.Id == catalogItemId, cancellationToken);
-  }
-
   public async Task<IReadOnlyList<CatalogItem>> FindByIdsAsync(IReadOnlyCollection<Guid> catalogItemIds, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(catalogItemIds);
@@ -31,21 +26,6 @@ public sealed class CatalogItemRepository : ICatalogItemRepository
     List<Guid> requestedIds = catalogItemIds.ToList();
 
     return await _dbContext.CatalogItems.AsNoTracking().Where(item => requestedIds.Contains(item.Id)).ToListAsync(cancellationToken);
-  }
-
-  public async Task<IReadOnlyList<CatalogItem>> FindAllOrderedAsync(Guid? festivalId, CancellationToken cancellationToken)
-  {
-    if (festivalId is not { } menuFestivalId)
-      return await _dbContext.CatalogItems.AsNoTracking().OrderBy(item => item.SortOrder).Include(item => item.Ingredients).ThenInclude(recipeLine => recipeLine.Ingredient).ThenInclude(ingredient => ingredient.Unit).ToListAsync(cancellationToken);
-
-    return await _dbContext.CatalogItems.AsNoTracking()
-                           .OrderBy(item => item.SortOrder)
-                           .Include(item => item.FestivalCatalogItems.Where(menuRow => menuRow.FestivalId == menuFestivalId))
-                           .Include(item => item.StationAssignments.Where(assignment => assignment.FestivalId == menuFestivalId))
-                           .Include(item => item.Ingredients)
-                           .ThenInclude(recipeLine => recipeLine.Ingredient)
-                           .ThenInclude(ingredient => ingredient.Unit)
-                           .ToListAsync(cancellationToken);
   }
 
   public async Task<IReadOnlyCollection<ItemStationAssignment>> FindAssignmentsAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
@@ -70,25 +50,5 @@ public sealed class CatalogItemRepository : ICatalogItemRepository
   public async Task<FestivalCatalogItem?> FindMenuRowAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
   {
     return await _dbContext.FestivalCatalogItems.FirstOrDefaultAsync(menuRow => menuRow.FestivalId == festivalId && menuRow.CatalogItemId == catalogItemId, cancellationToken);
-  }
-
-  public async Task<bool> IsNameTakenAsync(string name, Guid? itemBeingSaved, CancellationToken cancellationToken)
-  {
-    IQueryable<CatalogItem> candidates = _dbContext.CatalogItems.AsNoTracking().Where(item => item.Name == name);
-
-    if (itemBeingSaved is { } savedItemId)
-      candidates = candidates.Where(item => item.Id != savedItemId);
-
-    return await candidates.AnyAsync(cancellationToken);
-  }
-
-  public async Task AddAsync(CatalogItem item, CancellationToken cancellationToken)
-  {
-    await _dbContext.CatalogItems.AddAsync(item, cancellationToken);
-  }
-
-  public async Task SaveChangesAsync(CancellationToken cancellationToken)
-  {
-    await _dbContext.SaveChangesAsync(cancellationToken);
   }
 }

@@ -15,7 +15,6 @@ public sealed class OpenItemMappingTest
     IMappingRegistration[] registrations =
     [
       new AdminFestivalMapping(new()),
-      new AdminItemMapping(),
       new AdminStaffMembersMapping(),
       new AdminStationMapping(new()),
       new CatalogMapping(),
