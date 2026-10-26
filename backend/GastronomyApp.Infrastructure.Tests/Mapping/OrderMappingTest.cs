@@ -1,10 +1,10 @@
-using GastronomyApp.Api.Mapping;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
-using MapsterMapper;
+using GastronomyApp.Infrastructure.Tests.TestSupport;
+using Mapster;
 
-namespace GastronomyApp.Api.Tests.Mapping;
+namespace GastronomyApp.Infrastructure.Tests.Mapping;
 
 [TestFixture]
 public sealed class OrderMappingTest
@@ -12,29 +12,21 @@ public sealed class OrderMappingTest
   [SetUp]
   public void SetUp()
   {
-    IMappingRegistration[] registrations =
-    [
-      new OpenItemMapping(),
-      new OrderMapping(new()),
-      new SettlementMapping(),
-      new StationQueueMapping(new())
-    ];
-
-    _mapper = new Mapper(new MappingConfiguration(registrations).Build());
+    _mapping = new CoreMappingFactory().Create();
   }
 
   private readonly DateTime _placedAtUtc = new(2026, 9, 5, 19, 5, 0, DateTimeKind.Utc);
   private readonly Guid _kitchenId = Guid.Parse("cccccccc-0000-0000-0000-000000000001");
   private readonly Guid _barId = Guid.Parse("cccccccc-0000-0000-0000-000000000002");
 
-  private IMapper _mapper = null!;
+  private TypeAdapterConfig _mapping = null!;
 
   [Test]
   public void Map_AnOrderNoStationHasHandedOutYet_IsOpenAndCarriesTheTotalThePhoneDisplayed()
   {
     var order = OrderAtOneStation(350, 400);
 
-    var view = _mapper.Map<PlacedOrderView>(order);
+    var view = order.Adapt<PlacedOrderView>(_mapping);
 
     Assert.Multiple(() =>
                     {
@@ -52,7 +44,7 @@ public sealed class OrderMappingTest
     var order = OrderAtOneStation(350, 400);
     order.StationOrders[0].Items[0].FulfilledAtUtc = _placedAtUtc.AddMinutes(4);
 
-    Assert.That(_mapper.Map<PlacedOrderView>(order).Status, Is.EqualTo(OrderStatus.PartiallyFulfilled));
+    Assert.That(order.Adapt<PlacedOrderView>(_mapping).Status, Is.EqualTo(OrderStatus.PartiallyFulfilled));
   }
 
   [Test]
@@ -63,7 +55,7 @@ public sealed class OrderMappingTest
     order.StationOrders.Add(StationOrderAt(order.Id, _barId, "Theke", 2, 400));
     order.StationOrders.Add(StationOrderAt(order.Id, _kitchenId, "Kueche", 1, 350));
 
-    var view = _mapper.Map<PlacedOrderView>(order);
+    var view = order.Adapt<PlacedOrderView>(_mapping);
 
     Assert.Multiple(() =>
                     {
@@ -91,7 +83,7 @@ public sealed class OrderMappingTest
     stationOrder.Items.Add(kasekrainerWithoutKetchup);
     stationOrder.Items.Add(plainKasekrainer);
 
-    var view = _mapper.Map<PlacedOrderView>(order);
+    var view = order.Adapt<PlacedOrderView>(_mapping);
 
     Assert.That(view.StationOrders[0].ItemIds,
                 Is.EqualTo(new[]
@@ -121,7 +113,7 @@ public sealed class OrderMappingTest
     order.StationOrders.Add(StationOrderAt(order.Id, Guid.NewGuid(), "grill", 1, 400));
     order.StationOrders.Add(StationOrderAt(order.Id, Guid.NewGuid(), "Bar", 1, 400));
 
-    var view = _mapper.Map<PlacedOrderView>(order);
+    var view = order.Adapt<PlacedOrderView>(_mapping);
 
     Assert.Multiple(() =>
                     {

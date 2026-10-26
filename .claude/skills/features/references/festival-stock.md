@@ -16,7 +16,9 @@ Backend, under `backend/`:
   (`Core/Mapping/IngredientMapping.cs` fills the computed members with empty values), reads the
   consumption per ingredient and order time in one grouped query, and sets the computed members with
   `with` from `StockForecast`. `SetAvailableAmountAsync` stores an amount and then runs
-  `StockSoldOutMarker`, which `OrderAcceptanceService` also runs after every order.
+  `StockSoldOutMarker`, which `OrderPlacementService` also runs after every order. The marker reads
+  the limited stock, the consumption (`OrderItemQueries.ConsumedIngredients`) and the available menu
+  rows with their recipes through `IGastronomyDatabase`.
 - `Services/StockForecast.cs` holds the pure facts, computed on every read: `UsageOf` (the series of
   `IngredientUsagePoint`), `RunsOutAtUtcSinceStart`, `RunsOutAtUtcFromLastTwoHours` (both through
   `RunsOutAtUtcAtTheMeasuredRate`), `RunsOutSoonAtUtc` and `StockWarningOf`. It reads no database, which
@@ -26,11 +28,7 @@ Backend, under `backend/`:
 - `Queries/OrderItemQueries.ConsumedIngredients` is the one join of order items and recipe lines (one
   `Results/ConsumedIngredient` per recipe line of an ordered item, with the order time). Both callers
   narrow the items with `OrderItemQueries.WhereFestivalIs` first. The list groups it per ingredient and order
-  time; the sold-out marker's `SumConsumedAmountsAsync` groups it per ingredient.
-- `Ports/IIngredientStockRepository.cs` with `Infrastructure/Repositories/IngredientStockRepository.cs`
-  is what is left of the old repository, for `StockSoldOutMarker` only: it is shared with the
-  unconverted `OrderAcceptanceService`, whose Core test fakes the port. It goes when the orders area is
-  converted and the marker reads through `IGastronomyDatabase`.
+  time; the sold-out marker groups it per ingredient.
 - Routes: `GET /api/admin/festivals/{festivalId}/ingredients` and `PUT .../ingredients/{ingredientId}`
   in `Endpoints/AdminFestivalEndpoints.cs`, calling `FestivalStockService` directly.
 - Wire records: `GastronomyApp.Contracts/Admin/Ingredients` (`AdminFestivalIngredientListView`,
@@ -118,13 +116,13 @@ Frontend, under `frontend/src/`:
 
 - `GastronomyApp.Core.Tests/Services`: `StockForecastTest` (usage with both clamps and the
   shared points, both forecasts, the window and its start, a moment beyond the last date, fractional
-  portions, the warning bounds), `StockSoldOutMarkerTest` (fractional portions too) and
-  `IngredientAmountComparisonTest`.
+  portions, the warning bounds) and `IngredientAmountComparisonTest`.
 - `GastronomyApp.Infrastructure.Tests`: `Services/FestivalStockServiceTest` (the list on the real
   DbContext: usage, both forecasts and the warning from stored orders, the ingredients the menu uses
   by name with their unit, orders of another festival, the amount refusals and the sold-out switch),
-  `Repositories/IngredientStockRepositoryTest` (the marker's reads) and `Queries/OrderItemQueriesTest`
-  (`ConsumedIngredients`).
+  `Services/StockSoldOutMarkerTest` (the marker on stored orders: one portion left, fractional portions,
+  overspent stock, one of two ingredients short, unlimited and switched off ingredients, an article
+  switched off by hand, another festival) and `Queries/OrderItemQueriesTest` (`ConsumedIngredients`).
 - `GastronomyApp.Api.Tests/Endpoints`: `AdminFestivalIngredientEndpointsTest` (the wire shape, the
   `unitId` and `unitName` of every row, the `stockWarning` values, an absurd amount that still
   answers the list, and a renamed unit that appears in the next read).

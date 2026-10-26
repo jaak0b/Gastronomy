@@ -1,7 +1,8 @@
-﻿using GastronomyApp.Api.Auth.Conventions;
-using GastronomyApp.Api.Handlers;
+using GastronomyApp.Api.Auth.Conventions;
+using GastronomyApp.Api.Answers;
 using GastronomyApp.Api.Values;
 using GastronomyApp.Contracts.Orders;
+using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 
@@ -13,7 +14,7 @@ public static class OrderEndpoints
   {
     var group = routes.MapGroup("/api/orders").RequireAuthorization().RequireStaffDevice().RequireRateLimiting(Names.RateLimitPolicies.PerDevice);
 
-    group.MapPost(string.Empty, async (PlaceOrderRequest request, StaffDeviceCaller caller, OrderPlacementHandler handler, CancellationToken cancellationToken) => await handler.PlaceAsync(request, caller, cancellationToken));
+    group.MapPost(string.Empty, async Task<CreatedAnswer<PlacedOrderView>> (PlaceOrderRequest request, StaffDeviceCaller caller, OrderPlacementService service, CancellationToken cancellationToken) => await service.PlaceAsync(request, caller.StaffMemberId, cancellationToken));
 
     return routes;
   }

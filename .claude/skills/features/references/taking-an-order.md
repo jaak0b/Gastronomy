@@ -66,11 +66,19 @@ Frontend, under `frontend/src/phone/`:
 
 Backend, under `backend/`:
 
-- `POST /api/orders` (`GastronomyApp.Api/Endpoints/OrderEndpoints.cs`, `OrderPlacementHandler`)
-  takes `PlaceOrderRequest` (`GastronomyApp.Contracts/Orders`): the client order id, the `TableId`
-  of a table of the plan, the items and the delivery modes.
-- `GastronomyApp.Core/Services/OrderAcceptanceService.cs` accepts it; refusals are in
-  `Core/Refusals/Refusal.Order.cs`.
+- `POST /api/orders` (`GastronomyApp.Api/Endpoints/OrderEndpoints.cs`, calling `OrderPlacementService`
+  directly) takes `PlaceOrderRequest` (`GastronomyApp.Contracts/Orders`): the client order id, the
+  `TableId` of a table of the plan, the items and the delivery modes, and answers `PlacedOrderView`.
+- `GastronomyApp.Core/Services/OrderPlacementService.cs` is the area service for placing an order
+  (`PlaceAsync`). It looks the client order id up first (a retry returns the stored order), then the
+  running festival (`RunningFestivalLookup`) and the table, then routes every line in the order sent
+  with four batched reads (articles, menu rows, assignments, active stations) and
+  `OrderRoutingResolver`, and collects every refused line. Only then does it number the order
+  (`SequenceNumberAllocator`: the global order number from the festival, the station number from the
+  festival's station link, each saved at once inside the request's transaction), add it, run
+  `StockSoldOutMarker` and read the order back for the answer. The answer is mapped by
+  `Core/Mapping/OrderMapping.cs`, which takes the status and total from `OrderService`. Refusals are
+  in `Core/Refusals/Refusal.Order.cs`.
 
 ## Invariants
 
@@ -165,8 +173,11 @@ Backend, under `backend/`:
   `orderFestivalScope.spec.ts`; `frontend/tests/phone/composables/useStationChoiceQuotes.spec.ts` and
   `useSendAndLeave.spec.ts`. `tests/support/waiterPhone.ts` (`theWaiterTakesTheOrderAt`) gives a
   store spec an order at a table.
-- Backend: `GastronomyApp.Core.Tests/Services/OrderAcceptanceServiceTest.cs`,
-  `GastronomyApp.Infrastructure.Tests/Services/OrderAcceptanceServiceTest.cs`,
+- Backend: `GastronomyApp.Infrastructure.Tests/Services/OrderPlacementServiceTest.cs` (on the real
+  DbContext: storing, numbering, routing, delivery modes, a retried client order id, every refusal and
+  the sold-out marker), `SequenceNumberAllocatorTest`, `StockSoldOutMarkerTest`,
+  `Mapping/OrderMappingTest`, `GastronomyApp.Core.Tests/Services/OrderRoutingResolverTest`,
+  `GastronomyApp.Api.Tests/Endpoints/ConcurrentOrderTest`,
   `GastronomyApp.Api.Tests/Endpoints/OrderEndpointsTest.cs` (a table of the running festival, a
   hidden one, one of another festival), `OrderIdempotencyTest.cs` and `OrderRefusalLoggingTest.cs`.
 - jsdom has no layout and does not apply scoped styles, so no spec proves where the row's parts

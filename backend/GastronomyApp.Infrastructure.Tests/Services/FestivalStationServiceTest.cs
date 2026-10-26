@@ -1,9 +1,9 @@
+using GastronomyApp.Contracts.Enums;
 using ErrorOr;
 using FakeItEasy;
 using GastronomyApp.Contracts.Admin.Festivals;
 using GastronomyApp.Contracts.Admin.Stations;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Repositories;
@@ -22,13 +22,11 @@ public sealed class FestivalStationServiceTest
     _fixture = new();
     _seeded = await new DomainSeeder().SeedAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     _clock = new(new(_now));
-    _numberAllocator = A.Fake<INumberAllocator>();
-    A.CallTo(() => _numberAllocator.FindNextStationOrderNumberAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(7);
     await MoveTheFestivalAsync(_now.AddHours(-5), _now.AddHours(5));
     _gardenId = await _plan.AddAreaAsync(_fixture.DbContext, _seeded.FestivalId, "Garten", 1, false);
     FestivalRepository festivalRepository = new(_fixture.DbContext, new());
     RunningFestivalLookup runningFestival = new(festivalRepository, new(), _clock);
-    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(_fixture.DbContext, _clock), _numberAllocator, new(new StationRepository(_fixture.DbContext), runningFestival), new());
+    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(_fixture.DbContext, _clock), new(_fixture.DbContext), new(new StationRepository(_fixture.DbContext), runningFestival), new());
   }
 
   [TearDown]
@@ -43,7 +41,6 @@ public sealed class FestivalStationServiceTest
   private FakeTimeProvider _clock = null!;
   private SqliteInMemoryFixture _fixture = null!;
   private Guid _gardenId;
-  private INumberAllocator _numberAllocator = null!;
   private SeededDomain _seeded = null!;
   private FestivalStationService _service = null!;
 
@@ -91,6 +88,7 @@ public sealed class FestivalStationServiceTest
   public async Task AddAsync_AStationComingBackToTheFestival_ContinuesTheNumberingWhereItStopped()
   {
     var tentId = await AddStationAsync("Zelt");
+    await AddStationOrderAsync(tentId, 6);
 
     ErrorOr<SavedStationView> added = await _service.AddAsync(_seeded.FestivalId, tentId, TestContext.CurrentContext.CancellationToken);
 
@@ -376,6 +374,33 @@ public sealed class FestivalStationServiceTest
   {
     var tableId = await _plan.AddTableAsync(_fixture.DbContext, _seeded.FestivalId, _gardenId, "Tisch 1", false);
     await _plan.AddOrderAsync(_fixture.DbContext, _seeded, tableId, 1, null, null);
+  }
+
+  private async Task AddStationOrderAsync(Guid stationId, int stationOrderNumber)
+  {
+    var orderId = Guid.NewGuid();
+    var tableId = await new DomainSeeder().SeedTableAsync(_fixture.DbContext, _seeded.FestivalId, $"Tisch {stationOrderNumber}", TestContext.CurrentContext.CancellationToken);
+
+    _fixture.DbContext.Orders.Add(new()
+                                  {
+                                    Id = orderId,
+                                    ClientOrderId = Guid.NewGuid(),
+                                    FestivalId = _seeded.FestivalId,
+                                    GlobalOrderNumber = stationOrderNumber,
+                                    StaffMemberId = _seeded.StaffMemberId,
+                                    TableId = tableId,
+                                    CreatedAtUtc = _now
+                                  });
+    _fixture.DbContext.StationOrders.Add(new()
+                                         {
+                                           Id = Guid.NewGuid(),
+                                           OrderId = orderId,
+                                           FestivalId = _seeded.FestivalId,
+                                           StationId = stationId,
+                                           StationOrderNumber = stationOrderNumber,
+                                           DeliveryMode = DeliveryMode.Together
+                                         });
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
 
   private async Task<Guid> AddStationAsync(string name)

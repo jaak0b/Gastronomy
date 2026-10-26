@@ -4,7 +4,6 @@ using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -25,7 +24,7 @@ public sealed class FestivalStockServiceTest
     _tableId = await new DomainSeeder().SeedTableAsync(_fixture.DbContext, _seeded.FestivalId, "Tisch 3", TestContext.CurrentContext.CancellationToken);
     _mustard = await AddIngredientAsync("Senf", true, _seeded.FestivalId, null);
     await AddRecipeLineAsync(_seeded.SausageItemId, _mustard.Id, 100);
-    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(new(), new()), new(new IngredientStockRepository(_fixture.DbContext), new(), NullLogger<StockSoldOutMarker>.Instance), _clock);
+    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(new(), new()), new(_fixture.DbContext, new(), NullLogger<StockSoldOutMarker>.Instance), _clock);
   }
 
   [TearDown]

@@ -44,7 +44,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton(TimeProvider.System);
 
     services.AddSingleton<IMappingRegistration, OpenItemMapping>();
-    services.AddSingleton<IMappingRegistration, OrderMapping>();
     services.AddSingleton<IMappingRegistration, SettlementMapping>();
     services.AddSingleton<IMappingRegistration, StationQueueMapping>();
 
@@ -67,16 +66,11 @@ public sealed class ApiServiceRegistration
     services.AddScoped<AfterCommitActions>();
     services.AddScoped<IAfterCommitActions>(provider => provider.GetRequiredService<AfterCommitActions>());
 
-    services.AddScoped<IOrderRepository, OrderRepository>();
     services.AddScoped<IOpenItemRepository, OpenItemRepository>();
-    services.AddScoped<ICatalogItemRepository, CatalogItemRepository>();
     services.AddScoped<IStationRepository, StationRepository>();
     services.AddScoped<IFestivalRepository, FestivalRepository>();
     services.AddScoped<IFestivalStationRepository, FestivalStationRepository>();
-    services.AddScoped<ITablePlanRepository, TablePlanRepository>();
-    services.AddScoped<INumberAllocator, SequenceNumberAllocator>();
     services.AddScoped<IStationOrderRepository, StationOrderRepository>();
-    services.AddScoped<IIngredientStockRepository, IngredientStockRepository>();
 
     services.AddSingleton<OrderRoutingResolver>();
     services.AddSingleton<OrderService>();
@@ -88,11 +82,11 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<TableCopyNaming>();
     services.AddSingleton<OrderItemFulfillmentService>();
 
-    services.AddScoped<OrderItemResolutionService>();
     services.AddScoped<OrderItemSettlementService>();
     services.AddScoped<OpenItemsService>();
     services.AddScoped<TablePlanService>();
-    services.AddScoped<OrderAcceptanceService>();
+    services.AddScoped<OrderPlacementService>();
+    services.AddScoped<SequenceNumberAllocator>();
     services.AddScoped<ItemOrderability>();
     services.AddScoped<CatalogService>();
     services.AddScoped<CatalogCategoryService>();
@@ -136,7 +130,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<LoopbackAdminAuthorizationMiddleware>();
     services.AddScoped<InfrastructureExceptionMiddleware>();
 
-    services.AddScoped<OrderPlacementHandler>();
     services.AddScoped<OpenItemQueryHandler>();
     services.AddScoped<OrderItemSettlementHandler>();
     services.AddSingleton<OutstandingInvitationCache>();

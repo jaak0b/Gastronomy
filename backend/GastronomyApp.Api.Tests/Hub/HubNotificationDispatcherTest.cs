@@ -28,7 +28,6 @@ public sealed class HubNotificationDispatcherTest
     IMappingRegistration[] registrations =
     [
       new OpenItemMapping(),
-      new OrderMapping(new()),
       new SettlementMapping(),
       new StationQueueMapping(new())
     ];

@@ -15,10 +15,10 @@ public sealed class FestivalStationService
   private readonly IGastronomyDatabase _database;
   private readonly ItemsToHandOutLookup _itemsToHandOut;
   private readonly TypeAdapterConfig _mapping;
-  private readonly INumberAllocator _numberAllocator;
+  private readonly SequenceNumberAllocator _numberAllocator;
   private readonly ItemOrderability _orderability;
 
-  public FestivalStationService(IGastronomyDatabase database, TypeAdapterConfig mapping, ItemOrderability orderability, INumberAllocator numberAllocator, ItemsToHandOutLookup itemsToHandOut, AreaShapeService areaShapeService)
+  public FestivalStationService(IGastronomyDatabase database, TypeAdapterConfig mapping, ItemOrderability orderability, SequenceNumberAllocator numberAllocator, ItemsToHandOutLookup itemsToHandOut, AreaShapeService areaShapeService)
   {
     _database = database;
     _mapping = mapping;

@@ -1,10 +1,10 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Infrastructure.Persistence;
-using GastronomyApp.Infrastructure.Repositories;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 
-namespace GastronomyApp.Infrastructure.Tests.Repositories;
+namespace GastronomyApp.Infrastructure.Tests.Services;
 
 public sealed class SequenceNumberAllocatorTest
 {

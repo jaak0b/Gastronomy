@@ -71,7 +71,6 @@ Frontend, under `frontend/src/`:
 ## Tests
 
 - `GastronomyApp.Core.Tests/Services`: the ingredient tests that construct an ingredient with a unit.
-- `GastronomyApp.Infrastructure.Tests/Repositories`: `IngredientStockRepositoryTest` (the unit navigation) and `CatalogItemRepositoryTest`.
 - `GastronomyApp.Infrastructure.Tests/Queries`: `NamedQueriesTest` (the namesake check of units and
   ingredients, in SQL).
 - `GastronomyApp.Infrastructure.Tests/Services`: `UnitServiceTest` (every unit action on the real

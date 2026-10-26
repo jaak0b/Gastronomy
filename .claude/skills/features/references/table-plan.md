@@ -79,10 +79,9 @@ Backend, under `backend/`:
   turns item flags into `None`, `Some` or `All` and that `OrderService.StatusOf` uses as well; the
   service sets them on the `TablePlanTableView`s after the read, in memory. The statement count is
   pinned in `TablePlanServiceTest` (see the `count-sql-statements` how-to page).
-- `ITablePlanRepository` (`TablePlanRepository`) is what is left of the old repository, for the
-  orders area that is not converted yet: `FindTableAsync` for `OrderAcceptanceService`, which looks
-  the order's table up through it; the open items screen reads one table with its orders through
-  `IOpenItemRepository.FindTableWithOrdersAsync` (see the `settling-a-table` page).
+- `OrderPlacementService` looks the order's table up in `IGastronomyDatabase.Tables`; the open items
+  screen reads one table with its orders through `IOpenItemRepository.FindTableWithOrdersAsync` (see
+  the `settling-a-table` page).
 - `FestivalStationService.RemoveAsync` deletes the station's shape together with its link through
   `IGastronomyDatabase`, and `FestivalService.CopyAsync` copies the plan (see the
   invariants).
@@ -432,7 +431,7 @@ Frontend, under `frontend/src/`:
   count), `TableCopyNamingTest` (every naming example, leading zeros, a name without a trailing
   digit, collisions with shown and hidden names, ASCII case collisions, a paste of several tables in
   deterministic order, a very long digit run), `ItemsToHandOutLookupTest` (the station checks),
-  `AreaShapeServiceTest`, and the table cases of `OrderAcceptanceServiceTest`;
+  `AreaShapeServiceTest`, and the table cases of `OrderPlacementServiceTest`;
   `TableProgressTest` for the two colour states (the example above, the settled side, a table
   without orders) and the `ShareOfFlaggedItems` cases of `OrderServiceTest`.
 - `GastronomyApp.Infrastructure.Tests`: `Configurations/AreaConfigurationTest`,
@@ -451,8 +450,7 @@ Frontend, under `frontend/src/`:
   out, the two progress states per table, an order at two stations beside two station shapes in one
   area answered once each, and the whole phone read in one statement, counted by
   `TestSupport/QueryCounter`); `Queries/OrderItemQueriesTest` for the filters on items;
-  `Repositories/TablePlanRepositoryTest` for what is left of the repository (another festival's table
-  not found); `Services/FestivalStationServiceTest` for the station shapes (placing, moving, removing,
+  `Services/FestivalStationServiceTest` for the station shapes (placing, moving, removing,
   a station outside the festival, an area of another festival, the shape going with its station); the plan copy in
   `FestivalServiceTest`; `Persistence/ReleasedDatabaseUpgradeTest` (festival station rows survive
   the rebuild of their table, and old orders at two festivals end up at hidden tables of their own

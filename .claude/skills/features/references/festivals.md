@@ -20,7 +20,7 @@ Backend, under `backend/`:
   `IsRunning`, `FindRunningAt`, `FindOverlapping` and `HasStartWithin` (the desktop's
   `UpdateInstallGate` uses it to hold an update back). `RunningFestivalLookup` is what every other
   service asks (`FindAsync`, `IsRunning`): it reads the clock through `TimeProvider` and hands the
-  question to `FestivalSchedule`. `CatalogService`, `OrderAcceptanceService`,
+  question to `FestivalSchedule`. `CatalogService`, `OrderPlacementService`,
   `OrderItemSettlementService`, `OpenItemsService`, `EstimateService`, `StationAtFestivalLookup`,
   `FestivalMenuService`, `FestivalStationService` and the administration services of articles and
   stations all hold one.
@@ -193,7 +193,7 @@ Every point below is intended behaviour. A change to any of them needs the owner
 - `GastronomyApp.Core.Tests/Services`: `FestivalScheduleTest` (the start counts, the end does not, a
   hidden festival never runs, overlap with a hidden festival), `RunningFestivalLookupTest`,
   and `StationAtFestivalLookupTest`; the no running festival cases of
-  `Infrastructure.Tests/Services/CatalogServiceTest`, `OrderAcceptanceServiceTest`, `OrderItemSettlementServiceTest` and
+  `Infrastructure.Tests/Services/CatalogServiceTest`, `OrderPlacementServiceTest`, `OrderItemSettlementServiceTest` and
   `StationQueueServiceTest`.
 - `GastronomyApp.Infrastructure.Tests`: `Repositories/FestivalRepositoryTest` (running),
   `Repositories/FestivalStationRepositoryTest`, `Services/FestivalMenuServiceTest` and

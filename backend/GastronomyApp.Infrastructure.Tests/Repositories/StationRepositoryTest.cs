@@ -12,24 +12,6 @@ public sealed class StationRepositoryTest
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
 
   [Test]
-  public async Task FindAtFestivalAsync_TheStationsOfOneFestival_ReturnsThemByTheirPlaceInTheList()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-
-    StationRepository repository = new(fixture.DbContext);
-
-    IReadOnlyCollection<Station> stations = await repository.FindAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
-
-    Assert.That(stations.Select(station => station.Id),
-                Is.EqualTo(new[]
-                           {
-                             seeded.KitchenStationId,
-                             seeded.BarStationId
-                           }));
-  }
-
-  [Test]
   public async Task FindStationIdsWithItemsToHandOutAsync_AStationWithAnItemNotYetHandedOutAtTheFestival_NamesThatStationOnly()
   {
     using SqliteInMemoryFixture fixture = new();

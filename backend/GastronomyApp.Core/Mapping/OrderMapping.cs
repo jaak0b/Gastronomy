@@ -3,16 +3,11 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
 using Mapster;
 
-namespace GastronomyApp.Api.Mapping;
+namespace GastronomyApp.Core.Mapping;
 
-public sealed class OrderMapping : IMappingRegistration
+public sealed class OrderMapping : IRegister
 {
-  private readonly OrderService _orderService;
-
-  public OrderMapping(OrderService orderService)
-  {
-    _orderService = orderService;
-  }
+  private readonly OrderService _orderService = new();
 
   public void Register(TypeAdapterConfig config)
   {
