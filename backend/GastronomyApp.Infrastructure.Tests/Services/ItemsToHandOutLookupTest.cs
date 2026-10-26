@@ -25,6 +25,8 @@ public sealed class ItemsToHandOutLookupTest
     _fixture.Dispose();
   }
 
+  private readonly OrderItemStatusSeeder _statusSeeder = new();
+
   private FakeTimeProvider _clock = null!;
   private SqliteInMemoryFixture _fixture = null!;
   private ItemsToHandOutLookup _lookup = null!;
@@ -143,10 +145,10 @@ public sealed class ItemsToHandOutLookupTest
   private async Task HandOutAsync(IReadOnlyCollection<Guid> orderItemIds)
   {
     List<Guid> ids = orderItemIds.ToList();
-    List<OrderItem> items = await _fixture.DbContext.OrderItems.Where(item => ids.Contains(item.Id)).ToListAsync(TestContext.CurrentContext.CancellationToken);
+    List<OrderItem> items = await _fixture.DbContext.OrderItems.Include(item => item.CurrentStatus).Include(item => item.StationOrder).Where(item => ids.Contains(item.Id)).ToListAsync(TestContext.CurrentContext.CancellationToken);
 
     foreach (var item in items)
-      item.FulfilledAtUtc = DateTime.UtcNow;
+      _statusSeeder.HandOut(item, item.StationOrder.StationId, DateTime.UtcNow);
 
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
@@ -183,20 +185,22 @@ public sealed class ItemsToHandOutLookupTest
     order.StationOrders.Add(stationOrder);
 
     _fixture.DbContext.Orders.Add(order);
-    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    await _statusSeeder.SaveAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
     return stationOrder.Items.Select(item => item.Id).ToList();
   }
 
   private OrderItem BuildItem(Guid stationOrderId, Guid catalogItemId, string itemName, int unitPriceCents)
   {
-    return new()
-           {
-             Id = Guid.NewGuid(),
-             StationOrderId = stationOrderId,
-             CatalogItemId = catalogItemId,
-             ItemName = itemName,
-             UnitPriceCents = unitPriceCents
-           };
+    OrderItem item = new()
+                     {
+                       Id = Guid.NewGuid(),
+                       StationOrderId = stationOrderId,
+                       CatalogItemId = catalogItemId,
+                       ItemName = itemName,
+                       UnitPriceCents = unitPriceCents
+                     };
+
+    return _statusSeeder.Open(item, _seeded.StaffMemberId, DateTime.UtcNow);
   }
 }

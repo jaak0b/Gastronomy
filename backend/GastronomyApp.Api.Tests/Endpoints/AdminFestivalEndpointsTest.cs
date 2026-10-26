@@ -735,7 +735,7 @@ public sealed class AdminFestivalEndpointsTest
 
     await using (var database = _context.Factory.CreateContext())
     {
-      await database.OrderItems.ExecuteUpdateAsync(item => item.SetProperty(entry => entry.FulfilledAtUtc, DateTime.UtcNow));
+      await new StoredItemHandOut().HandOutEveryItemAsync(database);
     }
 
     await AssignTheBratwurstToTheBarAsync();

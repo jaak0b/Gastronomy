@@ -23,7 +23,7 @@ public sealed class OrderPlacementServiceTest
     _tableId = await new DomainSeeder().SeedTableAsync(_fixture.DbContext, _seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     _clock = new(DateTimeOffset.UtcNow);
     RunningFestivalLookup runningFestival = new(_fixture.DbContext, new(), _clock);
-    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), runningFestival, new(_fixture.DbContext), new(), new(), new(_fixture.DbContext, new(), NullLogger<StockSoldOutMarker>.Instance), _clock);
+    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), runningFestival, new(_fixture.DbContext), new(), new(), new(_fixture.DbContext, new(), NullLogger<StockSoldOutMarker>.Instance), new(), _clock);
   }
 
   [TearDown]
@@ -107,6 +107,29 @@ public sealed class OrderPlacementServiceTest
   }
 
   [Test]
+  public async Task PlaceAsync_ValidRequest_StoresEveryItemWithItsFirstOpenStatusSetByTheWaiterAtTheOrderTime()
+  {
+    await PlaceAsync(RequestWith(ItemFor(_seeded.SausageItemId), ItemFor(_seeded.LemonadeItemId)));
+
+    var stored = await StoredOrderAsync();
+    List<OrderItemStatus> statuses = await _fixture.DbContext.OrderItemStatuses.AsNoTracking().ToListAsync(TestContext.CurrentContext.CancellationToken);
+    List<OrderItem> items = stored.StationOrders.SelectMany(stationOrder => stationOrder.Items).ToList();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(statuses, Has.Count.EqualTo(2));
+                      Assert.That(items.Select(item => item.CurrentStatusId), Is.All.Not.Null);
+                      Assert.That(items.Select(item => item.CurrentStatusId), Is.EquivalentTo(statuses.Select(status => (Guid?)status.Id)));
+                      Assert.That(statuses.Select(status => status.OrderItemId), Is.EquivalentTo(items.Select(item => item.Id)));
+                      Assert.That(statuses.Select(status => status.Status), Is.All.EqualTo(OrderItemState.Open));
+                      Assert.That(statuses.Select(status => status.PreviousStatusId), Is.All.Null);
+                      Assert.That(statuses.Select(status => status.CreatedByStaffMemberId), Is.All.EqualTo(_seeded.StaffMemberId));
+                      Assert.That(statuses.Select(status => status.CreatedByStationId), Is.All.Null);
+                      Assert.That(statuses.Select(status => status.CreatedAtUtc), Is.All.EqualTo(stored.CreatedAtUtc));
+                    });
+  }
+
+  [Test]
   public async Task PlaceAsync_ValidRequest_LeavesEveryItemOpenAndUnsettledWithItsOwnIdentifier()
   {
     await PlaceAsync(RequestWith(ItemFor(_seeded.SausageItemId), ItemFor(_seeded.LemonadeItemId)));
@@ -122,7 +145,7 @@ public sealed class OrderPlacementServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(items.Select(item => item.FulfilledAtUtc), Is.All.Null);
+                      Assert.That(items.Select(item => item.CurrentStatus!.Status), Is.All.EqualTo(OrderItemState.Open));
                       Assert.That(items.Select(item => item.SettledAtUtc), Is.All.Null);
                       Assert.That(everyId, Has.None.EqualTo(Guid.Empty));
                       Assert.That(everyId.Distinct().Count(), Is.EqualTo(everyId.Count));
@@ -313,8 +336,8 @@ public sealed class OrderPlacementServiceTest
   {
     var clientOrderId = Guid.NewGuid();
     await PlaceAsync(RequestWith(clientOrderId, ItemFor(_seeded.SausageItemId)));
-    var item = await _fixture.DbContext.OrderItems.SingleAsync(TestContext.CurrentContext.CancellationToken);
-    item.FulfilledAtUtc = DateTime.UtcNow;
+    var item = await _fixture.DbContext.OrderItems.Include(candidate => candidate.CurrentStatus).SingleAsync(TestContext.CurrentContext.CancellationToken);
+    HandOut(item);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
 
@@ -328,8 +351,8 @@ public sealed class OrderPlacementServiceTest
   {
     var clientOrderId = Guid.NewGuid();
     await PlaceAsync(RequestWith(clientOrderId, ItemFor(_seeded.SausageItemId, unitPriceCents: 350), ItemFor(_seeded.SausageItemId, unitPriceCents: 400)));
-    var item = await _fixture.DbContext.OrderItems.OrderBy(candidate => candidate.UnitPriceCents).FirstAsync(TestContext.CurrentContext.CancellationToken);
-    item.FulfilledAtUtc = DateTime.UtcNow;
+    var item = await _fixture.DbContext.OrderItems.Include(candidate => candidate.CurrentStatus).OrderBy(candidate => candidate.UnitPriceCents).FirstAsync(TestContext.CurrentContext.CancellationToken);
+    HandOut(item);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
 
@@ -594,9 +617,14 @@ public sealed class OrderPlacementServiceTest
     return JsonSerializer.Serialize(view);
   }
 
+  private void HandOut(OrderItem item)
+  {
+    new OrderItemLifecycle().AppendStatus(item, OrderItemState.HandedOut, new(null, _seeded.KitchenStationId), DateTime.UtcNow);
+  }
+
   private async Task<Order> StoredOrderAsync()
   {
-    return await _fixture.DbContext.Orders.AsNoTracking().Include(order => order.StationOrders).ThenInclude(stationOrder => stationOrder.Items).SingleAsync(TestContext.CurrentContext.CancellationToken);
+    return await _fixture.DbContext.Orders.AsNoTracking().Include(order => order.StationOrders).ThenInclude(stationOrder => stationOrder.Items).ThenInclude(item => item.CurrentStatus).SingleAsync(TestContext.CurrentContext.CancellationToken);
   }
 
   private Guid StoredTableId()

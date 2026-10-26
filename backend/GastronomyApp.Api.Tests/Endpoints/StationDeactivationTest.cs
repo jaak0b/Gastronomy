@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
-using GastronomyApp.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
@@ -114,12 +113,7 @@ public sealed class StationDeactivationTest
 
     await using (var database = _context.Factory.CreateContext())
     {
-      List<OrderItem> items = await database.OrderItems.ToListAsync();
-
-      foreach (var item in items)
-        item.FulfilledAtUtc = DateTime.UtcNow;
-
-      await database.SaveChangesAsync();
+      await new StoredItemHandOut().HandOutEveryItemAsync(database);
     }
 
     using (var assigned = await _context.Client.PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}",

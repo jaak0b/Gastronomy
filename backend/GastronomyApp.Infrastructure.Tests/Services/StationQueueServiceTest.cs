@@ -2,6 +2,7 @@ using ErrorOr;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Stations;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Mapping;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -29,6 +30,8 @@ public sealed class StationQueueServiceTest
   }
 
   private readonly DateTime _orderedAtUtc = new(2026, 8, 27, 18, 30, 0, DateTimeKind.Utc);
+
+  private readonly OrderItemStatusSeeder _statusSeeder = new();
 
   private FakeTimeProvider _clock = null!;
   private SqliteInMemoryFixture _fixture = null!;
@@ -487,6 +490,51 @@ public sealed class StationQueueServiceTest
   }
 
   [Test]
+  public async Task FulfillAsync_AnOpenItem_AddsAHandedOutStatusAfterItsOpenOneSetByTheStation()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+
+    await _service.FulfillAsync([items[0]], _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    List<OrderItemStatus> history = await StoredHistoryOfAsync(items[0]);
+    await using var readContext = _fixture.CreateContext();
+    var stored = await readContext.OrderItems.AsNoTracking().SingleAsync(item => item.Id == items[0], TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(history.Select(status => status.Status),
+                                  Is.EqualTo(new[]
+                                             {
+                                               OrderItemState.Open,
+                                               OrderItemState.HandedOut
+                                             }));
+                      Assert.That(history[1].PreviousStatusId, Is.EqualTo(history[0].Id));
+                      Assert.That(history[1].CreatedByStationId, Is.EqualTo(_seeded.KitchenStationId));
+                      Assert.That(history[1].CreatedByStaffMemberId, Is.Null);
+                      Assert.That(history[1].CreatedAtUtc, Is.EqualTo(_clock.GetUtcNow().UtcDateTime));
+                      Assert.That(stored.CurrentStatusId, Is.EqualTo(history[1].Id));
+                    });
+  }
+
+  [Test]
+  public async Task FulfillAsync_AnItemAlreadyHandedOut_AddsNoSecondStatus()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    await _service.FulfillAsync([items[0]], _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+    _clock.Advance(TimeSpan.FromMinutes(3));
+
+    await using var secondTapContext = _fixture.CreateContext();
+    await CreateService(secondTapContext).FulfillAsync([items[0]], _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That((await StoredHistoryOfAsync(items[0])).Select(status => status.Status),
+                Is.EqualTo(new[]
+                           {
+                             OrderItemState.Open,
+                             OrderItemState.HandedOut
+                           }));
+  }
+
+  [Test]
   public async Task FulfillAsync_AnIdThatIsNotAmongTheItemsOfThisStation_IsRefusedNamingItAndChangesNothing()
   {
     IReadOnlyList<Guid> kitchenItems = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
@@ -573,6 +621,36 @@ public sealed class StationQueueServiceTest
                       Assert.That(queue.IsSuccess, Is.True);
                       Assert.That(queue.Value.Orders.Single().FulfilledItemCount, Is.Zero);
                       Assert.That(stored.Values, Is.All.Null);
+                    });
+  }
+
+  [Test]
+  public async Task UnfulfillAsync_AHandedOutItem_AddsAnOpenStatusAfterTheHandedOutOneSetByTheStation()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    await _service.FulfillAsync([items[0]], _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+    _clock.Advance(TimeSpan.FromMinutes(2));
+
+    await using var putBackContext = _fixture.CreateContext();
+    await CreateService(putBackContext).UnfulfillAsync([items[0]], _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    List<OrderItemStatus> history = await StoredHistoryOfAsync(items[0]);
+    await using var readContext = _fixture.CreateContext();
+    var stored = await readContext.OrderItems.AsNoTracking().SingleAsync(item => item.Id == items[0], TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(history.Select(status => status.Status),
+                                  Is.EqualTo(new[]
+                                             {
+                                               OrderItemState.Open,
+                                               OrderItemState.HandedOut,
+                                               OrderItemState.Open
+                                             }));
+                      Assert.That(history[2].PreviousStatusId, Is.EqualTo(history[1].Id));
+                      Assert.That(history[2].CreatedByStationId, Is.EqualTo(_seeded.KitchenStationId));
+                      Assert.That(history[2].CreatedAtUtc, Is.EqualTo(_clock.GetUtcNow().UtcDateTime));
+                      Assert.That(stored.CurrentStatusId, Is.EqualTo(history[2].Id));
                     });
   }
 
@@ -766,7 +844,7 @@ public sealed class StationQueueServiceTest
   {
     RunningFestivalLookup runningFestival = new(database, new(), _clock);
 
-    return new(database, new CoreMappingFactory().Create(), runningFestival, _clock);
+    return new(database, new CoreMappingFactory().Create(), runningFestival, new(), _clock);
   }
 
   private async Task EndTheFestivalAsync()
@@ -804,10 +882,10 @@ public sealed class StationQueueServiceTest
   private async Task StampAsync(IReadOnlyCollection<Guid> orderItemIds)
   {
     List<Guid> ids = orderItemIds.ToList();
-    List<OrderItem> items = await _fixture.DbContext.OrderItems.Where(item => ids.Contains(item.Id)).ToListAsync(TestContext.CurrentContext.CancellationToken);
+    List<OrderItem> items = await _fixture.DbContext.OrderItems.Include(item => item.CurrentStatus).Include(item => item.StationOrder).Where(item => ids.Contains(item.Id)).ToListAsync(TestContext.CurrentContext.CancellationToken);
 
     foreach (var item in items)
-      item.FulfilledAtUtc = _orderedAtUtc.AddMinutes(5);
+      _statusSeeder.HandOut(item, item.StationOrder.StationId, _orderedAtUtc.AddMinutes(5));
 
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
@@ -816,7 +894,16 @@ public sealed class StationQueueServiceTest
   {
     await using var readContext = _fixture.CreateContext();
 
-    return await readContext.OrderItems.AsNoTracking().ToDictionaryAsync(item => item.Id, item => item.FulfilledAtUtc, TestContext.CurrentContext.CancellationToken);
+    List<OrderItem> items = await readContext.OrderItems.AsNoTracking().Include(item => item.CurrentStatus).ToListAsync(TestContext.CurrentContext.CancellationToken);
+
+    return items.ToDictionary(item => item.Id, OrderItemStates.HandedOutAtUtcOf);
+  }
+
+  private async Task<List<OrderItemStatus>> StoredHistoryOfAsync(Guid orderItemId)
+  {
+    await using var readContext = _fixture.CreateContext();
+
+    return await readContext.OrderItemStatuses.AsNoTracking().Where(status => status.OrderItemId == orderItemId).OrderBy(status => status.CreatedAtUtc).ToListAsync(TestContext.CurrentContext.CancellationToken);
   }
 
   private async Task<IReadOnlyList<Guid>> PlaceOrderAsync(Guid stationId, string tableName, int orderNumber, DeliveryMode deliveryMode, Guid? festivalId = null)
@@ -829,7 +916,7 @@ public sealed class StationQueueServiceTest
       BuildItem(stationOrderId, _seeded.LemonadeItemId, "Limonade", 250, null, Guid.NewGuid())
     ];
     _fixture.DbContext.OrderItems.AddRange(items);
-    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    await _statusSeeder.SaveAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
     return items.Select(item => item.Id).ToList();
   }
@@ -876,7 +963,7 @@ public sealed class StationQueueServiceTest
       _fixture.DbContext.OrderItems.Add(item);
     }
 
-    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    await _statusSeeder.SaveAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
   }
 
   private OrderItem Line(string itemName, string? note)
@@ -886,14 +973,16 @@ public sealed class StationQueueServiceTest
 
   private OrderItem BuildItem(Guid stationOrderId, Guid catalogItemId, string itemName, int unitPriceCents, string? note, Guid id)
   {
-    return new()
-           {
-             Id = id,
-             StationOrderId = stationOrderId,
-             CatalogItemId = catalogItemId,
-             ItemName = itemName,
-             UnitPriceCents = unitPriceCents,
-             Note = note
-           };
+    OrderItem item = new()
+                     {
+                       Id = id,
+                       StationOrderId = stationOrderId,
+                       CatalogItemId = catalogItemId,
+                       ItemName = itemName,
+                       UnitPriceCents = unitPriceCents,
+                       Note = note
+                     };
+
+    return _statusSeeder.Open(item, _seeded.StaffMemberId, _orderedAtUtc);
   }
 }

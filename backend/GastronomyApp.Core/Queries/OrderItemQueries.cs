@@ -1,4 +1,5 @@
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Mapping;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Queries;
@@ -9,14 +10,14 @@ public static class OrderItemQueries
   {
     ArgumentNullException.ThrowIfNull(items);
 
-    return items.Where(item => item.FulfilledAtUtc == null);
+    return items.Where(OrderItemStates.NotHandedOutPredicate);
   }
 
   public static IQueryable<OrderItem> WhereNotHandedOutOrNotSettled(this IQueryable<OrderItem> items)
   {
     ArgumentNullException.ThrowIfNull(items);
 
-    return items.Where(item => item.FulfilledAtUtc == null || item.SettledAtUtc == null);
+    return items.Where(OrderItemStates.NotHandedOutOrNotSettledPredicate);
   }
 
   public static IQueryable<OrderItem> WhereFestivalIs(this IQueryable<OrderItem> items, Guid festivalId)

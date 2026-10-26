@@ -42,6 +42,7 @@ public sealed class OpenItemsService
                                .Include(candidate => candidate.Orders)
                                .ThenInclude(order => order.StationOrders)
                                .ThenInclude(stationOrder => stationOrder.Items)
+                               .ThenInclude(item => item.CurrentStatus)
                                .FirstOrDefaultAsync(cancellationToken);
 
     if (table is null)

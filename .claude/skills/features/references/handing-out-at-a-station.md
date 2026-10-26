@@ -14,8 +14,27 @@ Backend, under `backend/`:
 
 - `GastronomyApp.Core/Entities/StationOrder.cs`: the part of an order that belongs to one station,
   with `StationOrderNumber` (the number that station shows for it), `DeliveryMode` and
-  `IsHiddenFromAsItComesQueue`. `OrderItem.FulfilledAtUtc` records the hand-out. An article's
-  `CatalogItem.ProductionMinutes` and `IsQueueIndependent` feed the estimates.
+  `IsHiddenFromAsItComesQueue`. An article's `CatalogItem.ProductionMinutes` and
+  `IsQueueIndependent` feed the estimates.
+- `Core/Entities/OrderItemStatus.cs` with `Contracts/Enums/OrderItemState.cs` (`Open = 0`,
+  `HandedOut = 20`, numbers pinned, never compared with `<` or `>`): every status an item has had,
+  each row pointing at the one before it (`PreviousStatusId`, unique) and naming who set it, a waiter
+  or a station (exactly one, a check constraint). `OrderItem.CurrentStatusId` points at the newest
+  row. Rows are never changed or deleted; they go only with their item when the database cascade
+  removes it.
+- `Core/Mapping/OrderItemStates.cs`: the one home of "is this item handed out". The predicates
+  `HandedOutPredicate`, `NotHandedOutPredicate` and `NotHandedOutOrNotSettledPredicate` serve SQL
+  (`OrderItemQueries.WhereNotHandedOut` and `WhereNotHandedOutOrNotSettled`, a Mapster projection,
+  or `Items.AsQueryable().Any(...)` inside a query). `CurrentStatusOf`,
+  `IsHandedOut` and `HandedOutAtUtcOf` serve loaded entities and throw an
+  `InvalidOperationException` naming the missing current status when a query forgot to include it.
+  Every reader goes through these, never through `CurrentStatus.Status` of its own.
+- `Core/Services/OrderItemLifecycle.cs`: the only writer of status rows. `CanAppendStatus` and
+  `AppendStatus` check the allowed changes (none to `Open` by the order's waiter, `Open` to `HandedOut` and back by
+  the station) and append a row after the current one. Because an item and its status point at each
+  other, a new item's first `Open` row is saved first and made current with `PointAtFirstStatus` in a
+  second save of the same request transaction; `OrderPlacementService` does this. Handing out and
+  putting back need one save.
 - `Core/Services/StationQueueService.cs`: the one service of the station tablet's queue, on
   `IGastronomyDatabase`. `ReadQueueAsync` and `ReadFulfilledAsync` answer the two reads,
   `FulfillAsync`, `UnfulfillAsync` and `HideFromAsItComesQueueAsync` the three actions, and each
@@ -46,14 +65,18 @@ Frontend, under `frontend/src/`:
 
 ## Invariants
 
-- **An item is open or done.** Done is `OrderItem.FulfilledAtUtc`, set when the station hands the
-  item out and cleared again when a mistaken tap is put back. There is no in-between production state
-  and no status log.
+- **An item is open or done.** Done is the current status `HandedOut`, appended when the station
+  hands the item out; putting a mistaken tap back appends a new `Open` after it. The history keeps
+  every step, and there is no in-between production state.
+- **Every saved item has a current status.** Placing stores each item with its first `Open` row,
+  set by the order's waiter at the order's time, and both saves of placing commit or roll back
+  together.
 - **A second tap never hands an item out twice.** Handing out an item that is already done succeeds
   and keeps the first time. Putting back an item that is still open is refused naming the item, and a
   selection that holds an id outside this station changes nothing. Both actions re-read the whole
-  queue after the save and answer with it. Two simultaneous taps on the same item leave the later
-  timestamp.
+  queue after the save and answer with it. Two simultaneous taps on the same item keep the first
+  tap's time, because every write request waits for the one before it (`BEGIN IMMEDIATE` in
+  `RequestTransactionFilter`) and the second then finds the item already done.
 - **The two columns.** The first holds every order with open items, the second the as-it-comes
   orders the employee has not hidden from it. A fully done order leaves both and appears in the done
   view. `IsHiddenFromAsItComesQueue` is the employee's own decision; it only removes the order from
@@ -79,14 +102,27 @@ Frontend, under `frontend/src/`:
 
 ## Tests
 
-- `GastronomyApp.Core.Tests/Services`: `StationWaitingTimesTest` (the pure sums).
+- `GastronomyApp.Core.Tests/Services`: `StationWaitingTimesTest` (the pure sums),
+  `OrderItemLifecycleTest` (every allowed and refused change, who may set it, the first status
+  made current), `Mapping/OrderItemStatesTest` (the accessor's refusal, the hand-out time).
 - `GastronomyApp.Infrastructure.Tests`: `Services/EstimateServiceTest` (the list and the quote on the real DbContext: open work of the same festival and station only, a handed-out item left out, independent articles, refusals), `Configurations/StationOrderConfigurationTest`,
+  `Configurations/OrderItemStatusConfigurationTest` (the check constraint, no fork in a history, the
+  cascade from a deleted order, no item without a current status),
+  `Persistence/ReleasedDatabaseUpgradeTest` (an open and a handed-out item of a released database get
+  their histories, and 20000 items get theirs within a time bound),
+  `Queries/OrderItemQueriesTest`,
   `Configurations/OrderNumberIndexTest`, `Services/SequenceNumberAllocatorTest`,
   `Services/StationQueueServiceTest` (every read and action on the real DbContext: both columns, the
   order of the cards and of the lines, the refusals and their order, nothing stored on a refusal, the
-  four statements of the queue read), `Services/ItemsToHandOutLookupTest` and
+  four statements of the queue read, the status rows a hand-out and a put-back append),
+  `Services/ItemsToHandOutLookupTest` and
   `Mapping/StationQueueMappingTest`.
-- `GastronomyApp.Api.Tests`: `Endpoints/StationQueueEndpointsTest`, `Endpoints/EstimateEndpointsTest`.
+- `GastronomyApp.Api.Tests`: `Endpoints/StationQueueEndpointsTest` (with two simultaneous taps on
+  one item), `Endpoints/EstimateEndpointsTest`, `Endpoints/OrderEndpointsTest` (a failing second save
+  of placing stores nothing). Test seeds give items their history through
+  `Infrastructure.Tests/TestSupport/OrderItemStatusSeeder.cs` (`Open`, `OpenAndHandOutOnSaveWhenAHandOutTimeIsGiven`
+  and `SaveAsync` save the two-step way; `OpenAndMakeCurrent` is for items that are never saved) and
+  `Api.Tests/TestSupport/StoredItemHandOut.cs`.
 - `frontend/tests/station`: the views `StationPage.screen`, `.markingDone`, `.doneView` and
   `.connection` on `stationPageFixture.ts`, the components, the composables and the store specs
   (`station.queue`, `station.done`, `station.staleAnswers`, `stationChangeListening`,

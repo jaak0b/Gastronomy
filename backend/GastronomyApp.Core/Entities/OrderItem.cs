@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Announcements;
 
@@ -18,7 +19,7 @@ public sealed class OrderItem : IEntity
 
   public string? Note { get; set; }
 
-  public DateTime? FulfilledAtUtc { get; set; }
+  public Guid? CurrentStatusId { get; set; }
 
   public DateTime? SettledAtUtc { get; set; }
 
@@ -35,4 +36,8 @@ public sealed class OrderItem : IEntity
   public CatalogItem CatalogItem { get; set; } = null!;
 
   public StaffMember? SettledByStaffMember { get; set; }
+
+  public OrderItemStatus? CurrentStatus { get; set; }
+
+  public Collection<OrderItemStatus> Statuses { get; } = [];
 }

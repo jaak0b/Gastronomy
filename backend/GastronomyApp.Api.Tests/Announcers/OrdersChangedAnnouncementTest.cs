@@ -66,6 +66,24 @@ public sealed class OrdersChangedAnnouncementTest
   }
 
   [Test]
+  public async Task FulfillItems_EachHandOutWritesANewItemStatus_TellsThePhoneTheAdminAndTheKitchenOnce()
+  {
+    await PlaceTheKitchenOrderAsync();
+    List<Guid> itemIds = await KitchenItemIdsAsync();
+    var statusesBefore = await StoredStatusCountAsync();
+    await ListenAsync(_context.DeviceToken, null, _kitchenToken);
+
+    using var response = await _context.SendAsAsync(_kitchenToken, HttpMethod.Post, "/api/station/items/fulfill", new StationItemSelectionBody(itemIds));
+
+    Assert.Multiple(async () =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(await StoredStatusCountAsync(), Is.EqualTo(statusesBefore + itemIds.Count));
+                    });
+    await AssertEveryListenerHeardOnceAsync();
+  }
+
+  [Test]
   public async Task UnfulfillItems_TheKitchenPutsItsItemsBack_TellsThePhoneTheAdminAndTheKitchenOnce()
   {
     await PlaceTheKitchenOrderAsync();
@@ -142,6 +160,13 @@ public sealed class OrdersChangedAnnouncementTest
     await using var database = _context.Factory.CreateContext();
 
     return await database.OrderItems.Where(item => item.StationOrder.StationId == _context.World.KitchenStationId).Select(item => item.Id).ToListAsync();
+  }
+
+  private async Task<int> StoredStatusCountAsync()
+  {
+    await using var database = _context.Factory.CreateContext();
+
+    return await database.OrderItemStatuses.CountAsync();
   }
 
   private async Task AssertEveryListenerHeardOnceAsync()

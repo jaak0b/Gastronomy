@@ -2,6 +2,7 @@ using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Queries;
 using GastronomyApp.Core.Results;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,6 +24,23 @@ public sealed class OrderItemQueriesTest
     await using var readContext = fixture.CreateContext();
 
     IReadOnlyList<string> names = await readContext.OrderItems.WhereNotHandedOut().Select(item => item.ItemName).ToListAsync(TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(names, Is.EqualTo(new[] { "Bratwurst" }));
+  }
+
+  [Test]
+  public async Task WhereNotHandedOut_AnItemPutBackAfterItWasHandedOut_KeepsIt()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var stationOrderId = await PlaceOrderAsync(fixture, seeded, seeded.FestivalId);
+    await AddItemAsync(fixture, seeded, stationOrderId, "Bratwurst", _now, null);
+    var item = await fixture.DbContext.OrderItems.Include(candidate => candidate.CurrentStatus).SingleAsync(TestContext.CurrentContext.CancellationToken);
+    new OrderItemLifecycle().AppendStatus(item, OrderItemState.Open, new(null, seeded.KitchenStationId), _now.AddMinutes(1));
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    await using var readContext = fixture.CreateContext();
+
+    IReadOnlyList<string> names = await readContext.OrderItems.WhereNotHandedOut().Select(candidate => candidate.ItemName).ToListAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.That(names, Is.EqualTo(new[] { "Bratwurst" }));
   }
@@ -192,16 +210,18 @@ public sealed class OrderItemQueriesTest
 
   private async Task AddItemAsync(SqliteInMemoryFixture fixture, SeededDomain seeded, Guid stationOrderId, string itemName, DateTime? handedOutAtUtc, DateTime? settledAtUtc)
   {
-    fixture.DbContext.OrderItems.Add(new()
-                                     {
-                                       Id = Guid.NewGuid(),
-                                       StationOrderId = stationOrderId,
-                                       CatalogItemId = seeded.SausageItemId,
-                                       ItemName = itemName,
-                                       UnitPriceCents = 350,
-                                       FulfilledAtUtc = handedOutAtUtc,
-                                       SettledAtUtc = settledAtUtc
-                                     });
-    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    OrderItem item = new()
+                     {
+                       Id = Guid.NewGuid(),
+                       StationOrderId = stationOrderId,
+                       CatalogItemId = seeded.SausageItemId,
+                       ItemName = itemName,
+                       UnitPriceCents = 350,
+                       SettledAtUtc = settledAtUtc
+                     };
+
+    OrderItemStatusSeeder statusSeeder = new();
+    fixture.DbContext.OrderItems.Add(statusSeeder.OpenAndHandOutOnSaveWhenAHandOutTimeIsGiven(item, seeded.StaffMemberId, DateTime.UtcNow, seeded.KitchenStationId, handedOutAtUtc));
+    await statusSeeder.SaveAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
   }
 }

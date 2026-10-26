@@ -1,7 +1,6 @@
 using System.Net;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
-using GastronomyApp.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
@@ -58,12 +57,7 @@ public sealed class EstimateEndpointsTest
 
     await using (var database = _context.Factory.CreateContext())
     {
-      List<OrderItem> items = await database.OrderItems.ToListAsync();
-
-      foreach (var item in items)
-        item.FulfilledAtUtc = DateTime.UtcNow;
-
-      await database.SaveChangesAsync();
+      await new StoredItemHandOut().HandOutEveryItemAsync(database);
     }
 
     Assert.That(ReadyInMinutesOf(await ReadEstimatesAsync(), _context.World.BratwurstItemId), Is.EqualTo(4));

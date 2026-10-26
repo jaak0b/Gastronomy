@@ -43,6 +43,7 @@ public sealed class OpenItemsServiceTest
 
   private readonly DateTime _orderedAtUtc = new(2026, 8, 27, 18, 30, 0, DateTimeKind.Utc);
   private readonly Guid _anotherWaiter = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000002");
+  private readonly OrderItemStatusSeeder _statusSeeder = new();
 
   private FakeTimeProvider _clock = null!;
   private SqliteInMemoryFixture _fixture = null!;
@@ -812,6 +813,7 @@ public sealed class OpenItemsServiceTest
                                                    UnitPriceCents = line.UnitPriceCents,
                                                    Note = line.Note
                                                  })
+                                 .Select(item => _statusSeeder.Open(item, _seeded.StaffMemberId, createdAtUtc))
                                  .ToList();
 
     foreach (var item in items)
@@ -837,15 +839,18 @@ public sealed class OpenItemsServiceTest
       _fixture.DbContext.StationOrders.Add(stationOrder);
     }
 
-    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    await _statusSeeder.SaveAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
     return items;
   }
 
   private async Task StampAsync(OrderItem item, DateTime? fulfilledAtUtc = null, DateTime? settledAtUtc = null)
   {
-    var tracked = await _fixture.DbContext.OrderItems.SingleAsync(candidate => candidate.Id == item.Id, TestContext.CurrentContext.CancellationToken);
-    tracked.FulfilledAtUtc = fulfilledAtUtc;
+    var tracked = await _fixture.DbContext.OrderItems.Include(candidate => candidate.CurrentStatus).Include(candidate => candidate.StationOrder).SingleAsync(candidate => candidate.Id == item.Id, TestContext.CurrentContext.CancellationToken);
+
+    if (fulfilledAtUtc is { } handedOutAtUtc)
+      _statusSeeder.HandOut(tracked, tracked.StationOrder.StationId, handedOutAtUtc);
+
     tracked.SettledAtUtc = settledAtUtc;
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }

@@ -29,6 +29,7 @@ public sealed class EstimateServiceTest
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
+  private readonly OrderItemStatusSeeder _statusSeeder = new();
 
   private int _orderNumber;
   private FakeTimeProvider _clock = null!;
@@ -336,8 +337,8 @@ public sealed class EstimateServiceTest
 
   private async Task HandOutAsync(Guid orderItemId)
   {
-    var item = await _fixture.DbContext.OrderItems.SingleAsync(row => row.Id == orderItemId, TestContext.CurrentContext.CancellationToken);
-    item.FulfilledAtUtc = _now;
+    var item = await _fixture.DbContext.OrderItems.Include(row => row.CurrentStatus).Include(row => row.StationOrder).SingleAsync(row => row.Id == orderItemId, TestContext.CurrentContext.CancellationToken);
+    _statusSeeder.HandOut(item, item.StationOrder.StationId, _now);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
 
@@ -369,18 +370,21 @@ public sealed class EstimateServiceTest
                                 };
 
     foreach (var catalogItemId in catalogItemIds)
-      stationOrder.Items.Add(new()
-                             {
-                               Id = Guid.NewGuid(),
-                               StationOrderId = stationOrderId,
-                               CatalogItemId = catalogItemId,
-                               ItemName = "Artikel",
-                               UnitPriceCents = 350
-                             });
+    {
+      OrderItem item = new()
+                       {
+                         Id = Guid.NewGuid(),
+                         StationOrderId = stationOrderId,
+                         CatalogItemId = catalogItemId,
+                         ItemName = "Artikel",
+                         UnitPriceCents = 350
+                       };
+      stationOrder.Items.Add(_statusSeeder.Open(item, _seeded.StaffMemberId, _now));
+    }
 
     order.StationOrders.Add(stationOrder);
     _fixture.DbContext.Orders.Add(order);
-    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    await _statusSeeder.SaveAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
     return stationOrder.Items.Select(item => item.Id).ToList();
   }

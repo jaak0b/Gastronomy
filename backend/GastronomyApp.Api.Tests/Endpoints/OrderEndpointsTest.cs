@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -133,7 +134,51 @@ public sealed class OrderEndpointsTest
 
     await using var database = _context.Factory.CreateContext();
 
-    Assert.That(await database.OrderItems.CountAsync(item => item.FulfilledAtUtc == null), Is.EqualTo(2));
+    Assert.That(await database.OrderItems.CountAsync(item => item.CurrentStatus!.Status == OrderItemState.Open), Is.EqualTo(2));
+  }
+
+  [Test]
+  public async Task PostOrder_FirstSubmission_LeavesNoItemWithoutACurrentStatusOfItsOwn()
+  {
+    using (var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
+    {
+      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    await using var database = _context.Factory.CreateContext();
+    List<OrderItem> items = await database.OrderItems.Include(item => item.CurrentStatus).ToListAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(items, Has.Count.EqualTo(2));
+                      Assert.That(items.Select(item => item.CurrentStatus), Is.All.Not.Null);
+                      Assert.That(items.Select(item => item.CurrentStatus!.OrderItemId), Is.EqualTo(items.Select(item => item.Id)));
+                    });
+  }
+
+  [Test]
+  public async Task PostOrder_TheSaveThatPointsEachItemAtItsFirstStatusFails_StoresNothingOfTheOrder()
+  {
+    await using (var database = _context.Factory.CreateContext())
+    {
+      await database.Database.ExecuteSqlRawAsync("""
+                                                 CREATE TRIGGER "RefuseCurrentStatus" BEFORE UPDATE OF "CurrentStatusId" ON "OrderItems"
+                                                 BEGIN SELECT RAISE(ABORT, 'second save refused by the test'); END;
+                                                 """);
+    }
+
+    using var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
+
+    await using var afterwards = _context.Factory.CreateContext();
+
+    Assert.Multiple(async () =>
+                    {
+                      Assert.That(response.IsSuccessStatusCode, Is.False);
+                      Assert.That(await afterwards.Orders.CountAsync(), Is.Zero);
+                      Assert.That(await afterwards.StationOrders.CountAsync(), Is.Zero);
+                      Assert.That(await afterwards.OrderItems.CountAsync(), Is.Zero);
+                      Assert.That(await afterwards.OrderItemStatuses.CountAsync(), Is.Zero);
+                    });
   }
 
   [Test]

@@ -18,13 +18,15 @@ public sealed class StationQueueMappingTest
   private readonly DateTime _placedAtUtc = new(2026, 9, 5, 19, 5, 0, DateTimeKind.Utc);
   private readonly Guid _kitchenId = Guid.Parse("cccccccc-0000-0000-0000-000000000001");
 
+  private readonly OrderItemStatusSeeder _statusSeeder = new();
+
   private TypeAdapterConfig _mapping = null!;
 
   [Test]
   public void Map_AStationOrderWithOpenItems_CarriesTheTableTheWaiterAndBothCounts()
   {
     var stationOrder = StationOrderWith(1, DeliveryMode.Together, Item("Bratwurst", null), Item("Limonade", null));
-    stationOrder.Items[0].FulfilledAtUtc = _placedAtUtc.AddMinutes(3);
+    HandOut(stationOrder.Items[0], _placedAtUtc.AddMinutes(3));
 
     var view = stationOrder.Adapt<StationOrderQueueView>(_mapping);
 
@@ -88,7 +90,7 @@ public sealed class StationQueueMappingTest
   public void Map_AStationOrderTheStationHandedOut_CarriesEveryLineWithItsHandOverTime()
   {
     var stationOrder = StationOrderWith(1, DeliveryMode.Together, Item("Bratwurst", "Ohne Ketchup"));
-    stationOrder.Items[0].FulfilledAtUtc = _placedAtUtc.AddMinutes(6);
+    HandOut(stationOrder.Items[0], _placedAtUtc.AddMinutes(6));
 
     var view = stationOrder.Adapt<StationOrderQueueView>(_mapping);
 
@@ -191,15 +193,22 @@ public sealed class StationQueueMappingTest
 
   private OrderItem Item(string itemName, string? note)
   {
-    return new()
-           {
-             Id = Guid.NewGuid(),
-             StationOrderId = Guid.NewGuid(),
-             CatalogItemId = Guid.NewGuid(),
-             ItemName = itemName,
-             UnitPriceCents = 350,
-             Note = note
-           };
+    OrderItem item = new()
+                     {
+                       Id = Guid.NewGuid(),
+                       StationOrderId = Guid.NewGuid(),
+                       CatalogItemId = Guid.NewGuid(),
+                       ItemName = itemName,
+                       UnitPriceCents = 350,
+                       Note = note
+                     };
+
+    return _statusSeeder.OpenAndMakeCurrent(item, Guid.NewGuid(), _placedAtUtc);
+  }
+
+  private void HandOut(OrderItem item, DateTime handedOutAtUtc)
+  {
+    _statusSeeder.HandOut(item, _kitchenId, handedOutAtUtc);
   }
 
   private OrderItem ItemWithId(string itemName, string? note, string id)

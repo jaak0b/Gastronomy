@@ -75,9 +75,11 @@ Backend, under `backend/`:
   with four batched reads (articles, menu rows, assignments, active stations) and
   `OrderRoutingResolver`, and collects every refused line. Only then does it number the order
   (`SequenceNumberAllocator`: the global order number from the festival, the station number from the
-  festival's station link, each saved at once inside the request's transaction), add it, run
-  `StockSoldOutMarker` and read the order back for the answer. The answer is mapped by
-  `Core/Mapping/OrderMapping.cs`, which leaves the status and total as placeholders: the service sets
+  festival's station link, each saved at once inside the request's transaction), give every item
+  its first `Open` status through `OrderItemLifecycle`, add it, save, make each first status the
+  item's current one and save again (an item and its status point at each other, so EF cannot store
+  both in one save; see the `handing-out-at-a-station` page), run `StockSoldOutMarker` and read the
+  order back for the answer. The answer is mapped by `Core/Mapping/OrderMapping.cs`, which leaves the status and total as placeholders: the service sets
   them from `OrderService` on the mapped view, because a scanned mapping takes no collaborators. Refusals are
   in `Core/Refusals/Refusal.Order.cs`.
 
@@ -145,8 +147,12 @@ Backend, under `backend/`:
   returns the original order before the table is looked at.
 - **What happens when a step of placing fails.** No running festival, an unknown table, an item
   that is not on the menu or not routable: refused before anything is numbered or written, so no
-  order exists. The insert, the numbers and the stock step share the request's transaction; a
-  failure in any of them rolls all of it back and the phone keeps the order on screen with its retry.
+  order exists. The insert, the numbers, both saves of the items' first status and the stock step
+  share the request's transaction; a failure in any of them rolls all of it back and the phone
+  keeps the order on screen with its retry.
+- **An order and its items are never deleted.** Nothing in the app removes one. Deleting an item
+  with its statuses loaded fails on the pointer between the item and its current status, so a
+  feature that ever deletes orders clears that pointer in an earlier save first.
 
 ## Tests
 

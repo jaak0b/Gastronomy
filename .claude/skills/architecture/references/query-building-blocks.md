@@ -30,7 +30,11 @@ a deactivated station is not offered any more, and a screen shows a row another 
   A flag with another meaning gets no interface, and an entity never carries both `IsActive` and `IsHidden`.
 - **A piece is extracted on its second use.** A query used once stays in its service.
 - **A piece is called on the top-level query only.** EF Core cannot translate a custom extension method
-  inside a lambda, so a filter inside a Mapster expression is written out in `Core/Mapping`.
+  inside a lambda, so a filter inside a Mapster expression is written out in `Core/Mapping`. Where
+  several readers need the same condition, the expression lives once there as a property and both the
+  query piece and the projection use it: `OrderItemStates.NotHandedOutPredicate` backs
+  `OrderItemQueries.WhereNotHandedOut` and a nested filter of the station queue, applied with
+  `Items.AsQueryable().Any(...)`, and `HandedOutPredicate` backs the table plan's projection.
 - **A piece returns `IQueryable`**, so it composes with the rest of the query and EF Core translates it
   into SQL. It does not load rows and does not call `SaveChangesAsync`.
 

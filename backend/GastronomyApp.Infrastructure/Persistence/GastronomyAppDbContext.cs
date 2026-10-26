@@ -37,6 +37,8 @@ public sealed class GastronomyAppDbContext : DbContext, IGastronomyDatabase
 
   public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
+  public DbSet<OrderItemStatus> OrderItemStatuses => Set<OrderItemStatus>();
+
   public DbSet<Festival> Festivals => Set<Festival>();
 
   public DbSet<FestivalStation> FestivalStations => Set<FestivalStation>();

@@ -464,7 +464,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<int?>("ChargedPriceCents")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime?>("FulfilledAtUtc")
+                    b.Property<Guid?>("CurrentStatusId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ItemName")
@@ -496,7 +496,8 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.HasIndex("CatalogItemId");
 
-                    b.HasIndex("FulfilledAtUtc");
+                    b.HasIndex("CurrentStatusId")
+                        .IsUnique();
 
                     b.HasIndex("SettledAtUtc");
 
@@ -505,6 +506,46 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.HasIndex("StationOrderId");
 
                     b.ToTable("OrderItems");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.OrderItemStatus", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CreatedByStaffMemberId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CreatedByStationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("OrderItemId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("PreviousStatusId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByStaffMemberId");
+
+                    b.HasIndex("CreatedByStationId");
+
+                    b.HasIndex("OrderItemId");
+
+                    b.HasIndex("PreviousStatusId")
+                        .IsUnique();
+
+                    b.ToTable("OrderItemStatuses", t =>
+                        {
+                            t.HasCheckConstraint("CK_OrderItemStatuses_ExactlyOneCreator", "(\"CreatedByStaffMemberId\" IS NULL) <> (\"CreatedByStationId\" IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.StaffMember", b =>
@@ -885,6 +926,11 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("GastronomyApp.Core.Entities.OrderItemStatus", "CurrentStatus")
+                        .WithOne()
+                        .HasForeignKey("GastronomyApp.Core.Entities.OrderItem", "CurrentStatusId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("GastronomyApp.Core.Entities.StaffMember", "SettledByStaffMember")
                         .WithMany()
                         .HasForeignKey("SettledByStaffMemberId")
@@ -898,9 +944,43 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.Navigation("CatalogItem");
 
+                    b.Navigation("CurrentStatus");
+
                     b.Navigation("SettledByStaffMember");
 
                     b.Navigation("StationOrder");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.OrderItemStatus", b =>
+                {
+                    b.HasOne("GastronomyApp.Core.Entities.StaffMember", "CreatedByStaffMember")
+                        .WithMany()
+                        .HasForeignKey("CreatedByStaffMemberId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("GastronomyApp.Core.Entities.Station", "CreatedByStation")
+                        .WithMany()
+                        .HasForeignKey("CreatedByStationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("GastronomyApp.Core.Entities.OrderItem", "OrderItem")
+                        .WithMany("Statuses")
+                        .HasForeignKey("OrderItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GastronomyApp.Core.Entities.OrderItemStatus", "PreviousStatus")
+                        .WithOne()
+                        .HasForeignKey("GastronomyApp.Core.Entities.OrderItemStatus", "PreviousStatusId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CreatedByStaffMember");
+
+                    b.Navigation("CreatedByStation");
+
+                    b.Navigation("OrderItem");
+
+                    b.Navigation("PreviousStatus");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.StaffMember", b =>
@@ -1028,6 +1108,11 @@ namespace GastronomyApp.Infrastructure.Migrations
             modelBuilder.Entity("GastronomyApp.Core.Entities.Order", b =>
                 {
                     b.Navigation("StationOrders");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.OrderItem", b =>
+                {
+                    b.Navigation("Statuses");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.StaffMember", b =>

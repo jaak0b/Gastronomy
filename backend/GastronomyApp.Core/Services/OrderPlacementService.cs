@@ -13,6 +13,7 @@ namespace GastronomyApp.Core.Services;
 public sealed class OrderPlacementService
 {
   private readonly IGastronomyDatabase _database;
+  private readonly OrderItemLifecycle _itemLifecycle;
   private readonly TypeAdapterConfig _mapping;
   private readonly SequenceNumberAllocator _numberAllocator;
   private readonly OrderService _orderService;
@@ -21,7 +22,15 @@ public sealed class OrderPlacementService
   private readonly StockSoldOutMarker _soldOutMarker;
   private readonly TimeProvider _timeProvider;
 
-  public OrderPlacementService(IGastronomyDatabase database, TypeAdapterConfig mapping, RunningFestivalLookup runningFestival, SequenceNumberAllocator numberAllocator, OrderService orderService, OrderRoutingResolver routingResolver, StockSoldOutMarker soldOutMarker, TimeProvider timeProvider)
+  public OrderPlacementService(IGastronomyDatabase database,
+                               TypeAdapterConfig mapping,
+                               RunningFestivalLookup runningFestival,
+                               SequenceNumberAllocator numberAllocator,
+                               OrderService orderService,
+                               OrderRoutingResolver routingResolver,
+                               StockSoldOutMarker soldOutMarker,
+                               OrderItemLifecycle itemLifecycle,
+                               TimeProvider timeProvider)
   {
     _database = database;
     _mapping = mapping;
@@ -30,6 +39,7 @@ public sealed class OrderPlacementService
     _orderService = orderService;
     _routingResolver = routingResolver;
     _soldOutMarker = soldOutMarker;
+    _itemLifecycle = itemLifecycle;
     _timeProvider = timeProvider;
   }
 
@@ -57,6 +67,11 @@ public sealed class OrderPlacementService
     _database.Orders.Add(order);
     await _database.SaveChangesAsync(cancellationToken);
 
+    foreach (var item in routing.Value)
+      _itemLifecycle.PointAtFirstStatus(item);
+
+    await _database.SaveChangesAsync(cancellationToken);
+
     await _soldOutMarker.MarkItemsWithoutEnoughStockSoldOutAsync(festival.Id, cancellationToken);
 
     return await ReadPlacedOrderAsync(order.Id, cancellationToken);
@@ -69,6 +84,7 @@ public sealed class OrderPlacementService
                                .ThenInclude(stationOrder => stationOrder.Station)
                                .Include(candidate => candidate.StationOrders)
                                .ThenInclude(stationOrder => stationOrder.Items)
+                               .ThenInclude(item => item.CurrentStatus)
                                .FirstAsync(candidate => candidate.Id == orderId, cancellationToken);
 
     return order.Adapt<PlacedOrderView>(_mapping) with
@@ -180,6 +196,8 @@ public sealed class OrderPlacementService
 
     foreach (var routedItem in routedItems)
     {
+      _itemLifecycle.AppendStatus(routedItem, OrderItemState.Open, new(staffMemberId, null), createdAtUtc);
+
       var stationOrder = routedItem.StationOrder;
 
       if (order.StationOrders.Contains(stationOrder))

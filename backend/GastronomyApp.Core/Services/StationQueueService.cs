@@ -2,6 +2,7 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Stations;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Mapping;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Results;
@@ -13,15 +14,17 @@ namespace GastronomyApp.Core.Services;
 public sealed class StationQueueService
 {
   private readonly IGastronomyDatabase _database;
+  private readonly OrderItemLifecycle _itemLifecycle;
   private readonly TypeAdapterConfig _mapping;
   private readonly RunningFestivalLookup _runningFestival;
   private readonly TimeProvider _timeProvider;
 
-  public StationQueueService(IGastronomyDatabase database, TypeAdapterConfig mapping, RunningFestivalLookup runningFestival, TimeProvider timeProvider)
+  public StationQueueService(IGastronomyDatabase database, TypeAdapterConfig mapping, RunningFestivalLookup runningFestival, OrderItemLifecycle itemLifecycle, TimeProvider timeProvider)
   {
     _database = database;
     _mapping = mapping;
     _runningFestival = runningFestival;
+    _itemLifecycle = itemLifecycle;
     _timeProvider = timeProvider;
   }
 
@@ -42,7 +45,7 @@ public sealed class StationQueueService
     if (access.IsError)
       return access.Errors;
 
-    List<StationOrder> fulfilled = await StationOrdersWithTheirCards(access.Value).Where(stationOrder => stationOrder.Items.Any(item => item.FulfilledAtUtc != null)).ToListAsync(cancellationToken);
+    List<StationOrder> fulfilled = await StationOrdersWithTheirCards(access.Value).Where(stationOrder => stationOrder.Items.AsQueryable().Any(OrderItemStates.HandedOutPredicate)).ToListAsync(cancellationToken);
 
     return new StationFulfilledView(fulfilled.Select(stationOrder => stationOrder.Adapt<StationOrderQueueView>(_mapping)).ToList());
   }
@@ -64,9 +67,10 @@ public sealed class StationQueueService
       return refusedIds;
 
     var fulfilledAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
+    OrderItemStatusAuthor station = new(null, stationId);
 
-    foreach (var item in itemsAtThisStation.Values.Where(item => item.FulfilledAtUtc is null))
-      item.FulfilledAtUtc = fulfilledAtUtc;
+    foreach (var item in itemsAtThisStation.Values.Where(item => _itemLifecycle.CanAppendStatus(item, OrderItemState.HandedOut)))
+      _itemLifecycle.AppendStatus(item, OrderItemState.HandedOut, station, fulfilledAtUtc);
 
     await _database.SaveChangesAsync(cancellationToken);
 
@@ -95,7 +99,7 @@ public sealed class StationQueueService
         continue;
       }
 
-      if (item.FulfilledAtUtc is null)
+      if (!_itemLifecycle.CanAppendStatus(item, OrderItemState.Open))
       {
         refusedIds.Add(Refusal.StationQueue.ItemNotFulfilled(item.Id));
         continue;
@@ -107,8 +111,11 @@ public sealed class StationQueueService
     if (refusedIds.Count > 0)
       return refusedIds;
 
+    var putBackAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
+    OrderItemStatusAuthor station = new(null, stationId);
+
     foreach (var item in toPutBack)
-      item.FulfilledAtUtc = null;
+      _itemLifecycle.AppendStatus(item, OrderItemState.Open, station, putBackAtUtc);
 
     await _database.SaveChangesAsync(cancellationToken);
 
@@ -157,7 +164,7 @@ public sealed class StationQueueService
 
   private async Task<StationQueueView> ReadQueueAtAsync(StationAtFestival access, CancellationToken cancellationToken)
   {
-    List<StationOrder> unfinished = await StationOrdersWithTheirCards(access).Where(stationOrder => stationOrder.Items.Any(item => item.FulfilledAtUtc == null)).ToListAsync(cancellationToken);
+    List<StationOrder> unfinished = await StationOrdersWithTheirCards(access).Where(stationOrder => stationOrder.Items.AsQueryable().Any(OrderItemStates.NotHandedOutPredicate)).ToListAsync(cancellationToken);
     List<StationOrderQueueView> orders = unfinished.Select(stationOrder => stationOrder.Adapt<StationOrderQueueView>(_mapping)).ToList();
 
     return new(access.Station, orders, orders.Where(IsInAsItComesColumn).ToList());
@@ -168,6 +175,7 @@ public sealed class StationQueueService
     return _database.StationOrders.AsNoTracking()
                     .Where(stationOrder => stationOrder.StationId == access.Station.Id && stationOrder.FestivalId == access.FestivalId)
                     .Include(stationOrder => stationOrder.Items)
+                    .ThenInclude(item => item.CurrentStatus)
                     .Include(stationOrder => stationOrder.Order)
                     .ThenInclude(order => order.StaffMember)
                     .Include(stationOrder => stationOrder.Order)
@@ -177,7 +185,7 @@ public sealed class StationQueueService
 
   private async Task<Dictionary<Guid, OrderItem>> FindItemsAtStationAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
   {
-    return await _database.OrderItems.Where(item => orderItemIds.Contains(item.Id) && item.StationOrder.StationId == stationId).ToDictionaryAsync(item => item.Id, cancellationToken);
+    return await _database.OrderItems.Include(item => item.CurrentStatus).Where(item => orderItemIds.Contains(item.Id) && item.StationOrder.StationId == stationId).ToDictionaryAsync(item => item.Id, cancellationToken);
   }
 
   private bool IsInAsItComesColumn(StationOrderQueueView stationOrder)

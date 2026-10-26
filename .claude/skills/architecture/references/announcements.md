@@ -12,7 +12,7 @@ Five SignalR hub events exist, and no others are added without a page here sayin
 | Event | Payload | Groups | Raised when |
 |---|---|---|---|
 | `ConfigurationChanged` | none | `Devices`, `Admin`, `Stations` | any entity an admin edits was added, changed or deleted: catalog category, catalog item, festival, festival catalog item, item station assignment, station, festival station, staff member, unit, ingredient, recipe line, festival stock row, area, table, festival station shape |
-| `OrdersChanged` | none | `Devices`, `Admin`, `Stations` | an order, a station order or an order item was added, changed or deleted, which covers placing, handing out, putting back, hiding and settling |
+| `OrdersChanged` | none | `Devices`, `Admin`, `Stations` | an order, a station order, an order item or an order item status was added, changed or deleted, which covers placing, handing out, putting back, hiding and settling |
 | `EnrolmentCompleted` | staff member id or station id, owner name, device id | `Admin` | a device redeemed an invitation |
 | `DeviceRevoked` | device id | `device:{id}`, `Admin` | a device was signed out |
 | `GroupsJoined` | none | the connecting connection only | the laptop has put a new connection into all its groups |
@@ -24,7 +24,7 @@ WiFi that carries nothing else, while a fine-grained event is exactly the thing 
 
 The decision sits on the entity. `HubEvent` and `RaisesAttribute` live in `Core/Announcements`, and
 every entity class carries `[Raises(...)]` with the events a write to it raises: the configuration
-entities `ConfigurationChanged`, `Order`, `StationOrder` and `OrderItem` `OrdersChanged`, `Festival`
+entities `ConfigurationChanged`, `Order`, `StationOrder`, `OrderItem` and `OrderItemStatus` `OrdersChanged`, `Festival`
 and `FestivalStation` both because an order moves their counters, and `Device` and
 `EnrolmentInvitation` an empty list. A save interceptor (`ChangeAnnouncementInterceptor` in
 `Infrastructure/Persistence`) on the one database context unions those lists over every added,
@@ -83,7 +83,7 @@ The mechanism is per entity type, so the hub tests prove it per type through one
 `ConfigurationChangedAnnouncementTest` for a category, an article, a festival, a station, a waiter,
 a station removed from a festival with its assignments, an area, a table, a station shape on the
 plan, a new, renamed, activated and deactivated unit, and a phone replaced over several saves;
-`OrdersChangedAnnouncementTest` for placing, handing out, putting back, hiding and settling. Each
+`OrdersChangedAnnouncementTest` for placing (two saves, one event), handing out (with the status rows it writes), putting back, hiding and settling. Each
 asserts the phone, the admin connection and the station tablet hear the event exactly once. A new
 entity type gets a hub test through one of its routes in the same change. The tests listen through
 `HubEventListener`, built on the test factory. The interceptor's unit tests cover the union of

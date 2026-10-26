@@ -591,9 +591,9 @@ public sealed class OpenItemEndpointsTest
   private async Task FulfillAndSettleAsync(Guid orderItemId)
   {
     await using var database = _context.Factory.CreateContext();
+    await new StoredItemHandOut().HandOutItemAsync(database, orderItemId);
     var item = await database.OrderItems.FirstAsync(candidate => candidate.Id == orderItemId);
 
-    item.FulfilledAtUtc = DateTime.UtcNow;
     item.SettledAtUtc = DateTime.UtcNow;
     item.SettledByStaffMemberId = _context.World.StaffMemberId;
     item.ChargedPriceCents = item.UnitPriceCents;

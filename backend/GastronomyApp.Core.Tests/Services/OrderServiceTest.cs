@@ -7,6 +7,7 @@ namespace GastronomyApp.Core.Tests.Services;
 [TestFixture]
 public sealed class OrderServiceTest
 {
+  private readonly OrderItemLifecycle _lifecycle = new();
   private readonly OrderService _service = new();
 
   private readonly DateTime _placedAtUtc = new(2026, 9, 5, 19, 5, 0, DateTimeKind.Utc);
@@ -149,15 +150,22 @@ public sealed class OrderServiceTest
 
     for (var index = 0; index < itemCount; index++)
     {
-      stationOrder.Items.Add(new()
-                             {
-                               Id = Guid.NewGuid(),
-                               StationOrderId = stationOrder.Id,
-                               CatalogItemId = Guid.NewGuid(),
-                               ItemName = "Bratwurst",
-                               UnitPriceCents = 350,
-                               FulfilledAtUtc = index < fulfilledItemCount ? _handedOutAtUtc : null
-                             });
+      OrderItem item = new()
+                       {
+                         Id = Guid.NewGuid(),
+                         StationOrderId = stationOrder.Id,
+                         CatalogItemId = Guid.NewGuid(),
+                         ItemName = "Bratwurst",
+                         UnitPriceCents = 350
+                       };
+
+      _lifecycle.AppendStatus(item, OrderItemState.Open, new(Guid.NewGuid(), null), _placedAtUtc);
+      _lifecycle.PointAtFirstStatus(item);
+
+      if (index < fulfilledItemCount)
+        _lifecycle.AppendStatus(item, OrderItemState.HandedOut, new(null, stationOrder.StationId), _handedOutAtUtc);
+
+      stationOrder.Items.Add(item);
     }
 
     return stationOrder;

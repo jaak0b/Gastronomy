@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.Data.Sqlite;
@@ -75,7 +77,7 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(orderItem.SettledAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 18, 0, 0)));
                       Assert.That(orderItem.SettledByStaffMemberId, Is.EqualTo(staffMemberId));
                       Assert.That(orderItem.PaymentMethod, Is.Null);
-                      Assert.That(appliedMigrations, Has.Count.EqualTo(11));
+                      Assert.That(appliedMigrations, Has.Count.EqualTo(12));
                       Assert.That(appliedMigrations[0], Is.EqualTo(_releasedSchema.MigrationId));
                       Assert.That(appliedMigrations[1], Does.EndWith("_CollateCategoryNamesAndCapitalizeQRColumns"));
                       Assert.That(appliedMigrations[2], Does.EndWith("_DropOrderNote"));
@@ -87,6 +89,7 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(appliedMigrations[8], Does.EndWith("_AddUnits"));
                       Assert.That(appliedMigrations[9], Does.EndWith("_RemoveDeviceLastSeen"));
                       Assert.That(appliedMigrations[10], Does.EndWith("_NameColumnsIgnoreCase"));
+                      Assert.That(appliedMigrations[11], Does.EndWith("_AddOrderItemStatusHistory"));
                       Assert.That(ingredientCount, Is.Zero);
                       Assert.That(stockRowCount, Is.Zero);
                       Assert.That(recipeLineCount, Is.Zero);
@@ -452,6 +455,101 @@ public sealed class ReleasedDatabaseUpgradeTest
   }
 
   [Test]
+  public async Task MigrateAsync_OnReleasedDatabaseWithAnOpenAndAHandedOutItem_GivesEachItsHistoryAndPointsAtTheLastStatus()
+  {
+    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
+    var categoryId = Guid.NewGuid();
+    var festivalId = Guid.NewGuid();
+    var staffMemberId = Guid.NewGuid();
+    var orderId = Guid.NewGuid();
+    var stationId = Guid.NewGuid();
+    var catalogItemId = Guid.NewGuid();
+    var openItemId = Guid.NewGuid();
+    var handedOutItemId = Guid.NewGuid();
+
+    var connection = fixture.OpenConnection();
+    await ExecuteAsync(connection, _releasedSchema.Sql);
+    await InsertCatalogCategoryAsync(connection, categoryId);
+    await InsertFestivalAsync(connection, festivalId);
+    await InsertStaffMemberAsync(connection, staffMemberId);
+    await InsertOrderAsync(connection, orderId, festivalId, staffMemberId);
+    await InsertStationAndCatalogItemAsync(connection, stationId, catalogItemId, categoryId);
+    await InsertOpenAndHandedOutItemsAsync(connection, orderId, festivalId, stationId, catalogItemId, openItemId, handedOutItemId);
+
+    var context = fixture.CreateContext();
+    await context.Database.MigrateAsync();
+
+    List<OrderItem> items = await context.Set<OrderItem>().Include(persisted => persisted.CurrentStatus).ToListAsync();
+    List<OrderItemStatus> openHistory = await context.Set<OrderItemStatus>().Where(status => status.OrderItemId == openItemId).ToListAsync();
+    List<OrderItemStatus> handedOutHistory = await context.Set<OrderItemStatus>().Where(status => status.OrderItemId == handedOutItemId).OrderBy(status => status.CreatedAtUtc).ToListAsync();
+    var openItem = items.Single(item => item.Id == openItemId);
+    var handedOutItem = items.Single(item => item.Id == handedOutItemId);
+    var brokenLinks = await context.Database.SqlQueryRaw<string>("SELECT \"table\" AS \"Value\" FROM pragma_foreign_key_check").ToListAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(openHistory, Has.Count.EqualTo(1));
+                      Assert.That(openHistory[0].Status, Is.EqualTo(OrderItemState.Open));
+                      Assert.That(openHistory[0].PreviousStatusId, Is.Null);
+                      Assert.That(openHistory[0].CreatedAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 17, 30, 0)));
+                      Assert.That(openHistory[0].CreatedByStaffMemberId, Is.EqualTo(staffMemberId));
+                      Assert.That(openHistory[0].CreatedByStationId, Is.Null);
+                      Assert.That(openItem.CurrentStatusId, Is.EqualTo(openHistory[0].Id));
+                      Assert.That(handedOutHistory.Select(status => status.Status),
+                                  Is.EqualTo(new[]
+                                             {
+                                               OrderItemState.Open,
+                                               OrderItemState.HandedOut
+                                             }));
+                      Assert.That(handedOutHistory[0].CreatedAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 17, 30, 0)));
+                      Assert.That(handedOutHistory[0].CreatedByStaffMemberId, Is.EqualTo(staffMemberId));
+                      Assert.That(handedOutHistory[1].PreviousStatusId, Is.EqualTo(handedOutHistory[0].Id));
+                      Assert.That(handedOutHistory[1].CreatedAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 17, 45, 0)));
+                      Assert.That(handedOutHistory[1].CreatedByStationId, Is.EqualTo(stationId));
+                      Assert.That(handedOutHistory[1].CreatedByStaffMemberId, Is.Null);
+                      Assert.That(handedOutItem.CurrentStatusId, Is.EqualTo(handedOutHistory[1].Id));
+                      Assert.That(handedOutItem.CurrentStatus!.Status, Is.EqualTo(OrderItemState.HandedOut));
+                      Assert.That(brokenLinks, Is.Empty);
+                    });
+  }
+
+  [Test]
+  public async Task MigrateAsync_TheStatusHistoryOnAFestivalWithTwentyThousandItems_FinishesWellWithinTheTimeBound()
+  {
+    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
+    var categoryId = Guid.NewGuid();
+    var festivalId = Guid.NewGuid();
+    var staffMemberId = Guid.NewGuid();
+    var stationId = Guid.NewGuid();
+    var catalogItemId = Guid.NewGuid();
+
+    var connection = fixture.OpenConnection();
+    await ExecuteAsync(connection, _releasedSchema.Sql);
+    await InsertCatalogCategoryAsync(connection, categoryId);
+    await InsertFestivalAsync(connection, festivalId);
+    await InsertStaffMemberAsync(connection, staffMemberId);
+    await InsertStationAndCatalogItemAsync(connection, stationId, catalogItemId, categoryId);
+    await InsertManyOrdersWithFiveItemsEachAsync(connection, festivalId, staffMemberId, stationId, catalogItemId, 4000);
+
+    var context = fixture.CreateContext();
+    await context.Database.MigrateAsync("20261025160032_NameColumnsIgnoreCase", TestContext.CurrentContext.CancellationToken);
+
+    var stopwatch = Stopwatch.StartNew();
+    await context.Database.MigrateAsync(TestContext.CurrentContext.CancellationToken);
+    var elapsed = stopwatch.Elapsed;
+
+    var statusCount = await context.Set<OrderItemStatus>().CountAsync(TestContext.CurrentContext.CancellationToken);
+    var itemsWithoutCurrentStatus = await context.Set<OrderItem>().CountAsync(item => item.CurrentStatusId == null, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(elapsed, Is.LessThan(TimeSpan.FromSeconds(20)), "The status history of a busy festival must be written in seconds, not minutes, while the laptop updates.");
+                      Assert.That(statusCount, Is.EqualTo(30000));
+                      Assert.That(itemsWithoutCurrentStatus, Is.Zero);
+                    });
+  }
+
+  [Test]
   public async Task MigrateAsync_BackToTheReleasedSchema_KeepsTheIngredientsAndMapsTheirUnitsBack()
   {
     using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
@@ -762,6 +860,54 @@ public sealed class ReleasedDatabaseUpgradeTest
     command.Parameters.AddWithValue("$stationId", ToStoredText(stationId));
     command.Parameters.AddWithValue("$orderItemId", ToStoredText(Guid.NewGuid()));
     command.Parameters.AddWithValue("$catalogItemId", ToStoredText(catalogItemId));
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertManyOrdersWithFiveItemsEachAsync(SqliteConnection connection, Guid festivalId, Guid staffMemberId, Guid stationId, Guid catalogItemId, int orderCount)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          WITH RECURSIVE "Numbers"("N") AS (SELECT 1 UNION ALL SELECT "N" + 1 FROM "Numbers" WHERE "N" < $orderCount)
+                          INSERT INTO "Orders" ("Id", "ClientOrderId", "FestivalId", "GlobalOrderNumber", "StaffMemberId", "TableName", "Note", "CreatedAtUtc")
+                          SELECT printf('00000000-0000-4000-8000-%012d', "N"), printf('00000000-0000-4000-8001-%012d', "N"), $festivalId, "N", $staffMemberId, 'Tisch 7', NULL, '2026-09-20 17:30:00'
+                          FROM "Numbers";
+
+                          INSERT INTO "StationOrders" ("Id", "OrderId", "FestivalId", "StationId", "StationOrderNumber", "DeliveryMode", "IsHiddenFromAsItComesQueue")
+                          SELECT printf('00000000-0000-4000-9000-%012d', "GlobalOrderNumber"), "Id", $festivalId, $stationId, "GlobalOrderNumber", 0, 0
+                          FROM "Orders";
+
+                          WITH RECURSIVE "Numbers"("N") AS (SELECT 1 UNION ALL SELECT "N" + 1 FROM "Numbers" WHERE "N" < $orderCount * 5)
+                          INSERT INTO "OrderItems" ("Id", "StationOrderId", "CatalogItemId", "ItemName", "UnitPriceCents", "Note", "FulfilledAtUtc", "SettledAtUtc", "ChargedPriceCents", "SettledByStaffMemberId", "PaymentNotice")
+                          SELECT printf('00000000-0000-4000-A000-%012d', "N"), printf('00000000-0000-4000-9000-%012d', ("N" - 1) / 5 + 1), $catalogItemId, 'Bratwurst', 350, NULL,
+                                 CASE WHEN "N" % 2 = 0 THEN '2026-09-20 17:45:00' END, NULL, NULL, NULL, NULL
+                          FROM "Numbers";
+                          """;
+    command.Parameters.AddWithValue("$orderCount", orderCount);
+    command.Parameters.AddWithValue("$festivalId", ToStoredText(festivalId));
+    command.Parameters.AddWithValue("$staffMemberId", ToStoredText(staffMemberId));
+    command.Parameters.AddWithValue("$stationId", ToStoredText(stationId));
+    command.Parameters.AddWithValue("$catalogItemId", ToStoredText(catalogItemId));
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertOpenAndHandedOutItemsAsync(SqliteConnection connection, Guid orderId, Guid festivalId, Guid stationId, Guid catalogItemId, Guid openItemId, Guid handedOutItemId)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "StationOrders" ("Id", "OrderId", "FestivalId", "StationId", "StationOrderNumber", "DeliveryMode", "IsHiddenFromAsItComesQueue")
+                          VALUES ($stationOrderId, $orderId, $festivalId, $stationId, 1, 1, 0);
+                          INSERT INTO "OrderItems" ("Id", "StationOrderId", "CatalogItemId", "ItemName", "UnitPriceCents", "Note", "FulfilledAtUtc", "SettledAtUtc", "ChargedPriceCents", "SettledByStaffMemberId", "PaymentNotice")
+                          VALUES ($openItemId, $stationOrderId, $catalogItemId, 'Bratwurst', 350, NULL, NULL, NULL, NULL, NULL, NULL);
+                          INSERT INTO "OrderItems" ("Id", "StationOrderId", "CatalogItemId", "ItemName", "UnitPriceCents", "Note", "FulfilledAtUtc", "SettledAtUtc", "ChargedPriceCents", "SettledByStaffMemberId", "PaymentNotice")
+                          VALUES ($handedOutItemId, $stationOrderId, $catalogItemId, 'Bratwurst', 350, 'Ohne Senf', '2026-09-20 17:45:00', NULL, NULL, NULL, NULL);
+                          """;
+    command.Parameters.AddWithValue("$stationOrderId", ToStoredText(Guid.NewGuid()));
+    command.Parameters.AddWithValue("$orderId", ToStoredText(orderId));
+    command.Parameters.AddWithValue("$festivalId", ToStoredText(festivalId));
+    command.Parameters.AddWithValue("$stationId", ToStoredText(stationId));
+    command.Parameters.AddWithValue("$catalogItemId", ToStoredText(catalogItemId));
+    command.Parameters.AddWithValue("$openItemId", ToStoredText(openItemId));
+    command.Parameters.AddWithValue("$handedOutItemId", ToStoredText(handedOutItemId));
     await command.ExecuteNonQueryAsync();
   }
 

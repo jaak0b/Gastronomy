@@ -25,6 +25,8 @@ public interface IGastronomyDatabase
 
   public DbSet<OrderItem> OrderItems { get; }
 
+  public DbSet<OrderItemStatus> OrderItemStatuses { get; }
+
   public DbSet<Festival> Festivals { get; }
 
   public DbSet<FestivalStation> FestivalStations { get; }

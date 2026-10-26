@@ -19,6 +19,8 @@ public sealed class OpenItemMappingTest
 
   private readonly DateTime _orderedAtUtc = new(2026, 9, 5, 19, 5, 0, DateTimeKind.Utc);
 
+  private readonly OrderItemStatusSeeder _statusSeeder = new();
+
   private int _ordersPlaced;
 
   private TypeAdapterConfig _mapping = null!;
@@ -27,7 +29,7 @@ public sealed class OpenItemMappingTest
   public void Map_APositionOfATable_CarriesWhenItWasHandedOutAndWhenItWasSettled()
   {
     var limonade = Item("Limonade", 250);
-    limonade.FulfilledAtUtc = _orderedAtUtc.AddMinutes(20);
+    _statusSeeder.HandOut(limonade, Guid.NewGuid(), _orderedAtUtc.AddMinutes(20));
     limonade.SettledAtUtc = _orderedAtUtc.AddMinutes(25);
     var order = OrderAt("Tisch 12", limonade);
 
@@ -224,13 +226,15 @@ public sealed class OpenItemMappingTest
 
   private OrderItem Item(string itemName, int unitPriceCents)
   {
-    return new()
-           {
-             Id = Guid.NewGuid(),
-             StationOrderId = Guid.NewGuid(),
-             CatalogItemId = Guid.NewGuid(),
-             ItemName = itemName,
-             UnitPriceCents = unitPriceCents
-           };
+    OrderItem item = new()
+                     {
+                       Id = Guid.NewGuid(),
+                       StationOrderId = Guid.NewGuid(),
+                       CatalogItemId = Guid.NewGuid(),
+                       ItemName = itemName,
+                       UnitPriceCents = unitPriceCents
+                     };
+
+    return _statusSeeder.OpenAndMakeCurrent(item, Guid.NewGuid(), _orderedAtUtc);
   }
 }

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
+using GastronomyApp.Contracts.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
@@ -233,7 +234,7 @@ public sealed class FestivalScopeEndpointsTest
     var body = await ReadBodyAsync(response);
 
     await using var afterwards = _context.Factory.CreateContext();
-    var stillOpen = await afterwards.OrderItems.CountAsync(item => item.FulfilledAtUtc == null);
+    var stillOpen = await afterwards.OrderItems.CountAsync(item => item.CurrentStatus!.Status == OrderItemState.Open);
 
     Assert.Multiple(() =>
                     {

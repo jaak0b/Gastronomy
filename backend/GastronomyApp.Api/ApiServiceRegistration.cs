@@ -62,6 +62,7 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton<OrderRoutingResolver>();
     services.AddSingleton<OrderService>();
+    services.AddSingleton<OrderItemLifecycle>();
     services.AddSingleton<StationWaitingTimes>();
     services.AddSingleton<TableProgress>();
     services.AddSingleton<FestivalSchedule>();

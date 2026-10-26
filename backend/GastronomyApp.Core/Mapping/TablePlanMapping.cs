@@ -25,7 +25,7 @@ public sealed class TablePlanMapping : IRegister
 
     config.NewConfig<FestivalStationShape, TablePlanStationShapeView>().Map(view => view.StationName, shape => shape.FestivalStation.Station.Name).Map(view => view.Geometry, shape => shape);
 
-    config.NewConfig<OrderItem, OrderItemFlags>().Map(flags => flags.IsHandedOut, item => item.FulfilledAtUtc != null).Map(flags => flags.IsSettled, item => item.SettledAtUtc != null);
+    config.NewConfig<OrderItem, OrderItemFlags>().Map(flags => flags.IsHandedOut, OrderItemStates.HandedOutPredicate).Map(flags => flags.IsSettled, item => item.SettledAtUtc != null);
 
     config.NewConfig<Table, ShownTable>().Map(shown => shown.TableId, table => table.Id).Map(shown => shown.Geometry, table => table).Map(shown => shown.ItemFlagsPerOrder, table => table.Orders.Select(order => order.StationOrders.SelectMany(stationOrder => stationOrder.Items)));
 

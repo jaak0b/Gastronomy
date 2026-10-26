@@ -1,5 +1,6 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Mapping;
 
 namespace GastronomyApp.Core.Services;
 
@@ -9,7 +10,7 @@ public sealed class OrderService
   {
     ArgumentNullException.ThrowIfNull(order);
 
-    var handOutShare = ShareOfFlaggedItems(order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Select(item => item.FulfilledAtUtc is not null));
+    var handOutShare = ShareOfFlaggedItems(order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Select(OrderItemStates.IsHandedOut));
 
     if (handOutShare == ShareState.None)
       return OrderStatus.Open;

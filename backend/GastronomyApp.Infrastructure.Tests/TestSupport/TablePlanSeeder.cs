@@ -9,6 +9,8 @@ public sealed class TablePlanSeeder
 {
   private readonly DateTime _createdAtUtc = new(2026, 8, 27, 18, 30, 0, DateTimeKind.Utc);
 
+  private readonly OrderItemStatusSeeder _statusSeeder = new();
+
   public async Task<Guid> AddFestivalAsync(GastronomyAppDbContext dbContext)
   {
     var festivalId = Guid.NewGuid();
@@ -90,21 +92,21 @@ public sealed class TablePlanSeeder
                                   StationOrderNumber = globalOrderNumber,
                                   DeliveryMode = DeliveryMode.Together
                                 };
-    stationOrder.Items.Add(new()
-                           {
-                             Id = Guid.NewGuid(),
-                             StationOrderId = stationOrderId,
-                             CatalogItemId = seeded.SausageItemId,
-                             ItemName = "Bratwurst",
-                             UnitPriceCents = 350,
-                             FulfilledAtUtc = handedOutAtUtc,
-                             SettledAtUtc = settledAtUtc,
-                             ChargedPriceCents = settledAtUtc is null ? null : 350,
-                             SettledByStaffMemberId = settledAtUtc is null ? null : seeded.StaffMemberId
-                           });
+    OrderItem item = new()
+                     {
+                       Id = Guid.NewGuid(),
+                       StationOrderId = stationOrderId,
+                       CatalogItemId = seeded.SausageItemId,
+                       ItemName = "Bratwurst",
+                       UnitPriceCents = 350,
+                       SettledAtUtc = settledAtUtc,
+                       ChargedPriceCents = settledAtUtc is null ? null : 350,
+                       SettledByStaffMemberId = settledAtUtc is null ? null : seeded.StaffMemberId
+                     };
+    stationOrder.Items.Add(_statusSeeder.OpenAndHandOutOnSaveWhenAHandOutTimeIsGiven(item, seeded.StaffMemberId, _createdAtUtc, seeded.KitchenStationId, handedOutAtUtc));
     order.StationOrders.Add(stationOrder);
     dbContext.Orders.Add(order);
-    await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    await _statusSeeder.SaveAsync(dbContext, TestContext.CurrentContext.CancellationToken);
   }
 
   public async Task AddOrderAtKitchenAndBarAsync(GastronomyAppDbContext dbContext, SeededDomain seeded, Guid tableId, int globalOrderNumber, DateTime? kitchenHandedOutAtUtc)
@@ -123,7 +125,7 @@ public sealed class TablePlanSeeder
     order.StationOrders.Add(StationOrderWithOneItem(seeded, orderId, globalOrderNumber, seeded.KitchenStationId, seeded.SausageItemId, "Bratwurst", kitchenHandedOutAtUtc));
     order.StationOrders.Add(StationOrderWithOneItem(seeded, orderId, globalOrderNumber, seeded.BarStationId, seeded.LemonadeItemId, "Limonade", null));
     dbContext.Orders.Add(order);
-    await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    await _statusSeeder.SaveAsync(dbContext, TestContext.CurrentContext.CancellationToken);
   }
 
   private StationOrder StationOrderWithOneItem(SeededDomain seeded, Guid orderId, int stationOrderNumber, Guid stationId, Guid catalogItemId, string itemName, DateTime? handedOutAtUtc)
@@ -137,15 +139,15 @@ public sealed class TablePlanSeeder
                                   StationOrderNumber = stationOrderNumber,
                                   DeliveryMode = DeliveryMode.Together
                                 };
-    stationOrder.Items.Add(new()
-                           {
-                             Id = Guid.NewGuid(),
-                             StationOrderId = stationOrder.Id,
-                             CatalogItemId = catalogItemId,
-                             ItemName = itemName,
-                             UnitPriceCents = 350,
-                             FulfilledAtUtc = handedOutAtUtc
-                           });
+    OrderItem item = new()
+                     {
+                       Id = Guid.NewGuid(),
+                       StationOrderId = stationOrder.Id,
+                       CatalogItemId = catalogItemId,
+                       ItemName = itemName,
+                       UnitPriceCents = 350
+                     };
+    stationOrder.Items.Add(_statusSeeder.OpenAndHandOutOnSaveWhenAHandOutTimeIsGiven(item, seeded.StaffMemberId, _createdAtUtc, stationId, handedOutAtUtc));
 
     return stationOrder;
   }

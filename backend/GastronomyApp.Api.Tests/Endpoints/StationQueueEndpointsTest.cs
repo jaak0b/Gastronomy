@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -122,7 +123,7 @@ public sealed class StationQueueEndpointsTest
     var orders = body.RootElement.GetProperty("orders");
 
     await using var database = _context.Factory.CreateContext();
-    var stored = await database.OrderItems.SingleAsync(item => item.Id == kitchenItemIds[0]);
+    var stored = await database.OrderItems.Include(item => item.CurrentStatus).SingleAsync(item => item.Id == kitchenItemIds[0]);
 
     Assert.Multiple(() =>
                     {
@@ -131,7 +132,32 @@ public sealed class StationQueueEndpointsTest
                       Assert.That(orders.GetArrayLength(), Is.EqualTo(1));
                       Assert.That(orders[0].GetProperty("itemCount").GetInt32(), Is.EqualTo(2));
                       Assert.That(orders[0].GetProperty("fulfilledItemCount").GetInt32(), Is.EqualTo(1));
-                      Assert.That(stored.FulfilledAtUtc, Is.Not.Null);
+                      Assert.That(stored.CurrentStatus!.Status, Is.EqualTo(OrderItemState.HandedOut));
+                    });
+  }
+
+  [Test]
+  public async Task PostItemFulfill_TwoTapsOnTheSameItemAtTheSameMoment_BothSucceedAndHandItOutOnce()
+  {
+    IReadOnlyList<Guid> kitchenItemIds = await ReadKitchenItemIdsAsync(await PlaceOrderAcrossBothStationsAsync("Tisch 3"));
+
+    HttpResponseMessage[] responses = await Task.WhenAll(FulfillAsync(_kitchenToken, [kitchenItemIds[0]]), FulfillAsync(_kitchenToken, [kitchenItemIds[0]]));
+
+    foreach (var response in responses)
+      response.Dispose();
+
+    await using var database = _context.Factory.CreateContext();
+    List<OrderItemState> history = await database.OrderItemStatuses.Where(status => status.OrderItemId == kitchenItemIds[0]).Select(status => status.Status).ToListAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(responses.Select(response => response.StatusCode), Is.All.EqualTo(HttpStatusCode.OK));
+                      Assert.That(history,
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    OrderItemState.Open,
+                                                    OrderItemState.HandedOut
+                                                  }));
                     });
   }
 
@@ -187,13 +213,13 @@ public sealed class StationQueueEndpointsTest
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     await using var database = _context.Factory.CreateContext();
-    var stored = await database.OrderItems.SingleAsync(item => item.Id == kitchenItemIds[0]);
+    var stored = await database.OrderItems.Include(item => item.CurrentStatus).SingleAsync(item => item.Id == kitchenItemIds[0]);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(body.RootElement.GetProperty("orders")[0].GetProperty("fulfilledItemCount").GetInt32(), Is.Zero);
-                      Assert.That(stored.FulfilledAtUtc, Is.Null);
+                      Assert.That(stored.CurrentStatus!.Status, Is.EqualTo(OrderItemState.Open));
                     });
   }
 
@@ -224,13 +250,13 @@ public sealed class StationQueueEndpointsTest
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     await using var database = _context.Factory.CreateContext();
-    List<OrderItem> stored = await database.OrderItems.ToListAsync();
+    List<OrderItem> stored = await database.OrderItems.Include(item => item.CurrentStatus).ToListAsync();
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
                       Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.station.itemNotAtThisStation"));
-                      Assert.That(stored.Select(item => item.FulfilledAtUtc), Is.All.Null);
+                      Assert.That(stored.Select(item => item.CurrentStatus!.Status), Is.All.EqualTo(OrderItemState.Open));
                     });
   }
 

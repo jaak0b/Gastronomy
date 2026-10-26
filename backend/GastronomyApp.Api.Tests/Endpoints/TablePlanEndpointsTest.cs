@@ -234,11 +234,7 @@ public sealed class TablePlanEndpointsTest
   private async Task HandOutAsync(Guid orderItemId)
   {
     await using var database = _context.Factory.CreateContext();
-    var item = await database.OrderItems.SingleAsync(candidate => candidate.Id == orderItemId);
-
-    item.FulfilledAtUtc = DateTime.UtcNow;
-
-    await database.SaveChangesAsync();
+    await new StoredItemHandOut().HandOutItemAsync(database, orderItemId);
   }
 
   private async Task SettleAsync(IReadOnlyList<Guid> orderItemIds)
