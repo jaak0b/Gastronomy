@@ -22,7 +22,7 @@ public sealed class OrderMappingTest
   private TypeAdapterConfig _mapping = null!;
 
   [Test]
-  public void Map_AnOrderNoStationHasHandedOutYet_IsOpenAndCarriesTheTotalThePhoneDisplayed()
+  public void Map_AnOrder_CarriesItsNumberAndWhenItWasPlaced()
   {
     var order = OrderAtOneStation(350, 400);
 
@@ -33,18 +33,7 @@ public sealed class OrderMappingTest
                       Assert.That(view.OrderId, Is.EqualTo(order.Id));
                       Assert.That(view.GlobalOrderNumber, Is.EqualTo(7));
                       Assert.That(view.CreatedAtUtc, Is.EqualTo(_placedAtUtc));
-                      Assert.That(view.Status, Is.EqualTo(OrderStatus.Open));
-                      Assert.That(view.TotalCents, Is.EqualTo(750));
                     });
-  }
-
-  [Test]
-  public void Map_AnOrderWhereOneItemWasHandedOut_IsPartiallyFulfilled()
-  {
-    var order = OrderAtOneStation(350, 400);
-    order.StationOrders[0].Items[0].FulfilledAtUtc = _placedAtUtc.AddMinutes(4);
-
-    Assert.That(order.Adapt<PlacedOrderView>(_mapping).Status, Is.EqualTo(OrderStatus.PartiallyFulfilled));
   }
 
   [Test]

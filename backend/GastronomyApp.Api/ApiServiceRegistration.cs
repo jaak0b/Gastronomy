@@ -45,7 +45,6 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton<IMappingRegistration, OpenItemMapping>();
     services.AddSingleton<IMappingRegistration, SettlementMapping>();
-    services.AddSingleton<IMappingRegistration, StationQueueMapping>();
 
     services.AddSingleton(serviceProvider => new MappingConfiguration(serviceProvider.GetServices<IMappingRegistration>()).Build());
     services.AddScoped<IMapper, ServiceMapper>();
@@ -67,20 +66,15 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IAfterCommitActions>(provider => provider.GetRequiredService<AfterCommitActions>());
 
     services.AddScoped<IOpenItemRepository, OpenItemRepository>();
-    services.AddScoped<IStationRepository, StationRepository>();
     services.AddScoped<IFestivalRepository, FestivalRepository>();
-    services.AddScoped<IFestivalStationRepository, FestivalStationRepository>();
-    services.AddScoped<IStationOrderRepository, StationOrderRepository>();
 
     services.AddSingleton<OrderRoutingResolver>();
     services.AddSingleton<OrderService>();
-    services.AddSingleton<StationOrderService>();
     services.AddSingleton<StationWaitingTimes>();
     services.AddSingleton<TableProgress>();
     services.AddSingleton<FestivalSchedule>();
     services.AddSingleton<AreaShapeService>();
     services.AddSingleton<TableCopyNaming>();
-    services.AddSingleton<OrderItemFulfillmentService>();
 
     services.AddScoped<OrderItemSettlementService>();
     services.AddScoped<OpenItemsService>();
@@ -105,10 +99,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<EnrolmentService>();
     services.AddScoped<RunningFestivalLookup>();
     services.AddScoped<ItemsToHandOutLookup>();
-    services.AddScoped<StationAtFestivalLookup>();
     services.AddScoped<StationQueueService>();
-    services.AddScoped<StationQueueWriter>();
-    services.AddScoped<StationQueueChangeService>();
     services.AddScoped<EstimateService>();
     services.AddScoped<IngredientService>();
     services.AddScoped<ActivationService>();
@@ -142,8 +133,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<StationShellResponder>();
     services.AddSingleton<ClientRouteFallbackResponder>();
     services.AddSingleton<DeviceKindGate>();
-    services.AddScoped<StationQueueHandler>();
-    services.AddScoped<StationFulfillmentHandler>();
 
     services.AddValidation();
 

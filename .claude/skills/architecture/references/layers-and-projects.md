@@ -83,7 +83,7 @@ navigation properties.
   commits, and the save interceptor announces what was written (the `one-transaction-per-request` and
   `announcements` pages).
 - **A repository** exists only where loading the data for a write is complex and the same load is
-  repeated across actions, such as an order with its items or the station queue. It is never one per
+  repeated across actions, such as an order with its items or a table with its orders. It is never one per
   entity and never one method per caller.
 - **An endpoint the frontend does not call** does not exist. When an area is converted, every such
   endpoint is removed completely.

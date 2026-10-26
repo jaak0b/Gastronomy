@@ -15,8 +15,7 @@ public sealed class OpenItemMappingTest
     IMappingRegistration[] registrations =
     [
       new OpenItemMapping(),
-      new SettlementMapping(),
-      new StationQueueMapping(new())
+      new SettlementMapping()
     ];
 
     _mapper = new Mapper(new MappingConfiguration(registrations).Build());

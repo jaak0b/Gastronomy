@@ -1,19 +1,11 @@
-﻿using GastronomyApp.Contracts.Stations;
+using GastronomyApp.Contracts.Stations;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Services;
 using Mapster;
 
-namespace GastronomyApp.Api.Mapping;
+namespace GastronomyApp.Core.Mapping;
 
-public sealed class StationQueueMapping : IMappingRegistration
+public sealed class StationQueueMapping : IRegister
 {
-  private readonly StationOrderService _stationOrderService;
-
-  public StationQueueMapping(StationOrderService stationOrderService)
-  {
-    _stationOrderService = stationOrderService;
-  }
-
   public void Register(TypeAdapterConfig config)
   {
     ArgumentNullException.ThrowIfNull(config);
@@ -31,10 +23,5 @@ public sealed class StationQueueMapping : IMappingRegistration
           .Map(view => view.Items, stationOrder => stationOrder.Items.OrderBy(item => item.ItemName, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Note, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Id).ToList());
 
     config.NewConfig<Station, StationSummaryView>();
-
-    config.NewConfig<Station, StationQueueView>()
-          .Map(view => view.Station, station => station)
-          .Map(view => view.Orders, station => station.StationOrders.OrderBy(stationOrder => stationOrder.StationOrderNumber).ToList())
-          .Map(view => view.AsItComes, station => station.StationOrders.Where(stationOrder => _stationOrderService.IsInAsItComesColumn(stationOrder)).OrderBy(stationOrder => stationOrder.StationOrderNumber).ToList());
   }
 }

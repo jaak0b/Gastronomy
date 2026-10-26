@@ -24,7 +24,7 @@ public sealed class OrderPlacementServiceTest
     _tableId = await new DomainSeeder().SeedTableAsync(_fixture.DbContext, _seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     _clock = new(DateTimeOffset.UtcNow);
     RunningFestivalLookup runningFestival = new(new FestivalRepository(_fixture.DbContext, new()), new(), _clock);
-    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), runningFestival, new(_fixture.DbContext), new(), new(_fixture.DbContext, new(), NullLogger<StockSoldOutMarker>.Instance), _clock);
+    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), runningFestival, new(_fixture.DbContext), new(), new(), new(_fixture.DbContext, new(), NullLogger<StockSoldOutMarker>.Instance), _clock);
   }
 
   [TearDown]
@@ -322,6 +322,60 @@ public sealed class OrderPlacementServiceTest
     ErrorOr<PlacedOrderView> replay = await PlaceAsync(RequestWith(clientOrderId, ItemFor(_seeded.SausageItemId)));
 
     Assert.That(replay.Value.Status, Is.EqualTo(OrderStatus.Fulfilled));
+  }
+
+  [Test]
+  public async Task PlaceAsync_AReplayOfAnOrderWhoseFirstItemWasHandedOutMeanwhile_AnswersWithTheCurrentStatusAndTheTotal()
+  {
+    var clientOrderId = Guid.NewGuid();
+    await PlaceAsync(RequestWith(clientOrderId, ItemFor(_seeded.SausageItemId, unitPriceCents: 350), ItemFor(_seeded.SausageItemId, unitPriceCents: 400)));
+    var item = await _fixture.DbContext.OrderItems.OrderBy(candidate => candidate.UnitPriceCents).FirstAsync(TestContext.CurrentContext.CancellationToken);
+    item.FulfilledAtUtc = DateTime.UtcNow;
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    _fixture.DbContext.ChangeTracker.Clear();
+
+    ErrorOr<PlacedOrderView> replay = await PlaceAsync(RequestWith(clientOrderId, ItemFor(_seeded.SausageItemId)));
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(replay.Value.Status, Is.EqualTo(OrderStatus.PartiallyFulfilled));
+                      Assert.That(replay.Value.TotalCents, Is.EqualTo(750));
+                    });
+  }
+
+  [Test]
+  public async Task PlaceAsync_ARequestThatFailsSeveralChecksAtOnce_IsAnsweredByTheFirstCheckInOrderRetryFestivalTableArticleRouting()
+  {
+    var clientOrderId = Guid.NewGuid();
+    var strangerTableId = Guid.NewGuid();
+    await PlaceAsync(RequestWith(clientOrderId, ItemFor(_seeded.SausageItemId)));
+    var festival = await _fixture.DbContext.Festivals.SingleAsync(TestContext.CurrentContext.CancellationToken);
+    festival.EndsAtUtc = DateTime.UtcNow.AddHours(-1);
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    ErrorOr<PlacedOrderView> retry = await PlaceAsync(RequestWith(clientOrderId, ItemFor(Guid.NewGuid())) with { TableId = strangerTableId });
+    ErrorOr<PlacedOrderView> noFestival = await PlaceAsync(RequestWith(ItemFor(Guid.NewGuid())) with { TableId = strangerTableId });
+
+    festival.EndsAtUtc = DateTime.UtcNow.AddYears(1);
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    ErrorOr<PlacedOrderView> strangerTable = await PlaceAsync(RequestWith(ItemFor(Guid.NewGuid())) with { TableId = strangerTableId });
+
+    var sausage = await _fixture.DbContext.CatalogItems.SingleAsync(item => item.Id == _seeded.SausageItemId, TestContext.CurrentContext.CancellationToken);
+    var kitchen = await _fixture.DbContext.Stations.SingleAsync(station => station.Id == _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+    sausage.IsActive = false;
+    kitchen.IsActive = false;
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    ErrorOr<PlacedOrderView> unavailableArticle = await PlaceAsync(RequestWith(ItemFor(_seeded.SausageItemId)));
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(retry.IsSuccess, Is.True);
+                      Assert.That(noFestival.RefusalDescription(), Does.StartWith("No festival is running"));
+                      Assert.That(strangerTable.RefusalDescription(), Does.Contain(strangerTableId.ToString()));
+                      Assert.That(unavailableArticle.RefusalMessageKey(), Is.EqualTo("errors.order.itemSoldOut"));
+                    });
   }
 
   [Test]

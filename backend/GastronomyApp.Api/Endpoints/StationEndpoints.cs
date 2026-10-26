@@ -1,7 +1,6 @@
 ﻿using GastronomyApp.Api.Auth.Conventions;
 using ErrorOr;
 using GastronomyApp.Api.Answers;
-using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.Values;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Contracts.Stations;
@@ -23,15 +22,18 @@ public static class StationEndpoints
 
     var stationTablet = routes.MapGroup("/api/station").RequireAuthorization().RequireStationDevice().RequireRateLimiting(Names.RateLimitPolicies.PerDevice);
 
-    stationTablet.MapGet("/orders", async (StationDeviceCaller caller, StationQueueHandler handler, CancellationToken cancellationToken) => await handler.ListQueueAsync(caller, cancellationToken));
+    stationTablet.MapGet("/orders", async Task<ApiAnswer<StationQueueView>> (StationDeviceCaller caller, StationQueueService service, CancellationToken cancellationToken) => await service.ReadQueueAsync(caller.StationId, cancellationToken));
 
-    stationTablet.MapGet("/orders/fulfilled", async (StationDeviceCaller caller, StationQueueHandler handler, CancellationToken cancellationToken) => await handler.ListFulfilledAsync(caller, cancellationToken));
+    stationTablet.MapGet("/orders/fulfilled", async Task<ApiAnswer<StationFulfilledView>> (StationDeviceCaller caller, StationQueueService service, CancellationToken cancellationToken) => await service.ReadFulfilledAsync(caller.StationId, cancellationToken));
 
-    stationTablet.MapPost("/items/fulfill", async (StationItemSelectionRequest request, StationDeviceCaller caller, StationFulfillmentHandler handler, CancellationToken cancellationToken) => await handler.FulfillAsync(request, caller, cancellationToken));
+    stationTablet.MapPost("/items/fulfill",
+                          async Task<ApiAnswer<StationQueueView>> (StationItemSelectionRequest request, StationDeviceCaller caller, StationQueueService service, CancellationToken cancellationToken) => await service.FulfillAsync(request.OrderItemIds ?? [], caller.StationId, cancellationToken));
 
-    stationTablet.MapPost("/items/unfulfill", async (StationItemSelectionRequest request, StationDeviceCaller caller, StationFulfillmentHandler handler, CancellationToken cancellationToken) => await handler.UnfulfillAsync(request, caller, cancellationToken));
+    stationTablet.MapPost("/items/unfulfill",
+                          async Task<ApiAnswer<StationQueueView>> (StationItemSelectionRequest request, StationDeviceCaller caller, StationQueueService service, CancellationToken cancellationToken) => await service.UnfulfillAsync(request.OrderItemIds ?? [], caller.StationId, cancellationToken));
 
-    stationTablet.MapPost("/orders/{stationOrderId:guid}/hide", async (Guid stationOrderId, StationDeviceCaller caller, StationFulfillmentHandler handler, CancellationToken cancellationToken) => await handler.HideAsync(stationOrderId, caller, cancellationToken));
+    stationTablet.MapPost("/orders/{stationOrderId:guid}/hide",
+                          async Task<ApiAnswer<StationQueueView>> (Guid stationOrderId, StationDeviceCaller caller, StationQueueService service, CancellationToken cancellationToken) => await service.HideFromAsItComesQueueAsync(stationOrderId, caller.StationId, cancellationToken));
 
     return routes;
   }

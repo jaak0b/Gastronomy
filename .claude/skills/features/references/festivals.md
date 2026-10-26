@@ -21,7 +21,7 @@ Backend, under `backend/`:
   `UpdateInstallGate` uses it to hold an update back). `RunningFestivalLookup` is what every other
   service asks (`FindAsync`, `IsRunning`): it reads the clock through `TimeProvider` and hands the
   question to `FestivalSchedule`. `CatalogService`, `OrderPlacementService`,
-  `OrderItemSettlementService`, `OpenItemsService`, `EstimateService`, `StationAtFestivalLookup`,
+  `OrderItemSettlementService`, `OpenItemsService`, `EstimateService`, `StationQueueService`,
   `FestivalMenuService`, `FestivalStationService` and the administration services of articles and
   stations all hold one.
 - `Core/Services/FestivalService.cs` is the service of the Feste tab and reads and writes through
@@ -62,7 +62,7 @@ Backend, under `backend/`:
   `Core/Services/ItemsToHandOutLookup.cs`, the one home of that check: `FindStationIdsIfRunningAsync`
   (a festival: its stations with an item not handed out, and none unless it runs) and
   `FindStationIdsAtTheRunningFestivalAsync` (the same for the running festival, none when nothing
-  runs), over `StationRepository.FindStationIdsWithItemsToHandOutAsync`. The list,
+  runs), over `IGastronomyDatabase` and `OrderItemQueries`. The list,
   `FestivalStationService.RemoveAsync` (`StationHasOrdersAtTheFestival`) and
   `StationService.DeactivateAsync` (`StationHasUnfulfilledItems`) all ask it, and so
   do the tables and areas of the table plan: its read and the hiding of a table or an area ask
@@ -191,12 +191,12 @@ Every point below is intended behaviour. A change to any of them needs the owner
 ## Tests
 
 - `GastronomyApp.Core.Tests/Services`: `FestivalScheduleTest` (the start counts, the end does not, a
-  hidden festival never runs, overlap with a hidden festival), `RunningFestivalLookupTest`,
-  and `StationAtFestivalLookupTest`; the no running festival cases of
+  hidden festival never runs, overlap with a hidden festival) and `RunningFestivalLookupTest`;
+  the no running festival cases of
   `Infrastructure.Tests/Services/CatalogServiceTest`, `OrderPlacementServiceTest`, `OrderItemSettlementServiceTest` and
   `StationQueueServiceTest`.
 - `GastronomyApp.Infrastructure.Tests`: `Repositories/FestivalRepositoryTest` (running),
-  `Repositories/FestivalStationRepositoryTest`, `Services/FestivalMenuServiceTest` and
+  `Services/FestivalMenuServiceTest` and
   `Services/FestivalStationServiceTest` (every action on the real DbContext, shapes included),
   `Configurations/OrderNumberIndexTest` (the station number index) and
   `Services/FestivalServiceTest` (every festival action on the real DbContext: the list with its
@@ -205,10 +205,9 @@ Every point below is intended behaviour. A change to any of them needs the owner
 - `GastronomyApp.Api.Tests/Endpoints`: `AdminFestivalEndpointsTest` (the wire shape, overlap with a
   hidden festival, show without an overlap check, hide while running refused with its reason, copy) and
   `FestivalScopeEndpointsTest`.
-- What would refuse taking a station out: `GastronomyApp.Core.Tests/Services/ItemsToHandOutLookupTest`
-  (running, over, not yet started, nothing running), `StationRepositoryTest` in
-  `GastronomyApp.Infrastructure.Tests/Repositories` (another festival's open items name no
-  station), `StationServiceTest` in `GastronomyApp.Infrastructure.Tests/Services` (which festival the flag is read at, a festival that
+- What would refuse taking a station out: `ItemsToHandOutLookupTest` in
+  `GastronomyApp.Infrastructure.Tests/Services` (running, over, not yet started, nothing running,
+  another festival's open items name no station), `StationServiceTest` in `GastronomyApp.Infrastructure.Tests/Services` (which festival the flag is read at, a festival that
   is over, which stranded count each read fills, the statement count not growing with the stations), `FestivalStationServiceTest`
   and `Services/ItemOrderabilityTest` (on the real DbContext: each station on its own, a station that is not an active station of
   the festival, the active stations and the menu read once and one query per active station). In

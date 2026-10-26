@@ -16,14 +16,22 @@ Backend, under `backend/`:
   with `StationOrderNumber` (the number that station shows for it), `DeliveryMode` and
   `IsHiddenFromAsItComesQueue`. `OrderItem.FulfilledAtUtc` records the hand-out. An article's
   `CatalogItem.ProductionMinutes` and `IsQueueIndependent` feed the estimates.
-- `Core/Services`: `StationQueueService`, `StationQueueChangeService`, `StationQueueWriter`,
-  `OrderItemFulfillmentService` and `StationOrderService`; the estimates are `EstimateService` (`ListAsync`, `QuoteAsync`) on `IGastronomyDatabase`, with the pure `StationWaitingTimes` beside it, which sums the open work of one station (`Results/OpenWork`) for an article (`Results/ArticleTiming`). `Core/Mapping/EstimateMapping.cs` projects the timed assignments, the articles and the open work. Refusals:
-  `Core/Refusals/Refusal.StationQueue.cs`. The numbers come from
-  `Infrastructure/Repositories/SequenceNumberAllocator.cs`.
+- `Core/Services/StationQueueService.cs`: the one service of the station tablet's queue, on
+  `IGastronomyDatabase`. `ReadQueueAsync` and `ReadFulfilledAsync` answer the two reads,
+  `FulfillAsync`, `UnfulfillAsync` and `HideFromAsItComesQueueAsync` the three actions, and each
+  action answers with the fresh `StationQueueView`. Every method first finds the station at the
+  running festival (unknown station, no running festival, station not at the festival, in that
+  order, in three statements), so the queue read runs four statements. A request names items by id,
+  and an id that is not one of this station's items refuses the whole request and stores nothing. The
+  item order inside a card is sorted in memory with `StringComparer.OrdinalIgnoreCase`, because
+  `OrderItem.ItemName` and `Note` carry no `NOCASE` collation. The estimates are `EstimateService` (`ListAsync`, `QuoteAsync`) on `IGastronomyDatabase`, with the pure `StationWaitingTimes` beside it, which sums the open work of one station (`Results/OpenWork`) for an article (`Results/ArticleTiming`). `Core/Mapping/EstimateMapping.cs` projects the timed assignments, the articles and the open work. Refusals:
+  `Core/Refusals/Refusal.StationQueue.cs`. The wire records are mapped by
+  `Core/Mapping/StationQueueMapping.cs` (cards, lines and the station summary). The numbers come from
+  `Core/Services/SequenceNumberAllocator.cs`.
 - Routes in `GastronomyApp.Api/Endpoints/StationEndpoints.cs`. For the station tablet:
   `GET /api/station/orders`, `GET /api/station/orders/fulfilled`, `POST /api/station/items/fulfill`,
   `POST /api/station/items/unfulfill` and `POST /api/station/orders/{stationOrderId}/hide`
-  (`StationQueueHandler`, `StationFulfillmentHandler`). For the phone: `GET /api/estimates` and
+  (`StationQueueService` directly). For the phone: `GET /api/estimates` and
   `POST /api/estimates/quote` (`EstimateService` directly). Wire records in `GastronomyApp.Contracts/Stations`,
   the estimate records in `Contracts/Orders`, `DeliveryMode` and `OrderStatus` in `Contracts/Enums`.
 
@@ -41,6 +49,10 @@ Frontend, under `frontend/src/`:
 - **An item is open or done.** Done is `OrderItem.FulfilledAtUtc`, set when the station hands the
   item out and cleared again when a mistaken tap is put back. There is no in-between production state
   and no status log.
+- **A second tap never hands an item out twice.** Handing out an item that is already done succeeds
+  and keeps the first time. Putting back an item that is still open is refused naming the item, and a
+  selection that holds an id outside this station changes nothing. Both actions read the items again
+  after the save and answer with the fresh queue.
 - **The two columns.** The first holds every order with open items, the second the as-it-comes
   orders the employee has not hidden from it. A fully done order leaves both and appears in the done
   view. `IsHiddenFromAsItComesQueue` is the employee's own decision; it only removes the order from
@@ -66,14 +78,14 @@ Frontend, under `frontend/src/`:
 
 ## Tests
 
-- `GastronomyApp.Core.Tests/Services`: `StationQueueServiceTest`, `StationQueueChangeServiceTest`,
-  `StationQueueWriterTest`, `OrderItemFulfillmentServiceTest`, `StationOrderServiceTest` and
-  `StationWaitingTimesTest` (the pure sums).
+- `GastronomyApp.Core.Tests/Services`: `StationWaitingTimesTest` (the pure sums).
 - `GastronomyApp.Infrastructure.Tests`: `Services/EstimateServiceTest` (the list and the quote on the real DbContext: open work of the same festival and station only, a handed-out item left out, independent articles, refusals), `Configurations/StationOrderConfigurationTest`,
-  `Configurations/OrderNumberIndexTest`, `Repositories/StationOrderRepositoryTest` and
-  `Repositories/SequenceNumberAllocatorTest`.
-- `GastronomyApp.Api.Tests`: `Endpoints/StationQueueEndpointsTest`, `Endpoints/EstimateEndpointsTest`,
+  `Configurations/OrderNumberIndexTest`, `Services/SequenceNumberAllocatorTest`,
+  `Services/StationQueueServiceTest` (every read and action on the real DbContext: both columns, the
+  order of the cards and of the lines, the refusals and their order, nothing stored on a refusal, the
+  four statements of the queue read), `Services/ItemsToHandOutLookupTest` and
   `Mapping/StationQueueMappingTest`.
+- `GastronomyApp.Api.Tests`: `Endpoints/StationQueueEndpointsTest`, `Endpoints/EstimateEndpointsTest`.
 - `frontend/tests/station`: the views `StationPage.screen`, `.markingDone`, `.doneView` and
   `.connection` on `stationPageFixture.ts`, the components, the composables and the store specs
   (`station.queue`, `station.done`, `station.staleAnswers`, `stationChangeListening`,

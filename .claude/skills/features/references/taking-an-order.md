@@ -77,7 +77,8 @@ Backend, under `backend/`:
   (`SequenceNumberAllocator`: the global order number from the festival, the station number from the
   festival's station link, each saved at once inside the request's transaction), add it, run
   `StockSoldOutMarker` and read the order back for the answer. The answer is mapped by
-  `Core/Mapping/OrderMapping.cs`, which takes the status and total from `OrderService`. Refusals are
+  `Core/Mapping/OrderMapping.cs`, which leaves the status and total as placeholders: the service sets
+  them from `OrderService` on the mapped view, because a scanned mapping takes no collaborators. Refusals are
   in `Core/Refusals/Refusal.Order.cs`.
 
 ## Invariants

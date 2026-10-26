@@ -26,7 +26,7 @@ public sealed class FestivalStationServiceTest
     _gardenId = await _plan.AddAreaAsync(_fixture.DbContext, _seeded.FestivalId, "Garten", 1, false);
     FestivalRepository festivalRepository = new(_fixture.DbContext, new());
     RunningFestivalLookup runningFestival = new(festivalRepository, new(), _clock);
-    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(_fixture.DbContext, _clock), new(_fixture.DbContext), new(new StationRepository(_fixture.DbContext), runningFestival), new());
+    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(_fixture.DbContext, _clock), new(_fixture.DbContext), new(_fixture.DbContext, runningFestival), new());
   }
 
   [TearDown]

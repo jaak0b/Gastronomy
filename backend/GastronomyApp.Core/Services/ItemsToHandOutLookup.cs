@@ -1,16 +1,18 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Queries;
+using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class ItemsToHandOutLookup
 {
+  private readonly IGastronomyDatabase _database;
   private readonly RunningFestivalLookup _runningFestival;
-  private readonly IStationRepository _stationRepository;
 
-  public ItemsToHandOutLookup(IStationRepository stationRepository, RunningFestivalLookup runningFestival)
+  public ItemsToHandOutLookup(IGastronomyDatabase database, RunningFestivalLookup runningFestival)
   {
-    _stationRepository = stationRepository;
+    _database = database;
     _runningFestival = runningFestival;
   }
 
@@ -21,7 +23,7 @@ public sealed class ItemsToHandOutLookup
     if (!_runningFestival.IsRunning(festival))
       return [];
 
-    return await _stationRepository.FindStationIdsWithItemsToHandOutAsync(festival.Id, cancellationToken);
+    return await _database.OrderItems.AsNoTracking().WhereNotHandedOut().WhereFestivalIs(festival.Id).Select(item => item.StationOrder.StationId).Distinct().ToListAsync(cancellationToken);
   }
 
   public async Task<IReadOnlyCollection<Guid>> FindStationIdsAtTheRunningFestivalAsync(CancellationToken cancellationToken)

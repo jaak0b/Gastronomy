@@ -15,17 +15,19 @@ public sealed class OrderPlacementService
   private readonly IGastronomyDatabase _database;
   private readonly TypeAdapterConfig _mapping;
   private readonly SequenceNumberAllocator _numberAllocator;
+  private readonly OrderService _orderService;
   private readonly OrderRoutingResolver _routingResolver;
   private readonly RunningFestivalLookup _runningFestival;
   private readonly StockSoldOutMarker _soldOutMarker;
   private readonly TimeProvider _timeProvider;
 
-  public OrderPlacementService(IGastronomyDatabase database, TypeAdapterConfig mapping, RunningFestivalLookup runningFestival, SequenceNumberAllocator numberAllocator, OrderRoutingResolver routingResolver, StockSoldOutMarker soldOutMarker, TimeProvider timeProvider)
+  public OrderPlacementService(IGastronomyDatabase database, TypeAdapterConfig mapping, RunningFestivalLookup runningFestival, SequenceNumberAllocator numberAllocator, OrderService orderService, OrderRoutingResolver routingResolver, StockSoldOutMarker soldOutMarker, TimeProvider timeProvider)
   {
     _database = database;
     _mapping = mapping;
     _runningFestival = runningFestival;
     _numberAllocator = numberAllocator;
+    _orderService = orderService;
     _routingResolver = routingResolver;
     _soldOutMarker = soldOutMarker;
     _timeProvider = timeProvider;
@@ -69,7 +71,11 @@ public sealed class OrderPlacementService
                                .ThenInclude(stationOrder => stationOrder.Items)
                                .FirstAsync(candidate => candidate.Id == orderId, cancellationToken);
 
-    return order.Adapt<PlacedOrderView>(_mapping);
+    return order.Adapt<PlacedOrderView>(_mapping) with
+           {
+             Status = _orderService.StatusOf(order),
+             TotalCents = _orderService.TotalCentsOf(order)
+           };
   }
 
   private async Task<ErrorOr<IReadOnlyList<OrderItem>>> RouteItemsAsync(Guid festivalId, IReadOnlyList<OrderItemRequest> itemRequests, CancellationToken cancellationToken)

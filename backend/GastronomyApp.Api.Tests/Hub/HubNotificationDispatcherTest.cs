@@ -28,8 +28,7 @@ public sealed class HubNotificationDispatcherTest
     IMappingRegistration[] registrations =
     [
       new OpenItemMapping(),
-      new SettlementMapping(),
-      new StationQueueMapping(new())
+      new SettlementMapping()
     ];
 
     _dispatcher = new(_hubContext, guard, new(new(), _hubContext), new Mapper(new MappingConfiguration(registrations).Build()));
