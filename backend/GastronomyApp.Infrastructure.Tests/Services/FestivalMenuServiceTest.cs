@@ -4,7 +4,6 @@ using GastronomyApp.Contracts.Admin.Festivals;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Time.Testing;
@@ -21,8 +20,7 @@ public sealed class FestivalMenuServiceTest
     _seeded = await new DomainSeeder().SeedAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     _clock = new(new(_now));
     await MoveTheFestivalAsync(_now.AddHours(-5), _now.AddHours(5));
-    FestivalRepository festivalRepository = new(_fixture.DbContext, new());
-    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(_fixture.DbContext, _clock), new(festivalRepository, new(), _clock));
+    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(_fixture.DbContext, _clock), new(_fixture.DbContext, new(), _clock));
   }
 
   [TearDown]

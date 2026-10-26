@@ -1,7 +1,8 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using Microsoft.Extensions.DependencyInjection;
 using GastronomyApp.Desktop.Ports;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Desktop.Hosting;
 
@@ -22,8 +23,8 @@ public sealed class HostFestivalReader : IFestivalReader
       throw new InvalidOperationException("The server is not running, so the festival list cannot be read.");
 
     using var scope = application.Services.CreateScope();
-    var festivals = scope.ServiceProvider.GetRequiredService<IFestivalRepository>();
+    var database = scope.ServiceProvider.GetRequiredService<IGastronomyDatabase>();
 
-    return await festivals.FindAllAsync(cancellationToken);
+    return await database.Festivals.AsNoTracking().OrderByDescending(festival => festival.StartsAtUtc).ToListAsync(cancellationToken);
   }
 }

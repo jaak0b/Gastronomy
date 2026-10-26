@@ -17,7 +17,6 @@ using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.ErrorHandling;
 using GastronomyApp.Infrastructure.Persistence;
-using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Security;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authorization;
@@ -60,8 +59,6 @@ public sealed class ApiServiceRegistration
 
     services.AddScoped<AfterCommitActions>();
     services.AddScoped<IAfterCommitActions>(provider => provider.GetRequiredService<AfterCommitActions>());
-
-    services.AddScoped<IFestivalRepository, FestivalRepository>();
 
     services.AddSingleton<OrderRoutingResolver>();
     services.AddSingleton<OrderService>();

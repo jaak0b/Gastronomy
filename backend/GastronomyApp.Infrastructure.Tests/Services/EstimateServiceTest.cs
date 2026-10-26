@@ -2,7 +2,6 @@ using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Time.Testing;
@@ -20,7 +19,7 @@ public sealed class EstimateServiceTest
     _clock = new(new(_now));
     await MoveTheFestivalAsync(_now.AddHours(-5), _now.AddHours(5));
     await SetMinutesAsync(_seeded.SausageItemId, 4, false);
-    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(new FestivalRepository(_fixture.DbContext, new()), new(), _clock), new());
+    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(_fixture.DbContext, new(), _clock), new());
   }
 
   [TearDown]

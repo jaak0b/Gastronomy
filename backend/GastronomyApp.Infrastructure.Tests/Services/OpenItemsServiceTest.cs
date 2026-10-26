@@ -6,7 +6,6 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
-using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -739,7 +738,7 @@ public sealed class OpenItemsServiceTest
 
   private OpenItemsService CreateService(GastronomyAppDbContext database)
   {
-    RunningFestivalLookup runningFestival = new(new FestivalRepository(database, new()), new(), _clock);
+    RunningFestivalLookup runningFestival = new(database, new(), _clock);
 
     return new(database, new CoreMappingFactory().Create(), runningFestival, _clock, _logger);
   }

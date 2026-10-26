@@ -5,7 +5,6 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
-using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Security;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
@@ -344,8 +343,7 @@ public sealed class StationServiceTest
 
   private StationService CreateService(GastronomyAppDbContext dbContext)
   {
-    FestivalRepository festivalRepository = new(dbContext, new());
-    RunningFestivalLookup runningFestival = new(festivalRepository, new(), _clock);
+    RunningFestivalLookup runningFestival = new(dbContext, new(), _clock);
 
     return new(dbContext, new CoreMappingFactory().Create(), new(dbContext, new(dbContext, new Pbkdf2SecretHasher()), _announcer, _afterCommitActions, _clock), new(dbContext, _clock), new(dbContext, runningFestival));
   }

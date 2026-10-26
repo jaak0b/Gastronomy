@@ -40,9 +40,10 @@ Backend, under `backend/`:
   (`Core/Mapping/FestivalMapping.cs`) or `Success`, and keep their refusals in order: festival, article
   or station, the stations of the festival, an active station that prepares the item. The stock rows
   are `FestivalStockService` (see the `festival-stock` page).
-- `Infrastructure/Repositories/FestivalRepository.cs` stays for the services of the unconverted
-  sub-areas, the desktop and `RunningFestivalLookup`: `FindRunningAsync` gives the shown festivals to
-  `FestivalSchedule.FindRunningAt` and `FindAllAsync` loads all for the desktop. `ItemOrderability` asks "not hidden and not yet over" of `IGastronomyDatabase` itself (it includes festivals still to come, so it is not "running").
+- `RunningFestivalLookup.FindAsync` loads the shown festivals from `IGastronomyDatabase` and hands them
+  to `FestivalSchedule.FindRunningAt`, the one place the running rule lives. The desktop's
+  `HostFestivalReader` reads all festivals, newest first, from `IGastronomyDatabase` in its own scope.
+  `ItemOrderability` asks "not hidden and not yet over" of `IGastronomyDatabase` itself (it includes festivals still to come, so it is not "running").
 - Refusals: `GastronomyApp.Core/Refusals/Refusal.Festival.cs` (`PeriodInvalid`,
   `PeriodOverlapsAnotherFestival`, `FestivalIsRunning` with
   `errors.admin.festivals.runningFestivalStaysShown`, which is also the tooltip of the festival
@@ -191,12 +192,11 @@ Every point below is intended behaviour. A change to any of them needs the owner
 ## Tests
 
 - `GastronomyApp.Core.Tests/Services`: `FestivalScheduleTest` (the start counts, the end does not, a
-  hidden festival never runs, overlap with a hidden festival) and `RunningFestivalLookupTest`;
-  the no running festival cases of
+  hidden festival never runs, overlap with a hidden festival); the no running festival cases of
   `Infrastructure.Tests/Services/CatalogServiceTest`, `OrderPlacementServiceTest`, `OpenItemsServiceTest` and
   `StationQueueServiceTest`.
-- `GastronomyApp.Infrastructure.Tests`: `Repositories/FestivalRepositoryTest` (running),
-  `Services/FestivalMenuServiceTest` and
+- `GastronomyApp.Infrastructure.Tests`: `Services/RunningFestivalLookupTest` (the running festival on
+  the real DbContext, hidden and ended festivals, UTC moments), `Services/FestivalMenuServiceTest` and
   `Services/FestivalStationServiceTest` (every action on the real DbContext, shapes included),
   `Configurations/OrderNumberIndexTest` (the station number index) and
   `Services/FestivalServiceTest` (every festival action on the real DbContext: the list with its

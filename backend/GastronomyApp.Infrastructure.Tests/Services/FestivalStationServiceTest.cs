@@ -6,7 +6,6 @@ using GastronomyApp.Contracts.Admin.Stations;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Time.Testing;
@@ -24,8 +23,7 @@ public sealed class FestivalStationServiceTest
     _clock = new(new(_now));
     await MoveTheFestivalAsync(_now.AddHours(-5), _now.AddHours(5));
     _gardenId = await _plan.AddAreaAsync(_fixture.DbContext, _seeded.FestivalId, "Garten", 1, false);
-    FestivalRepository festivalRepository = new(_fixture.DbContext, new());
-    RunningFestivalLookup runningFestival = new(festivalRepository, new(), _clock);
+    RunningFestivalLookup runningFestival = new(_fixture.DbContext, new(), _clock);
     _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(_fixture.DbContext, _clock), new(_fixture.DbContext), new(_fixture.DbContext, runningFestival), new());
   }
 

@@ -2,7 +2,6 @@ using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
-using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Time.Testing;
@@ -366,7 +365,7 @@ public sealed class TablePlanServiceTest
 
   private TablePlanService CreateService(GastronomyAppDbContext database)
   {
-    RunningFestivalLookup runningFestival = new(new FestivalRepository(_fixture.DbContext, new()), new(), _clock);
+    RunningFestivalLookup runningFestival = new(_fixture.DbContext, new(), _clock);
 
     return new(database, new CoreMappingFactory().Create(), runningFestival, new(new()));
   }

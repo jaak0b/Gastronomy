@@ -4,7 +4,6 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
-using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -24,7 +23,7 @@ public sealed class TableEditServiceTest
     await MoveTheFestivalAsync(_now.AddHours(-5), _now.AddHours(5));
     _gardenId = await _plan.AddAreaAsync(_fixture.DbContext, _seeded.FestivalId, "Garten", 1, false);
     _hallId = await _plan.AddAreaAsync(_fixture.DbContext, _seeded.FestivalId, "Halle", 2, false);
-    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(_fixture.DbContext, new CoreMappingFactory().Create(), new(new FestivalRepository(_fixture.DbContext, new()), new(), _clock)), new(), new());
+    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(_fixture.DbContext, new CoreMappingFactory().Create(), new(_fixture.DbContext, new(), _clock)), new(), new());
   }
 
   [TearDown]
@@ -486,7 +485,7 @@ public sealed class TableEditServiceTest
     var secondId = await _plan.AddTableAsync(_fixture.DbContext, _seeded.FestivalId, _gardenId, "A2", false);
     SaveCounter counter = new();
     await using GastronomyAppDbContext countingContext = new(new DbContextOptionsBuilder<GastronomyAppDbContext>().UseSqlite(_fixture.Connection).AddInterceptors(counter).Options);
-    TableEditService countedService = new(countingContext, new CoreMappingFactory().Create(), new(countingContext, new CoreMappingFactory().Create(), new(new FestivalRepository(countingContext, new()), new(), _clock)), new(), new());
+    TableEditService countedService = new(countingContext, new CoreMappingFactory().Create(), new(countingContext, new CoreMappingFactory().Create(), new(countingContext, new(), _clock)), new(), new());
 
     var moved = await countedService.MoveAsync(_seeded.FestivalId,
                                                new()

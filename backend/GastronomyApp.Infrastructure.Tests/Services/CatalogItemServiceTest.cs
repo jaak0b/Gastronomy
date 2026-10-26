@@ -3,7 +3,6 @@ using GastronomyApp.Contracts.Admin.Catalog;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 
 namespace GastronomyApp.Infrastructure.Tests.Services;
@@ -33,8 +32,7 @@ public sealed class CatalogItemServiceTest
     _fixture.DbContext.CatalogCategories.Add(_switchedOffCategory);
     _fixture.DbContext.Units.Add(_gram);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
-    FestivalRepository festivalRepository = new(_fixture.DbContext, new());
-    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(festivalRepository, new(), TimeProvider.System));
+    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(_fixture.DbContext, new(), TimeProvider.System));
   }
 
   [TearDown]

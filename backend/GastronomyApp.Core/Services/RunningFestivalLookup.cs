@@ -1,24 +1,27 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class RunningFestivalLookup
 {
   private readonly TimeProvider _timeProvider;
-  private readonly IFestivalRepository _festivalRepository;
+  private readonly IGastronomyDatabase _database;
   private readonly FestivalSchedule _schedule;
 
-  public RunningFestivalLookup(IFestivalRepository festivalRepository, FestivalSchedule schedule, TimeProvider timeProvider)
+  public RunningFestivalLookup(IGastronomyDatabase database, FestivalSchedule schedule, TimeProvider timeProvider)
   {
-    _festivalRepository = festivalRepository;
+    _database = database;
     _schedule = schedule;
     _timeProvider = timeProvider;
   }
 
-  public Task<Festival?> FindAsync(CancellationToken cancellationToken)
+  public async Task<Festival?> FindAsync(CancellationToken cancellationToken)
   {
-    return _festivalRepository.FindRunningAsync(_timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
+    var shown = await _database.Festivals.AsNoTracking().Where(festival => !festival.IsHidden).ToListAsync(cancellationToken);
+
+    return _schedule.FindRunningAt(shown, _timeProvider.GetUtcNow().UtcDateTime);
   }
 
   public bool IsRunning(Festival festival)

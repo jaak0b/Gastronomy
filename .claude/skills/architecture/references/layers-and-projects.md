@@ -84,7 +84,7 @@ navigation properties.
   `announcements` pages).
 - **A repository** exists only where loading the data for a write is complex and the same load is
   repeated across actions, such as an order with its items or a table with its orders. It is never one per
-  entity and never one method per caller.
+  entity and never one method per caller. No repository exists today.
 - **An endpoint the frontend does not call** does not exist. When an area is converted, every such
   endpoint is removed completely.
 
@@ -110,12 +110,6 @@ area's own service. The one exception is the flow that area and table hide ident
 The routes stay one pair per entity, so the generated types name every operation and a refusal
 belongs to a route a reader can find. The frontend's shared admin list offers only the operations
 whose route exists for that list.
-
-## Conversion in progress
-
-Every area is converted to this structure; open items and settling were the last. New code is
-written the way this page describes. `IFestivalRepository` is the one repository left: it serves
-`RunningFestivalLookup` and the desktop's `HostFestivalReader`.
 
 ## Frontend
 

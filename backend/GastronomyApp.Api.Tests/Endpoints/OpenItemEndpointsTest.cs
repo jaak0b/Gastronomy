@@ -407,6 +407,39 @@ public sealed class OpenItemEndpointsTest
   }
 
   [Test]
+  public async Task PostSettle_TwoPhonesSettleTheSameLineAtTheSameMoment_SettlesItExactlyOnce()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync(_context.World.TableId);
+    var colleagueToken = await _context.IssueSecondStaffTokenAsync("Bernd");
+
+    Task<HttpResponseMessage> own = _context.SendAsAsync(_context.DeviceToken, HttpMethod.Post, "/api/open-items/settle", SettleBodyFor([itemIds[0]], 350));
+    Task<HttpResponseMessage> colleague = _context.SendAsAsync(colleagueToken, HttpMethod.Post, "/api/open-items/settle", SettleBodyFor([itemIds[0]], 350));
+
+    HttpResponseMessage[] responses = await Task.WhenAll(own, colleague);
+    List<JsonDocument> bodies = [];
+
+    foreach (var response in responses)
+    {
+      bodies.Add(JsonDocument.Parse(await response.Content.ReadAsStringAsync()));
+      response.Dispose();
+    }
+
+    var settledCount = bodies.Sum(body => body.RootElement.GetProperty("settledOrderItemIds").GetArrayLength());
+    var alreadySettledCount = bodies.Sum(body => body.RootElement.GetProperty("alreadySettledByOthersOrderItemIds").GetArrayLength());
+    await using var database = _context.Factory.CreateContext();
+    var storedLine = await database.OrderItems.SingleAsync(item => item.Id == itemIds[0]);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(responses.Select(response => response.StatusCode), Is.All.EqualTo(HttpStatusCode.OK));
+                      Assert.That(settledCount, Is.EqualTo(1));
+                      Assert.That(alreadySettledCount, Is.EqualTo(1));
+                      Assert.That(storedLine.SettledAtUtc, Is.Not.Null);
+                      Assert.That(storedLine.ChargedPriceCents, Is.EqualTo(350));
+                    });
+  }
+
+  [Test]
   public async Task PostSettle_ASelectionHoldingAnItemTheLaptopDoesNotKnow_SettlesNothingAtAll()
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync(_context.World.TableId);

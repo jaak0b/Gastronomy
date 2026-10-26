@@ -1,7 +1,6 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Time.Testing;
@@ -17,7 +16,7 @@ public sealed class ItemsToHandOutLookupTest
     _fixture = new();
     _seeded = await new DomainSeeder().SeedAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     _clock = new(DateTimeOffset.UtcNow);
-    _lookup = new(_fixture.DbContext, new(new FestivalRepository(_fixture.DbContext, new()), new(), _clock));
+    _lookup = new(_fixture.DbContext, new(_fixture.DbContext, new(), _clock));
   }
 
   [TearDown]

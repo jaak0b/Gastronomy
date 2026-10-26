@@ -3,7 +3,6 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
-using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 
@@ -425,7 +424,7 @@ public sealed class FestivalServiceTest
 
   private FestivalService CreateService(GastronomyAppDbContext dbContext)
   {
-    RunningFestivalLookup runningFestival = new(new FestivalRepository(dbContext, new()), new(), TimeProvider.System);
+    RunningFestivalLookup runningFestival = new(dbContext, new(), TimeProvider.System);
 
     return new(dbContext, new CoreMappingFactory().Create(), new(), runningFestival, new());
   }

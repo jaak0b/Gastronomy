@@ -5,7 +5,6 @@ using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -23,7 +22,7 @@ public sealed class OrderPlacementServiceTest
     _seeded = await new DomainSeeder().SeedAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     _tableId = await new DomainSeeder().SeedTableAsync(_fixture.DbContext, _seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     _clock = new(DateTimeOffset.UtcNow);
-    RunningFestivalLookup runningFestival = new(new FestivalRepository(_fixture.DbContext, new()), new(), _clock);
+    RunningFestivalLookup runningFestival = new(_fixture.DbContext, new(), _clock);
     _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), runningFestival, new(_fixture.DbContext), new(), new(), new(_fixture.DbContext, new(), NullLogger<StockSoldOutMarker>.Instance), _clock);
   }
 
