@@ -80,7 +80,7 @@ Backend, under `backend/`:
   service sets them on the `TablePlanTableView`s after the read, in memory. The statement count is
   pinned in `TablePlanServiceTest` (see the `count-sql-statements` how-to page).
 - `OrderPlacementService` looks the order's table up in `IGastronomyDatabase.Tables`; the open items
-  screen reads one table with its orders through `IOpenItemRepository.FindTableWithOrdersAsync` (see
+  screen reads one table with its orders through `OpenItemsService.ReadTableAsync` (see
   the `settling-a-table` page).
 - `FestivalStationService.RemoveAsync` deletes the station's shape together with its link through
   `IGastronomyDatabase`, and `FestivalService.CopyAsync` copies the plan (see the

@@ -21,7 +21,7 @@ Backend, under `backend/`:
   `UpdateInstallGate` uses it to hold an update back). `RunningFestivalLookup` is what every other
   service asks (`FindAsync`, `IsRunning`): it reads the clock through `TimeProvider` and hands the
   question to `FestivalSchedule`. `CatalogService`, `OrderPlacementService`,
-  `OrderItemSettlementService`, `OpenItemsService`, `EstimateService`, `StationQueueService`,
+  `OpenItemsService`, `EstimateService`, `StationQueueService`,
   `FestivalMenuService`, `FestivalStationService` and the administration services of articles and
   stations all hold one.
 - `Core/Services/FestivalService.cs` is the service of the Feste tab and reads and writes through
@@ -193,7 +193,7 @@ Every point below is intended behaviour. A change to any of them needs the owner
 - `GastronomyApp.Core.Tests/Services`: `FestivalScheduleTest` (the start counts, the end does not, a
   hidden festival never runs, overlap with a hidden festival) and `RunningFestivalLookupTest`;
   the no running festival cases of
-  `Infrastructure.Tests/Services/CatalogServiceTest`, `OrderPlacementServiceTest`, `OrderItemSettlementServiceTest` and
+  `Infrastructure.Tests/Services/CatalogServiceTest`, `OrderPlacementServiceTest`, `OpenItemsServiceTest` and
   `StationQueueServiceTest`.
 - `GastronomyApp.Infrastructure.Tests`: `Repositories/FestivalRepositoryTest` (running),
   `Services/FestivalMenuServiceTest` and

@@ -51,8 +51,9 @@ Frontend, under `frontend/src/`:
   and no status log.
 - **A second tap never hands an item out twice.** Handing out an item that is already done succeeds
   and keeps the first time. Putting back an item that is still open is refused naming the item, and a
-  selection that holds an id outside this station changes nothing. Both actions read the items again
-  after the save and answer with the fresh queue.
+  selection that holds an id outside this station changes nothing. Both actions re-read the whole
+  queue after the save and answer with it. Two simultaneous taps on the same item leave the later
+  timestamp.
 - **The two columns.** The first holds every order with open items, the second the as-it-comes
   orders the employee has not hidden from it. A fully done order leaves both and appears in the done
   view. `IsHiddenFromAsItComesQueue` is the employee's own decision; it only removes the order from

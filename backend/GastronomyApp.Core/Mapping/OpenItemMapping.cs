@@ -1,10 +1,11 @@
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Results;
 using Mapster;
 
-namespace GastronomyApp.Api.Mapping;
+namespace GastronomyApp.Core.Mapping;
 
-public sealed class OpenItemMapping : IMappingRegistration
+public sealed class OpenItemMapping : IRegister
 {
   public void Register(TypeAdapterConfig config)
   {
@@ -20,5 +21,15 @@ public sealed class OpenItemMapping : IMappingRegistration
           .Map(view => view.OrderId, order => order.Id)
           .Map(view => view.StaffMemberName, order => order.StaffMember.Name)
           .Map(view => view.Items, order => order.StationOrders.SelectMany(stationOrder => stationOrder.Items).OrderBy(item => item.ItemName, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Note, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Id).ToList());
+
+    config.NewConfig<Table, TableOrderReportView>()
+          .Map(view => view.TableId, table => table.Id)
+          .Map(view => view.TableName, table => table.Name)
+          .Map(view => view.OpenAmountCents, table => table.Orders.SelectMany(order => order.StationOrders).SelectMany(stationOrder => stationOrder.Items).Where(item => item.SettledAtUtc == null).Sum(item => item.UnitPriceCents));
+
+    config.NewConfig<SettlementResult, SettlementView>()
+          .Map(view => view.SettledOrderItemIds, settlement => settlement.NewlySettled.Select(item => item.Id).ToList())
+          .Map(view => view.ReappliedOrderItemIds, settlement => settlement.Reapplied.Select(item => item.Id).ToList())
+          .Map(view => view.AlreadySettledByOthersOrderItemIds, settlement => settlement.AlreadySettledByOthers.Select(item => item.Id).ToList());
   }
 }

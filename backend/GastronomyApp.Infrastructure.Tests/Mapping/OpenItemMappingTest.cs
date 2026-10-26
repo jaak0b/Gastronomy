@@ -1,10 +1,11 @@
-using GastronomyApp.Api.Mapping;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
-using MapsterMapper;
+using GastronomyApp.Core.Results;
+using GastronomyApp.Infrastructure.Tests.TestSupport;
+using Mapster;
 
-namespace GastronomyApp.Api.Tests.Mapping;
+namespace GastronomyApp.Infrastructure.Tests.Mapping;
 
 [TestFixture]
 public sealed class OpenItemMappingTest
@@ -12,13 +13,7 @@ public sealed class OpenItemMappingTest
   [SetUp]
   public void SetUp()
   {
-    IMappingRegistration[] registrations =
-    [
-      new OpenItemMapping(),
-      new SettlementMapping()
-    ];
-
-    _mapper = new Mapper(new MappingConfiguration(registrations).Build());
+    _mapping = new CoreMappingFactory().Create();
     _ordersPlaced = 0;
   }
 
@@ -26,7 +21,7 @@ public sealed class OpenItemMappingTest
 
   private int _ordersPlaced;
 
-  private IMapper _mapper = null!;
+  private TypeAdapterConfig _mapping = null!;
 
   [Test]
   public void Map_APositionOfATable_CarriesWhenItWasHandedOutAndWhenItWasSettled()
@@ -36,7 +31,7 @@ public sealed class OpenItemMappingTest
     limonade.SettledAtUtc = _orderedAtUtc.AddMinutes(25);
     var order = OrderAt("Tisch 12", limonade);
 
-    var view = _mapper.Map<TableOrderRecordItemView>(limonade);
+    var view = limonade.Adapt<TableOrderRecordItemView>(_mapping);
 
     Assert.Multiple(() =>
                     {
@@ -54,7 +49,7 @@ public sealed class OpenItemMappingTest
   {
     var order = OrderAt("Tisch 12", Item("Bratwurst", 350));
 
-    var view = _mapper.Map<TableOrderRecordView>(order);
+    var view = order.Adapt<TableOrderRecordView>(_mapping);
 
     Assert.Multiple(() =>
                     {
@@ -78,7 +73,7 @@ public sealed class OpenItemMappingTest
 
     var order = OrderAt("Tisch 12", schnitzel, notedBratwurst, plainBratwurst);
 
-    var view = _mapper.Map<TableOrderRecordView>(order);
+    var view = order.Adapt<TableOrderRecordView>(_mapping);
 
     Assert.That(view.Items.Select(item => item.OrderItemId),
                 Is.EqualTo(new[]
@@ -94,7 +89,7 @@ public sealed class OpenItemMappingTest
   {
     var order = OrderAt("Tisch 12", Item("Zwiebel", 100), Item("Äpfel", 100), Item("apfel", 100), Item("Birne", 100));
 
-    var view = _mapper.Map<TableOrderRecordView>(order);
+    var view = order.Adapt<TableOrderRecordView>(_mapping);
 
     Assert.That(view.Items.Select(item => item.ItemName),
                 Is.EqualTo(new[]
@@ -114,7 +109,7 @@ public sealed class OpenItemMappingTest
     var order = OrderAt("Tisch 12", bratwurst);
     AddStationOrder(order, bier);
 
-    var view = _mapper.Map<TableOrderRecordView>(order);
+    var view = order.Adapt<TableOrderRecordView>(_mapping);
 
     Assert.That(view.Items.Select(item => item.OrderItemId),
                 Is.EqualTo(new[]
@@ -122,6 +117,49 @@ public sealed class OpenItemMappingTest
                              bier.Id,
                              bratwurst.Id
                            }));
+  }
+
+  [Test]
+  public void Map_ATableWithOpenAndSettledPositions_NamesTheTableAndOwesOnlyTheOpenOnes()
+  {
+    var bratwurst = Item("Bratwurst", 350);
+    var bier = Item("Bier", 400);
+    bier.SettledAtUtc = _orderedAtUtc.AddMinutes(5);
+    var order = OrderAt("Tisch 12", bratwurst, bier);
+    order.Table.Orders.Add(order);
+
+    var view = order.Table.Adapt<TableOrderReportView>(_mapping);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(view.TableId, Is.EqualTo(order.TableId));
+                      Assert.That(view.TableName, Is.EqualTo("Tisch 12"));
+                      Assert.That(view.OpenAmountCents, Is.EqualTo(350));
+                      Assert.That(view.Orders.Select(placed => placed.OrderId), Is.EqualTo(new[] { order.Id }));
+                    });
+  }
+
+  [Test]
+  public void Map_ASettlementResult_ListsTheIdsOfEachGroup()
+  {
+    var settled = Item("Bratwurst", 350);
+    var reapplied = Item("Bier", 400);
+    var takenByOthers = Item("Limonade", 250);
+    SettlementResult result = new()
+                              {
+                                NewlySettled = [settled],
+                                Reapplied = [reapplied],
+                                AlreadySettledByOthers = [takenByOthers]
+                              };
+
+    var view = result.Adapt<SettlementView>(_mapping);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(view.SettledOrderItemIds, Is.EqualTo(new[] { settled.Id }));
+                      Assert.That(view.ReappliedOrderItemIds, Is.EqualTo(new[] { reapplied.Id }));
+                      Assert.That(view.AlreadySettledByOthersOrderItemIds, Is.EqualTo(new[] { takenByOthers.Id }));
+                    });
   }
 
   private Order OrderAt(string tableName, params OrderItem[] items)

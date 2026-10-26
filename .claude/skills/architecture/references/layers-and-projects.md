@@ -113,9 +113,9 @@ whose route exists for that list.
 
 ## Conversion in progress
 
-Areas are converted to this structure one at a time, ingredients first. An area that is not converted
-yet keeps the code it has until its turn, so the old and the new structure sit side by side for a
-while. New code is written the way this page describes.
+Every area is converted to this structure; open items and settling were the last. New code is
+written the way this page describes. `IFestivalRepository` is the one repository left: it serves
+`RunningFestivalLookup` and the desktop's `HostFestivalReader`.
 
 ## Frontend
 

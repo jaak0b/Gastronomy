@@ -1,7 +1,8 @@
-﻿using GastronomyApp.Api.Auth.Conventions;
-using GastronomyApp.Api.Handlers;
+﻿using GastronomyApp.Api.Answers;
+using GastronomyApp.Api.Auth.Conventions;
 using GastronomyApp.Api.Values;
 using GastronomyApp.Contracts.OpenItems;
+using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 
@@ -13,9 +14,10 @@ public static class OpenItemEndpoints
   {
     var group = routes.MapGroup("/api/open-items").RequireAuthorization().RequireStaffDevice().RequireRateLimiting(Names.RateLimitPolicies.PerDevice);
 
-    group.MapGet("/tables/{tableId:guid}", async (Guid tableId, OpenItemQueryHandler handler, CancellationToken cancellationToken) => await handler.ReadTableAsync(tableId, cancellationToken));
+    group.MapGet("/tables/{tableId:guid}", async Task<ApiAnswer<TableOrderReportView>> (Guid tableId, OpenItemsService service, CancellationToken cancellationToken) => await service.ReadTableAsync(tableId, cancellationToken));
 
-    group.MapPost("/settle", async (SettleItemsRequest request, StaffDeviceCaller caller, OrderItemSettlementHandler handler, CancellationToken cancellationToken) => await handler.SettleAsync(request, caller, cancellationToken));
+    group.MapPost("/settle",
+                  async Task<ApiAnswer<SettlementView>> (SettleItemsRequest request, StaffDeviceCaller caller, OpenItemsService service, CancellationToken cancellationToken) => await service.SettleAsync(request.Lines ?? [], request.PaymentMethod!.Value, caller.StaffMemberId, cancellationToken));
 
     return routes;
   }

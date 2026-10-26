@@ -5,7 +5,6 @@ using GastronomyApp.Api.Auth.Filters;
 using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.DocumentTransformers;
 using GastronomyApp.Api.ErrorHandling;
-using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Json;
@@ -43,10 +42,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton(options);
     services.AddSingleton(TimeProvider.System);
 
-    services.AddSingleton<IMappingRegistration, OpenItemMapping>();
-    services.AddSingleton<IMappingRegistration, SettlementMapping>();
-
-    services.AddSingleton(serviceProvider => new MappingConfiguration(serviceProvider.GetServices<IMappingRegistration>()).Build());
+    services.AddSingleton(new MappingConfiguration().Build());
     services.AddScoped<IMapper, ServiceMapper>();
 
     SqliteConnectionFactory connectionFactory = new();
@@ -65,7 +61,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<AfterCommitActions>();
     services.AddScoped<IAfterCommitActions>(provider => provider.GetRequiredService<AfterCommitActions>());
 
-    services.AddScoped<IOpenItemRepository, OpenItemRepository>();
     services.AddScoped<IFestivalRepository, FestivalRepository>();
 
     services.AddSingleton<OrderRoutingResolver>();
@@ -76,7 +71,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<AreaShapeService>();
     services.AddSingleton<TableCopyNaming>();
 
-    services.AddScoped<OrderItemSettlementService>();
     services.AddScoped<OpenItemsService>();
     services.AddScoped<TablePlanService>();
     services.AddScoped<OrderPlacementService>();
@@ -121,8 +115,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<LoopbackAdminAuthorizationMiddleware>();
     services.AddScoped<InfrastructureExceptionMiddleware>();
 
-    services.AddScoped<OpenItemQueryHandler>();
-    services.AddScoped<OrderItemSettlementHandler>();
     services.AddSingleton<OutstandingInvitationCache>();
     services.AddSingleton<IOutstandingInvitationCache>(provider => provider.GetRequiredService<OutstandingInvitationCache>());
     services.AddSingleton<LocalNetworkAddressProvider>();

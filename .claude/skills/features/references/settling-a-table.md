@@ -40,16 +40,20 @@ Frontend, under `frontend/src/phone/`:
 Backend, under `backend/`:
 
 - `GastronomyApp.Api/Endpoints/OpenItemEndpoints.cs` under `/api/open-items`: `/tables/{tableId}`
-  (`Handlers/OpenItemQueryHandler.cs`) and `POST /settle`
-  (`Handlers/OrderItemSettlementHandler.cs`). Wire records in `GastronomyApp.Contracts/OpenItems/`
+  and `POST /settle`, both calling `OpenItemsService` directly. Wire records in `GastronomyApp.Contracts/OpenItems/`
   (`TableOrderReportView` with the table's `TableId` and current `TableName`,
   `TableOrderRecordView`, `TableOrderRecordItemView`; `SettleItemsRequest`, `SettleLineRequest`,
   `SettlementView`).
-- `GastronomyApp.Core/Services/OrderItemSettlementService.cs` checks and applies a settlement, and
-  `OpenItemsService.cs` reads one table with its orders (`ReadTableWithOrdersAsync`). Refusals are in
-  `Core/Refusals/Refusal.Settlement.cs`, the queries in
-  `Infrastructure/Repositories/OpenItemRepository.cs` (`FindTableWithOrdersAsync`,
-  `FindForSettlementAsync`).
+- `GastronomyApp.Core/Services/OpenItemsService.cs` is the one service of the area on
+  `IGastronomyDatabase`: `ReadTableAsync` reads one table with its orders and answers the
+  `TableOrderReportView` (running festival lookup, then one table statement, so two statements; the
+  lines of an order are sorted in memory with `StringComparer.OrdinalIgnoreCase`, because the item
+  name and note carry no `NOCASE` collation), and `SettleAsync` checks and applies a settlement and
+  answers the `SettlementView`. The check order is: running festival, the waiter named (a program
+  error, thrown), duplicate lines, the payment method against the money paid, unknown lines, missing
+  notices, one table. Nothing is stored on a refusal. Refusals are in `Core/Refusals/Refusal.Settlement.cs`.
+  The wire records are mapped by `Core/Mapping/OpenItemMapping.cs` (lines, orders, the table report
+  with the sum of the unsettled prices, the settlement).
 
 ## Invariants
 
@@ -116,9 +120,9 @@ Backend, under `backend/`:
   `openItemsSettleRetry.spec.ts`, `openItems.justSent.spec.ts`,
   `openItemsAfterAnotherPhonePlacesAnOrder.spec.ts` and `order.settleRightAway.spec.ts`;
   `frontend/tests/phone/composables/useSettleDialog.spec.ts` and `useSendAndLeave.spec.ts`.
-- Backend: `GastronomyApp.Core.Tests/Services/OrderItemSettlementServiceTest.cs`,
-  `OrderItemSettlementServiceOverlapTest.cs` and `OpenItemsServiceTest.cs`,
+- Backend: `GastronomyApp.Infrastructure.Tests/Services/OpenItemsServiceTest.cs` (every read and
+  settle rule on the real DbContext, nothing stored on a refusal, the two statements of the table
+  read) and `Mapping/OpenItemMappingTest.cs`,
   `GastronomyApp.Api.Tests/Endpoints/OpenItemEndpointsTest.cs` (the one-table view by table id, a
   renamed table, settling read back through the one-table view, a selection spanning two tables),
-  `FestivalScopeEndpointsTest.cs`, `GastronomyApp.Api.Tests/Mapping/OpenItemMappingTest.cs` and
-  `GastronomyApp.Infrastructure.Tests/Repositories/OpenItemRepositoryTest.cs`.
+  `FestivalScopeEndpointsTest.cs`.
