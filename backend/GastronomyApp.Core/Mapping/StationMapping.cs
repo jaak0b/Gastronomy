@@ -13,7 +13,7 @@ public sealed class StationMapping : IRegister
     config.NewConfig<Station, AdminStationView>()
           .Map(view => view.StationId, station => station.Id)
           .Map(view => view.HasDevice, station => station.DeviceId != null)
-          .Map(view => view.IsAtAnyFestival, station => false)
+          .Map(view => view.IsAtFestival, station => false)
           .Map(view => view.HasItemsToHandOutAtTheRunningFestival, station => false)
           .Map(view => view.StrandedItemCountWhenSwitchedOff, station => (int?)null)
           .Map(view => view.StrandedItemCountWhenRemovedFromTheFestival, station => (int?)null);

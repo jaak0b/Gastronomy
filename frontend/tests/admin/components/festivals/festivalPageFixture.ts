@@ -31,7 +31,7 @@ export const BAR = anAdminStation({
   name: 'Theke',
   sortOrder: 2,
   hasDevice: false,
-  isAtAnyFestival: false,
+  isAtFestival: false,
 })
 
 export const FOOD = {

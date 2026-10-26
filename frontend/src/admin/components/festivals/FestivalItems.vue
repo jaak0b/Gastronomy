@@ -79,7 +79,7 @@ const {
 } = useFestivalItemRows(toRef(props, 'festivalId'))
 
 const festivalStations = computed(() =>
-  stations.stations.filter((station) => station.isAtAnyFestival && station.isActive),
+  stations.stations.filter((station) => station.isAtFestival && station.isActive),
 )
 
 const groups = computed(() =>

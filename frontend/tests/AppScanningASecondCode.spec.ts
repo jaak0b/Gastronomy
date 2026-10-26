@@ -91,7 +91,6 @@ describe('a browser that is already set up and scans a second QR code', () => {
       {
         code: 'CODE',
         name: null,
-        userAgent: navigator.userAgent,
         previousDeviceToken: 'lookup.of-the-tablet',
       },
     ])

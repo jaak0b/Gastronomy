@@ -65,7 +65,7 @@ export type AdminStaffMemberListView = __TypedOpenapi.Schemas.AdminStaffMemberLi
 export const AdminStaffMemberListView = z.strictObject({ staffMembers: z.array(AdminStaffMemberView) });
 
 export type AdminStationView = __TypedOpenapi.Schemas.AdminStationView;
-export const AdminStationView = z.strictObject({ stationId: z.string(), name: z.string(), sortOrder: z.number().int(), isActive: z.boolean(), hasDevice: z.boolean(), isAtAnyFestival: z.boolean(), hasItemsToHandOutAtTheRunningFestival: z.boolean(), strandedItemCountWhenSwitchedOff: z.number().int().nullable(), strandedItemCountWhenRemovedFromTheFestival: z.number().int().nullable() });
+export const AdminStationView = z.strictObject({ stationId: z.string(), name: z.string(), sortOrder: z.number().int(), isActive: z.boolean(), hasDevice: z.boolean(), isAtFestival: z.boolean(), hasItemsToHandOutAtTheRunningFestival: z.boolean(), strandedItemCountWhenSwitchedOff: z.number().int().nullable(), strandedItemCountWhenRemovedFromTheFestival: z.number().int().nullable() });
 
 export type AdminStationListView = __TypedOpenapi.Schemas.AdminStationListView;
 export const AdminStationListView = z.strictObject({ stations: z.array(AdminStationView) });
@@ -185,7 +185,7 @@ export type RedeemedEnrolmentView = __TypedOpenapi.Schemas.RedeemedEnrolmentView
 export const RedeemedEnrolmentView = z.strictObject({ deviceId: z.string(), deviceToken: z.string(), staffMember: StaffMemberView.nullable(), station: StationSummaryView.nullable(), language: z.string() });
 
 export type RedeemEnrolmentRequest = __TypedOpenapi.Schemas.RedeemEnrolmentRequest;
-export const RedeemEnrolmentRequest = z.strictObject({ code: z.string().nullable(), name: z.string().nullable().optional(), userAgent: z.string().nullable().optional(), previousDeviceToken: z.string().nullable().optional() });
+export const RedeemEnrolmentRequest = z.strictObject({ code: z.string().nullable(), name: z.string().nullable().optional(), previousDeviceToken: z.string().nullable().optional() });
 
 export type RenameStaffMemberRequest = __TypedOpenapi.Schemas.RenameStaffMemberRequest;
 export const RenameStaffMemberRequest = z.strictObject({ name: z.string().nullable() });

@@ -42,7 +42,7 @@ public sealed class EnrolmentLoggingTest
 
   private Task<HttpResponseMessage> RedeemAsync(string code)
   {
-    return _context.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody(code, null, "NUnit"));
+    return _context.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody(code, null));
   }
 
   private async Task AgeTheInvitationAsync(Guid invitationId)

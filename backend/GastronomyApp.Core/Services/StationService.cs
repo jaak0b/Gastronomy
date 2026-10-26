@@ -43,7 +43,7 @@ public sealed class StationService
 
     return new AdminStationListView(stations.Select(station => station with
                                                                {
-                                                                 IsAtAnyFestival = stationIdsAtTheFestival.Contains(station.StationId),
+                                                                 IsAtFestival = stationIdsAtTheFestival.Contains(station.StationId),
                                                                  HasItemsToHandOutAtTheRunningFestival = holdingItems.Contains(station.StationId),
                                                                  StrandedItemCountWhenRemovedFromTheFestival = strandedByRemoving[station.StationId].Count
                                                                })

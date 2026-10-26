@@ -55,13 +55,13 @@ export const HALL_WITH_TWO_TABLES = anAdminArea({
 
 export const TENT = anAdminArea({ areaId: 'area-zelt', name: 'Zelt' })
 
-export const KITCHEN = anAdminStation({ stationId: 'station-kueche', name: 'Küche', isAtAnyFestival: true })
+export const KITCHEN = anAdminStation({ stationId: 'station-kueche', name: 'Küche', isAtFestival: true })
 
 export const SCHANK = anAdminStation({
   stationId: 'station-schank',
   name: 'Schank',
   sortOrder: 2,
-  isAtAnyFestival: true,
+  isAtFestival: true,
 })
 
 export const TABLE_A1_SHAPE_ID = 'table-table-a1'

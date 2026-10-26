@@ -98,7 +98,7 @@ describe('the stations of this festival', () => {
       sortOrder: 3,
       isActive: true,
       hasDevice: false,
-      isAtAnyFestival: false,
+      isAtFestival: false,
       hasItemsToHandOutAtTheRunningFestival: false,
       strandedItemCountWhenSwitchedOff: null,
       strandedItemCountWhenRemovedFromTheFestival: null,
@@ -220,7 +220,7 @@ describe('the stations of this festival', () => {
   })
 
   it('tints every second station row so the eye can follow it', async () => {
-    festivalLaptop({ stations: [KITCHEN, { ...BAR, isAtAnyFestival: true }] })
+    festivalLaptop({ stations: [KITCHEN, { ...BAR, isAtFestival: true }] })
 
     const page = mountPage()
     await vi.waitFor(() => expect(page.findAll('[data-test="festival-station-row"]').length).toBe(2))

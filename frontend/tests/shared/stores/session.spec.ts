@@ -12,7 +12,7 @@ import { PlacedOrderView } from '../../../src/shared/api/generatedSchemas'
 import { stubLaptop, answer, type StubbedLaptop } from '../../support/laptop'
 
 function withBrowserLanguage(language: string): void {
-  vi.stubGlobal('navigator', { language, userAgent: 'test' })
+  vi.stubGlobal('navigator', { language })
 }
 
 describe('the language a phone starts in', () => {
@@ -76,7 +76,6 @@ describe('setting a phone up for a waiter who is not on the list yet', () => {
       {
         code: 'abc123',
         name: 'Bernd',
-        userAgent: navigator.userAgent,
         previousDeviceToken: null,
       },
     ])
@@ -115,7 +114,6 @@ describe('the token a browser gives up when it redeems a code', () => {
       {
         code: 'abc123',
         name: null,
-        userAgent: navigator.userAgent,
         previousDeviceToken: 'lookup.of-the-tablet',
       },
     ])

@@ -29,7 +29,7 @@ public sealed class ConcurrentOrderTest
                               });
     await database.SaveChangesAsync();
 
-    _secondDeviceToken = (await new TestDeviceEnrolment(_context.Factory.Services).EnrolStaffMemberAsync(secondStaffMemberId, "NUnit second phone")).PlaintextToken;
+    _secondDeviceToken = (await new TestDeviceEnrolment(_context.Factory.Services).EnrolStaffMemberAsync(secondStaffMemberId)).PlaintextToken;
   }
 
   [TearDown]

@@ -583,7 +583,6 @@ public sealed class EnrolmentServiceTest
            {
              Code = code,
              Name = name,
-             UserAgent = "Test agent",
              PreviousDeviceToken = previousDeviceToken
            };
   }

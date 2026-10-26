@@ -24,7 +24,7 @@ describe('a new station', () => {
             name: 'Zelt',
             sortOrder: 2,
             hasDevice: false,
-            isAtAnyFestival: false,
+            isAtFestival: false,
           }),
           201,
         ),

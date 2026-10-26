@@ -24,10 +24,10 @@ const { refusal: stationRefusal, refusalText: stationRefusalText } = useRefusalD
 const { removalRefusalOf } = useStationRefusalReasons()
 
 const atTheFestival = computed(() =>
-  stations.stations.filter((station) => station.isAtAnyFestival),
+  stations.stations.filter((station) => station.isAtFestival),
 )
 const stillToAdd = computed(() =>
-  stations.stations.filter((station) => station.isActive && !station.isAtAnyFestival),
+  stations.stations.filter((station) => station.isActive && !station.isAtFestival),
 )
 const noStationsToAddText = computed(() =>
   stations.stations.some((station) => station.isActive)

@@ -123,6 +123,6 @@ public sealed class OrderTestContext : IAsyncDisposable
                               });
     await database.SaveChangesAsync();
 
-    return (await new TestDeviceEnrolment(Factory.Services).EnrolStaffMemberAsync(staffMemberId, "NUnit second phone")).PlaintextToken;
+    return (await new TestDeviceEnrolment(Factory.Services).EnrolStaffMemberAsync(staffMemberId)).PlaintextToken;
   }
 }

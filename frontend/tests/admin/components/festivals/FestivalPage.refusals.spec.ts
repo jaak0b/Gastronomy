@@ -34,7 +34,7 @@ describe('an item change the laptop refuses', () => {
 
   it('puts the station selection back where the laptop has it and says why', async () => {
     festivalLaptop({
-      stations: [KITCHEN, { ...BAR, isAtAnyFestival: true }],
+      stations: [KITCHEN, { ...BAR, isAtFestival: true }],
       refusal: REFUSED_PUT,
     })
 
@@ -95,7 +95,7 @@ describe('an item change the laptop refuses', () => {
 
   it('sends a second change to the same row only once the first one is answered', async () => {
     const theFirstAnswer = aHold()
-    const laptop = festivalLaptop({ stations: [KITCHEN, { ...BAR, isAtAnyFestival: true }] }).answers(
+    const laptop = festivalLaptop({ stations: [KITCHEN, { ...BAR, isAtFestival: true }] }).answers(
       'PUT',
       `/api/admin/festivals/${FESTIVAL_ID}/items`,
       inTurn(heldUntil(theFirstAnswer.released, answer({})), answer({})),

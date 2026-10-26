@@ -252,7 +252,7 @@ public sealed class EnrolmentEndpointsTest
   {
     var code = await CreateInvitationCodeAsync();
 
-    using var request = new HttpRequestMessage(HttpMethod.Post, "/api/enrolment/redeem") { Content = JsonContent.Create(new RedeemBody(code, null, "NUnit")) };
+    using var request = new HttpRequestMessage(HttpMethod.Post, "/api/enrolment/redeem") { Content = JsonContent.Create(new RedeemBody(code, null)) };
     request.Headers.TryAddWithoutValidation("Accept-Language", acceptLanguage);
 
     using var response = await _factory.Client.SendAsync(request);
@@ -267,7 +267,7 @@ public sealed class EnrolmentEndpointsTest
 
   private Task<HttpResponseMessage> RedeemAsync(string? code, string? name = null, string? previousDeviceToken = null)
   {
-    return _factory.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody(code, name, "NUnit", previousDeviceToken));
+    return _factory.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody(code, name, previousDeviceToken));
   }
 
   private Task<HttpResponseMessage> GetSessionAsync(string deviceToken)

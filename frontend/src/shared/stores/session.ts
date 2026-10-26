@@ -109,7 +109,6 @@ export const useSessionStore = defineStore('session', () => {
       body: {
         code: input.code ?? null,
         name: input.name ?? null,
-        userAgent: navigator.userAgent,
         previousDeviceToken: storedDeviceToken(),
       },
       schema: redeemedEnrolmentAnswerSchema,

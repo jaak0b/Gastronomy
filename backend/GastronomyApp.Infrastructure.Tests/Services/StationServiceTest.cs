@@ -143,7 +143,7 @@ public sealed class StationServiceTest
                       Assert.That(listed.Value.Stations.Single(station => station.StationId == _seeded.BarStationId).StrandedItemCountWhenSwitchedOff, Is.EqualTo(1));
                       Assert.That(listed.Value.Stations.Single(station => station.StationId == tentId).StrandedItemCountWhenSwitchedOff, Is.Zero);
                       Assert.That(listed.Value.Stations.Select(station => station.StrandedItemCountWhenRemovedFromTheFestival), Is.All.Null);
-                      Assert.That(listed.Value.Stations.Select(station => station.IsAtAnyFestival), Is.All.False);
+                      Assert.That(listed.Value.Stations.Select(station => station.IsAtFestival), Is.All.False);
                     });
   }
 
@@ -171,9 +171,9 @@ public sealed class StationServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(listed.Value.Stations.Single(station => station.StationId == _seeded.KitchenStationId).IsAtAnyFestival, Is.True);
-                      Assert.That(listed.Value.Stations.Single(station => station.StationId == _seeded.BarStationId).IsAtAnyFestival, Is.True);
-                      Assert.That(listed.Value.Stations.Single(station => station.StationId == tentId).IsAtAnyFestival, Is.False);
+                      Assert.That(listed.Value.Stations.Single(station => station.StationId == _seeded.KitchenStationId).IsAtFestival, Is.True);
+                      Assert.That(listed.Value.Stations.Single(station => station.StationId == _seeded.BarStationId).IsAtFestival, Is.True);
+                      Assert.That(listed.Value.Stations.Single(station => station.StationId == tentId).IsAtFestival, Is.False);
                     });
   }
 
@@ -207,7 +207,7 @@ public sealed class StationServiceTest
                       Assert.That(created.Value.SortOrder, Is.EqualTo(2));
                       Assert.That(created.Value.IsActive, Is.True);
                       Assert.That(created.Value.HasDevice, Is.False);
-                      Assert.That(created.Value.IsAtAnyFestival, Is.False);
+                      Assert.That(created.Value.IsAtFestival, Is.False);
                       Assert.That(created.Value.HasItemsToHandOutAtTheRunningFestival, Is.False);
                       Assert.That(created.Value.StrandedItemCountWhenSwitchedOff, Is.Zero);
                       Assert.That(created.Value.StrandedItemCountWhenRemovedFromTheFestival, Is.Zero);

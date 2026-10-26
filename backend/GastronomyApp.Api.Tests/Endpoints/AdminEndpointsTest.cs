@@ -87,7 +87,7 @@ public sealed class AdminEndpointsTest
                       Assert.That(body.RootElement.GetProperty("sortOrder").GetInt32(), Is.EqualTo(3));
                       Assert.That(body.RootElement.GetProperty("isActive").GetBoolean(), Is.True);
                       Assert.That(body.RootElement.GetProperty("hasDevice").GetBoolean(), Is.False);
-                      Assert.That(body.RootElement.GetProperty("isAtAnyFestival").GetBoolean(), Is.False);
+                      Assert.That(body.RootElement.GetProperty("isAtFestival").GetBoolean(), Is.False);
                     });
   }
 

@@ -16,20 +16,20 @@ public sealed class TestDeviceEnrolment
     _services = services;
   }
 
-  public async Task<EnrolledDevice> EnrolStaffMemberAsync(Guid staffMemberId, string userAgent = "NUnit")
+  public async Task<EnrolledDevice> EnrolStaffMemberAsync(Guid staffMemberId)
   {
     using var scope = _services.CreateScope();
     scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
 
-    return await RedeemAsync(scope.ServiceProvider, staffMemberId, null, userAgent);
+    return await RedeemAsync(scope.ServiceProvider, staffMemberId, null);
   }
 
-  public async Task<EnrolledDevice> EnrolStationAsync(Guid stationId, string userAgent = "NUnit tablet")
+  public async Task<EnrolledDevice> EnrolStationAsync(Guid stationId)
   {
     using var scope = _services.CreateScope();
     scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
 
-    return await RedeemAsync(scope.ServiceProvider, null, stationId, userAgent);
+    return await RedeemAsync(scope.ServiceProvider, null, stationId);
   }
 
   public async Task<string> CreateInvitationCodeAsync(Guid? staffMemberId)
@@ -40,17 +40,10 @@ public sealed class TestDeviceEnrolment
     return await CreateInvitationCodeAsync(scope.ServiceProvider, staffMemberId, null);
   }
 
-  private async Task<EnrolledDevice> RedeemAsync(IServiceProvider scopedServices, Guid? staffMemberId, Guid? stationId, string userAgent)
+  private async Task<EnrolledDevice> RedeemAsync(IServiceProvider scopedServices, Guid? staffMemberId, Guid? stationId)
   {
     var code = await CreateInvitationCodeAsync(scopedServices, staffMemberId, stationId);
-    var redeemed = await scopedServices.GetRequiredService<EnrolmentService>()
-                  .RedeemAsync(new()
-                               {
-                                 Code = code,
-                                 UserAgent = userAgent
-                               },
-                               "de",
-                               CancellationToken.None);
+    var redeemed = await scopedServices.GetRequiredService<EnrolmentService>().RedeemAsync(new() { Code = code }, "de", CancellationToken.None);
 
     return new(redeemed.Value.DeviceId, redeemed.Value.DeviceToken);
   }

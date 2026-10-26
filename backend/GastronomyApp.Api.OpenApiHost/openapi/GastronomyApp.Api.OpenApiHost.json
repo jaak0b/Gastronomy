@@ -2955,7 +2955,7 @@
           "sortOrder",
           "isActive",
           "hasDevice",
-          "isAtAnyFestival",
+          "isAtFestival",
           "hasItemsToHandOutAtTheRunningFestival",
           "strandedItemCountWhenSwitchedOff",
           "strandedItemCountWhenRemovedFromTheFestival"
@@ -2979,7 +2979,7 @@
           "hasDevice": {
             "type": "boolean"
           },
-          "isAtAnyFestival": {
+          "isAtFestival": {
             "type": "boolean"
           },
           "hasItemsToHandOutAtTheRunningFestival": {
@@ -3809,12 +3809,6 @@
             ]
           },
           "name": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "userAgent": {
             "type": [
               "null",
               "string"

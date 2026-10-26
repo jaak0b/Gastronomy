@@ -120,7 +120,7 @@ export function anAdminStation(overrides: Partial<AdminStationView> = {}): Admin
     sortOrder: 1,
     isActive: true,
     hasDevice: true,
-    isAtAnyFestival: true,
+    isAtFestival: true,
     hasItemsToHandOutAtTheRunningFestival: false,
     strandedItemCountWhenSwitchedOff: null,
     strandedItemCountWhenRemovedFromTheFestival: null,

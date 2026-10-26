@@ -115,7 +115,7 @@ public sealed class OrderPlacementScenarioTest
       qrCodeValue = qrUrl[(qrUrl.LastIndexOf('/') + 1)..];
     }
 
-    using var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody(qrCodeValue, null, "NUnit tablet"));
+    using var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody(qrCodeValue, null));
 
     Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
@@ -136,7 +136,7 @@ public sealed class OrderPlacementScenarioTest
       qrCodeValue = qrUrl[(qrUrl.LastIndexOf('/') + 1)..];
     }
 
-    using var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody(qrCodeValue, null, "NUnit"));
+    using var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody(qrCodeValue, null));
 
     Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 

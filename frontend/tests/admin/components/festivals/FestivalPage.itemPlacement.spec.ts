@@ -140,7 +140,7 @@ describe('the items of this festival', () => {
   it('sends the price with a newly chosen station and summarises both stations', async () => {
     const listed = listedItems()
     const laptop = festivalLaptop({
-      stations: [KITCHEN, { ...BAR, isAtAnyFestival: true }],
+      stations: [KITCHEN, { ...BAR, isAtFestival: true }],
       items: listed,
       waitBeforeAnswering: async (call) => {
         if (call.method === 'PUT' && call.url.endsWith(`/items/${SAUSAGE_ID}`)) {
@@ -218,7 +218,7 @@ describe('the items of this festival', () => {
   })
 
   it('keeps the stations as they were while the price in that row cannot be read', async () => {
-    const laptop = festivalLaptop({ stations: [KITCHEN, { ...BAR, isAtAnyFestival: true }] })
+    const laptop = festivalLaptop({ stations: [KITCHEN, { ...BAR, isAtFestival: true }] })
 
     const page = mountPage()
     await vi.waitFor(() =>

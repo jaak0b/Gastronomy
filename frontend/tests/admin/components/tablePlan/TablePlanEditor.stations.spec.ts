@@ -33,13 +33,13 @@ enableAutoUnmount(afterEach)
 
 const SHAPE_PATH = '/api/admin/festivals/fest-1/stations'
 
-const BAR = anAdminStation({ stationId: 'station-theke', name: 'Theke', sortOrder: 3, isAtAnyFestival: true })
+const BAR = anAdminStation({ stationId: 'station-theke', name: 'Theke', sortOrder: 3, isAtFestival: true })
 
 const NOT_AT_THE_FESTIVAL = anAdminStation({
   stationId: 'station-grill',
   name: 'Grill',
   sortOrder: 4,
-  isAtAnyFestival: false,
+  isAtFestival: false,
 })
 
 const TENT_WITH_THE_BAR = {
