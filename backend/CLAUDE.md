@@ -20,7 +20,10 @@ record have their pages in `how-to`.
 
 4. **NuGet packages: official Microsoft or highly regarded community only.** No niche or unmaintained
    single-author packages. Prefer built-in BCL APIs over a third-party dependency: this binary is
-   handed to volunteer fire departments and every dependency is a thing that can rot.
+   handed to volunteer fire departments and every dependency is a thing that can rot. The owner
+   decides on a package that does not meet this, and the ones he approved are listed here:
+   EntityFrameworkCore.Projectables, so that EF Core translates our extension methods inside a
+   query.
 
 5. **Device tokens are treated as credentials.** Stored hashed with built-in PBKDF2-HMAC-SHA512, a
    per-token random salt, and the iteration count plus algorithm stored alongside the hash. Never
