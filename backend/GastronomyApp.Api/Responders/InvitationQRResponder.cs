@@ -1,31 +1,28 @@
-﻿using System.Text;
+using System.Text;
 using ErrorOr;
 using GastronomyApp.Api.ErrorHandling;
-using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;
 using QRCoder;
 
-namespace GastronomyApp.Api.Handlers;
+namespace GastronomyApp.Api.Responders;
 
-public sealed class InvitationQRHandler
+public sealed class InvitationQRResponder
 {
   private const string SvgMediaType = "image/svg+xml";
   private const int PixelsPerModule = 8;
 
   private readonly ResultEnvelope _resultEnvelope;
-  private readonly EnrolmentService _service;
 
-  public InvitationQRHandler(EnrolmentService service, ResultEnvelope resultEnvelope)
+  public InvitationQRResponder(ResultEnvelope resultEnvelope)
   {
-    _service = service;
     _resultEnvelope = resultEnvelope;
   }
 
-  public async Task<IResult> RenderAsync(Guid invitationId, HttpContext httpContext, CancellationToken cancellationToken)
+  public IResult Respond(ErrorOr<string> qrUrl, HttpContext httpContext)
   {
     ArgumentNullException.ThrowIfNull(httpContext);
 
-    return await _service.ReadOpenQRUrlAsync(invitationId, cancellationToken).Match(qrUrl => RenderTheCodePicture(qrUrl, httpContext), _resultEnvelope.Refuse);
+    return qrUrl.Match(url => RenderTheCodePicture(url, httpContext), _resultEnvelope.Refuse);
   }
 
   private IResult RenderTheCodePicture(string qrUrl, HttpContext httpContext)

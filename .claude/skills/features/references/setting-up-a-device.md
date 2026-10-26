@@ -12,20 +12,28 @@ Backend, under `backend/`:
 
 - `GastronomyApp.Core/Entities/Device.cs` and `EnrolmentInvitation.cs`. `StaffMember.DeviceId` and
   `Station.DeviceId` point at the owner's device (`IDeviceOwner`).
-- `Core/Services/EnrolmentService.cs` creates an invitation (`CreateAsync`) and redeems it
-  (`RedeemAsync`); `DeviceOwnerRetirement.cs` signs a device out. Refusals:
-  `Core/Refusals/Refusal.Enrolment.cs` and `Refusal.EnrolmentRedemption.cs`.
-- `Infrastructure/Repositories`: `DeviceRepository`, `DeviceTokenStore`, `DeviceOwnerStore` and
-  `EnrolmentInvitationStore`; `Infrastructure/Security/DeviceTokenSplitter.cs`.
-- Routes: `POST /api/admin/enrolment/invitations` (`AdminEnrolmentEndpoints.cs`,
-  `AdminEnrolmentHandler`), the QR picture at
+- `Core/Services/EnrolmentService.cs` creates an invitation (`CreateInvitationAsync`, which also
+  remembers its code in the outstanding invitation cache), redeems it (`RedeemAsync`, which issues the
+  device and its token, and signs out the device the browser handed over) and answers the QR address
+  (`ReadOpenQRUrlAsync`). `DeviceSessionService.cs` reads the session of the calling device
+  (`ReadAsync`) and changes its language (`ChangeLanguageAsync`). `DeviceOwnerLookup.cs` finds the
+  owner of a device, of an invitation or of a presented token (`FindByTokenAsync`), and
+  `DeviceOwnerRetirement.cs` signs a device out. Refusals: `Core/Refusals/Refusal.Enrolment.cs`,
+  `Refusal.EnrolmentRedemption.cs`, `Refusal.Session.cs` and `Refusal.DeviceLanguage.cs`. The
+  mapping is `Core/Mapping/EnrolmentMapping.cs`.
+- Ports: `ISecretHasher` (implemented by `Infrastructure/Security/Pbkdf2SecretHasher.cs`),
+  `IDeviceTokenSplitter` (`Infrastructure/Security/DeviceTokenSplitter.cs`),
+  `IEnrolmentUrlBuilder` (`Api/Hosting/EnrolmentUrlBuilder.cs`) and
+  `IOutstandingInvitationCache`. No repository stands in front of the database for this area.
+- Routes: `POST /api/admin/enrolment/invitations` (`AdminEnrolmentEndpoints.cs`), the QR picture at
   `GET /api/admin/enrolment/invitations/{invitationId}/qr.svg` (`AdminInvitationQREndpoints.cs`,
-  `InvitationQRHandler`), `POST /api/enrolment/redeem` (`EnrolmentEndpoints.cs`,
-  `EnrolmentRedemptionHandler`) and the session read in `SessionEndpoints.cs` (`SessionHandler`).
-  `Hosting/EnrolmentUrlBuilder.cs` builds the address the QR carries.
-  `Auth/DeviceAuthenticationHandler.cs` reads the token on every request, and
-  `Values/DeviceCaller.cs`, `StaffDeviceCaller.cs` and `StationDeviceCaller.cs` hand the device to a
-  handler. Wire records in `GastronomyApp.Contracts/Enrolment` and `Contracts/Session`.
+  drawn by `Responders/InvitationQRResponder.cs`), `POST /api/enrolment/redeem`
+  (`EnrolmentEndpoints.cs`), `GET /api/session` and `PUT /api/session/language`
+  (`SessionEndpoints.cs`) and `GET /api/language` (`LanguageEndpoints.cs`, the language the laptop
+  was started with). `Auth/DeviceAuthenticationHandler.cs` reads the token on every request through
+  `DeviceOwnerLookup`, and `Values/DeviceCaller.cs`, `StaffDeviceCaller.cs` and
+  `StationDeviceCaller.cs` hand the device to an endpoint. Wire records in
+  `GastronomyApp.Contracts/Enrolment` and `Contracts/Session`.
 
 Frontend, under `frontend/src/`:
 
@@ -49,14 +57,15 @@ Frontend, under `frontend/src/`:
 
 ## Tests
 
-- `GastronomyApp.Core.Tests/Services`: `EnrolmentServiceTest` and `DeviceOwnerRetirementTest`.
-- `GastronomyApp.Infrastructure.Tests`: `Configurations/DeviceConfigurationTest`,
-  `EnrolmentInvitationConfigurationTest`, `Repositories/DeviceRepositoryTest`,
-  `DeviceTokenStoreTest`, `EnrolmentInvitationStoreTest` and `Security/DeviceTokenSplitterTest`.
+- `GastronomyApp.Infrastructure.Tests/Services`: `EnrolmentServiceTest`, `DeviceSessionServiceTest`,
+  `DeviceOwnerLookupTest` and `DeviceOwnerRetirementTest`, on the real DbContext with in-memory
+  SQLite; `Security/DeviceTokenSplitterTest` and `Pbkdf2SecretHasherTest`; `Configurations/DeviceConfigurationTest`
+  and `EnrolmentInvitationConfigurationTest`.
 - `GastronomyApp.Api.Tests`: `Endpoints/AdminEnrolmentEndpointsTest`, `EnrolmentEndpointsTest`,
   `EnrolmentLoggingTest`, `ConcurrentInvitationTest`, `InvitationQREndpointTest`,
-  `SessionEndpointsTest`, `Handlers/InvitationQRHandlerTest`, `Auth/DeviceAuthenticationTest` and
-  `Auth/Filters/DeviceKindTest`.
+  `SessionEndpointsTest`, `LanguageEndpointTest`, `Responders/InvitationQRResponderTest`,
+  `Auth/DeviceAuthenticationTest` and `Auth/Filters/DeviceKindTest`. `TestSupport/TestDeviceEnrolment`
+  gives a test a device token by creating and redeeming an invitation through `EnrolmentService`.
 - `frontend/tests`: `admin/components/enrolment/InvitationPanel.spec.ts`,
   `admin/stores/enrolment.spec.ts`, `admin/core/invitationQrView.spec.ts`,
   `shared/core/landing.spec.ts`, `shared/core/startingUp.spec.ts`, the `shared/stores/session*`

@@ -43,7 +43,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton(options);
     services.AddSingleton(TimeProvider.System);
 
-    services.AddSingleton<IMappingRegistration, EnrolmentMapping>();
     services.AddSingleton<IMappingRegistration, OpenItemMapping>();
     services.AddSingleton<IMappingRegistration, OrderMapping>();
     services.AddSingleton<IMappingRegistration, SettlementMapping>();
@@ -62,6 +61,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IGastronomyDatabase>(provider => provider.GetRequiredService<GastronomyAppDbContext>());
 
     services.AddSingleton<Pbkdf2SecretHasher>();
+    services.AddSingleton<ISecretHasher>(provider => provider.GetRequiredService<Pbkdf2SecretHasher>());
     services.AddSingleton<SqliteFailureTranslator>();
 
     services.AddScoped<AfterCommitActions>();
@@ -69,7 +69,6 @@ public sealed class ApiServiceRegistration
 
     services.AddScoped<IOrderRepository, OrderRepository>();
     services.AddScoped<IOpenItemRepository, OpenItemRepository>();
-    services.AddScoped<IDeviceRepository, DeviceRepository>();
     services.AddScoped<ICatalogItemRepository, CatalogItemRepository>();
     services.AddScoped<IStationRepository, StationRepository>();
     services.AddScoped<IFestivalRepository, FestivalRepository>();
@@ -93,14 +92,14 @@ public sealed class ApiServiceRegistration
     services.AddScoped<OrderItemSettlementService>();
     services.AddScoped<OpenItemsService>();
     services.AddScoped<TablePlanService>();
-    services.AddScoped<DeviceLanguageService>();
     services.AddScoped<OrderAcceptanceService>();
     services.AddScoped<ItemOrderability>();
     services.AddScoped<CatalogService>();
-    services.AddScoped<SessionService>();
     services.AddScoped<CatalogCategoryService>();
     services.AddScoped<CatalogItemService>();
+    services.AddScoped<DeviceOwnerLookup>();
     services.AddScoped<DeviceOwnerRetirement>();
+    services.AddScoped<DeviceSessionService>();
     services.AddScoped<FestivalService>();
     services.AddScoped<FestivalMenuService>();
     services.AddScoped<FestivalStationService>();
@@ -125,10 +124,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<IngredientAmountComparison>();
     services.AddSingleton<StockForecast>();
 
-    services.AddScoped<IDeviceOwnerStore, DeviceOwnerStore>();
-    services.AddScoped<IDeviceTokenStore, DeviceTokenStore>();
-    services.AddScoped<IEnrolmentInvitationStore, EnrolmentInvitationStore>();
-
     services.AddSingleton<SortOrdering>();
     services.AddHttpContextAccessor();
     services.AddSingleton<SystemTextJsonRecordingSerializer>();
@@ -144,15 +139,13 @@ public sealed class ApiServiceRegistration
     services.AddScoped<OrderPlacementHandler>();
     services.AddScoped<OpenItemQueryHandler>();
     services.AddScoped<OrderItemSettlementHandler>();
-    services.AddScoped<SessionHandler>();
     services.AddSingleton<OutstandingInvitationCache>();
     services.AddSingleton<IOutstandingInvitationCache>(provider => provider.GetRequiredService<OutstandingInvitationCache>());
-    services.AddScoped<InvitationQRHandler>();
     services.AddSingleton<LocalNetworkAddressProvider>();
     services.AddSingleton<ReachableHostResolver>();
     services.AddSingleton<EnrolmentUrlBuilder>();
-    services.AddScoped<AdminEnrolmentHandler>();
-    services.AddScoped<EnrolmentRedemptionHandler>();
+    services.AddSingleton<IEnrolmentUrlBuilder>(provider => provider.GetRequiredService<EnrolmentUrlBuilder>());
+    services.AddSingleton<InvitationQRResponder>();
     services.AddSingleton<StationShellResponder>();
     services.AddSingleton<ClientRouteFallbackResponder>();
     services.AddSingleton<DeviceKindGate>();

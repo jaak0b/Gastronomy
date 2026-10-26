@@ -14,7 +14,6 @@ public sealed class OrderMappingTest
   {
     IMappingRegistration[] registrations =
     [
-      new EnrolmentMapping(),
       new OpenItemMapping(),
       new OrderMapping(new()),
       new SettlementMapping(),

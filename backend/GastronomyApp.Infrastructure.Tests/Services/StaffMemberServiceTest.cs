@@ -4,6 +4,7 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
+using GastronomyApp.Infrastructure.Security;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Time.Testing;
@@ -18,14 +19,12 @@ public sealed class StaffMemberServiceTest
   {
     _fixture = new();
     _seeded = await new DomainSeeder().SeedAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    _invitationStore = A.Fake<IEnrolmentInvitationStore>();
-    _deviceTokenStore = A.Fake<IDeviceTokenStore>();
     _announcer = A.Fake<IDeviceRevocationAnnouncer>();
     var afterCommitActions = A.Fake<IAfterCommitActions>();
     A.CallTo(() => afterCommitActions.RunWhenCommittedAsync(A<Func<CancellationToken, Task>>._, A<CancellationToken>._)).ReturnsLazily(call => ((Func<CancellationToken, Task>)call.Arguments[0]!)(call.GetArgument<CancellationToken>(1)));
     FakeTimeProvider clock = new(new(_now));
     var mapping = new CoreMappingFactory().Create();
-    _service = new(_fixture.DbContext, mapping, new(_invitationStore, _deviceTokenStore, _announcer, afterCommitActions, clock));
+    _service = new(_fixture.DbContext, mapping, new(_fixture.DbContext, new(_fixture.DbContext, new Pbkdf2SecretHasher()), _announcer, afterCommitActions, clock));
     _activation = new(_fixture.DbContext, mapping);
   }
 
@@ -39,9 +38,7 @@ public sealed class StaffMemberServiceTest
 
   private ActivationService _activation = null!;
   private IDeviceRevocationAnnouncer _announcer = null!;
-  private IDeviceTokenStore _deviceTokenStore = null!;
   private SqliteInMemoryFixture _fixture = null!;
-  private IEnrolmentInvitationStore _invitationStore = null!;
   private SeededDomain _seeded = null!;
   private StaffMemberService _service = null!;
 
@@ -155,8 +152,15 @@ public sealed class StaffMemberServiceTest
                       Assert.That(stored.EnrolmentInvitationId, Is.Null);
                     });
 
-    A.CallTo(() => _invitationStore.ConsumeAsync(invitationId, _now, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
-    A.CallTo(() => _deviceTokenStore.RevokeAsync(deviceId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+    var deviceStillStored = await _fixture.DbContext.Devices.AnyAsync(device => device.Id == deviceId, TestContext.CurrentContext.CancellationToken);
+    var invitation = await _fixture.DbContext.EnrolmentInvitations.SingleAsync(candidate => candidate.Id == invitationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(deviceStillStored, Is.False);
+                      Assert.That(invitation.ConsumedAtUtc, Is.EqualTo(_now));
+                    });
+
     A.CallTo(() => _announcer.AnnounceDeviceRevokedAsync(deviceId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
@@ -167,8 +171,6 @@ public sealed class StaffMemberServiceTest
 
     Assert.That(switchedOff.IsError, Is.False);
 
-    A.CallTo(() => _invitationStore.ConsumeAsync(A<Guid>._, A<DateTime>._, A<CancellationToken>._)).MustNotHaveHappened();
-    A.CallTo(() => _deviceTokenStore.RevokeAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
     A.CallTo(() => _announcer.AnnounceDeviceRevokedAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
   }
 

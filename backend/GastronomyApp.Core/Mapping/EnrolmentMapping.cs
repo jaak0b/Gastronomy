@@ -1,20 +1,19 @@
-﻿using GastronomyApp.Contracts.Enrolment;
+using GastronomyApp.Contracts.Enrolment;
 using GastronomyApp.Contracts.Events;
 using GastronomyApp.Contracts.Session;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using Mapster;
 
-namespace GastronomyApp.Api.Mapping;
+namespace GastronomyApp.Core.Mapping;
 
-public sealed class EnrolmentMapping : IMappingRegistration
+public sealed class EnrolmentMapping : IRegister
 {
   public void Register(TypeAdapterConfig config)
   {
     ArgumentNullException.ThrowIfNull(config);
 
     config.NewConfig<IssuedEnrolmentInvitation, InvitationView>()
-          .Ignore(view => view.QRUrl)
           .Map(view => view.InvitationId, issued => issued.Invitation.Id)
           .Map(view => view.ExpiresAtUtc, issued => issued.Invitation.ExpiresAtUtc)
           .Map(view => view.StaffMember, issued => issued.Owner as StaffMember)
@@ -33,6 +32,12 @@ public sealed class EnrolmentMapping : IMappingRegistration
           .Map(payload => payload.OwnerName, owner => owner.Name)
           .Map(payload => payload.DeviceId, owner => owner.Device!.Id);
 
-    config.NewConfig<IDeviceOwner, SessionView>().Ignore(view => view.DeviceId).Ignore(view => view.Language).Map(view => view.StaffMember, owner => owner as StaffMember).Map(view => view.Station, owner => owner as Station);
+    config.NewConfig<StaffMember, SessionView>()
+          .Map(view => view.DeviceId, staffMember => staffMember.Device!.Id)
+          .Map(view => view.Language, staffMember => staffMember.Device!.Language)
+          .Map(view => view.StaffMember, staffMember => staffMember)
+          .Map(view => view.Station, staffMember => (Station?)null);
+
+    config.NewConfig<Station, SessionView>().Map(view => view.DeviceId, station => station.Device!.Id).Map(view => view.Language, station => station.Device!.Language).Map(view => view.StaffMember, station => (StaffMember?)null).Map(view => view.Station, station => station);
   }
 }

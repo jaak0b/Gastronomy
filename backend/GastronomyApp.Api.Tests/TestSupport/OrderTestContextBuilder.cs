@@ -1,7 +1,3 @@
-﻿using GastronomyApp.Core.Ports;
-using Microsoft.Extensions.DependencyInjection;
-using GastronomyApp.Infrastructure.Persistence;
-
 namespace GastronomyApp.Api.Tests.TestSupport;
 
 public sealed class OrderTestContextBuilder
@@ -16,11 +12,8 @@ public sealed class OrderTestContextBuilder
       world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
     }
 
-    using var scope = factory.Services.CreateScope();
-    scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
-    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindStaffMemberAsync(world.StaffMemberId, CancellationToken.None);
-    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(owner!, "de", "NUnit", CancellationToken.None);
+    var enrolled = await new TestDeviceEnrolment(factory.Services).EnrolStaffMemberAsync(world.StaffMemberId);
 
-    return new(factory, world, issued.PlaintextToken, issued.Device.Id);
+    return new(factory, world, enrolled.PlaintextToken, enrolled.DeviceId);
   }
 }

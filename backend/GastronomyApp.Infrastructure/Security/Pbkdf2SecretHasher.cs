@@ -1,9 +1,10 @@
-﻿using System.Security.Cryptography;
-using GastronomyApp.Infrastructure.Values;
+using System.Security.Cryptography;
+using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Infrastructure.Security;
 
-public sealed class Pbkdf2SecretHasher
+public sealed class Pbkdf2SecretHasher : ISecretHasher
 {
   private const int DefaultIterations = 210_000;
   private const int SaltLengthBytes = 16;

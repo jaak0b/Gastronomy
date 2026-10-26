@@ -1,17 +1,17 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using GastronomyApp.Api.Values;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Services;
 
 namespace GastronomyApp.Api.Auth;
 
 public sealed class CallerIdentity
 {
-  private readonly IDeviceOwnerStore _ownerStore;
+  private readonly DeviceOwnerLookup _ownerLookup;
 
-  public CallerIdentity(IDeviceOwnerStore ownerStore)
+  public CallerIdentity(DeviceOwnerLookup ownerLookup)
   {
-    _ownerStore = ownerStore;
+    _ownerLookup = ownerLookup;
   }
 
   public DeviceCaller? ReadDevice(ClaimsPrincipal principal)
@@ -35,14 +35,14 @@ public sealed class CallerIdentity
     if (caller is null)
       return null;
 
-    return await _ownerStore.FindByDeviceAsync(caller.DeviceId, cancellationToken);
+    return await _ownerLookup.FindByDeviceAsync(caller.DeviceId, cancellationToken);
   }
 
   public async Task<StaffDeviceCaller?> ReadStaffDeviceAsync(ClaimsPrincipal principal, CancellationToken cancellationToken)
   {
     var caller = ReadDevice(principal);
 
-    if (caller is null || await _ownerStore.FindByDeviceAsync(caller.DeviceId, cancellationToken) is not StaffMember)
+    if (caller is null || await _ownerLookup.FindByDeviceAsync(caller.DeviceId, cancellationToken) is not StaffMember)
       return null;
 
     return new(caller.OwnerId, caller.DeviceId, caller.Language);
@@ -52,7 +52,7 @@ public sealed class CallerIdentity
   {
     var caller = ReadDevice(principal);
 
-    if (caller is null || await _ownerStore.FindByDeviceAsync(caller.DeviceId, cancellationToken) is not Station)
+    if (caller is null || await _ownerLookup.FindByDeviceAsync(caller.DeviceId, cancellationToken) is not Station)
       return null;
 
     return new(caller.OwnerId, caller.DeviceId, caller.Language);

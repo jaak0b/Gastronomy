@@ -1,11 +1,8 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
-using GastronomyApp.Core.Ports;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using GastronomyApp.Infrastructure.Persistence;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
@@ -283,19 +280,12 @@ public sealed class EnrolmentEndpointsTest
 
   private async Task<string> CreateInvitationCodeAsync()
   {
-    using var scope = _factory.Services.CreateScope();
-    scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
-    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindStaffMemberAsync(_world.StaffMemberId, CancellationToken.None);
-
-    return (await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>().CreateAsync(owner, CancellationToken.None)).QRCodeValue;
+    return await new TestDeviceEnrolment(_factory.Services).CreateInvitationCodeAsync(_world.StaffMemberId);
   }
 
   private async Task<string> CreateInvitationCodeForNobodyAsync()
   {
-    using var scope = _factory.Services.CreateScope();
-    scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
-
-    return (await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>().CreateAsync(null, CancellationToken.None)).QRCodeValue;
+    return await new TestDeviceEnrolment(_factory.Services).CreateInvitationCodeAsync(null);
   }
 
   private async Task<string> CreateInvitationCodeOverHttpAsync(Guid staffMemberId)

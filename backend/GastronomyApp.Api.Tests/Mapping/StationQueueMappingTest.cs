@@ -14,7 +14,6 @@ public sealed class StationQueueMappingTest
   {
     IMappingRegistration[] registrations =
     [
-      new EnrolmentMapping(),
       new OpenItemMapping(),
       new OrderMapping(new()),
       new SettlementMapping(),

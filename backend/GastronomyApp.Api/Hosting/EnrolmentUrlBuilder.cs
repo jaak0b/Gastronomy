@@ -1,10 +1,11 @@
-﻿using GastronomyApp.Api.Values;
+using GastronomyApp.Api.Values;
+using GastronomyApp.Core.Ports;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 
 namespace GastronomyApp.Api.Hosting;
 
-public sealed class EnrolmentUrlBuilder
+public sealed class EnrolmentUrlBuilder : IEnrolmentUrlBuilder
 {
   private readonly ApiHostOptions _hostOptions;
   private readonly ReachableHostResolver _hostResolver;

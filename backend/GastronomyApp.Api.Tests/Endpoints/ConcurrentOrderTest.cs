@@ -1,7 +1,6 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using GastronomyApp.Api.Tests.TestSupport;
-using GastronomyApp.Core.Ports;
 using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,9 +29,7 @@ public sealed class ConcurrentOrderTest
                               });
     await database.SaveChangesAsync();
 
-    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindStaffMemberAsync(secondStaffMemberId, CancellationToken.None);
-    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(owner!, "de", "NUnit second phone", CancellationToken.None);
-    _secondDeviceToken = issued.PlaintextToken;
+    _secondDeviceToken = (await new TestDeviceEnrolment(_context.Factory.Services).EnrolStaffMemberAsync(secondStaffMemberId, "NUnit second phone")).PlaintextToken;
   }
 
   [TearDown]

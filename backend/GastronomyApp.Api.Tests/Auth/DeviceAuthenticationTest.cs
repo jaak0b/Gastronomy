@@ -1,8 +1,7 @@
-﻿using System.Net;
+using System.Net;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
-using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
+using GastronomyApp.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using GastronomyApp.Infrastructure.Persistence;
 
@@ -69,7 +68,7 @@ public sealed class DeviceAuthenticationTest
     using (var scope = _factory.Services.CreateScope())
     {
       scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
-      await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().RevokeAsync(issued.Device.Id, CancellationToken.None);
+      await scope.ServiceProvider.GetRequiredService<DeviceOwnerRetirement>().RevokeDeviceAsync(issued.DeviceId, CancellationToken.None);
     }
 
     using HttpRequestMessage request = new(HttpMethod.Get, "/api/session");
@@ -94,17 +93,13 @@ public sealed class DeviceAuthenticationTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(body.RootElement.GetProperty("deviceId").GetGuid(), Is.EqualTo(issued.Device.Id));
+                      Assert.That(body.RootElement.GetProperty("deviceId").GetGuid(), Is.EqualTo(issued.DeviceId));
                       Assert.That(body.RootElement.GetProperty("staffMember").GetProperty("id").GetGuid(), Is.EqualTo(_world.StaffMemberId));
                     });
   }
 
-  private async Task<IssuedDeviceToken> IssueTokenAsync()
+  private async Task<EnrolledDevice> IssueTokenAsync()
   {
-    using var scope = _factory.Services.CreateScope();
-    scope.ServiceProvider.GetRequiredService<AfterCommitActions>().StartCollecting();
-    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindStaffMemberAsync(_world.StaffMemberId, CancellationToken.None);
-
-    return await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(owner!, "de", "NUnit", CancellationToken.None);
+    return await new TestDeviceEnrolment(_factory.Services).EnrolStaffMemberAsync(_world.StaffMemberId);
   }
 }

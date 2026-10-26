@@ -1,6 +1,7 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using System.Text.Encodings.Web;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,12 +13,12 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
   private const string BearerPrefix = "Bearer ";
   private const string AccessTokenQueryKey = "access_token";
   private const string HubPathPrefix = "/hub";
-  private readonly IDeviceTokenStore _deviceTokenStore;
+  private readonly DeviceOwnerLookup _ownerLookup;
   private readonly IDeviceTokenSplitter _tokenSplitter;
 
-  public DeviceAuthenticationHandler(IOptionsMonitor<DeviceAuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, IDeviceTokenStore deviceTokenStore, IDeviceTokenSplitter tokenSplitter) : base(options, logger, encoder)
+  public DeviceAuthenticationHandler(IOptionsMonitor<DeviceAuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, DeviceOwnerLookup ownerLookup, IDeviceTokenSplitter tokenSplitter) : base(options, logger, encoder)
   {
-    _deviceTokenStore = deviceTokenStore;
+    _ownerLookup = ownerLookup;
     _tokenSplitter = tokenSplitter;
   }
 
@@ -31,7 +32,7 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
     if (tokenParts is null)
       return AuthenticateResult.Fail("The device token is not in the form TokenLookupId.secret.");
 
-    var owner = await _deviceTokenStore.VerifyAsync(tokenParts.TokenLookupId, tokenParts.Secret, Context.RequestAborted);
+    var owner = await _ownerLookup.FindByTokenAsync(tokenParts.TokenLookupId, tokenParts.Secret, Context.RequestAborted);
 
     if (owner?.Device is null)
       return AuthenticateResult.Fail("The device token was not accepted.");

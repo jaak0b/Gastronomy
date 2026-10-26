@@ -1,3 +1,3 @@
-namespace GastronomyApp.Infrastructure.Values;
+namespace GastronomyApp.Core.Results;
 
 public sealed record HashedSecret(byte[] Hash, byte[] Salt, int Iterations, string Algorithm);
