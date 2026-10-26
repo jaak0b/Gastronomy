@@ -345,6 +345,13 @@ Every rule binds every agent, main or sub, with no exception it does not name.
     several entities share the flag. Read the `layers-and-projects` page before adding a backend
     class, and never write new code the old way because the area beside it still looks like that.
 
+26. **No rule and no skill page is right just because it is written down.** A page may record an
+    accident as a rule. When a rule or a page seems to cause harm (duplicated code, a layer that only passes a
+    call on, a prescription with no reason behind it), or a change feels wrong for any other reason,
+    the agent stops and asks the owner before following it or working around it. A subagent reports
+    it to the main agent, which brings it to the owner. Silently obeying a rule that smells is as
+    wrong as silently breaking it.
+
 ## Verification bar
 
 Backend and frontend tests green for what you touched, with real output quoted. See each folder's
