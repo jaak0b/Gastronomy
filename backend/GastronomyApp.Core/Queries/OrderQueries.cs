@@ -21,14 +21,14 @@ public static class OrderQueries
   [Projectable]
   public static bool IsPartlySettled(this Order order) => order.HasItemsToSettle() && order.Items().Any(item => item.IsStillOrdered() && item.IsSettled());
 
-  public static OrderStatus Status(this Order order)
-  {
-    if (!order.HasItemsToHandOut())
-      return OrderStatus.Fulfilled;
-
-    if (order.IsPartlyHandedOut())
-      return OrderStatus.PartiallyFulfilled;
-
-    return OrderStatus.Open;
-  }
+  [Projectable]
+  public static OrderStatus Status(this Order order) => order.HasItemsToHandOut() switch
+                                                        {
+                                                          false => OrderStatus.Fulfilled,
+                                                          _ => order.IsPartlyHandedOut() switch
+                                                               {
+                                                                 true => OrderStatus.PartiallyFulfilled,
+                                                                 _ => OrderStatus.Open
+                                                               }
+                                                        };
 }

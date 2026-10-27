@@ -24,7 +24,6 @@ public sealed class DeviceKindTest
   private string _stationToken = null!;
 
   [TestCase("/api/catalog")]
-  [TestCase("/api/open-items/tables/6f9619ff-8b86-4011-b42d-00cf4fc964ff")]
   [TestCase("/api/table-plan")]
   [TestCase("/api/estimates")]
   public async Task Get_WaiterRouteWithAStationTablet_IsRefusedAsTheWrongKindOfDevice(string path)
@@ -58,6 +57,19 @@ public sealed class DeviceKindTest
     using var response = await _context.SendAsAsync(_stationToken, HttpMethod.Post, "/api/orders", _context.BuildOrder(Guid.NewGuid()));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+  }
+
+  [Test]
+  public async Task Post_TableSearchWithAStationTablet_IsRefusedAsTheWrongKindOfDevice()
+  {
+    using var response = await _context.SendAsAsync(_stationToken, HttpMethod.Post, $"/api/open-items/tables/{_context.World.TableId}/search", new TableSearchBody(null, null, null));
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.auth.wrongDeviceKind"));
+                    });
   }
 
   [Test]

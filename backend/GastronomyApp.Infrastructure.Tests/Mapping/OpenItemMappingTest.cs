@@ -125,7 +125,7 @@ public sealed class OpenItemMappingTest
   }
 
   [Test]
-  public void Map_ATableWithOpenAndSettledPositions_NamesTheTableAndOwesOnlyTheOpenOnes()
+  public void Map_ATableWithOpenAndSettledPositions_NamesTheTableAndCarriesItsOrders()
   {
     var bratwurst = Item("Bratwurst", 350);
     var bier = Item("Bier", 400);
@@ -139,7 +139,6 @@ public sealed class OpenItemMappingTest
                     {
                       Assert.That(view.TableId, Is.EqualTo(order.TableId));
                       Assert.That(view.TableName, Is.EqualTo("Tisch 12"));
-                      Assert.That(view.OpenAmountCents, Is.EqualTo(350));
                       Assert.That(view.Orders.Select(placed => placed.OrderId), Is.EqualTo(new[] { order.Id }));
                     });
   }
@@ -162,7 +161,7 @@ public sealed class OpenItemMappingTest
   }
 
   [Test]
-  public void Map_ATableWithACancelledUnsettledPosition_OwesNothingForIt()
+  public void Map_ATableWithACancelledUnsettledPosition_KeepsItAmongThePositions()
   {
     var bratwurst = Item("Bratwurst", 350);
     var bier = Item("Bier", 400);
@@ -174,7 +173,6 @@ public sealed class OpenItemMappingTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(view.OpenAmountCents, Is.EqualTo(350));
                       Assert.That(view.Orders.Single().Items.Select(item => item.ItemName),
                                   Is.EquivalentTo(new[]
                                                   {

@@ -88,7 +88,7 @@ public sealed class FestivalScopeEndpointsTest
   }
 
   [Test]
-  public async Task GetTable_NoFestivalIsRunning_IsRefusedWithTheSettlementMessage()
+  public async Task SearchTable_NoFestivalIsRunning_IsRefusedWithTheSettlementMessage()
   {
     using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
     {
@@ -97,7 +97,7 @@ public sealed class FestivalScopeEndpointsTest
 
     await LetTheFestivalEndAsync();
 
-    using var response = await _context.SendAsync(HttpMethod.Get, $"/api/open-items/tables/{_context.World.TableId}");
+    using var response = await _context.SendAsync(HttpMethod.Post, $"/api/open-items/tables/{_context.World.TableId}/search", new TableSearchBody(null, null, null));
     var body = await ReadBodyAsync(response);
 
     Assert.Multiple(() =>

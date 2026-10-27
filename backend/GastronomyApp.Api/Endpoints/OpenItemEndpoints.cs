@@ -14,7 +14,9 @@ public static class OpenItemEndpoints
   {
     var group = routes.MapGroup("/api/open-items").RequireAuthorization().RequireStaffDevice().RequireRateLimiting(Names.RateLimitPolicies.PerDevice);
 
-    group.MapGet("/tables/{tableId:guid}", async Task<ApiAnswer<TableOrderReportView>> (Guid tableId, OpenItemsService service, CancellationToken cancellationToken) => await service.ReadTableAsync(tableId, cancellationToken));
+    group.MapPost("/tables/{tableId:guid}/search",
+                  async Task<ApiAnswer<TableOrderReportView>> (Guid tableId, TableOrderSearchRequest search, OpenItemsService service, CancellationToken cancellationToken) =>
+                    await service.SearchTableAsync(tableId, search.OrderStatus, search.PaymentStatus, search.IncludeCancelled, cancellationToken));
 
     group.MapPost("/settle",
                   async Task<ApiAnswer<SettlementView>> (SettleItemsRequest request, StaffDeviceCaller caller, OpenItemsService service, CancellationToken cancellationToken) => await service.SettleAsync(request.Lines ?? [], request.PaymentMethod!.Value, caller.StaffMemberId, cancellationToken));

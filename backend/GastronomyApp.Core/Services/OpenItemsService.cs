@@ -32,7 +32,7 @@ public sealed class OpenItemsService
     _logger = logger;
   }
 
-  public async Task<ErrorOr<TableOrderReportView>> ReadTableAsync(Guid tableId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<TableOrderReportView>> SearchTableAsync(Guid tableId, OrderStatus? orderStatus, PaymentStatus? paymentStatus, bool? includeCancelled, CancellationToken cancellationToken)
   {
     var festival = await _runningFestival.FindAsync(cancellationToken);
 
@@ -41,11 +41,13 @@ public sealed class OpenItemsService
 
     var table = await _database.Tables.AsNoTracking()
                                .Where(candidate => candidate.Id == tableId && candidate.FestivalId == festival.Id)
-                               .Include(candidate => candidate.Orders.OrderByDescending(order => order.CreatedAtUtc).ThenByDescending(order => order.GlobalOrderNumber))
+                               .Include(candidate => candidate.Orders.Where(order => (orderStatus == null || order.Status() == orderStatus) && order.Items().Any(item => item.MatchesTableSearch(paymentStatus, includeCancelled)))
+                                                              .OrderByDescending(order => order.CreatedAtUtc)
+                                                              .ThenByDescending(order => order.GlobalOrderNumber))
                                .ThenInclude(order => order.StaffMember)
                                .Include(candidate => candidate.Orders)
                                .ThenInclude(order => order.StationOrders)
-                               .ThenInclude(stationOrder => stationOrder.Items)
+                               .ThenInclude(stationOrder => stationOrder.Items.Where(item => item.MatchesTableSearch(paymentStatus, includeCancelled)))
                                .FirstOrDefaultAsync(cancellationToken);
 
     if (table is null)

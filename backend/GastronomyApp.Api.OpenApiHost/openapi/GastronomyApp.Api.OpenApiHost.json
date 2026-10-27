@@ -213,8 +213,8 @@
         }
       }
     },
-    "/api/open-items/tables/{tableId}": {
-      "get": {
+    "/api/open-items/tables/{tableId}/search": {
+      "post": {
         "tags": [
           "GetDocument.Insider"
         ],
@@ -229,6 +229,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TableOrderSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -3776,6 +3786,13 @@
           null
         ]
       },
+      "PaymentStatus": {
+        "enum": [
+          "notPaid",
+          "paid",
+          null
+        ]
+      },
       "PlacedOrderView": {
         "required": [
           "orderId",
@@ -4801,7 +4818,6 @@
         "required": [
           "tableId",
           "tableName",
-          "openAmountCents",
           "orders"
         ],
         "type": "object",
@@ -4813,15 +4829,42 @@
           "tableName": {
             "type": "string"
           },
-          "openAmountCents": {
-            "type": "integer",
-            "format": "int32"
-          },
           "orders": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TableOrderRecordView"
             }
+          }
+        }
+      },
+      "TableOrderSearchRequest": {
+        "type": "object",
+        "properties": {
+          "orderStatus": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OrderStatus"
+              }
+            ]
+          },
+          "paymentStatus": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PaymentStatus"
+              }
+            ]
+          },
+          "includeCancelled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },

@@ -72,6 +72,10 @@ public static class OrderItemQueries
   public static bool IsToSettle(this OrderItem item) => item.IsStillOrdered() && !item.IsSettled();
 
   [Projectable]
+  public static bool MatchesTableSearch(this OrderItem item, PaymentStatus? paymentStatus, bool? includeCancelled) =>
+    (paymentStatus == null || (paymentStatus == PaymentStatus.Paid && item.IsSettled()) || (paymentStatus == PaymentStatus.NotPaid && !item.IsSettled())) && ((includeCancelled ?? true) || item.IsStillOrdered());
+
+  [Projectable]
   public static OrderItemState State(this OrderItem item) => item.CurrentStatus!.Status;
 
   [Projectable]

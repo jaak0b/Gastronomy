@@ -25,10 +25,7 @@ public sealed class OpenItemMapping : IRegister
           .Map(view => view.StaffMemberName, order => order.StaffMember.Name)
           .Map(view => view.Items, order => order.Items().OrderBy(item => item.ItemName, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Note, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Id).ToList());
 
-    config.NewConfig<Table, TableOrderReportView>()
-          .Map(view => view.TableId, table => table.Id)
-          .Map(view => view.TableName, table => table.Name)
-          .Map(view => view.OpenAmountCents, table => table.Orders.SelectMany(order => order.Items()).Where(item => item.IsToSettle()).Sum(item => item.UnitPriceCents));
+    config.NewConfig<Table, TableOrderReportView>().Map(view => view.TableId, table => table.Id).Map(view => view.TableName, table => table.Name);
 
     config.NewConfig<SettlementResult, SettlementView>()
           .Map(view => view.SettledOrderItemIds, settlement => settlement.NewlySettled.Select(item => item.Id).ToList())
