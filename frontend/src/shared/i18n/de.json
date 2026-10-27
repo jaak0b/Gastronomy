@@ -130,8 +130,8 @@
       "errors": {
         "cancelAnswerNeverCame": "Es ist nicht klar, ob die Stornierung angekommen ist. Tippen Sie auf \"Neu laden\" und schauen Sie nach, ob die Positionen storniert sind.",
         "loadFailed": "Der Rechner war nicht erreichbar. Tippen Sie auf \"Neu laden\".",
-        "settleAnswerNeverCame": "Es ist nicht klar, ob das Kassieren beim Rechner angekommen ist. Tippen Sie auf \"Neu laden\" und schauen Sie nach, ob die Positionen noch offen sind.",
-        "settleFailed": "Das Kassieren ist fehlgeschlagen. Versuchen Sie es noch einmal.",
+        "settleAnswerNeverCame": "Es ist nicht klar, ob die Zahlung gespeichert wurde. Tippen Sie auf \"Neu laden\" und schauen Sie nach, ob die Positionen noch offen sind.",
+        "settleFailed": "Die Zahlung wurde nicht gespeichert. Versuchen Sie es noch einmal.",
         "tableCouldNotBeLoaded": "Dieser Tisch konnte nicht geladen werden. Öffnen Sie ihn noch einmal über den Tischplan."
       }
     },

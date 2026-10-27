@@ -141,7 +141,7 @@ describe('settling what the table actually handed over', () => {
 
     expect(document.querySelector('[data-test="amount-paid-dialog"]')).toBeNull()
     expect(screen.get('[data-test="settle-notice"]').text()).toBe(
-      'Es ist nicht klar, ob das Kassieren beim Rechner angekommen ist. Tippen Sie auf "Neu laden" und schauen Sie nach, ob die Positionen noch offen sind.',
+      'Es ist nicht klar, ob die Zahlung gespeichert wurde. Tippen Sie auf "Neu laden" und schauen Sie nach, ob die Positionen noch offen sind.',
     )
     expect(useOpenItemsStore().selectedItemIds).toEqual(['item-1'])
   })
@@ -161,7 +161,7 @@ describe('settling what the table actually handed over', () => {
     expect(inputOf(`${AMOUNT_DIALOG} [data-test="amount-field"]`).value).toBe('2,00')
     expect(inputOf(`${AMOUNT_DIALOG} [data-test="reason-field"]`).value).toBe('Stammgast')
     expect(document.querySelector('[data-test="amount-paid-dialog"]')?.textContent).toContain(
-      'Das Kassieren ist fehlgeschlagen. Versuchen Sie es noch einmal.',
+      'Die Zahlung wurde nicht gespeichert. Versuchen Sie es noch einmal.',
     )
   })
 
