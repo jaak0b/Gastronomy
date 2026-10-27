@@ -104,12 +104,16 @@
         "amountPaidField": "Bezahlter Betrag",
         "amountPaidReason": "Grund",
         "amountPaidTitle": "Wie viel hat der Tisch bezahlt?",
+        "cancelTitle": "Wollen Sie diese Positionen stornieren?",
         "order": "Bestellung {order}",
         "paid": "Bezahlt",
         "reasonPlaceholder": "Zum Beispiel: Essen für die Kapelle",
-        "selected": "Ausgewählt: {amount}"
+        "selected": "Ausgewählt: {amount}",
+        "selectedCount": "Ausgewählt: {count} Position | Ausgewählt: {count} Positionen"
       },
       "actions": {
+        "cancelItems": "Position stornieren",
+        "cancelSelected": "Stornieren",
         "reload": "Neu laden",
         "settle": "Abrechnen",
         "settleByCard": "Mit Karte abrechnen",
@@ -117,10 +121,12 @@
         "wholeTable": "Ganzen Tisch auswählen"
       },
       "messages": {
+        "cashToReturn": "Der Gast bekommt {amount} bar zurück.",
         "noOrdersForTable": "Für diesen Tisch gibt es keine Bestellungen.",
         "someWereAlreadySettled": "Jemand anderes hatte {count} Position aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast {amount} zurück. | Jemand anderes hatte {count} Positionen aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast {amount} zurück."
       },
       "errors": {
+        "cancelAnswerNeverCame": "Es ist nicht klar, ob die Stornierung angekommen ist. Tippen Sie auf \"Neu laden\" und schauen Sie nach, ob die Positionen storniert sind.",
         "loadFailed": "Der Rechner war nicht erreichbar. Tippen Sie auf \"Neu laden\".",
         "settleAnswerNeverCame": "Es ist nicht klar, ob die Abrechnung angekommen ist. Tippen Sie auf \"Neu laden\" und schauen Sie nach, ob die Positionen noch offen sind.",
         "settleFailed": "Versuchen Sie es noch einmal. Das Abrechnen ist fehlgeschlagen.",
@@ -184,6 +190,8 @@
     "board": {
       "labels": {
         "asItComesHeading": "Einzellieferungen",
+        "cancellationAcknowledgedAt": "Stornierung bestätigt um {time}",
+        "cancelledAt": "Storniert um {time}",
         "confirmDoneTitle": "Diese Positionen zubereiten?",
         "openArticlesHeading": "Offene Artikel",
         "orderHeader": "Bestellung {order} · Nr. {sequence} ·",
@@ -193,6 +201,7 @@
         "unitSeparator": " · "
       },
       "actions": {
+        "acknowledgeCancellation": "Stornierung bestätigen",
         "backToOrders": "Zurück zu den Bestellungen",
         "groupedView": "Gruppiert",
         "hideHere": "Hier ausblenden",

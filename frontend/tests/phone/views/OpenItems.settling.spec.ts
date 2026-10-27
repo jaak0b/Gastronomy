@@ -175,8 +175,62 @@ describe('settling what the table actually handed over', () => {
 
     await pressConfirm()
 
-    expect(document.querySelector('[data-test="amount-paid-dialog"]')?.textContent).toContain(
-      'Bratwurst wurde inzwischen storniert. Tippen Sie auf "Neu laden" und wählen Sie die Positionen noch einmal aus.',
+    expect({
+      reason: document.querySelector(`${AMOUNT_DIALOG} [data-test="settle-notice"]`)?.textContent?.trim(),
+      reload: document.querySelector(`${AMOUNT_DIALOG} [data-test="reload-after-refusal"]`)?.textContent?.trim(),
+    }).toEqual({
+      reason: 'Bratwurst wurde inzwischen storniert. Tippen Sie auf "Neu laden" und wählen Sie die Positionen noch einmal aus.',
+      reload: 'Neu laden',
+    })
+  })
+
+  it('closes the amount page and loads the table again when the waiter taps the reload after a refusal', async () => {
+    const screen = await mountScreen()
+    const laptop = openItemsLaptop(
+      TISCH_12,
+      refusal('errors.settlement.itemWasCancelled', { code: 'ItemWasCancelled', parameters: { name: 'Bratwurst' } }),
     )
+    await openTheAmountDialog(screen)
+    await pressConfirm()
+
+    await clickOn(`${AMOUNT_DIALOG} [data-test="reload-after-refusal"]`)
+
+    expect({
+      amountPageOpen: document.querySelector(AMOUNT_DIALOG) !== null,
+      tableLoads: laptop.callsTo('GET', '/api/open-items/tables/table-12').length,
+    }).toEqual({ amountPageOpen: false, tableLoads: 2 })
+  })
+
+  it('leaves no reason on the table once the waiter taps the reload after a refusal', async () => {
+    const screen = await mountScreen()
+    openItemsLaptop(
+      TISCH_12,
+      refusal('errors.settlement.itemWasCancelled', { code: 'ItemWasCancelled', parameters: { name: 'Bratwurst' } }),
+    )
+    await openTheAmountDialog(screen)
+    await pressConfirm()
+
+    await clickOn(`${AMOUNT_DIALOG} [data-test="reload-after-refusal"]`)
+
+    expect(document.querySelector('[data-test="settle-notice"]') !== null).toBe(false)
+  })
+
+  it('shows the old reason neither on the table nor on the amount page once the waiter backed out', async () => {
+    const screen = await mountScreen()
+    openItemsLaptop(
+      TISCH_12,
+      refusal('errors.settlement.itemWasCancelled', { code: 'ItemWasCancelled', parameters: { name: 'Bratwurst' } }),
+    )
+    await openTheAmountDialog(screen)
+    await pressConfirm()
+
+    await clickOn(`${AMOUNT_DIALOG} [data-test="cancel"]`)
+    const onTheTable = document.querySelector('[data-test="settle-notice"]') !== null
+    await clickOn('[data-test="settle"]')
+
+    expect({
+      onTheTable,
+      onTheAmountPage: document.querySelector(`${AMOUNT_DIALOG} [data-test="settle-notice"]`) !== null,
+    }).toEqual({ onTheTable: false, onTheAmountPage: false })
   })
 })

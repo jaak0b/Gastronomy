@@ -70,19 +70,19 @@ Backend, under `backend/`:
 - The phone's plan: `TablePlanService.ReadRunningFestivalAsync` asks `RunningFestivalLookup` for the
   running festival and reads its shown plan as one SQL statement, so one snapshot: `ProjectToType`
   into the records in `Core/Results`, `ShownArea` (the area with its `ShownTable`s and its
-  `TablePlanStationShapeView`s) and `ShownTable` (the table with `ItemProgressPerOrder`, one list of
-  `OrderItemProgress` (`State`, `IsSettled`) per order, over all its stations; a cancelled item counts
-  toward neither colour). The progress is
-  mapped from `OrderItem` in `TablePlanMapping`, so no hand-written `Select` is left. No order or
-  item entity is loaded, because every phone reads this again on every `OrdersChanged`.
-  `Core/Services/TableProgress.cs` derives a table's two colour states, `HandOutProgressOf` and
-  `SettlementProgressOf`, from each order's `OrderService.HandOutProgressOf` and
-  `OrderService.SettlementProgressOf`, the one home of an order's two progress states, which
-  `OrderService.StatusOf` uses as well. Each leaves cancelled items out and hands the rest to
-  `ShareOfFlaggedItems`, which turns item flags into `None`, `Some` or `All`. Something with nothing
-  left to do counts as done, so an empty list is `All` and an order whose items are all cancelled is
-  finished; the
-  service sets them on the `TablePlanTableView`s after the read, in memory. The statement count is
+  `TablePlanStationShapeView`s) and `ShownTable` (the table with `OrdersToHandOut` and
+  `OrdersToSettle`, each an `UnfinishedOrders` record: how many of its orders still have something
+  to hand out or settle, and how many of those are partly done). The database counts both in the
+  same statement: `TablePlanMapping` counts the table's orders with the `[Projectable]` checks
+  `OrderQueries.HasItemsToHandOut`, `IsPartlyHandedOut`, `HasItemsToSettle` and `IsPartlySettled`,
+  which look at every item of an order through `OrderQueries.Items` and leave cancelled items out. No order or item entity
+  is loaded, because every phone reads this again on every `OrdersChanged`.
+  `UnfinishedOrders.Progress` turns the counts into the colour: no unfinished order is `All`, one
+  partly done order among them is `Some`, otherwise `None`. So a table without orders, or whose
+  orders were all cancelled, counts as done. `TablePlanMapping` maps `ShownTable` to
+  `TablePlanTableView` through `Progress`, and the service only adapts the areas. Mapster cannot
+  copy the positional `UnfinishedOrders` onto itself, so the `Table` to `ShownTable` mapping sets
+  `ShallowCopyForSameType(true)` and passes the record through unchanged. The statement count is
   pinned in `TablePlanServiceTest` (see the `count-sql-statements` how-to page).
 - `OrderPlacementService` looks the order's table up in `IGastronomyDatabase.Tables`; the open items
   screen reads one table with its orders through `OpenItemsService.ReadTableAsync` (see
@@ -245,7 +245,7 @@ Frontend, under `frontend/src/`:
   it claims nothing. A plan of an area without tables says so above the drawing. It shows
   `phone/components/tablePlan/AreaList.vue` (one large button per area, in the laptop's order),
   `AreaPlan.vue` (the read-only Konva drawing of one area with its scroll bars), `TableActionSheet.vue`
-  (the table's name, "Bestellung aufnehmen", "Abrechnen", "Zurück") and `UnsentOrderDialog.vue` (the
+  (the table's name, "Bestellung aufnehmen", "Abrechnen", "Position stornieren", "Zurück") and `UnsentOrderDialog.vue` (the
   question when another table's unsent items are on the phone; see the `taking-an-order` page). `phone/components/header/AppHeader.vue` carries
   the back control ("Tischpläne" from a plan when there are several areas, "Tischplan" from the
   ordering screen and the settle view) and the area or table name.
@@ -382,7 +382,7 @@ Frontend, under `frontend/src/`:
 - **The two colour states are computed on every read and never stored.** Handed out (the fill):
   leave out every order of the table whose items are all handed out, at every one of its stations.
   Of the orders left, none with an item handed out is `None`, at least one handed-out item is
-  `Some`, and no order left is `All`. Settled (the border) is the same rule over `SettledAtUtc`;
+  `Some`, and no order left is `All`. Settled (the border) is the same rule over `IsSettled`;
   an item given away for zero is settled like any other. A table that never had an order is `All`
   for both. Example: order 1 fully handed out, order 2 untouched, order 3 partly handed out is
   `Some`; once order 3 is fully handed out it is `None`; once order 2 is too it is `All`; a new
@@ -437,9 +437,8 @@ Frontend, under `frontend/src/`:
   digit, collisions with shown and hidden names, ASCII case collisions, a paste of several tables in
   deterministic order, a very long digit run), `ItemsToHandOutLookupTest` (the station checks),
   `AreaShapeServiceTest`, and the table cases of `OrderPlacementServiceTest`;
-  `TableProgressTest` for the two colour states (the example above, the settled side, a table
-  without orders) and the `ShareOfFlaggedItems`, `HandOutProgressOf` and `SettlementProgressOf` cases
-  of `OrderServiceTest`.
+  `Results/UnfinishedOrdersTest` for the colour rule and `Queries/OrderQueriesTest` for the four order
+  checks (cancelled items left out, partly handed out, partly settled) and `Status`.
 - `GastronomyApp.Infrastructure.Tests`: `Configurations/AreaConfigurationTest`,
   `TableConfigurationTest`, `FestivalStationShapeConfigurationTest` and `OrderConfigurationTest`
   (the unique names, the database refusing a festival mix-up and the deletion of a table with an

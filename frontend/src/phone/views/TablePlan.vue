@@ -95,6 +95,16 @@ function settleTheTable(): void {
   navigate('/open-items')
 }
 
+function cancelItemsAtTheTable(): void {
+  const table = tappedTable.value
+  tappedTable.value = null
+  if (table === null) {
+    return
+  }
+  openItems.openTableToCancelItems(table.tableId)
+  navigate('/open-items')
+}
+
 function backToTheDraft(): void {
   tableAskingAboutTheDraft.value = null
   navigate('/catalog')
@@ -158,6 +168,7 @@ function discardTheDraft(): void {
       :table-name="tappedTable.name"
       @take-order="takeTheOrder"
       @settle="settleTheTable"
+      @cancel-items="cancelItemsAtTheTable"
       @back="tappedTable = null"
     />
     <UnsentOrderDialog

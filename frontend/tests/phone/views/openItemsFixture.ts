@@ -159,7 +159,7 @@ export function openItemsLaptop(
     .answers('ANY', (call) => call.method !== 'GET', settlement)
 }
 
-type MountedScreen = Awaited<ReturnType<typeof mountScreen>>
+type MountedScreen = Awaited<ReturnType<typeof mountTheOpenTable>>
 
 type ScreenPart = ReturnType<MountedScreen['get']>
 
@@ -182,11 +182,20 @@ export function isHalfTaken(part: MountedScreen | ScreenPart, selector: string):
 }
 
 export async function mountScreen(language: AppLanguage = 'de') {
+  useOpenItemsStore().openTable('table-12')
+  return await mountTheOpenTable(language)
+}
+
+export async function mountScreenToCancelItems(language: AppLanguage = 'de') {
+  useOpenItemsStore().openTableToCancelItems('table-12')
+  return await mountTheOpenTable(language)
+}
+
+async function mountTheOpenTable(language: AppLanguage) {
   localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
   const session = useSessionStore()
   session.deviceToken = 'token-here'
   session.language = language
-  useOpenItemsStore().openTable('table-12')
   const screen = mount(OpenItems, {
     global: { plugins: testPlugins(language) },
     attachTo: document.body,

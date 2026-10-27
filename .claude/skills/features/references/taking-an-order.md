@@ -79,8 +79,10 @@ Backend, under `backend/`:
   its first `Open` status through `OrderItemLifecycle`, add it, save, make each first status the
   item's current one and save again (an item and its status point at each other, so EF cannot store
   both in one save; see the `handing-out-at-a-station` page), run `StockSoldOutMarker` and read the
-  order back for the answer. The answer is mapped by `Core/Mapping/OrderMapping.cs`, which leaves the status and total as placeholders: the service sets
-  them from `OrderService` on the mapped view, because a scanned mapping takes no collaborators. Refusals are
+  order back for the answer. The answer is mapped by `Core/Mapping/OrderMapping.cs`, which takes the status from
+  `OrderQueries.Status` (fulfilled when nothing is left to hand out, partially fulfilled when
+  something is handed out, open otherwise; cancelled items count as nothing left) and sums the
+  prices of the items that are not cancelled. Refusals are
   in `Core/Refusals/Refusal.Order.cs`.
 
 ## Invariants
@@ -110,7 +112,8 @@ Backend, under `backend/`:
   with `order.itemCount` and priced with `formatPrice` like the basket bar). Its three buttons: "Zu
   Tisch …" (the filled one) goes to that table's order, "Verwerfen" discards the items and takes the
   order for the tapped table without asking again, and "Zurück" closes the question and leaves the
-  draft and the plan as they were. "Abrechnen" asks nothing and leaves the draft alone. A draft that
+  draft and the plan as they were. "Abrechnen" and "Position stornieren" ask nothing and leave the
+  draft alone. A draft that
   was never sent locks nothing: the waiter may go back to the plan, and the items wait for their
   table.
 - **A frozen order takes no change and blocks the way to the plan.** While a send attempt is

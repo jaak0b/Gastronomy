@@ -1,10 +1,17 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request, type ApiResult } from '../../shared/api/client'
-import { SettlementView, TableOrderRecordView, TableOrderReportView } from '../../shared/api/generatedSchemas'
+import {
+  CancellationView,
+  type CancelItemsRequest,
+  SettlementView,
+  TableOrderRecordView,
+  TableOrderReportView,
+} from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import {
+  cashToReturnCents,
   noticeAfterSettling,
   type SentSettleLine,
   selectedAmountCents,
@@ -13,6 +20,7 @@ import {
   withWholeOrder,
   withWholeTable,
   withoutItemsThatAreGone,
+  type SelectionPurpose,
   type SettleNotice,
   type SettleOutcome,
   type SettlementPaymentMethod,
@@ -30,6 +38,8 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   const loadFailureKey = ref<string | null>(null)
   const selectedItemIds = ref<string[]>([])
   const isSettling = ref(false)
+  const isCancelling = ref(false)
+  const purpose = ref<SelectionPurpose>('settling')
   const notice = ref<SettleNotice | null>(null)
   const preselectedItemIds = ref<string[] | null>(null)
 
@@ -39,6 +49,12 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     report.value === null ? 0 : selectedAmountCents(report.value, selectedItemIds.value),
   )
 
+  const itemsToCancel = computed(() =>
+    report.value === null ? [] : selectedItems(report.value, selectedItemIds.value, 'cancelling'),
+  )
+
+  const cashToReturnForTheItemsToCancel = computed(() => cashToReturnCents(itemsToCancel.value))
+
   function deviceToken(): string | null {
     return useSessionStore().deviceToken
   }
@@ -46,6 +62,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   function openTable(openedTableId: string): void {
     loadGate.startRequest()
     tableId.value = openedTableId
+    purpose.value = 'settling'
     report.value = null
     loadFailureKey.value = null
     selectedItemIds.value = []
@@ -56,6 +73,11 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   function openTableAndSelectItemsOnceLoaded(openedTableId: string, itemIds: readonly string[]): void {
     openTable(openedTableId)
     preselectedItemIds.value = [...itemIds]
+  }
+
+  function openTableToCancelItems(openedTableId: string): void {
+    openTable(openedTableId)
+    purpose.value = 'cancelling'
   }
 
   function closeTable(): void {
@@ -100,6 +122,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
         selectedItemIds.value = withoutItemsThatAreGone(
           preselectedItemIds.value ?? selectedItemIds.value,
           result.data,
+          purpose.value,
         )
         preselectedItemIds.value = null
         return
@@ -136,7 +159,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     if (report.value === null) {
       return
     }
-    selectedItemIds.value = withItemToggled(selectedItemIds.value, report.value, orderItemId)
+    selectedItemIds.value = withItemToggled(selectedItemIds.value, report.value, orderItemId, purpose.value)
   }
 
   function setWholeTable(isWanted: boolean): void {
@@ -144,12 +167,12 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     if (report.value === null) {
       return
     }
-    selectedItemIds.value = withWholeTable(selectedItemIds.value, report.value, isWanted)
+    selectedItemIds.value = withWholeTable(selectedItemIds.value, report.value, isWanted, purpose.value)
   }
 
   function setWholeOrder(order: TableOrderRecordView, isWanted: boolean): void {
     dismissNotice()
-    selectedItemIds.value = withWholeOrder(selectedItemIds.value, order, isWanted)
+    selectedItemIds.value = withWholeOrder(selectedItemIds.value, order, isWanted, purpose.value)
   }
 
   async function accept(
@@ -186,7 +209,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     paymentMethod: SettlementPaymentMethod,
   ): Promise<SettleOutcome> {
     isSettling.value = true
-    const items = report.value === null ? [] : selectedItems(report.value, selectedItemIds.value)
+    const items = report.value === null ? [] : selectedItems(report.value, selectedItemIds.value, 'settling')
     const split = splitSettlement(amountPaidCents, items, paymentNotice ?? '')
     const lines = items.map((item, index) => ({
       orderItemId: item.orderItemId,
@@ -205,16 +228,56 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     )
   }
 
+  async function cancelSelectedItems(): Promise<boolean> {
+    isCancelling.value = true
+    const cancellation: CancelItemsRequest = {
+      orderItemIds: itemsToCancel.value.map((item) => item.orderItemId),
+    }
+    const result = await request('/api/open-items/cancel', {
+      method: 'POST',
+      body: cancellation,
+      token: deviceToken(),
+      timeoutMs: SEND_TIMEOUT_MS,
+      schema: CancellationView,
+    })
+    isCancelling.value = false
+    switch (result.kind) {
+      case 'ok':
+        notice.value = null
+        selectedItemIds.value = []
+        await load()
+        return true
+      case 'error':
+        notice.value = {
+          key: result.body?.messageKey ?? 'phone.openItems.errors.cancelAnswerNeverCame',
+          parameters: result.body?.parameters ?? {},
+          count: null,
+        }
+        return false
+      case 'unreachable':
+      case 'unreadableAnswer':
+        notice.value = { key: 'phone.openItems.errors.cancelAnswerNeverCame', parameters: {}, count: null }
+        return false
+      default:
+        return assertNever(result)
+    }
+  }
+
   return {
     tableId,
+    purpose,
     report,
     loadFailureKey,
     selectedItemIds,
     selectedTotalCents,
+    itemsToCancel,
+    cashToReturnForTheItemsToCancel,
     isSettling,
+    isCancelling,
     notice,
     openTable,
     openTableAndSelectItemsOnceLoaded,
+    openTableToCancelItems,
     closeTable,
     load,
     listen,
@@ -223,5 +286,6 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     setWholeTable,
     setWholeOrder,
     settle,
+    cancelSelectedItems,
   }
 })

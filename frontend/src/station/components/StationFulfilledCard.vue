@@ -3,14 +3,14 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { StationOrderQueueView } from '../../shared/api/generatedSchemas'
 import { isCancelled, isHandedOut } from '../../shared/core/orderItemStates'
-import { itemLineText, itemLines, itemsNotCancelledIn } from '../../shared/core/stationBoard'
+import { cancellationText, itemLineText, itemLines, itemsNotCancelledIn } from '../../shared/core/stationBoard'
 import { useStationOrderHeader } from '../composables/useStationOrderHeader'
 import BaseStationCard from './BaseStationCard.vue'
 
 const props = defineProps<{ stationOrder: StationOrderQueueView; isWorking: boolean }>()
 const emit = defineEmits<{ putBack: [orderItemId: string] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { deliveryText, deliveryModeColour, orderReference, takenByText, doneCounter } =
   useStationOrderHeader(() => props.stationOrder)
 
@@ -48,13 +48,23 @@ const unitSummary = computed(() =>
       class="station-item d-flex align-center ga-3"
       data-test="station-item"
       :data-test-id="item.orderItemId"
-      :class="{ fulfilled: isHandedOut(item.state), 'cancelled-item': isCancelled(item.state) }"
+      :class="{ fulfilled: isHandedOut(item.state) }"
     >
       <v-icon v-if="isHandedOut(item.state)" class="item-tick" data-test="item-tick" icon="mdi-check" />
       <div class="item-text flex-grow-1">
-        <div class="item-name text-body-1" data-test="item-name">{{ item.itemName }}</div>
-        <div v-if="item.note !== null" class="item-note text-body-2" data-test="item-note">
+        <div class="item-name text-body-1" data-test="item-name" :class="{ 'cancelled-item': isCancelled(item.state) }">
+          {{ item.itemName }}
+        </div>
+        <div
+          v-if="item.note !== null"
+          class="item-note text-body-2"
+          data-test="item-note"
+          :class="{ 'cancelled-item': isCancelled(item.state) }"
+        >
           {{ t('common.labels.note', { note: item.note }) }}
+        </div>
+        <div v-if="isCancelled(item.state)" class="cancelled-at text-body-2" data-test="cancelled-at">
+          {{ cancellationText(item, t, locale) }}
         </div>
       </div>
       <v-btn

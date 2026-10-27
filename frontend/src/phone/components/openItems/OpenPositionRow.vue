@@ -10,7 +10,7 @@ const props = defineProps<{
   note: string | null
   priceText: string
   isSelected: boolean
-  isDisabled: boolean
+  isSelectable: boolean
   isSettled: boolean
   productionState: PositionState
 }>()
@@ -60,18 +60,6 @@ const stateIcon = computed<string | null>(() => {
       return assertNever(props.productionState)
   }
 })
-
-const canBeTicked = computed(() => {
-  switch (props.productionState) {
-    case 'produced':
-    case 'notProduced':
-      return !props.isSettled
-    case 'cancelled':
-      return false
-    default:
-      return assertNever(props.productionState)
-  }
-})
 </script>
 
 <template>
@@ -80,12 +68,12 @@ const canBeTicked = computed(() => {
     data-test="open-line"
     :class="stateClass"
     :style="tint"
-    :disabled="isDisabled"
+    :disabled="!isSelectable"
     @click="emit('toggle')"
   >
     <template #prepend>
       <v-checkbox-btn
-        v-if="canBeTicked"
+        v-if="isSelectable"
         class="line-tick"
         data-test="line-tick"
         readonly

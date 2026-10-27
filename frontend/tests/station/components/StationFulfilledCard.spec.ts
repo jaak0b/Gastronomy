@@ -60,7 +60,26 @@ describe('a done card with an item a waiter cancelled', () => {
   it('shows the cancelled item struck through', () => {
     mountDoneCard(WITH_CANCELLED_POMMES)
 
-    expect(onScreen('[data-test="station-item"][data-test-id="b"]').classList).toContain('cancelled-item')
+    expect(onScreen('[data-test="station-item"][data-test-id="b"] [data-test="item-name"]').classList).toContain('cancelled-item')
+  })
+
+  it('says when the item was cancelled', () => {
+    mountDoneCard(WITH_CANCELLED_POMMES)
+
+    expect(textOnScreen('[data-test="station-item"][data-test-id="b"] [data-test="cancelled-at"]').trim()).toBe('Storniert um 20:20')
+  })
+
+  it('says when the station confirmed a cancellation', () => {
+    mountDoneCard(
+      stationOrder({
+        itemCount: 0,
+        items: [{ ...cancelledItem('b', 'Pommes'), state: 'cancellationAcknowledged', stateSetAtUtc: '2026-09-05T18:25:00Z' }],
+      }),
+    )
+
+    expect(textOnScreen('[data-test="station-item"][data-test-id="b"] [data-test="cancelled-at"]').trim()).toBe(
+      'Stornierung bestätigt um 20:25',
+    )
   })
 
   it('offers neither a tick nor a put back control on the cancelled item', () => {

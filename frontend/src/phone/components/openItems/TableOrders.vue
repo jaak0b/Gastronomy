@@ -9,14 +9,15 @@ import type {
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { formatFestivalMoment } from '../../../shared/core/moments'
 import {
-  canBeSettled,
+  canBeSelected,
   notCancelledItemCountIn,
   positionStateOf,
   producedCountIn,
   productionStateOf,
+  selectableItemIdsIn,
+  selectableItemIdsInOrder,
   selectionStateOf,
-  settleableItemIdsIn,
-  settleableItemIdsInOrder,
+  type SelectionPurpose,
 } from '../../core/openItems'
 import { formatPrice } from '../../../shared/core/money'
 import { statusTintCssOf, statusTokenOf } from '../../../shared/core/statusTints'
@@ -25,6 +26,7 @@ import OpenPositionRow from './OpenPositionRow.vue'
 const props = defineProps<{
   report: TableOrderReportView | null
   selectedItemIds: string[]
+  purpose: SelectionPurpose
   language: AppLanguage
 }>()
 const emit = defineEmits<{
@@ -39,12 +41,12 @@ const orders = computed(() => props.report?.orders ?? [])
 
 const foundNothing = computed(() => props.report !== null && orders.value.length === 0)
 
-const settleableItemIds = computed(() =>
-  props.report === null ? [] : settleableItemIdsIn(props.report),
+const selectableItemIds = computed(() =>
+  props.report === null ? [] : selectableItemIdsIn(props.report, props.purpose),
 )
 
 const wholeTableSelection = computed<ShareState>(() =>
-  selectionStateOf(settleableItemIds.value, props.selectedItemIds),
+  selectionStateOf(selectableItemIds.value, props.selectedItemIds),
 )
 
 function setTheWholeTable(): void {
@@ -52,7 +54,11 @@ function setTheWholeTable(): void {
 }
 
 function orderSelectionOf(order: TableOrderRecordView): ShareState {
-  return selectionStateOf(settleableItemIdsInOrder(order), props.selectedItemIds)
+  return selectionStateOf(selectableItemIdsInOrder(order, props.purpose), props.selectedItemIds)
+}
+
+function canSelectAnythingIn(order: TableOrderRecordView): boolean {
+  return selectableItemIdsInOrder(order, props.purpose).length > 0
 }
 
 function setWholeOrder(order: TableOrderRecordView): void {
@@ -88,7 +94,7 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
 
 <template>
   <v-checkbox
-    v-if="settleableItemIds.length > 0"
+    v-if="selectableItemIds.length > 0"
     data-test="whole-table"
     density="comfortable"
     hide-details
@@ -117,7 +123,7 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
       </div>
       <div class="order-card-tally d-flex align-center ga-2">
         <v-checkbox-btn
-          v-if="settleableItemIdsInOrder(order).length > 0"
+          v-if="canSelectAnythingIn(order)"
           class="flex-grow-0"
           data-test="whole-order"
           :model-value="orderSelectionOf(order) === 'all'"
@@ -136,7 +142,7 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
           :note="item.note"
           :price-text="priceTextFor(item.unitPriceCents)"
           :is-selected="selectedItemIds.includes(item.orderItemId)"
-          :is-disabled="!canBeSettled(item)"
+          :is-selectable="canBeSelected(item, purpose)"
           :is-settled="item.settledAtUtc !== null"
           :production-state="positionStateOf(item)"
           @toggle="emit('toggle-item', item.orderItemId)"

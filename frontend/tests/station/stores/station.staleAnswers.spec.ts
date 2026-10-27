@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useStationStore } from '../../../src/station/stores/station'
 import { aHold, answer, heldUntil, inTurn, stubLaptopAt } from '../../support/laptop'
-import { aQueue, enrolledStationTablet, item, stationOrder } from '../../support/station'
+import { aQueue, cancelledItem, enrolledStationTablet, item, stationOrder } from '../../support/station'
 
 const HANDED_OUT = '2026-09-05T18:30:00Z'
 
@@ -71,5 +71,23 @@ describe('a station tablet whose older reading answers after a newer one', () =>
     await reading
 
     expect(station.asItComes).toEqual([])
+  })
+
+  it('keeps a confirmed cancellation off the card when a reading from before answers last', async () => {
+    const slowReading = aHold()
+    const withCancelledPommes = stationOrder({ items: [item('a', 'Bratwurst'), cancelledItem('b', 'Pommes')] })
+    const afterTheConfirmation = stationOrder({ items: [item('a', 'Bratwurst')] })
+    stubLaptopAt({
+      '/api/station/orders': heldUntil(slowReading.released, aQueue([withCancelledPommes])),
+      '/api/station/items/acknowledge-cancellation': aQueue([afterTheConfirmation]),
+    })
+    const station = useStationStore()
+    const reading = station.load()
+    await station.acknowledgeCancellation(['b'])
+
+    slowReading.release()
+    await reading
+
+    expect(station.orders.flatMap((order) => order.items.map((entry) => entry.orderItemId))).toEqual(['a'])
   })
 })

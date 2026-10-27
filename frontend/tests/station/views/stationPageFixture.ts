@@ -112,6 +112,7 @@ export interface StubRoutes {
   fulfilled?: LaptopReply
   fulfill?: LaptopReply
   unfulfill?: LaptopReply
+  acknowledgeCancellation?: LaptopReply
   hide?: LaptopReply
 }
 
@@ -121,6 +122,7 @@ export function stationLaptop(routes: StubRoutes = {}): StubbedLaptop {
     '/api/station/orders/fulfilled': routes.fulfilled ?? answer({ stationOrders: [] }),
     '/api/station/items/fulfill': routes.fulfill ?? queue([]),
     '/api/station/items/unfulfill': routes.unfulfill ?? queue([]),
+    '/api/station/items/acknowledge-cancellation': routes.acknowledgeCancellation ?? queue([]),
   }).answers('ANY', /\/hide$/, routes.hide ?? queue([]))
 }
 

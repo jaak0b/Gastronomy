@@ -11,7 +11,7 @@ interface RowProps {
   note: string | null
   priceText: string
   isSelected: boolean
-  isDisabled: boolean
+  isSelectable: boolean
   isSettled: boolean
   productionState: PositionState
 }
@@ -22,7 +22,7 @@ function mountRow(overrides: Partial<RowProps> = {}) {
     note: null,
     priceText: '3,50 €',
     isSelected: false,
-    isDisabled: false,
+    isSelectable: true,
     isSettled: false,
     productionState: 'notProduced',
     ...overrides,
@@ -74,18 +74,25 @@ describe('one position of an open table', () => {
   })
 
   it('writes the word for paid instead of a tick box once the position is settled', () => {
-    const row = mountRow({ isSettled: true })
+    const row = mountRow({ isSettled: true, isSelectable: false })
 
     expect(row.get('[data-test="line-paid"]').text()).toBe('Bezahlt')
     expect(row.find('[data-test="line-tick"]').exists()).toBe(false)
   })
 
   it('strikes a cancelled position through and offers no tick box and no state for it', () => {
-    const row = mountRow({ productionState: 'cancelled', isDisabled: true })
+    const row = mountRow({ productionState: 'cancelled', isSelectable: false })
 
     expect(row.get('[data-test="open-line"]').classes()).toContain('cancelled-item')
     expect(row.find('[data-test="line-tick"]').exists()).toBe(false)
     expect(row.find('[data-test="line-state"]').exists()).toBe(false)
+  })
+
+  it('offers the tick box for a paid position the screen lets the waiter select', () => {
+    const row = mountRow({ isSettled: true, isSelectable: true })
+
+    expect(row.find('[data-test="line-tick"]').exists()).toBe(true)
+    expect(row.get('[data-test="line-paid"]').text()).toBe('Bezahlt')
   })
 
   it('hands the tap up so the screen decides what it means', async () => {

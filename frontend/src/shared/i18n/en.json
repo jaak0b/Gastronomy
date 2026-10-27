@@ -104,12 +104,16 @@
         "amountPaidField": "Amount paid",
         "amountPaidReason": "Reason",
         "amountPaidTitle": "How much did the table pay?",
+        "cancelTitle": "Do you want to cancel these items?",
         "order": "Order {order}",
         "paid": "Paid",
         "reasonPlaceholder": "For example: food for the band",
-        "selected": "Selected: {amount}"
+        "selected": "Selected: {amount}",
+        "selectedCount": "Selected: {count} item | Selected: {count} items"
       },
       "actions": {
+        "cancelItems": "Cancel items",
+        "cancelSelected": "Cancel items",
         "reload": "Reload",
         "settle": "Settle",
         "settleByCard": "Settle by card",
@@ -117,10 +121,12 @@
         "wholeTable": "Select the whole table"
       },
       "messages": {
+        "cashToReturn": "The guest gets {amount} back in cash.",
         "noOrdersForTable": "There are no orders for this table.",
         "someWereAlreadySettled": "Somebody else had already settled {count} item in your selection. Give the guest {amount} back. | Somebody else had already settled {count} items in your selection. Give the guest {amount} back."
       },
       "errors": {
+        "cancelAnswerNeverCame": "It is not clear whether the cancellation arrived. Tap \"Reload\" and check whether the items are cancelled.",
         "loadFailed": "The computer could not be reached. Tap \"Reload\".",
         "settleAnswerNeverCame": "It is not clear whether the settlement arrived. Tap \"Reload\" and check whether the items are still open.",
         "settleFailed": "Try again. Settling failed.",
@@ -184,6 +190,8 @@
     "board": {
       "labels": {
         "asItComesHeading": "Individual deliveries",
+        "cancellationAcknowledgedAt": "Cancellation confirmed at {time}",
+        "cancelledAt": "Cancelled at {time}",
         "confirmDoneTitle": "Prepare these items?",
         "openArticlesHeading": "Open items",
         "orderHeader": "Order {order} · No. {sequence} ·",
@@ -193,6 +201,7 @@
         "unitSeparator": " · "
       },
       "actions": {
+        "acknowledgeCancellation": "Confirm cancellation",
         "backToOrders": "Back to the orders",
         "groupedView": "Grouped",
         "hideHere": "Hide here",

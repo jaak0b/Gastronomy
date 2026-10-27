@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n'
 
 defineProps<{ tableName: string }>()
-const emit = defineEmits<{ 'take-order': []; settle: []; back: [] }>()
+const emit = defineEmits<{ 'take-order': []; settle: []; 'cancel-items': []; back: [] }>()
 
 const { t } = useI18n()
 </script>
@@ -35,6 +35,17 @@ const { t } = useI18n()
           @click="emit('settle')"
         >
           {{ t('phone.openItems.actions.settle') }}
+        </v-btn>
+        <v-btn
+          class="cancel-items"
+          data-test="cancel-items"
+          color="primary"
+          variant="outlined"
+          size="x-large"
+          block
+          @click="emit('cancel-items')"
+        >
+          {{ t('phone.openItems.actions.cancelItems') }}
         </v-btn>
         <v-btn
           class="back-from-table-actions"

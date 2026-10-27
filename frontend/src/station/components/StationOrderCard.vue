@@ -4,9 +4,11 @@ import { useI18n } from 'vue-i18n'
 import { StationOrderQueueView } from '../../shared/api/generatedSchemas'
 import { isCancelled } from '../../shared/core/orderItemStates'
 import {
+  cancellationText,
   itemLineText,
   itemLines,
   itemsNotHandedOutIn,
+  selectedItemIdsAwaitingAcknowledgement,
   selectedOpenItemIds,
 } from '../../shared/core/stationBoard'
 import { useStationOrderHeader } from '../composables/useStationOrderHeader'
@@ -21,10 +23,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   toggleItem: [orderItemId: string]
   fulfill: [stationOrder: StationOrderQueueView, orderItemIds: string[]]
+  acknowledge: [orderItemIds: string[]]
   hide: [stationOrderId: string]
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { deliveryText, deliveryModeColour, orderReference, takenByText, doneCounter } =
   useStationOrderHeader(() => props.stationOrder)
 
@@ -32,6 +35,9 @@ const isGrouped = ref(false)
 const cardItems = computed(() => itemsNotHandedOutIn(props.stationOrder))
 const selectedHere = computed(() =>
   selectedOpenItemIds(props.stationOrder, props.selectedItemIds),
+)
+const cancelledSelectedHere = computed(() =>
+  selectedItemIdsAwaitingAcknowledgement(props.stationOrder, props.selectedItemIds),
 )
 const groupedLines = computed(() => itemLines(cardItems.value))
 const viewToggleLabel = computed(() =>
@@ -42,7 +48,7 @@ const viewToggleIcon = computed(() =>
 )
 
 function isSelected(orderItemId: string): boolean {
-  return selectedHere.value.includes(orderItemId)
+  return selectedHere.value.includes(orderItemId) || cancelledSelectedHere.value.includes(orderItemId)
 }
 </script>
 
@@ -88,18 +94,27 @@ function isSelected(orderItemId: string): boolean {
         class="station-item"
         data-test="station-item"
         :data-test-id="item.orderItemId"
-        :class="{ selected: isSelected(item.orderItemId), 'cancelled-item': isCancelled(item.state) }"
+        :class="{ selected: isSelected(item.orderItemId) }"
         variant="tonal"
         block
         size="large"
-        :disabled="isCancelled(item.state)"
         @click="emit('toggleItem', item.orderItemId)"
       >
         <span class="item-text">
-          <span class="item-name" data-test="item-name">{{ item.itemName }}</span>
-          <span v-if="item.note !== null" class="item-note text-body-2" data-test="item-note">
+          <span class="item-name" data-test="item-name" :class="{ 'cancelled-item': isCancelled(item.state) }">
+            {{ item.itemName }}
+          </span>
+          <span
+            v-if="item.note !== null"
+            class="item-note text-body-2"
+            data-test="item-note"
+            :class="{ 'cancelled-item': isCancelled(item.state) }"
+          >
             <v-icon class="item-note-icon" data-test="item-note-icon" icon="mdi-note-text-outline" size="small" />
             {{ t('common.labels.note', { note: item.note }) }}
+          </span>
+          <span v-if="isCancelled(item.state)" class="cancelled-at text-body-2" data-test="cancelled-at">
+            {{ cancellationText(item, t, locale) }}
           </span>
         </span>
         <v-icon v-if="isSelected(item.orderItemId)" class="selected-tick ms-auto" data-test="selected-tick" icon="mdi-check" />
@@ -118,6 +133,19 @@ function isSelected(orderItemId: string): boolean {
     </div>
     <div v-if="!isGrouped" class="card-actions d-flex mt-3" data-test="card-actions">
       <v-btn
+        v-if="cancelledSelectedHere.length > 0"
+        class="acknowledge"
+        data-test="acknowledge"
+        color="primary"
+        variant="flat"
+        size="large"
+        :disabled="isWorking"
+        @click="emit('acknowledge', cancelledSelectedHere)"
+      >
+        {{ t('station.board.actions.acknowledgeCancellation') }}
+      </v-btn>
+      <v-btn
+        v-else
         class="fulfill"
         data-test="fulfill"
         color="primary"

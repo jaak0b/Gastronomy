@@ -1,9 +1,15 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { request } from '../../shared/api/client'
-import { StationFulfilledView, StationOrderQueueView, StationQueueView, StationSummaryView } from '../../shared/api/generatedSchemas'
+import { request, type ApiResult } from '../../shared/api/client'
+import {
+  StationFulfilledView,
+  StationOrderQueueView,
+  StationQueueView,
+  StationSummaryView,
+  type StationItemSelectionRequest,
+} from '../../shared/api/generatedSchemas'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
-import { retainOpenItemIds, stationFailureMessage, type StationMessage } from '../../shared/core/stationBoard'
+import { retainStillSelectableItemIds, stationFailureMessage, type StationMessage } from '../../shared/core/stationBoard'
 import { useConnectionStore } from '../../shared/stores/connection'
 import { useSessionStore } from '../../shared/stores/session'
 
@@ -36,9 +42,9 @@ export const useStationStore = defineStore('station', () => {
 
   function applyQueue(data: StationQueueView): void {
     identity.value = data.station
+    selectedItemIds.value = retainStillSelectableItemIds(selectedItemIds.value, orders.value, data.orders)
     orders.value = data.orders
     asItComes.value = data.asItComes
-    selectedItemIds.value = retainOpenItemIds(selectedItemIds.value, data.orders)
   }
 
   async function load(): Promise<void> {
@@ -108,78 +114,70 @@ export const useStationStore = defineStore('station', () => {
       : [...selectedItemIds.value, orderItemId]
   }
 
-  async function fulfill(orderItemIds: string[]): Promise<void> {
+  async function runAction(send: () => Promise<ApiResult<StationQueueView>>): Promise<boolean> {
     failure.value = null
     isWorking.value = true
     const token = boardGate.startRequest()
     newestActionToken = token
-    const result = await request('/api/station/items/fulfill', {
-      method: 'POST',
-      body: { orderItemIds },
-      token: deviceToken(),
-      schema: StationQueueView,
-    })
+    const result = await send()
     if (newestActionToken === token) {
       isWorking.value = false
     }
     if (!boardGate.isNewestRequest(token)) {
-      return
+      return false
     }
     if (result.kind !== 'ok') {
       failure.value = stationFailureMessage(result)
-      return
+      return false
     }
     applyQueue(result.data)
+    return true
+  }
+
+  async function fulfill(orderItemIds: string[]): Promise<void> {
+    await runAction(() =>
+      request('/api/station/items/fulfill', {
+        method: 'POST',
+        body: { orderItemIds } satisfies StationItemSelectionRequest,
+        token: deviceToken(),
+        schema: StationQueueView,
+      }),
+    )
+  }
+
+  async function acknowledgeCancellation(orderItemIds: string[]): Promise<void> {
+    await runAction(() =>
+      request('/api/station/items/acknowledge-cancellation', {
+        method: 'POST',
+        body: { orderItemIds } satisfies StationItemSelectionRequest,
+        token: deviceToken(),
+        schema: StationQueueView,
+      }),
+    )
   }
 
   async function unfulfill(orderItemId: string): Promise<void> {
-    failure.value = null
-    isWorking.value = true
-    const token = boardGate.startRequest()
-    newestActionToken = token
-    const result = await request('/api/station/items/unfulfill', {
-      method: 'POST',
-      body: { orderItemIds: [orderItemId] },
-      token: deviceToken(),
-      schema: StationQueueView,
-    })
-    if (newestActionToken === token) {
-      isWorking.value = false
-    }
-    if (!boardGate.isNewestRequest(token)) {
-      return
-    }
-    if (result.kind !== 'ok') {
-      failure.value = stationFailureMessage(result)
-      return
-    }
-    applyQueue(result.data)
-    if (isShowingFulfilled.value) {
+    const isApplied = await runAction(() =>
+      request('/api/station/items/unfulfill', {
+        method: 'POST',
+        body: { orderItemIds: [orderItemId] } satisfies StationItemSelectionRequest,
+        token: deviceToken(),
+        schema: StationQueueView,
+      }),
+    )
+    if (isApplied && isShowingFulfilled.value) {
       await loadFulfilled()
     }
   }
 
   async function hide(stationOrderId: string): Promise<void> {
-    failure.value = null
-    isWorking.value = true
-    const token = boardGate.startRequest()
-    newestActionToken = token
-    const result = await request(`/api/station/orders/${stationOrderId}/hide`, {
-      method: 'POST',
-      token: deviceToken(),
-      schema: StationQueueView,
-    })
-    if (newestActionToken === token) {
-      isWorking.value = false
-    }
-    if (!boardGate.isNewestRequest(token)) {
-      return
-    }
-    if (result.kind !== 'ok') {
-      failure.value = stationFailureMessage(result)
-      return
-    }
-    applyQueue(result.data)
+    await runAction(() =>
+      request(`/api/station/orders/${stationOrderId}/hide`, {
+        method: 'POST',
+        token: deviceToken(),
+        schema: StationQueueView,
+      }),
+    )
   }
 
   function listen(): () => void {
@@ -206,6 +204,7 @@ export const useStationStore = defineStore('station', () => {
     closeFulfilled,
     toggleItemSelection,
     fulfill,
+    acknowledgeCancellation,
     unfulfill,
     hide,
     listen,

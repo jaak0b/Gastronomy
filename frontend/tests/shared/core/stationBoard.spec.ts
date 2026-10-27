@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import {
+  cancellationText,
   deliveryModeColourToken,
   deliveryModeKey,
   itemLineText,
   itemLines,
+  itemsAwaitingAcknowledgementIn,
   itemsNotCancelledIn,
   itemsNotHandedOutIn,
   linesByCount,
   openItemsIn,
-  retainOpenItemIds,
+  retainStillSelectableItemIds,
+  selectedItemIdsAwaitingAcknowledgement,
   selectedOpenItemIds,
   selectedUnits,
   stationFailureMessage,
@@ -254,13 +257,14 @@ describe('the statistics above the queue', () => {
 
 describe('a selection after a reload', () => {
   it('drops the ids whose item is no longer open in the queue', () => {
-    const orders = [
+    const before = [stationOrder({ items: [stationOrderItem('a', 'Bratwurst'), stationOrderItem('b', 'Pommes')] })]
+    const after = [
       stationOrder({
         items: [stationOrderItem('a', 'Bratwurst'), stationOrderItem('b', 'Pommes', '2026-09-05T18:30:00Z')],
       }),
     ]
 
-    expect(retainOpenItemIds(['a', 'b', 'gone'], orders)).toEqual(['a'])
+    expect(retainStillSelectableItemIds(['a', 'b', 'gone'], before, after)).toEqual(['a'])
   })
 })
 
@@ -328,7 +332,47 @@ describe('a station order with an item a waiter cancelled while it was open', ()
     ])
   })
 
-  it('drops a selected item once it is cancelled', () => {
-    expect(retainOpenItemIds(['a', 'c'], [order])).toEqual(['a'])
+  it('drops a selected open item once it is cancelled, so the selection never turns into a confirmation', () => {
+    const before = stationOrder({ items: [stationOrderItem('a', 'Pommes'), stationOrderItem('c', 'Pommes')] })
+
+    expect(retainStillSelectableItemIds(['a', 'c'], [before], [order])).toEqual(['a'])
+  })
+
+  it('keeps a selected cancelled item selected while it still waits for its confirmation', () => {
+    expect(retainStillSelectableItemIds(['c'], [order], [order])).toEqual(['c'])
+  })
+
+  it('drops a selected cancelled item once its cancellation is confirmed and it left the card', () => {
+    const after = stationOrder({ items: [stationOrderItem('a', 'Pommes')] })
+
+    expect(retainStillSelectableItemIds(['a', 'c'], [order], [after])).toEqual(['a'])
+  })
+
+  it('names the cancelled item as the one that waits for the confirmation', () => {
+    expect(itemsAwaitingAcknowledgementIn(order).map((item) => item.orderItemId)).toEqual(['c'])
+  })
+
+  it('picks only the selected cancelled items for the confirmation', () => {
+    expect(selectedItemIdsAwaitingAcknowledgement(order, ['a', 'c', 'elsewhere'])).toEqual(['c'])
+  })
+})
+
+describe('the state line of a cancelled item', () => {
+  const t = (key: string, values?: Record<string, string | number>) => `${key} ${values?.time ?? ''}`
+  const at = (state: StationQueueItemView['state']): StationQueueItemView => ({
+    ...stationOrderItem('a', 'Pommes'),
+    state,
+    stateSetAtUtc: '2026-09-05T16:42:00Z',
+  })
+
+  it.each([
+    ['cancelled', 'station.board.labels.cancelledAt 18:42'],
+    ['cancellationAcknowledged', 'station.board.labels.cancellationAcknowledgedAt 18:42'],
+  ] as const)('reads %s as the time of that step', (state, expected) => {
+    expect(cancellationText(at(state), t, 'de')).toBe(expected)
+  })
+
+  it.each(['open', 'handedOut'] as const)('gives an item that is %s no state line', (state) => {
+    expect(cancellationText(at(state), t, 'de')).toBeNull()
   })
 })

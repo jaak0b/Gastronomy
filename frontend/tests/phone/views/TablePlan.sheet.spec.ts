@@ -36,7 +36,7 @@ function oneWasserOnTheOrderFor(table: { tableId: string; name: string }) {
 }
 
 describe('the choices a tapped table offers', () => {
-  it('names the table and offers to take an order, to settle and to go back', async () => {
+  it('names the table and offers to take an order, to settle, to cancel items and to go back', async () => {
     await mountThePlan()
 
     await tapTheTable('table-12')
@@ -45,8 +45,15 @@ describe('the choices a tapped table offers', () => {
       title: textOnScreen('[data-test="table-actions-title"]').trim(),
       takeOrder: textOnScreen('[data-test="take-order"]').trim(),
       settle: textOnScreen('[data-test="settle-table"]').trim(),
+      cancelItems: textOnScreen('[data-test="cancel-items"]').trim(),
       back: textOnScreen('[data-test="back-from-table-actions"]').trim(),
-    }).toEqual({ title: 'Tisch 12', takeOrder: 'Bestellung aufnehmen', settle: 'Abrechnen', back: 'Zurück' })
+    }).toEqual({
+      title: 'Tisch 12',
+      takeOrder: 'Bestellung aufnehmen',
+      settle: 'Abrechnen',
+      cancelItems: 'Position stornieren',
+      back: 'Zurück',
+    })
   })
 
   it('names the choices in English on an English phone', async () => {
@@ -57,8 +64,23 @@ describe('the choices a tapped table offers', () => {
     expect({
       takeOrder: textOnScreen('[data-test="take-order"]').trim(),
       settle: textOnScreen('[data-test="settle-table"]').trim(),
+      cancelItems: textOnScreen('[data-test="cancel-items"]').trim(),
       back: textOnScreen('[data-test="back-from-table-actions"]').trim(),
-    }).toEqual({ takeOrder: 'Take an order', settle: 'Settle', back: 'Back' })
+    }).toEqual({ takeOrder: 'Take an order', settle: 'Settle', cancelItems: 'Cancel items', back: 'Back' })
+  })
+
+  it('opens the table to cancel items when the waiter taps that choice', async () => {
+    await mountThePlan()
+    await tapTheTable('table-12')
+
+    await clickOn('[data-test="cancel-items"]')
+
+    const openItems = useOpenItemsStore()
+    expect({ table: openItems.tableId, purpose: openItems.purpose, route: currentRoute.value }).toEqual({
+      table: 'table-12',
+      purpose: 'cancelling',
+      route: { name: 'openItems' },
+    })
   })
 
   it('takes the order for the table when nothing is waiting to be sent', async () => {
@@ -106,6 +128,20 @@ describe('the choices a tapped table offers', () => {
     await tapTheTable('table-12')
 
     await clickOn('[data-test="settle-table"]')
+
+    expect({
+      asked: isOnScreen(UNSENT_ORDER),
+      table: order.draft.table,
+      lines: order.draft.lines.length,
+    }).toEqual({ asked: false, table: { tableId: 'table-3', name: '3' }, lines: 1 })
+  })
+
+  it('opens another table to cancel items without asking and leaves the unsent order alone', async () => {
+    const order = oneWasserOnTheOrderFor({ tableId: 'table-3', name: '3' })
+    await mountThePlan()
+    await tapTheTable('table-12')
+
+    await clickOn('[data-test="cancel-items"]')
 
     expect({
       asked: isOnScreen(UNSENT_ORDER),

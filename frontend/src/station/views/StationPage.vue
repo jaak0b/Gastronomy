@@ -139,6 +139,7 @@ function closeOverview(): void {
             :show-hide="false"
             @toggle-item="station.toggleItemSelection"
             @fulfill="openDone"
+            @acknowledge="station.acknowledgeCancellation"
             @hide="station.hide"
           />
         </v-col>
@@ -155,6 +156,7 @@ function closeOverview(): void {
             :show-hide="true"
             @toggle-item="station.toggleItemSelection"
             @fulfill="openDone"
+            @acknowledge="station.acknowledgeCancellation"
             @hide="station.hide"
           />
         </v-col>

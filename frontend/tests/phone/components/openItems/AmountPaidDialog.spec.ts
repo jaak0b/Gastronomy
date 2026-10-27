@@ -213,6 +213,37 @@ describe('the dialog that asks what the table handed over', () => {
     expect(document.querySelector('[data-test="amount-paid-dialog"] [data-test="reason-field"]')).not.toBeNull()
   })
 
+  it('asks what the table paid in its title', async () => {
+    mountDialog('de')
+    await flushPromises()
+
+    expect(document.querySelector('[data-test="amount-paid-dialog"] [data-test="page-title"]')?.textContent).toBe(
+      'Wie viel hat der Tisch bezahlt?',
+    )
+  })
+
+  it('offers the reload the refusal names and hands it back when tapped', async () => {
+    const dialog = mount(AmountPaidDialog, {
+      props: {
+        isSettling: false,
+        notice: { key: 'errors.settlement.itemWasCancelled', parameters: { name: 'Bratwurst' }, count: null },
+        selectedTotalCents: 700,
+        language: 'de',
+      },
+      global: { plugins: testPlugins('de') },
+      attachTo: document.body,
+    })
+    await flushPromises()
+
+    ;(document.querySelector('[data-test="amount-paid-dialog"] [data-test="reload-after-refusal"]') as HTMLElement).click()
+    await flushPromises()
+
+    expect({ buttons: buttonTexts(), reloads: dialog.emitted('reload') }).toEqual({
+      buttons: ['Bar abrechnen', 'Mit Karte abrechnen', 'Neu laden', 'Abbrechen'],
+      reloads: [[]],
+    })
+  })
+
   it('says that the waiter backed out and hands back nothing', async () => {
     const dialog = mountDialog('de')
     await flushPromises()

@@ -1,8 +1,9 @@
 import type { ApiErrorBody } from '../api/apiError'
-import { DeliveryMode, StationOrderQueueView, StationQueueItemView } from '../api/generatedSchemas'
+import { DeliveryMode, OrderItemState, StationOrderQueueView, StationQueueItemView } from '../api/generatedSchemas'
 import { assertNever } from './assertNever'
 import { mergeLinesWithSameArticleAndNote } from './collapse'
 import { compareNames } from './compareNames'
+import { formatTimeOfDay } from './moments'
 import { isCancelled, isHandedOut, isOpen } from './orderItemStates'
 import type { Translate } from './translation'
 
@@ -77,6 +78,10 @@ export function itemsNotHandedOutIn(stationOrder: StationOrderQueueView): Statio
   return stationOrder.items.filter((item) => !isHandedOut(item.state))
 }
 
+export function itemsAwaitingAcknowledgementIn(stationOrder: StationOrderQueueView): StationQueueItemView[] {
+  return stationOrder.items.filter((item) => isCancelled(item.state))
+}
+
 export function itemsNotCancelledIn(stationOrder: StationOrderQueueView): StationQueueItemView[] {
   return stationOrder.items.filter((item) => !isCancelled(item.state))
 }
@@ -143,6 +148,31 @@ export function selectedOpenItemIds(
     .map((item) => item.orderItemId)
 }
 
+export function selectedItemIdsAwaitingAcknowledgement(
+  stationOrder: StationOrderQueueView,
+  selectedItemIds: readonly string[],
+): string[] {
+  const selected = new Set(selectedItemIds)
+  return itemsAwaitingAcknowledgementIn(stationOrder)
+    .filter((item) => selected.has(item.orderItemId))
+    .map((item) => item.orderItemId)
+}
+
+export function cancellationText(item: StationQueueItemView, t: Translate, language: string): string | null {
+  const time = formatTimeOfDay(new Date(item.stateSetAtUtc), language, false)
+  switch (item.state) {
+    case 'open':
+    case 'handedOut':
+      return null
+    case 'cancelled':
+      return t('station.board.labels.cancelledAt', { time })
+    case 'cancellationAcknowledged':
+      return t('station.board.labels.cancellationAcknowledgedAt', { time })
+    default:
+      return assertNever(item.state)
+  }
+}
+
 export function stationStats(stationOrders: readonly StationOrderQueueView[]): StationStats {
   let togetherOrders = 0
   let asItComesOrders = 0
@@ -167,12 +197,22 @@ export function stationStats(stationOrders: readonly StationOrderQueueView[]): S
   }
 }
 
-export function retainOpenItemIds(
-  selectedItemIds: readonly string[],
-  stationOrders: readonly StationOrderQueueView[],
-): string[] {
-  const open = new Set(
-    stationOrders.flatMap((stationOrder) => openItemsIn(stationOrder)).map((item) => item.orderItemId),
+function selectableStates(stationOrders: readonly StationOrderQueueView[]): Map<string, OrderItemState> {
+  return new Map(
+    stationOrders
+      .flatMap((stationOrder) => [...openItemsIn(stationOrder), ...itemsAwaitingAcknowledgementIn(stationOrder)])
+      .map((item) => [item.orderItemId, item.state]),
   )
-  return selectedItemIds.filter((orderItemId) => open.has(orderItemId))
+}
+
+export function retainStillSelectableItemIds(
+  selectedItemIds: readonly string[],
+  previousOrders: readonly StationOrderQueueView[],
+  nextOrders: readonly StationOrderQueueView[],
+): string[] {
+  const before = selectableStates(previousOrders)
+  const after = selectableStates(nextOrders)
+  return selectedItemIds.filter(
+    (orderItemId) => after.has(orderItemId) && after.get(orderItemId) === before.get(orderItemId),
+  )
 }
