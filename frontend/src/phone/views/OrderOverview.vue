@@ -5,7 +5,7 @@ import { navigate } from '../../shared/router/router'
 import { useSessionStore } from '../../shared/stores/session'
 import { useOrderOverviewStore } from '../stores/orderOverview'
 import OrderOverviewFilter from '../components/orderOverview/OrderOverviewFilter.vue'
-import OverviewOrderCard from '../components/orderOverview/OverviewOrderCard.vue'
+import OrderListCard from '../components/orderList/OrderListCard.vue'
 
 const { t } = useI18n()
 const orderOverview = useOrderOverviewStore()
@@ -50,12 +50,7 @@ onUnmounted(() => {
     >
       {{ t(orderOverview.loadFailureKey) }}
     </v-alert>
-    <OverviewOrderCard
-      v-for="order in orders"
-      :key="order.orderId"
-      :order="order"
-      :language="session.language"
-    />
+    <OrderListCard v-for="order in orders" :key="order.orderId" :order="order" :language="session.language" />
     <v-alert v-if="foundNothing" data-test="no-orders" type="info" variant="tonal">
       {{ t('phone.orderOverview.messages.noOrderMatches') }}
     </v-alert>

@@ -19,6 +19,7 @@ function bratwurstOf(orderItemId: string, orderId: string, globalOrderNumber: nu
     orderedAtUtc: '2026-09-05T18:00:00Z',
     state: 'open',
     stateSetAtUtc: '2026-09-05T18:00:00Z',
+    wasHandedOutWhenCancelled: false,
     settledAtUtc: null,
     chargedPriceCents: null,
   }
@@ -29,6 +30,8 @@ const FIRST_ORDER = {
   globalOrderNumber: 41,
   createdAtUtc: '2026-09-05T18:00:00Z',
   staffMemberName: 'Anna',
+  notCancelledItemCount: 1,
+  handedOutItemCount: 0,
   items: [bratwurstOf('item-1', 'order-1', 41, 350)],
 }
 
@@ -47,6 +50,8 @@ const TISCH_SIEBEN_AFTER_THE_SECOND_WAITER_SENT_TWO_BRATWURST = {
       globalOrderNumber: 42,
       createdAtUtc: '2026-09-05T18:04:00Z',
       staffMemberName: 'Bernd',
+      notCancelledItemCount: 2,
+      handedOutItemCount: 0,
       items: [bratwurstOf('item-2', 'order-2', 42, 300), bratwurstOf('item-3', 'order-2', 42, 300)],
     },
     FIRST_ORDER,

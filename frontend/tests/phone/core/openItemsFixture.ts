@@ -16,6 +16,7 @@ export function itemWith(
     orderedAtUtc: '2026-09-05T18:00:00Z',
     state: handedOutAtUtc === null ? 'open' : 'handedOut',
     stateSetAtUtc: handedOutAtUtc ?? '2026-09-05T18:00:00Z',
+    wasHandedOutWhenCancelled: false,
     settledAtUtc,
     chargedPriceCents: settledAtUtc === null ? null : unitPriceCents,
   }
@@ -27,6 +28,8 @@ export function recordWith(items: TableOrderRecordItemView[]): TableOrderRecordV
     globalOrderNumber: 1,
     createdAtUtc: '2026-09-05T18:00:00Z',
     staffMemberName: 'Anna',
+    notCancelledItemCount: items.length,
+    handedOutItemCount: items.filter((item) => item.state === 'handedOut').length,
     items,
   }
 }

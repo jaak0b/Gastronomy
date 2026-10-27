@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { TABLE_REPORT, lineNamed, mountScreenToCancelItems, openItemsLaptop, orderCard } from './openItemsFixture'
+import { TABLE_REPORT, lineNamed, mountScreenToCancelItems, openItemsLaptop, orderCard, tickLine } from './openItemsFixture'
 import { answer, inTurn, noConnection, refusal, stubLaptop } from '../../support/laptop'
 import { clickOn, isOnScreen, textOnScreen } from '../../support/dom'
 
@@ -26,8 +26,7 @@ const REPORT_WITH_THE_BRATWURST_CANCELLED = {
 type Screen = Awaited<ReturnType<typeof mountScreenToCancelItems>>
 
 async function tick(screen: Screen, orderNumber: number, itemName: string): Promise<void> {
-  await lineNamed(orderCard(screen, orderNumber), itemName).trigger('click')
-  await flushPromises()
+  await tickLine(orderCard(screen, orderNumber), itemName)
 }
 
 async function openTheConfirmation(screen: Screen): Promise<void> {
@@ -53,10 +52,10 @@ describe('the table opened to cancel items', () => {
     vi.unstubAllGlobals()
   })
 
-  it('is titled like the button that opened it', async () => {
+  it('is titled Stornieren, the way the settle screen is titled Kassieren', async () => {
     const screen = await mountScreenToCancelItems()
 
-    expect(screen.get('[data-test="settle-title"]').text()).toBe('Position stornieren')
+    expect(screen.get('[data-test="settle-title"]').text()).toBe('Stornieren')
   })
 
   it('lets the waiter tick an item that is already paid', async () => {
@@ -175,7 +174,7 @@ describe('the page that confirms the cancellation', () => {
     expect({
       sent: laptop.bodiesSentTo('POST', '/api/open-items/cancel'),
       confirmationOpen: isOnScreen(CONFIRMATION),
-      bratwurst: lineNamed(orderCard(screen, 137), 'Bratwurst').classes(),
+      bratwurst: lineNamed(orderCard(screen, 137), 'Bratwurst').get('[data-test="line-name-cell"]').classes(),
     }).toEqual({
       sent: [{ orderItemIds: ['item-plain'] }],
       confirmationOpen: false,

@@ -17,6 +17,7 @@ function itemOf(orderItemId: string, itemName: string, unitPriceCents: number) {
     orderedAtUtc: '2026-09-05T18:00:00Z',
     state: 'open',
     stateSetAtUtc: '2026-09-05T18:00:00Z',
+    wasHandedOutWhenCancelled: false,
     settledAtUtc: null,
     chargedPriceCents: null,
   }
@@ -31,6 +32,8 @@ const TISCH_FUENF = {
       globalOrderNumber: 204,
       createdAtUtc: '2026-09-05T18:00:00Z',
       staffMemberName: 'Anna',
+      notCancelledItemCount: 2,
+      handedOutItemCount: 0,
       items: [itemOf('item-1', 'Schnitzel', 900), itemOf('item-2', 'Radler', 300)],
     },
   ],

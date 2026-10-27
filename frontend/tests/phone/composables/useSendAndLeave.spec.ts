@@ -52,6 +52,8 @@ const TABLE_THREE_WITH_THE_SENT_ITEM = {
       globalOrderNumber: 1,
       createdAtUtc: '2026-09-05T18:00:00Z',
       staffMemberName: 'Anna',
+      notCancelledItemCount: 1,
+      handedOutItemCount: 0,
       items: [
         {
           orderItemId: 'new-wasser',
@@ -63,6 +65,7 @@ const TABLE_THREE_WITH_THE_SENT_ITEM = {
           orderedAtUtc: '2026-09-05T18:00:00Z',
           state: 'open',
           stateSetAtUtc: '2026-09-05T18:00:00Z',
+          wasHandedOutWhenCancelled: false,
           settledAtUtc: null,
           chargedPriceCents: null,
         },

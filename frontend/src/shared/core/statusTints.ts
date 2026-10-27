@@ -29,7 +29,3 @@ export function statusTintOf(definition: ThemeDefinition, token: StatusToken): s
   )
   return `#${mixed.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`
 }
-
-export function statusTintCssOf(token: StatusToken): string {
-  return `color-mix(in srgb, rgb(var(--v-theme-${token})) ${STATUS_TINT_PERCENT}%, rgb(var(--v-theme-surface)))`
-}

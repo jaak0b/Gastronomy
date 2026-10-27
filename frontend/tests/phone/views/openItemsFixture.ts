@@ -18,6 +18,7 @@ function itemOfOrder137(orderItemId: string, itemName: string, note: string | nu
     orderedAtUtc: '2026-09-05T18:00:00Z',
     state: 'open',
     stateSetAtUtc: '2026-09-05T18:00:00Z',
+    wasHandedOutWhenCancelled: false,
     settledAtUtc: null,
     chargedPriceCents: null,
   }
@@ -32,6 +33,8 @@ export const TISCH_12 = {
       globalOrderNumber: 137,
       createdAtUtc: '2026-09-05T18:00:00Z',
       staffMemberName: 'Anna',
+      notCancelledItemCount: 2,
+      handedOutItemCount: 0,
       items: [
         itemOfOrder137('item-1', 'Bratwurst', 'ohne Zwiebeln', 350),
         itemOfOrder137('item-2', 'Bier', null, 350),
@@ -60,6 +63,8 @@ export const TABLE_REPORT = {
       globalOrderNumber: 137,
       createdAtUtc: '2026-09-05T18:00:00Z',
       staffMemberName: 'Anna',
+      notCancelledItemCount: 1,
+      handedOutItemCount: 0,
       items: [
         {
           orderItemId: 'item-plain',
@@ -71,6 +76,7 @@ export const TABLE_REPORT = {
           orderedAtUtc: '2026-09-05T18:00:00Z',
           state: 'open',
           stateSetAtUtc: '2026-09-05T18:00:00Z',
+          wasHandedOutWhenCancelled: false,
           settledAtUtc: null,
           chargedPriceCents: null,
         },
@@ -81,6 +87,8 @@ export const TABLE_REPORT = {
       globalOrderNumber: 138,
       createdAtUtc: '2026-09-05T18:10:00Z',
       staffMemberName: 'Bernd',
+      notCancelledItemCount: 3,
+      handedOutItemCount: 2,
       items: [
         {
           orderItemId: 'item-half',
@@ -92,6 +100,7 @@ export const TABLE_REPORT = {
           orderedAtUtc: '2026-09-05T18:10:00Z',
           state: 'handedOut',
           stateSetAtUtc: '2026-09-05T18:15:00Z',
+          wasHandedOutWhenCancelled: false,
           settledAtUtc: null,
           chargedPriceCents: null,
         },
@@ -105,6 +114,7 @@ export const TABLE_REPORT = {
           orderedAtUtc: '2026-09-05T18:10:00Z',
           state: 'open',
           stateSetAtUtc: '2026-09-05T18:10:00Z',
+          wasHandedOutWhenCancelled: false,
           settledAtUtc: null,
           chargedPriceCents: null,
         },
@@ -118,6 +128,7 @@ export const TABLE_REPORT = {
           orderedAtUtc: '2026-09-05T18:10:00Z',
           state: 'handedOut',
           stateSetAtUtc: '2026-09-05T18:15:00Z',
+          wasHandedOutWhenCancelled: false,
           settledAtUtc: '2026-09-05T18:40:00Z',
           chargedPriceCents: 200,
         },
@@ -128,6 +139,8 @@ export const TABLE_REPORT = {
       globalOrderNumber: 139,
       createdAtUtc: '2026-09-05T18:20:00Z',
       staffMemberName: 'Clara',
+      notCancelledItemCount: 1,
+      handedOutItemCount: 1,
       items: [
         {
           orderItemId: 'item-done',
@@ -139,6 +152,7 @@ export const TABLE_REPORT = {
           orderedAtUtc: '2026-09-05T18:20:00Z',
           state: 'handedOut',
           stateSetAtUtc: '2026-09-05T18:30:00Z',
+          wasHandedOutWhenCancelled: false,
           settledAtUtc: null,
           chargedPriceCents: null,
         },
@@ -163,12 +177,17 @@ type ScreenPart = ReturnType<MountedScreen['get']>
 
 export function lineNamed(container: MountedScreen | ScreenPart, itemName: string): ScreenPart {
   const line = container
-    .findAll('[data-test="open-line"]')
+    .findAll('[data-test="order-line"]')
     .find((candidate) => candidate.get('[data-test="line-name"]').text() === itemName)
   if (line === undefined) {
-    throw new Error(`No open line names ${itemName}.`)
+    throw new Error(`No order line names ${itemName}.`)
   }
   return line
+}
+
+export async function tickLine(container: MountedScreen | ScreenPart, itemName: string): Promise<void> {
+  await lineNamed(container, itemName).get('[data-test="line-tick"] input').trigger('click')
+  await flushPromises()
 }
 
 export function orderCard(screen: MountedScreen, orderNumber: number): ScreenPart {

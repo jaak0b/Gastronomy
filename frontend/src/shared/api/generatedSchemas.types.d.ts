@@ -56,10 +56,12 @@ export type MoveCategoryRequest = { direction: MoveDirection }
 export type MoveTableRequest = { tableId: string, geometry: (null | AreaShapeGeometry) }
 export type MoveTablesRequest = { tables: (null | Array<MoveTableRequest>) }
 export type OrderDeliveryModeRequest = { stationId: string, deliveryMode: DeliveryMode }
-export type OrderItemRequest = { catalogItemId: string, unitPriceCents: number, note?: (null | string), stationId?: (null | string) }
 export type OrderItemState = ("open" | "handedOut" | "cancelled" | "cancellationAcknowledged")
-export type OrderStatus = ("open" | "partiallyFulfilled" | "fulfilled")
+export type OrderItemStatusChangeView = { state: OrderItemState, changedAtUtc: string, staffMemberName: (null | string), stationName: (null | string) }
 export type PaymentMethod = ("none" | "cash" | "card" | null)
+export type OrderItemHistoryView = { orderedByStaffMemberName: string, orderedAtUtc: string, statusChanges: Array<OrderItemStatusChangeView>, settledAtUtc: (null | string), chargedPriceCents: (null | number), paymentMethod: (null | PaymentMethod), settledByStaffMemberName: (null | string), paymentNotice: (null | string) }
+export type OrderItemRequest = { catalogItemId: string, unitPriceCents: number, note?: (null | string), stationId?: (null | string) }
+export type OrderStatus = ("open" | "partiallyFulfilled" | "fulfilled")
 export type PaymentStatus = ("notPaid" | "paid" | null)
 export type StationOrderView = { stationOrderId: string, stationId: string, stationName: string, stationOrderNumber: number, deliveryMode: DeliveryMode, itemIds: Array<string> }
 export type PlacedOrderView = { orderId: string, globalOrderNumber: number, status: OrderStatus, totalCents: number, createdAtUtc: string, stationOrders: Array<StationOrderView> }
@@ -98,8 +100,8 @@ export type StationOrderQueueView = { stationOrderId: string, globalOrderNumber:
 export type StationFulfilledView = { stationOrders: Array<StationOrderQueueView> }
 export type StationItemSelectionRequest = { orderItemIds: (null | Array<string>) }
 export type StationQueueView = { station: StationSummaryView, orders: Array<StationOrderQueueView>, asItComes: Array<StationOrderQueueView> }
-export type TableOrderRecordItemView = { orderItemId: string, orderId: string, globalOrderNumber: number, itemName: string, note: (null | string), unitPriceCents: number, orderedAtUtc: string, state: OrderItemState, stateSetAtUtc: string, settledAtUtc: (null | string), chargedPriceCents: (null | number) }
-export type TableOrderRecordView = { orderId: string, globalOrderNumber: number, createdAtUtc: string, staffMemberName: string, items: Array<TableOrderRecordItemView> }
+export type TableOrderRecordItemView = { orderItemId: string, orderId: string, globalOrderNumber: number, itemName: string, note: (null | string), unitPriceCents: number, orderedAtUtc: string, state: OrderItemState, stateSetAtUtc: string, wasHandedOutWhenCancelled: boolean, settledAtUtc: (null | string), chargedPriceCents: (null | number) }
+export type TableOrderRecordView = { orderId: string, globalOrderNumber: number, createdAtUtc: string, staffMemberName: string, notCancelledItemCount: number, handedOutItemCount: number, items: Array<TableOrderRecordItemView> }
 export type TableOrderReportView = { tableId: string, tableName: string, orders: Array<TableOrderRecordView> }
 export type TableOrderSearchRequest = Partial<{ orderStatus: (null | OrderStatus), paymentStatus: (null | PaymentStatus), includeCancelled: (null | boolean) }>
 export type TablePlanTableView = { tableId: string, name: string, geometry: AreaShapeGeometry, handOutProgress: ShareState, settlementProgress: ShareState }
@@ -246,6 +248,22 @@ export type post__api_openItems_tables_TableId_search = {
         body:  Schemas.TableOrderSearchRequest,
           }
       responses: {200: Schemas.TableOrderReportView,
+},
+      
+    }
+export type get__api_openItems_items_OrderItemId_history = {
+      method: "GET",
+      path: "/api/open-items/items/{orderItemId}/history",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { orderItemId: string },
+        
+        
+        
+          }
+      responses: {200: Schemas.OrderItemHistoryView,
 },
       
     }
@@ -1363,6 +1381,7 @@ get: {
 "/api/language": Endpoints.get__api_language,
 "/api/admin/enrolment/invitations/{invitationId}/qr.svg": Endpoints.get__api_admin_enrolment_invitations_InvitationId_qr_svg,
 "/api/session": Endpoints.get__api_session,
+"/api/open-items/items/{orderItemId}/history": Endpoints.get__api_openItems_items_OrderItemId_history,
 "/api/estimates": Endpoints.get__api_estimates,
 "/api/station/orders": Endpoints.get__api_station_orders,
 "/api/station/orders/fulfilled": Endpoints.get__api_station_orders_fulfilled,

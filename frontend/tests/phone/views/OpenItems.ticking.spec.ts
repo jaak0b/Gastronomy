@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
-import { TABLE_REPORT, TISCH_12, isHalfTaken, lineNamed, orderCard, mountScreen, openItemsLaptop } from './openItemsFixture'
+import { TABLE_REPORT, TISCH_12, isHalfTaken, orderCard, tickLine, mountScreen, openItemsLaptop } from './openItemsFixture'
 import { answer } from '../../support/laptop'
 import { clickOn } from '../../support/dom'
 import { nextTick } from 'vue'
@@ -33,10 +33,10 @@ describe('ticking what the guests at one table pay for', () => {
     expect(screen.find('[data-test="settle-footer"]').exists()).toBe(false)
   })
 
-  it('ticks an item when the waiter taps its row, so the whole row is the target', async () => {
+  it('ticks an item when the waiter taps its tick box', async () => {
     const screen = await mountScreen()
 
-    await lineNamed(orderCard(screen, 137), 'Bratwurst').trigger('click')
+    await tickLine(orderCard(screen, 137), 'Bratwurst')
 
     expect(useOpenItemsStore().selectedItemIds).toEqual(['item-plain'])
   })
@@ -44,7 +44,7 @@ describe('ticking what the guests at one table pay for', () => {
   it('settles a ticked position through the footer under the orders', async () => {
     const laptop = openItemsLaptop(TABLE_REPORT)
     const screen = await mountScreen()
-    await lineNamed(orderCard(screen, 137), 'Bratwurst').trigger('click')
+    await tickLine(orderCard(screen, 137), 'Bratwurst')
     await nextTick()
     expect(screen.get('[data-test="selected-total"]').text()).toBe('Ausgewählt: 3,50 €')
     await screen.get('[data-test="settle"]').trigger('click')
@@ -70,7 +70,7 @@ describe('ticking what the guests at one table pay for', () => {
   it('shows the whole table as half taken while only some of its items are ticked', async () => {
     const screen = await mountScreen()
 
-    await lineNamed(orderCard(screen, 137), 'Bratwurst').trigger('click')
+    await tickLine(orderCard(screen, 137), 'Bratwurst')
     await nextTick()
 
     expect(isHalfTaken(screen, '[data-test="whole-table"]')).toBe(true)
@@ -95,7 +95,7 @@ describe('ticking what the guests at one table pay for', () => {
     await card.get('[data-test="whole-order"] input').trigger('click')
     await nextTick()
 
-    await lineNamed(card, 'Bier').trigger('click')
+    await tickLine(card, 'Bier')
     await nextTick()
 
     expect(isHalfTaken(card, '[data-test="whole-order"]')).toBe(true)
@@ -103,7 +103,7 @@ describe('ticking what the guests at one table pay for', () => {
 
   it('ticks the rest of a half taken order when its header is tapped', async () => {
     const screen = await mountScreen()
-    await lineNamed(orderCard(screen, 138), 'Bier').trigger('click')
+    await tickLine(orderCard(screen, 138), 'Bier')
     await nextTick()
 
     await orderCard(screen, 138).get('[data-test="whole-order"] input').trigger('click')

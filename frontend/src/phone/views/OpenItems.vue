@@ -27,7 +27,7 @@ const title = computed(() => {
     case 'settling':
       return t('phone.openItems.title')
     case 'cancelling':
-      return t('phone.openItems.actions.cancelItems')
+      return t('phone.openItems.cancellingTitle')
     default:
       return assertNever(openItems.purpose)
   }

@@ -8,12 +8,19 @@ import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
 import { testPlugins } from '../../support/plugins'
 import { answer, stubLaptop } from '../../support/laptop'
+import { allOnScreen, clickOn, isOnScreen, waitUntil } from '../../support/dom'
 
 enableAutoUnmount(afterEach)
 
 const SEARCH = '/api/open-items/tables/table-12/search'
 
-function itemOfOrder141(orderItemId: string, itemName: string, state: string, settledAtUtc: string | null) {
+function itemOfOrder141(
+  orderItemId: string,
+  itemName: string,
+  state: string,
+  settledAtUtc: string | null,
+  wasHandedOutWhenCancelled = false,
+) {
   return {
     orderItemId,
     orderId: 'order-141',
@@ -24,6 +31,7 @@ function itemOfOrder141(orderItemId: string, itemName: string, state: string, se
     orderedAtUtc: '2026-09-05T18:20:00Z',
     state,
     stateSetAtUtc: '2026-09-05T18:25:00Z',
+    wasHandedOutWhenCancelled,
     settledAtUtc,
     chargedPriceCents: settledAtUtc === null ? null : 400,
   }
@@ -38,6 +46,8 @@ const TISCH_12 = {
       globalOrderNumber: 141,
       createdAtUtc: '2026-09-05T18:20:00Z',
       staffMemberName: 'Anna',
+      notCancelledItemCount: 2,
+      handedOutItemCount: 1,
       items: [
         itemOfOrder141('bier', 'Bier', 'open', null),
         itemOfOrder141('wasser', 'Wasser', 'handedOut', '2026-09-05T18:40:00Z'),
@@ -45,6 +55,20 @@ const TISCH_12 = {
       ],
     },
   ],
+}
+
+const WASSER_HISTORY = {
+  orderedByStaffMemberName: 'Anna',
+  orderedAtUtc: '2026-09-05T18:20:00Z',
+  statusChanges: [
+    { state: 'open', changedAtUtc: '2026-09-05T18:20:00Z', staffMemberName: 'Anna', stationName: null },
+    { state: 'handedOut', changedAtUtc: '2026-09-05T18:25:00Z', staffMemberName: null, stationName: 'Schänke' },
+  ],
+  settledAtUtc: '2026-09-05T18:40:00Z',
+  chargedPriceCents: 400,
+  paymentMethod: 'cash',
+  paymentNotice: null,
+  settledByStaffMemberName: 'Anna',
 }
 
 async function mountTheOrders(language: AppLanguage = 'de') {
@@ -60,6 +84,10 @@ async function mountTheOrders(language: AppLanguage = 'de') {
 
 type Screen = Awaited<ReturnType<typeof mountTheOrders>>
 
+function nameCellOf(screen: Screen, orderItemId: string) {
+  return screen.get(`[data-test="order-line"][data-test-id="${orderItemId}"] [data-test="line-name-cell"]`)
+}
+
 function markOf(screen: Screen, mark: 'paid-mark' | 'handed-out-mark', orderItemId: string): string[] {
   return screen.get(`[data-test="${mark}"][data-test-id="${orderItemId}"]`).classes()
 }
@@ -67,6 +95,16 @@ function markOf(screen: Screen, mark: 'paid-mark' | 'handed-out-mark', orderItem
 async function tap(screen: Screen, selector: string): Promise<void> {
   await screen.get(selector).trigger('click')
   await flushPromises()
+}
+
+async function openTheOptions(screen: Screen, filter: 'order-status' | 'payment-status'): Promise<void> {
+  await screen.get(`[data-test="${filter}-filter"] .v-field`).trigger('mousedown')
+  await waitUntil(() => expect(isOnScreen(`[data-test="${filter}-option"]`)).toBe(true))
+}
+
+async function pick(screen: Screen, filter: 'order-status' | 'payment-status', choice: string): Promise<void> {
+  await openTheOptions(screen, filter)
+  await clickOn(`[data-test="${filter}-option"][data-test-id="${choice}"]`)
 }
 
 beforeEach(() => {
@@ -126,16 +164,84 @@ describe('the orders of a table, shown to read', () => {
 
     const screen = await mountTheOrders()
 
-    expect(screen.get('[data-test="overview-line"][data-test-id="cola"]').classes()).toContain('cancelled-item')
-    expect(screen.get('[data-test="overview-line"][data-test-id="bier"]').classes()).not.toContain('cancelled-item')
+    expect(nameCellOf(screen, 'cola').classes()).toContain('cancelled-item')
+    expect(nameCellOf(screen, 'bier').classes()).not.toContain('cancelled-item')
   })
 
-  it('counts how many items of the order are prepared, leaving the cancelled one out', async () => {
+  it('shows the done counter the laptop counted for the order', async () => {
     stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
 
     const screen = await mountTheOrders()
 
     expect(screen.get('[data-test="done-counter"]').text()).toBe('1 / 2 zubereitet')
+  })
+
+  it('counts over the whole order when the filter leaves items out', async () => {
+    const onlyThePaidWasser = {
+      ...TISCH_12,
+      orders: [
+        {
+          ...TISCH_12.orders[0],
+          notCancelledItemCount: 5,
+          handedOutItemCount: 3,
+          items: [itemOfOrder141('wasser', 'Wasser', 'handedOut', '2026-09-05T18:40:00Z')],
+        },
+      ],
+    }
+    stubLaptop().answers('POST', SEARCH, answer(onlyThePaidWasser))
+
+    const screen = await mountTheOrders()
+
+    expect(screen.get('[data-test="done-counter"]').text()).toBe('3 / 5 zubereitet')
+  })
+
+  it('puts a check under Ausgegeben for an item cancelled after it was handed out, and keeps it struck through', async () => {
+    const cancelledAfterHandOut = {
+      ...TISCH_12,
+      orders: [{ ...TISCH_12.orders[0], items: [itemOfOrder141('cola', 'Cola', 'cancelled', null, true)] }],
+    }
+    stubLaptop().answers('POST', SEARCH, answer(cancelledAfterHandOut))
+
+    const screen = await mountTheOrders()
+
+    expect(markOf(screen, 'handed-out-mark', 'cola')).toContain('mdi-check')
+    expect(nameCellOf(screen, 'cola').classes()).toContain('cancelled-item')
+  })
+
+  it('puts a cross under Ausgegeben for an item cancelled before it was handed out', async () => {
+    stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
+
+    const screen = await mountTheOrders()
+
+    expect(markOf(screen, 'handed-out-mark', 'cola')).toContain('mdi-close')
+  })
+
+  it('puts a check under Bezahlt for an item cancelled after it was paid', async () => {
+    const cancelledAfterPayment = {
+      ...TISCH_12,
+      orders: [{ ...TISCH_12.orders[0], items: [itemOfOrder141('cola', 'Cola', 'cancelled', '2026-09-05T18:30:00Z')] }],
+    }
+    stubLaptop().answers('POST', SEARCH, answer(cancelledAfterPayment))
+
+    const screen = await mountTheOrders()
+
+    expect(markOf(screen, 'paid-mark', 'cola')).toContain('mdi-check')
+  })
+
+  it('offers no tick box anywhere, because the overview is only read', async () => {
+    stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
+
+    const screen = await mountTheOrders()
+
+    expect(screen.findAll('[data-test="tick-cell"], [data-test="whole-order"], [data-test="line-tick"]')).toHaveLength(0)
+  })
+
+  it('shows no prices', async () => {
+    stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
+
+    const screen = await mountTheOrders()
+
+    expect(screen.findAll('[data-test="line-price"]')).toHaveLength(0)
   })
 
   it('says that no order matches when the laptop finds none', async () => {
@@ -171,25 +277,25 @@ describe('the filter above the orders of a table', () => {
 
   it.each([
     ['open', 'open'],
-    ['partially-fulfilled', 'partiallyFulfilled'],
+    ['partiallyFulfilled', 'partiallyFulfilled'],
     ['fulfilled', 'fulfilled'],
   ])('asks for the orders in the status the waiter tapped, %s', async (choice, orderStatus) => {
     const laptop = stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
     const screen = await mountTheOrders()
 
-    await tap(screen, `[data-test="order-status-choice"][data-test-id="${choice}"]`)
+    await pick(screen, 'order-status', choice)
 
     expect(laptop.bodiesSentTo('POST', SEARCH)[1]).toEqual({ orderStatus, paymentStatus: null, includeCancelled: true })
   })
 
   it.each([
     ['paid', 'paid'],
-    ['not-paid', 'notPaid'],
+    ['notPaid', 'notPaid'],
   ])('asks for the items in the payment status the waiter tapped, %s', async (choice, paymentStatus) => {
     const laptop = stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
     const screen = await mountTheOrders()
 
-    await tap(screen, `[data-test="payment-status-choice"][data-test-id="${choice}"]`)
+    await pick(screen, 'payment-status', choice)
 
     expect(laptop.bodiesSentTo('POST', SEARCH)[1]).toEqual({ orderStatus: null, paymentStatus, includeCancelled: true })
   })
@@ -210,9 +316,9 @@ describe('the filter above the orders of a table', () => {
   it('keeps an earlier pick when the waiter taps a second one', async () => {
     const laptop = stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
     const screen = await mountTheOrders()
-    await tap(screen, '[data-test="order-status-choice"][data-test-id="open"]')
+    await pick(screen, 'order-status', 'open')
 
-    await tap(screen, '[data-test="payment-status-choice"][data-test-id="not-paid"]')
+    await pick(screen, 'payment-status', 'notPaid')
 
     expect(laptop.bodiesSentTo('POST', SEARCH)[2]).toEqual({
       orderStatus: 'open',
@@ -221,21 +327,68 @@ describe('the filter above the orders of a table', () => {
     })
   })
 
-  it('names the choices in English on an English phone', async () => {
+  it('goes back to every order when the waiter picks Alle again', async () => {
+    const laptop = stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
+    const screen = await mountTheOrders()
+    await pick(screen, 'order-status', 'open')
+
+    await pick(screen, 'order-status', 'every')
+
+    expect(laptop.bodiesSentTo('POST', SEARCH)[2]).toEqual({ orderStatus: null, paymentStatus: null, includeCancelled: true })
+  })
+
+  it('names the two dropdowns Bestellungen and Positionen and starts both on Alle', async () => {
     stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
 
+    const screen = await mountTheOrders()
+
+    expect([
+      screen.get('[data-test="order-status-filter"]').text(),
+      screen.get('[data-test="payment-status-filter"]').text(),
+    ]).toEqual([expect.stringMatching(/^Bestellungen\s*Alle/), expect.stringMatching(/^Positionen\s*Alle/)])
+  })
+
+  it('names the order choices in English on an English phone', async () => {
+    stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
     const screen = await mountTheOrders('en')
 
-    expect(screen.findAll('[data-test="order-status-choice"]').map((chip) => chip.text())).toEqual([
+    await openTheOptions(screen, 'order-status')
+
+    expect(allOnScreen('[data-test="order-status-option"]').map((option) => option.textContent?.trim())).toEqual([
       'All',
       'Open',
       'Partly handed out',
       'Handed out',
     ])
-    expect(screen.findAll('[data-test="payment-status-choice"]').map((chip) => chip.text())).toEqual([
+  })
+
+  it('names the item choices in English on an English phone', async () => {
+    stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
+    const screen = await mountTheOrders('en')
+
+    await openTheOptions(screen, 'payment-status')
+
+    expect(allOnScreen('[data-test="payment-status-option"]').map((option) => option.textContent?.trim())).toEqual([
       'All',
       'Paid',
       'Not paid',
+    ])
+  })
+})
+
+describe('tapping an item on the overview', () => {
+  it('opens the history the laptop holds for that item', async () => {
+    stubLaptop()
+      .answers('POST', SEARCH, answer(TISCH_12))
+      .answers('GET', '/api/open-items/items/wasser/history', answer(WASSER_HISTORY))
+    const screen = await mountTheOrders()
+
+    await tap(screen, '[data-test="order-line"][data-test-id="wasser"] [data-test="line-name"]')
+
+    expect(allOnScreen('[data-test="entry-event"]').map((event) => event.textContent?.trim())).toEqual([
+      'Bestellt',
+      'Ausgegeben',
+      'Bezahlt',
     ])
   })
 })

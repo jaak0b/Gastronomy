@@ -235,8 +235,7 @@ Frontend, under `frontend/src/`:
   On the phone `handOutFill` and `settlementBorder` take each `ShareState`'s status token from
   `shared/core/statusTints.ts`: the border takes the token itself, the fill takes `statusTintOf`.
   That module is the one home of the mapping (none `error`, some `warning`, all `success`) and of the
-  tint strength (`STATUS_TINT_PERCENT`, thirty percent of the token mixed into `surface`), and the
-  settle view's cards and rows take the same through `statusTintCssOf`.
+  tint strength (`STATUS_TINT_PERCENT`, thirty percent of the token mixed into `surface`).
 - The waiter's phone: `phone/views/TablePlan.vue` is the home screen (route `home`, screen
   `tablePlan`). `shared/core/landing.ts` decides what it shows (`waiterLandingFor`, read through
   `phone/composables/useWaiterLanding.ts`): the locked order first, then no festival active (the

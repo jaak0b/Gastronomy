@@ -3,6 +3,7 @@
     "actions": {
       "back": "Zurück",
       "cancel": "Abbrechen",
+      "close": "Schließen",
       "continue": "Weiter",
       "save": "Speichern"
     },
@@ -100,6 +101,7 @@
     },
     "openItems": {
       "title": "Kassieren",
+      "cancellingTitle": "Stornieren",
       "labels": {
         "amountPaidField": "Bezahlter Betrag",
         "amountPaidReason": "Grund",
@@ -153,6 +155,21 @@
       },
       "messages": {
         "noOrderMatches": "An diesem Tisch passt keine Bestellung zu dieser Auswahl."
+      }
+    },
+    "itemHistory": {
+      "events": {
+        "ordered": "Bestellt",
+        "handedOut": "Ausgegeben",
+        "putBack": "Zurückgelegt",
+        "cancelled": "Storniert",
+        "cancellationAcknowledged": "Stornierung bestätigt",
+        "paid": "Bezahlt"
+      },
+      "labels": {
+        "paidInCash": "{amount} bar",
+        "paidByCard": "{amount} mit Karte",
+        "paymentNotice": "Grund: {notice}"
       }
     },
     "review": {
@@ -582,6 +599,9 @@
       "qrUnavailable": "Erstellen Sie einen neuen QR-Code. Dieser lässt sich nicht mehr anzeigen.",
       "staffMemberIsOffTheList": "Lassen Sie sich am Rechner einen neuen QR-Code zeigen. Dieser Kellner steht nicht mehr in der Liste.",
       "stationIsOffTheList": "Lassen Sie sich am Rechner einen neuen QR-Code zeigen. Diese Ausgabestelle ist abgeschaltet."
+    },
+    "itemHistory": {
+      "unknownItem": "Diese Position gibt es am Rechner nicht mehr. Schließen Sie das Fenster und tippen Sie auf \"Neu laden\"."
     },
     "order": {
       "cannotBeProcessed": "Die Bestellung konnte nicht verarbeitet werden. Geben Sie sie an der Ausgabestelle persönlich auf.",

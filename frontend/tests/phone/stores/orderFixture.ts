@@ -72,6 +72,7 @@ function openItemOf(orderItemId: string) {
     orderedAtUtc: '2026-09-05T18:20:00Z',
     state: 'open',
     stateSetAtUtc: '2026-09-05T18:20:00Z',
+    wasHandedOutWhenCancelled: false,
     settledAtUtc: null,
     chargedPriceCents: null,
   }
@@ -86,6 +87,8 @@ const TABLE_THREE_REPORT = {
       globalOrderNumber: 141,
       createdAtUtc: '2026-09-05T18:20:00Z',
       staffMemberName: 'Anna',
+      notCancelledItemCount: 2,
+      handedOutItemCount: 0,
       items: [openItemOf('new-1'), openItemOf('new-2')],
     },
   ],

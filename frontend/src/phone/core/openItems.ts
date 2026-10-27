@@ -11,7 +11,7 @@ import type {
 import { assertNever } from '../../shared/core/assertNever'
 import type { AppLanguage } from '../../shared/core/deviceLanguage'
 import { formatPrice } from '../../shared/core/money'
-import { isCancelled, isHandedOut } from '../../shared/core/orderItemStates'
+import { isCancelled } from '../../shared/core/orderItemStates'
 
 export type SettleOutcome = 'accepted' | 'refused' | 'answerNeverCame'
 
@@ -30,14 +30,6 @@ export interface SettleNotice {
   count: number | null
 }
 
-export function producedCountIn(order: TableOrderRecordView): number {
-  return order.items.filter((item) => isHandedOut(item.state)).length
-}
-
-export function notCancelledItemCountIn(order: TableOrderRecordView): number {
-  return order.items.filter((item) => !isCancelled(item.state)).length
-}
-
 export function shareStateOf(count: number, total: number): ShareState {
   if (count === total) {
     return 'all'
@@ -54,17 +46,6 @@ export function searchOptionsFor(purpose: SelectionPurpose, showsEveryItem: bool
       return { paymentStatus: 'notPaid', includeCancelled: false }
     case 'cancelling':
       return { includeCancelled: false }
-    default:
-      return assertNever(purpose)
-  }
-}
-
-export function isShownAsPaid(item: TableOrderRecordItemView, purpose: SelectionPurpose): boolean {
-  switch (purpose) {
-    case 'settling':
-      return item.settledAtUtc !== null
-    case 'cancelling':
-      return false
     default:
       return assertNever(purpose)
   }

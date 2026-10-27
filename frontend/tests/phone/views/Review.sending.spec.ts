@@ -181,6 +181,8 @@ describe('sending an order the guest pays on the spot', () => {
               globalOrderNumber: 1,
               createdAtUtc: '2026-09-05T18:00:00Z',
               staffMemberName: 'Anna',
+              notCancelledItemCount: 1,
+              handedOutItemCount: 0,
               items: [
                 {
                   orderItemId: 'new-wasser',
@@ -192,6 +194,7 @@ describe('sending an order the guest pays on the spot', () => {
                   orderedAtUtc: '2026-09-05T18:00:00Z',
                   state: 'open',
                   stateSetAtUtc: '2026-09-05T18:00:00Z',
+                  wasHandedOutWhenCancelled: false,
                   settledAtUtc: null,
                   chargedPriceCents: null,
                 },

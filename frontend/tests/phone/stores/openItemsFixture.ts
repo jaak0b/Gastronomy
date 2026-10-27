@@ -19,6 +19,8 @@ export const TABLE_REPORT = {
       globalOrderNumber: 141,
       createdAtUtc: '2026-09-05T18:20:00Z',
       staffMemberName: 'Anna',
+      notCancelledItemCount: 2,
+      handedOutItemCount: 1,
       items: [
         {
           orderItemId: 'bier-open',
@@ -30,6 +32,7 @@ export const TABLE_REPORT = {
           orderedAtUtc: '2026-09-05T18:20:00Z',
           state: 'open' as const,
           stateSetAtUtc: '2026-09-05T18:20:00Z',
+          wasHandedOutWhenCancelled: false,
           settledAtUtc: null,
           chargedPriceCents: null,
         },
@@ -43,6 +46,7 @@ export const TABLE_REPORT = {
           orderedAtUtc: '2026-09-05T18:20:00Z',
           state: 'handedOut' as const,
           stateSetAtUtc: '2026-09-05T18:25:00Z',
+          wasHandedOutWhenCancelled: false,
           settledAtUtc: '2026-09-05T18:40:00Z',
           chargedPriceCents: 200,
         },
@@ -62,6 +66,7 @@ function bratwurst(orderItemId: string) {
     orderedAtUtc: '2026-09-05T18:00:00Z',
     state: 'open' as const,
     stateSetAtUtc: '2026-09-05T18:00:00Z',
+    wasHandedOutWhenCancelled: false,
     settledAtUtc: null,
     chargedPriceCents: null,
   }
@@ -76,6 +81,8 @@ export const TWO_BRATWURST = {
       globalOrderNumber: 137,
       createdAtUtc: '2026-09-05T18:00:00Z',
       staffMemberName: 'Anna',
+      notCancelledItemCount: 2,
+      handedOutItemCount: 0,
       items: [bratwurst('item-1'), bratwurst('item-2')],
     },
   ],
@@ -126,6 +133,8 @@ export const REPORT_AFTER_THE_NEW_ORDER = {
       globalOrderNumber: 140,
       createdAtUtc: '2026-09-05T18:10:00Z',
       staffMemberName: 'Anna',
+      notCancelledItemCount: 1,
+      handedOutItemCount: 0,
       items: [
         {
           orderItemId: 'older-open',
@@ -137,6 +146,7 @@ export const REPORT_AFTER_THE_NEW_ORDER = {
           orderedAtUtc: '2026-09-05T18:10:00Z',
           state: 'open' as const,
           stateSetAtUtc: '2026-09-05T18:10:00Z',
+          wasHandedOutWhenCancelled: false,
           settledAtUtc: null,
           chargedPriceCents: null,
         },
@@ -147,6 +157,8 @@ export const REPORT_AFTER_THE_NEW_ORDER = {
       globalOrderNumber: 141,
       createdAtUtc: '2026-09-05T18:20:00Z',
       staffMemberName: 'Anna',
+      notCancelledItemCount: 2,
+      handedOutItemCount: 0,
       items: [
         {
           orderItemId: 'new-open',
@@ -158,6 +170,7 @@ export const REPORT_AFTER_THE_NEW_ORDER = {
           orderedAtUtc: '2026-09-05T18:20:00Z',
           state: 'open' as const,
           stateSetAtUtc: '2026-09-05T18:20:00Z',
+          wasHandedOutWhenCancelled: false,
           settledAtUtc: null,
           chargedPriceCents: null,
         },
@@ -171,6 +184,7 @@ export const REPORT_AFTER_THE_NEW_ORDER = {
           orderedAtUtc: '2026-09-05T18:20:00Z',
           state: 'open' as const,
           stateSetAtUtc: '2026-09-05T18:20:00Z',
+          wasHandedOutWhenCancelled: false,
           settledAtUtc: '2026-09-05T18:21:00Z',
           chargedPriceCents: 200,
         },
@@ -205,6 +219,7 @@ export function positionOf(orderItemId: string, settledAtUtc: string | null) {
     orderedAtUtc: '2026-09-05T18:20:00Z',
     state: 'open' as const,
     stateSetAtUtc: '2026-09-05T18:20:00Z',
+    wasHandedOutWhenCancelled: false,
     settledAtUtc,
     chargedPriceCents: null,
   }
@@ -219,6 +234,8 @@ export const REPORT_WITH_TWO_ORDERS = {
       globalOrderNumber: 150,
       createdAtUtc: '2026-09-05T18:20:00Z',
       staffMemberName: 'Anna',
+      notCancelledItemCount: 3,
+      handedOutItemCount: 0,
       items: [
         positionOf('a-open-1', null),
         positionOf('a-open-2', null),
@@ -230,6 +247,8 @@ export const REPORT_WITH_TWO_ORDERS = {
       globalOrderNumber: 151,
       createdAtUtc: '2026-09-05T18:30:00Z',
       staffMemberName: 'Anna',
+      notCancelledItemCount: 1,
+      handedOutItemCount: 0,
       items: [positionOf('b-open', null)],
     },
   ],

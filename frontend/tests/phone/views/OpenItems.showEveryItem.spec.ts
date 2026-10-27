@@ -72,23 +72,23 @@ describe('what the settle screen asks the laptop for', () => {
 })
 
 describe('every item on the settle screen', () => {
-  it('puts a paid item on a green background and offers no tick box for it', async () => {
+  it('puts a check under Bezahlt for a paid item and offers no tick box for it', async () => {
     openItemsLaptop(WITH_CANCELLED_COLA)
 
     const screen = await mountScreen()
 
     const wasser = lineNamed(orderCard(screen, 138), 'Wasser')
-    expect(wasser.classes()).toContain('paid-line')
+    expect(wasser.get('[data-test="paid-mark"]').classes()).toContain('mdi-check')
     expect(wasser.find('[data-test="line-tick"]').exists()).toBe(false)
   })
 
-  it('greys a cancelled item out, strikes it through and offers no tick box for it', async () => {
+  it('strikes a cancelled item through and offers no tick box for it', async () => {
     openItemsLaptop(WITH_CANCELLED_COLA)
 
     const screen = await mountScreen()
 
     const cola = lineNamed(orderCard(screen, 138), 'Cola')
-    expect(cola.classes()).toEqual(expect.arrayContaining(['cancelled-item', 'v-list-item--disabled']))
+    expect(cola.get('[data-test="line-name-cell"]').classes()).toContain('cancelled-item')
     expect(cola.find('[data-test="line-tick"]').exists()).toBe(false)
   })
 })
@@ -121,24 +121,21 @@ describe('what the cancel screen asks the laptop for', () => {
 })
 
 describe('every item on the cancel screen', () => {
-  it('shows a paid item like any other and lets the waiter tick it', async () => {
+  it('lets the waiter tick a paid item', async () => {
     openItemsLaptop(WITH_CANCELLED_COLA)
 
     const screen = await mountScreenToCancelItems()
 
-    const wasser = lineNamed(orderCard(screen, 138), 'Wasser')
-    expect(wasser.classes()).not.toContain('paid-line')
-    expect(wasser.find('[data-test="line-paid"]').exists()).toBe(false)
-    expect(wasser.find('[data-test="line-tick"]').exists()).toBe(true)
+    expect(lineNamed(orderCard(screen, 138), 'Wasser').find('[data-test="line-tick"]').exists()).toBe(true)
   })
 
-  it('greys a cancelled item out, strikes it through and offers no tick box for it', async () => {
+  it('strikes a cancelled item through and offers no tick box for it', async () => {
     openItemsLaptop(WITH_CANCELLED_COLA)
 
     const screen = await mountScreenToCancelItems()
 
     const cola = lineNamed(orderCard(screen, 138), 'Cola')
-    expect(cola.classes()).toEqual(expect.arrayContaining(['cancelled-item', 'v-list-item--disabled']))
+    expect(cola.get('[data-test="line-name-cell"]').classes()).toContain('cancelled-item')
     expect(cola.find('[data-test="line-tick"]').exists()).toBe(false)
   })
 })

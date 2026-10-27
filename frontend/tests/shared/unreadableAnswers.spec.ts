@@ -22,6 +22,8 @@ const A_TABLE: TableOrderReportView = {
       globalOrderNumber: 1,
       createdAtUtc: '2026-09-20T18:00:00Z',
       staffMemberName: 'Anna',
+      notCancelledItemCount: 1,
+      handedOutItemCount: 0,
       items: [
         {
           orderItemId: 'item-of-the-order',
@@ -33,6 +35,7 @@ const A_TABLE: TableOrderReportView = {
           orderedAtUtc: '2026-09-20T18:00:00Z',
           state: 'open',
           stateSetAtUtc: '2026-09-20T18:00:00Z',
+          wasHandedOutWhenCancelled: false,
           settledAtUtc: null,
           chargedPriceCents: null,
         },

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canTheAmountBeSettled, notCancelledItemCountIn, isAPaymentMethodNeeded, isPaymentNoticeNeeded, isPaymentNoticeWritten, noticeAfterSettling, producedCountIn } from '../../../src/phone/core/openItems'
-import { itemWith, recordWith } from './openItemsFixture'
+import { canTheAmountBeSettled, isAPaymentMethodNeeded, isPaymentNoticeNeeded, isPaymentNoticeWritten, noticeAfterSettling } from '../../../src/phone/core/openItems'
 
 describe('what the waiter is told after settling', () => {
   const thePhoneSent = [
@@ -150,26 +149,6 @@ describe('whether the phone may send the amount the waiter typed', () => {
 
   it('allows more than the full price with no reason', () => {
     expect(canTheAmountBeSettled(1000, '', 700)).toBe(true)
-  })
-})
-
-describe('the done counter of one order', () => {
-  it('counts the positions that have left the station', () => {
-    const order = recordWith([
-      itemWith('item-1', '2026-09-05T18:05:00Z', null, 350),
-      itemWith('item-2', null, null, 350),
-    ])
-
-    expect(producedCountIn(order)).toBe(1)
-  })
-
-  it('leaves a cancelled position out of the positions it counts', () => {
-    const order = recordWith([
-      itemWith('item-1', '2026-09-05T18:05:00Z', null, 350),
-      { ...itemWith('item-2', null, null, 350), state: 'cancelled' },
-    ])
-
-    expect(notCancelledItemCountIn(order)).toBe(1)
   })
 })
 

@@ -44,14 +44,14 @@ describe('the orders of the table the waiter chose to settle', () => {
     expect([germanTitle, english.get('[data-test="settle-title"]').text()]).toEqual(['Kassieren', 'Take payment'])
   })
 
-  it('writes the word for paid on a settled position and leaves out its tick box', async () => {
+  it('puts a check under Bezahlt on a settled position and leaves its tick box cell empty', async () => {
     openItemsLaptop(TABLE_REPORT)
 
     const screen = await mountScreen()
 
     const settled = lineNamed(orderCard(screen, 138), 'Wasser')
-    expect(settled.get('[data-test="line-paid"]').text()).toBe('Bezahlt')
-    expect(settled.find('[data-test="line-tick"]').exists()).toBe(false)
+    expect(settled.get('[data-test="paid-mark"]').classes()).toEqual(expect.arrayContaining(['mdi-check', 'text-success']))
+    expect(settled.get('[data-test="tick-cell"]').find('[data-test="line-tick"]').exists()).toBe(false)
   })
 
   it('says that nothing is left to take payment for when the laptop finds no order', async () => {
@@ -182,16 +182,67 @@ describe('a table with an item a waiter cancelled', () => {
 
     const screen = await mountScreen()
 
-    expect(lineNamed(screen, 'Bier').classes()).toContain('cancelled-item')
-    expect(lineNamed(screen, 'Bratwurst').classes()).not.toContain('cancelled-item')
+    expect(lineNamed(screen, 'Bier').get('[data-test="line-name-cell"]').classes()).toContain('cancelled-item')
+    expect(lineNamed(screen, 'Bratwurst').get('[data-test="line-name-cell"]').classes()).not.toContain('cancelled-item')
   })
 
-  it('does not tick the cancelled item when the waiter taps it', async () => {
+  it('keeps the tick box column on the cancelled item and leaves it empty, so the names stay in line', async () => {
     openItemsLaptop(WITH_CANCELLED_BIER)
+
     const screen = await mountScreen()
 
-    await lineNamed(screen, 'Bier').trigger('click')
+    const bier = lineNamed(screen, 'Bier')
+    expect(bier.find('[data-test="tick-cell"]').exists()).toBe(true)
+    expect(bier.find('[data-test="line-tick"]').exists()).toBe(false)
+  })
+})
 
-    expect(useOpenItemsStore().selectedItemIds).toEqual([])
+describe('tapping an item on the settle screen', () => {
+  const BRATWURST_HISTORY = {
+    orderedByStaffMemberName: 'Anna',
+    orderedAtUtc: '2026-09-05T18:00:00Z',
+    statusChanges: [{ state: 'open', changedAtUtc: '2026-09-05T18:00:00Z', staffMemberName: 'Anna', stationName: null }],
+    settledAtUtc: null,
+    chargedPriceCents: null,
+    paymentMethod: null,
+    paymentNotice: null,
+    settledByStaffMemberName: null,
+  }
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/open-items')
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('opens the history of the item and ticks nothing when the waiter taps its name', async () => {
+    openItemsLaptop(TISCH_12).answers('GET', '/api/open-items/items/item-1/history', answer(BRATWURST_HISTORY))
+    const screen = await mountScreen()
+
+    await lineNamed(screen, 'Bratwurst').get('[data-test="line-name"]').trigger('click')
+    await flushPromises()
+
+    expect({
+      history: document.querySelector('[data-test="entry-event"]')?.textContent?.trim(),
+      ticked: useOpenItemsStore().selectedItemIds,
+    }).toEqual({ history: 'Bestellt', ticked: [] })
+  })
+
+  it('ticks the item and opens no history when the waiter taps its tick box', async () => {
+    const laptop = openItemsLaptop(TISCH_12)
+    const screen = await mountScreen()
+
+    await lineNamed(screen, 'Bratwurst').get('[data-test="line-tick"] input').trigger('click')
+    await flushPromises()
+
+    expect({
+      historyAsked: laptop.callsTo('GET', '/api/open-items/items/item-1/history').length,
+      ticked: useOpenItemsStore().selectedItemIds,
+    }).toEqual({ historyAsked: 0, ticked: ['item-1'] })
   })
 })
