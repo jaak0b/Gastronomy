@@ -1,6 +1,7 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Mapster;
 
@@ -16,6 +17,8 @@ public sealed class OrderMappingTest
   }
 
   private readonly DateTime _placedAtUtc = new(2026, 9, 5, 19, 5, 0, DateTimeKind.Utc);
+  private readonly DateTime _handedOutAtUtc = new(2026, 9, 5, 19, 30, 0, DateTimeKind.Utc);
+  private readonly OrderItemLifecycle _lifecycle = new();
   private readonly Guid _kitchenId = Guid.Parse("cccccccc-0000-0000-0000-000000000001");
   private readonly Guid _barId = Guid.Parse("cccccccc-0000-0000-0000-000000000002");
 
@@ -124,6 +127,62 @@ public sealed class OrderMappingTest
                     });
   }
 
+  [Test]
+  public void Map_AnOrderWithoutItems_CountsNothingAndIsFulfilled()
+  {
+    var order = OrderAtOneStation();
+    order.StationOrders.Clear();
+
+    var view = order.Adapt<PlacedOrderView>(_mapping);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(view.TotalCents, Is.Zero);
+                      Assert.That(view.Status, Is.EqualTo(OrderStatus.Fulfilled));
+                    });
+  }
+
+  [Test]
+  public void Map_SeveralItemsAtTwoStations_AddsThePricesThePhoneDisplayed()
+  {
+    var order = OrderAtOneStation(350, 400);
+    order.StationOrders.Add(StationOrderAt(order.Id, _barId, "Theke", 2, 250));
+
+    var view = order.Adapt<PlacedOrderView>(_mapping);
+
+    Assert.That(view.TotalCents, Is.EqualTo(1000));
+  }
+
+  [Test]
+  public void Map_ACancelledItem_LeavesItsPriceOut()
+  {
+    var order = OrderAtOneStation(350, 400, 250);
+    _lifecycle.AppendStatus(order.StationOrders[0].Items[1], OrderItemState.Cancelled, new(order.StaffMemberId, null), _handedOutAtUtc);
+
+    var view = order.Adapt<PlacedOrderView>(_mapping);
+
+    Assert.That(view.TotalCents, Is.EqualTo(600));
+  }
+
+  [Test]
+  public void Map_OneOfTwoItemsHandedOut_IsPartiallyFulfilled()
+  {
+    var order = OrderAtOneStation(350, 400);
+    _lifecycle.AppendStatus(order.StationOrders[0].Items[0], OrderItemState.HandedOut, new(null, _kitchenId), _handedOutAtUtc);
+
+    var view = order.Adapt<PlacedOrderView>(_mapping);
+
+    Assert.That(view.Status, Is.EqualTo(OrderStatus.PartiallyFulfilled));
+  }
+
+  [Test]
+  public void Map_NothingHandedOut_IsOpen()
+  {
+    var view = OrderAtOneStation(350, 400).Adapt<PlacedOrderView>(_mapping);
+
+    Assert.That(view.Status, Is.EqualTo(OrderStatus.Open));
+  }
+
   private Order OrderAtOneStation(params int[] unitPricesCents)
   {
     Order order = new()
@@ -169,14 +228,19 @@ public sealed class OrderMappingTest
 
   private OrderItem ItemOf(Guid stationOrderId, string itemName, string? note, int unitPriceCents)
   {
-    return new()
-           {
-             Id = Guid.NewGuid(),
-             StationOrderId = stationOrderId,
-             CatalogItemId = Guid.NewGuid(),
-             ItemName = itemName,
-             Note = note,
-             UnitPriceCents = unitPriceCents
-           };
+    OrderItem item = new()
+                     {
+                       Id = Guid.NewGuid(),
+                       StationOrderId = stationOrderId,
+                       CatalogItemId = Guid.NewGuid(),
+                       ItemName = itemName,
+                       Note = note,
+                       UnitPriceCents = unitPriceCents
+                     };
+
+    _lifecycle.AppendStatus(item, OrderItemState.Open, new(Guid.NewGuid(), null), _placedAtUtc);
+    _lifecycle.PointAtFirstStatus(item);
+
+    return item;
   }
 }

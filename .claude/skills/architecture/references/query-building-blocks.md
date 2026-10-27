@@ -33,10 +33,17 @@ a deactivated station is not offered any more, and a screen shows a row another 
   same holds for every other type with checks of its own: an enum gets its own class
   (`OrderItemStateQueries` for `OrderItemState`), and a flag several entities share lives in
   `<Interface>Queries.cs`.
-  `OrderItemQueries.IsOpen`, `IsHandedOut`, `IsCancelled`, `AwaitsCancellationAcknowledgement`,
-  `State` and `StateSetAtUtc` are such checks: `WhereOpen` uses one at the top level,
-  `StationOrderQueries` nests them in `Items.Any(...)`, `StationQueueMapping` and `OpenItemMapping`
-  call them in a Mapster mapping, and the services call them on loaded items. The package is turned
+  `OrderItemQueries.IsOpen`, `IsHandedOut`, `IsCancelled`, `IsStillOrdered` (not cancelled, the
+  one place that says so), `IsSettled`, `IsToSettle`, `AwaitsCancellationAcknowledgement`, `State`
+  and `StateSetAtUtc` are such checks: `WhereOpen` uses
+  one at the top level, `StationOrderQueries` nests them in `Items.Any(...)`, `StationQueueMapping`
+  and `OpenItemMapping` call them in a Mapster mapping, and the services call them on loaded items.
+  `OrderQueries.Items` (every item of every station order of an order) carries them over to a
+  whole order: `HasItemsToHandOut`, `IsPartlyHandedOut`, `HasItemsToSettle` and `IsPartlySettled`
+  each ask `order.Items().Any(...)`, and a `[Projectable]` that calls another one is expanded inside
+  it, so the four still translate: `TablePlanMapping` counts a table's orders with them in SQL, and
+  the plain extension `OrderQueries.Status` uses two of them on a loaded order for `OrderMapping`.
+  A check that only ever runs in memory, such as `Status`, needs no `[Projectable]`. The package is turned
   on once, with `UseProjectables()` in `GastronomyAppDbContext.OnConfiguring`, which every way of
   building the context's options passes through.
 - **Two `[Projectable]` methods in one class never share a name.** Version 4.0.0, the last one for

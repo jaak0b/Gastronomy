@@ -7,38 +7,36 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class OrderItemLifecycle
 {
-  public bool CanAppendStatus(OrderItem item, OrderItemState targetState)
+  public OrderItemChangeVerdict JudgeChange(OrderItem item, OrderItemState targetState)
   {
-    return CheckStatusChange(item, targetState) == OrderItemStatusChange.Allowed;
-  }
-
-  public OrderItemStatusChange CheckStatusChange(OrderItem item, OrderItemState targetState)
-  {
-    ArgumentNullException.ThrowIfNull(item);
-
-    var currentState = CurrentStateOf(item);
-
-    if (IsAllowed(item, currentState, targetState))
-      return OrderItemStatusChange.Allowed;
-
-    if (currentState == targetState)
-      return OrderItemStatusChange.AlreadyInThatState;
-
-    if (currentState is { } state && state.IsCancelled() && targetState != OrderItemState.CancellationAcknowledged)
-      return OrderItemStatusChange.ItemIsCancelled;
-
-    return OrderItemStatusChange.NotAllowed;
+    return new StateChange(CurrentStateOf(item), targetState) switch
+           {
+             { From: null, To: OrderItemState.Open } => OrderItemChangeVerdict.Allowed,
+             { From: null, To: not OrderItemState.Open } => OrderItemChangeVerdict.ItemIsNotPlacedYet,
+             { From: OrderItemState.Open, To: OrderItemState.Open } => OrderItemChangeVerdict.ItemIsNotHandedOut,
+             { From: OrderItemState.Open, To: OrderItemState.HandedOut } => OrderItemChangeVerdict.Allowed,
+             { From: OrderItemState.Open, To: OrderItemState.Cancelled } => OrderItemChangeVerdict.Allowed,
+             { From: OrderItemState.Open, To: OrderItemState.CancellationAcknowledged } => OrderItemChangeVerdict.ItemDoesNotAwaitCancellationAcknowledgement,
+             { From: OrderItemState.HandedOut, To: OrderItemState.Open } => OrderItemChangeVerdict.Allowed,
+             { From: OrderItemState.HandedOut, To: OrderItemState.HandedOut } => OrderItemChangeVerdict.AlreadyInThatState,
+             { From: OrderItemState.HandedOut, To: OrderItemState.Cancelled } => OrderItemChangeVerdict.Allowed,
+             { From: OrderItemState.HandedOut, To: OrderItemState.CancellationAcknowledged } => OrderItemChangeVerdict.ItemDoesNotAwaitCancellationAcknowledgement,
+             { From: OrderItemState.Cancelled, To: OrderItemState.Open or OrderItemState.HandedOut } => OrderItemChangeVerdict.ItemIsCancelled,
+             { From: OrderItemState.Cancelled, To: OrderItemState.Cancelled } => OrderItemChangeVerdict.AlreadyInThatState,
+             { From: OrderItemState.Cancelled, To: OrderItemState.CancellationAcknowledged } => JudgeAcknowledgementOf(item),
+             { From: OrderItemState.CancellationAcknowledged, To: OrderItemState.Open or OrderItemState.HandedOut or OrderItemState.Cancelled } => OrderItemChangeVerdict.ItemIsCancelled,
+             { From: OrderItemState.CancellationAcknowledged, To: OrderItemState.CancellationAcknowledged } => OrderItemChangeVerdict.AlreadyInThatState,
+             _ => throw new ArgumentOutOfRangeException(nameof(targetState), targetState, $"Order item {item.Id} is in a state or asked for a state the lifecycle does not know.")
+           };
   }
 
   public void AppendStatus(OrderItem item, OrderItemState targetState, OrderItemStatusAuthor author, DateTime changedAtUtc)
   {
-    ArgumentNullException.ThrowIfNull(item);
-    ArgumentNullException.ThrowIfNull(author);
-
     var currentState = CurrentStateOf(item);
+    var verdict = JudgeChange(item, targetState);
 
-    if (!IsAllowed(item, currentState, targetState))
-      throw new InvalidOperationException($"Order item {item.Id} may not change from {currentState?.ToString() ?? "no status"} to {targetState}.");
+    if (verdict != OrderItemChangeVerdict.Allowed)
+      throw new InvalidOperationException($"Order item {item.Id} may not change from {currentState?.ToString() ?? "no status"} to {targetState}: {verdict}.");
 
     EnsureAuthorFits(currentState, targetState, author);
 
@@ -63,8 +61,6 @@ public sealed class OrderItemLifecycle
 
   public void PointAtFirstStatus(OrderItem item)
   {
-    ArgumentNullException.ThrowIfNull(item);
-
     if (item.CurrentStatusId is not null || item.CurrentStatus is not null || item.Statuses.Count != 1)
       throw new InvalidOperationException($"Order item {item.Id} has no single first status waiting to become its current one.");
 
@@ -88,24 +84,15 @@ public sealed class OrderItemLifecycle
     return null;
   }
 
-  private bool IsAllowed(OrderItem item, OrderItemState? currentState, OrderItemState targetState)
-  {
-    return currentState switch
-           {
-             null => targetState == OrderItemState.Open,
-             OrderItemState.Open => targetState is OrderItemState.HandedOut or OrderItemState.Cancelled,
-             OrderItemState.HandedOut => targetState is OrderItemState.Open or OrderItemState.Cancelled,
-             OrderItemState.Cancelled => targetState == OrderItemState.CancellationAcknowledged && AwaitsAcknowledgementWithItsPreviousStatusLoaded(item),
-             _ => false
-           };
-  }
-
-  private bool AwaitsAcknowledgementWithItsPreviousStatusLoaded(OrderItem item)
+  private OrderItemChangeVerdict JudgeAcknowledgementOf(OrderItem item)
   {
     if (item.CurrentStatus!.PreviousStatus is null)
       throw new InvalidOperationException($"Order item {item.Id} was read without the status before its current one, so the query that loaded it must include OrderItemStatus.PreviousStatus.");
 
-    return item.AwaitsCancellationAcknowledgement();
+    if (item.AwaitsCancellationAcknowledgement())
+      return OrderItemChangeVerdict.Allowed;
+
+    return OrderItemChangeVerdict.ItemDoesNotAwaitCancellationAcknowledgement;
   }
 
   private void EnsureAuthorFits(OrderItemState? currentState, OrderItemState targetState, OrderItemStatusAuthor author)
@@ -120,4 +107,6 @@ public sealed class OrderItemLifecycle
     if (!setByWaiter && !namesStationOnly)
       throw new ArgumentException("A station hands an order item out, puts it back and acknowledges its cancellation, so the station alone sets that status.", nameof(author));
   }
+
+  private readonly record struct StateChange(OrderItemState? From, OrderItemState To);
 }

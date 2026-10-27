@@ -54,7 +54,7 @@ its question to `IGastronomyDatabase` directly with LINQ, and the database engin
 ## One service per area
 
 Each area has one service in `Core/Services`, named `<Area>Service` (`IngredientService`,
-`UnitService`, `OrderService`). It holds every action of that area, its reads and its writes. A rule
+`UnitService`, `OpenItemsService`). It holds every action of that area, its reads and its writes. A rule
 that several actions of the area share is a private method of that one class, so nothing is copied
 between actions. Two services for one area are merged into one when the area is converted. A service
 is split only when it grows too large, and then by sub-topic (placing an order and settling it, for

@@ -103,21 +103,89 @@ public sealed class OrderItemLifecycleTest
   }
 
   [Test]
-  public void CanAppendStatus_EachStateAndTarget_AllowsOnlyTheChangesOfTheLifecycle()
+  public void JudgeChange_ANewItem_AllowsOnlyPlacingItOpen()
   {
-    var newItem = NewItem();
-    var openItem = OpenItem();
-    var handedOutItem = OpenItem();
-    _lifecycle.AppendStatus(handedOutItem, OrderItemState.HandedOut, _kitchen, _handedOutAtUtc);
+    var item = NewItem();
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(_lifecycle.CanAppendStatus(newItem, OrderItemState.Open), Is.True);
-                      Assert.That(_lifecycle.CanAppendStatus(newItem, OrderItemState.HandedOut), Is.False);
-                      Assert.That(_lifecycle.CanAppendStatus(openItem, OrderItemState.HandedOut), Is.True);
-                      Assert.That(_lifecycle.CanAppendStatus(openItem, OrderItemState.Open), Is.False);
-                      Assert.That(_lifecycle.CanAppendStatus(handedOutItem, OrderItemState.Open), Is.True);
-                      Assert.That(_lifecycle.CanAppendStatus(handedOutItem, OrderItemState.HandedOut), Is.False);
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.Open), Is.EqualTo(OrderItemChangeVerdict.Allowed));
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.HandedOut), Is.EqualTo(OrderItemChangeVerdict.ItemIsNotPlacedYet));
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.Cancelled), Is.EqualTo(OrderItemChangeVerdict.ItemIsNotPlacedYet));
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.CancellationAcknowledged), Is.EqualTo(OrderItemChangeVerdict.ItemIsNotPlacedYet));
+                    });
+  }
+
+  [Test]
+  public void JudgeChange_AnOpenItem_AllowsHandingOutAndCancellingAndNamesWhyTheRestIsRefused()
+  {
+    var item = OpenItem();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.Open), Is.EqualTo(OrderItemChangeVerdict.ItemIsNotHandedOut));
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.HandedOut), Is.EqualTo(OrderItemChangeVerdict.Allowed));
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.Cancelled), Is.EqualTo(OrderItemChangeVerdict.Allowed));
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.CancellationAcknowledged), Is.EqualTo(OrderItemChangeVerdict.ItemDoesNotAwaitCancellationAcknowledgement));
+                    });
+  }
+
+  [Test]
+  public void JudgeChange_AHandedOutItem_AllowsPuttingBackAndCancellingAndCallsAnotherHandOutAlreadyDone()
+  {
+    var item = HandedOutItem();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.Open), Is.EqualTo(OrderItemChangeVerdict.Allowed));
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.HandedOut), Is.EqualTo(OrderItemChangeVerdict.AlreadyInThatState));
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.Cancelled), Is.EqualTo(OrderItemChangeVerdict.Allowed));
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.CancellationAcknowledged), Is.EqualTo(OrderItemChangeVerdict.ItemDoesNotAwaitCancellationAcknowledgement));
+                    });
+  }
+
+  [Test]
+  public void JudgeChange_ItemsCancelledWhileOpen_AllowOnlyTheAcknowledgement()
+  {
+    var cancelledWhileOpen = CancelledItem(OpenItem());
+    var putBackAndCancelled = HandedOutItem();
+    _lifecycle.AppendStatus(putBackAndCancelled, OrderItemState.Open, _kitchen, _putBackAtUtc);
+    _lifecycle.AppendStatus(putBackAndCancelled, OrderItemState.Cancelled, _waiter, _cancelledAtUtc);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(_lifecycle.JudgeChange(cancelledWhileOpen, OrderItemState.Open), Is.EqualTo(OrderItemChangeVerdict.ItemIsCancelled));
+                      Assert.That(_lifecycle.JudgeChange(cancelledWhileOpen, OrderItemState.HandedOut), Is.EqualTo(OrderItemChangeVerdict.ItemIsCancelled));
+                      Assert.That(_lifecycle.JudgeChange(cancelledWhileOpen, OrderItemState.Cancelled), Is.EqualTo(OrderItemChangeVerdict.AlreadyInThatState));
+                      Assert.That(_lifecycle.JudgeChange(cancelledWhileOpen, OrderItemState.CancellationAcknowledged), Is.EqualTo(OrderItemChangeVerdict.Allowed));
+                      Assert.That(_lifecycle.JudgeChange(putBackAndCancelled, OrderItemState.CancellationAcknowledged), Is.EqualTo(OrderItemChangeVerdict.Allowed));
+                    });
+  }
+
+  [Test]
+  public void JudgeChange_AnItemCancelledAfterItWasHandedOut_RefusesTheAcknowledgementBecauseNothingWaitsForIt()
+  {
+    var item = CancelledItem(HandedOutItem());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.CancellationAcknowledged), Is.EqualTo(OrderItemChangeVerdict.ItemDoesNotAwaitCancellationAcknowledgement));
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.HandedOut), Is.EqualTo(OrderItemChangeVerdict.ItemIsCancelled));
+                    });
+  }
+
+  [Test]
+  public void JudgeChange_AnAcknowledgedCancellation_RefusesEveryChangeAsCancelledAndCallsAnotherAcknowledgementAlreadyDone()
+  {
+    var item = CancelledItem(OpenItem());
+    _lifecycle.AppendStatus(item, OrderItemState.CancellationAcknowledged, _kitchen, _acknowledgedAtUtc);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.Open), Is.EqualTo(OrderItemChangeVerdict.ItemIsCancelled));
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.HandedOut), Is.EqualTo(OrderItemChangeVerdict.ItemIsCancelled));
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.Cancelled), Is.EqualTo(OrderItemChangeVerdict.ItemIsCancelled));
+                      Assert.That(_lifecycle.JudgeChange(item, OrderItemState.CancellationAcknowledged), Is.EqualTo(OrderItemChangeVerdict.AlreadyInThatState));
                     });
   }
 
@@ -173,35 +241,6 @@ public sealed class OrderItemLifecycleTest
   }
 
   [Test]
-  public void CanAppendStatus_CancelledAndAcknowledgedItems_AllowOnlyTheAcknowledgementOfACancellationWhileOpen()
-  {
-    var cancelledWhileOpen = CancelledItem(OpenItem());
-    var cancelledAfterHandOut = CancelledItem(HandedOutItem());
-    var acknowledged = CancelledItem(OpenItem());
-    _lifecycle.AppendStatus(acknowledged, OrderItemState.CancellationAcknowledged, _kitchen, _acknowledgedAtUtc);
-    var putBackAndCancelled = HandedOutItem();
-    _lifecycle.AppendStatus(putBackAndCancelled, OrderItemState.Open, _kitchen, _putBackAtUtc);
-    _lifecycle.AppendStatus(putBackAndCancelled, OrderItemState.Cancelled, _waiter, _cancelledAtUtc);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(_lifecycle.CanAppendStatus(OpenItem(), OrderItemState.Cancelled), Is.True);
-                      Assert.That(_lifecycle.CanAppendStatus(HandedOutItem(), OrderItemState.Cancelled), Is.True);
-                      Assert.That(_lifecycle.CanAppendStatus(OpenItem(), OrderItemState.CancellationAcknowledged), Is.False);
-                      Assert.That(_lifecycle.CanAppendStatus(cancelledWhileOpen, OrderItemState.CancellationAcknowledged), Is.True);
-                      Assert.That(_lifecycle.CanAppendStatus(putBackAndCancelled, OrderItemState.CancellationAcknowledged), Is.True);
-                      Assert.That(_lifecycle.CanAppendStatus(cancelledAfterHandOut, OrderItemState.CancellationAcknowledged), Is.False);
-                      Assert.That(_lifecycle.CanAppendStatus(cancelledWhileOpen, OrderItemState.Open), Is.False);
-                      Assert.That(_lifecycle.CanAppendStatus(cancelledWhileOpen, OrderItemState.HandedOut), Is.False);
-                      Assert.That(_lifecycle.CanAppendStatus(cancelledWhileOpen, OrderItemState.Cancelled), Is.False);
-                      Assert.That(_lifecycle.CanAppendStatus(acknowledged, OrderItemState.Open), Is.False);
-                      Assert.That(_lifecycle.CanAppendStatus(acknowledged, OrderItemState.HandedOut), Is.False);
-                      Assert.That(_lifecycle.CanAppendStatus(acknowledged, OrderItemState.Cancelled), Is.False);
-                      Assert.That(_lifecycle.CanAppendStatus(acknowledged, OrderItemState.CancellationAcknowledged), Is.False);
-                    });
-  }
-
-  [Test]
   public void AppendStatus_ACancelledItemCancelledAgain_ThrowsAndAddsNothing()
   {
     var item = CancelledItem(OpenItem());
@@ -226,40 +265,12 @@ public sealed class OrderItemLifecycleTest
   }
 
   [Test]
-  public void CheckStatusChange_EachStateAndTarget_NamesWhetherAndWhyTheChangeIsRefused()
-  {
-    var acknowledged = CancelledItem(OpenItem());
-    _lifecycle.AppendStatus(acknowledged, OrderItemState.CancellationAcknowledged, _kitchen, _acknowledgedAtUtc);
-    var cancelledAfterHandOut = CancelledItem(HandedOutItem());
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(_lifecycle.CheckStatusChange(OpenItem(), OrderItemState.HandedOut), Is.EqualTo(OrderItemStatusChange.Allowed));
-                      Assert.That(_lifecycle.CheckStatusChange(HandedOutItem(), OrderItemState.HandedOut), Is.EqualTo(OrderItemStatusChange.AlreadyInThatState));
-                      Assert.That(_lifecycle.CheckStatusChange(OpenItem(), OrderItemState.Open), Is.EqualTo(OrderItemStatusChange.AlreadyInThatState));
-                      Assert.That(_lifecycle.CheckStatusChange(acknowledged, OrderItemState.CancellationAcknowledged), Is.EqualTo(OrderItemStatusChange.AlreadyInThatState));
-                      Assert.That(_lifecycle.CheckStatusChange(CancelledItem(OpenItem()), OrderItemState.HandedOut), Is.EqualTo(OrderItemStatusChange.ItemIsCancelled));
-                      Assert.That(_lifecycle.CheckStatusChange(cancelledAfterHandOut, OrderItemState.Open), Is.EqualTo(OrderItemStatusChange.ItemIsCancelled));
-                      Assert.That(_lifecycle.CheckStatusChange(acknowledged, OrderItemState.HandedOut), Is.EqualTo(OrderItemStatusChange.ItemIsCancelled));
-                      Assert.That(_lifecycle.CheckStatusChange(cancelledAfterHandOut, OrderItemState.CancellationAcknowledged), Is.EqualTo(OrderItemStatusChange.NotAllowed));
-                      Assert.That(_lifecycle.CheckStatusChange(OpenItem(), OrderItemState.CancellationAcknowledged), Is.EqualTo(OrderItemStatusChange.NotAllowed));
-                      Assert.That(_lifecycle.CheckStatusChange(CancelledItem(OpenItem()), OrderItemState.CancellationAcknowledged), Is.EqualTo(OrderItemStatusChange.Allowed));
-                    });
-  }
-
-  [Test]
-  public void CheckStatusChange_NullItem_ThrowsArgumentNullException()
-  {
-    Assert.That(() => _lifecycle.CheckStatusChange(null!, OrderItemState.Open), Throws.ArgumentNullException);
-  }
-
-  [Test]
-  public void CanAppendStatus_ACancellationReadWithoutTheStatusBeforeIt_ThrowsNamingTheMissingStatus()
+  public void JudgeChange_ACancellationReadWithoutTheStatusBeforeIt_ThrowsNamingTheMissingStatus()
   {
     var item = CancelledItem(OpenItem());
     item.CurrentStatus!.PreviousStatus = null;
 
-    Assert.That(() => _lifecycle.CanAppendStatus(item, OrderItemState.CancellationAcknowledged), Throws.InvalidOperationException.With.Message.Contains("OrderItemStatus.PreviousStatus"));
+    Assert.That(() => _lifecycle.JudgeChange(item, OrderItemState.CancellationAcknowledged), Throws.InvalidOperationException.With.Message.Contains("OrderItemStatus.PreviousStatus"));
   }
 
   [Test]
@@ -335,30 +346,6 @@ public sealed class OrderItemLifecycleTest
     OrderItemStatusAuthor both = new(_waiter.StaffMemberId, _kitchen.StationId);
 
     Assert.That(() => _lifecycle.AppendStatus(OpenItem(), OrderItemState.HandedOut, both, _handedOutAtUtc), Throws.ArgumentException);
-  }
-
-  [Test]
-  public void AppendStatus_NullItem_ThrowsArgumentNullException()
-  {
-    Assert.That(() => _lifecycle.AppendStatus(null!, OrderItemState.Open, _waiter, _placedAtUtc), Throws.ArgumentNullException);
-  }
-
-  [Test]
-  public void AppendStatus_NullAuthor_ThrowsArgumentNullException()
-  {
-    Assert.That(() => _lifecycle.AppendStatus(NewItem(), OrderItemState.Open, null!, _placedAtUtc), Throws.ArgumentNullException);
-  }
-
-  [Test]
-  public void CanAppendStatus_NullItem_ThrowsArgumentNullException()
-  {
-    Assert.That(() => _lifecycle.CanAppendStatus(null!, OrderItemState.Open), Throws.ArgumentNullException);
-  }
-
-  [Test]
-  public void PointAtFirstStatus_NullItem_ThrowsArgumentNullException()
-  {
-    Assert.That(() => _lifecycle.PointAtFirstStatus(null!), Throws.ArgumentNullException);
   }
 
   private OrderItem NewItem()

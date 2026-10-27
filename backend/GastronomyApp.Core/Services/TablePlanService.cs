@@ -15,14 +15,12 @@ public sealed class TablePlanService
   private readonly IGastronomyDatabase _database;
   private readonly TypeAdapterConfig _mapping;
   private readonly RunningFestivalLookup _runningFestival;
-  private readonly TableProgress _tableProgress;
 
-  public TablePlanService(IGastronomyDatabase database, TypeAdapterConfig mapping, RunningFestivalLookup runningFestival, TableProgress tableProgress)
+  public TablePlanService(IGastronomyDatabase database, TypeAdapterConfig mapping, RunningFestivalLookup runningFestival)
   {
     _database = database;
     _mapping = mapping;
     _runningFestival = runningFestival;
-    _tableProgress = tableProgress;
   }
 
   public async Task<ErrorOr<AdminTablePlanView>> ListAsync(Guid festivalId, CancellationToken cancellationToken)
@@ -58,28 +56,12 @@ public sealed class TablePlanService
 
     var areas = await _database.Areas.AsNoTracking().Where(area => area.FestivalId == festival.Id && !area.IsHidden).OrderBy(area => area.SortOrder).ThenBy(area => area.Name).ProjectToType<ShownArea>(_mapping).ToListAsync(cancellationToken);
 
-    return new(areas.Select(ViewOf).ToList());
+    return new(areas.Adapt<List<TablePlanAreaView>>(_mapping));
   }
 
   private async Task<IReadOnlyList<TableHoldingItems>> FindTablesHoldingItemsAsync(Guid festivalId, CancellationToken cancellationToken)
   {
     return await _database.OrderItems.AsNoTracking().WhereToHandOutOrToSettle().WhereFestivalIs(festivalId).Select(item => new TableHoldingItems(item.StationOrder.Order.TableId, item.StationOrder.Order.Table.AreaId)).Distinct().ToListAsync(cancellationToken);
-  }
-
-  private TablePlanAreaView ViewOf(ShownArea shown)
-  {
-    var view = shown.Adapt<TablePlanAreaView>(_mapping);
-
-    return view with
-           {
-             Tables = view.Tables.Zip(shown.Tables,
-                                      (tableView, shownTable) => tableView with
-                                                                 {
-                                                                   HandOutProgress = _tableProgress.HandOutProgressOf(shownTable),
-                                                                   SettlementProgress = _tableProgress.SettlementProgressOf(shownTable)
-                                                                 })
-                          .ToList()
-           };
   }
 
   private sealed record TableHoldingItems(Guid TableId, Guid AreaId);

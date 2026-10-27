@@ -9,48 +9,36 @@ public static class OrderItemQueries
 {
   public static IQueryable<OrderItem> WhereOpen(this IQueryable<OrderItem> items)
   {
-    ArgumentNullException.ThrowIfNull(items);
-
     return items.Where(item => item.IsOpen());
   }
 
-  public static IQueryable<OrderItem> WhereNotCancelled(this IQueryable<OrderItem> items)
+  public static IQueryable<OrderItem> WhereStillOrdered(this IQueryable<OrderItem> items)
   {
-    ArgumentNullException.ThrowIfNull(items);
-
-    return items.Where(item => !item.IsCancelled());
+    return items.Where(item => item.IsStillOrdered());
   }
 
   public static IQueryable<OrderItem> WhereToHandOutOrToSettle(this IQueryable<OrderItem> items)
   {
-    ArgumentNullException.ThrowIfNull(items);
-
     return items.Where(item => item.IsToHandOutOrToSettle());
   }
 
   public static IQueryable<OrderItem> WhereFestivalIs(this IQueryable<OrderItem> items, Guid festivalId)
   {
-    ArgumentNullException.ThrowIfNull(items);
-
     return items.Where(item => item.StationOrder.FestivalId == festivalId);
   }
 
   public static IQueryable<ConsumedIngredient> ConsumedIngredients(this IQueryable<OrderItem> items, IQueryable<CatalogItemIngredient> recipeLines)
   {
-    ArgumentNullException.ThrowIfNull(items);
-    ArgumentNullException.ThrowIfNull(recipeLines);
-
-    IQueryable<OrderItem> itemsNotCancelled = items.WhereNotCancelled();
-
-    return itemsNotCancelled.Join(recipeLines,
-                                  item => item.CatalogItemId,
-                                  recipeLine => recipeLine.CatalogItemId,
-                                  (item, recipeLine) => new ConsumedIngredient
-                                                        {
-                                                          IngredientId = recipeLine.IngredientId,
-                                                          OrderedAtUtc = item.StationOrder.Order.CreatedAtUtc,
-                                                          Amount = recipeLine.Amount
-                                                        });
+    return items.WhereStillOrdered()
+   .Join(recipeLines,
+         item => item.CatalogItemId,
+         recipeLine => recipeLine.CatalogItemId,
+         (item, recipeLine) => new ConsumedIngredient
+                               {
+                                 IngredientId = recipeLine.IngredientId,
+                                 OrderedAtUtc = item.StationOrder.Order.CreatedAtUtc,
+                                 Amount = recipeLine.Amount
+                               });
   }
 
   [Projectable]
@@ -63,6 +51,9 @@ public static class OrderItemQueries
   public static bool IsCancelled(this OrderItem item) => item.CurrentStatus!.Status.IsCancelled();
 
   [Projectable]
+  public static bool IsStillOrdered(this OrderItem item) => !item.IsCancelled();
+
+  [Projectable]
   public static bool AwaitsCancellationAcknowledgement(this OrderItem item) => item.CurrentStatus!.Status == OrderItemState.Cancelled && item.CurrentStatus!.PreviousStatus!.Status.IsOpen();
 
   [Projectable]
@@ -72,7 +63,13 @@ public static class OrderItemQueries
   public static bool IsOnTheQueueCard(this OrderItem item) => item.IsOpenOrAwaitsCancellationAcknowledgement() || item.IsHandedOut();
 
   [Projectable]
-  public static bool IsToHandOutOrToSettle(this OrderItem item) => item.IsOpen() || (item.IsHandedOut() && item.SettledAtUtc == null);
+  public static bool IsSettled(this OrderItem item) => item.SettledAtUtc != null;
+
+  [Projectable]
+  public static bool IsToHandOutOrToSettle(this OrderItem item) => item.IsOpen() || (item.IsHandedOut() && !item.IsSettled());
+
+  [Projectable]
+  public static bool IsToSettle(this OrderItem item) => item.IsStillOrdered() && !item.IsSettled();
 
   [Projectable]
   public static OrderItemState State(this OrderItem item) => item.CurrentStatus!.Status;

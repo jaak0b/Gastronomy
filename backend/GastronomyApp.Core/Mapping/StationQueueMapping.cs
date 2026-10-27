@@ -19,7 +19,7 @@ public sealed class StationQueueMapping : IRegister
           .Map(view => view.TableName, stationOrder => stationOrder.Order.Table.Name)
           .Map(view => view.StaffMemberName, stationOrder => stationOrder.Order.StaffMember.Name)
           .Map(view => view.CreatedAtUtc, stationOrder => stationOrder.Order.CreatedAtUtc)
-          .Map(view => view.ItemCount, stationOrder => stationOrder.Items.Count(item => !item.IsCancelled()))
+          .Map(view => view.ItemCount, stationOrder => stationOrder.Items.Count(item => item.IsStillOrdered()))
           .Map(view => view.FulfilledItemCount, stationOrder => stationOrder.Items.Count(item => item.IsHandedOut()))
           .Map(view => view.Items, stationOrder => stationOrder.Items.OrderBy(item => item.ItemName, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Note, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Id).ToList());
 

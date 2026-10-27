@@ -1,4 +1,5 @@
-﻿using ErrorOr;
+﻿using System.Diagnostics;
+using ErrorOr;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Stations;
 using GastronomyApp.Core.Entities;
@@ -52,17 +53,17 @@ public sealed class StationQueueService
 
   public async Task<ErrorOr<StationQueueView>> FulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
   {
-    return await AppendStatusToSelectedItemsAsync(orderItemIds, stationId, OrderItemState.HandedOut, KeepTheFirstHandOut, cancellationToken);
+    return await ChangeStateOfSelectedItemsAsync(orderItemIds, stationId, OrderItemState.HandedOut, cancellationToken);
   }
 
   public async Task<ErrorOr<StationQueueView>> UnfulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
   {
-    return await AppendStatusToSelectedItemsAsync(orderItemIds, stationId, OrderItemState.Open, RefuseThePutBack, cancellationToken);
+    return await ChangeStateOfSelectedItemsAsync(orderItemIds, stationId, OrderItemState.Open, cancellationToken);
   }
 
   public async Task<ErrorOr<StationQueueView>> AcknowledgeCancellationAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
   {
-    return await AppendStatusToSelectedItemsAsync(orderItemIds, stationId, OrderItemState.CancellationAcknowledged, KeepTheFirstAcknowledgement, cancellationToken);
+    return await ChangeStateOfSelectedItemsAsync(orderItemIds, stationId, OrderItemState.CancellationAcknowledged, cancellationToken);
   }
 
   public async Task<ErrorOr<StationQueueView>> HideFromAsItComesQueueAsync(Guid stationOrderId, Guid stationId, CancellationToken cancellationToken)
@@ -105,7 +106,7 @@ public sealed class StationQueueService
     return new StationAtFestival(station, festival.Id);
   }
 
-  private async Task<ErrorOr<StationQueueView>> AppendStatusToSelectedItemsAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, OrderItemState targetState, Func<OrderItem, OrderItemStatusChange, ErrorOr<Success>> acceptTheRepeat, CancellationToken cancellationToken)
+  private async Task<ErrorOr<StationQueueView>> ChangeStateOfSelectedItemsAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, OrderItemState targetState, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
 
@@ -117,38 +118,39 @@ public sealed class StationQueueService
     List<Guid> selectedIds = orderItemIds.Distinct().ToList();
     Dictionary<Guid, OrderItem> itemsAtThisStation = await FindItemsAtStationAsync(selectedIds, stationId, cancellationToken);
     List<OrderItem> toChange = [];
-    List<Error> refusedIds = [];
+    List<Error> refusals = [];
 
     foreach (var orderItemId in selectedIds)
     {
       if (!itemsAtThisStation.TryGetValue(orderItemId, out var item))
       {
-        refusedIds.Add(Refusal.StationQueue.UnknownOrderItemId(orderItemId));
+        refusals.Add(Refusal.StationQueue.UnknownOrderItemId(orderItemId));
         continue;
       }
 
-      var change = _itemLifecycle.CheckStatusChange(item, targetState);
-
-      if (change == OrderItemStatusChange.Allowed)
+      switch (_itemLifecycle.JudgeChange(item, targetState))
       {
-        toChange.Add(item);
-        continue;
+        case OrderItemChangeVerdict.Allowed:
+          toChange.Add(item);
+          break;
+        case OrderItemChangeVerdict.AlreadyInThatState:
+          break;
+        case OrderItemChangeVerdict.ItemIsCancelled:
+          refusals.Add(Refusal.StationQueue.ItemWasCancelled(item.Id, item.ItemName));
+          break;
+        case OrderItemChangeVerdict.ItemIsNotHandedOut:
+          refusals.Add(Refusal.StationQueue.ItemNotFulfilled(item.Id));
+          break;
+        case OrderItemChangeVerdict.ItemDoesNotAwaitCancellationAcknowledgement:
+          refusals.Add(Refusal.StationQueue.ItemNotAwaitingCancellationAcknowledgement(item.Id));
+          break;
+        default:
+          throw new UnreachableException($"Order item {item.Id} was read from the database, so it has a status and the lifecycle knows it.");
       }
-
-      if (change == OrderItemStatusChange.ItemIsCancelled)
-      {
-        refusedIds.Add(Refusal.StationQueue.ItemWasCancelled(item.Id, item.ItemName));
-        continue;
-      }
-
-      ErrorOr<Success> accepted = acceptTheRepeat(item, change);
-
-      if (accepted.IsError)
-        refusedIds.AddRange(accepted.Errors);
     }
 
-    if (refusedIds.Count > 0)
-      return refusedIds;
+    if (refusals.Count > 0)
+      return refusals;
 
     var changedAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
     OrderItemStatusAuthor station = new(null, stationId);
@@ -159,27 +161,6 @@ public sealed class StationQueueService
     await _database.SaveChangesAsync(cancellationToken);
 
     return await ReadQueueAtAsync(access.Value, cancellationToken);
-  }
-
-  private ErrorOr<Success> KeepTheFirstHandOut(OrderItem item, OrderItemStatusChange change)
-  {
-    if (change == OrderItemStatusChange.AlreadyInThatState)
-      return Result.Success;
-
-    throw new InvalidOperationException($"Order item {item.Id} could not be handed out ({change}), although every item that is neither handed out nor cancelled may be.");
-  }
-
-  private ErrorOr<Success> RefuseThePutBack(OrderItem item, OrderItemStatusChange change)
-  {
-    return Refusal.StationQueue.ItemNotFulfilled(item.Id);
-  }
-
-  private ErrorOr<Success> KeepTheFirstAcknowledgement(OrderItem item, OrderItemStatusChange change)
-  {
-    if (change == OrderItemStatusChange.AlreadyInThatState)
-      return Result.Success;
-
-    return Refusal.StationQueue.ItemNotAwaitingCancellationAcknowledgement(item.Id);
   }
 
   private async Task<StationQueueView> ReadQueueAtAsync(StationAtFestival access, CancellationToken cancellationToken)

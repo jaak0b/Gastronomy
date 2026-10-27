@@ -51,7 +51,7 @@ public sealed class OrderItemQueriesTest
   }
 
   [Test]
-  public async Task WhereNotCancelled_AnOpenAHandedOutACancelledAndAnAcknowledgedItem_KeepsTheOpenAndTheHandedOutOne()
+  public async Task WhereStillOrdered_AnOpenAHandedOutACancelledAndAnAcknowledgedItem_KeepsTheOpenAndTheHandedOutOne()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
@@ -64,7 +64,7 @@ public sealed class OrderItemQueriesTest
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     await using var readContext = fixture.CreateContext();
 
-    IReadOnlyList<string> names = await readContext.OrderItems.WhereNotCancelled().Select(item => item.ItemName).ToListAsync(TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<string> names = await readContext.OrderItems.WhereStillOrdered().Select(item => item.ItemName).ToListAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.That(names,
                 Is.EquivalentTo(new[]
@@ -100,6 +100,66 @@ public sealed class OrderItemQueriesTest
   }
 
   [Test]
+  public async Task IsSettled_InAWhereAndInMemory_KeepsEverySettledItemWhateverItsState()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var stationOrderId = await PlaceOrderAsync(fixture, seeded, seeded.FestivalId);
+    await AddItemAsync(fixture, seeded, stationOrderId, "Open", null, null);
+    await AddItemAsync(fixture, seeded, stationOrderId, "OpenSettled", null, _now);
+    await AddItemAsync(fixture, seeded, stationOrderId, "HandedOutSettled", _now, _now);
+    await AddCancelledItemAsync(fixture, seeded, stationOrderId, "CancelledSettled", _now, _now);
+    await using var readContext = fixture.CreateContext();
+    var cancellationToken = TestContext.CurrentContext.CancellationToken;
+    string[] settled =
+    [
+      "OpenSettled",
+      "HandedOutSettled",
+      "CancelledSettled"
+    ];
+
+    IReadOnlyList<string> translated = await readContext.OrderItems.Where(item => item.IsSettled()).Select(item => item.ItemName).ToListAsync(cancellationToken);
+    List<OrderItem> loaded = await readContext.OrderItems.AsNoTracking().ToListAsync(cancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(translated, Is.EquivalentTo(settled));
+                      Assert.That(loaded.Where(item => item.IsSettled()).Select(item => item.ItemName), Is.EquivalentTo(settled));
+                    });
+  }
+
+  [Test]
+  public async Task IsStillOrdered_InAWhereAndInMemory_KeepsEveryItemThatWasNotCancelledWhetherHandedOutOrSettled()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var stationOrderId = await PlaceOrderAsync(fixture, seeded, seeded.FestivalId);
+    await AddItemAsync(fixture, seeded, stationOrderId, "Open", null, null);
+    await AddItemAsync(fixture, seeded, stationOrderId, "HandedOutSettled", _now, _now);
+    await AddCancelledItemAsync(fixture, seeded, stationOrderId, "CancelledWhileOpen", null, null);
+    await AddCancelledItemAsync(fixture, seeded, stationOrderId, "CancelledSettled", _now, _now);
+    var acknowledged = await AddCancelledItemAsync(fixture, seeded, stationOrderId, "Acknowledged", null, null);
+    new OrderItemStatusSeeder().AcknowledgeCancellation(acknowledged, seeded.KitchenStationId, _now.AddMinutes(3));
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    await using var readContext = fixture.CreateContext();
+    var cancellationToken = TestContext.CurrentContext.CancellationToken;
+    string[] stillOrdered =
+    [
+      "Open",
+      "HandedOutSettled"
+    ];
+
+    IReadOnlyList<string> translated = await readContext.OrderItems.Where(item => item.IsStillOrdered()).Select(item => item.ItemName).ToListAsync(cancellationToken);
+    List<OrderItem> loaded = await readContext.OrderItems.AsNoTracking().Include(item => item.CurrentStatus).ToListAsync(cancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(translated, Is.EquivalentTo(stillOrdered));
+                      Assert.That(loaded.Where(item => item.IsStillOrdered()).Select(item => item.ItemName), Is.EquivalentTo(stillOrdered));
+                    });
+  }
+
+  [Test]
   public async Task WhereFestivalIs_ItemsOfTwoFestivals_KeepsThoseOfTheFestivalAskedFor()
   {
     using SqliteInMemoryFixture fixture = new();
@@ -112,18 +172,6 @@ public sealed class OrderItemQueriesTest
     IReadOnlyList<string> names = await readContext.OrderItems.WhereFestivalIs(seeded.FestivalId).Select(item => item.ItemName).ToListAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.That(names, Is.EqualTo(new[] { "Bratwurst" }));
-  }
-
-  [Test]
-  public void EveryFilter_NoItems_ThrowsArgumentNullException()
-  {
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(() => OrderItemQueries.WhereOpen(null!), Throws.ArgumentNullException);
-                      Assert.That(() => OrderItemQueries.WhereNotCancelled(null!), Throws.ArgumentNullException);
-                      Assert.That(() => OrderItemQueries.WhereToHandOutOrToSettle(null!), Throws.ArgumentNullException);
-                      Assert.That(() => OrderItemQueries.WhereFestivalIs(null!, Guid.NewGuid()), Throws.ArgumentNullException);
-                    });
   }
 
   private async Task<Guid> SeedAutumnFestivalAsync(SqliteInMemoryFixture fixture)
@@ -423,13 +471,13 @@ public sealed class OrderItemQueriesTest
     List<OrderItem> loaded = await readContext.OrderItems.AsNoTracking().Include(item => item.CurrentStatus!.PreviousStatus).ToListAsync(cancellationToken);
 
     IReadOnlyList<string> open = await readContext.OrderItems.WhereOpen().Select(item => item.ItemName).ToListAsync(cancellationToken);
-    IReadOnlyList<string> notCancelled = await readContext.OrderItems.WhereNotCancelled().Select(item => item.ItemName).ToListAsync(cancellationToken);
+    IReadOnlyList<string> stillOrdered = await readContext.OrderItems.WhereStillOrdered().Select(item => item.ItemName).ToListAsync(cancellationToken);
     IReadOnlyList<string> toHandOutOrToSettle = await readContext.OrderItems.WhereToHandOutOrToSettle().Select(item => item.ItemName).ToListAsync(cancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(open, Is.EquivalentTo(loaded.Where(item => item.IsOpen()).Select(item => item.ItemName)));
-                      Assert.That(notCancelled, Is.EquivalentTo(loaded.Where(item => !item.IsCancelled()).Select(item => item.ItemName)));
+                      Assert.That(stillOrdered, Is.EquivalentTo(loaded.Where(item => !item.IsCancelled()).Select(item => item.ItemName)));
                       Assert.That(toHandOutOrToSettle,
                                   Is.EquivalentTo(new[]
                                                   {

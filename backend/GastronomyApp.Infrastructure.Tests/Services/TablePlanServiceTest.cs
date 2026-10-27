@@ -386,6 +386,59 @@ public sealed class TablePlanServiceTest
   }
 
   [Test]
+  public async Task ReadRunningFestivalAsync_AnUntouchedOrderBesideAHandedOutAndSettledOne_IsNoneOnBothSides()
+  {
+    var gardenId = await _plan.AddAreaAsync(_fixture.DbContext, _seeded.FestivalId, "Garten", 1, false);
+    var tableId = await _plan.AddTableAsync(_fixture.DbContext, _seeded.FestivalId, gardenId, "Tisch 1", false);
+    await _plan.AddOrderAsync(_fixture.DbContext, _seeded, tableId, 1, _now, _now);
+    await _plan.AddOrderAsync(_fixture.DbContext, _seeded, tableId, 2, null, null);
+    _fixture.DbContext.ChangeTracker.Clear();
+
+    var plan = await _service.ReadRunningFestivalAsync(TestContext.CurrentContext.CancellationToken);
+    var table = plan.Areas.Single().Tables.Single();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(table.HandOutProgress, Is.EqualTo(ShareState.None));
+                      Assert.That(table.SettlementProgress, Is.EqualTo(ShareState.None));
+                    });
+  }
+
+  [Test]
+  public async Task ReadRunningFestivalAsync_EverythingSettledButNothingHandedOut_IsNoneForHandingOutAndAllForSettling()
+  {
+    var gardenId = await _plan.AddAreaAsync(_fixture.DbContext, _seeded.FestivalId, "Garten", 1, false);
+    var tableId = await _plan.AddTableAsync(_fixture.DbContext, _seeded.FestivalId, gardenId, "Tisch 1", false);
+    await _plan.AddOrderAsync(_fixture.DbContext, _seeded, tableId, 1, null, _now);
+    _fixture.DbContext.ChangeTracker.Clear();
+
+    var plan = await _service.ReadRunningFestivalAsync(TestContext.CurrentContext.CancellationToken);
+    var table = plan.Areas.Single().Tables.Single();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(table.HandOutProgress, Is.EqualTo(ShareState.None));
+                      Assert.That(table.SettlementProgress, Is.EqualTo(ShareState.All));
+                    });
+  }
+
+  [Test]
+  public async Task ReadRunningFestivalAsync_AnOrderWithOneOfItsTwoItemsSettled_IsSomeForSettling()
+  {
+    var gardenId = await _plan.AddAreaAsync(_fixture.DbContext, _seeded.FestivalId, "Garten", 1, false);
+    var tableId = await _plan.AddTableAsync(_fixture.DbContext, _seeded.FestivalId, gardenId, "Tisch 1", false);
+    await _plan.AddOrderAtKitchenAndBarAsync(_fixture.DbContext, _seeded, tableId, 1, null);
+    var sausage = await _fixture.DbContext.OrderItems.SingleAsync(item => item.ItemName == "Bratwurst", TestContext.CurrentContext.CancellationToken);
+    sausage.SettledAtUtc = _now;
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    _fixture.DbContext.ChangeTracker.Clear();
+
+    var plan = await _service.ReadRunningFestivalAsync(TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(plan.Areas.Single().Tables.Single().SettlementProgress, Is.EqualTo(ShareState.Some));
+  }
+
+  [Test]
   public async Task ReadRunningFestivalAsync_APlanWithOrdersAtTwoStationsAndStationShapes_ReadsThePlanInOneStatement()
   {
     var gardenId = await _plan.AddAreaAsync(_fixture.DbContext, _seeded.FestivalId, "Garten", 1, false);
@@ -407,7 +460,7 @@ public sealed class TablePlanServiceTest
   {
     RunningFestivalLookup runningFestival = new(_fixture.DbContext, new(), _clock);
 
-    return new(database, new CoreMappingFactory().Create(), runningFestival, new(new()));
+    return new(database, new CoreMappingFactory().Create(), runningFestival);
   }
 
   private async Task MoveTheFestivalAsync(DateTime startsAtUtc, DateTime endsAtUtc)

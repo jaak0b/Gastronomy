@@ -23,7 +23,7 @@ public sealed class OrderPlacementServiceTest
     _tableId = await new DomainSeeder().SeedTableAsync(_fixture.DbContext, _seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
     _clock = new(DateTimeOffset.UtcNow);
     RunningFestivalLookup runningFestival = new(_fixture.DbContext, new(), _clock);
-    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), runningFestival, new(_fixture.DbContext), new(), new(), new(_fixture.DbContext, new(), NullLogger<StockSoldOutMarker>.Instance), new(), _clock);
+    _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), runningFestival, new(_fixture.DbContext), new(), new(_fixture.DbContext, new(), NullLogger<StockSoldOutMarker>.Instance), new(), _clock);
   }
 
   [TearDown]

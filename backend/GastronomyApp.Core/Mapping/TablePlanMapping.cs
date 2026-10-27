@@ -1,5 +1,4 @@
 using GastronomyApp.Contracts.Admin.Festivals;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.TablePlan;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Queries;
@@ -26,16 +25,19 @@ public sealed class TablePlanMapping : IRegister
 
     config.NewConfig<FestivalStationShape, TablePlanStationShapeView>().Map(view => view.StationName, shape => shape.FestivalStation.Station.Name).Map(view => view.Geometry, shape => shape);
 
-    config.NewConfig<OrderItem, OrderItemProgress>().Map(progress => progress.State, item => item.State()).Map(progress => progress.IsSettled, item => item.SettledAtUtc != null);
-
-    config.NewConfig<Table, ShownTable>().Map(shown => shown.TableId, table => table.Id).Map(shown => shown.Geometry, table => table).Map(shown => shown.ItemProgressPerOrder, table => table.Orders.Select(order => order.StationOrders.SelectMany(stationOrder => stationOrder.Items)));
+    config.NewConfig<Table, ShownTable>()
+          .ShallowCopyForSameType(true)
+          .Map(shown => shown.TableId, table => table.Id)
+          .Map(shown => shown.Geometry, table => table)
+          .Map(shown => shown.OrdersToHandOut, table => new UnfinishedOrders(table.Orders.Count(order => order.HasItemsToHandOut()), table.Orders.Count(order => order.IsPartlyHandedOut())))
+          .Map(shown => shown.OrdersToSettle, table => new UnfinishedOrders(table.Orders.Count(order => order.HasItemsToSettle()), table.Orders.Count(order => order.IsPartlySettled())));
 
     config.NewConfig<Area, ShownArea>()
           .Map(shown => shown.AreaId, area => area.Id)
           .Map(shown => shown.Tables, area => area.Tables.Where(table => !table.IsHidden).OrderBy(table => table.Name))
           .Map(shown => shown.StationShapes, area => area.StationShapes.OrderBy(shape => shape.FestivalStation.Station.SortOrder).ThenBy(shape => shape.FestivalStation.Station.Name));
 
-    config.NewConfig<ShownTable, TablePlanTableView>().Map(view => view.HandOutProgress, shown => ShareState.None).Map(view => view.SettlementProgress, shown => ShareState.None);
+    config.NewConfig<ShownTable, TablePlanTableView>().Map(view => view.HandOutProgress, shown => shown.OrdersToHandOut.Progress).Map(view => view.SettlementProgress, shown => shown.OrdersToSettle.Progress);
 
     config.NewConfig<Area, SavedAreaView>().Map(view => view.AreaId, area => area.Id);
 

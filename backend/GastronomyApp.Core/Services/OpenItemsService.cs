@@ -1,4 +1,5 @@
-﻿using ErrorOr;
+﻿using System.Diagnostics;
+using ErrorOr;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
@@ -92,28 +93,28 @@ public sealed class OpenItemsService
     if (orderItemIds.Count == 0)
       return Refusal.Cancellation.NothingSelected();
 
-    List<Error> duplicates = FindDuplicates(orderItemIds, Refusal.Cancellation.DuplicateOrderItemId);
-    if (duplicates.Count > 0)
-      return duplicates;
+    List<Guid> duplicateIds = DuplicatesIn(orderItemIds);
+    if (duplicateIds.Count > 0)
+      return duplicateIds.Select(Refusal.Cancellation.DuplicateOrderItemId).ToList();
 
     Dictionary<Guid, OrderItem> knownItems = await _database.OrderItems.Include(item => item.StationOrder)
                                                             .ThenInclude(stationOrder => stationOrder.Order)
                                                             .Where(item => orderItemIds.Contains(item.Id) && item.StationOrder.FestivalId == festival.Id)
                                                             .ToDictionaryAsync(item => item.Id, cancellationToken);
 
-    ErrorOr<List<OrderItem>> found = FindKnownItems(orderItemIds, knownItems, Refusal.Cancellation.UnknownOrderItemId);
-    if (found.IsError)
-      return found.Errors;
+    List<Guid> unknownIds = orderItemIds.Where(orderItemId => !knownItems.ContainsKey(orderItemId)).ToList();
+    if (unknownIds.Count > 0)
+      return unknownIds.Select(Refusal.Cancellation.UnknownOrderItemId).ToList();
 
-    var selected = found.Value;
+    List<OrderItem> selected = orderItemIds.Select(orderItemId => knownItems[orderItemId]).ToList();
 
-    List<Error> alreadyCancelled = selected.Where(IsAlreadyCancelled).Select(item => Refusal.Cancellation.AlreadyCancelled(item.Id, item.ItemName)).ToList();
-    if (alreadyCancelled.Count > 0)
-      return alreadyCancelled;
+    List<Error> notCancellable = RefusalsOfCancelling(selected);
+    if (notCancellable.Count > 0)
+      return notCancellable;
 
-    ErrorOr<Success> oneTable = EnsureOneTable(selected, Refusal.Cancellation.SelectionSpansSeveralTables);
-    if (oneTable.IsError)
-      return oneTable.Errors;
+    List<Guid> tableIds = TableIdsOf(selected);
+    if (tableIds.Count > 1)
+      return Refusal.Cancellation.SelectionSpansSeveralTables(tableIds);
 
     var cancelledAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
     OrderItemStatusAuthor waiter = new(cancelledByStaffMemberId, null);
@@ -125,16 +126,40 @@ public sealed class OpenItemsService
 
     _logger.LogInformation("{CancelledItemCount} order items were cancelled and saved. Order item ids: {CancelledOrderItemIds}.", selected.Count, selected.Select(item => item.Id).ToList());
 
-    return new CancellationView(selected.Where(item => item.SettledAtUtc is not null).Sum(item => item.ChargedPriceCents ?? 0));
+    var cashToReturnCents = selected.Where(item => item.IsSettled()).Sum(item => item.ChargedPriceCents ?? 0);
+
+    return new CancellationView(cashToReturnCents);
+  }
+
+  private List<Error> RefusalsOfCancelling(IEnumerable<OrderItem> selected)
+  {
+    List<Error> refusals = [];
+
+    foreach (var item in selected)
+    {
+      switch (_itemLifecycle.JudgeChange(item, OrderItemState.Cancelled))
+      {
+        case OrderItemChangeVerdict.Allowed:
+          break;
+        case OrderItemChangeVerdict.AlreadyInThatState:
+        case OrderItemChangeVerdict.ItemIsCancelled:
+          refusals.Add(Refusal.Cancellation.AlreadyCancelled(item.Id, item.ItemName));
+          break;
+        default:
+          throw new UnreachableException($"The lifecycle refused to cancel order item {item.Id} for a reason that does not apply to cancelling a placed item.");
+      }
+    }
+
+    return refusals;
   }
 
   private ErrorOr<SettlementResult> Settle(IReadOnlyList<SettleLineRequest> lines, PaymentMethod paymentMethod, Guid settledByStaffMemberId, IReadOnlyDictionary<Guid, OrderItem> knownItemsById, DateTime settledAtUtc)
   {
     EnsureSettlerNamed(settledByStaffMemberId);
 
-    List<Error> duplicates = FindDuplicates(lines.Select(line => line.OrderItemId), Refusal.Settlement.DuplicateOrderItemId);
-    if (duplicates.Count > 0)
-      return duplicates;
+    List<Guid> duplicateIds = DuplicatesIn(lines.Select(line => line.OrderItemId));
+    if (duplicateIds.Count > 0)
+      return duplicateIds.Select(Refusal.Settlement.DuplicateOrderItemId).ToList();
 
     var moneyWasPaid = lines.Any(line => line.PaidPriceCents!.Value > 0);
     if (moneyWasPaid && paymentMethod is not (PaymentMethod.Cash or PaymentMethod.Card))
@@ -143,11 +168,11 @@ public sealed class OpenItemsService
     if (!moneyWasPaid && paymentMethod != PaymentMethod.None)
       return Refusal.Settlement.PaymentMethodNamedForNothingPaid(paymentMethod);
 
-    ErrorOr<List<OrderItem>> found = FindKnownItems(lines.Select(line => line.OrderItemId), knownItemsById, Refusal.Settlement.UnknownOrderItemId);
-    if (found.IsError)
-      return found.Errors;
+    List<Guid> unknownIds = lines.Select(line => line.OrderItemId).Where(orderItemId => !knownItemsById.ContainsKey(orderItemId)).ToList();
+    if (unknownIds.Count > 0)
+      return unknownIds.Select(Refusal.Settlement.UnknownOrderItemId).ToList();
 
-    var selected = found.Value;
+    List<OrderItem> selected = lines.Select(line => knownItemsById[line.OrderItemId]).ToList();
 
     List<Error> cancelled = selected.Where(item => item.IsCancelled()).Select(item => Refusal.Settlement.ItemWasCancelled(item.Id, item.ItemName)).ToList();
     if (cancelled.Count > 0)
@@ -157,9 +182,9 @@ public sealed class OpenItemsService
     if (missingNotices.Count > 0)
       return missingNotices;
 
-    ErrorOr<Success> oneTable = EnsureOneTable(selected, Refusal.Settlement.SelectionSpansSeveralTables);
-    if (oneTable.IsError)
-      return oneTable.Errors;
+    List<Guid> tableIds = TableIdsOf(selected);
+    if (tableIds.Count > 1)
+      return Refusal.Settlement.SelectionSpansSeveralTables(tableIds);
 
     return Apply(lines, paymentMethod, selected, settledByStaffMemberId, settledAtUtc);
   }
@@ -176,7 +201,7 @@ public sealed class OpenItemsService
       var item = selected[index];
       var paidPriceCents = line.PaidPriceCents!.Value;
 
-      if (item.SettledAtUtc is null)
+      if (!item.IsSettled())
       {
         item.SettledAtUtc = settledAtUtc;
         item.SettledByStaffMemberId = settledByStaffMemberId;
@@ -223,55 +248,21 @@ public sealed class OpenItemsService
       item.PaymentMethod = paymentMethod;
   }
 
-  private List<Error> FindDuplicates(IEnumerable<Guid> orderItemIds, Func<Guid, Error> duplicateRefusal)
+  private List<Guid> DuplicatesIn(IEnumerable<Guid> orderItemIds)
   {
     HashSet<Guid> seenIds = [];
-    List<Error> duplicates = [];
+    List<Guid> duplicateIds = [];
 
     foreach (var orderItemId in orderItemIds)
       if (!seenIds.Add(orderItemId))
-        duplicates.Add(duplicateRefusal(orderItemId));
+        duplicateIds.Add(orderItemId);
 
-    return duplicates;
+    return duplicateIds;
   }
 
-  private ErrorOr<List<OrderItem>> FindKnownItems(IEnumerable<Guid> orderItemIds, IReadOnlyDictionary<Guid, OrderItem> knownItemsById, Func<Guid, Error> unknownRefusal)
+  private List<Guid> TableIdsOf(IEnumerable<OrderItem> items)
   {
-    List<OrderItem> selected = [];
-    List<Error> strangers = [];
-
-    foreach (var orderItemId in orderItemIds)
-      if (knownItemsById.TryGetValue(orderItemId, out var knownItem))
-        selected.Add(knownItem);
-      else
-        strangers.Add(unknownRefusal(orderItemId));
-
-    if (strangers.Count > 0)
-      return strangers;
-
-    return selected;
-  }
-
-  private bool IsAlreadyCancelled(OrderItem item)
-  {
-    var change = _itemLifecycle.CheckStatusChange(item, OrderItemState.Cancelled);
-
-    if (change is OrderItemStatusChange.AlreadyInThatState or OrderItemStatusChange.ItemIsCancelled)
-      return true;
-
-    if (change == OrderItemStatusChange.NotAllowed)
-      throw new InvalidOperationException($"Order item {item.Id} could not be cancelled although every item that is not cancelled may be.");
-
-    return false;
-  }
-
-  private ErrorOr<Success> EnsureOneTable(IEnumerable<OrderItem> selected, Func<IReadOnlyList<Guid>, Error> severalTablesRefusal)
-  {
-    IReadOnlyList<Guid> tableIds = selected.Select(item => item.StationOrder.Order.TableId).Distinct().ToList();
-    if (tableIds.Count > 1)
-      return severalTablesRefusal(tableIds);
-
-    return Result.Success;
+    return items.Select(item => item.StationOrder.Order.TableId).Distinct().ToList();
   }
 
   private List<Error> FindMissingPaymentNotices(IReadOnlyList<SettleLineRequest> lines, IReadOnlyList<OrderItem> selected)
