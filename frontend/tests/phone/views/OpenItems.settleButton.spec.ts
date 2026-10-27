@@ -33,7 +33,7 @@ describe('the settle button under the selected total', () => {
     expect({
       total: footer.get('[data-test="selected-total"]').text(),
       settle: footer.get('[data-test="settle"]').text(),
-    }).toEqual({ total: 'Ausgewählt: 3,50 €', settle: 'Abrechnen' })
+    }).toEqual({ total: 'Ausgewählt: 3,50 €', settle: 'Kassieren' })
   })
 
   it('shows the settle button in English when the device language is English', async () => {
@@ -43,7 +43,7 @@ describe('the settle button under the selected total', () => {
     useOpenItemsStore().toggleItem('item-1')
     await nextTick()
 
-    expect(screen.get('[data-test="settle"]').text()).toBe('Settle')
+    expect(screen.get('[data-test="settle"]').text()).toBe('Take payment')
   })
 
   it('opens the amount page with the whole selection filled in as the amount', async () => {

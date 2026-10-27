@@ -59,8 +59,8 @@ Frontend, under `frontend/src/phone/`:
   mode per station (`order.chooseDeliveryMode`, with `core/stationOrders.ts` and
   `core/stationDeliveries.ts`), the order total and the two send buttons.
 - After sending, `composables/useSendAndLeave.ts` closes the opened area and lands on the home
-  screen for "Senden und später abrechnen", or opens the table's settle view with the new items
-  ticked for "Senden und abrechnen".
+  screen for "Senden und später kassieren", or opens the table's settle view with the new items
+  ticked for "Senden und kassieren".
 - Texts: `phone.catalog.*`, `phone.tablePlan.*` (the action sheet and the question about unsent
   items), `common.labels.soldOut` and `common.estimates.*` in `shared/i18n/de.json` and `en.json`.
 
@@ -112,7 +112,7 @@ Backend, under `backend/`:
   with `order.itemCount` and priced with `formatPrice` like the basket bar). Its three buttons: "Zu
   Tisch …" (the filled one) goes to that table's order, "Verwerfen" discards the items and takes the
   order for the tapped table without asking again, and "Zurück" closes the question and leaves the
-  draft and the plan as they were. "Abrechnen" and "Position stornieren" ask nothing and leave the
+  draft and the plan as they were. "Position kassieren" and "Position stornieren" ask nothing and leave the
   draft alone. A draft that
   was never sent locks nothing: the waiter may go back to the plan, and the items wait for their
   table.
@@ -134,8 +134,8 @@ Backend, under `backend/`:
   the order is handed out together (the default, `DELIVERY_MODE_BEFORE_THE_SERVER_CHOOSES` in
   `core/stationOrders.ts`) or item by item as each is ready. It is fixed once the order is sent, and
   no screen offers to change it (see the `handing-out-at-a-station` page).
-- **An order is always sent open.** "Senden und später abrechnen" is for a table that runs a tab;
-  "Senden und abrechnen" is for a guest who pays on the spot, and only opens the settle view with the
+- **An order is always sent open.** "Senden und später kassieren" is for a table that runs a tab;
+  "Senden und kassieren" is for a guest who pays on the spot, and only opens the settle view with the
   new items ticked.
 - **Sold out stops adding, not removing.** Tapping the name, the price, the Note button or plus adds
   nothing, and the waiting time gives way to "Ausverkauft"; minus still takes portions off.

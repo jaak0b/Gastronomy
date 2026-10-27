@@ -245,7 +245,7 @@ Frontend, under `frontend/src/`:
   it claims nothing. A plan of an area without tables says so above the drawing. It shows
   `phone/components/tablePlan/AreaList.vue` (one large button per area, in the laptop's order),
   `AreaPlan.vue` (the read-only Konva drawing of one area with its scroll bars), `TableActionSheet.vue`
-  (the table's name, "Bestellung aufnehmen", "Abrechnen", "Position stornieren", "Zurück") and `UnsentOrderDialog.vue` (the
+  (the table's name, "Bestellung aufnehmen", "Position kassieren", "Position stornieren", "Zurück") and `UnsentOrderDialog.vue` (the
   question when another table's unsent items are on the phone; see the `taking-an-order` page). `phone/components/header/AppHeader.vue` carries
   the back control ("Tischpläne" from a plan when there are several areas, "Tischplan" from the
   ordering screen and the settle view) and the area or table name.

@@ -197,7 +197,7 @@ describe('the overview board on the station screen', () => {
     await flushPromises()
 
     expect(textsOf('[data-test="station-open-board"] [data-test="board-failed"]')).toEqual([
-      'Laden Sie die Seite neu. Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein.',
+      'Laden Sie die Seite neu. Der Rechner war nicht erreichbar. Diese Liste kann veraltet sein.',
     ])
   })
 

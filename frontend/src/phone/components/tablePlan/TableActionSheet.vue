@@ -34,7 +34,7 @@ const { t } = useI18n()
           block
           @click="emit('settle')"
         >
-          {{ t('phone.openItems.actions.settle') }}
+          {{ t('phone.openItems.actions.settleItems') }}
         </v-btn>
         <v-btn
           class="cancel-items"

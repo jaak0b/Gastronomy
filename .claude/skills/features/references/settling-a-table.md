@@ -1,8 +1,8 @@
 # Settling a table
 
-A waiter taps a table on the plan and "Abrechnen", and the phone shows that table's orders one by
+A waiter taps a table on the plan and "Position kassieren", and the phone shows that table's orders one by
 one, with how far each is handed out and what is already paid. The waiter ticks what the guest pays
-for, taps Abrechnen under the selected total and, on the amount page, confirms what the table
+for, taps Kassieren under the selected total and, on the amount page, confirms what the table
 actually handed over, in cash or by card.
 
 The same view cancels items: "Position stornieren" on the table's action sheet opens it in cancel
@@ -14,10 +14,10 @@ back for the paid ones, and cancels them on confirming. A cancellation is final.
 
 Frontend, under `frontend/src/phone/`:
 
-- `views/OpenItems.vue` (route `/open-items`) is the settle view of one table, titled "Abrechnen"
-  like the button that opens it: the reload button ("Neu laden"),
+- `views/OpenItems.vue` (route `/open-items`) is the settle view of one table, titled "Kassieren":
+  the reload button ("Neu laden"),
   the sentence when the table could not be loaded, the notice after settling, the table's orders and
-  the bottom bar with the selected total and the one Abrechnen button that opens the amount page. It
+  the bottom bar with the selected total and the one Kassieren button that opens the amount page. It
   goes back to the plan when no table is open, as after a reload, and closes the table when the
   waiter leaves. In cancel mode it is titled "Position stornieren", the footer counts the selection
   (`phone.openItems.labels.selectedCount`) and its "Stornieren" opens `CancelItemsDialog.vue`. The header (`components/header/AppHeader.vue`) shows the table's current name and
@@ -26,7 +26,7 @@ Frontend, under `frontend/src/phone/`:
   by how far it is handed out, with a tick per order and for the whole table), `OpenPositionRow.vue`
   (one item, tinted by whether it is handed out), `SettleNotice.vue`, and
   `AmountPaidDialog.vue`, the amount page: the selected total, the fields, the reason of a refusal,
-  then Bar abrechnen and Mit Karte abrechnen, or Abrechnen alone when nothing is to be paid, "Neu
+  then Bar kassieren and Mit Karte kassieren, or Kassieren alone when nothing is to be paid, "Neu
   laden" while a reason shows (reloads and goes back to the table), and Abbrechen.
   `CancelItemsDialog.vue` is the cancel page: the selected items with price and "Bezahlt", the cash
   to give back when it is above zero (`phone.openItems.messages.cashToReturn`), the reason of a
@@ -107,7 +107,7 @@ Backend, under `backend/`:
 - **The cash shown is what was charged.** The cancel page adds up `chargedPriceCents` of the paid
   items in the selection, always as cash, and says nothing when that is zero.
 
-- **Every settlement names the amount paid.** The Abrechnen button opens the amount page for every
+- **Every settlement names the amount paid.** The Kassieren button opens the amount page for every
   selection, a free one included, and the request carries a paid price for every line
   (`splitSettlement`). Giving something away is that same act with the amount set to zero, never a
   second kind of settlement.
@@ -117,13 +117,13 @@ Backend, under `backend/`:
   sends one price per line and the laptop stores exactly that price; it never spreads an amount
   across items. What a table still owes is derived from these on every read, never stored.
 - **The full amount is filled in.** The amount field starts at the selected total, so the ordinary
-  case is Abrechnen and then Bar or Karte.
+  case is Kassieren and then Bar or Karte.
 - **A short amount needs a typed reason.** Below the selected total the reason field appears and the
   confirm buttons stay disabled until something is written in it (`canTheAmountBeSettled`). The laptop
   refuses a line paid below its price without a reason (`PaymentNoticeMissing`). Paying more than the
   total needs no reason.
 - **Cash or card unless nothing is to be paid.** An amount above zero offers Bar and Karte, and zero
-  offers Abrechnen alone and sends `none`. The laptop refuses money paid without cash or card, and a
+  offers Kassieren alone and sends `none`. The laptop refuses money paid without cash or card, and a
   payment method named when nothing was paid.
 - **A cancelled item is shown and never settled.** The settle view lists it struck through, it
   cannot be ticked, alone or with its order or the whole table, and it counts toward neither the
@@ -168,7 +168,7 @@ Backend, under `backend/`:
   `OpenItems.settling.spec.ts` (a shorter amount with its reason, rounding up, cancelling, a refusal,
   a refusal naming an item cancelled in the meantime with its reload, the reload, the reason gone
   after the reload and after Abbrechen, no answer) and `OpenItems.paymentMethod.spec.ts` (card, and nothing paid for free items);
-  `TablePlan.sheet.spec.ts` for "Abrechnen" and "Position stornieren" on the plan.
+  `TablePlan.sheet.spec.ts` for "Position kassieren" and "Position stornieren" on the plan.
 - `frontend/tests/phone/components/openItems`: `AmountPaidDialog.spec.ts` (including the title and
   the reload beside a refusal), `AmountPaidDialogShrinkingSelection.spec.ts` and
   `OpenPositionRow.spec.ts`; `frontend/tests/phone/components/BaseFullPageDialog.spec.ts`.

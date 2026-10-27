@@ -78,14 +78,14 @@ describe('the overview board at a station', () => {
   it('shows the warning the page passed in, above the counts', () => {
     board(
       [],
-      'Laden Sie die Seite neu. Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein.',
+      'Laden Sie die Seite neu. Der Rechner war nicht erreichbar. Diese Liste kann veraltet sein.',
     )
 
     const warning = document.querySelector('[data-test="station-open-board"] [data-test="board-failed"]')
     const counts = document.querySelector('[data-test="station-open-board"] [data-test="mode-counts"]')
 
     expect(warning?.textContent?.trim()).toBe(
-      'Laden Sie die Seite neu. Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein.',
+      'Laden Sie die Seite neu. Der Rechner war nicht erreichbar. Diese Liste kann veraltet sein.',
     )
     expect(
       (warning as Node).compareDocumentPosition(counts as Node) &

@@ -81,14 +81,14 @@ describe('the dialog that asks what the table handed over', () => {
     mountDialog('de')
     await flushPromises()
 
-    expect(buttonTexts()).toEqual(['Bar abrechnen', 'Mit Karte abrechnen', 'Abbrechen'])
+    expect(buttonTexts()).toEqual(['Bar kassieren', 'Mit Karte kassieren', 'Abbrechen'])
   })
 
   it('offers cash and card in English too', async () => {
     mountDialog('en')
     await flushPromises()
 
-    expect(buttonTexts()).toEqual(['Settle in cash', 'Settle by card', 'Cancel'])
+    expect(buttonTexts()).toEqual(['Take cash payment', 'Take card payment', 'Cancel'])
   })
 
   it('offers one settle button that says nothing was paid once the amount is zero', async () => {
@@ -97,7 +97,7 @@ describe('the dialog that asks what the table handed over', () => {
 
     await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '0')
     await typeIn(`${AMOUNT_DIALOG} [data-test="reason-field"]`, 'Essen für die Kapelle')
-    expect(buttonTexts()).toEqual(['Abrechnen', 'Abbrechen'])
+    expect(buttonTexts()).toEqual(['Kassieren', 'Abbrechen'])
     ;(document.querySelector('[data-test="amount-paid-dialog"] [data-test="confirm-nothing-paid"]') as HTMLElement).click()
     await flushPromises()
 
@@ -111,7 +111,7 @@ describe('the dialog that asks what the table handed over', () => {
     await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '0')
     await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '0,50')
 
-    expect(buttonTexts()).toEqual(['Bar abrechnen', 'Mit Karte abrechnen', 'Abbrechen'])
+    expect(buttonTexts()).toEqual(['Bar kassieren', 'Mit Karte kassieren', 'Abbrechen'])
   })
 
   it('keeps every button shut while a settlement is on its way', async () => {
@@ -239,7 +239,7 @@ describe('the dialog that asks what the table handed over', () => {
     await flushPromises()
 
     expect({ buttons: buttonTexts(), reloads: dialog.emitted('reload') }).toEqual({
-      buttons: ['Bar abrechnen', 'Mit Karte abrechnen', 'Neu laden', 'Abbrechen'],
+      buttons: ['Bar kassieren', 'Mit Karte kassieren', 'Neu laden', 'Abbrechen'],
       reloads: [[]],
     })
   })

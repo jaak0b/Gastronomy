@@ -240,7 +240,7 @@ describe('hiding and showing an area', () => {
 
     await waitUntil(() =>
       expect(refusalOnTheRowOf('area-zelt')).toBe(
-        'Ein Tischplan kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und abgerechnet ist.',
+        'Ein Tischplan kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und kassiert ist.',
       ),
     )
   })

@@ -41,7 +41,7 @@ const NAME_TAKEN =
   'Ein Tisch dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.'
 
 const STILL_OPEN =
-  'Ein Tisch kann bei einem aktiven Fest erst ausgeblendet werden, wenn dort alles zubereitet und abgerechnet ist.'
+  'Ein Tisch kann bei einem aktiven Fest erst ausgeblendet werden, wenn dort alles zubereitet und kassiert ist.'
 
 const TABLE_A2 = anAdminTable({ tableId: 'table-a2', name: 'A2', geometry: aGeometry({ x: 20, y: 100 }) })
 

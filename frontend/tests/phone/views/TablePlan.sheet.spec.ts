@@ -50,7 +50,7 @@ describe('the choices a tapped table offers', () => {
     }).toEqual({
       title: 'Tisch 12',
       takeOrder: 'Bestellung aufnehmen',
-      settle: 'Abrechnen',
+      settle: 'Position kassieren',
       cancelItems: 'Position stornieren',
       back: 'Zurück',
     })
@@ -66,7 +66,7 @@ describe('the choices a tapped table offers', () => {
       settle: textOnScreen('[data-test="settle-table"]').trim(),
       cancelItems: textOnScreen('[data-test="cancel-items"]').trim(),
       back: textOnScreen('[data-test="back-from-table-actions"]').trim(),
-    }).toEqual({ takeOrder: 'Take an order', settle: 'Settle', cancelItems: 'Cancel items', back: 'Back' })
+    }).toEqual({ takeOrder: 'Take an order', settle: 'Take payment', cancelItems: 'Cancel items', back: 'Back' })
   })
 
   it('opens the table to cancel items when the waiter taps that choice', async () => {

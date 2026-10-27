@@ -41,7 +41,7 @@ describe('the orders of the table the waiter chose to settle', () => {
 
     const english = await mountScreen('en')
 
-    expect([germanTitle, english.get('[data-test="settle-title"]').text()]).toEqual(['Abrechnen', 'Settle'])
+    expect([germanTitle, english.get('[data-test="settle-title"]').text()]).toEqual(['Kassieren', 'Take payment'])
   })
 
   it('colours each order by how far its positions have been produced', async () => {

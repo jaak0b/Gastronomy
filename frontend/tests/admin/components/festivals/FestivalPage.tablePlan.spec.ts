@@ -22,7 +22,7 @@ import { anAdminArea, anAdminTable } from '../../../support/wireViews'
 enableAutoUnmount(afterEach)
 
 const STILL_OPEN =
-  'Ein Tischplan kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und abgerechnet ist.'
+  'Ein Tischplan kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und kassiert ist.'
 
 const TENT_WITH_ITEMS_TO_HAND_OUT = { ...TENT, hasItemsToHandOutOrSettleAtTheRunningFestival: true }
 

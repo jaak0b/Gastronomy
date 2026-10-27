@@ -99,7 +99,7 @@
       }
     },
     "openItems": {
-      "title": "Abrechnen",
+      "title": "Kassieren",
       "labels": {
         "amountPaidField": "Bezahlter Betrag",
         "amountPaidReason": "Grund",
@@ -115,21 +115,23 @@
         "cancelItems": "Position stornieren",
         "cancelSelected": "Stornieren",
         "reload": "Neu laden",
-        "settle": "Abrechnen",
-        "settleByCard": "Mit Karte abrechnen",
-        "settleInCash": "Bar abrechnen",
+        "settle": "Kassieren",
+        "settleByCard": "Mit Karte kassieren",
+        "settleInCash": "Bar kassieren",
+        "settleItems": "Position kassieren",
+        "settleSelected": "Kassieren",
         "wholeTable": "Ganzen Tisch auswählen"
       },
       "messages": {
         "cashToReturn": "Der Gast bekommt {amount} bar zurück.",
         "noOrdersForTable": "Für diesen Tisch gibt es keine Bestellungen.",
-        "someWereAlreadySettled": "Jemand anderes hatte {count} Position aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast {amount} zurück. | Jemand anderes hatte {count} Positionen aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast {amount} zurück."
+        "someWereAlreadySettled": "Jemand anderes hatte {count} Position aus Ihrer Auswahl schon kassiert. Geben Sie dem Gast {amount} zurück. | Jemand anderes hatte {count} Positionen aus Ihrer Auswahl schon kassiert. Geben Sie dem Gast {amount} zurück."
       },
       "errors": {
         "cancelAnswerNeverCame": "Es ist nicht klar, ob die Stornierung angekommen ist. Tippen Sie auf \"Neu laden\" und schauen Sie nach, ob die Positionen storniert sind.",
         "loadFailed": "Der Rechner war nicht erreichbar. Tippen Sie auf \"Neu laden\".",
-        "settleAnswerNeverCame": "Es ist nicht klar, ob die Abrechnung angekommen ist. Tippen Sie auf \"Neu laden\" und schauen Sie nach, ob die Positionen noch offen sind.",
-        "settleFailed": "Versuchen Sie es noch einmal. Das Abrechnen ist fehlgeschlagen.",
+        "settleAnswerNeverCame": "Es ist nicht klar, ob das Kassieren beim Rechner angekommen ist. Tippen Sie auf \"Neu laden\" und schauen Sie nach, ob die Positionen noch offen sind.",
+        "settleFailed": "Das Kassieren ist fehlgeschlagen. Versuchen Sie es noch einmal.",
         "tableCouldNotBeLoaded": "Dieser Tisch konnte nicht geladen werden. Öffnen Sie ihn noch einmal über den Tischplan."
       }
     },
@@ -142,8 +144,8 @@
       "actions": {
         "removeLinesThatCannotBeOrdered": "Nicht bestellbare Artikel entfernen",
         "retry": "Erneut senden",
-        "sendAndSettle": "Senden und abrechnen",
-        "sendAndSettleLater": "Senden und später abrechnen",
+        "sendAndSettle": "Senden und kassieren",
+        "sendAndSettleLater": "Senden und später kassieren",
         "sending": "Wird gesendet",
         "writtenDown": "Bestellung ist aufgeschrieben"
       },
@@ -213,8 +215,8 @@
       },
       "errors": {
         "actionFailed": "Versuchen Sie es noch einmal. Die Änderung wurde nicht gespeichert.",
-        "actionNotReached": "Tippen Sie noch einmal. Der Rechner war nicht erreichbar, deshalb wurde nichts geändert.",
-        "loadFailed": "Laden Sie die Seite neu. Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein."
+        "actionNotReached": "Tippen Sie noch einmal. Der Rechner war nicht erreichbar. Es wurde nichts geändert.",
+        "loadFailed": "Laden Sie die Seite neu. Der Rechner war nicht erreichbar. Diese Liste kann veraltet sein."
       }
     },
     "done": {
@@ -496,7 +498,7 @@
       },
       "festivals": {
         "areaNameTaken": "Ein Tischplan dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.",
-        "areaWithItemsToHandOutOrSettleStaysShown": "Ein Tischplan kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und abgerechnet ist.",
+        "areaWithItemsToHandOutOrSettleStaysShown": "Ein Tischplan kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und kassiert ist.",
         "itemNeedsAStation": "Wählen Sie mindestens eine Ausgabestelle für den Artikel.",
         "itemPriceOutOfRange": "Tragen Sie einen Preis zwischen 0,00 und 999,99 Euro ein.",
         "itemStaysOnTheMenuWhileTheFestivalRuns": "Ein Artikel kann von einem aktiven Fest nicht entfernt werden.",
@@ -507,7 +509,7 @@
         "stationHasOrdersAtTheFestival": "Eine Ausgabestelle mit offenen Bestellungen kann von einem aktiven Fest nicht entfernt werden.",
         "tableNameTaken": "Ein Tisch dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.",
         "tableCopyNameTooLong": "Der Name einer Kopie wäre länger als 40 Zeichen. Kürzen Sie den Namen des Tisches.",
-        "tableWithItemsToHandOutOrSettleStaysShown": "Ein Tisch kann bei einem aktiven Fest erst ausgeblendet werden, wenn dort alles zubereitet und abgerechnet ist."
+        "tableWithItemsToHandOutOrSettleStaysShown": "Ein Tisch kann bei einem aktiven Fest erst ausgeblendet werden, wenn dort alles zubereitet und kassiert ist."
       },
       "ingredients": {
         "nameMissing": "Geben Sie einen Namen für die Zutat an.",
@@ -570,10 +572,10 @@
       "unsupportedLanguage": "Diese Sprache gibt es im Programm nicht. Wählen Sie Deutsch oder Englisch."
     },
     "settlement": {
-      "cannotBeProcessed": "Die Abrechnung konnte nicht verarbeitet werden. Schreiben Sie auf einen Zettel, was der Tisch bezahlt hat.",
+      "cannotBeProcessed": "Die Aktion konnte nicht verarbeitet werden. Schreiben Sie auf einen Zettel, was der Tisch bezahlt hat.",
       "itemWasCancelled": "{name} wurde inzwischen storniert. Tippen Sie auf \"Neu laden\" und wählen Sie die Positionen noch einmal aus.",
-      "noItemsSelected": "Wählen Sie zuerst die Positionen aus, die Sie abrechnen wollen.",
-      "unknownItem": "Der Rechner kennt eine der ausgewählten Positionen nicht mehr, deshalb wurde nichts abgerechnet. Tippen Sie auf \"Neu laden\"."
+      "noItemsSelected": "Wählen Sie zuerst die Positionen aus, die Sie kassieren wollen.",
+      "unknownItem": "Der Rechner kennt eine der ausgewählten Positionen nicht mehr. Es wurde nichts kassiert. Tippen Sie auf \"Neu laden\"."
     },
     "station": {
       "changeNotSaved": "Die Bestellung konnte nicht aktualisiert werden. Laden Sie die Seite neu und versuchen Sie es erneut.",

@@ -164,7 +164,7 @@ describe('settling items somebody else had already settled', () => {
     await clickOn('[data-test="amount-paid-dialog"] [data-test="confirm-in-cash"]')
 
     expect(screen.get('[data-test="settle-notice"]').text()).toBe(
-      'Jemand anderes hatte 1 Position aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast 3,50 € zurück.',
+      'Jemand anderes hatte 1 Position aus Ihrer Auswahl schon kassiert. Geben Sie dem Gast 3,50 € zurück.',
     )
   })
 })

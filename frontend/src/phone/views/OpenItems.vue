@@ -53,7 +53,7 @@ const selectedText = computed(() => {
 const footerAction = computed(() => {
   switch (openItems.purpose) {
     case 'settling':
-      return { test: 'settle', text: t('phone.openItems.actions.settle') }
+      return { test: 'settle', text: t('phone.openItems.actions.settleSelected') }
     case 'cancelling':
       return { test: 'cancel-items', text: t('phone.openItems.actions.cancelSelected') }
     default:
