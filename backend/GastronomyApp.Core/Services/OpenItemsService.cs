@@ -47,13 +47,31 @@ public sealed class OpenItemsService
                                .ThenInclude(order => order.StaffMember)
                                .Include(candidate => candidate.Orders)
                                .ThenInclude(order => order.StationOrders)
-                               .ThenInclude(stationOrder => stationOrder.Items.Where(item => item.MatchesTableSearch(paymentStatus, includeCancelled)))
+                               .ThenInclude(stationOrder => stationOrder.Items)
+                               .ThenInclude(item => item.CurrentStatus!.PreviousStatus)
                                .FirstOrDefaultAsync(cancellationToken);
 
     if (table is null)
       return Refusal.Settlement.TableNotAtTheRunningFestival(tableId);
 
-    return table.Adapt<TableOrderReportView>(_mapping);
+    List<SearchedOrder> orders = table.Orders.Select(order => new SearchedOrder
+                                                              {
+                                                                Order = order,
+                                                                ShownItems = order.Items().Where(item => item.MatchesTableSearch(paymentStatus, includeCancelled)).ToList()
+                                                              })
+                                      .ToList();
+
+    return new TableOrderReportView(table.Id, table.Name, orders.Adapt<List<TableOrderRecordView>>(_mapping));
+  }
+
+  public async Task<ErrorOr<OrderItemHistoryView>> ReadItemHistoryAsync(Guid orderItemId, CancellationToken cancellationToken)
+  {
+    var history = await _database.OrderItems.AsNoTracking().Where(item => item.Id == orderItemId).ProjectToType<OrderItemHistoryView>(_mapping).FirstOrDefaultAsync(cancellationToken);
+
+    if (history is null)
+      return Refusal.ItemHistory.UnknownItem(orderItemId);
+
+    return history;
   }
 
   public async Task<ErrorOr<SettlementView>> SettleAsync(IReadOnlyList<SettleLineRequest> lines, PaymentMethod paymentMethod, Guid settledByStaffMemberId, CancellationToken cancellationToken)

@@ -26,6 +26,7 @@ public sealed class DeviceKindTest
   [TestCase("/api/catalog")]
   [TestCase("/api/table-plan")]
   [TestCase("/api/estimates")]
+  [TestCase("/api/open-items/items/00000000-0000-0000-0000-000000000001/history")]
   public async Task Get_WaiterRouteWithAStationTablet_IsRefusedAsTheWrongKindOfDevice(string path)
   {
     using var response = await _context.SendAsAsync(_stationToken, HttpMethod.Get, path);

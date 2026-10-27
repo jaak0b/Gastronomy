@@ -47,7 +47,13 @@ a deactivated station is not offered any more, and a screen shows a row another 
   between values is a `switch` expression on constant patterns ending in a discard arm, because
   version 4.0.0 rewrites no other pattern and no `when` guard. `OrderItemQueries.MatchesTableSearch`
   takes the search's optional payment status and include-cancelled option, and an option that is
-  `null` keeps every item. A check that only ever runs in memory needs no `[Projectable]`. The package is turned
+  `null` keeps every item. A check that only ever runs in memory needs no `[Projectable]`:
+  `OrderItemQueries.WasHandedOutWhenCancelled` reads, for a cancelled item, the status the
+  cancellation followed (`CurrentStatus.PreviousStatus`) on items the table search loaded with that
+  status included. An acknowledged item answers false, because `OrderItemLifecycle` allows an
+  acknowledgement only after cancelling an open item. The check throws an
+  `InvalidOperationException` naming `OrderItemStatus.PreviousStatus` when the chain was not
+  loaded. The package is turned
   on once, with `UseProjectables()` in `GastronomyAppDbContext.OnConfiguring`, which every way of
   building the context's options passes through.
 - **Two `[Projectable]` methods in one class never share a name.** Version 4.0.0, the last one for

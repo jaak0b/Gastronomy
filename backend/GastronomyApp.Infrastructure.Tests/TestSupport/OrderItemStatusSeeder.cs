@@ -44,6 +44,13 @@ public sealed class OrderItemStatusSeeder
     return item;
   }
 
+  public OrderItem PutBack(OrderItem item, Guid stationId, DateTime putBackAtUtc)
+  {
+    _lifecycle.AppendStatus(item, OrderItemState.Open, new(null, stationId), putBackAtUtc);
+
+    return item;
+  }
+
   public OrderItem Cancel(OrderItem item, Guid staffMemberId, DateTime cancelledAtUtc)
   {
     _lifecycle.AppendStatus(item, OrderItemState.Cancelled, new(staffMemberId, null), cancelledAtUtc);

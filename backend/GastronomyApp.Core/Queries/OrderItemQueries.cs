@@ -75,6 +75,22 @@ public static class OrderItemQueries
   public static bool MatchesTableSearch(this OrderItem item, PaymentStatus? paymentStatus, bool? includeCancelled) =>
     (paymentStatus == null || (paymentStatus == PaymentStatus.Paid && item.IsSettled()) || (paymentStatus == PaymentStatus.NotPaid && !item.IsSettled())) && ((includeCancelled ?? true) || item.IsStillOrdered());
 
+  public static bool WasHandedOutWhenCancelled(this OrderItem item)
+  {
+    ArgumentNullException.ThrowIfNull(item);
+
+    return item.State() switch
+           {
+             OrderItemState.Cancelled => StatusBefore(item.CurrentStatus!).Status.IsHandedOut(),
+             _ => false
+           };
+  }
+
+  private static OrderItemStatus StatusBefore(OrderItemStatus status)
+  {
+    return status.PreviousStatus ?? throw new InvalidOperationException($"Status {status.Id} of order item {status.OrderItemId} was read without the status before it, so the query that loaded it must include OrderItemStatus.PreviousStatus.");
+  }
+
   [Projectable]
   public static OrderItemState State(this OrderItem item) => item.CurrentStatus!.Status;
 

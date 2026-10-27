@@ -349,6 +349,159 @@ public sealed class OpenItemsServiceTest
   }
 
   [Test]
+  public async Task SearchTableAsync_ThePaidFilter_CountsEveryItemOfTheOrderThatIsNotCancelled()
+  {
+    var items = await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bier", 400), Line("Wasser", 200), Line("Cola", 300));
+    await StampAsync(items[1], _orderedAtUtc.AddMinutes(5), _orderedAtUtc.AddMinutes(6));
+    await CancelStoredAsync(items[2], _orderedAtUtc.AddMinutes(7));
+
+    ErrorOr<TableOrderReportView> search = await _service.SearchTableAsync(await TableAsync("Tisch 12"), null, PaymentStatus.Paid, null, TestContext.CurrentContext.CancellationToken);
+
+    var order = search.Value.Orders.Single();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(order.Items.Select(item => item.ItemName), Is.EqualTo(new[] { "Wasser" }));
+                      Assert.That(order.NotCancelledItemCount, Is.EqualTo(2));
+                      Assert.That(order.HandedOutItemCount, Is.EqualTo(1));
+                    });
+  }
+
+  [Test]
+  public async Task SearchTableAsync_CancelledItemsIncluded_SendsThemButLeavesThemOutOfTheCounts()
+  {
+    var items = await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bier", 400), Line("Wasser", 200), Line("Cola", 300));
+    await StampAsync(items[1], _orderedAtUtc.AddMinutes(5));
+    await StampAsync(items[2], _orderedAtUtc.AddMinutes(5));
+    await CancelStoredAsync(items[2], _orderedAtUtc.AddMinutes(7));
+
+    ErrorOr<TableOrderReportView> search = await _service.SearchTableAsync(await TableAsync("Tisch 12"), null, null, true, TestContext.CurrentContext.CancellationToken);
+
+    var order = search.Value.Orders.Single();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(order.Items, Has.Count.EqualTo(3));
+                      Assert.That(order.NotCancelledItemCount, Is.EqualTo(2));
+                      Assert.That(order.HandedOutItemCount, Is.EqualTo(1));
+                    });
+  }
+
+  [Test]
+  public async Task SearchTableAsync_ItemsCancelledAtDifferentPoints_SayWhetherEachWasHandedOutWhenItWasCancelled()
+  {
+    var items = await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bier", 400), Line("Cola", 300), Line("Limonade", 250), Line("Pommes", 300), Line("Wasser", 200));
+    await StampAsync(items[0], _orderedAtUtc.AddMinutes(2));
+    await CancelStoredAsync(items[0], _orderedAtUtc.AddMinutes(3));
+    await CancelStoredAsync(items[1], _orderedAtUtc.AddMinutes(3));
+    await AcknowledgeStoredAsync(items[2], _orderedAtUtc.AddMinutes(3), _orderedAtUtc.AddMinutes(4));
+    await PutBackAndCancelStoredAsync(items[3], _orderedAtUtc.AddMinutes(2), _orderedAtUtc.AddMinutes(3), _orderedAtUtc.AddMinutes(4));
+    await StampAsync(items[4], _orderedAtUtc.AddMinutes(2));
+
+    ErrorOr<TableOrderReportView> search = await _service.SearchTableAsync(await TableAsync("Tisch 12"), null, null, null, TestContext.CurrentContext.CancellationToken);
+
+    Dictionary<string, bool> handedOutWhenCancelled = search.Value.Orders.Single().Items.ToDictionary(item => item.ItemName, item => item.WasHandedOutWhenCancelled);
+
+    Assert.That(handedOutWhenCancelled,
+                Is.EquivalentTo(new Dictionary<string, bool>
+                                {
+                                  ["Bier"] = true,
+                                  ["Cola"] = false,
+                                  ["Limonade"] = false,
+                                  ["Pommes"] = false,
+                                  ["Wasser"] = false
+                                }));
+  }
+
+  [Test]
+  public async Task ReadItemHistoryAsync_AnItemThroughItsWholeLife_ListsWhoOrderedItEveryChangeInOrderWithItsAuthorAndThePaymentWithItsReason()
+  {
+    var bier = (await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bier", 400))).Single();
+    await PutBackAndCancelStoredAsync(bier, _orderedAtUtc.AddMinutes(2), _orderedAtUtc.AddMinutes(3), _orderedAtUtc.AddMinutes(6));
+    await SettleByAsync(bier, _anotherWaiter, _orderedAtUtc.AddMinutes(4), 380, "Rabatt", PaymentMethod.Card);
+    var tracked = await _fixture.DbContext.OrderItems.Include(item => item.StationOrder).Include(item => item.CurrentStatus!.PreviousStatus).SingleAsync(item => item.Id == bier.Id, TestContext.CurrentContext.CancellationToken);
+    _statusSeeder.AcknowledgeCancellation(tracked, tracked.StationOrder.StationId, _orderedAtUtc.AddMinutes(7));
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    ErrorOr<OrderItemHistoryView> read = await _service.ReadItemHistoryAsync(bier.Id, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(read.Value.OrderedByStaffMemberName, Is.EqualTo("Anna"));
+                      Assert.That(read.Value.OrderedAtUtc, Is.EqualTo(_orderedAtUtc));
+                      Assert.That(read.Value.StatusChanges,
+                                  Is.EqualTo(new[]
+                                             {
+                                               new OrderItemStatusChangeView(OrderItemState.Open, _orderedAtUtc, "Anna", null),
+                                               new OrderItemStatusChangeView(OrderItemState.HandedOut, _orderedAtUtc.AddMinutes(2), null, "Kueche"),
+                                               new OrderItemStatusChangeView(OrderItemState.Open, _orderedAtUtc.AddMinutes(3), null, "Kueche"),
+                                               new OrderItemStatusChangeView(OrderItemState.Cancelled, _orderedAtUtc.AddMinutes(6), "Anna", null),
+                                               new OrderItemStatusChangeView(OrderItemState.CancellationAcknowledged, _orderedAtUtc.AddMinutes(7), null, "Kueche")
+                                             }));
+                      Assert.That(read.Value.SettledAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(4)));
+                      Assert.That(read.Value.ChargedPriceCents, Is.EqualTo(380));
+                      Assert.That(read.Value.PaymentMethod, Is.EqualTo(PaymentMethod.Card));
+                      Assert.That(read.Value.SettledByStaffMemberName, Is.EqualTo("Berta"));
+                      Assert.That(read.Value.PaymentNotice, Is.EqualTo("Rabatt"));
+                    });
+  }
+
+  [Test]
+  public async Task ReadItemHistoryAsync_AnItemNobodyHasPaidFor_NamesNoPayment()
+  {
+    var bier = (await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bier", 400))).Single();
+
+    ErrorOr<OrderItemHistoryView> read = await _service.ReadItemHistoryAsync(bier.Id, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(read.Value.StatusChanges.Select(change => change.State), Is.EqualTo(new[] { OrderItemState.Open }));
+                      Assert.That(read.Value.SettledAtUtc, Is.Null);
+                      Assert.That(read.Value.ChargedPriceCents, Is.Null);
+                      Assert.That(read.Value.PaymentMethod, Is.Null);
+                      Assert.That(read.Value.SettledByStaffMemberName, Is.Null);
+                      Assert.That(read.Value.PaymentNotice, Is.Null);
+                    });
+  }
+
+  [Test]
+  public async Task ReadItemHistoryAsync_AnItemPaidInFullBeforeThePaymentMethodWasStored_NamesThePaymentWithoutAMethodOrAReason()
+  {
+    var bier = (await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bier", 400))).Single();
+    var tracked = await _fixture.DbContext.OrderItems.SingleAsync(item => item.Id == bier.Id, TestContext.CurrentContext.CancellationToken);
+    tracked.SettledAtUtc = _orderedAtUtc.AddMinutes(4);
+    tracked.SettledByStaffMemberId = _seeded.StaffMemberId;
+    tracked.ChargedPriceCents = 400;
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    ErrorOr<OrderItemHistoryView> read = await _service.ReadItemHistoryAsync(bier.Id, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(read.Value.SettledAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(4)));
+                      Assert.That(read.Value.ChargedPriceCents, Is.EqualTo(400));
+                      Assert.That(read.Value.PaymentMethod, Is.Null);
+                      Assert.That(read.Value.SettledByStaffMemberName, Is.EqualTo("Anna"));
+                      Assert.That(read.Value.PaymentNotice, Is.Null);
+                    });
+  }
+
+  [Test]
+  public async Task ReadItemHistoryAsync_AnItemTheLaptopDoesNotKnow_IsRefusedAsUnknownItem()
+  {
+    var orderItemId = Guid.NewGuid();
+
+    ErrorOr<OrderItemHistoryView> read = await _service.ReadItemHistoryAsync(orderItemId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(read.FirstError.NumericType, Is.EqualTo(RefusalType.UnprocessableEntity));
+                      Assert.That(read.RefusalMessageKey(), Is.EqualTo("errors.itemHistory.unknownItem"));
+                      Assert.That(read.RefusalDescription(), Does.Contain(orderItemId.ToString()));
+                    });
+  }
+
+  [Test]
   public void SettleAsync_NullLines_ThrowsArgumentNullException()
   {
     Assert.That(async () => await _service.SettleAsync(null!, PaymentMethod.Cash, _seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
@@ -1198,6 +1351,15 @@ public sealed class OpenItemsServiceTest
   private async Task CancelStoredAsync(OrderItem item, DateTime cancelledAtUtc)
   {
     var tracked = await _fixture.DbContext.OrderItems.SingleAsync(candidate => candidate.Id == item.Id, TestContext.CurrentContext.CancellationToken);
+    _statusSeeder.Cancel(tracked, _seeded.StaffMemberId, cancelledAtUtc);
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+  }
+
+  private async Task PutBackAndCancelStoredAsync(OrderItem item, DateTime handedOutAtUtc, DateTime putBackAtUtc, DateTime cancelledAtUtc)
+  {
+    var tracked = await _fixture.DbContext.OrderItems.Include(candidate => candidate.StationOrder).SingleAsync(candidate => candidate.Id == item.Id, TestContext.CurrentContext.CancellationToken);
+    _statusSeeder.HandOut(tracked, tracked.StationOrder.StationId, handedOutAtUtc);
+    _statusSeeder.PutBack(tracked, tracked.StationOrder.StationId, putBackAtUtc);
     _statusSeeder.Cancel(tracked, _seeded.StaffMemberId, cancelledAtUtc);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }

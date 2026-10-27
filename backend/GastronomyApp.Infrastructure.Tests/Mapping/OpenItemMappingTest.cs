@@ -54,7 +54,7 @@ public sealed class OpenItemMappingTest
   {
     var order = OrderAt("Tisch 12", Item("Bratwurst", 350));
 
-    var view = order.Adapt<TableOrderRecordView>(_mapping);
+    var view = Searched(order).Adapt<TableOrderRecordView>(_mapping);
 
     Assert.Multiple(() =>
                     {
@@ -78,7 +78,7 @@ public sealed class OpenItemMappingTest
 
     var order = OrderAt("Tisch 12", schnitzel, notedBratwurst, plainBratwurst);
 
-    var view = order.Adapt<TableOrderRecordView>(_mapping);
+    var view = Searched(order).Adapt<TableOrderRecordView>(_mapping);
 
     Assert.That(view.Items.Select(item => item.OrderItemId),
                 Is.EqualTo(new[]
@@ -94,7 +94,7 @@ public sealed class OpenItemMappingTest
   {
     var order = OrderAt("Tisch 12", Item("Zwiebel", 100), Item("Äpfel", 100), Item("apfel", 100), Item("Birne", 100));
 
-    var view = order.Adapt<TableOrderRecordView>(_mapping);
+    var view = Searched(order).Adapt<TableOrderRecordView>(_mapping);
 
     Assert.That(view.Items.Select(item => item.ItemName),
                 Is.EqualTo(new[]
@@ -114,7 +114,7 @@ public sealed class OpenItemMappingTest
     var order = OrderAt("Tisch 12", bratwurst);
     AddStationOrder(order, bier);
 
-    var view = order.Adapt<TableOrderRecordView>(_mapping);
+    var view = Searched(order).Adapt<TableOrderRecordView>(_mapping);
 
     Assert.That(view.Items.Select(item => item.OrderItemId),
                 Is.EqualTo(new[]
@@ -122,25 +122,6 @@ public sealed class OpenItemMappingTest
                              bier.Id,
                              bratwurst.Id
                            }));
-  }
-
-  [Test]
-  public void Map_ATableWithOpenAndSettledPositions_NamesTheTableAndCarriesItsOrders()
-  {
-    var bratwurst = Item("Bratwurst", 350);
-    var bier = Item("Bier", 400);
-    bier.SettledAtUtc = _orderedAtUtc.AddMinutes(5);
-    var order = OrderAt("Tisch 12", bratwurst, bier);
-    order.Table.Orders.Add(order);
-
-    var view = order.Table.Adapt<TableOrderReportView>(_mapping);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(view.TableId, Is.EqualTo(order.TableId));
-                      Assert.That(view.TableName, Is.EqualTo("Tisch 12"));
-                      Assert.That(view.Orders.Select(placed => placed.OrderId), Is.EqualTo(new[] { order.Id }));
-                    });
   }
 
   [Test]
@@ -161,25 +142,40 @@ public sealed class OpenItemMappingTest
   }
 
   [Test]
-  public void Map_ATableWithACancelledUnsettledPosition_KeepsItAmongThePositions()
+  public void Map_AnOrderWithFewerItemsShown_CountsEveryItemThatIsNotCancelledAndShowsOnlyTheShownOnes()
   {
-    var bratwurst = Item("Bratwurst", 350);
     var bier = Item("Bier", 400);
-    _statusSeeder.Cancel(bier, Guid.NewGuid(), _orderedAtUtc.AddMinutes(7));
-    var order = OrderAt("Tisch 12", bratwurst, bier);
-    order.Table.Orders.Add(order);
+    var wasser = Item("Wasser", 200);
+    _statusSeeder.HandOut(wasser, Guid.NewGuid(), _orderedAtUtc.AddMinutes(5));
+    var cola = Item("Cola", 300);
+    _statusSeeder.Cancel(cola, Guid.NewGuid(), _orderedAtUtc.AddMinutes(6));
+    var order = OrderAt("Tisch 12", bier, wasser, cola);
 
-    var view = order.Table.Adapt<TableOrderReportView>(_mapping);
+    var view = new SearchedOrder
+               {
+                 Order = order,
+                 ShownItems = [wasser]
+               }.Adapt<TableOrderRecordView>(_mapping);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(view.Orders.Single().Items.Select(item => item.ItemName),
-                                  Is.EquivalentTo(new[]
-                                                  {
-                                                    "Bratwurst",
-                                                    "Bier"
-                                                  }));
+                      Assert.That(view.Items.Select(item => item.OrderItemId), Is.EqualTo(new[] { wasser.Id }));
+                      Assert.That(view.NotCancelledItemCount, Is.EqualTo(2));
+                      Assert.That(view.HandedOutItemCount, Is.EqualTo(1));
                     });
+  }
+
+  [Test]
+  public void Map_APositionCancelledAfterItWasHandedOut_SaysItWasHandedOutWhenCancelled()
+  {
+    var bier = Item("Bier", 400);
+    _statusSeeder.HandOut(bier, Guid.NewGuid(), _orderedAtUtc.AddMinutes(5));
+    _statusSeeder.Cancel(bier, Guid.NewGuid(), _orderedAtUtc.AddMinutes(6));
+    OrderAt("Tisch 12", bier);
+
+    var view = bier.Adapt<TableOrderRecordItemView>(_mapping);
+
+    Assert.That(view.WasHandedOutWhenCancelled, Is.True);
   }
 
   [Test]
@@ -203,6 +199,15 @@ public sealed class OpenItemMappingTest
                       Assert.That(view.ReappliedOrderItemIds, Is.EqualTo(new[] { reapplied.Id }));
                       Assert.That(view.AlreadySettledByOthersOrderItemIds, Is.EqualTo(new[] { takenByOthers.Id }));
                     });
+  }
+
+  private SearchedOrder Searched(Order order)
+  {
+    return new()
+           {
+             Order = order,
+             ShownItems = order.StationOrders.SelectMany(stationOrder => stationOrder.Items).ToList()
+           };
   }
 
   private Order OrderAt(string tableName, params OrderItem[] items)

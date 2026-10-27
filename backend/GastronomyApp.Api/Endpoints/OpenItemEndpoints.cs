@@ -18,6 +18,8 @@ public static class OpenItemEndpoints
                   async Task<ApiAnswer<TableOrderReportView>> (Guid tableId, TableOrderSearchRequest search, OpenItemsService service, CancellationToken cancellationToken) =>
                     await service.SearchTableAsync(tableId, search.OrderStatus, search.PaymentStatus, search.IncludeCancelled, cancellationToken));
 
+    group.MapGet("/items/{orderItemId:guid}/history", async Task<ApiAnswer<OrderItemHistoryView>> (Guid orderItemId, OpenItemsService service, CancellationToken cancellationToken) => await service.ReadItemHistoryAsync(orderItemId, cancellationToken));
+
     group.MapPost("/settle",
                   async Task<ApiAnswer<SettlementView>> (SettleItemsRequest request, StaffDeviceCaller caller, OpenItemsService service, CancellationToken cancellationToken) => await service.SettleAsync(request.Lines ?? [], request.PaymentMethod!.Value, caller.StaffMemberId, cancellationToken));
 

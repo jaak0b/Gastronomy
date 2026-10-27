@@ -933,6 +933,116 @@ public sealed class OpenItemEndpointsTest
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
   }
 
+  [Test]
+  public async Task SearchTable_AnItemCancelledAfterItsHandOut_AnswersTheOrdersCountsAndThatItWasHandedOutWhenCancelled()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync(_context.World.TableId);
+    var kitchenToken = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
+    using (var handOut = await HandOutAsync(kitchenToken, [itemIds[0]]))
+    {
+      Assert.That(handOut.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    using (var cancelled = await CancelAsync(_context.DeviceToken, [itemIds[0]]))
+    {
+      Assert.That(cancelled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    var order = (await SearchTableAsync(_context.World.TableId)).RootElement.GetProperty("orders")[0];
+    var cancelledItem = order.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("orderItemId").GetGuid() == itemIds[0]);
+    var openItem = order.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("orderItemId").GetGuid() == itemIds[1]);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(order.GetProperty("notCancelledItemCount").GetInt32(), Is.EqualTo(1));
+                      Assert.That(order.GetProperty("handedOutItemCount").GetInt32(), Is.Zero);
+                      Assert.That(cancelledItem.GetProperty("wasHandedOutWhenCancelled").GetBoolean(), Is.True);
+                      Assert.That(openItem.GetProperty("wasHandedOutWhenCancelled").GetBoolean(), Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task GetItemHistory_AnItemHandedOutPaidShortAndCancelled_AnswersWhoOrderedItEveryChangeWithItsAuthorAndThePaymentWithItsReason()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync(_context.World.TableId);
+    var kitchenToken = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
+    using (var handOut = await HandOutAsync(kitchenToken, [itemIds[0]]))
+    {
+      Assert.That(handOut.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    using (var settled = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", new SettleItemsBody([new(itemIds[0], 300, "Rabatt")], "cash")))
+    {
+      Assert.That(settled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    using (var cancelled = await CancelAsync(_context.DeviceToken, [itemIds[0]]))
+    {
+      Assert.That(cancelled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    using var response = await _context.SendAsync(HttpMethod.Get, $"/api/open-items/items/{itemIds[0]}/history");
+    var history = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+    var changes = history.GetProperty("statusChanges").EnumerateArray().ToList();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(history.GetProperty("orderedByStaffMemberName").GetString(), Is.EqualTo("Anna"));
+                      Assert.That(history.GetProperty("orderedAtUtc").ValueKind, Is.EqualTo(JsonValueKind.String));
+                      Assert.That(changes.Select(change => change.GetProperty("state").GetString()),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "open",
+                                               "handedOut",
+                                               "cancelled"
+                                             }));
+                      Assert.That(changes.Select(change => change.GetProperty("staffMemberName").GetString()),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Anna",
+                                               null,
+                                               "Anna"
+                                             }));
+                      Assert.That(changes.Select(change => change.GetProperty("stationName").GetString()),
+                                  Is.EqualTo(new[]
+                                             {
+                                               null,
+                                               "Kueche",
+                                               null
+                                             }));
+                      Assert.That(changes.Select(change => change.GetProperty("changedAtUtc").ValueKind), Is.All.EqualTo(JsonValueKind.String));
+                      Assert.That(history.GetProperty("settledAtUtc").ValueKind, Is.EqualTo(JsonValueKind.String));
+                      Assert.That(history.GetProperty("chargedPriceCents").GetInt32(), Is.EqualTo(300));
+                      Assert.That(history.GetProperty("paymentMethod").GetString(), Is.EqualTo("cash"));
+                      Assert.That(history.GetProperty("settledByStaffMemberName").GetString(), Is.EqualTo("Anna"));
+                      Assert.That(history.GetProperty("paymentNotice").GetString(), Is.EqualTo("Rabatt"));
+                    });
+  }
+
+  [Test]
+  public async Task GetItemHistory_AnItemTheLaptopDoesNotKnow_IsRefusedWithTheItemHistoryWording()
+  {
+    using var response = await _context.SendAsync(HttpMethod.Get, $"/api/open-items/items/{Guid.NewGuid()}/history");
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
+                      Assert.That(body.GetProperty("code").GetString(), Is.EqualTo("UnprocessableEntity"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.itemHistory.unknownItem"));
+                    });
+  }
+
+  [Test]
+  public async Task GetItemHistory_WithoutADeviceToken_IsRefused()
+  {
+    using HttpRequestMessage request = new(HttpMethod.Get, $"/api/open-items/items/{Guid.NewGuid()}/history");
+    using var response = await _context.Client.SendAsync(request);
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+  }
+
   private async Task FulfillAndSettleAsync(Guid orderItemId)
   {
     await using var database = _context.Factory.CreateContext();

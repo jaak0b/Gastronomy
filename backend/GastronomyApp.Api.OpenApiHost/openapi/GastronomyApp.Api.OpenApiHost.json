@@ -253,6 +253,36 @@
         }
       }
     },
+    "/api/open-items/items/{orderItemId}/history": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "orderItemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderItemHistoryView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/open-items/settle": {
       "post": {
         "tags": [
@@ -3731,6 +3761,70 @@
           }
         }
       },
+      "OrderItemHistoryView": {
+        "required": [
+          "orderedByStaffMemberName",
+          "orderedAtUtc",
+          "statusChanges",
+          "settledAtUtc",
+          "chargedPriceCents",
+          "paymentMethod",
+          "settledByStaffMemberName",
+          "paymentNotice"
+        ],
+        "type": "object",
+        "properties": {
+          "orderedByStaffMemberName": {
+            "type": "string"
+          },
+          "orderedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "statusChanges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemStatusChangeView"
+            }
+          },
+          "settledAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "chargedPriceCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "paymentMethod": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PaymentMethod"
+              }
+            ]
+          },
+          "settledByStaffMemberName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "paymentNotice": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "OrderItemRequest": {
         "required": [
           "catalogItemId",
@@ -3770,6 +3864,36 @@
           "cancelled",
           "cancellationAcknowledged"
         ]
+      },
+      "OrderItemStatusChangeView": {
+        "required": [
+          "state",
+          "changedAtUtc",
+          "staffMemberName",
+          "stationName"
+        ],
+        "type": "object",
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/OrderItemState"
+          },
+          "changedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "staffMemberName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "stationName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
       },
       "OrderStatus": {
         "enum": [
@@ -4724,6 +4848,7 @@
           "orderedAtUtc",
           "state",
           "stateSetAtUtc",
+          "wasHandedOutWhenCancelled",
           "settledAtUtc",
           "chargedPriceCents"
         ],
@@ -4765,6 +4890,9 @@
             "type": "string",
             "format": "date-time"
           },
+          "wasHandedOutWhenCancelled": {
+            "type": "boolean"
+          },
           "settledAtUtc": {
             "type": [
               "null",
@@ -4787,6 +4915,8 @@
           "globalOrderNumber",
           "createdAtUtc",
           "staffMemberName",
+          "notCancelledItemCount",
+          "handedOutItemCount",
           "items"
         ],
         "type": "object",
@@ -4805,6 +4935,14 @@
           },
           "staffMemberName": {
             "type": "string"
+          },
+          "notCancelledItemCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "handedOutItemCount": {
+            "type": "integer",
+            "format": "int32"
           },
           "items": {
             "type": "array",

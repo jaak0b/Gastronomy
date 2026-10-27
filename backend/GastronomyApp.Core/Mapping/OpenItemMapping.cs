@@ -18,14 +18,33 @@ public sealed class OpenItemMapping : IRegister
           .Map(view => view.GlobalOrderNumber, item => item.StationOrder.Order.GlobalOrderNumber)
           .Map(view => view.OrderedAtUtc, item => item.StationOrder.Order.CreatedAtUtc)
           .Map(view => view.State, item => item.State())
-          .Map(view => view.StateSetAtUtc, item => item.StateSetAtUtc());
+          .Map(view => view.StateSetAtUtc, item => item.StateSetAtUtc())
+          .Map(view => view.WasHandedOutWhenCancelled, item => item.WasHandedOutWhenCancelled());
 
-    config.NewConfig<Order, TableOrderRecordView>()
-          .Map(view => view.OrderId, order => order.Id)
-          .Map(view => view.StaffMemberName, order => order.StaffMember.Name)
-          .Map(view => view.Items, order => order.Items().OrderBy(item => item.ItemName, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Note, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Id).ToList());
+    config.NewConfig<SearchedOrder, TableOrderRecordView>()
+          .Map(view => view.OrderId, searched => searched.Order.Id)
+          .Map(view => view.GlobalOrderNumber, searched => searched.Order.GlobalOrderNumber)
+          .Map(view => view.CreatedAtUtc, searched => searched.Order.CreatedAtUtc)
+          .Map(view => view.StaffMemberName, searched => searched.Order.StaffMember.Name)
+          .Map(view => view.NotCancelledItemCount, searched => searched.Order.Items().Count(item => item.IsStillOrdered()))
+          .Map(view => view.HandedOutItemCount, searched => searched.Order.Items().Count(item => item.IsHandedOut()))
+          .Map(view => view.Items, searched => searched.ShownItems.OrderBy(item => item.ItemName, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Note, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Id).ToList());
 
-    config.NewConfig<Table, TableOrderReportView>().Map(view => view.TableId, table => table.Id).Map(view => view.TableName, table => table.Name);
+    config.NewConfig<OrderItem, OrderItemHistoryView>()
+          .Map(view => view.OrderedByStaffMemberName, item => item.StationOrder.Order.StaffMember.Name)
+          .Map(view => view.OrderedAtUtc, item => item.StationOrder.Order.CreatedAtUtc)
+          .Map(view => view.StatusChanges, item => item.Statuses.OrderBy(status => status.CreatedAtUtc))
+          .Map(view => view.SettledAtUtc, item => item.SettledAtUtc)
+          .Map(view => view.ChargedPriceCents, item => item.ChargedPriceCents)
+          .Map(view => view.PaymentMethod, item => item.PaymentMethod)
+          .Map(view => view.SettledByStaffMemberName, item => item.SettledByStaffMember!.Name)
+          .Map(view => view.PaymentNotice, item => item.PaymentNotice);
+
+    config.NewConfig<OrderItemStatus, OrderItemStatusChangeView>()
+          .Map(view => view.State, status => status.Status)
+          .Map(view => view.ChangedAtUtc, status => status.CreatedAtUtc)
+          .Map(view => view.StaffMemberName, status => status.CreatedByStaffMember!.Name)
+          .Map(view => view.StationName, status => status.CreatedByStation!.Name);
 
     config.NewConfig<SettlementResult, SettlementView>()
           .Map(view => view.SettledOrderItemIds, settlement => settlement.NewlySettled.Select(item => item.Id).ToList())

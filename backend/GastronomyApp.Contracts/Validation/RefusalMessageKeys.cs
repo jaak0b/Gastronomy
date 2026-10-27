@@ -38,6 +38,8 @@ public static class RefusalMessageKeys
 
   public const string FestivalItemPriceOutOfRange = "errors.admin.festivals.itemPriceOutOfRange";
 
+  public const string ItemHistoryUnknownItem = "errors.itemHistory.unknownItem";
+
   public const string OrderCannotBeProcessed = "errors.order.cannotBeProcessed";
 
   public const string SettlementCannotBeProcessed = "errors.settlement.cannotBeProcessed";
