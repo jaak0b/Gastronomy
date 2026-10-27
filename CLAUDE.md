@@ -156,7 +156,8 @@ Every rule binds every agent, main or sub, with no exception it does not name.
   kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden." Add an instruction
   only where the reader has a control on that screen and something to do with it, and keep it
   equally plain. Never a formula, never a second sentence of reassurance, never an account of what
-  the program did internally. Name only controls that exist on the screen where the sentence
+  the program did internally. Never join a fact and its consequence with "deshalb", "daher" or an
+  English ", so": each stands as a sentence of its own. Name only controls that exist on the screen where the sentence
   appears. Write each language for itself; a sentence translated word for word from the other one
   reads as machine-written even when every word is correct. Read it aloud before you ship it, and if
   you would not say it to a colleague across a counter, write it again.
