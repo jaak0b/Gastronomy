@@ -8,12 +8,11 @@ export const SETTLED = {
   alreadySettledByOthersOrderItemIds: [],
 }
 
-export const TABLE_PATH = '/api/open-items/tables/table-12'
+export const TABLE_PATH = '/api/open-items/tables/table-12/search'
 
 export const TABLE_REPORT = {
   tableId: 'table-12',
   tableName: 'Tisch 12',
-  openAmountCents: 400,
   orders: [
     {
       orderId: 'order-9',
@@ -71,7 +70,6 @@ function bratwurst(orderItemId: string) {
 export const TWO_BRATWURST = {
   tableId: 'table-12',
   tableName: 'Tisch 12',
-  openAmountCents: 700,
   orders: [
     {
       orderId: 'order-1',
@@ -122,7 +120,6 @@ export async function storeShowingTisch12(replies: LaptopReply[], report: unknow
 export const REPORT_AFTER_THE_NEW_ORDER = {
   tableId: 'table-12',
   tableName: 'Tisch 12',
-  openAmountCents: 1100,
   orders: [
     {
       orderId: 'order-8',
@@ -216,7 +213,6 @@ export function positionOf(orderItemId: string, settledAtUtc: string | null) {
 export const REPORT_WITH_TWO_ORDERS = {
   tableId: 'table-12',
   tableName: 'Tisch 12',
-  openAmountCents: 1600,
   orders: [
     {
       orderId: 'order-a',

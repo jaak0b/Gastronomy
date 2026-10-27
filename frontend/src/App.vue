@@ -25,6 +25,7 @@ import TablePlan from './phone/views/TablePlan.vue'
 import Catalog from './phone/views/Catalog.vue'
 import Review from './phone/views/Review.vue'
 import OpenItems from './phone/views/OpenItems.vue'
+import OrderOverview from './phone/views/OrderOverview.vue'
 import StationPage from './station/views/StationPage.vue'
 import AdminShell from './admin/views/AdminShell.vue'
 
@@ -139,6 +140,7 @@ onMounted(async () => {
     <Catalog v-else-if="screen === 'catalog'" />
     <Review v-else-if="screen === 'review'" />
     <OpenItems v-else-if="screen === 'openItems'" />
+    <OrderOverview v-else-if="screen === 'orderOverview'" />
     <StationPage v-else-if="screen === 'station'" />
     <AdminShell v-else />
     </v-main>

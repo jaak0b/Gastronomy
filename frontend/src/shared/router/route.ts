@@ -8,6 +8,7 @@ export type AppRoute =
   | { name: 'catalog' }
   | { name: 'review' }
   | { name: 'openItems' }
+  | { name: 'orderOverview' }
   | { name: 'stations' }
   | { name: 'admin'; section: AdminSection; festivalId: string | null; areaId?: string }
 
@@ -51,6 +52,9 @@ export function resolveRoute(path: string): AppRoute {
   if (first === 'open-items') {
     return { name: 'openItems' }
   }
+  if (first === 'order-overview') {
+    return { name: 'orderOverview' }
+  }
   if (first === 'stations') {
     return { name: 'stations' }
   }
@@ -66,6 +70,7 @@ export function routeToStartAt(path: string): AppRoute {
     case 'catalog':
     case 'review':
     case 'openItems':
+    case 'orderOverview':
       return { name: 'home' }
     case 'home':
     case 'stations':

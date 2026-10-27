@@ -26,7 +26,6 @@ function itemOfOrder137(orderItemId: string, itemName: string, note: string | nu
 export const TISCH_12 = {
   tableId: 'table-12',
   tableName: 'Tisch 12',
-  openAmountCents: 700,
   orders: [
     {
       orderId: 'order-1',
@@ -43,7 +42,6 @@ export const TISCH_12 = {
 
 export const ONE_FREE_ITEM = {
   ...TISCH_12,
-  openAmountCents: 0,
   orders: [{ ...TISCH_12.orders[0], items: [itemOfOrder137('item-water', 'Leitungswasser', null, 0)] }],
 }
 
@@ -56,7 +54,6 @@ export const SETTLED = {
 export const TABLE_REPORT = {
   tableId: 'table-12',
   tableName: 'Tisch 12',
-  openAmountCents: 1200,
   orders: [
     {
       orderId: 'order-137',
@@ -155,8 +152,9 @@ export function openItemsLaptop(
   settlement: LaptopReply = answer(SETTLED),
 ): StubbedLaptop {
   return stubLaptop()
-    .answers('GET', '/api/open-items/tables/table-12', answer(report))
-    .answers('ANY', (call) => call.method !== 'GET', settlement)
+    .answers('POST', '/api/open-items/settle', settlement)
+    .answers('POST', '/api/open-items/cancel', settlement)
+    .answers('POST', '/api/open-items/tables/table-12/search', answer(report))
 }
 
 type MountedScreen = Awaited<ReturnType<typeof mountTheOpenTable>>

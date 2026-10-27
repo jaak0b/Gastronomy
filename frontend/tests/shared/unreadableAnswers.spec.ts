@@ -16,7 +16,6 @@ function aLaptopThatAnswersWith(aBody: unknown): void {
 const A_TABLE: TableOrderReportView = {
   tableId: 'table-5',
   tableName: 'Tisch 5',
-  openAmountCents: 200,
   orders: [
     {
       orderId: 'order-1',

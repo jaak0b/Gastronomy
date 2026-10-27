@@ -39,6 +39,14 @@ describe('screenFor, the screen a device lands on', () => {
     expect(screenFor(aWaiterPhone, { name: 'openItems' })).toBe('openItems')
   })
 
+  it('lets a waiter phone open the orders of a table', () => {
+    expect(screenFor(aWaiterPhone, { name: 'orderOverview' })).toBe('orderOverview')
+  })
+
+  it('keeps a station tablet on the station page when it opens the order overview address', () => {
+    expect(screenFor(aStationTablet, { name: 'orderOverview' })).toBe('station')
+  })
+
   it('sends a waiter phone that opens the stations address back to the table plan', () => {
     expect(screenFor(aWaiterPhone, { name: 'stations' })).toBe('tablePlan')
   })

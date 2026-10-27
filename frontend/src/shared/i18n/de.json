@@ -120,12 +120,14 @@
         "settleInCash": "Bar kassieren",
         "settleItems": "Position kassieren",
         "settleSelected": "Kassieren",
-        "wholeTable": "Ganzen Tisch auswählen"
+        "wholeTable": "Ganzen Tisch auswählen",
+        "showEveryItem": "Alle Positionen anzeigen"
       },
       "messages": {
         "cashToReturn": "Der Gast bekommt {amount} bar zurück.",
-        "noOrdersForTable": "Für diesen Tisch gibt es keine Bestellungen.",
-        "someWereAlreadySettled": "Jemand anderes hatte {count} Position aus Ihrer Auswahl schon kassiert. Geben Sie dem Gast {amount} zurück. | Jemand anderes hatte {count} Positionen aus Ihrer Auswahl schon kassiert. Geben Sie dem Gast {amount} zurück."
+        "someWereAlreadySettled": "Jemand anderes hatte {count} Position aus Ihrer Auswahl schon kassiert. Geben Sie dem Gast {amount} zurück. | Jemand anderes hatte {count} Positionen aus Ihrer Auswahl schon kassiert. Geben Sie dem Gast {amount} zurück.",
+        "nothingToCancel": "An diesem Tisch gibt es nichts mehr zu stornieren.",
+        "nothingToSettle": "An diesem Tisch ist nichts mehr zu kassieren."
       },
       "errors": {
         "cancelAnswerNeverCame": "Es ist nicht klar, ob die Stornierung angekommen ist. Tippen Sie auf \"Neu laden\" und schauen Sie nach, ob die Positionen storniert sind.",
@@ -133,6 +135,24 @@
         "settleAnswerNeverCame": "Es ist nicht klar, ob die Zahlung gespeichert wurde. Tippen Sie auf \"Neu laden\" und schauen Sie nach, ob die Positionen noch offen sind.",
         "settleFailed": "Die Zahlung wurde nicht gespeichert. Versuchen Sie es noch einmal.",
         "tableCouldNotBeLoaded": "Dieser Tisch konnte nicht geladen werden. Öffnen Sie ihn noch einmal über den Tischplan."
+      }
+    },
+    "orderOverview": {
+      "title": "Bestellungen",
+      "labels": {
+        "handedOut": "Ausgegeben"
+      },
+      "filter": {
+        "every": "Alle",
+        "includeCancelled": "Stornierte Positionen anzeigen",
+        "itemsHeading": "Positionen",
+        "notPaid": "Nicht bezahlt",
+        "open": "Offen",
+        "ordersHeading": "Bestellungen",
+        "partiallyHandedOut": "Teilweise ausgegeben"
+      },
+      "messages": {
+        "noOrderMatches": "An diesem Tisch passt keine Bestellung zu dieser Auswahl."
       }
     },
     "review": {
@@ -166,7 +186,8 @@
         "backToThePlan": "Tischplan",
         "reload": "Neu laden",
         "toTheUnsentTable": "Zu Tisch {table}",
-        "discard": "Verwerfen"
+        "discard": "Verwerfen",
+        "showOrders": "Bestellungen anzeigen"
       },
       "messages": {
         "noFestivalIsActive": "Es ist kein Fest aktiv.",

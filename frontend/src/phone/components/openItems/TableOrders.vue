@@ -10,23 +10,21 @@ import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { formatFestivalMoment } from '../../../shared/core/moments'
 import {
   canBeSelected,
-  notCancelledItemCountIn,
-  positionStateOf,
-  producedCountIn,
-  productionStateOf,
+  isShownAsPaid,
   selectableItemIdsIn,
   selectableItemIdsInOrder,
   selectionStateOf,
   type SelectionPurpose,
 } from '../../core/openItems'
 import { formatPrice } from '../../../shared/core/money'
-import { statusTintCssOf, statusTokenOf } from '../../../shared/core/statusTints'
+import { isCancelled } from '../../../shared/core/orderItemStates'
 import OpenPositionRow from './OpenPositionRow.vue'
 
 const props = defineProps<{
   report: TableOrderReportView | null
   selectedItemIds: string[]
   purpose: SelectionPurpose
+  emptyText: string
   language: AppLanguage
 }>()
 const emit = defineEmits<{
@@ -69,25 +67,10 @@ function priceTextFor(cents: number): string {
   return formatPrice(cents, props.language)
 }
 
-function coloursOf(order: TableOrderRecordView): Record<string, string> {
-  const token = statusTokenOf(productionStateOf(order))
-  return {
-    background: statusTintCssOf(token),
-    borderInlineStart: `0.375rem solid rgb(var(--v-theme-${token}))`,
-  }
-}
-
 function takenByTextFor(order: TableOrderRecordView): string {
   return t('common.labels.takenBy', {
     time: formatFestivalMoment(order.createdAtUtc, props.language),
     name: order.staffMemberName,
-  })
-}
-
-function doneCounterTextFor(order: TableOrderRecordView): string {
-  return t('common.labels.doneCounter', {
-    fulfilled: producedCountIn(order),
-    total: notCancelledItemCountIn(order),
   })
 }
 </script>
@@ -107,10 +90,8 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
     v-for="order in orders"
     :key="order.orderId"
     class="order-card mb-3"
-    :style="coloursOf(order)"
     data-test="order-card"
     :data-test-id="order.globalOrderNumber"
-    :data-state="productionStateOf(order)"
   >
     <v-card-text class="order-body">
       <div class="order-card-head d-flex flex-wrap align-baseline ga-2">
@@ -121,18 +102,14 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
           {{ takenByTextFor(order) }}
         </span>
       </div>
-      <div class="order-card-tally d-flex align-center ga-2">
+      <div v-if="canSelectAnythingIn(order)" class="order-card-tally d-flex align-center ga-2">
         <v-checkbox-btn
-          v-if="canSelectAnythingIn(order)"
           class="flex-grow-0"
           data-test="whole-order"
           :model-value="orderSelectionOf(order) === 'all'"
           :indeterminate="orderSelectionOf(order) === 'some'"
           @update:model-value="setWholeOrder(order)"
         />
-        <span class="text-body-2 ms-auto" data-test="done-counter">
-          {{ doneCounterTextFor(order) }}
-        </span>
       </div>
       <v-list class="order-lines" lines="three">
         <OpenPositionRow
@@ -143,15 +120,15 @@ function doneCounterTextFor(order: TableOrderRecordView): string {
           :price-text="priceTextFor(item.unitPriceCents)"
           :is-selected="selectedItemIds.includes(item.orderItemId)"
           :is-selectable="canBeSelected(item, purpose)"
-          :is-settled="item.settledAtUtc !== null"
-          :production-state="positionStateOf(item)"
+          :is-cancelled="isCancelled(item.state)"
+          :is-shown-as-paid="isShownAsPaid(item, purpose)"
           @toggle="emit('toggle-item', item.orderItemId)"
         />
       </v-list>
     </v-card-text>
   </v-card>
   <v-alert v-if="foundNothing" data-test="no-orders" type="info" variant="tonal">
-    {{ t('phone.openItems.messages.noOrdersForTable') }}
+    {{ emptyText }}
   </v-alert>
 </template>
 

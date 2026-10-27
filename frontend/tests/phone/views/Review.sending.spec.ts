@@ -170,12 +170,11 @@ describe('sending an order the guest pays on the spot', () => {
     stubLaptop()
       .answersEverythingElse(answer({ stations: [] }))
       .answers(
-        'GET',
-        '/api/open-items/tables/table-3',
+        'POST',
+        '/api/open-items/tables/table-3/search',
         answer({
           tableId: 'table-3',
           tableName: 'Tisch 3',
-          openAmountCents: 200,
           orders: [
             {
               orderId: 'order-1',

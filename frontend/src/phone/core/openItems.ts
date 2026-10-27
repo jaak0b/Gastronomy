@@ -6,6 +6,7 @@ import type {
   TableOrderRecordItemView,
   TableOrderRecordView,
   TableOrderReportView,
+  TableOrderSearchRequest,
 } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
 import type { AppLanguage } from '../../shared/core/deviceLanguage'
@@ -20,8 +21,6 @@ export interface AmountPaidWithReason {
   amountPaidCents: number
   paymentNotice: string | null
 }
-
-export type PositionState = 'produced' | 'notProduced' | 'cancelled'
 
 export type SelectionPurpose = 'settling' | 'cancelling'
 
@@ -46,21 +45,28 @@ export function shareStateOf(count: number, total: number): ShareState {
   return count === 0 ? 'none' : 'some'
 }
 
-export function productionStateOf(order: TableOrderRecordView): ShareState {
-  return shareStateOf(producedCountIn(order), notCancelledItemCountIn(order))
+export function searchOptionsFor(purpose: SelectionPurpose, showsEveryItem: boolean): TableOrderSearchRequest {
+  if (showsEveryItem) {
+    return {}
+  }
+  switch (purpose) {
+    case 'settling':
+      return { paymentStatus: 'notPaid', includeCancelled: false }
+    case 'cancelling':
+      return { includeCancelled: false }
+    default:
+      return assertNever(purpose)
+  }
 }
 
-export function positionStateOf(item: TableOrderRecordItemView): PositionState {
-  switch (item.state) {
-    case 'open':
-      return 'notProduced'
-    case 'handedOut':
-      return 'produced'
-    case 'cancelled':
-    case 'cancellationAcknowledged':
-      return 'cancelled'
+export function isShownAsPaid(item: TableOrderRecordItemView, purpose: SelectionPurpose): boolean {
+  switch (purpose) {
+    case 'settling':
+      return item.settledAtUtc !== null
+    case 'cancelling':
+      return false
     default:
-      return assertNever(item.state)
+      return assertNever(purpose)
   }
 }
 

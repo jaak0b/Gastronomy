@@ -181,6 +181,9 @@ export const OrderStatus = z.enum(["open", "partiallyFulfilled", "fulfilled"]);
 export type PaymentMethod = __TypedOpenapi.Schemas.PaymentMethod;
 export const PaymentMethod = z.union([z.literal("none"), z.literal("cash"), z.literal("card"), z.literal(null)]);
 
+export type PaymentStatus = __TypedOpenapi.Schemas.PaymentStatus;
+export const PaymentStatus = z.union([z.literal("notPaid"), z.literal("paid"), z.literal(null)]);
+
 export type StationOrderView = __TypedOpenapi.Schemas.StationOrderView;
 export const StationOrderView = z.strictObject({ stationOrderId: z.string(), stationId: z.string(), stationName: z.string(), stationOrderNumber: z.number().int(), deliveryMode: DeliveryMode, itemIds: z.array(z.string()) });
 
@@ -299,7 +302,10 @@ export type TableOrderRecordView = __TypedOpenapi.Schemas.TableOrderRecordView;
 export const TableOrderRecordView = z.strictObject({ orderId: z.string(), globalOrderNumber: z.number().int(), createdAtUtc: z.string(), staffMemberName: z.string(), items: z.array(TableOrderRecordItemView) });
 
 export type TableOrderReportView = __TypedOpenapi.Schemas.TableOrderReportView;
-export const TableOrderReportView = z.strictObject({ tableId: z.string(), tableName: z.string(), openAmountCents: z.number().int(), orders: z.array(TableOrderRecordView) });
+export const TableOrderReportView = z.strictObject({ tableId: z.string(), tableName: z.string(), orders: z.array(TableOrderRecordView) });
+
+export type TableOrderSearchRequest = __TypedOpenapi.Schemas.TableOrderSearchRequest;
+export const TableOrderSearchRequest = z.strictObject({ orderStatus: OrderStatus.nullable(), paymentStatus: PaymentStatus.nullable(), includeCancelled: z.boolean().nullable() }).partial();
 
 export type TablePlanTableView = __TypedOpenapi.Schemas.TablePlanTableView;
 export const TablePlanTableView = z.strictObject({ tableId: z.string(), name: z.string(), geometry: AreaShapeGeometry, handOutProgress: ShareState, settlementProgress: ShareState });

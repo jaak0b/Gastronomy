@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canTheAmountBeSettled, notCancelledItemCountIn, isAPaymentMethodNeeded, isPaymentNoticeNeeded, isPaymentNoticeWritten, noticeAfterSettling, positionStateOf, producedCountIn, productionStateOf } from '../../../src/phone/core/openItems'
+import { canTheAmountBeSettled, notCancelledItemCountIn, isAPaymentMethodNeeded, isPaymentNoticeNeeded, isPaymentNoticeWritten, noticeAfterSettling, producedCountIn } from '../../../src/phone/core/openItems'
 import { itemWith, recordWith } from './openItemsFixture'
 
 describe('what the waiter is told after settling', () => {
@@ -153,29 +153,7 @@ describe('whether the phone may send the amount the waiter typed', () => {
   })
 })
 
-describe('how far the positions of one order are produced', () => {
-  it('says none while nothing has left the station', () => {
-    expect(productionStateOf(recordWith([itemWith('item-1', null, null, 350)]))).toBe('none')
-  })
-
-  it('says some while part of the order has left the station', () => {
-    const order = recordWith([
-      itemWith('item-1', '2026-09-05T18:05:00Z', null, 350),
-      itemWith('item-2', null, null, 350),
-    ])
-
-    expect(productionStateOf(order)).toBe('some')
-  })
-
-  it('says all once every position has left the station', () => {
-    const order = recordWith([
-      itemWith('item-1', '2026-09-05T18:05:00Z', null, 350),
-      itemWith('item-2', '2026-09-05T18:06:00Z', null, 350),
-    ])
-
-    expect(productionStateOf(order)).toBe('all')
-  })
-
+describe('the done counter of one order', () => {
   it('counts the positions that have left the station', () => {
     const order = recordWith([
       itemWith('item-1', '2026-09-05T18:05:00Z', null, 350),
@@ -185,32 +163,13 @@ describe('how far the positions of one order are produced', () => {
     expect(producedCountIn(order)).toBe(1)
   })
 
-  it('reads a position the station has handed out as produced', () => {
-    expect(positionStateOf(itemWith('item-1', '2026-09-05T18:05:00Z', null, 350))).toBe('produced')
-  })
-
-  it('reads a position still at the station as not produced', () => {
-    expect(positionStateOf(itemWith('item-1', null, null, 350))).toBe('notProduced')
-  })
-
-  it.each(['cancelled', 'cancellationAcknowledged'] as const)('reads a position in state %s as cancelled', (state) => {
-    expect(positionStateOf({ ...itemWith('item-1', null, null, 350), state })).toBe('cancelled')
-  })
-
-  it('leaves a cancelled position out of how far the order is produced', () => {
+  it('leaves a cancelled position out of the positions it counts', () => {
     const order = recordWith([
       itemWith('item-1', '2026-09-05T18:05:00Z', null, 350),
       { ...itemWith('item-2', null, null, 350), state: 'cancelled' },
     ])
 
-    expect(productionStateOf(order)).toBe('all')
     expect(notCancelledItemCountIn(order)).toBe(1)
-  })
-
-  it('says all for an order whose positions were all cancelled, as the table plan does', () => {
-    const order = recordWith([{ ...itemWith('item-1', null, null, 350), state: 'cancelled' }])
-
-    expect(productionStateOf(order)).toBe('all')
   })
 })
 

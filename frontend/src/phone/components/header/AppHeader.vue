@@ -6,6 +6,7 @@ import { currentRoute, navigate } from '../../../shared/router/router'
 import { useDraftTableName } from '../../composables/useDraftTableName'
 import { useWaiterLanding } from '../../composables/useWaiterLanding'
 import { useOpenItemsStore } from '../../stores/openItems'
+import { useOrderOverviewStore } from '../../stores/orderOverview'
 import { useTablePlanStore } from '../../stores/tablePlan'
 import SettingsSheet from './SettingsSheet.vue'
 
@@ -14,6 +15,7 @@ type BackDestination = 'areaList' | 'tablePlan' | 'none'
 const { t } = useI18n()
 const tablePlan = useTablePlanStore()
 const openItems = useOpenItemsStore()
+const orderOverview = useOrderOverviewStore()
 const { landing } = useWaiterLanding()
 const { draftTableName } = useDraftTableName()
 const settingsAreOpen = ref(false)
@@ -32,6 +34,7 @@ const backDestination = computed<BackDestination>(() => {
       return shownAreaName.value !== null && tablePlan.areas.length > 1 ? 'areaList' : 'none'
     case 'catalog':
     case 'openItems':
+    case 'orderOverview':
       return 'tablePlan'
     case 'review':
     case 'enrolQr':
@@ -64,6 +67,8 @@ const shownTableName = computed<string | null>(() => {
       return draftTableName.value
     case 'openItems':
       return openItems.report?.tableName ?? null
+    case 'orderOverview':
+      return orderOverview.report?.tableName ?? null
     case 'home':
     case 'review':
     case 'enrolQr':

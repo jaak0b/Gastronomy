@@ -25,7 +25,6 @@ function itemOf(orderItemId: string, itemName: string, unitPriceCents: number) {
 const TISCH_FUENF = {
   tableId: 'table-5',
   tableName: 'Tisch 5',
-  openAmountCents: 1200,
   orders: [
     {
       orderId: 'order-1',
@@ -37,7 +36,7 @@ const TISCH_FUENF = {
   ],
 }
 
-const TISCH_FUENF_AFTER_THE_SETTLEMENT = { ...TISCH_FUENF, openAmountCents: 0, orders: [] }
+const TISCH_FUENF_AFTER_THE_SETTLEMENT = { ...TISCH_FUENF, orders: [] }
 
 const OWN_SETTLEMENT_APPLIED_AGAIN = {
   settledOrderItemIds: [],

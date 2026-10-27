@@ -15,9 +15,10 @@ describe('the browser title of a screen', () => {
   })
 
   it('names the ordering screens through the waiter key', () => {
-    const waiterScreens: ScreenName[] = ['tablePlan', 'catalog', 'review', 'openItems']
+    const waiterScreens: ScreenName[] = ['tablePlan', 'catalog', 'review', 'openItems', 'orderOverview']
 
     expect(waiterScreens.map((screen) => screenTitle(screen, null, words))).toEqual([
+      'common.appTitle.waiter',
       'common.appTitle.waiter',
       'common.appTitle.waiter',
       'common.appTitle.waiter',

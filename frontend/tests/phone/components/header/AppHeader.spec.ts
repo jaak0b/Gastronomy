@@ -3,6 +3,7 @@ import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AppHeader from '../../../../src/phone/components/header/AppHeader.vue'
 import { useOpenItemsStore } from '../../../../src/phone/stores/openItems'
+import { useOrderOverviewStore } from '../../../../src/phone/stores/orderOverview'
 import { useOrderStore } from '../../../../src/phone/stores/order'
 import { useTablePlanStore } from '../../../../src/phone/stores/tablePlan'
 import { currentRoute, navigate, registerOpenStepCloser } from '../../../../src/shared/router/router'
@@ -153,7 +154,30 @@ describe('the header over a table being settled', () => {
   it('names the table by the name the laptop holds for it now', async () => {
     const header = mountHeader()
 
-    useOpenItemsStore().report = { tableId: 'table-12', tableName: '12a', openAmountCents: 0, orders: [] }
+    useOpenItemsStore().report = { tableId: 'table-12', tableName: '12a', orders: [] }
+    await nextTick()
+
+    expect(header.get('[data-test="header-title"]').text()).toBe('Tisch 12a')
+  })
+
+  it('leads back to the table plan', async () => {
+    const header = mountHeader()
+
+    await header.get('[data-test="header-back"]').trigger('click')
+
+    expect(currentRoute.value).toEqual({ name: 'home' })
+  })
+})
+
+describe('the header over the orders of a table', () => {
+  beforeEach(() => {
+    navigate('/order-overview')
+  })
+
+  it('names the table by the name the laptop holds for it now', async () => {
+    const header = mountHeader()
+
+    useOrderOverviewStore().report = { tableId: 'table-12', tableName: '12a', orders: [] }
     await nextTick()
 
     expect(header.get('[data-test="header-title"]').text()).toBe('Tisch 12a')

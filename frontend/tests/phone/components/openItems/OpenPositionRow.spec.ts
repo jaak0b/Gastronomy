@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import OpenPositionRow from '../../../../src/phone/components/openItems/OpenPositionRow.vue'
-import type { PositionState } from '../../../../src/phone/core/openItems'
 import { testPlugins } from '../../../support/plugins'
 
 enableAutoUnmount(afterEach)
@@ -12,8 +11,8 @@ interface RowProps {
   priceText: string
   isSelected: boolean
   isSelectable: boolean
-  isSettled: boolean
-  productionState: PositionState
+  isCancelled: boolean
+  isShownAsPaid: boolean
 }
 
 function mountRow(overrides: Partial<RowProps> = {}) {
@@ -23,8 +22,8 @@ function mountRow(overrides: Partial<RowProps> = {}) {
     priceText: '3,50 €',
     isSelected: false,
     isSelectable: true,
-    isSettled: false,
-    productionState: 'notProduced',
+    isCancelled: false,
+    isShownAsPaid: false,
     ...overrides,
   }
   return mount(OpenPositionRow, {
@@ -52,47 +51,28 @@ describe('one position of an open table', () => {
     expect(row.get('[data-test="line-note"]').text()).toBe('Hinweis: ohne Zwiebeln')
   })
 
-  it('shows a tick for a position the station has handed out', () => {
-    const row = mountRow({ productionState: 'produced' })
-
-    expect(row.get('[data-test="open-line"]').classes()).toContain('is-produced')
-    expect(row.get('[data-test="line-state"]').classes()).toContain('mdi-check')
-  })
-
-  it('shows a clock for a position still at the station', () => {
-    const row = mountRow({ productionState: 'notProduced' })
-
-    expect(row.get('[data-test="open-line"]').classes()).toContain('is-not-produced')
-    expect(row.get('[data-test="line-state"]').classes()).toContain('mdi-clock-outline')
-  })
-
-  it('offers the tick box while the position is open', () => {
+  it('offers the tick box while the position can be selected', () => {
     const row = mountRow()
 
     expect(row.find('[data-test="line-tick"]').exists()).toBe(true)
     expect(row.find('[data-test="line-paid"]').exists()).toBe(false)
   })
 
-  it('writes the word for paid instead of a tick box once the position is settled', () => {
-    const row = mountRow({ isSettled: true, isSelectable: false })
+  it('puts a paid position on a green background with the word for paid and no tick box', () => {
+    const row = mountRow({ isShownAsPaid: true, isSelectable: false })
 
+    expect(row.get('[data-test="open-line"]').classes()).toContain('paid-line')
     expect(row.get('[data-test="line-paid"]').text()).toBe('Bezahlt')
     expect(row.find('[data-test="line-tick"]').exists()).toBe(false)
   })
 
-  it('strikes a cancelled position through and offers no tick box and no state for it', () => {
-    const row = mountRow({ productionState: 'cancelled', isSelectable: false })
+  it('greys a cancelled position out, strikes it through and offers no tick box', () => {
+    const row = mountRow({ isCancelled: true, isSelectable: false })
 
-    expect(row.get('[data-test="open-line"]').classes()).toContain('cancelled-item')
+    expect(row.get('[data-test="open-line"]').classes()).toEqual(
+      expect.arrayContaining(['cancelled-item', 'v-list-item--disabled']),
+    )
     expect(row.find('[data-test="line-tick"]').exists()).toBe(false)
-    expect(row.find('[data-test="line-state"]').exists()).toBe(false)
-  })
-
-  it('offers the tick box for a paid position the screen lets the waiter select', () => {
-    const row = mountRow({ isSettled: true, isSelectable: true })
-
-    expect(row.find('[data-test="line-tick"]').exists()).toBe(true)
-    expect(row.get('[data-test="line-paid"]').text()).toBe('Bezahlt')
   })
 
   it('hands the tap up so the screen decides what it means', async () => {

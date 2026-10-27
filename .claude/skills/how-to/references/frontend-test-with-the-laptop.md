@@ -18,8 +18,10 @@ this page is the set of tools and the shape of a spec.
   defined reply with `answersEverythingElse`, and assert on `calls` or `urls()` that the expected
   requests were sent.
 - It records every request in `calls` and offers `writes()` (every call that is not a GET),
-  `writtenBodies()`, `callsTo(method, match)`, `urls()` and `forgetCalls()`. Assert on these, for
-  example `expect(laptop.writes()).toEqual([{ url, method, body }])`.
+  `writtenBodies()`, `callsTo(method, match)`, `bodiesSentTo(method, match)`, `urls()` and
+  `forgetCalls()`. Assert on these, for example `expect(laptop.writes()).toEqual([{ url, method, body }])`.
+  A read sent as a POST, such as the table search, counts among `writes()`, so a spec that checks one
+  action's body asks `bodiesSentTo('POST', '/api/open-items/settle')` instead of `writtenBodies()[0]`.
 - Replies: `answer(body, status = 200)`, `emptyAnswer(status)`,
   `refusal(messageKey, { status = 409, code, parameters })` for a refusal with the laptop's error body,
   `noConnection()`, `neverAnswers()`, `inTurn(first, second)` for a laptop that answers differently the

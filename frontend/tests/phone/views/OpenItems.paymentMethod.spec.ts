@@ -32,7 +32,7 @@ describe('saying how the table paid on the amount page', () => {
 
     await clickOn(`${AMOUNT_DIALOG} [data-test="confirm-nothing-paid"]`)
 
-    expect(laptop.writtenBodies()).toEqual([
+    expect(laptop.bodiesSentTo('POST', '/api/open-items/settle')).toEqual([
       {
         lines: [{ orderItemId: 'item-water', paidPriceCents: 0, paymentNotice: null }],
         paymentMethod: 'none',
@@ -50,7 +50,7 @@ describe('saying how the table paid on the amount page', () => {
 
     await clickOn(`${AMOUNT_DIALOG} [data-test="confirm-by-card"]`)
 
-    expect(laptop.writtenBodies()).toEqual([
+    expect(laptop.bodiesSentTo('POST', '/api/open-items/settle')).toEqual([
       {
         lines: [{ orderItemId: 'item-1', paidPriceCents: 350, paymentNotice: null }],
         paymentMethod: 'card',

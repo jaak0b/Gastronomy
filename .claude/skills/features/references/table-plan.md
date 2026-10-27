@@ -85,7 +85,7 @@ Backend, under `backend/`:
   `ShallowCopyForSameType(true)` and passes the record through unchanged. The statement count is
   pinned in `TablePlanServiceTest` (see the `count-sql-statements` how-to page).
 - `OrderPlacementService` looks the order's table up in `IGastronomyDatabase.Tables`; the open items
-  screen reads one table with its orders through `OpenItemsService.ReadTableAsync` (see
+  screen reads one table with its orders through `OpenItemsService.SearchTableAsync` (see
   the `settling-a-table` page).
 - `FestivalStationService.RemoveAsync` deletes the station's shape together with its link through
   `IGastronomyDatabase`, and `FestivalService.CopyAsync` copies the plan (see the
@@ -245,10 +245,10 @@ Frontend, under `frontend/src/`:
   it claims nothing. A plan of an area without tables says so above the drawing. It shows
   `phone/components/tablePlan/AreaList.vue` (one large button per area, in the laptop's order),
   `AreaPlan.vue` (the read-only Konva drawing of one area with its scroll bars), `TableActionSheet.vue`
-  (the table's name, "Bestellung aufnehmen", "Position kassieren", "Position stornieren", "Zurück") and `UnsentOrderDialog.vue` (the
+  (the table's name and five buttons: "Bestellung aufnehmen", "Bestellungen anzeigen", "Position kassieren", "Position stornieren", "Zurück") and `UnsentOrderDialog.vue` (the
   question when another table's unsent items are on the phone; see the `taking-an-order` page). `phone/components/header/AppHeader.vue` carries
   the back control ("Tischpläne" from a plan when there are several areas, "Tischplan" from the
-  ordering screen and the settle view) and the area or table name.
+  ordering screen, the order overview and the settle view) and the area or table name.
 - `phone/core/tablePlanCamera.ts` is the camera of the phone's drawing: `cameraFittingTheWidth`,
   `clampedPosition`, `pinchOf`, `pinchedCamera` (zoom about the point between the fingers, from the
   width of the screen up to `DEEPEST_ZOOM`, four times that) and `waiterDrawingLength` (the lowest
@@ -282,7 +282,7 @@ Frontend, under `frontend/src/`:
   `(FestivalStationId, FestivalId)` at the festival station's, and an order's `(TableId, FestivalId)`
   at the table's. Every relation is `Restrict`.
 - **An order shows its table's current name**, read through `Order.Table` on the station cards and
-  the one-table view, so renaming a table renames it on every order.
+  the table search, so renaming a table renames it on every order.
 - **Names are unique per festival without regard to case, hidden rows included**, for areas and for
   tables (collation `NOCASE`, unique index on `(FestivalId, Name)`). The service checks first and
   refuses with `areaNameTaken` or `tableNameTaken`.

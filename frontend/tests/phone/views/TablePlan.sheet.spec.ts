@@ -3,6 +3,7 @@ import { enableAutoUnmount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { useOrderStore } from '../../../src/phone/stores/order'
+import { useOrderOverviewStore } from '../../../src/phone/stores/orderOverview'
 import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { clickOn, isOnScreen, textOnScreen } from '../../support/dom'
 import { theWaiterTakesTheOrderAt } from '../../support/waiterPhone'
@@ -36,7 +37,7 @@ function oneWasserOnTheOrderFor(table: { tableId: string; name: string }) {
 }
 
 describe('the choices a tapped table offers', () => {
-  it('names the table and offers to take an order, to settle, to cancel items and to go back', async () => {
+  it('names the table and offers to take an order, to show the orders, to settle, to cancel items and to go back', async () => {
     await mountThePlan()
 
     await tapTheTable('table-12')
@@ -44,12 +45,14 @@ describe('the choices a tapped table offers', () => {
     expect({
       title: textOnScreen('[data-test="table-actions-title"]').trim(),
       takeOrder: textOnScreen('[data-test="take-order"]').trim(),
+      showOrders: textOnScreen('[data-test="show-orders"]').trim(),
       settle: textOnScreen('[data-test="settle-table"]').trim(),
       cancelItems: textOnScreen('[data-test="cancel-items"]').trim(),
       back: textOnScreen('[data-test="back-from-table-actions"]').trim(),
     }).toEqual({
       title: 'Tisch 12',
       takeOrder: 'Bestellung aufnehmen',
+      showOrders: 'Bestellungen anzeigen',
       settle: 'Position kassieren',
       cancelItems: 'Position stornieren',
       back: 'Zurück',
@@ -63,10 +66,29 @@ describe('the choices a tapped table offers', () => {
 
     expect({
       takeOrder: textOnScreen('[data-test="take-order"]').trim(),
+      showOrders: textOnScreen('[data-test="show-orders"]').trim(),
       settle: textOnScreen('[data-test="settle-table"]').trim(),
       cancelItems: textOnScreen('[data-test="cancel-items"]').trim(),
       back: textOnScreen('[data-test="back-from-table-actions"]').trim(),
-    }).toEqual({ takeOrder: 'Take an order', settle: 'Take payment', cancelItems: 'Cancel items', back: 'Back' })
+    }).toEqual({
+      takeOrder: 'Take an order',
+      showOrders: 'Show orders',
+      settle: 'Take payment',
+      cancelItems: 'Cancel items',
+      back: 'Back',
+    })
+  })
+
+  it('opens the orders of the table when the waiter taps that choice', async () => {
+    await mountThePlan()
+    await tapTheTable('table-12')
+
+    await clickOn('[data-test="show-orders"]')
+
+    expect({ table: useOrderOverviewStore().tableId, route: currentRoute.value }).toEqual({
+      table: 'table-12',
+      route: { name: 'orderOverview' },
+    })
   })
 
   it('opens the table to cancel items when the waiter taps that choice', async () => {

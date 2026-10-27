@@ -27,6 +27,7 @@ export interface StubbedLaptop {
   writes(): LaptopCall[]
   writtenBodies(): unknown[]
   callsTo(method: HttpMethod, match: RequestMatch): LaptopCall[]
+  bodiesSentTo(method: HttpMethod, match: RequestMatch): unknown[]
   urls(): string[]
 }
 
@@ -55,6 +56,9 @@ export function stubLaptop(): StubbedLaptop {
     },
     callsTo(method, match) {
       return calls.filter((call) => isMatching({ method, match }, call))
+    },
+    bodiesSentTo(method, match) {
+      return laptop.callsTo(method, match).map((call) => call.body)
     },
     urls() {
       return calls.map((call) => call.url)

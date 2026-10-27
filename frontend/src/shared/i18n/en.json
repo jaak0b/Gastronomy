@@ -120,12 +120,14 @@
         "settleInCash": "Take cash payment",
         "settleItems": "Take payment",
         "settleSelected": "Take payment",
-        "wholeTable": "Select the whole table"
+        "wholeTable": "Select the whole table",
+        "showEveryItem": "Show all items"
       },
       "messages": {
         "cashToReturn": "The guest gets {amount} back in cash.",
-        "noOrdersForTable": "There are no orders for this table.",
-        "someWereAlreadySettled": "Somebody else had already taken payment for {count} item in your selection. Give the guest {amount} back. | Somebody else had already taken payment for {count} items in your selection. Give the guest {amount} back."
+        "someWereAlreadySettled": "Somebody else had already taken payment for {count} item in your selection. Give the guest {amount} back. | Somebody else had already taken payment for {count} items in your selection. Give the guest {amount} back.",
+        "nothingToCancel": "There is nothing left to cancel at this table.",
+        "nothingToSettle": "There is nothing left to take payment for at this table."
       },
       "errors": {
         "cancelAnswerNeverCame": "It is not clear whether the cancellation arrived. Tap \"Reload\" and check whether the items are cancelled.",
@@ -133,6 +135,24 @@
         "settleAnswerNeverCame": "It is not clear whether the payment reached the computer. Tap \"Reload\" and check whether the items are still open.",
         "settleFailed": "Taking the payment failed. Try again.",
         "tableCouldNotBeLoaded": "This table could not be loaded. Open it again from the table plan."
+      }
+    },
+    "orderOverview": {
+      "title": "Orders",
+      "labels": {
+        "handedOut": "Handed out"
+      },
+      "filter": {
+        "every": "All",
+        "includeCancelled": "Show cancelled items",
+        "itemsHeading": "Items",
+        "notPaid": "Not paid",
+        "open": "Open",
+        "ordersHeading": "Orders",
+        "partiallyHandedOut": "Partly handed out"
+      },
+      "messages": {
+        "noOrderMatches": "No order at this table matches this filter."
       }
     },
     "review": {
@@ -166,7 +186,8 @@
         "backToThePlan": "Table plan",
         "reload": "Reload",
         "toTheUnsentTable": "Go to table {table}",
-        "discard": "Discard"
+        "discard": "Discard",
+        "showOrders": "Show orders"
       },
       "messages": {
         "noFestivalIsActive": "No festival is active.",

@@ -141,7 +141,8 @@ Never select by an accessibility attribute; the frontend has none.
 copy of anything listed here.
 
 - `laptop.ts` stubs `fetch` with a readable laptop. `stubLaptop()` returns a `StubbedLaptop` that
-  records every call (`calls`, `writes()`, `writtenBodies()`, `urls()`, `callsTo(method, path)`)
+  records every call (`calls`, `writes()`, `writtenBodies()`, `urls()`, `callsTo(method, path)`,
+  `bodiesSentTo(method, path)`)
   and answers routes registered with `answers(method, path, reply)`, the latest registration
   winning, plus `answersEverythingElse(reply)`. Replies are built with `answer(body, status)`,
   `emptyAnswer(status)`, `refusal(messageKey, { status, code, parameters })`, `noConnection()`,

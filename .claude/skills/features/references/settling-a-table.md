@@ -1,12 +1,17 @@
 # Settling a table
 
-A waiter taps a table on the plan and "Position kassieren", and the phone shows that table's orders one by
-one, with how far each is handed out and what is already paid. The waiter ticks what the guest pays
+A waiter taps a table on the plan and "Position kassieren", and the phone shows that table's items
+that are neither paid nor cancelled, order by order. With "Alle Positionen anzeigen" ticked it shows
+every item: a paid one on a green background with "Bezahlt", a cancelled one greyed out and struck
+through, neither of them tickable. How far an order is handed out is shown only on the order overview
+(see the `showing-a-tables-orders` page). The waiter ticks what the guest pays
 for, taps Kassieren under the selected total and, on the amount page, confirms what the table
 actually handed over, in cash or by card.
 
 The same view cancels items: "Position stornieren" on the table's action sheet opens it in cancel
-mode, where every item that is not cancelled can be ticked, paid ones included. The footer counts the
+mode, which shows the items that are not cancelled (every item with "Alle Positionen anzeigen") and
+lets every item that is not cancelled be ticked, paid ones included; the payment state is not shown
+there. The footer counts the
 ticked items and its "Stornieren" opens a page that lists them, says how much cash the guest gets
 back for the paid ones, and cancels them on confirming. A cancellation is final.
 
@@ -15,16 +20,18 @@ back for the paid ones, and cancels them on confirming. A cancellation is final.
 Frontend, under `frontend/src/phone/`:
 
 - `views/OpenItems.vue` (route `/open-items`) is the settle view of one table, titled "Kassieren":
-  the reload button ("Neu laden"),
-  the sentence when the table could not be loaded, the notice after settling, the table's orders and
+  the reload button ("Neu laden"), the box "Alle Positionen anzeigen"
+  (`phone.openItems.actions.showEveryItem`, off whenever a table opens),
+  the sentence when the table could not be loaded, the sentence when nothing is left
+  (`phone.openItems.messages.nothingToSettle` or `nothingToCancel`), the notice after settling, the table's orders and
   the bottom bar with the selected total and the one Kassieren button that opens the amount page. It
   goes back to the plan when no table is open, as after a reload, and closes the table when the
   waiter leaves. In cancel mode it is titled "Position stornieren", the footer counts the selection
   (`phone.openItems.labels.selectedCount`) and its "Stornieren" opens `CancelItemsDialog.vue`. The header (`components/header/AppHeader.vue`) shows the table's current name and
   "Tischplan".
-- `components/openItems/`: `TableOrders.vue` (the orders of the table, each card tinted and bordered
-  by how far it is handed out, with a tick per order and for the whole table), `OpenPositionRow.vue`
-  (one item, tinted by whether it is handed out), `SettleNotice.vue`, and
+- `components/openItems/`: `TableOrders.vue` (the orders of the table in neutral cards, with a tick
+  per order and for the whole table), `OpenPositionRow.vue` (one item: the paid background and
+  "Bezahlt" when the view passes `isShownAsPaid`, greyed out and struck through when `isCancelled`), `SettleNotice.vue`, and
   `AmountPaidDialog.vue`, the amount page: the selected total, the fields, the reason of a refusal,
   then Bar kassieren and Mit Karte kassieren, or Kassieren alone when nothing is to be paid, "Neu
   laden" while a reason shows (reloads and goes back to the table), and Abbrechen.
@@ -43,21 +50,19 @@ Frontend, under `frontend/src/phone/`:
 - `core/openItems.ts`: the selection over one table's `TableOrderReportView` for a
   `SelectionPurpose`, `settling` or `cancelling` (`selectableItemsIn`, `selectableItemIdsIn`,
   `selectableItemIdsInOrder`, `selectedItems`, `withItemToggled`, `withWholeTable`, `withWholeOrder`,
-  `withoutItemsThatAreGone`), `selectedAmountCents`, `cashToReturnCents`, `isPaymentNoticeNeeded`,
+  `withoutItemsThatAreGone`), `searchOptionsFor(purpose, showsEveryItem)` (the options each screen
+  sends), `isShownAsPaid(item, purpose)` (paid and settling only), `selectedAmountCents`, `cashToReturnCents`, `isPaymentNoticeNeeded`,
   `isAPaymentMethodNeeded`, `canTheAmountBeSettled` and `noticeAfterSettling`; the hand-out and
   selection states are the generated `ShareState`. `canBeSelected(item, purpose)` is the one test
   of what can be ticked (settling: not settled and not cancelled; cancelling: not cancelled); a row
   shows its tick box exactly when the view passes it `isSelectable`, and
-  `positionStateOf`, `producedCountIn`, `notCancelledItemCountIn` and `productionStateOf` read the item's
-  `state` through `shared/core/orderItemStates.ts`; an order whose items are all cancelled counts as
-  `all`, as on the table plan. A cancelled row carries the shared class `cancelled-item`
-  (`shared/styles/cancelledItems.css`, the same struck-through look as on the station tablet),
-  with no tint, no state icon and no tick box. The
-  colours of a card and a row come from `shared/core/statusTints.ts` (`statusTokenOf`,
-  `statusTintCssOf`), the same mapping and strength the table plan's drawing uses.
+  A cancelled row carries the shared class `cancelled-item`
+  (`shared/styles/cancelledItems.css`, the same struck-through look as on the station tablet), is
+  disabled and has no tick box. The green of a paid row is `statusTintCssOf('success')` from
+  `shared/core/statusTints.ts`, the strength the table plan's drawing uses.
   `core/settlementSplit.ts` spreads the amount paid over the ticked lines.
 - `stores/openItems.ts` (`useOpenItemsStore`: `openTable`, `openTableAndSelectItemsOnceLoaded`,
-  `openTableToCancelItems`, `closeTable`, `load`, `listen`, `toggleItem`, `setWholeTable`,
+  `openTableToCancelItems`, `closeTable`, `load`, `showEveryItem`, `showsEveryItem`, `listen`, `toggleItem`, `setWholeTable`,
   `setWholeOrder`, `settle`, `cancelSelectedItems`, `purpose`, `report`, `loadFailureKey`, `notice`,
   `isSettling`, `isCancelling`, `itemsToCancel`, `cashToReturnForTheItemsToCancel`) and `composables/useSettleDialog.ts`
   (`amountPaidIsOpen`, `settleTheAmountPaid`). `views/TablePlan.vue` opens a table with `openTable` or
@@ -67,17 +72,19 @@ Frontend, under `frontend/src/phone/`:
 
 Backend, under `backend/`:
 
-- `GastronomyApp.Api/Endpoints/OpenItemEndpoints.cs` under `/api/open-items`: `/tables/{tableId}`,
+- `GastronomyApp.Api/Endpoints/OpenItemEndpoints.cs` under `/api/open-items`: `POST /tables/{tableId}/search`,
   `POST /settle` and `POST /cancel`, all calling `OpenItemsService` directly. Wire records in `GastronomyApp.Contracts/OpenItems/`
-  (`TableOrderReportView` with the table's `TableId` and current `TableName`,
+  (`TableOrderSearchRequest` with the three search options, `TableOrderReportView` with the table's `TableId` and current `TableName`,
   `TableOrderRecordView`, `TableOrderRecordItemView` with each item's `State`, `StateSetAtUtc` and
   `ChargedPriceCents`; `SettleItemsRequest`, `SettleLineRequest`, `SettlementView`;
   `CancelItemsRequest`, `CancellationView`).
 - `GastronomyApp.Core/Services/OpenItemsService.cs` is the one service of the area on
-  `IGastronomyDatabase`: `ReadTableAsync` reads one table with its orders and answers the
-  `TableOrderReportView` (running festival lookup, then one table statement, so two statements; the
-  lines of an order are sorted in memory with `StringComparer.OrdinalIgnoreCase`, because the item
-  name and note carry no `NOCASE` collation), and `SettleAsync` checks and applies a settlement and
+  `IGastronomyDatabase`: `SearchTableAsync` reads one table with the orders and items its options
+  keep and answers the `TableOrderReportView` (running festival lookup, then one table statement, so
+  two statements; the filters run in SQL inside the filtered includes, through
+  `OrderQueries.Status` and `OrderItemQueries.MatchesTableSearch`; the lines of an order are sorted
+  in memory with `StringComparer.OrdinalIgnoreCase`, because the item name and note carry no
+  `NOCASE` collation), and `SettleAsync` checks and applies a settlement and
   answers the `SettlementView`. The check order is: running festival, the waiter named (a program
   error, thrown), duplicate lines, the payment method against the money paid, unknown lines,
   cancelled items (`errors.settlement.itemWasCancelled`, naming each), missing notices, one table.
@@ -90,13 +97,14 @@ Backend, under `backend/`:
   of the service that answer ids; each action turns them into its own refusals. Nothing is stored on a refusal. Refusals are in
   `Core/Refusals/Refusal.Settlement.cs` and `Refusal.Cancellation.cs`.
   The wire records are mapped by `Core/Mapping/OpenItemMapping.cs` (lines, orders, the table report
-  with the sum of the unsettled prices of the items that are not cancelled, the settlement).
+  with the table's id and current name, the settlement).
 
 ## Invariants
 
-- **Cancel mode reuses the settle view.** The purpose decides only what can be ticked, the footer,
-  the title and which page the footer opens; the orders, the rows, the ticks and the reload are the
-  same. Opening a table with `openTable` always returns to settling.
+- **Cancel mode reuses the settle view.** The purpose decides only the search options, what can be
+  ticked, whether a paid row shows as paid, the empty sentence, the footer, the title and which page
+  the footer opens; the orders, the rows, the ticks, the box and the reload are the same. Opening a
+  table with `openTable` always returns to settling with the box off.
 - **The cancel page stays open on a refusal and on silence.** A refusal shows the laptop's reason
   (`errors.cancellation.*`, naming the item) and the "Neu laden" those texts name; a lost answer
   says it is unclear whether the cancellation arrived (`phone.openItems.errors.cancelAnswerNeverCame`).
@@ -125,9 +133,9 @@ Backend, under `backend/`:
 - **Cash or card unless nothing is to be paid.** An amount above zero offers Bar and Karte, and zero
   offers Kassieren alone and sends `none`. The laptop refuses money paid without cash or card, and a
   payment method named when nothing was paid.
-- **A cancelled item is shown and never settled.** The settle view lists it struck through, it
-  cannot be ticked, alone or with its order or the whole table, and it counts toward neither the
-  selected total nor the order's done count. Settling an item a waiter cancelled in the meantime is
+- **A cancelled item is never settled.** The settle view lists it only with "Alle Positionen
+  anzeigen", greyed out and struck through; it cannot be ticked, alone or with its order or the whole table, and it counts toward neither the
+  selected total. Settling an item a waiter cancelled in the meantime is
   refused naming it (`errors.settlement.itemWasCancelled`).
 - **The amount page stays open on a refusal and closes otherwise.** A refusal keeps what was typed
   and shows the reason on the page, with the item it names, and the "Neu laden" those texts name. An accepted settlement closes it and clears the selection. When
@@ -138,9 +146,19 @@ Backend, under `backend/`:
 - **A notice belongs to the table it was given at.** Opening or closing a table clears the notice
   after settling (`openTable`, `closeTable`), so "Geben Sie dem Gast … zurück" never shows at the next
   table, nor on its amount page.
-- **The settle view is loaded by table id, and a stale table is never trusted.** It reads
-  `/api/open-items/tables/{tableId}` through the latest request gate and again on `OrdersChanged` and
-  `ConfigurationChanged`. When the laptop cannot be reached the orders leave the screen and the
+- **The table search keeps or drops whole orders by status and single items by payment and
+  cancellation.** Each option of `TableOrderSearchRequest` is optional and filters nothing when
+  left out: `orderStatus` (`open`, `partiallyFulfilled`, `fulfilled`, the order's status as
+  `OrderQueries.Status` computes it, cancelled items left out, so an order whose items are all
+  cancelled counts as `fulfilled`) keeps or drops whole orders with all their items;
+  `paymentStatus` (`paid`, `notPaid`) and `includeCancelled` (`false` leaves cancelled and
+  acknowledged items out) keep or drop items. An order left with no item is not sent. Kassieren
+  sends `notPaid` and `includeCancelled: false`, Stornieren `includeCancelled: false`, each nothing
+  with "Alle Positionen anzeigen", and Bestellungen anzeigen what the waiter picked in its filter.
+- **The settle view is loaded by table id, and a stale table is never trusted.** It searches
+  `/api/open-items/tables/{tableId}/search` through `api/tableSearch.ts` and the latest request gate,
+  with the options of its purpose and its box, and again on `OrdersChanged`, `ConfigurationChanged`
+  and `GroupsJoined`; ticking the box loads again. When the laptop cannot be reached the orders leave the screen and the
   ticks wait for the next answer. A 404 is a broken program, because the table came from the plan:
   the view says in one sentence that the table could not be loaded and to open it again from the
   plan (`phone.openItems.errors.tableCouldNotBeLoaded`), and clears the ticks
@@ -156,9 +174,11 @@ Backend, under `backend/`:
 ## Tests
 
 - `frontend/tests/phone/views`, on `openItemsFixture.ts`: `OpenItems.table.spec.ts` (loading by id,
-  the title, the colours and states, no orders, the reload, the 404 in German and English, no table after a
+  the title, a paid position, nothing left to take payment for, the reload, the 404 in German and English, no table after a
   reload, closing on leaving, the ticks of an order just sent, a cancelled item struck through, not
-  ticked and not counted), `OpenItems.ticking.spec.ts` (ticking
+  ticked), `OpenItems.showEveryItem.spec.ts` (the options Kassieren and Stornieren send, with and
+  without the box, the green paid row on Kassieren, the paid row like any other on Stornieren, the
+  greyed cancelled row on both, nothing left to cancel), `OpenItems.ticking.spec.ts` (ticking
   rows, whole table, whole order, settling from the footer, the notice when somebody else settled
   first), `OpenItems.cancelling.spec.ts` (cancel mode: the title, a paid item tickable, the count in
   German and English; the cancel page: the list, the title and buttons, the cash in both languages, sending and returning
@@ -172,18 +192,21 @@ Backend, under `backend/`:
 - `frontend/tests/phone/components/openItems`: `AmountPaidDialog.spec.ts` (including the title and
   the reload beside a refusal), `AmountPaidDialogShrinkingSelection.spec.ts` and
   `OpenPositionRow.spec.ts`; `frontend/tests/phone/components/BaseFullPageDialog.spec.ts`.
-- `frontend/tests/phone/core`: `openItems.selection.spec.ts` (both purposes, the cash to give back), `openItems.settling.spec.ts` and
+- `frontend/tests/phone/core`: `openItems.selection.spec.ts` (both purposes, the cash to give back),
+  `openItems.search.spec.ts` (the options per purpose, the paid display), `openItems.settling.spec.ts` and
   `settlementSplit.spec.ts`; `frontend/tests/shared/core/statusTints.spec.ts`.
 - `frontend/tests/phone/stores`: `openItems.table.spec.ts` (the read by id, the gate, a lost
-  connection, the 404, a refusal, closing, the reloads), `openItems.settling.spec.ts` (including the
+  connection, the 404, a refusal, closing, the reloads, the box's options on `OrdersChanged`), `openItems.settling.spec.ts` (including the
   notice staying behind at its table), `openItems.cancelling.spec.ts` (a paid item tickable, the
   cash, the request, the reload after success and the gate, a refusal, no answer, back to settling),
   `openItemsSettleRetry.spec.ts`, `openItems.justSent.spec.ts`,
   `openItemsAfterAnotherPhonePlacesAnOrder.spec.ts` and `order.settleRightAway.spec.ts`;
   `frontend/tests/phone/composables/useSettleDialog.spec.ts` and `useSendAndLeave.spec.ts`.
 - Backend: `GastronomyApp.Infrastructure.Tests/Services/OpenItemsServiceTest.cs` (every read and
-  settle rule on the real DbContext, nothing stored on a refusal, the two statements of the table
-  read) and `Mapping/OpenItemMappingTest.cs`,
-  `GastronomyApp.Api.Tests/Endpoints/OpenItemEndpointsTest.cs` (the one-table view by table id, a
-  renamed table, settling read back through the one-table view, a selection spanning two tables),
-  `FestivalScopeEndpointsTest.cs`.
+  settle rule on the real DbContext, each search option alone and the options of Kassieren together,
+  an emptied order not sent, cancelled and acknowledged items, no option filtering nothing, nothing
+  stored on a refusal, the two statements of the table search) and `Mapping/OpenItemMappingTest.cs`,
+  `GastronomyApp.Api.Tests/Endpoints/OpenItemEndpointsTest.cs` (the table search by table id, a
+  renamed table, the options of Kassieren and an order status on the wire, an option outside its
+  values, settling read back through the search, a selection spanning two tables),
+  `FestivalScopeEndpointsTest.cs`, `Auth/Filters/DeviceKindTest.cs` (a station tablet refused).

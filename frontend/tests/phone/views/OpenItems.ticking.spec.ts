@@ -52,7 +52,7 @@ describe('ticking what the guests at one table pay for', () => {
 
     await clickOn('[data-test="amount-paid-dialog"] [data-test="confirm-in-cash"]')
 
-    expect(laptop.writtenBodies()[0]).toEqual({
+    expect(laptop.bodiesSentTo('POST', '/api/open-items/settle')[0]).toEqual({
       lines: [{ orderItemId: 'item-plain', paidPriceCents: 350, paymentNotice: null }],
       paymentMethod: 'cash',
     })
@@ -131,7 +131,7 @@ describe('ticking what the guests at one table pay for', () => {
     await screen.get('[data-test="reload"]').trigger('click')
     await flushPromises()
 
-    expect(laptop.urls()).toEqual(['/api/open-items/tables/table-12', '/api/open-items/tables/table-12'])
+    expect(laptop.urls()).toEqual(['/api/open-items/tables/table-12/search', '/api/open-items/tables/table-12/search'])
   })
 })
 

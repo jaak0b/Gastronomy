@@ -1,7 +1,7 @@
 import type { AppRoute } from '../router/route'
 import { assertNever } from './assertNever'
 
-export type PhoneScreenName = 'tablePlan' | 'catalog' | 'review' | 'openItems'
+export type PhoneScreenName = 'tablePlan' | 'catalog' | 'review' | 'openItems' | 'orderOverview'
 
 export type ScreenName =
   | PhoneScreenName
@@ -18,6 +18,7 @@ export function isPhoneScreen(screen: ScreenName): screen is PhoneScreenName {
     case 'catalog':
     case 'review':
     case 'openItems':
+    case 'orderOverview':
       return true
     case 'doorGate':
     case 'enrolQr':
@@ -37,7 +38,7 @@ export type DeviceSession =
   | { state: 'waiterPhone' }
   | { state: 'stationTablet' }
 
-type EnrolledScreenRoute = 'home' | 'catalog' | 'review' | 'openItems' | 'stations'
+type EnrolledScreenRoute = 'home' | 'catalog' | 'review' | 'openItems' | 'orderOverview' | 'stations'
 
 function screenForAWaiterPhone(route: EnrolledScreenRoute): ScreenName {
   switch (route) {
@@ -49,6 +50,8 @@ function screenForAWaiterPhone(route: EnrolledScreenRoute): ScreenName {
       return 'review'
     case 'openItems':
       return 'openItems'
+    case 'orderOverview':
+      return 'orderOverview'
     case 'stations':
       return 'tablePlan'
     default:
@@ -84,6 +87,7 @@ export function screenFor(session: DeviceSession, route: AppRoute): ScreenName {
     case 'catalog':
     case 'review':
     case 'openItems':
+    case 'orderOverview':
     case 'stations':
       return screenForTheDeviceSession(session, route.name)
     default:

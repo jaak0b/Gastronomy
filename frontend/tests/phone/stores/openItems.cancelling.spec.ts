@@ -9,7 +9,6 @@ vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnec
 
 const REPORT_WITH_THE_BIER_CANCELLED = {
   ...TABLE_REPORT,
-  openAmountCents: 0,
   orders: [
     {
       ...TABLE_REPORT.orders[0],

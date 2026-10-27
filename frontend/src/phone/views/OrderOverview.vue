@@ -1,0 +1,63 @@
+<script setup lang="ts">
+import { computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { navigate } from '../../shared/router/router'
+import { useSessionStore } from '../../shared/stores/session'
+import { useOrderOverviewStore } from '../stores/orderOverview'
+import OrderOverviewFilter from '../components/orderOverview/OrderOverviewFilter.vue'
+import OverviewOrderCard from '../components/orderOverview/OverviewOrderCard.vue'
+
+const { t } = useI18n()
+const orderOverview = useOrderOverviewStore()
+const session = useSessionStore()
+let stopListening: (() => void) | null = null
+
+const orders = computed(() => orderOverview.report?.orders ?? [])
+
+const foundNothing = computed(() => orderOverview.report !== null && orders.value.length === 0)
+
+onMounted(async () => {
+  if (orderOverview.tableId === null) {
+    navigate('/')
+    return
+  }
+  stopListening = orderOverview.listen()
+  await orderOverview.load()
+})
+
+onUnmounted(() => {
+  orderOverview.closeTable()
+  stopListening?.()
+  stopListening = null
+})
+</script>
+
+<template>
+  <v-container class="order-overview">
+    <div class="d-flex align-center ga-3 mb-2">
+      <h1 class="text-h5 flex-grow-1" data-test="order-overview-title">{{ t('phone.orderOverview.title') }}</h1>
+      <v-btn class="reload" data-test="reload" variant="outlined" size="large" @click="orderOverview.load()">
+        {{ t('phone.openItems.actions.reload') }}
+      </v-btn>
+    </div>
+    <OrderOverviewFilter class="mb-3" :filter="orderOverview.filter" @change="orderOverview.changeFilter" />
+    <v-alert
+      v-if="orderOverview.loadFailureKey !== null"
+      class="mb-2"
+      data-test="load-failed"
+      type="warning"
+      variant="tonal"
+    >
+      {{ t(orderOverview.loadFailureKey) }}
+    </v-alert>
+    <OverviewOrderCard
+      v-for="order in orders"
+      :key="order.orderId"
+      :order="order"
+      :language="session.language"
+    />
+    <v-alert v-if="foundNothing" data-test="no-orders" type="info" variant="tonal">
+      {{ t('phone.orderOverview.messages.noOrderMatches') }}
+    </v-alert>
+  </v-container>
+</template>

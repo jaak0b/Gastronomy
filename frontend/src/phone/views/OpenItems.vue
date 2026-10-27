@@ -33,6 +33,17 @@ const title = computed(() => {
   }
 })
 
+const emptyText = computed(() => {
+  switch (openItems.purpose) {
+    case 'settling':
+      return t('phone.openItems.messages.nothingToSettle')
+    case 'cancelling':
+      return t('phone.openItems.messages.nothingToCancel')
+    default:
+      return assertNever(openItems.purpose)
+  }
+})
+
 const selectedText = computed(() => {
   switch (openItems.purpose) {
     case 'settling':
@@ -115,6 +126,15 @@ onUnmounted(() => {
         {{ t('phone.openItems.actions.reload') }}
       </v-btn>
     </div>
+    <v-checkbox
+      class="show-every-item"
+      data-test="show-every-item"
+      density="comfortable"
+      hide-details
+      :label="t('phone.openItems.actions.showEveryItem')"
+      :model-value="openItems.showsEveryItem"
+      @update:model-value="openItems.showEveryItem($event === true)"
+    />
     <v-alert
       v-if="openItems.loadFailureKey !== null"
       class="load-failed mb-2"
@@ -135,6 +155,7 @@ onUnmounted(() => {
       :report="openItems.report"
       :selected-item-ids="openItems.selectedItemIds"
       :purpose="openItems.purpose"
+      :empty-text="emptyText"
       :language="session.language"
       @toggle-item="openItems.toggleItem"
       @set-whole-table="openItems.setWholeTable"

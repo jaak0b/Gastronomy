@@ -11,7 +11,7 @@ import { answer, emptyAnswer, inTurn, stubLaptop } from '../../support/laptop'
 
 enableAutoUnmount(afterEach)
 
-const TABLE_PATH = '/api/open-items/tables/table-12'
+const TABLE_PATH = '/api/open-items/tables/table-12/search'
 
 describe('the orders of the table the waiter chose to settle', () => {
   beforeEach(() => {
@@ -44,31 +44,6 @@ describe('the orders of the table the waiter chose to settle', () => {
     expect([germanTitle, english.get('[data-test="settle-title"]').text()]).toEqual(['Kassieren', 'Take payment'])
   })
 
-  it('colours each order by how far its positions have been produced', async () => {
-    openItemsLaptop(TABLE_REPORT)
-
-    const screen = await mountScreen()
-
-    expect([137, 138, 139].map((orderNumber) => orderCard(screen, orderNumber).attributes('data-state'))).toEqual([
-      'none',
-      'some',
-      'all',
-    ])
-  })
-
-  it('marks each position as produced or not, with an icon beside the state', async () => {
-    openItemsLaptop(TABLE_REPORT)
-
-    const screen = await mountScreen()
-
-    const notProduced = lineNamed(orderCard(screen, 137), 'Bratwurst')
-    expect(notProduced.classes()).toContain('is-not-produced')
-    expect(notProduced.get('[data-test="line-state"]').classes()).toContain('mdi-clock-outline')
-    const produced = lineNamed(orderCard(screen, 139), 'Kuchen')
-    expect(produced.classes()).toContain('is-produced')
-    expect(produced.get('[data-test="line-state"]').classes()).toContain('mdi-check')
-  })
-
   it('writes the word for paid on a settled position and leaves out its tick box', async () => {
     openItemsLaptop(TABLE_REPORT)
 
@@ -79,16 +54,16 @@ describe('the orders of the table the waiter chose to settle', () => {
     expect(settled.find('[data-test="line-tick"]').exists()).toBe(false)
   })
 
-  it('says that the table has no orders at all when the laptop finds none', async () => {
-    openItemsLaptop({ ...TABLE_REPORT, openAmountCents: 0, orders: [] })
+  it('says that nothing is left to take payment for when the laptop finds no order', async () => {
+    openItemsLaptop({ ...TABLE_REPORT, orders: [] })
 
     const screen = await mountScreen()
 
-    expect(screen.get('[data-test="no-orders"]').text()).toBe('Für diesen Tisch gibt es keine Bestellungen.')
+    expect(screen.get('[data-test="no-orders"]').text()).toBe('An diesem Tisch ist nichts mehr zu kassieren.')
   })
 
   it('says the laptop could not be reached and loads the table again from the reload button', async () => {
-    const laptop = stubLaptop().answers('GET', TABLE_PATH, inTurn(answer({}, 500), answer(TABLE_REPORT)))
+    const laptop = stubLaptop().answers('POST', TABLE_PATH, inTurn(answer({}, 500), answer(TABLE_REPORT)))
     const screen = await mountScreen()
     expect(screen.get('[data-test="load-failed"]').text()).toBe(
       'Der Rechner war nicht erreichbar. Tippen Sie auf "Neu laden".',
@@ -97,12 +72,12 @@ describe('the orders of the table the waiter chose to settle', () => {
     await screen.get('[data-test="reload"]').trigger('click')
     await flushPromises()
 
-    expect(laptop.callsTo('GET', TABLE_PATH)).toHaveLength(2)
+    expect(laptop.callsTo('POST', TABLE_PATH)).toHaveLength(2)
     expect(screen.findAll('[data-test="order-card"]')).toHaveLength(3)
   })
 
   it('says in one sentence that the table could not be loaded when the laptop does not know it', async () => {
-    stubLaptop().answers('GET', TABLE_PATH, emptyAnswer(404))
+    stubLaptop().answers('POST', TABLE_PATH, emptyAnswer(404))
 
     const screen = await mountScreen()
 
@@ -112,7 +87,7 @@ describe('the orders of the table the waiter chose to settle', () => {
   })
 
   it('says the same in English', async () => {
-    stubLaptop().answers('GET', TABLE_PATH, emptyAnswer(404))
+    stubLaptop().answers('POST', TABLE_PATH, emptyAnswer(404))
 
     const screen = await mountScreen('en')
 
@@ -183,7 +158,6 @@ describe('a table opened with the order just sent ticked', () => {
 describe('a table with an item a waiter cancelled', () => {
   const WITH_CANCELLED_BIER = {
     ...TISCH_12,
-    openAmountCents: 350,
     orders: [
       {
         ...TISCH_12.orders[0],
@@ -219,13 +193,5 @@ describe('a table with an item a waiter cancelled', () => {
     await lineNamed(screen, 'Bier').trigger('click')
 
     expect(useOpenItemsStore().selectedItemIds).toEqual([])
-  })
-
-  it('leaves the cancelled item out of the order count', async () => {
-    openItemsLaptop(WITH_CANCELLED_BIER)
-
-    const screen = await mountScreen()
-
-    expect(orderCard(screen, 137).get('[data-test="done-counter"]').text()).toBe('0 / 1 zubereitet')
   })
 })

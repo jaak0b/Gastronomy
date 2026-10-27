@@ -10,6 +10,7 @@ import { useWaiterLanding } from '../composables/useWaiterLanding'
 import { useCatalogStore } from '../stores/catalog'
 import { useOpenItemsStore } from '../stores/openItems'
 import { useOrderStore } from '../stores/order'
+import { useOrderOverviewStore } from '../stores/orderOverview'
 import { useTablePlanStore } from '../stores/tablePlan'
 import { useSessionStore } from '../../shared/stores/session'
 import AreaList from '../components/tablePlan/AreaList.vue'
@@ -22,6 +23,7 @@ const tablePlan = useTablePlanStore()
 const catalog = useCatalogStore()
 const order = useOrderStore()
 const openItems = useOpenItemsStore()
+const orderOverview = useOrderOverviewStore()
 const session = useSessionStore()
 const { landing } = useWaiterLanding()
 const { draftTableName } = useDraftTableName()
@@ -83,6 +85,16 @@ function takeTheOrder(): void {
     default:
       return assertNever(opening)
   }
+}
+
+function showTheOrdersOfTheTable(): void {
+  const table = tappedTable.value
+  tappedTable.value = null
+  if (table === null) {
+    return
+  }
+  orderOverview.openTable(table.tableId)
+  navigate('/order-overview')
 }
 
 function settleTheTable(): void {
@@ -167,6 +179,7 @@ function discardTheDraft(): void {
       v-if="tappedTable !== null"
       :table-name="tappedTable.name"
       @take-order="takeTheOrder"
+      @show-orders="showTheOrdersOfTheTable"
       @settle="settleTheTable"
       @cancel-items="cancelItemsAtTheTable"
       @back="tappedTable = null"

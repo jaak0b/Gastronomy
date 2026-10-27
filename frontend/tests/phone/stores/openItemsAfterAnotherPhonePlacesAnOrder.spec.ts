@@ -35,14 +35,12 @@ const FIRST_ORDER = {
 const TISCH_SIEBEN_BEFORE = {
   tableId: 'table-7',
   tableName: 'Tisch 7',
-  openAmountCents: 350,
   orders: [FIRST_ORDER],
 }
 
 const TISCH_SIEBEN_AFTER_THE_SECOND_WAITER_SENT_TWO_BRATWURST = {
   tableId: 'table-7',
   tableName: 'Tisch 7',
-  openAmountCents: 950,
   orders: [
     {
       orderId: 'order-2',
@@ -68,8 +66,8 @@ describe('the open table on a phone while another phone places an order', () => 
 
   it('shows the two Bratwurst the other waiter sent for Tisch 7', async () => {
     stubLaptop().answers(
-      'GET',
-      '/api/open-items/tables/table-7',
+      'POST',
+      '/api/open-items/tables/table-7/search',
       inTurn(answer(TISCH_SIEBEN_BEFORE), answer(TISCH_SIEBEN_AFTER_THE_SECOND_WAITER_SENT_TWO_BRATWURST)),
     )
     localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
@@ -78,10 +76,10 @@ describe('the open table on a phone while another phone places an order', () => 
     openItems.listen()
     openItems.openTable('table-7')
     await useConnectionStore().connect({ deviceToken: 'token-here' })
-    await vi.waitFor(() => expect(openItems.report?.openAmountCents).toBe(350))
+    await vi.waitFor(() => expect(openItems.report?.orders.map((order) => order.globalOrderNumber)).toEqual([41]))
 
     fireHubEvent('OrdersChanged')
 
-    await vi.waitFor(() => expect(openItems.report?.openAmountCents).toBe(950))
+    await vi.waitFor(() => expect(openItems.report?.orders.map((order) => order.globalOrderNumber)).toEqual([42, 41]))
   })
 })

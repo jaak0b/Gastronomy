@@ -47,7 +47,7 @@ describe('the table a waiter opens to settle', () => {
   it('keeps the newest answer when an older load answers after it', async () => {
     const older = deferredResponse()
     const newer = deferredResponse()
-    stubLaptop().answers('GET', TABLE_PATH, inTurn(() => older.promise, () => newer.promise))
+    stubLaptop().answers('POST', TABLE_PATH, inTurn(() => older.promise, () => newer.promise))
     aWaiterPhone()
     const openItems = useOpenItemsStore()
     openItems.openTable('table-12')
@@ -106,7 +106,7 @@ describe('the table a waiter opens to settle', () => {
 
   it('keeps a closed table closed when a slow answer arrives afterwards', async () => {
     const slow = deferredResponse()
-    stubLaptop().answers('GET', TABLE_PATH, () => slow.promise)
+    stubLaptop().answers('POST', TABLE_PATH, () => slow.promise)
     aWaiterPhone()
     const openItems = useOpenItemsStore()
     openItems.openTable('table-12')
@@ -214,7 +214,7 @@ describe('the open table a phone follows', () => {
   })
 
   async function aPhoneFollowingTisch12() {
-    const laptop = stubLaptop().answers('GET', TABLE_PATH, answer(TABLE_REPORT))
+    const laptop = stubLaptop().answers('POST', TABLE_PATH, answer(TABLE_REPORT))
     const openItems = useOpenItemsStore()
     openItems.listen()
     openItems.openTable('table-12')
@@ -225,7 +225,7 @@ describe('the open table a phone follows', () => {
   }
 
   it('loads the table once the laptop has put the phone into its groups', async () => {
-    const laptop = stubLaptop().answers('GET', TABLE_PATH, answer(TABLE_REPORT))
+    const laptop = stubLaptop().answers('POST', TABLE_PATH, answer(TABLE_REPORT))
     const openItems = useOpenItemsStore()
     openItems.listen()
     openItems.openTable('table-12')
@@ -241,6 +241,16 @@ describe('the open table a phone follows', () => {
     fireHubEvent('OrdersChanged')
 
     await vi.waitFor(() => expect(laptop.urls()).toEqual([TABLE_PATH]))
+  })
+
+  it('loads the table again with the options of its screen when something happens to an order', async () => {
+    const laptop = await aPhoneFollowingTisch12()
+    await useOpenItemsStore().showEveryItem(true)
+    laptop.forgetCalls()
+
+    fireHubEvent('OrdersChanged')
+
+    await vi.waitFor(() => expect(laptop.bodiesSentTo('POST', TABLE_PATH)).toEqual([{}]))
   })
 
   it('loads the table again when the admin changes the plan, so a renamed table shows its new name', async () => {

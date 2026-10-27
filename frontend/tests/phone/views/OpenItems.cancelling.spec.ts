@@ -164,7 +164,7 @@ describe('the page that confirms the cancellation', () => {
 
   it('sends the cancellation and goes back to the table, which shows the item cancelled', async () => {
     const laptop = stubLaptop()
-      .answers('GET', '/api/open-items/tables/table-12', inTurn(answer(TABLE_REPORT), answer(REPORT_WITH_THE_BRATWURST_CANCELLED)))
+      .answers('POST', '/api/open-items/tables/table-12/search', inTurn(answer(TABLE_REPORT), answer(REPORT_WITH_THE_BRATWURST_CANCELLED)))
       .answers('POST', '/api/open-items/cancel', answer({ cashToReturnCents: 0 }))
     const screen = await mountScreenToCancelItems()
     await tick(screen, 137, 'Bratwurst')
@@ -173,7 +173,7 @@ describe('the page that confirms the cancellation', () => {
     await clickOn(`${CONFIRMATION} [data-test="confirm-cancel"]`)
 
     expect({
-      sent: laptop.writtenBodies(),
+      sent: laptop.bodiesSentTo('POST', '/api/open-items/cancel'),
       confirmationOpen: isOnScreen(CONFIRMATION),
       bratwurst: lineNamed(orderCard(screen, 137), 'Bratwurst').classes(),
     }).toEqual({
@@ -214,7 +214,7 @@ describe('the page that confirms the cancellation', () => {
 
     expect({
       confirmationOpen: isOnScreen(CONFIRMATION),
-      tableLoads: laptop.callsTo('GET', '/api/open-items/tables/table-12').length,
+      tableLoads: laptop.callsTo('POST', '/api/open-items/tables/table-12/search').length,
     }).toEqual({ confirmationOpen: false, tableLoads: 2 })
   })
 
@@ -268,7 +268,7 @@ describe('the page that confirms the cancellation', () => {
 
     await clickOn(`${CONFIRMATION} [data-test="back"]`)
 
-    expect({ confirmationOpen: isOnScreen(CONFIRMATION), sent: laptop.writes() }).toEqual({
+    expect({ confirmationOpen: isOnScreen(CONFIRMATION), sent: laptop.callsTo('POST', '/api/open-items/cancel') }).toEqual({
       confirmationOpen: false,
       sent: [],
     })

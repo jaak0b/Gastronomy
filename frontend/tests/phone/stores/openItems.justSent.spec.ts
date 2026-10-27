@@ -49,7 +49,7 @@ describe('a table opened with the items of an order just sent ticked', () => {
   it('ticks from the newest answer when an older load answers after it', async () => {
     const older = deferredResponse()
     const newer = deferredResponse()
-    stubLaptop().answers('GET', TABLE_PATH, inTurn(() => older.promise, () => newer.promise))
+    stubLaptop().answers('POST', TABLE_PATH, inTurn(() => older.promise, () => newer.promise))
     const openItems = useOpenItemsStore()
     openItems.openTableAndSelectItemsOnceLoaded('table-12', ['new-open'])
 
@@ -79,7 +79,7 @@ describe('a table opened with the items of an order just sent ticked', () => {
   it('ticks the new items when a load of the same table started before the handover answers first', async () => {
     const before = deferredResponse()
     const after = deferredResponse()
-    stubLaptop().answers('GET', TABLE_PATH, inTurn(() => before.promise, () => after.promise))
+    stubLaptop().answers('POST', TABLE_PATH, inTurn(() => before.promise, () => after.promise))
     const openItems = useOpenItemsStore()
     openItems.openTable('table-12')
     const loadBeforeTheHandover = openItems.load()

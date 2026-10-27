@@ -80,7 +80,6 @@ function openItemOf(orderItemId: string) {
 const TABLE_THREE_REPORT = {
   tableId: 'table-3',
   tableName: 'Tisch 3',
-  openAmountCents: 1600,
   orders: [
     {
       orderId: 'order-9',
@@ -96,5 +95,5 @@ export function theLaptopPlacesTheOrderAfter(failedAttempts: number): StubbedLap
   const failures = Array.from({ length: failedAttempts }, () => noConnection())
   return stubLaptop()
     .answersEverythingElse(inTurn(...failures, answer(PLACED_ORDER_WITH_TWO_STATIONS)))
-    .answers('GET', '/api/open-items/tables/table-3', answer(TABLE_THREE_REPORT))
+    .answers('POST', '/api/open-items/tables/table-3/search', answer(TABLE_THREE_REPORT))
 }

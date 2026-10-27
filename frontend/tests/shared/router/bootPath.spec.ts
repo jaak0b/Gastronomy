@@ -76,4 +76,12 @@ describe('the route the app boots into, read from the address bar', () => {
 
     expect(currentRoute.value).toEqual({ name: 'home' })
   })
+
+  it('boots a waiter that reloads the orders of a table at home', async () => {
+    window.history.replaceState({}, '', '/order-overview')
+
+    const { currentRoute } = await import('../../../src/shared/router/router')
+
+    expect(currentRoute.value).toEqual({ name: 'home' })
+  })
 })

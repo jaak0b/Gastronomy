@@ -44,7 +44,7 @@ describe('settling what the table actually handed over', () => {
     await typeIn(`${AMOUNT_DIALOG} [data-test="reason-field"]`, 'Stammgast')
     await pressConfirm()
 
-    expect(laptop.writtenBodies()[0]).toEqual({
+    expect(laptop.bodiesSentTo('POST', '/api/open-items/settle')[0]).toEqual({
       lines: [{ orderItemId: 'item-1', paidPriceCents: 200, paymentNotice: 'Stammgast' }],
       paymentMethod: 'cash',
     })
@@ -62,7 +62,7 @@ describe('settling what the table actually handed over', () => {
     expect(
       document.querySelector('[data-test="amount-paid-dialog"] [data-test="confirm-in-cash"]')?.hasAttribute('disabled'),
     ).toBe(true)
-    expect(laptop.writtenBodies()).toEqual([])
+    expect(laptop.bodiesSentTo('POST', '/api/open-items/settle')).toEqual([])
   })
 
   it('sends nothing at all when the table was given the items, until a reason stands', async () => {
@@ -74,7 +74,7 @@ describe('settling what the table actually handed over', () => {
     await typeIn(`${AMOUNT_DIALOG} [data-test="reason-field"]`, 'Essen fuer die Kapelle')
     await pressConfirm('[data-test="confirm-nothing-paid"]')
 
-    expect(laptop.writtenBodies()[0]).toEqual({
+    expect(laptop.bodiesSentTo('POST', '/api/open-items/settle')[0]).toEqual({
       lines: [{ orderItemId: 'item-1', paidPriceCents: 0, paymentNotice: 'Essen fuer die Kapelle' }],
       paymentMethod: 'none',
     })
@@ -88,7 +88,7 @@ describe('settling what the table actually handed over', () => {
     await pressConfirm()
 
     expect(document.querySelector('[data-test="amount-paid-dialog"] [data-test="reason-field"]')).toBeNull()
-    expect(laptop.writtenBodies()[0]).toEqual({
+    expect(laptop.bodiesSentTo('POST', '/api/open-items/settle')[0]).toEqual({
       lines: [{ orderItemId: 'item-1', paidPriceCents: 350, paymentNotice: null }],
       paymentMethod: 'cash',
     })
@@ -102,7 +102,7 @@ describe('settling what the table actually handed over', () => {
     await typeIn(`${AMOUNT_DIALOG} [data-test="amount-field"]`, '5,00')
     await pressConfirm()
 
-    expect(laptop.writtenBodies()[0]).toEqual({
+    expect(laptop.bodiesSentTo('POST', '/api/open-items/settle')[0]).toEqual({
       lines: [{ orderItemId: 'item-1', paidPriceCents: 500, paymentNotice: null }],
       paymentMethod: 'cash',
     })
@@ -117,7 +117,7 @@ describe('settling what the table actually handed over', () => {
     ;(document.querySelector('[data-test="amount-paid-dialog"] [data-test="cancel"]') as HTMLElement).click()
     await flushPromises()
 
-    expect(laptop.writtenBodies()).toEqual([])
+    expect(laptop.bodiesSentTo('POST', '/api/open-items/settle')).toEqual([])
     expect(document.querySelector('[data-test="amount-paid-dialog"]')).toBeNull()
   })
 
@@ -197,7 +197,7 @@ describe('settling what the table actually handed over', () => {
 
     expect({
       amountPageOpen: document.querySelector(AMOUNT_DIALOG) !== null,
-      tableLoads: laptop.callsTo('GET', '/api/open-items/tables/table-12').length,
+      tableLoads: laptop.callsTo('POST', '/api/open-items/tables/table-12/search').length,
     }).toEqual({ amountPageOpen: false, tableLoads: 2 })
   })
 

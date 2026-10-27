@@ -35,7 +35,6 @@ export function reportWith(orders: TableOrderRecordView[]): TableOrderReportView
   return {
     tableId: 'table-12',
     tableName: 'Tisch 12',
-    openAmountCents: 0,
     orders,
   }
 }

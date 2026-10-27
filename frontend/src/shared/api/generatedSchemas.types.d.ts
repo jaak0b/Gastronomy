@@ -60,6 +60,7 @@ export type OrderItemRequest = { catalogItemId: string, unitPriceCents: number, 
 export type OrderItemState = ("open" | "handedOut" | "cancelled" | "cancellationAcknowledged")
 export type OrderStatus = ("open" | "partiallyFulfilled" | "fulfilled")
 export type PaymentMethod = ("none" | "cash" | "card" | null)
+export type PaymentStatus = ("notPaid" | "paid" | null)
 export type StationOrderView = { stationOrderId: string, stationId: string, stationName: string, stationOrderNumber: number, deliveryMode: DeliveryMode, itemIds: Array<string> }
 export type PlacedOrderView = { orderId: string, globalOrderNumber: number, status: OrderStatus, totalCents: number, createdAtUtc: string, stationOrders: Array<StationOrderView> }
 export type PlaceOrderRequest = { clientOrderId: string, tableId: string, items: (null | Array<OrderItemRequest>), deliveryModes?: (null | Array<OrderDeliveryModeRequest>) }
@@ -99,7 +100,8 @@ export type StationItemSelectionRequest = { orderItemIds: (null | Array<string>)
 export type StationQueueView = { station: StationSummaryView, orders: Array<StationOrderQueueView>, asItComes: Array<StationOrderQueueView> }
 export type TableOrderRecordItemView = { orderItemId: string, orderId: string, globalOrderNumber: number, itemName: string, note: (null | string), unitPriceCents: number, orderedAtUtc: string, state: OrderItemState, stateSetAtUtc: string, settledAtUtc: (null | string), chargedPriceCents: (null | number) }
 export type TableOrderRecordView = { orderId: string, globalOrderNumber: number, createdAtUtc: string, staffMemberName: string, items: Array<TableOrderRecordItemView> }
-export type TableOrderReportView = { tableId: string, tableName: string, openAmountCents: number, orders: Array<TableOrderRecordView> }
+export type TableOrderReportView = { tableId: string, tableName: string, orders: Array<TableOrderRecordView> }
+export type TableOrderSearchRequest = Partial<{ orderStatus: (null | OrderStatus), paymentStatus: (null | PaymentStatus), includeCancelled: (null | boolean) }>
 export type TablePlanTableView = { tableId: string, name: string, geometry: AreaShapeGeometry, handOutProgress: ShareState, settlementProgress: ShareState }
 export type TablePlanStationShapeView = { stationName: string, geometry: AreaShapeGeometry }
 export type TablePlanAreaView = { areaId: string, name: string, tables: Array<TablePlanTableView>, stationShapes: Array<TablePlanStationShapeView> }
@@ -231,9 +233,9 @@ export type post__api_orders = {
 },
       
     }
-export type get__api_openItems_tables_TableId = {
-      method: "GET",
-      path: "/api/open-items/tables/{tableId}",
+export type post__api_openItems_tables_TableId_search = {
+      method: "POST",
+      path: "/api/open-items/tables/{tableId}/search",
       requestFormat: "json",
       responseFormat: "json",
       parameters: {
@@ -241,7 +243,7 @@ export type get__api_openItems_tables_TableId = {
         path:  { tableId: string },
         
         
-        
+        body:  Schemas.TableOrderSearchRequest,
           }
       responses: {200: Schemas.TableOrderReportView,
 },
@@ -1314,6 +1316,7 @@ export type post__api_admin_units_UnitId_deactivate = {
            "/api/enrolment/redeem": Endpoints.post__api_enrolment_redeem,
 "/api/admin/enrolment/invitations": Endpoints.post__api_admin_enrolment_invitations,
 "/api/orders": Endpoints.post__api_orders,
+"/api/open-items/tables/{tableId}/search": Endpoints.post__api_openItems_tables_TableId_search,
 "/api/open-items/settle": Endpoints.post__api_openItems_settle,
 "/api/open-items/cancel": Endpoints.post__api_openItems_cancel,
 "/api/estimates/quote": Endpoints.post__api_estimates_quote,
@@ -1360,7 +1363,6 @@ get: {
 "/api/language": Endpoints.get__api_language,
 "/api/admin/enrolment/invitations/{invitationId}/qr.svg": Endpoints.get__api_admin_enrolment_invitations_InvitationId_qr_svg,
 "/api/session": Endpoints.get__api_session,
-"/api/open-items/tables/{tableId}": Endpoints.get__api_openItems_tables_TableId,
 "/api/estimates": Endpoints.get__api_estimates,
 "/api/station/orders": Endpoints.get__api_station_orders,
 "/api/station/orders/fulfilled": Endpoints.get__api_station_orders_fulfilled,

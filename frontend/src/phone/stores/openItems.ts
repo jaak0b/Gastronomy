@@ -5,14 +5,15 @@ import {
   CancellationView,
   type CancelItemsRequest,
   SettlementView,
-  TableOrderRecordView,
-  TableOrderReportView,
+  type TableOrderRecordView,
+  type TableOrderReportView,
 } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import {
   cashToReturnCents,
   noticeAfterSettling,
+  searchOptionsFor,
   type SentSettleLine,
   selectedAmountCents,
   selectedItems,
@@ -27,10 +28,9 @@ import {
 } from '../core/openItems'
 import { SEND_TIMEOUT_MS } from '../core/sendTimeout'
 import { splitSettlement } from '../core/settlementSplit'
+import { searchTheTable } from '../api/tableSearch'
 import { useConnectionStore } from '../../shared/stores/connection'
 import { useSessionStore } from '../../shared/stores/session'
-
-const TABLE_NOT_FOUND = 404
 
 export const useOpenItemsStore = defineStore('openItems', () => {
   const tableId = ref<string | null>(null)
@@ -40,6 +40,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   const isSettling = ref(false)
   const isCancelling = ref(false)
   const purpose = ref<SelectionPurpose>('settling')
+  const showsEveryItem = ref(false)
   const notice = ref<SettleNotice | null>(null)
   const preselectedItemIds = ref<string[] | null>(null)
 
@@ -63,6 +64,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     loadGate.startRequest()
     tableId.value = openedTableId
     purpose.value = 'settling'
+    showsEveryItem.value = false
     report.value = null
     loadFailureKey.value = null
     selectedItemIds.value = []
@@ -83,6 +85,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   function closeTable(): void {
     loadGate.startRequest()
     tableId.value = null
+    showsEveryItem.value = false
     report.value = null
     loadFailureKey.value = null
     selectedItemIds.value = []
@@ -104,46 +107,40 @@ export const useOpenItemsStore = defineStore('openItems', () => {
 
   async function load(): Promise<void> {
     const shownTableId = tableId.value
-    if (deviceToken() === null || shownTableId === null) {
+    const token = deviceToken()
+    if (token === null || shownTableId === null) {
       return
     }
-    const token = loadGate.startRequest()
-    const result = await request(`/api/open-items/tables/${encodeURIComponent(shownTableId)}`, {
-      token: deviceToken(),
-      schema: TableOrderReportView,
-    })
-    if (!loadGate.isNewestRequest(token)) {
+    const gateNumber = loadGate.startRequest()
+    const answer = await searchTheTable(shownTableId, searchOptionsFor(purpose.value, showsEveryItem.value), token)
+    if (!loadGate.isNewestRequest(gateNumber)) {
       return
     }
-    switch (result.kind) {
-      case 'ok':
-        report.value = result.data
+    switch (answer.kind) {
+      case 'found':
+        report.value = answer.report
         loadFailureKey.value = null
         selectedItemIds.value = withoutItemsThatAreGone(
           preselectedItemIds.value ?? selectedItemIds.value,
-          result.data,
+          answer.report,
           purpose.value,
         )
         preselectedItemIds.value = null
         return
-      case 'error':
-        if (result.status === TABLE_NOT_FOUND) {
-          showWhyTheLaptopRefusedTheTable('phone.openItems.errors.tableCouldNotBeLoaded')
-          return
-        }
-        if (result.body !== null) {
-          showWhyTheLaptopRefusedTheTable(result.body.messageKey)
-          return
-        }
-        showThatTheLaptopCouldNotAnswer()
+      case 'refused':
+        showWhyTheLaptopRefusedTheTable(answer.failureKey)
         return
-      case 'unreachable':
-      case 'unreadableAnswer':
+      case 'unanswered':
         showThatTheLaptopCouldNotAnswer()
         return
       default:
-        return assertNever(result)
+        return assertNever(answer)
     }
+  }
+
+  async function showEveryItem(isWanted: boolean): Promise<void> {
+    showsEveryItem.value = isWanted
+    await load()
   }
 
   function listen(): () => void {
@@ -266,6 +263,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   return {
     tableId,
     purpose,
+    showsEveryItem,
     report,
     loadFailureKey,
     selectedItemIds,
@@ -280,6 +278,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     openTableToCancelItems,
     closeTable,
     load,
+    showEveryItem,
     listen,
     dismissNotice,
     toggleItem,

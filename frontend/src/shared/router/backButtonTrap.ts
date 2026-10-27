@@ -23,6 +23,7 @@ function returnPathFor(route: AppRoute): string {
     case 'catalog':
     case 'review':
     case 'openItems':
+    case 'orderOverview':
       return '/'
     case 'stations':
       return '/stations'

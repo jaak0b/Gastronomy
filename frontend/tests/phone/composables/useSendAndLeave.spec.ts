@@ -46,7 +46,6 @@ const PLACED_ORDER_TO_SETTLE = {
 const TABLE_THREE_WITH_THE_SENT_ITEM = {
   tableId: 'table-3',
   tableName: 'Tisch 3',
-  openAmountCents: 200,
   orders: [
     {
       orderId: 'order-1',
@@ -92,7 +91,7 @@ function theLaptopPlacesTheOrderToSettleAfter(failedAttempts: number): void {
   const failedAnswers = Array.from({ length: failedAttempts }, () => noConnection())
   stubLaptop()
     .answersEverythingElse(answer({ stations: [] }))
-    .answers('GET', '/api/open-items/tables/table-3', answer(TABLE_THREE_WITH_THE_SENT_ITEM))
+    .answers('POST', '/api/open-items/tables/table-3/search', answer(TABLE_THREE_WITH_THE_SENT_ITEM))
     .answers('ANY', (call) => call.url === '/api/orders', inTurn(...failedAnswers, answer(PLACED_ORDER_TO_SETTLE)))
 }
 
