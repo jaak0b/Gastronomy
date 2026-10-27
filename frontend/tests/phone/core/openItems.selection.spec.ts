@@ -3,8 +3,8 @@ import {
   selectedAmountCents,
   selectionStateOf,
   shareStateOf,
-  unsettledItemIdsIn,
-  unsettledItemIdsInOrder,
+  settleableItemIdsIn,
+  settleableItemIdsInOrder,
   withItemToggled,
   withWholeOrder,
   withWholeTable,
@@ -21,7 +21,7 @@ describe('the items of a table the waiter can still tick', () => {
   ])
 
   it('are the items of every order that are not settled yet', () => {
-    expect(unsettledItemIdsIn(report)).toEqual(['bier', 'bratwurst'])
+    expect(settleableItemIdsIn(report)).toEqual(['bier', 'bratwurst'])
   })
 })
 
@@ -129,13 +129,13 @@ describe('taking a whole order at once', () => {
   ])
 
   it('offers only the items of the order that are not settled', () => {
-    expect(unsettledItemIdsInOrder(order)).toEqual(['12-0', '12-1'])
+    expect(settleableItemIdsInOrder(order)).toEqual(['12-0', '12-1'])
   })
 
   it('offers nothing from an order whose items are all settled', () => {
     const paid = recordWith([itemWith('12-paid', null, SETTLED_AT, 200)])
 
-    expect(unsettledItemIdsInOrder(paid)).toEqual([])
+    expect(settleableItemIdsInOrder(paid)).toEqual([])
   })
 
   it('ticks the open items of the order and keeps the other ticks of the table', () => {
@@ -148,5 +148,29 @@ describe('taking a whole order at once', () => {
 
   it('unticks exactly the items of the order', () => {
     expect(withWholeOrder(['12-0', '12-1', '12-2'], order, false)).toEqual(['12-2'])
+  })
+})
+
+describe('an item a waiter cancelled', () => {
+  const cancelledBier = { ...itemWith('bier', null, null, 400), state: 'cancelled' as const }
+  const cancelledPaidCola = { ...itemWith('cola', '2026-09-05T18:12:00Z', SETTLED_AT, 150), state: 'cancelled' as const }
+  const order = recordWith([itemWith('bratwurst', null, null, 350), cancelledBier, cancelledPaidCola])
+  const report = reportWith([order])
+
+  it('is never one the waiter can tick', () => {
+    expect(settleableItemIdsIn(report)).toEqual(['bratwurst'])
+    expect(settleableItemIdsInOrder(order)).toEqual(['bratwurst'])
+  })
+
+  it('stays out of the selection when tapped', () => {
+    expect(withItemToggled([], report, 'bier')).toEqual([])
+  })
+
+  it('stays out when the whole table is ticked', () => {
+    expect(withWholeTable([], report, true)).toEqual(['bratwurst'])
+  })
+
+  it('counts nothing toward the amount', () => {
+    expect(selectedAmountCents(report, ['bratwurst', 'bier'])).toBe(350)
   })
 })

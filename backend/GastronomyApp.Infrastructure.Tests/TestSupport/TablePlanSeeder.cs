@@ -109,6 +109,19 @@ public sealed class TablePlanSeeder
     await _statusSeeder.SaveAsync(dbContext, TestContext.CurrentContext.CancellationToken);
   }
 
+  public async Task CancelEveryItemAtTableAsync(GastronomyAppDbContext dbContext, SeededDomain seeded, Guid tableId)
+  {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(seeded);
+
+    List<OrderItem> items = await dbContext.OrderItems.Where(item => item.StationOrder.Order.TableId == tableId).ToListAsync(TestContext.CurrentContext.CancellationToken);
+
+    foreach (var item in items)
+      _statusSeeder.Cancel(item, seeded.StaffMemberId, _createdAtUtc.AddMinutes(30));
+
+    await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+  }
+
   public async Task AddOrderAtKitchenAndBarAsync(GastronomyAppDbContext dbContext, SeededDomain seeded, Guid tableId, int globalOrderNumber, DateTime? kitchenHandedOutAtUtc)
   {
     var orderId = Guid.NewGuid();

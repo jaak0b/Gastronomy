@@ -9,9 +9,11 @@ public sealed class TableProgressTest
 {
   private readonly TableProgress _service = new(new());
 
-  private readonly OrderItemFlags _untouched = new(false, false);
-  private readonly OrderItemFlags _handedOut = new(true, false);
-  private readonly OrderItemFlags _settled = new(false, true);
+  private readonly OrderItemProgress _untouched = new(OrderItemState.Open, false);
+  private readonly OrderItemProgress _handedOut = new(OrderItemState.HandedOut, false);
+  private readonly OrderItemProgress _settled = new(OrderItemState.Open, true);
+  private readonly OrderItemProgress _cancelled = new(OrderItemState.Cancelled, false);
+  private readonly OrderItemProgress _settledAndCancelled = new(OrderItemState.CancellationAcknowledged, true);
 
   [Test]
   public void HandOutProgressOf_ATableWithoutOrders_IsAll()
@@ -55,6 +57,22 @@ public sealed class TableProgressTest
   public void HandOutProgressOf_EverythingSettledButNothingHandedOut_IsNone()
   {
     var table = TableWith(OrderOf(_settled, _settled));
+
+    Assert.That(_service.HandOutProgressOf(table), Is.EqualTo(ShareState.None));
+  }
+
+  [Test]
+  public void HandOutProgressOf_AnOrderWhoseItemsAreAllCancelledBesideAHandedOutOne_IsAll()
+  {
+    var table = TableWith(OrderOf(_cancelled, _cancelled), OrderOf(_handedOut));
+
+    Assert.That(_service.HandOutProgressOf(table), Is.EqualTo(ShareState.All));
+  }
+
+  [Test]
+  public void HandOutProgressOf_AHandedOutItemBesideACancelledOne_LeavesTheCancelledOneOut()
+  {
+    var table = TableWith(OrderOf(_handedOut, _cancelled), OrderOf(_untouched, _cancelled));
 
     Assert.That(_service.HandOutProgressOf(table), Is.EqualTo(ShareState.None));
   }
@@ -112,12 +130,20 @@ public sealed class TableProgressTest
   }
 
   [Test]
+  public void SettlementProgressOf_ASettledItemBesideACancelledUnsettledOne_IsAll()
+  {
+    var table = TableWith(OrderOf(_settled, _cancelled), OrderOf(_settledAndCancelled));
+
+    Assert.That(_service.SettlementProgressOf(table), Is.EqualTo(ShareState.All));
+  }
+
+  [Test]
   public void SettlementProgressOf_NullTable_ThrowsArgumentNullException()
   {
     Assert.That(() => _service.SettlementProgressOf(null!), Throws.ArgumentNullException);
   }
 
-  private ShownTable TableWith(params IReadOnlyList<OrderItemFlags>[] itemFlagsPerOrder)
+  private ShownTable TableWith(params IReadOnlyList<OrderItemProgress>[] itemProgressPerOrder)
   {
     return new(Guid.NewGuid(),
                "Tisch 3",
@@ -129,10 +155,10 @@ public sealed class TableProgressTest
                  Height = 40,
                  Rotation = 0
                },
-               itemFlagsPerOrder);
+               itemProgressPerOrder);
   }
 
-  private IReadOnlyList<OrderItemFlags> OrderOf(params OrderItemFlags[] items)
+  private IReadOnlyList<OrderItemProgress> OrderOf(params OrderItemProgress[] items)
   {
     return items;
   }

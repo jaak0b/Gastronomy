@@ -46,8 +46,8 @@ Backend, under `backend/`:
   one in that direction that `MoveAreaRequest.ShowsHiddenAreas` says the admin can see. `Area` and
   `Table` are `INamed`, so a name that is already taken at the festival, hidden rows included, is
   found by `NamedQueries.Namesakes` in SQL, where the column's `NOCASE` collation ignores case. Hiding
-  is one flow for both, `Core/Services/FestivalRowHiding.cs`, which each edit service calls with its own item filter and its own refusals: an area or a table that still has an item not handed out
-  or not settled stays shown while the festival runs (`WhereNotHandedOutOrNotSettled()` from
+  is one flow for both, `Core/Services/FestivalRowHiding.cs`, which each edit service calls with its own item filter and its own refusals: an area or a table that still has an item to hand out
+  or to settle, cancelled items left out, stays shown while the festival runs (`WhereToHandOutOrToSettle()` from
   `Core/Queries/OrderItemQueries.cs`, the filter every "item still owed" question shares, asked only
   when `RunningFestivalLookup.IsRunning` says the festival runs, the one home of "only while it
   runs" that the stations use too, see the `festivals` page). Showing is the festival-scoped `ActivationService.ShowAsync<TEntity, TView>(festivalId, id, ...)`, constrained on `IHideable` and `IFestivalScoped`, which looks the row up inside the
@@ -70,13 +70,18 @@ Backend, under `backend/`:
 - The phone's plan: `TablePlanService.ReadRunningFestivalAsync` asks `RunningFestivalLookup` for the
   running festival and reads its shown plan as one SQL statement, so one snapshot: `ProjectToType`
   into the records in `Core/Results`, `ShownArea` (the area with its `ShownTable`s and its
-  `TablePlanStationShapeView`s) and `ShownTable` (the table with `ItemFlagsPerOrder`, one list of
-  `OrderItemFlags` (`IsHandedOut`, `IsSettled`) per order, over all its stations). The flags are
+  `TablePlanStationShapeView`s) and `ShownTable` (the table with `ItemProgressPerOrder`, one list of
+  `OrderItemProgress` (`State`, `IsSettled`) per order, over all its stations; a cancelled item counts
+  toward neither colour). The progress is
   mapped from `OrderItem` in `TablePlanMapping`, so no hand-written `Select` is left. No order or
   item entity is loaded, because every phone reads this again on every `OrdersChanged`.
   `Core/Services/TableProgress.cs` derives a table's two colour states, `HandOutProgressOf` and
-  `SettlementProgressOf`, each through `OrderService.ShareOfFlaggedItems`, the one function that
-  turns item flags into `None`, `Some` or `All` and that `OrderService.StatusOf` uses as well; the
+  `SettlementProgressOf`, from each order's `OrderService.HandOutProgressOf` and
+  `OrderService.SettlementProgressOf`, the one home of an order's two progress states, which
+  `OrderService.StatusOf` uses as well. Each leaves cancelled items out and hands the rest to
+  `ShareOfFlaggedItems`, which turns item flags into `None`, `Some` or `All`. Something with nothing
+  left to do counts as done, so an empty list is `All` and an order whose items are all cancelled is
+  finished; the
   service sets them on the `TablePlanTableView`s after the read, in memory. The statement count is
   pinned in `TablePlanServiceTest` (see the `count-sql-statements` how-to page).
 - `OrderPlacementService` looks the order's table up in `IGastronomyDatabase.Tables`; the open items
@@ -433,7 +438,8 @@ Frontend, under `frontend/src/`:
   deterministic order, a very long digit run), `ItemsToHandOutLookupTest` (the station checks),
   `AreaShapeServiceTest`, and the table cases of `OrderPlacementServiceTest`;
   `TableProgressTest` for the two colour states (the example above, the settled side, a table
-  without orders) and the `ShareOfFlaggedItems` cases of `OrderServiceTest`.
+  without orders) and the `ShareOfFlaggedItems`, `HandOutProgressOf` and `SettlementProgressOf` cases
+  of `OrderServiceTest`.
 - `GastronomyApp.Infrastructure.Tests`: `Configurations/AreaConfigurationTest`,
   `TableConfigurationTest`, `FestivalStationShapeConfigurationTest` and `OrderConfigurationTest`
   (the unique names, the database refusing a festival mix-up and the deletion of a table with an

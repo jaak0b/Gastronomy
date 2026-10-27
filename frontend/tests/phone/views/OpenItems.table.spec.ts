@@ -6,7 +6,7 @@ import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
 import { testPlugins } from '../../support/plugins'
-import { TABLE_REPORT, lineNamed, orderCard, mountScreen, openItemsLaptop } from './openItemsFixture'
+import { TABLE_REPORT, TISCH_12, lineNamed, orderCard, mountScreen, openItemsLaptop } from './openItemsFixture'
 import { answer, emptyAnswer, inTurn, stubLaptop } from '../../support/laptop'
 
 enableAutoUnmount(afterEach)
@@ -177,5 +177,55 @@ describe('a table opened with the order just sent ticked', () => {
       older: [false],
       justSent: [true, true],
     })
+  })
+})
+
+describe('a table with an item a waiter cancelled', () => {
+  const WITH_CANCELLED_BIER = {
+    ...TISCH_12,
+    openAmountCents: 350,
+    orders: [
+      {
+        ...TISCH_12.orders[0],
+        items: [TISCH_12.orders[0].items[0], { ...TISCH_12.orders[0].items[1], state: 'cancelled' }],
+      },
+    ],
+  }
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/open-items')
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('shows the cancelled item struck through', async () => {
+    openItemsLaptop(WITH_CANCELLED_BIER)
+
+    const screen = await mountScreen()
+
+    expect(lineNamed(screen, 'Bier').classes()).toContain('cancelled-item')
+    expect(lineNamed(screen, 'Bratwurst').classes()).not.toContain('cancelled-item')
+  })
+
+  it('does not tick the cancelled item when the waiter taps it', async () => {
+    openItemsLaptop(WITH_CANCELLED_BIER)
+    const screen = await mountScreen()
+
+    await lineNamed(screen, 'Bier').trigger('click')
+
+    expect(useOpenItemsStore().selectedItemIds).toEqual([])
+  })
+
+  it('leaves the cancelled item out of the order count', async () => {
+    openItemsLaptop(WITH_CANCELLED_BIER)
+
+    const screen = await mountScreen()
+
+    expect(orderCard(screen, 137).get('[data-test="done-counter"]').text()).toBe('0 / 1 zubereitet')
   })
 })

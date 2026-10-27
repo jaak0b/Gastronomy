@@ -26,6 +26,8 @@ export type AdminStationListView = { stations: Array<AdminStationView> }
 export type AdminTablePlanView = { areas: Array<AdminAreaView> }
 export type AdminUnitView = { unitId: string, name: string, isActive: boolean, usedByIngredientNames: Array<string> }
 export type AdminUnitListView = { units: Array<AdminUnitView> }
+export type CancelItemsRequest = { orderItemIds: (null | Array<string>) }
+export type CancellationView = { cashToReturnCents: number }
 export type CatalogCategoryView = { categoryId: string, name: string, colourHex: string, sortOrder: number }
 export type CatalogItemView = { id: string, categoryId: string, name: string, priceCents: number, sortOrder: number, isAvailable: boolean, productionMinutes: (null | number), isQueueIndependent: boolean, stationIds: Array<string> }
 export type CatalogStationView = { id: string, name: string, sortOrder: number }
@@ -55,6 +57,7 @@ export type MoveTableRequest = { tableId: string, geometry: (null | AreaShapeGeo
 export type MoveTablesRequest = { tables: (null | Array<MoveTableRequest>) }
 export type OrderDeliveryModeRequest = { stationId: string, deliveryMode: DeliveryMode }
 export type OrderItemRequest = { catalogItemId: string, unitPriceCents: number, note?: (null | string), stationId?: (null | string) }
+export type OrderItemState = ("open" | "handedOut" | "cancelled" | "cancellationAcknowledged")
 export type OrderStatus = ("open" | "partiallyFulfilled" | "fulfilled")
 export type PaymentMethod = ("none" | "cash" | "card" | null)
 export type StationOrderView = { stationOrderId: string, stationId: string, stationName: string, stationOrderNumber: number, deliveryMode: DeliveryMode, itemIds: Array<string> }
@@ -89,12 +92,12 @@ export type SettleLineRequest = { orderItemId: string, paidPriceCents: (null | n
 export type SettleItemsRequest = { lines: (null | Array<SettleLineRequest>), paymentMethod: (null | PaymentMethod) }
 export type SettlementView = { settledOrderItemIds: Array<string>, reappliedOrderItemIds: Array<string>, alreadySettledByOthersOrderItemIds: Array<string> }
 export type ShareState = ("none" | "some" | "all")
-export type StationQueueItemView = { orderItemId: string, itemName: string, note: (null | string), fulfilledAtUtc: (null | string) }
+export type StationQueueItemView = { orderItemId: string, itemName: string, note: (null | string), state: OrderItemState, stateSetAtUtc: string }
 export type StationOrderQueueView = { stationOrderId: string, globalOrderNumber: number, stationOrderNumber: number, tableName: string, staffMemberName: string, deliveryMode: DeliveryMode, createdAtUtc: string, isHiddenFromAsItComesQueue: boolean, itemCount: number, fulfilledItemCount: number, items: Array<StationQueueItemView> }
 export type StationFulfilledView = { stationOrders: Array<StationOrderQueueView> }
 export type StationItemSelectionRequest = { orderItemIds: (null | Array<string>) }
 export type StationQueueView = { station: StationSummaryView, orders: Array<StationOrderQueueView>, asItComes: Array<StationOrderQueueView> }
-export type TableOrderRecordItemView = { orderItemId: string, orderId: string, globalOrderNumber: number, itemName: string, note: (null | string), unitPriceCents: number, orderedAtUtc: string, fulfilledAtUtc: (null | string), settledAtUtc: (null | string) }
+export type TableOrderRecordItemView = { orderItemId: string, orderId: string, globalOrderNumber: number, itemName: string, note: (null | string), unitPriceCents: number, orderedAtUtc: string, state: OrderItemState, stateSetAtUtc: string, settledAtUtc: (null | string), chargedPriceCents: (null | number) }
 export type TableOrderRecordView = { orderId: string, globalOrderNumber: number, createdAtUtc: string, staffMemberName: string, items: Array<TableOrderRecordItemView> }
 export type TableOrderReportView = { tableId: string, tableName: string, openAmountCents: number, orders: Array<TableOrderRecordView> }
 export type TablePlanTableView = { tableId: string, name: string, geometry: AreaShapeGeometry, handOutProgress: ShareState, settlementProgress: ShareState }
@@ -260,6 +263,22 @@ export type post__api_openItems_settle = {
 },
       
     }
+export type post__api_openItems_cancel = {
+      method: "POST",
+      path: "/api/open-items/cancel",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        
+        
+        
+        body:  Schemas.CancelItemsRequest,
+          }
+      responses: {200: Schemas.CancellationView,
+},
+      
+    }
 export type get__api_estimates = {
       method: "GET",
       path: "/api/estimates",
@@ -325,6 +344,22 @@ export type post__api_station_items_fulfill = {
 export type post__api_station_items_unfulfill = {
       method: "POST",
       path: "/api/station/items/unfulfill",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        
+        
+        
+        body:  Schemas.StationItemSelectionRequest,
+          }
+      responses: {200: Schemas.StationQueueView,
+},
+      
+    }
+export type post__api_station_items_acknowledgeCancellation = {
+      method: "POST",
+      path: "/api/station/items/acknowledge-cancellation",
       requestFormat: "json",
       responseFormat: "json",
       parameters: {
@@ -1280,9 +1315,11 @@ export type post__api_admin_units_UnitId_deactivate = {
 "/api/admin/enrolment/invitations": Endpoints.post__api_admin_enrolment_invitations,
 "/api/orders": Endpoints.post__api_orders,
 "/api/open-items/settle": Endpoints.post__api_openItems_settle,
+"/api/open-items/cancel": Endpoints.post__api_openItems_cancel,
 "/api/estimates/quote": Endpoints.post__api_estimates_quote,
 "/api/station/items/fulfill": Endpoints.post__api_station_items_fulfill,
 "/api/station/items/unfulfill": Endpoints.post__api_station_items_unfulfill,
+"/api/station/items/acknowledge-cancellation": Endpoints.post__api_station_items_acknowledgeCancellation,
 "/api/station/orders/{stationOrderId}/hide": Endpoints.post__api_station_orders_StationOrderId_hide,
 "/api/admin/stations": Endpoints.post__api_admin_stations,
 "/api/admin/stations/{stationId}/deactivate": Endpoints.post__api_admin_stations_StationId_deactivate,

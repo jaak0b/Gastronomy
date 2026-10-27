@@ -223,6 +223,18 @@ public sealed class TableEditServiceTest
   }
 
   [Test]
+  public async Task HideAsync_ATableWhoseUnsettledItemWasCancelledWhileTheFestivalRuns_HidesIt()
+  {
+    var tableId = await TableWithAnUnsettledItemAsync();
+    await _plan.CancelEveryItemAtTableAsync(_fixture.DbContext, _seeded, tableId);
+
+    var hidden = await _service.HideAsync(_seeded.FestivalId, tableId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That((await StoredTableAsync(tableId)).IsHidden, Is.True);
+    Assert.That(hidden.IsError, Is.False);
+  }
+
+  [Test]
   public async Task HideAsync_ATableWithItemsStillToHandOutOrSettleAfterTheFestival_HidesIt()
   {
     var tableId = await TableWithAnUnsettledItemAsync();

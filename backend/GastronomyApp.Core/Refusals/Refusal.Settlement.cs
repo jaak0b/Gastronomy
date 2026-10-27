@@ -40,6 +40,17 @@ public static partial class Refusal
                                  });
     }
 
+    public static Error ItemWasCancelled(Guid orderItemId, string itemName)
+    {
+      return Conflict("errors.settlement.itemWasCancelled",
+                      $"The settlement names the order item {orderItemId}, which a waiter has cancelled in the meantime.",
+                      new()
+                      {
+                        [MetadataKeys.ProblemCode] = "ItemWasCancelled",
+                        [MetadataKeys.Name] = itemName
+                      });
+    }
+
     public static Error SelectionSpansSeveralTables(IReadOnlyList<Guid> tableIds)
     {
       return BadRequest(RefusalMessageKeys.SettlementCannotBeProcessed,

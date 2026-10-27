@@ -84,7 +84,6 @@ public sealed class OrderPlacementService
                                .ThenInclude(stationOrder => stationOrder.Station)
                                .Include(candidate => candidate.StationOrders)
                                .ThenInclude(stationOrder => stationOrder.Items)
-                               .ThenInclude(item => item.CurrentStatus)
                                .FirstAsync(candidate => candidate.Id == orderId, cancellationToken);
 
     return order.Adapt<PlacedOrderView>(_mapping) with

@@ -1,23 +1,31 @@
+using EntityFrameworkCore.Projectables;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Mapping;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Queries;
 
 public static class OrderItemQueries
 {
-  public static IQueryable<OrderItem> WhereNotHandedOut(this IQueryable<OrderItem> items)
+  public static IQueryable<OrderItem> WhereOpen(this IQueryable<OrderItem> items)
   {
     ArgumentNullException.ThrowIfNull(items);
 
-    return items.Where(OrderItemStates.NotHandedOutPredicate);
+    return items.Where(item => item.IsOpen());
   }
 
-  public static IQueryable<OrderItem> WhereNotHandedOutOrNotSettled(this IQueryable<OrderItem> items)
+  public static IQueryable<OrderItem> WhereNotCancelled(this IQueryable<OrderItem> items)
   {
     ArgumentNullException.ThrowIfNull(items);
 
-    return items.Where(OrderItemStates.NotHandedOutOrNotSettledPredicate);
+    return items.Where(item => !item.IsCancelled());
+  }
+
+  public static IQueryable<OrderItem> WhereToHandOutOrToSettle(this IQueryable<OrderItem> items)
+  {
+    ArgumentNullException.ThrowIfNull(items);
+
+    return items.Where(item => item.IsToHandOutOrToSettle());
   }
 
   public static IQueryable<OrderItem> WhereFestivalIs(this IQueryable<OrderItem> items, Guid festivalId)
@@ -32,14 +40,43 @@ public static class OrderItemQueries
     ArgumentNullException.ThrowIfNull(items);
     ArgumentNullException.ThrowIfNull(recipeLines);
 
-    return items.Join(recipeLines,
-                      item => item.CatalogItemId,
-                      recipeLine => recipeLine.CatalogItemId,
-                      (item, recipeLine) => new ConsumedIngredient
-                                            {
-                                              IngredientId = recipeLine.IngredientId,
-                                              OrderedAtUtc = item.StationOrder.Order.CreatedAtUtc,
-                                              Amount = recipeLine.Amount
-                                            });
+    IQueryable<OrderItem> itemsNotCancelled = items.WhereNotCancelled();
+
+    return itemsNotCancelled.Join(recipeLines,
+                                  item => item.CatalogItemId,
+                                  recipeLine => recipeLine.CatalogItemId,
+                                  (item, recipeLine) => new ConsumedIngredient
+                                                        {
+                                                          IngredientId = recipeLine.IngredientId,
+                                                          OrderedAtUtc = item.StationOrder.Order.CreatedAtUtc,
+                                                          Amount = recipeLine.Amount
+                                                        });
   }
+
+  [Projectable]
+  public static bool IsOpen(this OrderItem item) => item.CurrentStatus!.Status.IsOpen();
+
+  [Projectable]
+  public static bool IsHandedOut(this OrderItem item) => item.CurrentStatus!.Status.IsHandedOut();
+
+  [Projectable]
+  public static bool IsCancelled(this OrderItem item) => item.CurrentStatus!.Status.IsCancelled();
+
+  [Projectable]
+  public static bool AwaitsCancellationAcknowledgement(this OrderItem item) => item.CurrentStatus!.Status == OrderItemState.Cancelled && item.CurrentStatus!.PreviousStatus!.Status.IsOpen();
+
+  [Projectable]
+  public static bool IsOpenOrAwaitsCancellationAcknowledgement(this OrderItem item) => item.IsOpen() || item.AwaitsCancellationAcknowledgement();
+
+  [Projectable]
+  public static bool IsOnTheQueueCard(this OrderItem item) => item.IsOpenOrAwaitsCancellationAcknowledgement() || item.IsHandedOut();
+
+  [Projectable]
+  public static bool IsToHandOutOrToSettle(this OrderItem item) => item.IsOpen() || (item.IsHandedOut() && item.SettledAtUtc == null);
+
+  [Projectable]
+  public static OrderItemState State(this OrderItem item) => item.CurrentStatus!.Status;
+
+  [Projectable]
+  public static DateTime StateSetAtUtc(this OrderItem item) => item.CurrentStatus!.CreatedAtUtc;
 }

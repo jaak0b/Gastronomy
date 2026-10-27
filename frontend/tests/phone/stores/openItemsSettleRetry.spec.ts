@@ -15,8 +15,10 @@ function itemOf(orderItemId: string, itemName: string, unitPriceCents: number) {
     note: null,
     unitPriceCents,
     orderedAtUtc: '2026-09-05T18:00:00Z',
-    fulfilledAtUtc: null,
+    state: 'open',
+    stateSetAtUtc: '2026-09-05T18:00:00Z',
     settledAtUtc: null,
+    chargedPriceCents: null,
   }
 }
 

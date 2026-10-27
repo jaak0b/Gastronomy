@@ -53,6 +53,22 @@ public sealed class ItemsToHandOutLookupTest
   }
 
   [Test]
+  public async Task FindStationIdsIfRunningAsync_AStationWhoseItemsWereCancelledAndWaitForTheAcknowledgement_NamesNoStation()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceKitchenOrderAsync(_seeded.FestivalId);
+    List<OrderItem> items = await _fixture.DbContext.OrderItems.Where(item => itemIds.Contains(item.Id)).ToListAsync(TestContext.CurrentContext.CancellationToken);
+
+    foreach (var item in items)
+      _statusSeeder.Cancel(item, _seeded.StaffMemberId, DateTime.UtcNow);
+
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    IReadOnlyCollection<Guid> stationIds = await _lookup.FindStationIdsIfRunningAsync(await FestivalAsync(_seeded.FestivalId), TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(stationIds, Is.Empty);
+  }
+
+  [Test]
   public async Task FindStationIdsIfRunningAsync_AnItemNotYetHandedOutAtAnotherFestival_NamesNoStation()
   {
     var autumnFestivalId = await SeedAutumnFestivalAsync();
@@ -145,7 +161,7 @@ public sealed class ItemsToHandOutLookupTest
   private async Task HandOutAsync(IReadOnlyCollection<Guid> orderItemIds)
   {
     List<Guid> ids = orderItemIds.ToList();
-    List<OrderItem> items = await _fixture.DbContext.OrderItems.Include(item => item.CurrentStatus).Include(item => item.StationOrder).Where(item => ids.Contains(item.Id)).ToListAsync(TestContext.CurrentContext.CancellationToken);
+    List<OrderItem> items = await _fixture.DbContext.OrderItems.Include(item => item.StationOrder).Where(item => ids.Contains(item.Id)).ToListAsync(TestContext.CurrentContext.CancellationToken);
 
     foreach (var item in items)
       _statusSeeder.HandOut(item, item.StationOrder.StationId, DateTime.UtcNow);

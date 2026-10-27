@@ -61,13 +61,13 @@ Backend, under `backend/`:
   answers what would refuse taking each station out, so a screen disables the removal or the switch
   off before the click. `AdminStationView.HasItemsToHandOutAtTheRunningFestival` comes from
   `Core/Services/ItemsToHandOutLookup.cs`, the one home of that check: `FindStationIdsIfRunningAsync`
-  (a festival: its stations with an item not handed out, and none unless it runs) and
+  (a festival: its stations with an open item, cancelled items left out, and none unless it runs) and
   `FindStationIdsAtTheRunningFestivalAsync` (the same for the running festival, none when nothing
   runs), over `IGastronomyDatabase` and `OrderItemQueries`. The list,
   `FestivalStationService.RemoveAsync` (`StationHasOrdersAtTheFestival`) and
   `StationService.DeactivateAsync` (`StationHasUnfulfilledItems`) all ask it, and so
   do the tables and areas of the table plan: its read and the hiding of a table or an area ask
-  `RunningFestivalLookup.IsRunning` before they count the items not handed out or not settled (see the
+  `RunningFestivalLookup.IsRunning` before they count the items still to hand out or to settle, cancelled items left out (see the
   `table-plan` page). So "only while it runs" is decided there and nowhere else, and no screen checks it again. The articles left without a station
   (`ItemsWouldHaveNoStation`) come in two fields, each filled only by the read whose screen offers
   that action and null in the other: `StrandedItemCountWhenRemovedFromTheFestival` on the festival

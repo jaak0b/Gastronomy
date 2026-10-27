@@ -479,7 +479,7 @@ public sealed class ReleasedDatabaseUpgradeTest
     var context = fixture.CreateContext();
     await context.Database.MigrateAsync();
 
-    List<OrderItem> items = await context.Set<OrderItem>().Include(persisted => persisted.CurrentStatus).ToListAsync();
+    List<OrderItem> items = await context.Set<OrderItem>().ToListAsync();
     List<OrderItemStatus> openHistory = await context.Set<OrderItemStatus>().Where(status => status.OrderItemId == openItemId).ToListAsync();
     List<OrderItemStatus> handedOutHistory = await context.Set<OrderItemStatus>().Where(status => status.OrderItemId == handedOutItemId).OrderBy(status => status.CreatedAtUtc).ToListAsync();
     var openItem = items.Single(item => item.Id == openItemId);

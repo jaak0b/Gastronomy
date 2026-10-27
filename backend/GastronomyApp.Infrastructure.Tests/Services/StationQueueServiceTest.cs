@@ -2,7 +2,8 @@ using ErrorOr;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Stations;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Mapping;
+using GastronomyApp.Core.Queries;
+using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -316,9 +317,9 @@ public sealed class StationQueueServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(order.Items, Has.Count.EqualTo(2));
-                      Assert.That(order.Items.Count(item => item.FulfilledAtUtc != null), Is.EqualTo(1));
+                      Assert.That(order.Items.Count(item => item.State == OrderItemState.HandedOut), Is.EqualTo(1));
                       Assert.That(order.StaffMemberName, Is.EqualTo("Anna"));
-                      Assert.That(order.Items.Single(item => item.OrderItemId == items[0]).FulfilledAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(5)));
+                      Assert.That(order.Items.Single(item => item.OrderItemId == items[0]).StateSetAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(5)));
                     });
   }
 
@@ -840,6 +841,320 @@ public sealed class StationQueueServiceTest
                     });
   }
 
+  [Test]
+  public async Task ReadQueueAsync_ACardWithAnOpenItemAndItemsCancelledWhileOpenAndAfterHandOut_ShowsTheOpenAndTheWaitingOneAndCountsNoCancelledOne()
+  {
+    var stationOrderId = await PlaceBareStationOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    OrderItem bratwurst = Line("Bratwurst", null);
+    OrderItem pommes = Line("Pommes", null);
+    OrderItem schnitzel = Line("Schnitzel", null);
+    await AddItemsAsync(stationOrderId, bratwurst, pommes, schnitzel);
+    await StampAsync([schnitzel.Id]);
+    await CancelAsync([
+                        pommes.Id,
+                        schnitzel.Id
+                      ]);
+
+    ErrorOr<StationQueueView> queue = await _service.ReadQueueAsync(_seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    var card = queue.Value.Orders.Single();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(card.Items.Select(item => item.ItemName),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Bratwurst",
+                                               "Pommes"
+                                             }));
+                      Assert.That(card.Items.Select(item => item.State),
+                                  Is.EqualTo(new[]
+                                             {
+                                               OrderItemState.Open,
+                                               OrderItemState.Cancelled
+                                             }));
+                      Assert.That(card.Items.Single(item => item.ItemName == "Pommes").StateSetAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(7)));
+                      Assert.That(card.ItemCount, Is.EqualTo(1));
+                      Assert.That(card.FulfilledItemCount, Is.Zero);
+                    });
+  }
+
+  [Test]
+  public async Task ReadQueueAsync_ACardThatLosesItemsCancelledAfterHandOutAndAcknowledged_KeepsTheRestByNameNoteAndId()
+  {
+    var stationOrderId = await PlaceBareStationOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    var firstPlain = BuildItem(Guid.Empty, _seeded.SausageItemId, "Käsekrainer", 100, null, Guid.Parse("00000000-0000-0000-0000-000000000001"));
+    var acknowledged = BuildItem(Guid.Empty, _seeded.SausageItemId, "Käsekrainer", 100, null, Guid.Parse("00000000-0000-0000-0000-000000000002"));
+    var secondPlain = BuildItem(Guid.Empty, _seeded.SausageItemId, "Käsekrainer", 100, null, Guid.Parse("00000000-0000-0000-0000-000000000003"));
+    var withNote = Line("Käsekrainer", "Ohne Ketchup");
+    var cancelledAfterHandOut = Line("Bratwurst", null);
+    var apple = Line("apfel", null);
+    var pear = Line("Birne", null);
+    await AddItemsAsync(stationOrderId, secondPlain, withNote, cancelledAfterHandOut, acknowledged, pear, firstPlain, apple);
+    await StampAsync([cancelledAfterHandOut.Id]);
+    await CancelAsync([
+                        cancelledAfterHandOut.Id,
+                        acknowledged.Id
+                      ]);
+    _statusSeeder.AcknowledgeCancellation(acknowledged, _seeded.KitchenStationId, _orderedAtUtc.AddMinutes(8));
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    ErrorOr<StationQueueView> queue = await _service.ReadQueueAsync(_seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(queue.Value.Orders.Single().Items.Select(item => item.OrderItemId),
+                Is.EqualTo(new[]
+                           {
+                             apple.Id,
+                             pear.Id,
+                             firstPlain.Id,
+                             secondPlain.Id,
+                             withNote.Id
+                           }));
+  }
+
+  [Test]
+  public async Task ReadQueueAsync_ACardWhoseLastOpenItemWasCancelled_StaysUntilTheStationAcknowledgesTheCancellation()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    await StampAsync([items[0]]);
+    await CancelAsync([items[1]]);
+
+    ErrorOr<StationQueueView> beforeAcknowledging = await _service.ReadQueueAsync(_seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<StationQueueView> afterAcknowledging = await _service.AcknowledgeCancellationAsync([items[1]], _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(beforeAcknowledging.Value.Orders.Single().Items, Has.Count.EqualTo(2));
+                      Assert.That(beforeAcknowledging.Value.Orders.Single().ItemCount, Is.EqualTo(1));
+                      Assert.That(beforeAcknowledging.Value.Orders.Single().FulfilledItemCount, Is.EqualTo(1));
+                      Assert.That(afterAcknowledging.Value.Orders, Is.Empty);
+                    });
+  }
+
+  [Test]
+  public async Task ReadQueueAsync_ACardWhoseItemsWereCancelledAfterHandOut_LeavesTheQueueWithoutAnAcknowledgement()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.AsItComes);
+    await StampAsync(items);
+    await CancelAsync([items[0]]);
+
+    ErrorOr<StationQueueView> queue = await _service.ReadQueueAsync(_seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(queue.Value.Orders, Is.Empty);
+                      Assert.That(queue.Value.AsItComes, Is.Empty);
+                    });
+  }
+
+  [Test]
+  public async Task ReadQueueAsync_AStationWithACancellationWaitingForItsAcknowledgement_RunsFourStatementsAndNoMore()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.AsItComes);
+    await StampAsync([items[0]]);
+    await CancelAsync([items[1]]);
+    QueryCounter counter = new();
+    await using GastronomyAppDbContext readContext = new(new DbContextOptionsBuilder<GastronomyAppDbContext>().UseSqlite(_fixture.Connection).AddInterceptors(counter).Options);
+
+    await CreateService(readContext).ReadQueueAsync(_seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(counter.QueryCount, Is.EqualTo(4));
+  }
+
+  [Test]
+  public async Task ReadFulfilledAsync_ACardWhoseItemsWereAllCancelledAndAcknowledged_ListsItWithEveryItemAndItsState()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    await CancelAsync(items);
+    await _service.AcknowledgeCancellationAsync(items, _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    ErrorOr<StationFulfilledView> fulfilled = await _service.ReadFulfilledAsync(_seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    var card = fulfilled.Value.StationOrders.Single();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(card.Items.Select(item => item.State), Is.All.EqualTo(OrderItemState.CancellationAcknowledged));
+                      Assert.That(card.Items, Has.Count.EqualTo(2));
+                      Assert.That(card.ItemCount, Is.Zero);
+                    });
+  }
+
+  [Test]
+  public async Task ReadFulfilledAsync_ACardWithAHandedOutItemAndOneCancelledAfterHandOut_ListsBothWithTheirStates()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    await StampAsync(items);
+    await CancelAsync([items[1]]);
+
+    ErrorOr<StationFulfilledView> fulfilled = await _service.ReadFulfilledAsync(_seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    var card = fulfilled.Value.StationOrders.Single();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(card.Items.Single(item => item.OrderItemId == items[0]).State, Is.EqualTo(OrderItemState.HandedOut));
+                      Assert.That(card.Items.Single(item => item.OrderItemId == items[1]).State, Is.EqualTo(OrderItemState.Cancelled));
+                      Assert.That(card.ItemCount, Is.EqualTo(1));
+                      Assert.That(card.FulfilledItemCount, Is.EqualTo(1));
+                    });
+  }
+
+  [Test]
+  public async Task ReadFulfilledAsync_ACardWithAnOpenItemAndAWaitingCancellation_LeavesItOut()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    await CancelAsync([items[1]]);
+
+    ErrorOr<StationFulfilledView> fulfilled = await _service.ReadFulfilledAsync(_seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(fulfilled.Value.StationOrders, Is.Empty);
+  }
+
+  [Test]
+  public async Task FulfillAsync_ASelectionHoldingACancelledItem_IsRefusedNamingItAndHandsOutNothing()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    await CancelAsync([items[1]]);
+    var statusCount = await StoredStatusCountAsync();
+
+    ErrorOr<StationQueueView> queue = await _service.FulfillAsync(items, _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(queue.RefusalMessageKey(), Is.EqualTo("errors.station.itemWasCancelled"));
+                      Assert.That(queue.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
+                      Assert.That(queue.RefusalMetadata(Refusal.MetadataKeys.Name), Is.EqualTo("Limonade"));
+                    });
+    Assert.That(await StoredStatusCountAsync(), Is.EqualTo(statusCount));
+  }
+
+  [Test]
+  public async Task UnfulfillAsync_AnItemCancelledAfterItWasHandedOut_IsRefusedNamingItAndPutsNothingBack()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    await StampAsync(items);
+    await CancelAsync([items[0]]);
+    var statusCount = await StoredStatusCountAsync();
+
+    ErrorOr<StationQueueView> queue = await _service.UnfulfillAsync(items, _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(queue.RefusalMessageKey(), Is.EqualTo("errors.station.itemWasCancelled"));
+                      Assert.That(queue.RefusalMetadata(Refusal.MetadataKeys.Name), Is.EqualTo("Bratwurst"));
+                    });
+    Assert.That(await StoredStatusCountAsync(), Is.EqualTo(statusCount));
+  }
+
+  [Test]
+  public void AcknowledgeCancellationAsync_NullSelection_ThrowsArgumentNullException()
+  {
+    Assert.That(async () => await _service.AcknowledgeCancellationAsync(null!, _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public async Task AcknowledgeCancellationAsync_AnItemCancelledWhileOpen_AddsTheAcknowledgementSetByTheStationAfterTheCancellation()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    await CancelAsync([items[0]]);
+    var acknowledgedAtUtc = _clock.GetUtcNow().UtcDateTime;
+
+    ErrorOr<StationQueueView> queue = await _service.AcknowledgeCancellationAsync([items[0]], _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    List<OrderItemStatus> history = await StoredHistoryOfAsync(items[0]);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(history.Select(status => status.Status),
+                                  Is.EqualTo(new[]
+                                             {
+                                               OrderItemState.Open,
+                                               OrderItemState.Cancelled,
+                                               OrderItemState.CancellationAcknowledged
+                                             }));
+                      Assert.That(history[2].PreviousStatusId, Is.EqualTo(history[1].Id));
+                      Assert.That(history[2].CreatedByStationId, Is.EqualTo(_seeded.KitchenStationId));
+                      Assert.That(history[2].CreatedAtUtc, Is.EqualTo(acknowledgedAtUtc));
+                      Assert.That(queue.Value.Orders.Single().Items.Select(item => item.OrderItemId), Is.EqualTo(new[] { items[1] }));
+                    });
+  }
+
+  [Test]
+  public async Task AcknowledgeCancellationAsync_AnAcknowledgementTappedTwice_SucceedsAndAddsNoSecondStatus()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    await CancelAsync([items[0]]);
+    await _service.AcknowledgeCancellationAsync([items[0]], _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+    var statusCount = await StoredStatusCountAsync();
+
+    ErrorOr<StationQueueView> again = await _service.AcknowledgeCancellationAsync([items[0]], _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(again.IsError, Is.False);
+    Assert.That(await StoredStatusCountAsync(), Is.EqualTo(statusCount));
+  }
+
+  [Test]
+  public async Task AcknowledgeCancellationAsync_AnOpenItemBesideAWaitingOne_IsRefusedAsNotSavedAndAcknowledgesNothing()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    await CancelAsync([items[1]]);
+    var statusCount = await StoredStatusCountAsync();
+
+    ErrorOr<StationQueueView> queue = await _service.AcknowledgeCancellationAsync(items, _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(queue.RefusalMessageKey(), Is.EqualTo("errors.station.changeNotSaved"));
+                      Assert.That(queue.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
+                      Assert.That(queue.RefusalDescription(), Does.Contain(items[0].ToString()));
+                    });
+    Assert.That(await StoredStatusCountAsync(), Is.EqualTo(statusCount));
+  }
+
+  [Test]
+  public async Task AcknowledgeCancellationAsync_AnItemCancelledAfterHandOut_IsRefusedAsNotSaved()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    await StampAsync([items[0]]);
+    await CancelAsync([items[0]]);
+
+    ErrorOr<StationQueueView> queue = await _service.AcknowledgeCancellationAsync([items[0]], _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(queue.RefusalMessageKey(), Is.EqualTo("errors.station.changeNotSaved"));
+  }
+
+  [Test]
+  public async Task AcknowledgeCancellationAsync_AnItemOfAnotherStation_IsRefusedNamingItAndChangesNothing()
+  {
+    IReadOnlyList<Guid> barItems = await PlaceOrderAsync(_seeded.BarStationId, "Tisch 12", 1, DeliveryMode.Together);
+    await CancelAsync([barItems[0]]);
+    var statusCount = await StoredStatusCountAsync();
+
+    ErrorOr<StationQueueView> queue = await _service.AcknowledgeCancellationAsync([barItems[0]], _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(queue.RefusalMessageKey(), Is.EqualTo("errors.station.itemNotAtThisStation"));
+                      Assert.That(queue.RefusalDescription(), Does.Contain(barItems[0].ToString()));
+                    });
+    Assert.That(await StoredStatusCountAsync(), Is.EqualTo(statusCount));
+  }
+
+  [Test]
+  public async Task AcknowledgeCancellationAsync_NoFestivalIsRunning_IsRefusedAndWritesNothing()
+  {
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(_seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    await CancelAsync([items[0]]);
+    await EndTheFestivalAsync();
+    var statusCount = await StoredStatusCountAsync();
+
+    ErrorOr<StationQueueView> queue = await _service.AcknowledgeCancellationAsync([items[0]], _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(queue.RefusalMessageKey(), Is.EqualTo("errors.station.noFestivalIsRunning"));
+    Assert.That(await StoredStatusCountAsync(), Is.EqualTo(statusCount));
+  }
+
   private StationQueueService CreateService(GastronomyAppDbContext database)
   {
     RunningFestivalLookup runningFestival = new(database, new(), _clock);
@@ -882,7 +1197,7 @@ public sealed class StationQueueServiceTest
   private async Task StampAsync(IReadOnlyCollection<Guid> orderItemIds)
   {
     List<Guid> ids = orderItemIds.ToList();
-    List<OrderItem> items = await _fixture.DbContext.OrderItems.Include(item => item.CurrentStatus).Include(item => item.StationOrder).Where(item => ids.Contains(item.Id)).ToListAsync(TestContext.CurrentContext.CancellationToken);
+    List<OrderItem> items = await _fixture.DbContext.OrderItems.Include(item => item.StationOrder).Where(item => ids.Contains(item.Id)).ToListAsync(TestContext.CurrentContext.CancellationToken);
 
     foreach (var item in items)
       _statusSeeder.HandOut(item, item.StationOrder.StationId, _orderedAtUtc.AddMinutes(5));
@@ -894,9 +1209,35 @@ public sealed class StationQueueServiceTest
   {
     await using var readContext = _fixture.CreateContext();
 
-    List<OrderItem> items = await readContext.OrderItems.AsNoTracking().Include(item => item.CurrentStatus).ToListAsync(TestContext.CurrentContext.CancellationToken);
+    List<OrderItem> items = await readContext.OrderItems.AsNoTracking().ToListAsync(TestContext.CurrentContext.CancellationToken);
 
-    return items.ToDictionary(item => item.Id, OrderItemStates.HandedOutAtUtcOf);
+    return items.ToDictionary(item => item.Id, HandOutTimeOf);
+  }
+
+  private DateTime? HandOutTimeOf(OrderItem item)
+  {
+    if (!item.IsHandedOut())
+      return null;
+
+    return item.StateSetAtUtc();
+  }
+
+  private async Task CancelAsync(IReadOnlyCollection<Guid> orderItemIds)
+  {
+    List<Guid> ids = orderItemIds.ToList();
+    List<OrderItem> items = await _fixture.DbContext.OrderItems.Where(item => ids.Contains(item.Id)).ToListAsync(TestContext.CurrentContext.CancellationToken);
+
+    foreach (var item in items)
+      _statusSeeder.Cancel(item, _seeded.StaffMemberId, _orderedAtUtc.AddMinutes(7));
+
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+  }
+
+  private async Task<int> StoredStatusCountAsync()
+  {
+    await using var readContext = _fixture.CreateContext();
+
+    return await readContext.OrderItemStatuses.CountAsync(TestContext.CurrentContext.CancellationToken);
   }
 
   private async Task<List<OrderItemStatus>> StoredHistoryOfAsync(Guid orderItemId)

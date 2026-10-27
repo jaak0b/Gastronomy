@@ -70,8 +70,10 @@ function openItemOf(orderItemId: string) {
     note: null,
     unitPriceCents: 800,
     orderedAtUtc: '2026-09-05T18:20:00Z',
-    fulfilledAtUtc: null,
+    state: 'open',
+    stateSetAtUtc: '2026-09-05T18:20:00Z',
     settledAtUtc: null,
+    chargedPriceCents: null,
   }
 }
 

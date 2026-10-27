@@ -5,11 +5,12 @@ import type { ItemLine } from '../../../src/shared/core/stationBoard'
 import { testPlugins } from '../../support/plugins'
 import { clickOn, textOnScreen, waitUntil } from '../../support/dom'
 
-const TWO_BRATWURST: ItemLine = { key: 'bratwurst', itemName: 'Bratwurst', note: null, units: 2 }
+const TWO_BRATWURST: ItemLine = { key: 'bratwurst', itemName: 'Bratwurst', note: null, isCancelled: false, units: 2 }
 const ONE_NOTED_BRATWURST: ItemLine = {
   key: 'bratwurst-ohne-senf',
   itemName: 'Bratwurst',
   note: 'ohne Senf',
+  isCancelled: false,
   units: 1,
 }
 

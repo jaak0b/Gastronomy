@@ -1,6 +1,7 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Mapping;
+using GastronomyApp.Core.Queries;
+using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
@@ -10,15 +11,30 @@ public sealed class OrderService
   {
     ArgumentNullException.ThrowIfNull(order);
 
-    var handOutShare = ShareOfFlaggedItems(order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Select(OrderItemStates.IsHandedOut));
+    List<OrderItemProgress> items = order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Select(item => new OrderItemProgress(item.State(), item.SettledAtUtc != null)).ToList();
+    var handOutProgress = HandOutProgressOf(items);
 
-    if (handOutShare == ShareState.None)
+    if (handOutProgress == ShareState.None)
       return OrderStatus.Open;
 
-    if (handOutShare == ShareState.All)
+    if (handOutProgress == ShareState.All)
       return OrderStatus.Fulfilled;
 
     return OrderStatus.PartiallyFulfilled;
+  }
+
+  public ShareState HandOutProgressOf(IEnumerable<OrderItemProgress> orderItems)
+  {
+    ArgumentNullException.ThrowIfNull(orderItems);
+
+    return ShareOfFlaggedItems(orderItems.Where(item => !item.State.IsCancelled()).Select(item => item.State.IsHandedOut()));
+  }
+
+  public ShareState SettlementProgressOf(IEnumerable<OrderItemProgress> orderItems)
+  {
+    ArgumentNullException.ThrowIfNull(orderItems);
+
+    return ShareOfFlaggedItems(orderItems.Where(item => !item.State.IsCancelled()).Select(item => item.IsSettled));
   }
 
   public ShareState ShareOfFlaggedItems(IEnumerable<bool> itemFlags)
@@ -29,11 +45,11 @@ public sealed class OrderService
 
     var flaggedItemCount = flags.Count(isFlagged => isFlagged);
 
-    if (flaggedItemCount == 0)
-      return ShareState.None;
-
     if (flaggedItemCount == flags.Count)
       return ShareState.All;
+
+    if (flaggedItemCount == 0)
+      return ShareState.None;
 
     return ShareState.Some;
   }
@@ -42,6 +58,6 @@ public sealed class OrderService
   {
     ArgumentNullException.ThrowIfNull(order);
 
-    return order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Sum(item => item.UnitPriceCents);
+    return order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Where(item => !item.IsCancelled()).Sum(item => item.UnitPriceCents);
   }
 }

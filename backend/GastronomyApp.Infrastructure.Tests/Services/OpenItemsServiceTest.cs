@@ -130,7 +130,7 @@ public sealed class OpenItemsServiceTest
     var newestItems = await PlaceOrderAsync("T1", 3, _orderedAtUtc.AddMinutes(15), Line("Bratwurst", 350), Line("Limonade", 250));
     var sameTimeItems = await PlaceOrderAsync("T1", 2, _orderedAtUtc.AddMinutes(15), Line("Bier", 300));
     await PlaceOrderAsync("Tisch 3", 4, _orderedAtUtc.AddMinutes(30), Line("Bratwurst", 350));
-    await StampAsync(newestItems.Single(item => item.ItemName == "Bratwurst"), fulfilledAtUtc: _orderedAtUtc.AddMinutes(20));
+    await StampAsync(newestItems.Single(item => item.ItemName == "Bratwurst"), handedOutAtUtc: _orderedAtUtc.AddMinutes(20));
     await StampAsync(newestItems.Single(item => item.ItemName == "Limonade"), settledAtUtc: _orderedAtUtc.AddMinutes(25));
     var tableId = await TableAsync("T1");
 
@@ -152,7 +152,9 @@ public sealed class OpenItemsServiceTest
                       Assert.That(orders.Select(order => order.StaffMemberName), Is.All.EqualTo("Anna"));
                       Assert.That(orders[0].CreatedAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(15)));
                       Assert.That(newestOrderItems.Select(item => item.OrderItemId), Is.EquivalentTo(newestItems.Select(item => item.Id)));
-                      Assert.That(newestOrderItems.Single(item => item.ItemName == "Bratwurst").FulfilledAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(20)));
+                      Assert.That(newestOrderItems.Single(item => item.ItemName == "Bratwurst").State, Is.EqualTo(OrderItemState.HandedOut));
+                      Assert.That(newestOrderItems.Single(item => item.ItemName == "Bratwurst").StateSetAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(20)));
+                      Assert.That(newestOrderItems.Single(item => item.ItemName == "Limonade").State, Is.EqualTo(OrderItemState.Open));
                       Assert.That(newestOrderItems.Single(item => item.ItemName == "Limonade").SettledAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(25)));
                       Assert.That(newestOrderItems.Single(item => item.ItemName == "Limonade").UnitPriceCents, Is.EqualTo(250));
                       Assert.That(newestOrderItems.Select(item => item.OrderId), Is.All.EqualTo(orders[0].OrderId));
@@ -737,11 +739,240 @@ public sealed class OpenItemsServiceTest
     Assert.That((await StoredAsync(items[0])).SettledAtUtc, Is.Null);
   }
 
+  [Test]
+  public async Task ReadTableAsync_ACancelledItem_ComesBackWithItsStateAndIsLeftOutOfTheOpenAmount()
+  {
+    var items = await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bratwurst", 350), Line("Bier", 400));
+    await CancelStoredAsync(items.Single(item => item.ItemName == "Bier"), _orderedAtUtc.AddMinutes(4));
+
+    ErrorOr<TableOrderReportView> read = await _service.ReadTableAsync(await TableAsync("Tisch 12"), TestContext.CurrentContext.CancellationToken);
+
+    var bier = read.Value.Orders.Single().Items.Single(item => item.ItemName == "Bier");
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(read.Value.OpenAmountCents, Is.EqualTo(350));
+                      Assert.That(bier.State, Is.EqualTo(OrderItemState.Cancelled));
+                      Assert.That(bier.StateSetAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(4)));
+                    });
+  }
+
+  [Test]
+  public async Task CancelAsync_AnOpenAHandedOutAndTwoSettledItems_CancelsEachForTheWaiterAndAnswersTheMoneyOfTheSettledOnes()
+  {
+    var items = await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bratwurst", 350), Line("Bier", 400), Line("Limonade", 250), Line("Pommes", 300));
+    await StampAsync(items[1], handedOutAtUtc: _orderedAtUtc.AddMinutes(10));
+    await SettleByAsync(items[2], _anotherWaiter, _orderedAtUtc.AddMinutes(11), 200, "Stammgast", PaymentMethod.Cash);
+    await SettleByAsync(items[3], _seeded.StaffMemberId, _orderedAtUtc.AddMinutes(12), 300, null, PaymentMethod.Card);
+    var cancelledAtUtc = _clock.GetUtcNow().UtcDateTime;
+
+    ErrorOr<CancellationView> cancellation = await _service.CancelAsync(items.Select(item => item.Id).ToList(), _seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+
+    List<OrderItemStatus> stored = [];
+    foreach (var item in items)
+      stored.Add(await StoredStatusAsync(item));
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(cancellation.Value.CashToReturnCents, Is.EqualTo(500));
+                      Assert.That(stored.Select(status => status.Status), Is.All.EqualTo(OrderItemState.Cancelled));
+                      Assert.That(stored.Select(status => status.CreatedByStaffMemberId), Is.All.EqualTo(_seeded.StaffMemberId));
+                      Assert.That(stored.Select(status => status.CreatedAtUtc), Is.All.EqualTo(cancelledAtUtc));
+                    });
+  }
+
+  [Test]
+  public async Task CancelAsync_NothingSettled_AnswersNoMoneyToHandBack()
+  {
+    var items = await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bratwurst", 350));
+
+    ErrorOr<CancellationView> cancellation = await _service.CancelAsync([items[0].Id], _seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(cancellation.Value.CashToReturnCents, Is.Zero);
+  }
+
+  [Test]
+  public async Task CancelAsync_NoFestivalIsRunning_IsRefusedAsCannotBeProcessedAndNothingIsStored()
+  {
+    var items = await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bratwurst", 350));
+    await EndTheFestivalAsync();
+    var statusCount = await StoredStatusCountAsync();
+
+    ErrorOr<CancellationView> cancellation = await _service.CancelAsync([items[0].Id], _seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(cancellation.RefusalMessageKey(), Is.EqualTo("errors.cancellation.cannotBeProcessed"));
+                      Assert.That(cancellation.FirstError.NumericType, Is.EqualTo(RefusalType.BadRequest));
+                    });
+    Assert.That(await StoredStatusCountAsync(), Is.EqualTo(statusCount));
+  }
+
+  [Test]
+  public async Task CancelAsync_NothingSelected_IsRefusedAsCannotBeProcessed()
+  {
+    ErrorOr<CancellationView> cancellation = await _service.CancelAsync([], _seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(cancellation.RefusalMessageKey(), Is.EqualTo("errors.cancellation.cannotBeProcessed"));
+                      Assert.That(cancellation.FirstError.NumericType, Is.EqualTo(RefusalType.BadRequest));
+                    });
+  }
+
+  [Test]
+  public async Task CancelAsync_TheSameItemNamedTwice_IsRefusedNamingItAndNothingIsStored()
+  {
+    var items = await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bratwurst", 350));
+
+    ErrorOr<CancellationView> cancellation = await _service.CancelAsync([
+                                                                          items[0].Id,
+                                                                          items[0].Id
+                                                                        ],
+                                                                        _seeded.StaffMemberId,
+                                                                        TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(cancellation.RefusalMessageKey(), Is.EqualTo("errors.cancellation.cannotBeProcessed"));
+                      Assert.That(cancellation.RefusalDescription(), Does.Contain(items[0].Id.ToString()));
+                    });
+    Assert.That((await StoredStatusAsync(items[0])).Status, Is.EqualTo(OrderItemState.Open));
+  }
+
+  [Test]
+  public async Task CancelAsync_ASelectionHoldingAnUnknownId_IsRefusedAsUnknownAndCancelsNoneOfIt()
+  {
+    var items = await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bratwurst", 350));
+
+    ErrorOr<CancellationView> cancellation = await _service.CancelAsync([
+                                                                          items[0].Id,
+                                                                          Guid.NewGuid()
+                                                                        ],
+                                                                        _seeded.StaffMemberId,
+                                                                        TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(cancellation.RefusalMessageKey(), Is.EqualTo("errors.cancellation.unknownItem"));
+                      Assert.That(cancellation.FirstError.NumericType, Is.EqualTo(RefusalType.UnprocessableEntity));
+                    });
+    Assert.That((await StoredStatusAsync(items[0])).Status, Is.EqualTo(OrderItemState.Open));
+  }
+
+  [Test]
+  public async Task CancelAsync_AnItemOfAnotherFestival_IsRefusedAsUnknown()
+  {
+    var autumnFestivalId = await AddFestivalAsync("Herbstfest");
+    var items = await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, autumnFestivalId, Line("Bratwurst", 350));
+
+    ErrorOr<CancellationView> cancellation = await _service.CancelAsync([items[0].Id], _seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(cancellation.RefusalMessageKey(), Is.EqualTo("errors.cancellation.unknownItem"));
+    Assert.That((await StoredStatusAsync(items[0])).Status, Is.EqualTo(OrderItemState.Open));
+  }
+
+  [Test]
+  public async Task CancelAsync_ASelectionHoldingAnItemCancelledBefore_IsRefusedNamingItAndCancelsNothingElse()
+  {
+    var items = await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bratwurst", 350), Line("Bier", 400));
+    await CancelStoredAsync(items[1], _orderedAtUtc.AddMinutes(3));
+    var statusCount = await StoredStatusCountAsync();
+
+    ErrorOr<CancellationView> cancellation = await _service.CancelAsync([
+                                                                          items[0].Id,
+                                                                          items[1].Id
+                                                                        ],
+                                                                        _seeded.StaffMemberId,
+                                                                        TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(cancellation.RefusalMessageKey(), Is.EqualTo("errors.cancellation.alreadyCancelled"));
+                      Assert.That(cancellation.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
+                      Assert.That(cancellation.RefusalMetadata(Refusal.MetadataKeys.Name), Is.EqualTo("Bier"));
+                    });
+    Assert.That(await StoredStatusCountAsync(), Is.EqualTo(statusCount));
+  }
+
+  [Test]
+  public async Task CancelAsync_TheSameRequestSentAgainAfterALostAnswer_IsRefusedAsAlreadyCancelled()
+  {
+    var items = await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bratwurst", 350));
+    await _service.CancelAsync([items[0].Id], _seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    var statusCount = await StoredStatusCountAsync();
+
+    await using var retryContext = _fixture.CreateContext();
+
+    ErrorOr<CancellationView> again = await CreateService(retryContext).CancelAsync([items[0].Id], _seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(again.RefusalMessageKey(), Is.EqualTo("errors.cancellation.alreadyCancelled"));
+    Assert.That(await StoredStatusCountAsync(), Is.EqualTo(statusCount));
+  }
+
+  [Test]
+  public async Task CancelAsync_ASelectionSpanningTwoTables_IsRefusedNamingBothTablesAndNothingIsStored()
+  {
+    var first = await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bratwurst", 350));
+    var second = await PlaceOrderAsync("Tisch 7", 2, _orderedAtUtc, Line("Bier", 400));
+    var secondTableId = await TableAsync("Tisch 7");
+    var statusCount = await StoredStatusCountAsync();
+
+    ErrorOr<CancellationView> cancellation = await _service.CancelAsync([
+                                                                          first[0].Id,
+                                                                          second[0].Id
+                                                                        ],
+                                                                        _seeded.StaffMemberId,
+                                                                        TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(cancellation.RefusalMessageKey(), Is.EqualTo("errors.cancellation.cannotBeProcessed"));
+                      Assert.That(cancellation.RefusalDescription(), Does.Contain(secondTableId.ToString()));
+                    });
+    Assert.That(await StoredStatusCountAsync(), Is.EqualTo(statusCount));
+  }
+
+  [Test]
+  public void CancelAsync_WithoutNamingTheWaiter_Throws()
+  {
+    Assert.That(async () => await _service.CancelAsync([Guid.NewGuid()], Guid.Empty, TestContext.CurrentContext.CancellationToken), Throws.ArgumentException);
+  }
+
+  [Test]
+  public void CancelAsync_NullIds_ThrowsArgumentNullException()
+  {
+    Assert.That(async () => await _service.CancelAsync(null!, _seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public async Task SettleAsync_ASelectionHoldingACancelledItem_IsRefusedNamingItAndNothingIsStored()
+  {
+    var items = await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bratwurst", 350), Line("Bier", 400));
+    await CancelStoredAsync(items[1], _orderedAtUtc.AddMinutes(3));
+
+    ErrorOr<SettlementView> settlement = await _service.SettleAsync([
+                                                                      Pay(items[0], 350),
+                                                                      Pay(items[1], 400)
+                                                                    ],
+                                                                    PaymentMethod.Cash,
+                                                                    _seeded.StaffMemberId,
+                                                                    TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("errors.settlement.itemWasCancelled"));
+                      Assert.That(settlement.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
+                      Assert.That(settlement.RefusalMetadata(Refusal.MetadataKeys.Name), Is.EqualTo("Bier"));
+                    });
+    Assert.That((await StoredAsync(items[0])).SettledAtUtc, Is.Null);
+  }
+
   private OpenItemsService CreateService(GastronomyAppDbContext database)
   {
     RunningFestivalLookup runningFestival = new(database, new(), _clock);
 
-    return new(database, new CoreMappingFactory().Create(), runningFestival, _clock, _logger);
+    return new(database, new CoreMappingFactory().Create(), runningFestival, new(), _clock, _logger);
   }
 
   private object? ValueNamed(object? state, string name)
@@ -844,15 +1075,38 @@ public sealed class OpenItemsServiceTest
     return items;
   }
 
-  private async Task StampAsync(OrderItem item, DateTime? fulfilledAtUtc = null, DateTime? settledAtUtc = null)
+  private async Task StampAsync(OrderItem item, DateTime? handedOutAtUtc = null, DateTime? settledAtUtc = null)
   {
-    var tracked = await _fixture.DbContext.OrderItems.Include(candidate => candidate.CurrentStatus).Include(candidate => candidate.StationOrder).SingleAsync(candidate => candidate.Id == item.Id, TestContext.CurrentContext.CancellationToken);
+    var tracked = await _fixture.DbContext.OrderItems.Include(candidate => candidate.StationOrder).SingleAsync(candidate => candidate.Id == item.Id, TestContext.CurrentContext.CancellationToken);
 
-    if (fulfilledAtUtc is { } handedOutAtUtc)
-      _statusSeeder.HandOut(tracked, tracked.StationOrder.StationId, handedOutAtUtc);
+    if (handedOutAtUtc is { } handOutTime)
+      _statusSeeder.HandOut(tracked, tracked.StationOrder.StationId, handOutTime);
 
     tracked.SettledAtUtc = settledAtUtc;
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+  }
+
+  private async Task CancelStoredAsync(OrderItem item, DateTime cancelledAtUtc)
+  {
+    var tracked = await _fixture.DbContext.OrderItems.SingleAsync(candidate => candidate.Id == item.Id, TestContext.CurrentContext.CancellationToken);
+    _statusSeeder.Cancel(tracked, _seeded.StaffMemberId, cancelledAtUtc);
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+  }
+
+  private async Task<OrderItemStatus> StoredStatusAsync(OrderItem item)
+  {
+    await using var readContext = _fixture.CreateContext();
+
+    var stored = await readContext.OrderItems.AsNoTracking().SingleAsync(candidate => candidate.Id == item.Id, TestContext.CurrentContext.CancellationToken);
+
+    return stored.CurrentStatus!;
+  }
+
+  private async Task<int> StoredStatusCountAsync()
+  {
+    await using var readContext = _fixture.CreateContext();
+
+    return await readContext.OrderItemStatuses.CountAsync(TestContext.CurrentContext.CancellationToken);
   }
 
   private async Task SettleByAsync(OrderItem item, Guid staffMemberId, DateTime settledAtUtc, int chargedPriceCents, string? paymentNotice, PaymentMethod paymentMethod)

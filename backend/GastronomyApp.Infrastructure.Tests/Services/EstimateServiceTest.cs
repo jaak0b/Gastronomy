@@ -92,6 +92,21 @@ public sealed class EstimateServiceTest
   }
 
   [Test]
+  public async Task ListAsync_AnItemTheWaiterCancelled_StaysOutOfTheQueue()
+  {
+    var schnitzel = await AddArticleAsync("Schnitzel", 5, false, false);
+    var steak = await AddArticleAsync("Steak", 7, false, false);
+    var itemIds = await PlaceOpenItemsAsync(_seeded.KitchenStationId, _seeded.FestivalId, schnitzel, steak);
+    var cancelled = await _fixture.DbContext.OrderItems.SingleAsync(row => row.Id == itemIds[1], TestContext.CurrentContext.CancellationToken);
+    _statusSeeder.Cancel(cancelled, _seeded.StaffMemberId, _now);
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    var estimates = await _service.ListAsync(TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(estimates.Single().ReadyInMinutes, Is.EqualTo(9));
+  }
+
+  [Test]
   public async Task ListAsync_ItemsOfTwoStationOrdersAtOneStation_SumsAcrossBothOfThem()
   {
     var schnitzel = await AddArticleAsync("Schnitzel", 5, false, false);
@@ -337,7 +352,7 @@ public sealed class EstimateServiceTest
 
   private async Task HandOutAsync(Guid orderItemId)
   {
-    var item = await _fixture.DbContext.OrderItems.Include(row => row.CurrentStatus).Include(row => row.StationOrder).SingleAsync(row => row.Id == orderItemId, TestContext.CurrentContext.CancellationToken);
+    var item = await _fixture.DbContext.OrderItems.Include(row => row.StationOrder).SingleAsync(row => row.Id == orderItemId, TestContext.CurrentContext.CancellationToken);
     _statusSeeder.HandOut(item, item.StationOrder.StationId, _now);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }

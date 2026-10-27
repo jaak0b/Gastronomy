@@ -164,8 +164,8 @@ copy of anything listed here.
   `how-to` page `test-a-konva-drawing.md` shows how.
 - `waiterPhone.ts` gives a phone spec an order at a table: `TISCH_3` and
   `theWaiterTakesTheOrderAt(table)`.
-- `station.ts` holds the station tablet scenario: `KITCHEN`, `item`, `stationOrder`, `aQueue` and
-  `enrolledStationTablet()`.
+- `station.ts` holds the station tablet scenario: `KITCHEN`, `item` (open, or handed out at the
+  time given), `cancelledItem`, `stationOrder`, `aQueue` and `enrolledStationTablet()`.
 - `plugins.ts` gives `testPlugins(locale)` for mounting, `mountApp.ts` mounts the whole app,
   `hubConnection.ts` fakes the SignalR hub, and `sourceFiles.ts` lists source files for the specs
   that scan the source tree.

@@ -26,7 +26,7 @@ const failureText = computed<string | null>(() => {
   if (station.loadFailed) {
     return t(station.loadFailureKey ?? 'station.board.errors.loadFailed')
   }
-  return station.failureKey === null ? null : t(station.failureKey)
+  return station.failure === null ? null : t(station.failure.key, station.failure.parameters)
 })
 
 onMounted(async () => {
@@ -74,13 +74,13 @@ function closeOverview(): void {
       {{ t(station.loadFailureKey ?? 'station.board.errors.loadFailed') }}
     </v-alert>
     <v-alert
-      v-if="!isShowingOverview && station.failureKey !== null"
+      v-if="!isShowingOverview && station.failure !== null"
       class="action-failed mb-4"
       data-test="action-failed"
       type="warning"
       variant="tonal"
     >
-      {{ t(station.failureKey) }}
+      {{ t(station.failure.key, station.failure.parameters) }}
     </v-alert>
 
     <StationOpenBoard

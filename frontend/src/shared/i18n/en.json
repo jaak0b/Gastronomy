@@ -533,6 +533,11 @@
     "auth": {
       "wrongDeviceKind": "This device is not set up for this screen. Have it set up again at the computer."
     },
+    "cancellation": {
+      "alreadyCancelled": "{name} has already been cancelled. Tap \"Reload\" and select the items again.",
+      "cannotBeProcessed": "The cancellation could not be processed. Tap \"Reload\" and try again.",
+      "unknownItem": "One of the selected items is no longer on the laptop. Tap \"Reload\" and select the items again."
+    },
     "enrolment": {
       "atMostOneOwner": "The QR code could not be created. Try again.",
       "codeMissing": "Scan the QR code on the computer again. This page was opened without a code.",
@@ -557,12 +562,14 @@
     },
     "settlement": {
       "cannotBeProcessed": "The settlement could not be processed. Write on a slip of paper what the table paid.",
+      "itemWasCancelled": "{name} has been cancelled in the meantime. Tap \"Reload\" and select the items again.",
       "noItemsSelected": "Choose the items you want to settle first.",
       "unknownItem": "The computer no longer knows one of the selected items, so nothing was settled. Tap \"Reload\"."
     },
     "station": {
       "changeNotSaved": "The order could not be updated. Reload the page and try again.",
       "itemNotAtThisStation": "Reload the page. This item does not belong to this station.",
+      "itemWasCancelled": "{name} has been cancelled in the meantime. Select the items again.",
       "noFestivalIsRunning": "No festival is active.",
       "noItemsSelected": "Tap an item.",
       "notPartOfTheFestival": "This station is not part of the festival that is running.",

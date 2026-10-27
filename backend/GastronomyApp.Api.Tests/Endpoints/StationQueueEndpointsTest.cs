@@ -52,7 +52,8 @@ public sealed class StationQueueEndpointsTest
                       Assert.That(orders[0].GetProperty("fulfilledItemCount").GetInt32(), Is.Zero);
                       Assert.That(orders[0].GetProperty("items").GetArrayLength(), Is.EqualTo(2));
                       Assert.That(orders[0].GetProperty("items")[0].GetProperty("itemName").GetString(), Is.EqualTo("Bratwurst mit Brot"));
-                      Assert.That(orders[0].GetProperty("items")[0].GetProperty("fulfilledAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
+                      Assert.That(orders[0].GetProperty("items")[0].GetProperty("state").GetString(), Is.EqualTo("open"));
+                      Assert.That(orders[0].GetProperty("items")[0].GetProperty("stateSetAtUtc").ValueKind, Is.EqualTo(JsonValueKind.String));
                     });
   }
 
@@ -123,7 +124,7 @@ public sealed class StationQueueEndpointsTest
     var orders = body.RootElement.GetProperty("orders");
 
     await using var database = _context.Factory.CreateContext();
-    var stored = await database.OrderItems.Include(item => item.CurrentStatus).SingleAsync(item => item.Id == kitchenItemIds[0]);
+    var stored = await database.OrderItems.SingleAsync(item => item.Id == kitchenItemIds[0]);
 
     Assert.Multiple(() =>
                     {
@@ -213,7 +214,7 @@ public sealed class StationQueueEndpointsTest
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     await using var database = _context.Factory.CreateContext();
-    var stored = await database.OrderItems.Include(item => item.CurrentStatus).SingleAsync(item => item.Id == kitchenItemIds[0]);
+    var stored = await database.OrderItems.SingleAsync(item => item.Id == kitchenItemIds[0]);
 
     Assert.Multiple(() =>
                     {
@@ -250,7 +251,7 @@ public sealed class StationQueueEndpointsTest
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     await using var database = _context.Factory.CreateContext();
-    List<OrderItem> stored = await database.OrderItems.Include(item => item.CurrentStatus).ToListAsync();
+    List<OrderItem> stored = await database.OrderItems.ToListAsync();
 
     Assert.Multiple(() =>
                     {
@@ -377,6 +378,107 @@ public sealed class StationQueueEndpointsTest
                       Assert.That(stationOrders[1].GetProperty("tableName").GetString(), Is.EqualTo("Tisch 4"));
                       Assert.That(stationOrders[1].GetProperty("fulfilledItemCount").GetInt32(), Is.EqualTo(2));
                     });
+  }
+
+  [Test]
+  public async Task PostAcknowledgeCancellation_AnItemCancelledWhileOpen_TakesItOffTheCardAndAnswersTheQueue()
+  {
+    IReadOnlyList<Guid> kitchenItemIds = await ReadKitchenItemIdsAsync(await PlaceOrderAcrossBothStationsAsync("Tisch 3"));
+    using var cancelled = await CancelAsync([kitchenItemIds[0]]);
+    using var before = await _context.SendAsAsync(_kitchenToken, HttpMethod.Get, "/api/station/orders");
+    var beforeBody = JsonDocument.Parse(await before.Content.ReadAsStringAsync());
+
+    using var response = await AcknowledgeCancellationAsync(_kitchenToken, [kitchenItemIds[0]]);
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    var cardBefore = beforeBody.RootElement.GetProperty("orders")[0];
+    var cardAfter = body.RootElement.GetProperty("orders")[0];
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(cancelled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(cardBefore.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("orderItemId").GetGuid() == kitchenItemIds[0]).GetProperty("state").GetString(), Is.EqualTo("cancelled"));
+                      Assert.That(cardBefore.GetProperty("itemCount").GetInt32(), Is.EqualTo(1));
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(cardAfter.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("orderItemId").GetGuid()), Is.EqualTo(new[] { kitchenItemIds[1] }));
+                    });
+  }
+
+  [Test]
+  public async Task PostAcknowledgeCancellation_TwoTapsOnTheSameItem_BothSucceed()
+  {
+    IReadOnlyList<Guid> kitchenItemIds = await ReadKitchenItemIdsAsync(await PlaceOrderAcrossBothStationsAsync("Tisch 3"));
+    using var cancelled = await CancelAsync([kitchenItemIds[0]]);
+
+    using var first = await AcknowledgeCancellationAsync(_kitchenToken, [kitchenItemIds[0]]);
+    using var second = await AcknowledgeCancellationAsync(_kitchenToken, [kitchenItemIds[0]]);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                    });
+  }
+
+  [Test]
+  public async Task PostAcknowledgeCancellation_AnItemThatWasNeverCancelled_IsRefusedAsNotSaved()
+  {
+    IReadOnlyList<Guid> kitchenItemIds = await ReadKitchenItemIdsAsync(await PlaceOrderAcrossBothStationsAsync("Tisch 3"));
+
+    using var response = await AcknowledgeCancellationAsync(_kitchenToken, [kitchenItemIds[0]]);
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.station.changeNotSaved"));
+                    });
+  }
+
+  [Test]
+  public async Task PostAcknowledgeCancellation_AnItemOfAnotherStation_IsRefusedAndChangesNothing()
+  {
+    IReadOnlyList<Guid> barItemIds = await ReadBarItemIdsAsync(await PlaceOrderAcrossBothStationsAsync("Tisch 3"));
+    using var cancelled = await CancelAsync([barItemIds[0]]);
+
+    using var response = await AcknowledgeCancellationAsync(_kitchenToken, [barItemIds[0]]);
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    await using var database = _context.Factory.CreateContext();
+    var acknowledged = await database.OrderItemStatuses.CountAsync(status => status.Status == OrderItemState.CancellationAcknowledged);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.station.itemNotAtThisStation"));
+                      Assert.That(acknowledged, Is.Zero);
+                    });
+  }
+
+  [Test]
+  public async Task PostItemUnfulfill_AnItemCancelledAfterItWasHandedOut_IsRefusedNamingIt()
+  {
+    IReadOnlyList<Guid> kitchenItemIds = await ReadKitchenItemIdsAsync(await PlaceOrderAcrossBothStationsAsync("Tisch 3"));
+    using var handedOut = await FulfillAsync(_kitchenToken, [kitchenItemIds[0]]);
+    using var cancelled = await CancelAsync([kitchenItemIds[0]]);
+
+    using var response = await UnfulfillAsync(_kitchenToken, [kitchenItemIds[0]]);
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.station.itemWasCancelled"));
+                      Assert.That(body.RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Bratwurst mit Brot"));
+                    });
+  }
+
+  private Task<HttpResponseMessage> CancelAsync(IReadOnlyList<Guid> orderItemIds)
+  {
+    return _context.SendAsync(HttpMethod.Post, "/api/open-items/cancel", new CancelItemsBody(orderItemIds));
+  }
+
+  private Task<HttpResponseMessage> AcknowledgeCancellationAsync(string deviceToken, IReadOnlyList<Guid> orderItemIds)
+  {
+    return _context.SendAsAsync(deviceToken, HttpMethod.Post, "/api/station/items/acknowledge-cancellation", new StationItemSelectionBody(orderItemIds));
   }
 
   private Task<HttpResponseMessage> FulfillAsync(string deviceToken, IReadOnlyList<Guid> orderItemIds)

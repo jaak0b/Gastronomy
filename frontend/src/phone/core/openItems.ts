@@ -7,8 +7,10 @@ import type {
   TableOrderRecordView,
   TableOrderReportView,
 } from '../../shared/api/generatedSchemas'
+import { assertNever } from '../../shared/core/assertNever'
 import type { AppLanguage } from '../../shared/core/deviceLanguage'
 import { formatPrice } from '../../shared/core/money'
+import { isCancelled, isHandedOut } from '../../shared/core/orderItemStates'
 
 export type SettleOutcome = 'accepted' | 'refused' | 'answerNeverCame'
 
@@ -19,7 +21,7 @@ export interface AmountPaidWithReason {
   paymentNotice: string | null
 }
 
-export type PositionState = 'produced' | 'notProduced'
+export type PositionState = 'produced' | 'notProduced' | 'cancelled'
 
 export interface SettleNotice {
   key: string
@@ -28,7 +30,11 @@ export interface SettleNotice {
 }
 
 export function producedCountIn(order: TableOrderRecordView): number {
-  return order.items.filter((item) => item.fulfilledAtUtc !== null).length
+  return order.items.filter((item) => isHandedOut(item.state)).length
+}
+
+export function notCancelledItemCountIn(order: TableOrderRecordView): number {
+  return order.items.filter((item) => !isCancelled(item.state)).length
 }
 
 export function shareStateOf(count: number, total: number): ShareState {
@@ -39,26 +45,41 @@ export function shareStateOf(count: number, total: number): ShareState {
 }
 
 export function productionStateOf(order: TableOrderRecordView): ShareState {
-  return shareStateOf(producedCountIn(order), order.items.length)
+  const notCancelledItemCount = notCancelledItemCountIn(order)
+  return notCancelledItemCount === 0 ? 'all' : shareStateOf(producedCountIn(order), notCancelledItemCount)
 }
 
 export function positionStateOf(item: TableOrderRecordItemView): PositionState {
-  return item.fulfilledAtUtc === null ? 'notProduced' : 'produced'
+  switch (item.state) {
+    case 'open':
+      return 'notProduced'
+    case 'handedOut':
+      return 'produced'
+    case 'cancelled':
+    case 'cancellationAcknowledged':
+      return 'cancelled'
+    default:
+      return assertNever(item.state)
+  }
 }
 
-export function unsettledItemsIn(report: TableOrderReportView): TableOrderRecordItemView[] {
-  return report.orders.flatMap((order) => order.items).filter((item) => item.settledAtUtc === null)
+export function canBeSettled(item: TableOrderRecordItemView): boolean {
+  return item.settledAtUtc === null && !isCancelled(item.state)
 }
 
-export function unsettledItemIdsIn(report: TableOrderReportView): string[] {
-  return unsettledItemsIn(report).map((item) => item.orderItemId)
+export function settleableItemsIn(report: TableOrderReportView): TableOrderRecordItemView[] {
+  return report.orders.flatMap((order) => order.items).filter((item) => canBeSettled(item))
+}
+
+export function settleableItemIdsIn(report: TableOrderReportView): string[] {
+  return settleableItemsIn(report).map((item) => item.orderItemId)
 }
 
 export function selectedItems(
   report: TableOrderReportView,
   selectedItemIds: readonly string[],
 ): TableOrderRecordItemView[] {
-  return unsettledItemsIn(report).filter((item) => selectedItemIds.includes(item.orderItemId))
+  return settleableItemsIn(report).filter((item) => selectedItemIds.includes(item.orderItemId))
 }
 
 export function selectedAmountCents(
@@ -81,9 +102,9 @@ export function selectionStateOf(
   )
 }
 
-export function unsettledItemIdsInOrder(order: TableOrderRecordView): string[] {
+export function settleableItemIdsInOrder(order: TableOrderRecordView): string[] {
   return order.items
-    .filter((item) => item.settledAtUtc === null)
+    .filter((item) => canBeSettled(item))
     .map((item) => item.orderItemId)
 }
 
@@ -92,7 +113,7 @@ export function withItemToggled(
   report: TableOrderReportView,
   orderItemId: string,
 ): string[] {
-  if (!unsettledItemIdsIn(report).includes(orderItemId)) {
+  if (!settleableItemIdsIn(report).includes(orderItemId)) {
     return [...selectedItemIds]
   }
   return selectedItemIds.includes(orderItemId)
@@ -105,7 +126,7 @@ export function withWholeTable(
   report: TableOrderReportView,
   isWanted: boolean,
 ): string[] {
-  const tableItemIds = unsettledItemIdsIn(report)
+  const tableItemIds = settleableItemIdsIn(report)
   const untouched = selectedItemIds.filter((id) => !tableItemIds.includes(id))
   return isWanted ? [...untouched, ...tableItemIds] : untouched
 }
@@ -115,7 +136,7 @@ export function withWholeOrder(
   order: TableOrderRecordView,
   isWanted: boolean,
 ): string[] {
-  const orderItemIds = unsettledItemIdsInOrder(order)
+  const orderItemIds = settleableItemIdsInOrder(order)
   const untouched = selectedItemIds.filter((id) => !orderItemIds.includes(id))
   return isWanted ? [...untouched, ...orderItemIds] : untouched
 }
@@ -124,8 +145,8 @@ export function withoutItemsThatAreGone(
   selectedItemIds: readonly string[],
   report: TableOrderReportView,
 ): string[] {
-  const stillOpen = unsettledItemIdsIn(report)
-  return selectedItemIds.filter((id) => stillOpen.includes(id))
+  const stillSettleable = settleableItemIdsIn(report)
+  return selectedItemIds.filter((id) => stillSettleable.includes(id))
 }
 
 export function isPaymentNoticeWritten(reason: string): boolean {

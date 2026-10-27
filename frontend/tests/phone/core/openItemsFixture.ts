@@ -2,7 +2,7 @@ import type { TableOrderRecordItemView, TableOrderRecordView, TableOrderReportVi
 
 export function itemWith(
   orderItemId: string,
-  fulfilledAtUtc: string | null,
+  handedOutAtUtc: string | null,
   settledAtUtc: string | null,
   unitPriceCents: number,
 ): TableOrderRecordItemView {
@@ -14,8 +14,10 @@ export function itemWith(
     note: null,
     unitPriceCents,
     orderedAtUtc: '2026-09-05T18:00:00Z',
-    fulfilledAtUtc,
+    state: handedOutAtUtc === null ? 'open' : 'handedOut',
+    stateSetAtUtc: handedOutAtUtc ?? '2026-09-05T18:00:00Z',
     settledAtUtc,
+    chargedPriceCents: settledAtUtc === null ? null : unitPriceCents,
   }
 }
 

@@ -16,14 +16,14 @@ public sealed class TableProgress
   {
     ArgumentNullException.ThrowIfNull(table);
 
-    return ProgressOfUnfinishedOrders(table.ItemFlagsPerOrder.Select(items => _orderService.ShareOfFlaggedItems(items.Select(item => item.IsHandedOut))));
+    return ProgressOfUnfinishedOrders(table.ItemProgressPerOrder.Select(_orderService.HandOutProgressOf));
   }
 
   public ShareState SettlementProgressOf(ShownTable table)
   {
     ArgumentNullException.ThrowIfNull(table);
 
-    return ProgressOfUnfinishedOrders(table.ItemFlagsPerOrder.Select(items => _orderService.ShareOfFlaggedItems(items.Select(item => item.IsSettled))));
+    return ProgressOfUnfinishedOrders(table.ItemProgressPerOrder.Select(_orderService.SettlementProgressOf));
   }
 
   private ShareState ProgressOfUnfinishedOrders(IEnumerable<ShareState> shareOfEachOrder)

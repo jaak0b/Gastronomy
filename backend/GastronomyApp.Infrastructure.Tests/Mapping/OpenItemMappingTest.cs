@@ -26,11 +26,12 @@ public sealed class OpenItemMappingTest
   private TypeAdapterConfig _mapping = null!;
 
   [Test]
-  public void Map_APositionOfATable_CarriesWhenItWasHandedOutAndWhenItWasSettled()
+  public void Map_APositionOfATable_CarriesItsStateWithItsTimeAndWhenAndForWhatItWasSettled()
   {
     var limonade = Item("Limonade", 250);
     _statusSeeder.HandOut(limonade, Guid.NewGuid(), _orderedAtUtc.AddMinutes(20));
     limonade.SettledAtUtc = _orderedAtUtc.AddMinutes(25);
+    limonade.ChargedPriceCents = 200;
     var order = OrderAt("Tisch 12", limonade);
 
     var view = limonade.Adapt<TableOrderRecordItemView>(_mapping);
@@ -41,8 +42,10 @@ public sealed class OpenItemMappingTest
                       Assert.That(view.OrderId, Is.EqualTo(order.Id));
                       Assert.That(view.GlobalOrderNumber, Is.EqualTo(order.GlobalOrderNumber));
                       Assert.That(view.OrderedAtUtc, Is.EqualTo(order.CreatedAtUtc));
-                      Assert.That(view.FulfilledAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(20)));
+                      Assert.That(view.State, Is.EqualTo(OrderItemState.HandedOut));
+                      Assert.That(view.StateSetAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(20)));
                       Assert.That(view.SettledAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(25)));
+                      Assert.That(view.ChargedPriceCents, Is.EqualTo(200));
                     });
   }
 
@@ -138,6 +141,46 @@ public sealed class OpenItemMappingTest
                       Assert.That(view.TableName, Is.EqualTo("Tisch 12"));
                       Assert.That(view.OpenAmountCents, Is.EqualTo(350));
                       Assert.That(view.Orders.Select(placed => placed.OrderId), Is.EqualTo(new[] { order.Id }));
+                    });
+  }
+
+  [Test]
+  public void Map_ACancelledPosition_CarriesTheCancellationWithItsTime()
+  {
+    var bier = Item("Bier", 400);
+    _statusSeeder.Cancel(bier, Guid.NewGuid(), _orderedAtUtc.AddMinutes(7));
+    OrderAt("Tisch 12", bier);
+
+    var view = bier.Adapt<TableOrderRecordItemView>(_mapping);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(view.State, Is.EqualTo(OrderItemState.Cancelled));
+                      Assert.That(view.StateSetAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(7)));
+                      Assert.That(view.ChargedPriceCents, Is.Null);
+                    });
+  }
+
+  [Test]
+  public void Map_ATableWithACancelledUnsettledPosition_OwesNothingForIt()
+  {
+    var bratwurst = Item("Bratwurst", 350);
+    var bier = Item("Bier", 400);
+    _statusSeeder.Cancel(bier, Guid.NewGuid(), _orderedAtUtc.AddMinutes(7));
+    var order = OrderAt("Tisch 12", bratwurst, bier);
+    order.Table.Orders.Add(order);
+
+    var view = order.Table.Adapt<TableOrderReportView>(_mapping);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(view.OpenAmountCents, Is.EqualTo(350));
+                      Assert.That(view.Orders.Single().Items.Select(item => item.ItemName),
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    "Bratwurst",
+                                                    "Bier"
+                                                  }));
                     });
   }
 

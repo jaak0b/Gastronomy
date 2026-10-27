@@ -32,7 +32,7 @@ belongs in the service's ordinary tests. This test only counts the statements.
 pins the phone's table plan read to one statement. The service under test gets the read context; the
 `RunningFestivalLookup` it asks for the running festival gets the fixture's own context, so the
 counter sees the plan statement alone. The statement is a `ProjectToType` over the shown areas, with
-the item flags of each table mapped in `Core/Mapping/TablePlanMapping.cs`.
+the item progress of each table mapped in `Core/Mapping/TablePlanMapping.cs`.
 
 Run it on its own:
 `dotnet test backend/GastronomyApp.Infrastructure.Tests/GastronomyApp.Infrastructure.Tests.csproj --filter "FullyQualifiedName~Services.TablePlanServiceTest"`.

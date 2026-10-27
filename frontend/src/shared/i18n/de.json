@@ -533,6 +533,11 @@
     "auth": {
       "wrongDeviceKind": "Dieses Gerät ist für diesen Bildschirm nicht eingerichtet. Lassen Sie es am Rechner neu einrichten."
     },
+    "cancellation": {
+      "alreadyCancelled": "{name} ist schon storniert. Tippen Sie auf \"Neu laden\" und wählen Sie die Positionen noch einmal aus.",
+      "cannotBeProcessed": "Die Stornierung konnte nicht verarbeitet werden. Tippen Sie auf \"Neu laden\" und versuchen Sie es noch einmal.",
+      "unknownItem": "Eine der ausgewählten Positionen gibt es am Rechner nicht mehr. Tippen Sie auf \"Neu laden\" und wählen Sie die Positionen noch einmal aus."
+    },
     "enrolment": {
       "atMostOneOwner": "Der QR-Code konnte nicht erstellt werden. Versuchen Sie es noch einmal.",
       "codeMissing": "Scannen Sie den QR-Code am Rechner noch einmal. Diese Seite wurde ohne Code geöffnet.",
@@ -557,12 +562,14 @@
     },
     "settlement": {
       "cannotBeProcessed": "Die Abrechnung konnte nicht verarbeitet werden. Schreiben Sie auf einen Zettel, was der Tisch bezahlt hat.",
+      "itemWasCancelled": "{name} wurde inzwischen storniert. Tippen Sie auf \"Neu laden\" und wählen Sie die Positionen noch einmal aus.",
       "noItemsSelected": "Wählen Sie zuerst die Positionen aus, die Sie abrechnen wollen.",
       "unknownItem": "Der Rechner kennt eine der ausgewählten Positionen nicht mehr, deshalb wurde nichts abgerechnet. Tippen Sie auf \"Neu laden\"."
     },
     "station": {
       "changeNotSaved": "Die Bestellung konnte nicht aktualisiert werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
       "itemNotAtThisStation": "Laden Sie die Seite neu. Diese Position gehört nicht zu dieser Ausgabestelle.",
+      "itemWasCancelled": "{name} wurde inzwischen storniert. Wählen Sie die Positionen noch einmal aus.",
       "noFestivalIsRunning": "Es ist kein Fest aktiv.",
       "noItemsSelected": "Tippen Sie eine Position an.",
       "notPartOfTheFestival": "Diese Ausgabestelle gehört nicht zum laufenden Fest.",

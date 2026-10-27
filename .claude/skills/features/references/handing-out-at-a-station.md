@@ -17,27 +17,41 @@ Backend, under `backend/`:
   `IsHiddenFromAsItComesQueue`. An article's `CatalogItem.ProductionMinutes` and
   `IsQueueIndependent` feed the estimates.
 - `Core/Entities/OrderItemStatus.cs` with `Contracts/Enums/OrderItemState.cs` (`Open = 0`,
-  `HandedOut = 20`, numbers pinned, never compared with `<` or `>`): every status an item has had,
+  `HandedOut = 20`, `Cancelled = 30`, `CancellationAcknowledged = 40`, numbers pinned, never
+  compared with `<` or `>`): every status an item has had,
   each row pointing at the one before it (`PreviousStatusId`, unique) and naming who set it, a waiter
   or a station (exactly one, a check constraint). `OrderItem.CurrentStatusId` points at the newest
   row. Rows are never changed or deleted; they go only with their item when the database cascade
   removes it.
-- `Core/Mapping/OrderItemStates.cs`: the one home of "is this item handed out". The predicates
-  `HandedOutPredicate`, `NotHandedOutPredicate` and `NotHandedOutOrNotSettledPredicate` serve SQL
-  (`OrderItemQueries.WhereNotHandedOut` and `WhereNotHandedOutOrNotSettled`, a Mapster projection,
-  or `Items.AsQueryable().Any(...)` inside a query). `CurrentStatusOf`,
-  `IsHandedOut` and `HandedOutAtUtcOf` serve loaded entities and throw an
-  `InvalidOperationException` naming the missing current status when a query forgot to include it.
-  Every reader goes through these, never through `CurrentStatus.Status` of its own.
+- `Core/Queries/OrderItemQueries.cs`: the one home of "what state is this item in". The
+  `[Projectable]` checks `IsOpen`, `IsHandedOut`, `IsCancelled` (both cancelled states),
+  `AwaitsCancellationAcknowledgement` (cancelled while it was open, not yet acknowledged),
+  `IsOnTheQueueCard` (open, handed out or waiting for its acknowledgement), `State` and
+  `StateSetAtUtc` work in SQL and on loaded items alike, and back the filters `WhereOpen`,
+  `WhereNotCancelled` and `WhereToHandOutOrToSettle`. `Core/Queries/StationOrderQueries.cs` picks
+  the cards of the two reads (`WhereAnItemIsOpenOrAwaitsCancellationAcknowledgement` for the queue,
+  `WhereListedAsDone` for the done view). The checks on the bare enum are in `OrderItemStateQueries`.
+  `OrderItem.CurrentStatus` is auto-included, so every loaded item carries its current status; the
+  status before it is included by hand where a cancellation's acknowledgement is decided in memory
+  (see the `query-building-blocks` page of `architecture`). Every reader goes through these checks,
+  never through `CurrentStatus.Status` of its own.
 - `Core/Services/OrderItemLifecycle.cs`: the only writer of status rows. `CanAppendStatus` and
   `AppendStatus` check the allowed changes (none to `Open` by the order's waiter, `Open` to `HandedOut` and back by
-  the station) and append a row after the current one. Because an item and its status point at each
+  the station, `Open` or `HandedOut` to `Cancelled` by a waiter, `Cancelled` to
+  `CancellationAcknowledged` by the station only when the item was open before it was cancelled)
+  and append a row after the current one. `CheckStatusChange` is the one place that decides
+  whether a change is allowed and names why not (`AlreadyInThatState`, `ItemIsCancelled` for any
+  change but the acknowledgement of a cancelled item, `NotAllowed`). Reading an acknowledgement without the status before the
+  current one throws an `InvalidOperationException` naming `OrderItemStatus.PreviousStatus`. Because an item and its status point at each
   other, a new item's first `Open` row is saved first and made current with `PointAtFirstStatus` in a
   second save of the same request transaction; `OrderPlacementService` does this. Handing out and
   putting back need one save.
 - `Core/Services/StationQueueService.cs`: the one service of the station tablet's queue, on
   `IGastronomyDatabase`. `ReadQueueAsync` and `ReadFulfilledAsync` answer the two reads,
-  `FulfillAsync`, `UnfulfillAsync` and `HideFromAsItComesQueueAsync` the three actions, and each
+  `FulfillAsync`, `UnfulfillAsync`, `AcknowledgeCancellationAsync` and
+  `HideFromAsItComesQueueAsync` the four actions (the first three share one loop that finds the
+  selected items, refuses unknown ones, asks `OrderItemLifecycle.CheckStatusChange` about each and
+  appends the status; the loop itself decides only what a repeated tap does), and each
   action answers with the fresh `StationQueueView`. Every method first finds the station at the
   running festival (unknown station, no running festival, station not at the festival, in that
   order, in three statements), so the queue read runs four statements. A request names items by id,
@@ -49,7 +63,8 @@ Backend, under `backend/`:
   `Core/Services/SequenceNumberAllocator.cs`.
 - Routes in `GastronomyApp.Api/Endpoints/StationEndpoints.cs`. For the station tablet:
   `GET /api/station/orders`, `GET /api/station/orders/fulfilled`, `POST /api/station/items/fulfill`,
-  `POST /api/station/items/unfulfill` and `POST /api/station/orders/{stationOrderId}/hide`
+  `POST /api/station/items/unfulfill`, `POST /api/station/items/acknowledge-cancellation` and
+  `POST /api/station/orders/{stationOrderId}/hide`
   (`StationQueueService` directly). For the phone: `GET /api/estimates` and
   `POST /api/estimates/quote` (`EstimateService` directly). Wire records in `GastronomyApp.Contracts/Stations`,
   the estimate records in `Contracts/Orders`, `DeliveryMode` and `OrderStatus` in `Contracts/Enums`.
@@ -59,15 +74,34 @@ Frontend, under `frontend/src/`:
 - `station/views/StationPage.vue` with `station/components/` (`StationOpenBoard.vue`,
   `StationOrderCard.vue`, `StationFulfilledCard.vue`, `StationDoneDialog.vue`),
   `station/composables/` and `station/stores/station.ts`. `shared/core/stationBoard.ts` builds the
-  lines, the counts and the selection.
+  lines, the counts and the selection: `openItemsIn` (what can be selected and marked done),
+  `itemsNotHandedOutIn` (what a card lists: the open items and the cancelled ones waiting for their
+  acknowledgement), `itemsNotCancelledIn` (what the done card's summary counts), and `itemLines`,
+  which groups by article and note and never merges a cancelled item into a line of open or
+  handed-out ones (`ItemLine.isCancelled`). `stationFailureMessage` turns a refused action into the
+  key and the parameters the page shows, so a refusal naming an item names it.
+- `shared/core/orderItemStates.ts` (`isOpen`, `isHandedOut`, `isCancelled`) is the frontend's one
+  reading of the wire's `OrderItemState`, shared with the waiter's settle view. A cancelled item is
+  drawn struck through by the global class `cancelled-item` in `shared/styles/cancelledItems.css`,
+  the same class the settle view uses: on the card it is a disabled line that cannot be selected, in
+  the grouped view a line of its own, and in the done view a row with neither tick nor put back.
 - The phone: `phone/core/estimates.ts` and `phone/stores/estimates.ts` for the waiting times; the
   delivery mode is chosen on the summary (see the `taking-an-order` page).
 
 ## Invariants
 
-- **An item is open or done.** Done is the current status `HandedOut`, appended when the station
-  hands the item out; putting a mistaken tap back appends a new `Open` after it. The history keeps
-  every step, and there is no in-between production state.
+- **An item is open, done or cancelled.** Done is the current status `HandedOut`, appended when the
+  station hands the item out; putting a mistaken tap back appends a new `Open` after it. A waiter
+  cancels an open or a handed-out item (see the `settling-a-table` page), and a cancellation is
+  final. The history keeps every step, and there is no in-between production state.
+- **A cancelled item is never handed out and leaves every count.** Handing out or putting back a
+  cancelled item is refused naming it (`errors.station.itemWasCancelled`). A card keeps an item
+  cancelled while it was open until the station acknowledges it; acknowledging an item already
+  acknowledged changes nothing, and one that does not wait for an acknowledgement is refused with
+  `errors.station.changeNotSaved`. An item cancelled after hand-out needs no acknowledgement and
+  leaves the card. A card stays in the queue while one of its items is open or waits for its
+  acknowledgement. The card's item count and done count, the waiting times and the order's status
+  leave cancelled items out.
 - **Every saved item has a current status.** Placing stores each item with its first `Open` row,
   set by the order's waiter at the order's time, and both saves of placing commit or roll back
   together.
@@ -85,7 +119,8 @@ Frontend, under `frontend/src/`:
   over at once, `AsItComes` hands each item out as soon as it is ready. A station order set to
   together is done when its last item is done.
 - **An order's status is derived from its items and never stored**: `Open` when none is done,
-  `PartiallyFulfilled` when some are, `Fulfilled` when all are. An order has no stored total either.
+  `PartiallyFulfilled` when some are, `Fulfilled` when all are, counting only the items that are not
+  cancelled. An order has no stored total either.
 - **Every station order carries two numbers**, the festival's global order number and the station's
   own number, so a gap shows in the station's list. `Festival.NextOrderNumber` and
   `FestivalStation.NextStationOrderNumber` count per festival, every festival starts at 1 by itself,
@@ -104,17 +139,19 @@ Frontend, under `frontend/src/`:
 
 - `GastronomyApp.Core.Tests/Services`: `StationWaitingTimesTest` (the pure sums),
   `OrderItemLifecycleTest` (every allowed and refused change, who may set it, the first status
-  made current), `Mapping/OrderItemStatesTest` (the accessor's refusal, the hand-out time).
+  made current, the acknowledgement read without the status before it).
 - `GastronomyApp.Infrastructure.Tests`: `Services/EstimateServiceTest` (the list and the quote on the real DbContext: open work of the same festival and station only, a handed-out item left out, independent articles, refusals), `Configurations/StationOrderConfigurationTest`,
   `Configurations/OrderItemStatusConfigurationTest` (the check constraint, no fork in a history, the
   cascade from a deleted order, no item without a current status),
   `Persistence/ReleasedDatabaseUpgradeTest` (an open and a handed-out item of a released database get
   their histories, and 20000 items get theirs within a time bound),
-  `Queries/OrderItemQueriesTest`,
+  `Queries/OrderItemQueriesTest` (the filters and the checks, in memory and translated by EF Core
+  in a `Where`, nested in an `Any` and in a projection),
   `Configurations/OrderNumberIndexTest`, `Services/SequenceNumberAllocatorTest`,
   `Services/StationQueueServiceTest` (every read and action on the real DbContext: both columns, the
   order of the cards and of the lines, the refusals and their order, nothing stored on a refusal, the
-  four statements of the queue read, the status rows a hand-out and a put-back append),
+  four statements of the queue read, the status rows a hand-out and a put-back append, cancelled
+  items on and off the card, the acknowledgement),
   `Services/ItemsToHandOutLookupTest` and
   `Mapping/StationQueueMappingTest`.
 - `GastronomyApp.Api.Tests`: `Endpoints/StationQueueEndpointsTest` (with two simultaneous taps on
@@ -126,5 +163,6 @@ Frontend, under `frontend/src/`:
 - `frontend/tests/station`: the views `StationPage.screen`, `.markingDone`, `.doneView` and
   `.connection` on `stationPageFixture.ts`, the components, the composables and the store specs
   (`station.queue`, `station.done`, `station.staleAnswers`, `stationChangeListening`,
-  `stationSnapshotOrdering`); `tests/support/station.ts`; `frontend/tests/shared/core/stationBoard.spec.ts`;
+  `stationSnapshotOrdering`); `tests/support/station.ts` (`item`, `cancelledItem`);
+  `frontend/tests/shared/core/stationBoard.spec.ts` and `orderItemStates.spec.ts`;
   `frontend/tests/phone/core/estimates.spec.ts` and `phone/stores/estimates.spec.ts`.

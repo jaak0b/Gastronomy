@@ -133,7 +133,8 @@ export function aQueuedItem(overrides: Partial<StationQueueItemView> = {}): Stat
     orderItemId: 'order-item-1',
     itemName: 'Bratwurst',
     note: null,
-    fulfilledAtUtc: null,
+    state: 'open',
+    stateSetAtUtc: '2026-07-18T18:00:00Z',
     ...overrides,
   }
 }
@@ -151,8 +152,8 @@ export function aStationOrder(
     deliveryMode: 'together',
     createdAtUtc: '2026-07-18T18:00:00Z',
     isHiddenFromAsItComesQueue: false,
-    itemCount: items.length,
-    fulfilledItemCount: items.filter((item) => item.fulfilledAtUtc !== null).length,
+    itemCount: items.filter((item) => item.state === 'open' || item.state === 'handedOut').length,
+    fulfilledItemCount: items.filter((item) => item.state === 'handedOut').length,
     ...overrides,
     items,
   }

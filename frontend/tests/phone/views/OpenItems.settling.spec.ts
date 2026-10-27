@@ -164,4 +164,19 @@ describe('settling what the table actually handed over', () => {
       'Versuchen Sie es noch einmal. Das Abrechnen ist fehlgeschlagen.',
     )
   })
+
+  it('names the item a waiter cancelled while this one was settling', async () => {
+    const screen = await mountScreen()
+    openItemsLaptop(
+      TISCH_12,
+      refusal('errors.settlement.itemWasCancelled', { code: 'ItemWasCancelled', parameters: { name: 'Bratwurst' } }),
+    )
+    await openTheAmountDialog(screen)
+
+    await pressConfirm()
+
+    expect(document.querySelector('[data-test="amount-paid-dialog"]')?.textContent).toContain(
+      'Bratwurst wurde inzwischen storniert. Tippen Sie auf "Neu laden" und wählen Sie die Positionen noch einmal aus.',
+    )
+  })
 })

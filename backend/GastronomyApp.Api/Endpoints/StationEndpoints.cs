@@ -32,6 +32,10 @@ public static class StationEndpoints
     stationTablet.MapPost("/items/unfulfill",
                           async Task<ApiAnswer<StationQueueView>> (StationItemSelectionRequest request, StationDeviceCaller caller, StationQueueService service, CancellationToken cancellationToken) => await service.UnfulfillAsync(request.OrderItemIds ?? [], caller.StationId, cancellationToken));
 
+    stationTablet.MapPost("/items/acknowledge-cancellation",
+                          async Task<ApiAnswer<StationQueueView>> (StationItemSelectionRequest request, StationDeviceCaller caller, StationQueueService service, CancellationToken cancellationToken) =>
+                            await service.AcknowledgeCancellationAsync(request.OrderItemIds ?? [], caller.StationId, cancellationToken));
+
     stationTablet.MapPost("/orders/{stationOrderId:guid}/hide",
                           async Task<ApiAnswer<StationQueueView>> (Guid stationOrderId, StationDeviceCaller caller, StationQueueService service, CancellationToken cancellationToken) => await service.HideFromAsItComesQueueAsync(stationOrderId, caller.StationId, cancellationToken));
 

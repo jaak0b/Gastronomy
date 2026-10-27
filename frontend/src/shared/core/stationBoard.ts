@@ -3,6 +3,7 @@ import { DeliveryMode, StationOrderQueueView, StationQueueItemView } from '../ap
 import { assertNever } from './assertNever'
 import { mergeLinesWithSameArticleAndNote } from './collapse'
 import { compareNames } from './compareNames'
+import { isCancelled, isHandedOut, isOpen } from './orderItemStates'
 import type { Translate } from './translation'
 
 export type StationFailure =
@@ -14,6 +15,7 @@ export interface ItemLine {
   key: string
   itemName: string
   note: string | null
+  isCancelled: boolean
   units: number
 }
 
@@ -23,14 +25,21 @@ export interface StationStats {
   openLines: ItemLine[]
 }
 
-export function stationFailureKey(failure: StationFailure): string {
+export interface StationMessage {
+  key: string
+  parameters: Record<string, string | number>
+}
+
+export function stationFailureMessage(failure: StationFailure): StationMessage {
   switch (failure.kind) {
     case 'unreachable':
-      return 'station.board.errors.actionNotReached'
+      return { key: 'station.board.errors.actionNotReached', parameters: {} }
     case 'error':
-      return failure.body === null ? 'station.board.errors.actionFailed' : failure.body.messageKey
+      return failure.body === null
+        ? { key: 'station.board.errors.actionFailed', parameters: {} }
+        : { key: failure.body.messageKey, parameters: failure.body.parameters }
     case 'unreadableAnswer':
-      return 'station.board.errors.actionFailed'
+      return { key: 'station.board.errors.actionFailed', parameters: {} }
     default:
       return assertNever(failure)
   }
@@ -60,12 +69,16 @@ export function deliveryModeColourToken(deliveryMode: DeliveryMode): DeliveryMod
   }
 }
 
-export function isFulfilled(item: StationQueueItemView): boolean {
-  return item.fulfilledAtUtc !== null
+export function openItemsIn(stationOrder: StationOrderQueueView): StationQueueItemView[] {
+  return stationOrder.items.filter((item) => isOpen(item.state))
 }
 
-export function openItemsIn(stationOrder: StationOrderQueueView): StationQueueItemView[] {
-  return stationOrder.items.filter((item) => !isFulfilled(item))
+export function itemsNotHandedOutIn(stationOrder: StationOrderQueueView): StationQueueItemView[] {
+  return stationOrder.items.filter((item) => !isHandedOut(item.state))
+}
+
+export function itemsNotCancelledIn(stationOrder: StationOrderQueueView): StationQueueItemView[] {
+  return stationOrder.items.filter((item) => !isCancelled(item.state))
 }
 
 function compareLines(left: ItemLine, right: ItemLine): number {
@@ -73,17 +86,25 @@ function compareLines(left: ItemLine, right: ItemLine): number {
   return byName !== 0 ? byName : compareNames(left.note ?? '', right.note ?? '')
 }
 
-export function itemLines(items: readonly StationQueueItemView[]): ItemLine[] {
+function linesOf(items: readonly StationQueueItemView[], areCancelled: boolean): ItemLine[] {
   return mergeLinesWithSameArticleAndNote(
     items,
     (item) => item.itemName,
     (item) => item.note,
   ).map(({ key, line, quantity }) => ({
-    key,
+    key: JSON.stringify([key, areCancelled]),
     itemName: line.itemName,
     note: line.note,
+    isCancelled: areCancelled,
     units: quantity,
   }))
+}
+
+export function itemLines(items: readonly StationQueueItemView[]): ItemLine[] {
+  return [
+    ...linesOf(items.filter((item) => !isCancelled(item.state)), false),
+    ...linesOf(items.filter((item) => isCancelled(item.state)), true),
+  ]
 }
 
 export function linesByCount(lines: readonly ItemLine[]): ItemLine[] {

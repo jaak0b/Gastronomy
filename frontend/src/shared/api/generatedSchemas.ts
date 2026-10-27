@@ -79,6 +79,12 @@ export const AdminUnitView = z.strictObject({ unitId: z.string(), name: z.string
 export type AdminUnitListView = __TypedOpenapi.Schemas.AdminUnitListView;
 export const AdminUnitListView = z.strictObject({ units: z.array(AdminUnitView) });
 
+export type CancelItemsRequest = __TypedOpenapi.Schemas.CancelItemsRequest;
+export const CancelItemsRequest = z.strictObject({ orderItemIds: z.array(z.string()).nullable() });
+
+export type CancellationView = __TypedOpenapi.Schemas.CancellationView;
+export const CancellationView = z.strictObject({ cashToReturnCents: z.number().int() });
+
 export type CatalogCategoryView = __TypedOpenapi.Schemas.CatalogCategoryView;
 export const CatalogCategoryView = z.strictObject({ categoryId: z.string(), name: z.string(), colourHex: z.string(), sortOrder: z.number().int() });
 
@@ -165,6 +171,9 @@ export const OrderDeliveryModeRequest = z.strictObject({ stationId: z.string(), 
 
 export type OrderItemRequest = __TypedOpenapi.Schemas.OrderItemRequest;
 export const OrderItemRequest = z.strictObject({ catalogItemId: z.string(), unitPriceCents: z.number().int(), note: z.string().nullable().optional(), stationId: z.string().nullable().optional() });
+
+export type OrderItemState = __TypedOpenapi.Schemas.OrderItemState;
+export const OrderItemState = z.enum(["open", "handedOut", "cancelled", "cancellationAcknowledged"]);
 
 export type OrderStatus = __TypedOpenapi.Schemas.OrderStatus;
 export const OrderStatus = z.enum(["open", "partiallyFulfilled", "fulfilled"]);
@@ -269,7 +278,7 @@ export type ShareState = __TypedOpenapi.Schemas.ShareState;
 export const ShareState = z.enum(["none", "some", "all"]);
 
 export type StationQueueItemView = __TypedOpenapi.Schemas.StationQueueItemView;
-export const StationQueueItemView = z.strictObject({ orderItemId: z.string(), itemName: z.string(), note: z.string().nullable(), fulfilledAtUtc: z.string().nullable() });
+export const StationQueueItemView = z.strictObject({ orderItemId: z.string(), itemName: z.string(), note: z.string().nullable(), state: OrderItemState, stateSetAtUtc: z.string() });
 
 export type StationOrderQueueView = __TypedOpenapi.Schemas.StationOrderQueueView;
 export const StationOrderQueueView = z.strictObject({ stationOrderId: z.string(), globalOrderNumber: z.number().int(), stationOrderNumber: z.number().int(), tableName: z.string(), staffMemberName: z.string(), deliveryMode: DeliveryMode, createdAtUtc: z.string(), isHiddenFromAsItComesQueue: z.boolean(), itemCount: z.number().int(), fulfilledItemCount: z.number().int(), items: z.array(StationQueueItemView) });
@@ -284,7 +293,7 @@ export type StationQueueView = __TypedOpenapi.Schemas.StationQueueView;
 export const StationQueueView = z.strictObject({ station: StationSummaryView, orders: z.array(StationOrderQueueView), asItComes: z.array(StationOrderQueueView) });
 
 export type TableOrderRecordItemView = __TypedOpenapi.Schemas.TableOrderRecordItemView;
-export const TableOrderRecordItemView = z.strictObject({ orderItemId: z.string(), orderId: z.string(), globalOrderNumber: z.number().int(), itemName: z.string(), note: z.string().nullable(), unitPriceCents: z.number().int(), orderedAtUtc: z.string(), fulfilledAtUtc: z.string().nullable(), settledAtUtc: z.string().nullable() });
+export const TableOrderRecordItemView = z.strictObject({ orderItemId: z.string(), orderId: z.string(), globalOrderNumber: z.number().int(), itemName: z.string(), note: z.string().nullable(), unitPriceCents: z.number().int(), orderedAtUtc: z.string(), state: OrderItemState, stateSetAtUtc: z.string(), settledAtUtc: z.string().nullable(), chargedPriceCents: z.number().int().nullable() });
 
 export type TableOrderRecordView = __TypedOpenapi.Schemas.TableOrderRecordView;
 export const TableOrderRecordView = z.strictObject({ orderId: z.string(), globalOrderNumber: z.number().int(), createdAtUtc: z.string(), staffMemberName: z.string(), items: z.array(TableOrderRecordItemView) });

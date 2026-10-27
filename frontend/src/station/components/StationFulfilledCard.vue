@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { StationOrderQueueView } from '../../shared/api/generatedSchemas'
-import { isFulfilled, itemLineText, itemLines } from '../../shared/core/stationBoard'
+import { isCancelled, isHandedOut } from '../../shared/core/orderItemStates'
+import { itemLineText, itemLines, itemsNotCancelledIn } from '../../shared/core/stationBoard'
 import { useStationOrderHeader } from '../composables/useStationOrderHeader'
 import BaseStationCard from './BaseStationCard.vue'
 
@@ -14,7 +15,7 @@ const { deliveryText, deliveryModeColour, orderReference, takenByText, doneCount
   useStationOrderHeader(() => props.stationOrder)
 
 const unitSummary = computed(() =>
-  itemLines(props.stationOrder.items)
+  itemLines(itemsNotCancelledIn(props.stationOrder))
     .map((line) => itemLineText(line, t))
     .join(t('station.board.labels.unitSeparator')),
 )
@@ -47,9 +48,9 @@ const unitSummary = computed(() =>
       class="station-item d-flex align-center ga-3"
       data-test="station-item"
       :data-test-id="item.orderItemId"
-      :class="{ fulfilled: isFulfilled(item) }"
+      :class="{ fulfilled: isHandedOut(item.state), 'cancelled-item': isCancelled(item.state) }"
     >
-      <v-icon v-if="isFulfilled(item)" class="item-tick" data-test="item-tick" icon="mdi-check" />
+      <v-icon v-if="isHandedOut(item.state)" class="item-tick" data-test="item-tick" icon="mdi-check" />
       <div class="item-text flex-grow-1">
         <div class="item-name text-body-1" data-test="item-name">{{ item.itemName }}</div>
         <div v-if="item.note !== null" class="item-note text-body-2" data-test="item-note">
@@ -57,7 +58,7 @@ const unitSummary = computed(() =>
         </div>
       </div>
       <v-btn
-        v-if="isFulfilled(item)"
+        v-if="isHandedOut(item.state)"
         class="put-back"
         data-test="put-back"
         variant="outlined"

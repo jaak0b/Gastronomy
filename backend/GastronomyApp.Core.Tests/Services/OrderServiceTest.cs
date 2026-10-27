@@ -32,9 +32,9 @@ public sealed class OrderServiceTest
   }
 
   [Test]
-  public void StatusOf_AnOrderWithoutItems_IsOpen()
+  public void StatusOf_AnOrderWithoutItems_IsFulfilled()
   {
-    Assert.That(_service.StatusOf(OrderWithItems(0, 0)), Is.EqualTo(OrderStatus.Open));
+    Assert.That(_service.StatusOf(OrderWithItems(0, 0)), Is.EqualTo(OrderStatus.Fulfilled));
   }
 
   [Test]
@@ -78,9 +78,9 @@ public sealed class OrderServiceTest
   }
 
   [Test]
-  public void ShareOfFlaggedItems_NoItems_IsNone()
+  public void ShareOfFlaggedItems_NoItems_IsAll()
   {
-    Assert.That(_service.ShareOfFlaggedItems([]), Is.EqualTo(ShareState.None));
+    Assert.That(_service.ShareOfFlaggedItems([]), Is.EqualTo(ShareState.All));
   }
 
   [Test]
@@ -108,6 +108,128 @@ public sealed class OrderServiceTest
     order.StationOrders.Add(StationOrderWithPrices(order.Id, 400));
 
     Assert.That(_service.TotalCentsOf(order), Is.EqualTo(750));
+  }
+
+  [Test]
+  public void StatusOf_EveryItemCancelled_IsFulfilled()
+  {
+    var order = OrderWithItems(2, 0);
+    CancelItems(order, 2);
+
+    Assert.That(_service.StatusOf(order), Is.EqualTo(OrderStatus.Fulfilled));
+  }
+
+  [Test]
+  public void StatusOf_TheOnlyItemNotCancelledIsHandedOut_IsFulfilled()
+  {
+    Assert.That(_service.StatusOf(OrderWithOneHandedOutAndOthersCancelled()), Is.EqualTo(OrderStatus.Fulfilled));
+  }
+
+  [Test]
+  public void StatusOf_AnOpenItemBesideACancelledOne_IsOpen()
+  {
+    var order = OrderWithItems(2, 0);
+    CancelItems(order, 1);
+
+    Assert.That(_service.StatusOf(order), Is.EqualTo(OrderStatus.Open));
+  }
+
+  [Test]
+  public void TotalCentsOf_ACancelledItem_LeavesItsPriceOut()
+  {
+    var order = OrderWithPrices(350, 400, 250);
+    CancelItems(order, 1);
+
+    Assert.That(_service.TotalCentsOf(order), Is.EqualTo(650));
+  }
+
+  [Test]
+  public void HandOutProgressOf_EveryItemCancelled_IsAll()
+  {
+    Assert.That(_service.HandOutProgressOf([
+                                             new(OrderItemState.Cancelled, false),
+                                             new(OrderItemState.CancellationAcknowledged, false)
+                                           ]),
+                Is.EqualTo(ShareState.All));
+  }
+
+  [Test]
+  public void HandOutProgressOf_AHandedOutItemBesideACancelledOne_IsAll()
+  {
+    Assert.That(_service.HandOutProgressOf([
+                                             new(OrderItemState.HandedOut, false),
+                                             new(OrderItemState.Cancelled, false)
+                                           ]),
+                Is.EqualTo(ShareState.All));
+  }
+
+  [Test]
+  public void HandOutProgressOf_AnOpenItemBesideAHandedOutOne_IsSome()
+  {
+    Assert.That(_service.HandOutProgressOf([
+                                             new(OrderItemState.HandedOut, false),
+                                             new(OrderItemState.Open, false)
+                                           ]),
+                Is.EqualTo(ShareState.Some));
+  }
+
+  [Test]
+  public void HandOutProgressOf_NullItems_ThrowsArgumentNullException()
+  {
+    Assert.That(() => _service.HandOutProgressOf(null!), Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public void SettlementProgressOf_EveryItemCancelled_IsAll()
+  {
+    Assert.That(_service.SettlementProgressOf([
+                                                new(OrderItemState.Cancelled, false),
+                                                new(OrderItemState.CancellationAcknowledged, false)
+                                              ]),
+                Is.EqualTo(ShareState.All));
+  }
+
+  [Test]
+  public void SettlementProgressOf_ASettledItemBesideAnUnsettledCancelledOne_IsAll()
+  {
+    Assert.That(_service.SettlementProgressOf([
+                                                new(OrderItemState.Open, true),
+                                                new(OrderItemState.Cancelled, false)
+                                              ]),
+                Is.EqualTo(ShareState.All));
+  }
+
+  [Test]
+  public void SettlementProgressOf_AnUnsettledItemBesideASettledOne_IsSome()
+  {
+    Assert.That(_service.SettlementProgressOf([
+                                                new(OrderItemState.Open, true),
+                                                new(OrderItemState.HandedOut, false)
+                                              ]),
+                Is.EqualTo(ShareState.Some));
+  }
+
+  [Test]
+  public void SettlementProgressOf_NullItems_ThrowsArgumentNullException()
+  {
+    Assert.That(() => _service.SettlementProgressOf(null!), Throws.ArgumentNullException);
+  }
+
+  private Order OrderWithOneHandedOutAndOthersCancelled()
+  {
+    var order = OrderWithItems(3, 1);
+    List<OrderItem> items = order.StationOrders.SelectMany(stationOrder => stationOrder.Items).ToList();
+
+    foreach (var item in items.Skip(1))
+      _lifecycle.AppendStatus(item, OrderItemState.Cancelled, new(order.StaffMemberId, null), _handedOutAtUtc.AddMinutes(1));
+
+    return order;
+  }
+
+  private void CancelItems(Order order, int cancelledItemCount)
+  {
+    foreach (var item in order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Take(cancelledItemCount))
+      _lifecycle.AppendStatus(item, OrderItemState.Cancelled, new(order.StaffMemberId, null), _handedOutAtUtc.AddMinutes(1));
   }
 
   private Order OrderWithItems(int itemCount, int fulfilledItemCount)
@@ -176,14 +298,20 @@ public sealed class OrderServiceTest
     var stationOrder = EmptyStationOrder(orderId);
 
     foreach (var unitPriceCents in unitPricesCents)
-      stationOrder.Items.Add(new()
-                             {
-                               Id = Guid.NewGuid(),
-                               StationOrderId = stationOrder.Id,
-                               CatalogItemId = Guid.NewGuid(),
-                               ItemName = "Bratwurst",
-                               UnitPriceCents = unitPriceCents
-                             });
+    {
+      OrderItem item = new()
+                       {
+                         Id = Guid.NewGuid(),
+                         StationOrderId = stationOrder.Id,
+                         CatalogItemId = Guid.NewGuid(),
+                         ItemName = "Bratwurst",
+                         UnitPriceCents = unitPriceCents
+                       };
+
+      _lifecycle.AppendStatus(item, OrderItemState.Open, new(Guid.NewGuid(), null), _placedAtUtc);
+      _lifecycle.PointAtFirstStatus(item);
+      stationOrder.Items.Add(item);
+    }
 
     return stationOrder;
   }

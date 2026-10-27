@@ -2,11 +2,11 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { StationOrderQueueView } from '../../shared/api/generatedSchemas'
+import { isCancelled } from '../../shared/core/orderItemStates'
 import {
-
   itemLineText,
   itemLines,
-  openItemsIn,
+  itemsNotHandedOutIn,
   selectedOpenItemIds,
 } from '../../shared/core/stationBoard'
 import { useStationOrderHeader } from '../composables/useStationOrderHeader'
@@ -29,11 +29,11 @@ const { deliveryText, deliveryModeColour, orderReference, takenByText, doneCount
   useStationOrderHeader(() => props.stationOrder)
 
 const isGrouped = ref(false)
-const openItems = computed(() => openItemsIn(props.stationOrder))
+const cardItems = computed(() => itemsNotHandedOutIn(props.stationOrder))
 const selectedHere = computed(() =>
   selectedOpenItemIds(props.stationOrder, props.selectedItemIds),
 )
-const groupedLines = computed(() => itemLines(openItems.value))
+const groupedLines = computed(() => itemLines(cardItems.value))
 const viewToggleLabel = computed(() =>
   t(isGrouped.value ? 'station.board.actions.listView' : 'station.board.actions.groupedView'),
 )
@@ -83,15 +83,16 @@ function isSelected(orderItemId: string): boolean {
     <v-divider class="my-2" />
     <template v-if="!isGrouped">
       <v-btn
-        v-for="item in openItems"
+        v-for="item in cardItems"
         :key="item.orderItemId"
         class="station-item"
         data-test="station-item"
         :data-test-id="item.orderItemId"
-        :class="{ selected: isSelected(item.orderItemId) }"
+        :class="{ selected: isSelected(item.orderItemId), 'cancelled-item': isCancelled(item.state) }"
         variant="tonal"
         block
         size="large"
+        :disabled="isCancelled(item.state)"
         @click="emit('toggleItem', item.orderItemId)"
       >
         <span class="item-text">
@@ -105,7 +106,13 @@ function isSelected(orderItemId: string): boolean {
       </v-btn>
     </template>
     <div v-else class="grouped-items">
-      <p v-for="line in groupedLines" :key="line.key" class="grouped-line text-body-1 mb-0" data-test="grouped-line">
+      <p
+        v-for="line in groupedLines"
+        :key="line.key"
+        class="grouped-line text-body-1 mb-0"
+        data-test="grouped-line"
+        :class="{ 'cancelled-item': line.isCancelled }"
+      >
         {{ itemLineText(line, t) }}
       </p>
     </div>

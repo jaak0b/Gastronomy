@@ -80,6 +80,14 @@ describe('one position of an open table', () => {
     expect(row.find('[data-test="line-tick"]').exists()).toBe(false)
   })
 
+  it('strikes a cancelled position through and offers no tick box and no state for it', () => {
+    const row = mountRow({ productionState: 'cancelled', isDisabled: true })
+
+    expect(row.get('[data-test="open-line"]').classes()).toContain('cancelled-item')
+    expect(row.find('[data-test="line-tick"]').exists()).toBe(false)
+    expect(row.find('[data-test="line-state"]').exists()).toBe(false)
+  })
+
   it('hands the tap up so the screen decides what it means', async () => {
     const row = mountRow()
 

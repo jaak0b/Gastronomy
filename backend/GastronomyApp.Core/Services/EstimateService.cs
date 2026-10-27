@@ -69,6 +69,6 @@ public sealed class EstimateService
 
   private async Task<IReadOnlyList<OpenWork>> FindOpenWorkAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    return await _database.OrderItems.AsNoTracking().WhereNotHandedOut().WhereFestivalIs(festivalId).ProjectToType<OpenWork>(_mapping).ToListAsync(cancellationToken);
+    return await _database.OrderItems.AsNoTracking().WhereOpen().WhereFestivalIs(festivalId).ProjectToType<OpenWork>(_mapping).ToListAsync(cancellationToken);
   }
 }

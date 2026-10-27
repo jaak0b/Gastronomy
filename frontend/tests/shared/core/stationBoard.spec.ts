@@ -1,36 +1,43 @@
 import { describe, expect, it } from 'vitest'
 import {
-
   deliveryModeColourToken,
   deliveryModeKey,
   itemLineText,
   itemLines,
+  itemsNotCancelledIn,
+  itemsNotHandedOutIn,
   linesByCount,
   openItemsIn,
   retainOpenItemIds,
   selectedOpenItemIds,
   selectedUnits,
-  stationFailureKey,
+  stationFailureMessage,
   stationStats,
 } from '../../../src/shared/core/stationBoard'
 import type { ItemLine } from '../../../src/shared/core/stationBoard'
 import { StationOrderQueueView, StationQueueItemView } from '../../../src/shared/api/generatedSchemas'
 
-function articleAndUnits(lines: readonly ItemLine[]): Omit<ItemLine, 'key'>[] {
+function articleAndUnits(lines: readonly ItemLine[]): Pick<ItemLine, 'itemName' | 'note' | 'units'>[] {
   return lines.map(({ itemName, note, units }) => ({ itemName, note, units }))
 }
 
 function line(itemName: string, note: string | null, units: number): ItemLine {
-  return { key: `${itemName}|${note ?? ''}`, itemName, note, units }
+  return { key: `${itemName}|${note ?? ''}`, itemName, note, isCancelled: false, units }
 }
 
 function stationOrderItem(
   orderItemId: string,
   itemName = 'Bratwurst',
-  fulfilledAtUtc: string | null = null,
+  handedOutAtUtc: string | null = null,
   note: string | null = null,
 ): StationQueueItemView {
-  return { orderItemId, itemName, note, fulfilledAtUtc }
+  return {
+    orderItemId,
+    itemName,
+    note,
+    state: handedOutAtUtc === null ? 'open' : 'handedOut',
+    stateSetAtUtc: handedOutAtUtc ?? '2026-09-05T18:00:00Z',
+  }
 }
 
 function stationOrder(overrides: Partial<StationOrderQueueView> = {}): StationOrderQueueView {
@@ -257,30 +264,71 @@ describe('a selection after a reload', () => {
   })
 })
 
-describe('stationFailureKey, what the tablet says when a change did not go through', () => {
+describe('stationFailureMessage, what the tablet says when a change did not go through', () => {
   it('asks to tap again when the laptop could not be reached', () => {
-    expect(stationFailureKey({ kind: 'unreachable' })).toBe('station.board.errors.actionNotReached')
+    expect(stationFailureMessage({ kind: 'unreachable' })).toEqual({
+      key: 'station.board.errors.actionNotReached',
+      parameters: {},
+    })
   })
 
-  it('shows the reason the laptop gave when it named one', () => {
+  it('shows the reason the laptop gave when it named one, with the item it names', () => {
     expect(
-      stationFailureKey({
+      stationFailureMessage({
         kind: 'error',
         status: 409,
         body: {
-          code: 'ItemNotFulfilled',
-          messageKey: 'errors.station.changeNotSaved',
-          parameters: {},
+          code: 'ItemWasCancelled',
+          messageKey: 'errors.station.itemWasCancelled',
+          parameters: { name: 'Pommes' },
           details: null,
         },
         raw: null,
       }),
-    ).toBe('errors.station.changeNotSaved')
+    ).toEqual({ key: 'errors.station.itemWasCancelled', parameters: { name: 'Pommes' } })
   })
 
   it('falls back to a plain failure when the laptop named nothing', () => {
-    expect(stationFailureKey({ kind: 'error', status: 500, body: null, raw: null })).toBe(
-      'station.board.errors.actionFailed',
-    )
+    expect(stationFailureMessage({ kind: 'error', status: 500, body: null, raw: null })).toEqual({
+      key: 'station.board.errors.actionFailed',
+      parameters: {},
+    })
+  })
+})
+
+describe('a station order with an item a waiter cancelled while it was open', () => {
+  const cancelledPommes: StationQueueItemView = { ...stationOrderItem('c', 'Pommes'), state: 'cancelled' }
+  const order = stationOrder({
+    items: [stationOrderItem('a', 'Pommes'), stationOrderItem('b', 'Bier', '2026-09-05T18:30:00Z'), cancelledPommes],
+  })
+
+  it('leaves the cancelled item out of the open items', () => {
+    expect(openItemsIn(order).map((item) => item.orderItemId)).toEqual(['a'])
+  })
+
+  it('keeps the cancelled item on the card beside the open one', () => {
+    expect(itemsNotHandedOutIn(order).map((item) => item.orderItemId)).toEqual(['a', 'c'])
+  })
+
+  it('leaves the cancelled item out of what the order counts', () => {
+    expect(itemsNotCancelledIn(order).map((item) => item.orderItemId)).toEqual(['a', 'b'])
+  })
+
+  it('never merges the cancelled pommes into the line of the open pommes', () => {
+    expect(itemLines(order.items).map(({ itemName, isCancelled, units }) => ({ itemName, isCancelled, units }))).toEqual([
+      { itemName: 'Pommes', isCancelled: false, units: 1 },
+      { itemName: 'Bier', isCancelled: false, units: 1 },
+      { itemName: 'Pommes', isCancelled: true, units: 1 },
+    ])
+  })
+
+  it('leaves the cancelled item out of the overview of open lines', () => {
+    expect(articleAndUnits(stationStats([order]).openLines)).toEqual([
+      { itemName: 'Pommes', note: null, units: 1 },
+    ])
+  })
+
+  it('drops a selected item once it is cancelled', () => {
+    expect(retainOpenItemIds(['a', 'c'], [order])).toEqual(['a'])
   })
 })

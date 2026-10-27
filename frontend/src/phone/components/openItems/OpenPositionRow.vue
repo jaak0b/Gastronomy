@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { assertNever } from '../../../shared/core/assertNever'
-import { statusTintCssOf, statusTokenOf } from '../../../shared/core/statusTints'
+import { statusTintCssOf, statusTokenOf, type StatusToken } from '../../../shared/core/statusTints'
 import type { PositionState } from '../../core/openItems'
 
 const props = defineProps<{
@@ -24,30 +24,50 @@ const stateClass = computed(() => {
       return 'is-produced'
     case 'notProduced':
       return 'is-not-produced'
+    case 'cancelled':
+      return 'cancelled-item'
     default:
       return assertNever(props.productionState)
   }
 })
 
-const stateToken = computed(() => {
+const stateToken = computed<StatusToken | null>(() => {
   switch (props.productionState) {
     case 'produced':
       return statusTokenOf('all')
     case 'notProduced':
       return statusTokenOf('none')
+    case 'cancelled':
+      return null
     default:
       return assertNever(props.productionState)
   }
 })
 
-const tint = computed(() => ({ background: statusTintCssOf(stateToken.value) }))
+const tint = computed(() =>
+  stateToken.value === null ? {} : { background: statusTintCssOf(stateToken.value) },
+)
 
-const stateIcon = computed(() => {
+const stateIcon = computed<string | null>(() => {
   switch (props.productionState) {
     case 'produced':
       return 'mdi-check'
     case 'notProduced':
       return 'mdi-clock-outline'
+    case 'cancelled':
+      return null
+    default:
+      return assertNever(props.productionState)
+  }
+})
+
+const canBeTicked = computed(() => {
+  switch (props.productionState) {
+    case 'produced':
+    case 'notProduced':
+      return !props.isSettled
+    case 'cancelled':
+      return false
     default:
       return assertNever(props.productionState)
   }
@@ -65,7 +85,7 @@ const stateIcon = computed(() => {
   >
     <template #prepend>
       <v-checkbox-btn
-        v-if="!isSettled"
+        v-if="canBeTicked"
         class="line-tick"
         data-test="line-tick"
         readonly
@@ -77,7 +97,14 @@ const stateIcon = computed(() => {
       {{ t('common.labels.note', { note }) }}
     </v-list-item-subtitle>
     <template #append>
-      <v-icon class="line-state" :color="stateToken" data-test="line-state" :icon="stateIcon" size="small" />
+      <v-icon
+        v-if="stateIcon !== null"
+        class="line-state"
+        :color="stateToken ?? undefined"
+        data-test="line-state"
+        :icon="stateIcon"
+        size="small"
+      />
       <span v-if="isSettled" class="line-paid text-body-1" data-test="line-paid">{{ t('phone.openItems.labels.paid') }}</span>
       <span class="line-price text-body-1" data-test="line-price">{{ priceText }}</span>
     </template>

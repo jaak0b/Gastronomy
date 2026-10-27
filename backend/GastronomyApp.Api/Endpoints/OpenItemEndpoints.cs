@@ -19,6 +19,8 @@ public static class OpenItemEndpoints
     group.MapPost("/settle",
                   async Task<ApiAnswer<SettlementView>> (SettleItemsRequest request, StaffDeviceCaller caller, OpenItemsService service, CancellationToken cancellationToken) => await service.SettleAsync(request.Lines ?? [], request.PaymentMethod!.Value, caller.StaffMemberId, cancellationToken));
 
+    group.MapPost("/cancel", async Task<ApiAnswer<CancellationView>> (CancelItemsRequest request, StaffDeviceCaller caller, OpenItemsService service, CancellationToken cancellationToken) => await service.CancelAsync(request.OrderItemIds ?? [], caller.StaffMemberId, cancellationToken));
+
     return routes;
   }
 }

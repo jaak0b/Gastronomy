@@ -1,5 +1,6 @@
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Queries;
 using GastronomyApp.Core.Results;
 using Mapster;
 
@@ -16,7 +17,8 @@ public sealed class OpenItemMapping : IRegister
           .Map(view => view.OrderId, item => item.StationOrder.Order.Id)
           .Map(view => view.GlobalOrderNumber, item => item.StationOrder.Order.GlobalOrderNumber)
           .Map(view => view.OrderedAtUtc, item => item.StationOrder.Order.CreatedAtUtc)
-          .Map(view => view.FulfilledAtUtc, item => OrderItemStates.HandedOutAtUtcOf(item));
+          .Map(view => view.State, item => item.State())
+          .Map(view => view.StateSetAtUtc, item => item.StateSetAtUtc());
 
     config.NewConfig<Order, TableOrderRecordView>()
           .Map(view => view.OrderId, order => order.Id)
@@ -26,7 +28,7 @@ public sealed class OpenItemMapping : IRegister
     config.NewConfig<Table, TableOrderReportView>()
           .Map(view => view.TableId, table => table.Id)
           .Map(view => view.TableName, table => table.Name)
-          .Map(view => view.OpenAmountCents, table => table.Orders.SelectMany(order => order.StationOrders).SelectMany(stationOrder => stationOrder.Items).Where(item => item.SettledAtUtc == null).Sum(item => item.UnitPriceCents));
+          .Map(view => view.OpenAmountCents, table => table.Orders.SelectMany(order => order.StationOrders).SelectMany(stationOrder => stationOrder.Items).Where(item => item.SettledAtUtc == null && !item.IsCancelled()).Sum(item => item.UnitPriceCents));
 
     config.NewConfig<SettlementResult, SettlementView>()
           .Map(view => view.SettledOrderItemIds, settlement => settlement.NewlySettled.Select(item => item.Id).ToList())

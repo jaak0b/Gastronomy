@@ -46,7 +46,7 @@ describe('marking selected items as done', () => {
     await station.fulfill(['a'])
 
     expect(station.orders[0].fulfilledItemCount).toBe(1)
-    expect(station.orders[0].items[0].fulfilledAtUtc).toBe('2026-09-05T18:30:00Z')
+    expect(station.orders[0].items[0].state).toBe('handedOut')
   })
 
   it('takes the done items out of the selection and leaves the other ones', async () => {
@@ -93,7 +93,7 @@ describe('marking selected items as done', () => {
 
     await station.fulfill(['a'])
 
-    expect(station.failureKey).toBe('errors.station.changeNotSaved')
+    expect(station.failure?.key).toBe('errors.station.changeNotSaved')
     expect(station.selectedItemIds).toEqual(['a'])
     expect(station.orders[0].fulfilledItemCount).toBe(0)
   })
@@ -111,7 +111,7 @@ describe('marking selected items as done', () => {
 
     await station.fulfill(['a'])
 
-    expect(station.failureKey).toBe('station.board.errors.actionNotReached')
+    expect(station.failure?.key).toBe('station.board.errors.actionNotReached')
   })
 })
 

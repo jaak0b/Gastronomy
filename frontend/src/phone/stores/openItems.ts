@@ -166,7 +166,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
       case 'error':
         notice.value = {
           key: result.body?.messageKey ?? 'phone.openItems.errors.settleFailed',
-          parameters: {},
+          parameters: result.body?.parameters ?? {},
           count: null,
         }
         await load()

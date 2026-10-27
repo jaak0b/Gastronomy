@@ -31,6 +31,22 @@ public static partial class Refusal
       return Conflict("errors.station.changeNotSaved", $"The order item {orderItemId} was to be put back although it was never handed out.", new() { [MetadataKeys.ProblemCode] = "ItemNotFulfilled" });
     }
 
+    public static Error ItemWasCancelled(Guid orderItemId, string itemName)
+    {
+      return Conflict("errors.station.itemWasCancelled",
+                      $"The order item {orderItemId} was to be handed out or put back although a waiter has cancelled it in the meantime.",
+                      new()
+                      {
+                        [MetadataKeys.ProblemCode] = "ItemWasCancelled",
+                        [MetadataKeys.Name] = itemName
+                      });
+    }
+
+    public static Error ItemNotAwaitingCancellationAcknowledgement(Guid orderItemId)
+    {
+      return Conflict("errors.station.changeNotSaved", $"The cancellation of order item {orderItemId} was to be acknowledged although the item does not wait for an acknowledgement.", new() { [MetadataKeys.ProblemCode] = "ItemNotAwaitingCancellationAcknowledgement" });
+    }
+
     public static Error OrderNotAtThisStation(Guid stationOrderId)
     {
       return UnprocessableEntity("errors.station.orderNotAtThisStation", $"The station order {stationOrderId} does not belong to this station at the running festival.", new() { [MetadataKeys.ProblemCode] = ProblemCodes.UnprocessableEntity });

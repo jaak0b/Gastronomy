@@ -55,10 +55,14 @@ public sealed class OpenItemEndpointsTest
                       Assert.That(settledItem.GetProperty("itemName").GetString(), Is.EqualTo("Bratwurst mit Brot"));
                       Assert.That(settledItem.GetProperty("note").ValueKind, Is.EqualTo(JsonValueKind.Null));
                       Assert.That(settledItem.GetProperty("unitPriceCents").GetInt32(), Is.EqualTo(350));
-                      Assert.That(settledItem.GetProperty("fulfilledAtUtc").ValueKind, Is.EqualTo(JsonValueKind.String));
+                      Assert.That(settledItem.GetProperty("state").GetString(), Is.EqualTo("handedOut"));
+                      Assert.That(settledItem.GetProperty("stateSetAtUtc").ValueKind, Is.EqualTo(JsonValueKind.String));
                       Assert.That(settledItem.GetProperty("settledAtUtc").ValueKind, Is.EqualTo(JsonValueKind.String));
-                      Assert.That(openItem.GetProperty("fulfilledAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
+                      Assert.That(settledItem.GetProperty("chargedPriceCents").GetInt32(), Is.EqualTo(350));
+                      Assert.That(openItem.GetProperty("state").GetString(), Is.EqualTo("open"));
+                      Assert.That(openItem.GetProperty("stateSetAtUtc").ValueKind, Is.EqualTo(JsonValueKind.String));
                       Assert.That(openItem.GetProperty("settledAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
+                      Assert.That(openItem.GetProperty("chargedPriceCents").ValueKind, Is.EqualTo(JsonValueKind.Null));
                     });
   }
 
@@ -565,6 +569,293 @@ public sealed class OpenItemEndpointsTest
     using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", new SettleItemsBody(itemIds.Select(itemId => new SettleLineBody(itemId, paidPriceCents, "Kapelle")).ToList(), paymentMethod));
 
     await AssertSettlementRefusedAndNothingStoredAsync(response);
+  }
+
+  [Test]
+  public async Task PostCancel_AHandedOutSettledItemAndAnOpenOne_CancelsBothAnswersTheCashToHandBackAndTheTableShowsThemCancelled()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync(_context.World.TableId);
+    await FulfillAndSettleAsync(itemIds[0]);
+
+    using var response = await CancelAsync(_context.DeviceToken, itemIds);
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    var table = await ReadTableAsync(_context.World.TableId);
+    var items = table.RootElement.GetProperty("orders")[0].GetProperty("items").EnumerateArray().ToList();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(body.RootElement.GetProperty("cashToReturnCents").GetInt32(), Is.EqualTo(350));
+                      Assert.That(items.Select(item => item.GetProperty("state").GetString()), Is.All.EqualTo("cancelled"));
+                      Assert.That(table.RootElement.GetProperty("openAmountCents").GetInt32(), Is.Zero);
+                    });
+  }
+
+  [Test]
+  public async Task PostCancel_NothingSelected_IsRefusedWithTheCancellationWording()
+  {
+    using var response = await CancelAsync(_context.DeviceToken, []);
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.cancellation.cannotBeProcessed"));
+                    });
+  }
+
+  [Test]
+  public async Task PostCancel_ASelectionNamingOneItemTwice_IsRefusedWithTheCancellationWordingAndCancelsNothing()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync(_context.World.TableId);
+
+    using var response = await CancelAsync(_context.DeviceToken,
+                                           [
+                                             itemIds[0],
+                                             itemIds[0]
+                                           ]);
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.cancellation.cannotBeProcessed"));
+                    });
+    Assert.That(await CancelledCountAsync(), Is.Zero);
+  }
+
+  [Test]
+  public async Task PostCancel_ASelectionHoldingAnItemTheLaptopDoesNotKnow_IsRefusedAsUnknownAndCancelsNothing()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync(_context.World.TableId);
+
+    using var response = await CancelAsync(_context.DeviceToken,
+                                           [
+                                             itemIds[0],
+                                             Guid.NewGuid()
+                                           ]);
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.cancellation.unknownItem"));
+                    });
+    Assert.That(await CancelledCountAsync(), Is.Zero);
+  }
+
+  [Test]
+  public async Task PostCancel_ASelectionSpanningTwoTables_IsRefusedWithTheCancellationWordingAndCancelsNothing()
+  {
+    var tableThreeId = await _context.SeedTableAsync("Tisch 3");
+    IReadOnlyList<Guid> twelve = await PlaceOrderAsync(_context.World.TableId);
+    IReadOnlyList<Guid> three = await PlaceOrderAsync(tableThreeId);
+
+    using var response = await CancelAsync(_context.DeviceToken,
+                                           [
+                                             twelve[0],
+                                             three[0]
+                                           ]);
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.cancellation.cannotBeProcessed"));
+                    });
+    Assert.That(await CancelledCountAsync(), Is.Zero);
+  }
+
+  [Test]
+  public async Task PostCancel_TheSameItemASecondTime_IsRefusedAsAlreadyCancelledNamingIt()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync(_context.World.TableId);
+    using var first = await CancelAsync(_context.DeviceToken, [itemIds[0]]);
+
+    using var again = await CancelAsync(_context.DeviceToken, [itemIds[0]]);
+    var body = JsonDocument.Parse(await again.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(again.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.cancellation.alreadyCancelled"));
+                      Assert.That(body.RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Bratwurst mit Brot"));
+                    });
+    Assert.That(await CancelledCountAsync(), Is.EqualTo(1));
+  }
+
+  [Test]
+  public async Task PostCancel_TwoWaitersCancelTheSameItemAtTheSameMoment_CancelsItOnceAndRefusesTheOtherNamingIt()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync(_context.World.TableId);
+    var colleagueToken = await _context.IssueSecondStaffTokenAsync("Bernd");
+
+    HttpResponseMessage[] responses = await Task.WhenAll(CancelAsync(_context.DeviceToken, [itemIds[0]]), CancelAsync(colleagueToken, [itemIds[0]]));
+    List<HttpStatusCode> statuses = responses.Select(response => response.StatusCode).ToList();
+    var refused = responses.Single(response => response.StatusCode == HttpStatusCode.Conflict);
+    var body = JsonDocument.Parse(await refused.Content.ReadAsStringAsync());
+
+    foreach (var response in responses)
+      response.Dispose();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(statuses,
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    HttpStatusCode.OK,
+                                                    HttpStatusCode.Conflict
+                                                  }));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.cancellation.alreadyCancelled"));
+                      Assert.That(body.RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Bratwurst mit Brot"));
+                    });
+    Assert.That(await CancelledCountAsync(), Is.EqualTo(1));
+  }
+
+  [Test]
+  public async Task PostCancel_ThenAHandOutOfTheSameItem_RefusesTheHandOutNamingTheItem()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync(_context.World.TableId);
+    var kitchenToken = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
+    using var cancelled = await CancelAsync(_context.DeviceToken, [itemIds[0]]);
+
+    using var handOut = await HandOutAsync(kitchenToken, [itemIds[0]]);
+    var body = JsonDocument.Parse(await handOut.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(cancelled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(handOut.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.station.itemWasCancelled"));
+                      Assert.That(body.RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Bratwurst mit Brot"));
+                    });
+    Assert.That(await HistoryOfAsync(itemIds[0]),
+                Is.EqualTo(new[]
+                           {
+                             OrderItemState.Open,
+                             OrderItemState.Cancelled
+                           }));
+  }
+
+  [Test]
+  public async Task PostCancel_AfterTheStationHandedTheItemOut_CancelsItAndTheCardNeedsNoAcknowledgement()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync(_context.World.TableId);
+    var kitchenToken = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
+    using var handOut = await HandOutAsync(kitchenToken, itemIds);
+
+    using var cancelled = await CancelAsync(_context.DeviceToken, [itemIds[0]]);
+    using var queue = await _context.SendAsAsync(kitchenToken, HttpMethod.Get, "/api/station/orders");
+    var queueBody = JsonDocument.Parse(await queue.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(handOut.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(cancelled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(queueBody.RootElement.GetProperty("orders").GetArrayLength(), Is.Zero);
+                    });
+    Assert.That(await HistoryOfAsync(itemIds[0]),
+                Is.EqualTo(new[]
+                           {
+                             OrderItemState.Open,
+                             OrderItemState.HandedOut,
+                             OrderItemState.Cancelled
+                           }));
+  }
+
+  [Test]
+  public async Task PostCancel_AndAHandOutOfTheSameItemAtTheSameMoment_EndInOneOfTheTwoOrdersAndNeverInBoth()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync(_context.World.TableId);
+    var kitchenToken = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
+
+    HttpResponseMessage[] responses = await Task.WhenAll(CancelAsync(_context.DeviceToken, [itemIds[0]]), HandOutAsync(kitchenToken, [itemIds[0]]));
+    var cancelStatus = responses[0].StatusCode;
+    var handOutStatus = responses[1].StatusCode;
+
+    foreach (var response in responses)
+      response.Dispose();
+
+    IReadOnlyList<OrderItemState> history = await HistoryOfAsync(itemIds[0]);
+    IReadOnlyList<OrderItemState> cancelledFirst =
+    [
+      OrderItemState.Open,
+      OrderItemState.Cancelled
+    ];
+    IReadOnlyList<OrderItemState> handedOutFirst =
+    [
+      OrderItemState.Open,
+      OrderItemState.HandedOut,
+      OrderItemState.Cancelled
+    ];
+    var expectedHandOutStatus = HttpStatusCode.OK;
+
+    if (history.SequenceEqual(cancelledFirst))
+      expectedHandOutStatus = HttpStatusCode.Conflict;
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(cancelStatus, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(history, Is.EqualTo(cancelledFirst).Or.EqualTo(handedOutFirst));
+                      Assert.That(handOutStatus, Is.EqualTo(expectedHandOutStatus));
+                    });
+  }
+
+  [Test]
+  public async Task PostSettle_ACancelledItem_IsRefusedNamingItAndSettlesNothing()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync(_context.World.TableId);
+    using var cancelled = await CancelAsync(_context.DeviceToken, [itemIds[1]]);
+
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 350));
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    await using var database = _context.Factory.CreateContext();
+    List<OrderItem> stored = await database.OrderItems.ToListAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.settlement.itemWasCancelled"));
+                      Assert.That(body.RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Bratwurst mit Brot"));
+                      Assert.That(stored.Select(item => item.SettledAtUtc), Is.All.Null);
+                    });
+  }
+
+  private Task<HttpResponseMessage> CancelAsync(string deviceToken, IReadOnlyList<Guid> orderItemIds)
+  {
+    return _context.SendAsAsync(deviceToken, HttpMethod.Post, "/api/open-items/cancel", new CancelItemsBody(orderItemIds));
+  }
+
+  private Task<HttpResponseMessage> HandOutAsync(string stationToken, IReadOnlyList<Guid> orderItemIds)
+  {
+    return _context.SendAsAsync(stationToken, HttpMethod.Post, "/api/station/items/fulfill", new StationItemSelectionBody(orderItemIds));
+  }
+
+  private async Task<int> CancelledCountAsync()
+  {
+    await using var database = _context.Factory.CreateContext();
+
+    return await database.OrderItemStatuses.CountAsync(status => status.Status == OrderItemState.Cancelled);
+  }
+
+  private async Task<IReadOnlyList<OrderItemState>> HistoryOfAsync(Guid orderItemId)
+  {
+    await using var database = _context.Factory.CreateContext();
+    List<OrderItemStatus> statuses = await database.OrderItemStatuses.Where(status => status.OrderItemId == orderItemId).ToListAsync();
+    List<OrderItemState> history = [];
+    var current = statuses.Single(status => status.PreviousStatusId is null);
+
+    while (true)
+    {
+      history.Add(current.Status);
+      var next = statuses.SingleOrDefault(status => status.PreviousStatusId == current.Id);
+
+      if (next is null)
+        return history;
+
+      current = next;
+    }
   }
 
   private async Task AssertSettlementRefusedAndNothingStoredAsync(HttpResponseMessage response)

@@ -14,14 +14,14 @@ public sealed class StoredItemHandOut
   {
     ArgumentNullException.ThrowIfNull(database);
 
-    await HandOutAsync(database, await database.OrderItems.Include(item => item.CurrentStatus).Include(item => item.StationOrder).ToListAsync());
+    await HandOutAsync(database, await database.OrderItems.Include(item => item.StationOrder).ToListAsync());
   }
 
   public async Task HandOutItemAsync(GastronomyAppDbContext database, Guid orderItemId)
   {
     ArgumentNullException.ThrowIfNull(database);
 
-    await HandOutAsync(database, await database.OrderItems.Include(item => item.CurrentStatus).Include(item => item.StationOrder).Where(item => item.Id == orderItemId).ToListAsync());
+    await HandOutAsync(database, await database.OrderItems.Include(item => item.StationOrder).Where(item => item.Id == orderItemId).ToListAsync());
   }
 
   private async Task HandOutAsync(GastronomyAppDbContext database, IReadOnlyList<OrderItem> items)

@@ -87,7 +87,7 @@ public sealed class StationQueueMappingTest
   }
 
   [Test]
-  public void Map_AStationOrderTheStationHandedOut_CarriesEveryLineWithItsHandOverTime()
+  public void Map_AStationOrderTheStationHandedOut_CarriesEveryLineWithItsStateAndItsTime()
   {
     var stationOrder = StationOrderWith(1, DeliveryMode.Together, Item("Bratwurst", "Ohne Ketchup"));
     HandOut(stationOrder.Items[0], _placedAtUtc.AddMinutes(6));
@@ -99,7 +99,32 @@ public sealed class StationQueueMappingTest
                       Assert.That(view.Items[0].OrderItemId, Is.EqualTo(stationOrder.Items[0].Id));
                       Assert.That(view.Items[0].ItemName, Is.EqualTo("Bratwurst"));
                       Assert.That(view.Items[0].Note, Is.EqualTo("Ohne Ketchup"));
-                      Assert.That(view.Items[0].FulfilledAtUtc, Is.EqualTo(_placedAtUtc.AddMinutes(6)));
+                      Assert.That(view.Items[0].State, Is.EqualTo(OrderItemState.HandedOut));
+                      Assert.That(view.Items[0].StateSetAtUtc, Is.EqualTo(_placedAtUtc.AddMinutes(6)));
+                    });
+  }
+
+  [Test]
+  public void Map_AStationOrderWithACancelledLine_LeavesItOutOfBothCountsAndCarriesItsState()
+  {
+    var stationOrder = StationOrderWith(1, DeliveryMode.Together, Item("Bratwurst", null), Item("Pommes", null), Item("Bier", null));
+    HandOut(stationOrder.Items[0], _placedAtUtc.AddMinutes(3));
+    _statusSeeder.Cancel(stationOrder.Items[1], Guid.NewGuid(), _placedAtUtc.AddMinutes(4));
+    _statusSeeder.Cancel(stationOrder.Items[0], Guid.NewGuid(), _placedAtUtc.AddMinutes(5));
+
+    var view = stationOrder.Adapt<StationOrderQueueView>(_mapping);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(view.ItemCount, Is.EqualTo(1));
+                      Assert.That(view.FulfilledItemCount, Is.Zero);
+                      Assert.That(view.Items.Select(item => item.State),
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    OrderItemState.Cancelled,
+                                                    OrderItemState.Cancelled,
+                                                    OrderItemState.Open
+                                                  }));
                     });
   }
 

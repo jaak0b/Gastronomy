@@ -43,7 +43,7 @@ public sealed class OrderItemStatusConfigurationTest
   public async Task Save_TheSeededOrder_LeavesNoItemWithoutACurrentStatusOfItsOwn()
   {
     await using var readContext = _fixture.CreateContext();
-    List<OrderItem> items = await readContext.OrderItems.AsNoTracking().Include(item => item.CurrentStatus).ToListAsync(TestContext.CurrentContext.CancellationToken);
+    List<OrderItem> items = await readContext.OrderItems.AsNoTracking().ToListAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {

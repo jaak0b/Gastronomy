@@ -7,9 +7,19 @@ export const KITCHEN = { id: 'station-kueche', name: 'Küche' }
 export function item(
   orderItemId: string,
   itemName: string,
-  fulfilledAtUtc: string | null = null,
+  handedOutAtUtc: string | null = null,
 ): StationQueueItemView {
-  return { orderItemId, itemName, note: null, fulfilledAtUtc }
+  return {
+    orderItemId,
+    itemName,
+    note: null,
+    state: handedOutAtUtc === null ? 'open' : 'handedOut',
+    stateSetAtUtc: handedOutAtUtc ?? '2026-09-05T18:00:00Z',
+  }
+}
+
+export function cancelledItem(orderItemId: string, itemName: string): StationQueueItemView {
+  return { orderItemId, itemName, note: null, state: 'cancelled', stateSetAtUtc: '2026-09-05T18:20:00Z' }
 }
 
 export function stationOrder(overrides: Partial<StationOrderQueueView> = {}): StationOrderQueueView {

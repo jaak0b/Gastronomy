@@ -20,13 +20,14 @@ export const TOGETHER_STATION_ORDER = {
   itemCount: 3,
   fulfilledItemCount: 1,
   items: [
-    { orderItemId: 'a', itemName: 'Bratwurst', note: 'ohne Senf', fulfilledAtUtc: null },
-    { orderItemId: 'b', itemName: 'Pommes', note: null, fulfilledAtUtc: null },
+    { orderItemId: 'a', itemName: 'Bratwurst', note: 'ohne Senf', state: 'open', stateSetAtUtc: '2026-09-05T18:00:00Z' },
+    { orderItemId: 'b', itemName: 'Pommes', note: null, state: 'open', stateSetAtUtc: '2026-09-05T18:00:00Z' },
     {
       orderItemId: 'c',
       itemName: 'Bratwurst',
       note: null,
-      fulfilledAtUtc: '2026-09-05T18:10:00Z',
+      state: 'handedOut',
+      stateSetAtUtc: '2026-09-05T18:10:00Z',
     },
   ],
 }
@@ -43,8 +44,8 @@ export const AS_IT_COMES_STATION_ORDER = {
   itemCount: 2,
   fulfilledItemCount: 0,
   items: [
-    { orderItemId: 'd', itemName: 'Bratwurst', note: null, fulfilledAtUtc: null },
-    { orderItemId: 'e', itemName: 'Bier', note: null, fulfilledAtUtc: null },
+    { orderItemId: 'd', itemName: 'Bratwurst', note: null, state: 'open', stateSetAtUtc: '2026-09-05T18:00:00Z' },
+    { orderItemId: 'e', itemName: 'Bier', note: null, state: 'open', stateSetAtUtc: '2026-09-05T18:00:00Z' },
   ],
 }
 
@@ -60,8 +61,8 @@ export const NOTED_STATION_ORDER = {
   itemCount: 2,
   fulfilledItemCount: 0,
   items: [
-    { orderItemId: 'f', itemName: 'Frankfurter', note: 'Mit Ketchup', fulfilledAtUtc: null },
-    { orderItemId: 'g', itemName: 'Frankfurter', note: 'Ohne Ketchup', fulfilledAtUtc: null },
+    { orderItemId: 'f', itemName: 'Frankfurter', note: 'Mit Ketchup', state: 'open', stateSetAtUtc: '2026-09-05T18:00:00Z' },
+    { orderItemId: 'g', itemName: 'Frankfurter', note: 'Ohne Ketchup', state: 'open', stateSetAtUtc: '2026-09-05T18:00:00Z' },
   ],
 }
 
@@ -70,9 +71,9 @@ export const DONE_STATION_ORDER = {
   itemCount: 3,
   fulfilledItemCount: 2,
   items: [
-    { orderItemId: 'a', itemName: 'Bratwurst', note: null, fulfilledAtUtc: '2026-09-05T19:00:00Z' },
-    { orderItemId: 'b', itemName: 'Pommes', note: null, fulfilledAtUtc: null },
-    { orderItemId: 'c', itemName: 'Bratwurst', note: null, fulfilledAtUtc: '2026-09-05T18:10:00Z' },
+    { orderItemId: 'a', itemName: 'Bratwurst', note: null, state: 'handedOut', stateSetAtUtc: '2026-09-05T19:00:00Z' },
+    { orderItemId: 'b', itemName: 'Pommes', note: null, state: 'open', stateSetAtUtc: '2026-09-05T18:00:00Z' },
+    { orderItemId: 'c', itemName: 'Bratwurst', note: null, state: 'handedOut', stateSetAtUtc: '2026-09-05T18:10:00Z' },
   ],
 }
 
@@ -85,13 +86,15 @@ export const DONE_NOTED_STATION_ORDER = {
       orderItemId: 'f',
       itemName: 'Frankfurter',
       note: 'Mit Ketchup',
-      fulfilledAtUtc: '2026-09-05T19:00:00Z',
+      state: 'handedOut',
+      stateSetAtUtc: '2026-09-05T19:00:00Z',
     },
     {
       orderItemId: 'g',
       itemName: 'Frankfurter',
       note: 'Ohne Ketchup',
-      fulfilledAtUtc: '2026-09-05T19:01:00Z',
+      state: 'handedOut',
+      stateSetAtUtc: '2026-09-05T19:01:00Z',
     },
   ],
 }

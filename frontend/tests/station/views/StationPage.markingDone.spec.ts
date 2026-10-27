@@ -135,6 +135,24 @@ describe('marking selected items as done from a card', () => {
       'Die Bestellung konnte nicht aktualisiert werden. Laden Sie die Seite neu und versuchen Sie es erneut.',
     )
   })
+
+  it('names the item a waiter cancelled before the tap reached the laptop', async () => {
+    stationLaptop({
+      fulfill: refusal('errors.station.itemWasCancelled', { code: 'ItemWasCancelled', parameters: { name: 'Pommes' } }),
+    })
+    const page = await mountPage()
+    const card = cardInTheQueue(page, 'station-order-1')
+
+    await itemOnCard(card, 'b').trigger('click')
+    await card.get('[data-test="fulfill"]').trigger('click')
+    await flushPromises()
+    ;(document.querySelector('[data-test="station-done-dialog"] [data-test="confirm"]') as HTMLElement).click()
+    await flushPromises()
+
+    expect(page.get('[data-test="action-failed"]').text()).toBe(
+      'Pommes wurde inzwischen storniert. Wählen Sie die Positionen noch einmal aus.',
+    )
+  })
 })
 
 describe('hiding an order from the second column', () => {

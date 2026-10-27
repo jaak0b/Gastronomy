@@ -41,7 +41,7 @@ public sealed class FestivalRowHiding
     if (festival is null)
       return Refusal.TablePlan.FestivalNotFound(festivalId);
 
-    if (_runningFestival.IsRunning(festival) && await _database.OrderItems.AsNoTracking().WhereNotHandedOutOrNotSettled().AnyAsync(itemOfRow, cancellationToken))
+    if (_runningFestival.IsRunning(festival) && await _database.OrderItems.AsNoTracking().WhereToHandOutOrToSettle().AnyAsync(itemOfRow, cancellationToken))
       return staysShown(id);
 
     row.IsHidden = true;

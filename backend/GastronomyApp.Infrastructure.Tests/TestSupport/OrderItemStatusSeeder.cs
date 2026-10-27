@@ -44,6 +44,20 @@ public sealed class OrderItemStatusSeeder
     return item;
   }
 
+  public OrderItem Cancel(OrderItem item, Guid staffMemberId, DateTime cancelledAtUtc)
+  {
+    _lifecycle.AppendStatus(item, OrderItemState.Cancelled, new(staffMemberId, null), cancelledAtUtc);
+
+    return item;
+  }
+
+  public OrderItem AcknowledgeCancellation(OrderItem item, Guid stationId, DateTime acknowledgedAtUtc)
+  {
+    _lifecycle.AppendStatus(item, OrderItemState.CancellationAcknowledged, new(null, stationId), acknowledgedAtUtc);
+
+    return item;
+  }
+
   public async Task SaveAsync(IGastronomyDatabase database, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(database);

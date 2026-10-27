@@ -279,6 +279,46 @@ public sealed class TablePlanServiceTest
   }
 
   [Test]
+  public async Task ListAsync_ATableWhoseOnlyItemNotYetSettledWasCancelled_SaysNoTableOrAreaHasItemsLeft()
+  {
+    var gardenId = await _plan.AddAreaAsync(_fixture.DbContext, _seeded.FestivalId, "Garten", 1, false);
+    var tableId = await _plan.AddTableAsync(_fixture.DbContext, _seeded.FestivalId, gardenId, "Tisch 1", false);
+    await _plan.AddOrderAsync(_fixture.DbContext, _seeded, tableId, 1, null, null);
+    await _plan.CancelEveryItemAtTableAsync(_fixture.DbContext, _seeded, tableId);
+    _fixture.DbContext.ChangeTracker.Clear();
+
+    var plan = (await _service.ListAsync(_seeded.FestivalId, TestContext.CurrentContext.CancellationToken)).Value;
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(plan.Areas.Single().HasItemsToHandOutOrSettleAtTheRunningFestival, Is.False);
+                      Assert.That(plan.Areas.Single().Tables.Single().HasItemsToHandOutOrSettleAtTheRunningFestival, Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task ReadRunningFestivalAsync_ATableWhoseOnlyOrderWasCancelledEntirely_CountsItAsFinished()
+  {
+    var gardenId = await _plan.AddAreaAsync(_fixture.DbContext, _seeded.FestivalId, "Garten", 1, false);
+    var cancelledId = await _plan.AddTableAsync(_fixture.DbContext, _seeded.FestivalId, gardenId, "Tisch 1", false);
+    var untouchedId = await _plan.AddTableAsync(_fixture.DbContext, _seeded.FestivalId, gardenId, "Tisch 2", false);
+    await _plan.AddOrderAsync(_fixture.DbContext, _seeded, cancelledId, 1, null, null);
+    await _plan.AddOrderAsync(_fixture.DbContext, _seeded, untouchedId, 2, null, null);
+    await _plan.CancelEveryItemAtTableAsync(_fixture.DbContext, _seeded, cancelledId);
+    _fixture.DbContext.ChangeTracker.Clear();
+
+    var plan = await _service.ReadRunningFestivalAsync(TestContext.CurrentContext.CancellationToken);
+    var tables = plan.Areas.Single().Tables.ToDictionary(table => table.TableId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(tables[cancelledId].HandOutProgress, Is.EqualTo(ShareState.All));
+                      Assert.That(tables[cancelledId].SettlementProgress, Is.EqualTo(ShareState.All));
+                      Assert.That(tables[untouchedId].HandOutProgress, Is.EqualTo(ShareState.None));
+                    });
+  }
+
+  [Test]
   public async Task ReadRunningFestivalAsync_ATableWithOrders_AnswersTheProgressOfItsUnfinishedOrders()
   {
     var gardenId = await _plan.AddAreaAsync(_fixture.DbContext, _seeded.FestivalId, "Garten", 1, false);

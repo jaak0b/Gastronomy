@@ -36,7 +36,7 @@ Full rules: [references/structure.md](references/structure.md)
 - **Do** keep a class to one kind of work and one reason to change; **do not** put route mapping, request validation and the database write in one class.
 - **Do** take every collaborator through the constructor, and **do not** reach for a static accessor or a service locator inside a method.
 - **Consider** splitting a class whose constructor takes more than about four or five dependencies; many injected dependencies signal too many responsibilities.
-- **Do** put rules, decisions and use cases in `GastronomyApp.Core`, the database engine and external access in `GastronomyApp.Infrastructure`, endpoints and hosting in `GastronomyApp.Api`, wire records in `GastronomyApp.Contracts`; `Core` references `Contracts`, EF Core and Mapster and nothing else.
+- **Do** put rules, decisions and use cases in `GastronomyApp.Core`, the database engine and external access in `GastronomyApp.Infrastructure`, endpoints and hosting in `GastronomyApp.Api`, wire records in `GastronomyApp.Contracts`; `Core` references `Contracts`, EF Core, EntityFrameworkCore.Projectables and Mapster and nothing else.
 - **Do not** accept an ASP.NET Core or SQLite `using`, or the concrete `DbContext`, in a `Core` file: `Core` reaches the database only through the database interface it defines. **Do not** name an `Infrastructure` type outside the composition root in `Api`.
 - **Do** let an endpoint only map a route, bind and validate the request, call one service and build the response; business rules and persistence live in the service.
 - **Do** keep one type per file with the file named after the type, and **do not** create static helper buckets (house rules).

@@ -23,7 +23,7 @@ public sealed class ItemsToHandOutLookup
     if (!_runningFestival.IsRunning(festival))
       return [];
 
-    return await _database.OrderItems.AsNoTracking().WhereNotHandedOut().WhereFestivalIs(festival.Id).Select(item => item.StationOrder.StationId).Distinct().ToListAsync(cancellationToken);
+    return await _database.OrderItems.AsNoTracking().WhereOpen().WhereFestivalIs(festival.Id).Select(item => item.StationOrder.StationId).Distinct().ToListAsync(cancellationToken);
   }
 
   public async Task<IReadOnlyCollection<Guid>> FindStationIdsAtTheRunningFestivalAsync(CancellationToken cancellationToken)

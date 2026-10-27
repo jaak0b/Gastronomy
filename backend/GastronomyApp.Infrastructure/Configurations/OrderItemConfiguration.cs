@@ -29,5 +29,6 @@ public sealed class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
     builder.HasOne(item => item.SettledByStaffMember).WithMany().HasForeignKey(item => item.SettledByStaffMemberId).OnDelete(DeleteBehavior.Restrict);
     builder.HasMany(item => item.Statuses).WithOne(status => status.OrderItem).HasForeignKey(status => status.OrderItemId).OnDelete(DeleteBehavior.Cascade);
     builder.HasOne(item => item.CurrentStatus).WithOne().HasForeignKey<OrderItem>(item => item.CurrentStatusId).OnDelete(DeleteBehavior.NoAction);
+    builder.Navigation(item => item.CurrentStatus).AutoInclude();
   }
 }

@@ -72,6 +72,13 @@ public sealed class GastronomyAppDbContext : DbContext, IGastronomyDatabase
     return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
   }
 
+  override protected void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+  {
+    ArgumentNullException.ThrowIfNull(optionsBuilder);
+
+    optionsBuilder.UseProjectables();
+  }
+
   override protected void OnModelCreating(ModelBuilder modelBuilder)
   {
     modelBuilder.ApplyConfigurationsFromAssembly(typeof(GastronomyAppDbContext).Assembly);

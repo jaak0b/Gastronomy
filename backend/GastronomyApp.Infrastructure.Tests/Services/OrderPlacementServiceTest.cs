@@ -336,7 +336,7 @@ public sealed class OrderPlacementServiceTest
   {
     var clientOrderId = Guid.NewGuid();
     await PlaceAsync(RequestWith(clientOrderId, ItemFor(_seeded.SausageItemId)));
-    var item = await _fixture.DbContext.OrderItems.Include(candidate => candidate.CurrentStatus).SingleAsync(TestContext.CurrentContext.CancellationToken);
+    var item = await _fixture.DbContext.OrderItems.SingleAsync(TestContext.CurrentContext.CancellationToken);
     HandOut(item);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
@@ -351,7 +351,7 @@ public sealed class OrderPlacementServiceTest
   {
     var clientOrderId = Guid.NewGuid();
     await PlaceAsync(RequestWith(clientOrderId, ItemFor(_seeded.SausageItemId, unitPriceCents: 350), ItemFor(_seeded.SausageItemId, unitPriceCents: 400)));
-    var item = await _fixture.DbContext.OrderItems.Include(candidate => candidate.CurrentStatus).OrderBy(candidate => candidate.UnitPriceCents).FirstAsync(TestContext.CurrentContext.CancellationToken);
+    var item = await _fixture.DbContext.OrderItems.OrderBy(candidate => candidate.UnitPriceCents).FirstAsync(TestContext.CurrentContext.CancellationToken);
     HandOut(item);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
@@ -624,7 +624,7 @@ public sealed class OrderPlacementServiceTest
 
   private async Task<Order> StoredOrderAsync()
   {
-    return await _fixture.DbContext.Orders.AsNoTracking().Include(order => order.StationOrders).ThenInclude(stationOrder => stationOrder.Items).ThenInclude(item => item.CurrentStatus).SingleAsync(TestContext.CurrentContext.CancellationToken);
+    return await _fixture.DbContext.Orders.AsNoTracking().Include(order => order.StationOrders).ThenInclude(stationOrder => stationOrder.Items).SingleAsync(TestContext.CurrentContext.CancellationToken);
   }
 
   private Guid StoredTableId()

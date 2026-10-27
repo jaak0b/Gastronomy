@@ -32,6 +32,8 @@ public static class RefusalMessageKeys
 
   public const string AdminUnitNameTaken = "errors.admin.units.nameTaken";
 
+  public const string CancellationCannotBeProcessed = "errors.cancellation.cannotBeProcessed";
+
   public const string EnrolmentCodeMissing = "errors.enrolment.codeMissing";
 
   public const string FestivalItemPriceOutOfRange = "errors.admin.festivals.itemPriceOutOfRange";

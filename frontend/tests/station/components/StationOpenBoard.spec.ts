@@ -6,7 +6,7 @@ import type { ItemLine } from '../../../src/shared/core/stationBoard'
 import { nextTick } from 'vue'
 
 function line(itemName: string, note: string | null, units: number): ItemLine {
-  return { key: `${itemName}|${note ?? ''}`, itemName, note, units }
+  return { key: `${itemName}|${note ?? ''}`, itemName, note, isCancelled: false, units }
 }
 
 function textsOf(selector: string): string[] {

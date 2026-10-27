@@ -2,6 +2,7 @@ using GastronomyApp.Contracts.Admin.Festivals;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.TablePlan;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Queries;
 using GastronomyApp.Core.Results;
 using Mapster;
 
@@ -25,9 +26,9 @@ public sealed class TablePlanMapping : IRegister
 
     config.NewConfig<FestivalStationShape, TablePlanStationShapeView>().Map(view => view.StationName, shape => shape.FestivalStation.Station.Name).Map(view => view.Geometry, shape => shape);
 
-    config.NewConfig<OrderItem, OrderItemFlags>().Map(flags => flags.IsHandedOut, OrderItemStates.HandedOutPredicate).Map(flags => flags.IsSettled, item => item.SettledAtUtc != null);
+    config.NewConfig<OrderItem, OrderItemProgress>().Map(progress => progress.State, item => item.State()).Map(progress => progress.IsSettled, item => item.SettledAtUtc != null);
 
-    config.NewConfig<Table, ShownTable>().Map(shown => shown.TableId, table => table.Id).Map(shown => shown.Geometry, table => table).Map(shown => shown.ItemFlagsPerOrder, table => table.Orders.Select(order => order.StationOrders.SelectMany(stationOrder => stationOrder.Items)));
+    config.NewConfig<Table, ShownTable>().Map(shown => shown.TableId, table => table.Id).Map(shown => shown.Geometry, table => table).Map(shown => shown.ItemProgressPerOrder, table => table.Orders.Select(order => order.StationOrders.SelectMany(stationOrder => stationOrder.Items)));
 
     config.NewConfig<Area, ShownArea>()
           .Map(shown => shown.AreaId, area => area.Id)

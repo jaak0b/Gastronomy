@@ -24,6 +24,8 @@ public sealed class StockSoldOutMarkerTest
     _fixture.Dispose();
   }
 
+  private readonly OrderItemStatusSeeder _statusSeeder = new();
+
   private SqliteInMemoryFixture _fixture = null!;
   private SeededDomain _seeded = null!;
   private StockSoldOutMarker _marker = null!;
@@ -48,6 +50,37 @@ public sealed class StockSoldOutMarkerTest
                       Assert.That(IsAvailable(verification, _seeded.SausageItemId), Is.False);
                       Assert.That(IsAvailable(verification, _seeded.LemonadeItemId), Is.True);
                     });
+  }
+
+  [Test]
+  public async Task MarkItemsWithoutEnoughStockSoldOutAsync_CancelledPortions_UseNoIngredientAndKeepTheArticleOn()
+  {
+    var mustard = await AddIngredientAsync("Senf", true, 100);
+    await AddRecipeLineAsync(_seeded.SausageItemId, mustard.Id, 20);
+    await OrderAsync(_seeded.SausageItemId, 5);
+    await CancelEveryItemAsync(_seeded.SausageItemId);
+    _fixture.DbContext.ChangeTracker.Clear();
+
+    IReadOnlyList<FestivalCatalogItem> soldOut = await _marker.MarkItemsWithoutEnoughStockSoldOutAsync(_seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(soldOut, Is.Empty);
+  }
+
+  [Test]
+  public async Task MarkItemsWithoutEnoughStockSoldOutAsync_PortionsCancelledAfterTheArticleWasSwitchedOff_LeaveItOff()
+  {
+    var mustard = await AddIngredientAsync("Senf", true, 100);
+    await AddRecipeLineAsync(_seeded.SausageItemId, mustard.Id, 20);
+    await OrderAsync(_seeded.SausageItemId, 5);
+    await _marker.MarkItemsWithoutEnoughStockSoldOutAsync(_seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    await CancelEveryItemAsync(_seeded.SausageItemId);
+    _fixture.DbContext.ChangeTracker.Clear();
+
+    await _marker.MarkItemsWithoutEnoughStockSoldOutAsync(_seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    using var verification = _fixture.CreateContext();
+
+    Assert.That(IsAvailable(verification, _seeded.SausageItemId), Is.False);
   }
 
   [Test]
@@ -191,16 +224,28 @@ public sealed class StockSoldOutMarkerTest
                                 };
 
     for (var portion = 0; portion < portions; portion++)
-      stationOrder.Items.Add(new()
-                             {
-                               Id = Guid.NewGuid(),
-                               StationOrderId = stationOrderId,
-                               CatalogItemId = catalogItemId,
-                               ItemName = "Artikel",
-                               UnitPriceCents = 350
-                             });
+      stationOrder.Items.Add(_statusSeeder.Open(new()
+                                                {
+                                                  Id = Guid.NewGuid(),
+                                                  StationOrderId = stationOrderId,
+                                                  CatalogItemId = catalogItemId,
+                                                  ItemName = "Artikel",
+                                                  UnitPriceCents = 350
+                                                },
+                                                _seeded.StaffMemberId,
+                                                DateTime.UtcNow));
 
     _fixture.DbContext.StationOrders.Add(stationOrder);
+    await _statusSeeder.SaveAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+  }
+
+  private async Task CancelEveryItemAsync(Guid catalogItemId)
+  {
+    List<OrderItem> items = await _fixture.DbContext.OrderItems.Where(item => item.CatalogItemId == catalogItemId).ToListAsync(TestContext.CurrentContext.CancellationToken);
+
+    foreach (var item in items)
+      _statusSeeder.Cancel(item, _seeded.StaffMemberId, DateTime.UtcNow);
+
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
 

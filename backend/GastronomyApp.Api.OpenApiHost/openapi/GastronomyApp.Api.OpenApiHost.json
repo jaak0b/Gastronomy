@@ -272,6 +272,35 @@
         }
       }
     },
+    "/api/open-items/cancel": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelItemsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancellationView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/estimates": {
       "get": {
         "tags": [
@@ -391,6 +420,35 @@
       }
     },
     "/api/station/items/unfulfill": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StationItemSelectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StationQueueView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/station/items/acknowledge-cancellation": {
       "post": {
         "tags": [
           "GetDocument.Insider"
@@ -3116,6 +3174,37 @@
           }
         }
       },
+      "CancelItemsRequest": {
+        "required": [
+          "orderItemIds"
+        ],
+        "type": "object",
+        "properties": {
+          "orderItemIds": {
+            "minItems": 1,
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "CancellationView": {
+        "required": [
+          "cashToReturnCents"
+        ],
+        "type": "object",
+        "properties": {
+          "cashToReturnCents": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "CatalogCategoryView": {
         "required": [
           "categoryId",
@@ -3663,6 +3752,14 @@
             "format": "uuid"
           }
         }
+      },
+      "OrderItemState": {
+        "enum": [
+          "open",
+          "handedOut",
+          "cancelled",
+          "cancellationAcknowledged"
+        ]
       },
       "OrderStatus": {
         "enum": [
@@ -4504,7 +4601,8 @@
           "orderItemId",
           "itemName",
           "note",
-          "fulfilledAtUtc"
+          "state",
+          "stateSetAtUtc"
         ],
         "type": "object",
         "properties": {
@@ -4521,11 +4619,11 @@
               "string"
             ]
           },
-          "fulfilledAtUtc": {
-            "type": [
-              "null",
-              "string"
-            ],
+          "state": {
+            "$ref": "#/components/schemas/OrderItemState"
+          },
+          "stateSetAtUtc": {
+            "type": "string",
             "format": "date-time"
           }
         }
@@ -4607,8 +4705,10 @@
           "note",
           "unitPriceCents",
           "orderedAtUtc",
-          "fulfilledAtUtc",
-          "settledAtUtc"
+          "state",
+          "stateSetAtUtc",
+          "settledAtUtc",
+          "chargedPriceCents"
         ],
         "type": "object",
         "properties": {
@@ -4641,11 +4741,11 @@
             "type": "string",
             "format": "date-time"
           },
-          "fulfilledAtUtc": {
-            "type": [
-              "null",
-              "string"
-            ],
+          "state": {
+            "$ref": "#/components/schemas/OrderItemState"
+          },
+          "stateSetAtUtc": {
+            "type": "string",
             "format": "date-time"
           },
           "settledAtUtc": {
@@ -4654,6 +4754,13 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "chargedPriceCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },

@@ -4,7 +4,7 @@ import StationOrderCard from '../../../src/station/components/StationOrderCard.v
 import type { StationOrderQueueView } from '../../../src/shared/api/generatedSchemas'
 import { testPlugins } from '../../support/plugins'
 import { clickOn, onScreen } from '../../support/dom'
-import { item, stationOrder } from '../../support/station'
+import { cancelledItem, item, stationOrder } from '../../support/station'
 
 interface CardSettings {
   selectedItemIds?: string[]
@@ -121,5 +121,52 @@ describe('a card switched to the grouped view', () => {
     await clickOn('[data-test="grouped-toggle"]')
 
     expect(groupedLines()).toEqual(['1 x Bratwurst', '1 x Pommes'])
+  })
+})
+
+describe('a card with an item a waiter cancelled while it was still open', () => {
+  const WITH_CANCELLED_POMMES = stationOrder({
+    itemCount: 1,
+    items: [item('a', 'Bratwurst'), cancelledItem('b', 'Pommes')],
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('shows the cancelled item struck through', () => {
+    mountCard(WITH_CANCELLED_POMMES)
+
+    const pommes = onScreen('[data-test="station-item"][data-test-id="b"]')
+
+    expect(pommes.classList).toContain('cancelled-item')
+    expect(onScreen('[data-test="station-item"][data-test-id="a"]').classList).not.toContain('cancelled-item')
+  })
+
+  it('does not let the cancelled item be selected', async () => {
+    const card = mountCard(WITH_CANCELLED_POMMES)
+
+    await clickOn('[data-test="station-item"][data-test-id="b"]')
+
+    expect(onScreen('[data-test="station-item"][data-test-id="b"]').hasAttribute('disabled')).toBe(true)
+    expect(card.emitted('toggleItem')).toBeUndefined()
+  })
+
+  it('keeps a cancelled bratwurst on a struck-through line of its own in the grouped view', async () => {
+    mountCard(
+      stationOrder({
+        itemCount: 2,
+        items: [item('a', 'Bratwurst'), item('b', 'Bratwurst'), cancelledItem('c', 'Bratwurst')],
+      }),
+    )
+
+    await clickOn('[data-test="grouped-toggle"]')
+
+    expect(groupedLines()).toEqual(['2 x Bratwurst', '1 x Bratwurst'])
+    expect(
+      [...document.querySelectorAll('[data-test="grouped-line"]')].map((line) =>
+        line.classList.contains('cancelled-item'),
+      ),
+    ).toEqual([false, true])
   })
 })

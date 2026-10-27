@@ -138,6 +138,40 @@ public sealed class OrdersChangedAnnouncementTest
     await AssertEveryListenerHeardOnceAsync();
   }
 
+  [Test]
+  public async Task CancelItems_TheWaiterCancelsItemsOfATable_TellsThePhoneTheAdminAndTheKitchenOnce()
+  {
+    await PlaceTheKitchenOrderAsync();
+    List<Guid> itemIds = await KitchenItemIdsAsync();
+    var statusCountBefore = await StoredStatusCountAsync();
+    await ListenAsync(_context.DeviceToken, null, _kitchenToken);
+
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/cancel", new CancelItemsBody(itemIds));
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await AssertEveryListenerHeardOnceAsync();
+    Assert.That(await StoredStatusCountAsync(), Is.EqualTo(statusCountBefore + itemIds.Count));
+  }
+
+  [Test]
+  public async Task AcknowledgeCancellation_TheKitchenAcknowledgesCancelledItems_TellsThePhoneTheAdminAndTheKitchenOnce()
+  {
+    await PlaceTheKitchenOrderAsync();
+    List<Guid> itemIds = await KitchenItemIdsAsync();
+
+    using (var cancelled = await _context.SendAsync(HttpMethod.Post, "/api/open-items/cancel", new CancelItemsBody(itemIds)))
+    {
+      Assert.That(cancelled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    await ListenAsync(_context.DeviceToken, null, _kitchenToken);
+
+    using var response = await _context.SendAsAsync(_kitchenToken, HttpMethod.Post, "/api/station/items/acknowledge-cancellation", new StationItemSelectionBody(itemIds));
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await AssertEveryListenerHeardOnceAsync();
+  }
+
   private async Task ListenAsync(params string?[] deviceTokens)
   {
     foreach (var deviceToken in deviceTokens)

@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { request } from '../../shared/api/client'
 import { StationFulfilledView, StationOrderQueueView, StationQueueView, StationSummaryView } from '../../shared/api/generatedSchemas'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
-import { retainOpenItemIds, stationFailureKey } from '../../shared/core/stationBoard'
+import { retainOpenItemIds, stationFailureMessage, type StationMessage } from '../../shared/core/stationBoard'
 import { useConnectionStore } from '../../shared/stores/connection'
 import { useSessionStore } from '../../shared/stores/session'
 
@@ -15,7 +15,7 @@ export const useStationStore = defineStore('station', () => {
   const selectedItemIds = ref<string[]>([])
   const loadFailed = ref(false)
   const loadFailureKey = ref<string | null>(null)
-  const failureKey = ref<string | null>(null)
+  const failure = ref<StationMessage | null>(null)
   const isWorking = ref(false)
   const isShowingFulfilled = ref(false)
   const fulfilledHasLoaded = ref(false)
@@ -102,14 +102,14 @@ export const useStationStore = defineStore('station', () => {
   }
 
   function toggleItemSelection(orderItemId: string): void {
-    failureKey.value = null
+    failure.value = null
     selectedItemIds.value = selectedItemIds.value.includes(orderItemId)
       ? selectedItemIds.value.filter((selected) => selected !== orderItemId)
       : [...selectedItemIds.value, orderItemId]
   }
 
   async function fulfill(orderItemIds: string[]): Promise<void> {
-    failureKey.value = null
+    failure.value = null
     isWorking.value = true
     const token = boardGate.startRequest()
     newestActionToken = token
@@ -126,14 +126,14 @@ export const useStationStore = defineStore('station', () => {
       return
     }
     if (result.kind !== 'ok') {
-      failureKey.value = stationFailureKey(result)
+      failure.value = stationFailureMessage(result)
       return
     }
     applyQueue(result.data)
   }
 
   async function unfulfill(orderItemId: string): Promise<void> {
-    failureKey.value = null
+    failure.value = null
     isWorking.value = true
     const token = boardGate.startRequest()
     newestActionToken = token
@@ -150,7 +150,7 @@ export const useStationStore = defineStore('station', () => {
       return
     }
     if (result.kind !== 'ok') {
-      failureKey.value = stationFailureKey(result)
+      failure.value = stationFailureMessage(result)
       return
     }
     applyQueue(result.data)
@@ -160,7 +160,7 @@ export const useStationStore = defineStore('station', () => {
   }
 
   async function hide(stationOrderId: string): Promise<void> {
-    failureKey.value = null
+    failure.value = null
     isWorking.value = true
     const token = boardGate.startRequest()
     newestActionToken = token
@@ -176,7 +176,7 @@ export const useStationStore = defineStore('station', () => {
       return
     }
     if (result.kind !== 'ok') {
-      failureKey.value = stationFailureKey(result)
+      failure.value = stationFailureMessage(result)
       return
     }
     applyQueue(result.data)
@@ -194,7 +194,7 @@ export const useStationStore = defineStore('station', () => {
     selectedItemIds,
     loadFailed,
     loadFailureKey,
-    failureKey,
+    failure,
     isWorking,
     isShowingFulfilled,
     fulfilledHasLoaded,

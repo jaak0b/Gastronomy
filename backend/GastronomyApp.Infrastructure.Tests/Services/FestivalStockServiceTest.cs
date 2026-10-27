@@ -35,6 +35,8 @@ public sealed class FestivalStockServiceTest
 
   private readonly DateTime _now = new(2026, 9, 26, 20, 0, 0, DateTimeKind.Utc);
 
+  private readonly OrderItemStatusSeeder _statusSeeder = new();
+
   private FakeTimeProvider _clock = null!;
   private SqliteInMemoryFixture _fixture = null!;
   private Ingredient _mustard = null!;
@@ -135,6 +137,18 @@ public sealed class FestivalStockServiceTest
     ErrorOr<AdminFestivalIngredientListView> listed = await _service.ListAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken);
 
     Assert.That(listed.FirstError.NumericType, Is.EqualTo(RefusalType.NotFound));
+  }
+
+  [Test]
+  public async Task ListAsync_AnOrderWhoseItemsWereCancelled_UsesNoIngredient()
+  {
+    await PlaceOrderAsync(_now.AddMinutes(-30), 2);
+    await PlaceOrderAsync(_now.AddMinutes(-20), 5);
+    await CancelTheItemsOfOrderAsync(_orderNumber);
+
+    ErrorOr<AdminFestivalIngredientListView> listed = await _service.ListAsync(_seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(listed.Value.Ingredients.Single().UsedAmount, Is.EqualTo(200));
   }
 
   [Test]
@@ -313,17 +327,30 @@ public sealed class FestivalStockServiceTest
                                 };
 
     foreach (var catalogItemId in itemIds ?? Enumerable.Repeat(_seeded.SausageItemId, sausages))
-      stationOrder.Items.Add(new()
-                             {
-                               Id = Guid.NewGuid(),
-                               StationOrderId = stationOrder.Id,
-                               CatalogItemId = catalogItemId,
-                               ItemName = "Artikel",
-                               UnitPriceCents = 350
-                             });
+      stationOrder.Items.Add(_statusSeeder.Open(new()
+                                                {
+                                                  Id = Guid.NewGuid(),
+                                                  StationOrderId = stationOrder.Id,
+                                                  CatalogItemId = catalogItemId,
+                                                  ItemName = "Artikel",
+                                                  UnitPriceCents = 350
+                                                },
+                                                _seeded.StaffMemberId,
+                                                createdAtUtc));
 
     order.StationOrders.Add(stationOrder);
     _fixture.DbContext.Orders.Add(order);
+    await _statusSeeder.SaveAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    _fixture.DbContext.ChangeTracker.Clear();
+  }
+
+  private async Task CancelTheItemsOfOrderAsync(int orderNumber)
+  {
+    List<OrderItem> items = await _fixture.DbContext.OrderItems.Where(item => item.StationOrder.Order.GlobalOrderNumber == orderNumber).ToListAsync(TestContext.CurrentContext.CancellationToken);
+
+    foreach (var item in items)
+      _statusSeeder.Cancel(item, _seeded.StaffMemberId, _now);
+
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
   }

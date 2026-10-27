@@ -146,7 +146,7 @@ public sealed class OrderEndpointsTest
     }
 
     await using var database = _context.Factory.CreateContext();
-    List<OrderItem> items = await database.OrderItems.Include(item => item.CurrentStatus).ToListAsync();
+    List<OrderItem> items = await database.OrderItems.ToListAsync();
 
     Assert.Multiple(() =>
                     {

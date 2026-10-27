@@ -29,13 +29,31 @@ a deactivated station is not offered any more, and a screen shows a row another 
 - **An interface appears only when at least two entities share the same flag with the same meaning.**
   A flag with another meaning gets no interface, and an entity never carries both `IsActive` and `IsHidden`.
 - **A piece is extracted on its second use.** A query used once stays in its service.
-- **A piece is called on the top-level query only.** EF Core cannot translate a custom extension method
-  inside a lambda, so a filter inside a Mapster expression is written out in `Core/Mapping`. Where
-  several readers need the same condition, the expression lives once there as a property and both the
-  query piece and the projection use it: `OrderItemStates.NotHandedOutPredicate` backs
-  `OrderItemQueries.WhereNotHandedOut` and a nested filter of the station queue, applied with
-  `Items.AsQueryable().Any(...)`, and `HandedOutPredicate` backs the table plan's projection.
-- **A piece returns `IQueryable`**, so it composes with the rest of the query and EF Core translates it
+- **Each entity has exactly one static extension class, `Core/Queries/<Entity>Queries.cs`.** It holds the entity's `IQueryable` filters and its checks as extension methods, and nothing else: no `Expression` property, field or method returning one. A check that EF Core must translate inside a query (a `Where`, a nested `Any`, an `Include` filter or a projection) is an extension method marked `[Projectable]` from EntityFrameworkCore.Projectables, written once as an ordinary expression body; the same method also works on a loaded entity. The
+  same holds for every other type with checks of its own: an enum gets its own class
+  (`OrderItemStateQueries` for `OrderItemState`), and a flag several entities share lives in
+  `<Interface>Queries.cs`.
+  `OrderItemQueries.IsOpen`, `IsHandedOut`, `IsCancelled`, `AwaitsCancellationAcknowledgement`,
+  `State` and `StateSetAtUtc` are such checks: `WhereOpen` uses one at the top level,
+  `StationOrderQueries` nests them in `Items.Any(...)`, `StationQueueMapping` and `OpenItemMapping`
+  call them in a Mapster mapping, and the services call them on loaded items. The package is turned
+  on once, with `UseProjectables()` in `GastronomyAppDbContext.OnConfiguring`, which every way of
+  building the context's options passes through.
+- **Two `[Projectable]` methods in one class never share a name.** Version 4.0.0, the last one for
+  EF Core 9, names its generated file after the class and the method only, so an overload breaks the
+  build of `Core` (`CS8785`). The checks on the `OrderItemState` enum therefore live in their own
+  class, `OrderItemStateQueries`.
+- **`OrderItem.CurrentStatus` is auto-included** (`Navigation(...).AutoInclude()` in
+  `OrderItemConfiguration`), so every query that loads an order item, directly or through an
+  `Include` of `Items`, brings its current status along, and no query includes it by hand. Almost
+  every read of an item asks for its state, so the status travels with the item wherever it is
+  loaded and no query can forget it. `OrderItemStatus.PreviousStatus` is not auto-included: EF Core refuses it as a
+  cycle, because it would follow the whole history. The station queue's two loads that decide in
+  memory whether a cancellation still waits for its acknowledgement (the queue read and the lookup
+  of the selected items; the done view does not need it) include it explicitly
+  (`Include(item => item.CurrentStatus!.PreviousStatus)`), and `OrderItemLifecycle` throws an
+  `InvalidOperationException` naming `OrderItemStatus.PreviousStatus` when it is missing.
+- **A filter returns `IQueryable`**, so it composes with the rest of the query and EF Core translates it
   into SQL. It does not load rows and does not call `SaveChangesAsync`.
 
 ## Example
@@ -52,4 +70,7 @@ public static class ActivatableQueries
 
 Each extension has a test that runs it against the database (in-memory SQLite), because only the
 database proves that EF Core can translate it. The test seeds rows that the piece must keep and rows
-it must drop, and asserts both.
+it must drop, and asserts both. A `[Projectable]` check is proved the same way at each place EF
+Core meets it: a top-level `Where`, nested in an `Any`, and in a projection, where the test also
+asserts that the generated SQL reads the status table, because EF Core would otherwise evaluate a
+final projection in memory without a word (`Queries/OrderItemQueriesTest`).

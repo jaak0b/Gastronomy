@@ -105,6 +105,23 @@ describe('the done view', () => {
     )
   })
 
+  it('names the item a waiter cancelled before it could be put back', async () => {
+    stationLaptop({
+      fulfilled: answer({ stationOrders: [DONE_STATION_ORDER] }),
+      unfulfill: refusal('errors.station.itemWasCancelled', { code: 'ItemWasCancelled', parameters: { name: 'Bratwurst' } }),
+    })
+    const page = await mountPage()
+    await page.get('[data-test="show-done"]').trigger('click')
+    await flushPromises()
+
+    await itemOnCard(page.get('[data-test="station-fulfilled"]'), 'a').get('[data-test="put-back"]').trigger('click')
+    await flushPromises()
+
+    expect(page.get('[data-test="action-failed"]').text()).toBe(
+      'Bratwurst wurde inzwischen storniert. Wählen Sie die Positionen noch einmal aus.',
+    )
+  })
+
   it('goes back to the queue', async () => {
     stationLaptop({ fulfilled: answer({ stationOrders: [DONE_STATION_ORDER] }) })
     const page = await mountPage()
