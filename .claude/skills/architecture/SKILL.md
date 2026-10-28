@@ -21,6 +21,7 @@ is never a feature or code documentation page: features are in `features`, recur
 | How screens learn that something changed | [references/announcements.md](references/announcements.md) |
 | Where a concept's name in code differs from its word on screen | [references/code-names-and-screen-words.md](references/code-names-and-screen-words.md) |
 | What readable C# means here, as before/after pairs from this repository; read before writing or reviewing backend code | [references/readable-code.md](references/readable-code.md) |
+| What readable TypeScript and Vue mean here, as before/after pairs; read before writing or reviewing frontend code | [references/readable-frontend-code.md](references/readable-frontend-code.md) |
 
 ## How to use
 

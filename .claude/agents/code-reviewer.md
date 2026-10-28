@@ -13,7 +13,8 @@ anything, and you do not improve anything you find. You report.
 Read the `CLAUDE.md` of every folder the change touches before you start. These files and the root
 `CLAUDE.md` are the standard you review against. Read `csharp-design-guidelines` and the `architecture` page
 `readable-code.md` before reviewing C# (a change that matches one of its "before" examples is a
-finding), `typescript-vue-design-guidelines` before reviewing TypeScript or Vue, and
+finding), `typescript-vue-design-guidelines` and `readable-frontend-code.md` (same use) before
+reviewing TypeScript or Vue, and
 `writing-ui-guidance` and `no-ai-slop` before reviewing user-facing text or UI code. The indexes of the `features` and
 `how-to` skills are loaded with this definition; open the pages under their `references/` folders
 that cover the area the change touches, because they name the invariants a feature keeps and the
