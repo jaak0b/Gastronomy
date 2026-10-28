@@ -9,7 +9,6 @@ import { useOpenItemsStore } from '../stores/openItems'
 import { useSessionStore } from '../../shared/stores/session'
 import { useSettleDialog } from '../composables/useSettleDialog'
 import OrderListFilter from '../components/orderList/OrderListFilter.vue'
-import OrderListTitle from '../components/orderList/OrderListTitle.vue'
 import TableOrders from '../components/openItems/TableOrders.vue'
 import AmountPaidDialog from '../components/openItems/AmountPaidDialog.vue'
 import CancelItemsDialog from '../components/openItems/CancelItemsDialog.vue'
@@ -136,7 +135,12 @@ onUnmounted(() => {
 
 <template>
   <v-container class="open-items">
-    <OrderListTitle data-test="settle-title" :text="title" />
+    <div class="head d-flex align-center ga-3 mb-2">
+      <h1 class="text-h5 flex-grow-1" data-test="settle-title">{{ title }}</h1>
+      <v-btn class="reload" data-test="reload" variant="outlined" size="large" @click="openItems.load()">
+        {{ t('phone.openItems.actions.reload') }}
+      </v-btn>
+    </div>
     <OrderListFilter class="mb-3" :filter="openItems.filter" @change="openItems.changeFilter" />
     <v-alert
       v-if="openItems.loadFailureKey !== null"
@@ -210,7 +214,7 @@ onUnmounted(() => {
 
 .settle-footer {
   position: sticky;
-  bottom: var(--v-layout-bottom, 0px);
+  bottom: 0;
   z-index: 2;
   border-top: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
 }

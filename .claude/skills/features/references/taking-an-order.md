@@ -2,7 +2,7 @@
 
 A waiter taps a table on the plan and "Bestellung aufnehmen", and builds that table's order: the
 categories screen shows one button per category with the number of portions already taken from it,
-the table's name in the bar at the bottom with the way back to the plan, and a bar with the item count and the
+the table's name in the header with the way back to the plan, and a bar with the item count and the
 running total. Tapping a category lists its articles, one row each, where a tap adds one portion, the
 Note button adds one with a note, and the rows under the article count the portions by note and
 station and take them off again.
@@ -29,8 +29,8 @@ Frontend, under `frontend/src/phone/`:
   articles in `components/catalog/ItemGrid.vue` and the button back to the categories. It decides
   where a new portion goes: `addItem` places it straight away or opens the station question, and
   `chooseStation` answers it. It leaves for the summary while the order is locked and for the plan
-  while the draft has no table. The bar at the bottom (`components/header/AppHeader.vue`) shows the
-  table's name and "Tischplan".
+  while the draft has no table. The header (`components/header/AppHeader.vue`) shows the table's
+  name and "Tischplan".
 - `views/TablePlan.vue` opens the ordering screen from the table's action sheet
   (`openingTheOrderAt` in `core/draftCart.ts`; see the `table-plan` page).
 - `components/catalog/ItemRow.vue` is one article: tapping its name or its price adds one portion,

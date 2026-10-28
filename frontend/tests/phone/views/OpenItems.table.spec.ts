@@ -15,7 +15,7 @@ import {
   mountScreenToCancelItems,
   openItemsLaptop,
 } from './openItemsFixture'
-import { answer, emptyAnswer, stubLaptop } from '../../support/laptop'
+import { answer, emptyAnswer, inTurn, stubLaptop } from '../../support/laptop'
 
 enableAutoUnmount(afterEach)
 
@@ -70,14 +70,18 @@ describe('the orders of the table the waiter chose to settle', () => {
     expect(screen.get('[data-test="no-orders"]').text()).toBe('An diesem Tisch ist nichts mehr zu kassieren.')
   })
 
-  it('says the laptop could not be reached', async () => {
-    stubLaptop().answers('POST', TABLE_PATH, answer({}, 500))
-
+  it('says the laptop could not be reached and loads the table again from the reload button', async () => {
+    const laptop = stubLaptop().answers('POST', TABLE_PATH, inTurn(answer({}, 500), answer(TABLE_REPORT)))
     const screen = await mountScreen()
-
     expect(screen.get('[data-test="load-failed"]').text()).toBe(
       'Der Rechner war nicht erreichbar. Tippen Sie auf "Neu laden".',
     )
+
+    await screen.get('[data-test="reload"]').trigger('click')
+    await flushPromises()
+
+    expect(laptop.callsTo('POST', TABLE_PATH)).toHaveLength(2)
+    expect(screen.findAll('[data-test="order-card"]')).toHaveLength(3)
   })
 
   it('says in one sentence that the table could not be loaded when the laptop does not know it', async () => {

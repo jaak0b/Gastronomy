@@ -12,8 +12,6 @@ import SettingsSheet from './SettingsSheet.vue'
 
 type BackDestination = 'areaList' | 'tablePlan' | 'none'
 
-type ReloadableList = 'openItems' | 'orderOverview' | 'none'
-
 const { t } = useI18n()
 const tablePlan = useTablePlanStore()
 const openItems = useOpenItemsStore()
@@ -88,41 +86,6 @@ const title = computed(() =>
     : t('common.labels.table', { name: shownTableName.value }),
 )
 
-const reloadableList = computed<ReloadableList>(() => {
-  const route = currentRoute.value
-  switch (route.name) {
-    case 'openItems':
-      return 'openItems'
-    case 'orderOverview':
-      return 'orderOverview'
-    case 'home':
-    case 'catalog':
-    case 'review':
-    case 'enrolQr':
-    case 'stations':
-    case 'admin':
-      return 'none'
-    default:
-      return assertNever(route)
-  }
-})
-
-async function reloadTheList(): Promise<void> {
-  const list = reloadableList.value
-  switch (list) {
-    case 'openItems':
-      await openItems.load()
-      return
-    case 'orderOverview':
-      await orderOverview.load()
-      return
-    case 'none':
-      return
-    default:
-      assertNever(list)
-  }
-}
-
 function goBack(): void {
   const destination = backDestination.value
   switch (destination) {
@@ -141,10 +104,10 @@ function goBack(): void {
 </script>
 
 <template>
-  <v-footer class="app-header" data-test="app-header" app>
+  <v-app-bar class="app-header" data-test="app-header" height="72">
     <v-btn
       v-if="backLabel !== null"
-      class="back-button"
+      class="back-button ms-1"
       data-test="header-back"
       prepend-icon="mdi-arrow-left"
       variant="text"
@@ -156,17 +119,6 @@ function goBack(): void {
     <span v-if="title !== null" class="header-title text-h6 px-3" data-test="header-title">{{ title }}</span>
     <v-spacer />
     <v-btn
-      v-if="reloadableList !== 'none'"
-      class="reload"
-      data-test="reload"
-      prepend-icon="mdi-refresh"
-      variant="text"
-      stacked
-      @click="reloadTheList"
-    >
-      <span class="reload-label text-caption">{{ t('phone.openItems.actions.reload') }}</span>
-    </v-btn>
-    <v-btn
       class="settings"
       data-test="settings"
       icon="mdi-cog"
@@ -174,21 +126,14 @@ function goBack(): void {
       @click="settingsAreOpen = true"
     >
       <v-icon icon="mdi-cog" />
-      <v-tooltip activator="parent" location="top">{{ t('phone.header.actions.settings') }}</v-tooltip>
+      <v-tooltip activator="parent" location="bottom">{{ t('phone.header.actions.settings') }}</v-tooltip>
     </v-btn>
-  </v-footer>
+  </v-app-bar>
   <SettingsSheet v-if="settingsAreOpen" @close="settingsAreOpen = false" />
 </template>
 
 <style scoped>
-.app-header {
-  min-height: calc(72px + env(safe-area-inset-bottom));
-  padding: 0 4px env(safe-area-inset-bottom);
-  border-top: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
-}
-
-.back-button,
-.reload {
+.back-button {
   text-transform: none;
   letter-spacing: normal;
 }

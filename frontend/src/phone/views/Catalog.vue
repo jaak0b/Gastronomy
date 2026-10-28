@@ -281,8 +281,8 @@ function chooseStation(stationId: string, note: string | null): void {
 .catalog {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
-  min-height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+  min-height: calc(100vh - var(--v-layout-top, 0px));
+  min-height: calc(100dvh - var(--v-layout-top, 0px));
   padding-bottom: 0;
 }
 

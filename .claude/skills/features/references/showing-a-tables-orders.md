@@ -14,13 +14,11 @@ price.
 Frontend, under `frontend/src/phone/`:
 
 - `views/OrderOverview.vue` (route `/order-overview`, route and screen name `orderOverview`): the
-  title "Bestellungen" (`components/orderList/OrderListTitle.vue`, the one-line bold title of all
-  three screens), the filter, the sentence when the table could not be loaded, one
+  title "Bestellungen", "Neu laden", the filter, the sentence when the table could not be loaded, one
   `OrderListCard` per order without a purpose (no tick boxes; a tap on a row does nothing), and
   `phone.orderOverview.messages.noOrderMatches` when the laptop sends no order. It goes back to the
   plan when no table is open, as after a reload, and closes the table when the waiter leaves. The
-  bar at the bottom (`components/header/AppHeader.vue`, see the `table-plan` page) shows the table's
-  current name, "Tischplan" and the reload "Neu laden".
+  header shows the table's current name and "Tischplan".
 - `components/orderList/OrderListFilter.vue` is the one filter of all three screens: two
   `v-select`s side by side, "Bestellungen" ("Alle", "Offen", "Teilweise ausgegeben", "Ausgegeben")
   and "Positionen" ("Alle", "Bezahlt", "Nicht bezahlt"), and below them the box "Stornierte
@@ -117,6 +115,6 @@ payment with its reason) is `GET /api/open-items/items/{orderItemId}/history` on
 - `frontend/tests/phone/stores/orderOverview.spec.ts` (the first search, a filter change, the gate, a
   404, no answer, closing, the reload after `GroupsJoined` and with the picked filter on
   `OrdersChanged`).
-- `TablePlan.sheet.spec.ts` for "Bestellungen anzeigen", `AppHeader.spec.ts` for the bar and its reload,
+- `TablePlan.sheet.spec.ts` for "Bestellungen anzeigen", `AppHeader.spec.ts` for the header,
   `tests/shared/core/landing.spec.ts`, `appTitle.spec.ts` and `tests/shared/router/bootPath.spec.ts`
   for the route.

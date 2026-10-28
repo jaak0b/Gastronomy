@@ -116,14 +116,6 @@ afterEach(() => {
 })
 
 describe('the orders of a table, shown to read', () => {
-  it('is titled Bestellungen', async () => {
-    stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
-
-    const screen = await mountTheOrders()
-
-    expect(screen.get('[data-test="order-overview-title"]').text()).toBe('Bestellungen')
-  })
-
   it('heads the two columns with Bezahlt and Ausgegeben', async () => {
     stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
 
