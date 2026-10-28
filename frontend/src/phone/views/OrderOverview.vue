@@ -5,6 +5,7 @@ import { navigate } from '../../shared/router/router'
 import { useSessionStore } from '../../shared/stores/session'
 import { useOrderOverviewStore } from '../stores/orderOverview'
 import OrderListFilter from '../components/orderList/OrderListFilter.vue'
+import OrderListTitle from '../components/orderList/OrderListTitle.vue'
 import OrderListCard from '../components/orderList/OrderListCard.vue'
 
 const { t } = useI18n()
@@ -34,12 +35,7 @@ onUnmounted(() => {
 
 <template>
   <v-container class="order-overview">
-    <div class="d-flex align-center ga-3 mb-2">
-      <h1 class="text-h5 flex-grow-1" data-test="order-overview-title">{{ t('phone.orderOverview.title') }}</h1>
-      <v-btn class="reload" data-test="reload" variant="outlined" size="large" @click="orderOverview.load()">
-        {{ t('phone.openItems.actions.reload') }}
-      </v-btn>
-    </div>
+    <OrderListTitle data-test="order-overview-title" :text="t('phone.orderOverview.title')" />
     <OrderListFilter class="mb-3" :filter="orderOverview.filter" @change="orderOverview.changeFilter" />
     <v-alert
       v-if="orderOverview.loadFailureKey !== null"

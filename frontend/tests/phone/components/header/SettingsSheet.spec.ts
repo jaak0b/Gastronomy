@@ -8,7 +8,7 @@ import { useSessionStore } from '../../../../src/shared/stores/session'
 import { testPlugins } from '../../../support/plugins'
 import { stubLaptop, answer } from '../../../support/laptop'
 
-const AppBarStub = {
+const FooterStub = {
   template: '<div class="app-header"><slot /></div>',
 }
 
@@ -26,7 +26,7 @@ function mountHeader() {
   return mount(HeaderFollowingTheLanguage, {
     global: {
       plugins: testPlugins(),
-      stubs: { VAppBar: AppBarStub },
+      stubs: { VFooter: FooterStub },
     },
     attachTo: document.body,
   })

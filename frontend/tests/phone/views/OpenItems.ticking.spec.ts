@@ -123,16 +123,6 @@ describe('ticking what the guests at one table pay for', () => {
       paid: orderCard(screen, 138).find('[data-test="whole-order"]').exists(),
     }).toEqual({ open: true, paid: false })
   })
-
-  it('fetches the table again when the waiter asks for it, which is what the notices name', async () => {
-    const laptop = openItemsLaptop(TABLE_REPORT)
-    const screen = await mountScreen()
-
-    await screen.get('[data-test="reload"]').trigger('click')
-    await flushPromises()
-
-    expect(laptop.urls()).toEqual(['/api/open-items/tables/table-12/search', '/api/open-items/tables/table-12/search'])
-  })
 })
 
 describe('settling items somebody else had already settled', () => {

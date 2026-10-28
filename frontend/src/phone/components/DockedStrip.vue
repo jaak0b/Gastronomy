@@ -21,7 +21,7 @@ const { beginPressTracking, trackPressMovement, suppressTapIfItWasAScrollRelease
 <style scoped>
 .docked-strip {
   position: sticky;
-  bottom: 0;
+  bottom: var(--v-layout-bottom, 0px);
   z-index: 2;
   border-top: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
 }

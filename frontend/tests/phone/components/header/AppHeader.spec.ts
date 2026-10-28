@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { enableAutoUnmount, mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AppHeader from '../../../../src/phone/components/header/AppHeader.vue'
 import { useOpenItemsStore } from '../../../../src/phone/stores/openItems'
@@ -9,14 +9,17 @@ import { useTablePlanStore } from '../../../../src/phone/stores/tablePlan'
 import { currentRoute, navigate, registerOpenStepCloser } from '../../../../src/shared/router/router'
 import { testPlugins } from '../../../support/plugins'
 import { stubLaptop, answer } from '../../../support/laptop'
+import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../../src/shared/stores/session'
 import { aPlanArea, aPlanTable } from '../../../support/wireViews'
 import { nextTick } from 'vue'
 
 enableAutoUnmount(afterEach)
 
-const AppBarStub = {
+const FooterStub = {
   template: '<div class="app-header"><slot /></div>',
 }
+
+const SEARCH = '/api/open-items/tables/table-12/search'
 
 const HALL = aPlanArea({ areaId: 'area-halle', name: 'Halle' })
 
@@ -26,7 +29,7 @@ function mountHeader(locale: 'de' | 'en' = 'de') {
   return mount(AppHeader, {
     global: {
       plugins: testPlugins(locale),
-      stubs: { VAppBar: AppBarStub },
+      stubs: { VFooter: FooterStub },
     },
     attachTo: document.body,
   })
@@ -189,5 +192,63 @@ describe('the header over the orders of a table', () => {
     await header.get('[data-test="header-back"]').trigger('click')
 
     expect(currentRoute.value).toEqual({ name: 'home' })
+  })
+})
+
+describe('the reload in the bar', () => {
+  function signedIn(): void {
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
+    useSessionStore().deviceToken = 'token-here'
+  }
+
+  it('fetches the table being settled again', async () => {
+    signedIn()
+    const laptop = stubLaptop().answers('POST', SEARCH, answer({ tableId: 'table-12', tableName: '12', orders: [] }))
+    useOpenItemsStore().openTable('table-12')
+    navigate('/open-items')
+    const header = mountHeader()
+
+    await header.get('[data-test="reload"]').trigger('click')
+    await flushPromises()
+
+    expect(laptop.callsTo('POST', SEARCH)).toHaveLength(1)
+  })
+
+  it('fetches the orders of the table again', async () => {
+    signedIn()
+    const laptop = stubLaptop().answers('POST', SEARCH, answer({ tableId: 'table-12', tableName: '12', orders: [] }))
+    useOrderOverviewStore().openTable('table-12')
+    navigate('/order-overview')
+    const header = mountHeader()
+
+    await header.get('[data-test="reload"]').trigger('click')
+    await flushPromises()
+
+    expect(laptop.callsTo('POST', SEARCH)).toHaveLength(1)
+  })
+
+  it('carries the word the notices name, in German and in English', () => {
+    navigate('/open-items')
+    const german = mountHeader().get('[data-test="reload"]').text()
+
+    const english = mountHeader('en').get('[data-test="reload"]').text()
+
+    expect([german, english]).toEqual(['Neu laden', 'Reload'])
+  })
+
+  it('is not offered over the table plan', () => {
+    navigate('/')
+
+    const header = mountHeader()
+
+    expect(header.find('[data-test="reload"]').exists()).toBe(false)
+  })
+
+  it('is not offered over an order being taken', () => {
+    navigate('/catalog')
+
+    const header = mountHeader()
+
+    expect(header.find('[data-test="reload"]').exists()).toBe(false)
   })
 })
