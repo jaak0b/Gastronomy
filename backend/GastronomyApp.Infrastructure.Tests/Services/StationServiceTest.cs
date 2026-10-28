@@ -442,17 +442,21 @@ public sealed class StationServiceTest
                                   DeliveryMode = DeliveryMode.Together
                                 };
 
-    stationOrder.Items.Add(new()
-                           {
-                             Id = Guid.NewGuid(),
-                             StationOrderId = stationOrderId,
-                             CatalogItemId = _seeded.SausageItemId,
-                             ItemName = "Bratwurst",
-                             UnitPriceCents = 350
-                           });
+    OrderItemStatusSeeder statusSeeder = new();
+
+    stationOrder.Items.Add(statusSeeder.Open(new()
+                                             {
+                                               Id = Guid.NewGuid(),
+                                               StationOrderId = stationOrderId,
+                                               CatalogItemId = _seeded.SausageItemId,
+                                               ItemName = "Bratwurst",
+                                               UnitPriceCents = 350
+                                             },
+                                             _seeded.StaffMemberId,
+                                             _now));
     order.StationOrders.Add(stationOrder);
 
     _fixture.DbContext.Orders.Add(order);
-    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    await statusSeeder.SaveAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
   }
 }
