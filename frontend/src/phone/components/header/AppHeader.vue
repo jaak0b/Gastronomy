@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import BaseIconAction from '../../../shared/components/BaseIconAction.vue'
 import { assertNever } from '../../../shared/core/assertNever'
 import { currentRoute, navigate } from '../../../shared/router/router'
 import { useDraftTableName } from '../../composables/useDraftTableName'
@@ -155,35 +156,27 @@ function goBack(): void {
     </v-btn>
     <span v-if="title !== null" class="header-title text-h6 px-3" data-test="header-title">{{ title }}</span>
     <v-spacer />
-    <v-btn
+    <BaseIconAction
       v-if="reloadableList !== 'none'"
-      class="reload"
       data-test="reload"
-      prepend-icon="mdi-refresh"
-      variant="text"
-      height="64"
-      stacked
+      icon="mdi-refresh"
+      :label="t('phone.openItems.actions.reload')"
+      location="bottom"
       @click="reloadTheList"
-    >
-      <span class="reload-label text-caption">{{ t('phone.openItems.actions.reload') }}</span>
-    </v-btn>
-    <v-btn
-      class="settings"
+    />
+    <BaseIconAction
       data-test="settings"
       icon="mdi-cog"
-      variant="text"
+      :label="t('phone.header.actions.settings')"
+      location="bottom"
       @click="settingsAreOpen = true"
-    >
-      <v-icon icon="mdi-cog" />
-      <v-tooltip activator="parent" location="bottom">{{ t('phone.header.actions.settings') }}</v-tooltip>
-    </v-btn>
+    />
   </v-app-bar>
   <SettingsSheet v-if="settingsAreOpen" @close="settingsAreOpen = false" />
 </template>
 
 <style scoped>
-.back-button,
-.reload {
+.back-button {
   text-transform: none;
   letter-spacing: normal;
 }

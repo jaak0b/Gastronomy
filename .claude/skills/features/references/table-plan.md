@@ -249,7 +249,7 @@ Frontend, under `frontend/src/`:
   the waiter's bar, one `v-app-bar` at the top of every waiter screen except the summary. From left
   to right it carries the back control ("Tischpläne" from a plan when there are several areas,
   "Tischplan" from the ordering screen, the order overview and the settle view), the area or table
-  name, the reload ("Neu laden" under a refresh icon, `phone.openItems.actions.reload`, only over
+  name, the reload (a refresh icon like the gear, with "Neu laden" as its tooltip, `phone.openItems.actions.reload`, only over
   the order overview and the settle view, where it calls that screen's store `load`) and the
   settings gear. The table plan has no reload in the bar; it keeps the one next to its failure
   message.

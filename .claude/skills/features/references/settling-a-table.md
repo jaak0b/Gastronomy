@@ -29,8 +29,8 @@ Frontend, under `frontend/src/phone/`:
   goes back to the plan when no table is open, as after a reload, and closes the table when the
   waiter leaves. In cancel mode it is titled "Stornieren" (`phone.openItems.cancellingTitle`), the footer counts the selection
   (`phone.openItems.labels.selectedCount`) and its "Stornieren" opens `CancelItemsDialog.vue`. The bar at the top (`components/header/AppHeader.vue`, see the
-  `table-plan` page) shows the table's current name, "Tischplan" and the reload "Neu laden"
-  that the refusal notices name.
+  `table-plan` page) shows the table's current name, "Tischplan" and the reload, an icon whose tooltip says "Neu laden", the
+  word the refusal notices name.
 - `components/openItems/`: `TableOrders.vue` (the box for the whole table, then one shared
   `components/orderList/OrderListCard.vue` per order with the view's purpose and ticks, see the
   `showing-a-tables-orders` page; the whole-order box sits in the order's header line, an item is

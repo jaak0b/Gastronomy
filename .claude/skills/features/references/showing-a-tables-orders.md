@@ -20,7 +20,7 @@ Frontend, under `frontend/src/phone/`:
   `phone.orderOverview.messages.noOrderMatches` when the laptop sends no order. It goes back to the
   plan when no table is open, as after a reload, and closes the table when the waiter leaves. The
   bar at the top (`components/header/AppHeader.vue`, see the `table-plan` page) shows the table's
-  current name, "Tischplan" and the reload "Neu laden".
+  current name, "Tischplan" and the reload, an icon whose tooltip says "Neu laden".
 - `components/orderList/OrderListFilter.vue` is the one filter of all three screens: two
   `v-select`s side by side, "Bestellungen" ("Alle", "Offen", "Teilweise ausgegeben", "Ausgegeben")
   and "Positionen" ("Alle", "Bezahlt", "Nicht bezahlt"), and below them the box "Stornierte

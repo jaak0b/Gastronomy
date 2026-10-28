@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount, type DOMWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AppHeader from '../../../../src/phone/components/header/AppHeader.vue'
 import { useOpenItemsStore } from '../../../../src/phone/stores/openItems'
@@ -195,6 +195,11 @@ describe('the header over the orders of a table', () => {
   })
 })
 
+function tooltipOf(button: Pick<DOMWrapper<Element>, 'getComponent'>): string | undefined {
+  const overlay = button.getComponent({ name: 'VTooltip' }).getComponent({ name: 'VOverlay' })
+  return (overlay.vm as unknown as { contentEl?: HTMLElement }).contentEl?.textContent ?? undefined
+}
+
 describe('the reload in the bar', () => {
   function signedIn(): void {
     localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
@@ -227,13 +232,24 @@ describe('the reload in the bar', () => {
     expect(laptop.callsTo('POST', SEARCH)).toHaveLength(1)
   })
 
-  it('carries the word the notices name, in German and in English', () => {
+  it('shows no word on the button itself', () => {
     navigate('/open-items')
-    const german = mountHeader().get('[data-test="reload"]').text()
 
-    const english = mountHeader('en').get('[data-test="reload"]').text()
+    const reload = mountHeader().get('[data-test="reload"]')
 
-    expect([german, english]).toEqual(['Neu laden', 'Reload'])
+    expect(reload.text()).toBe('')
+  })
+
+  it.each([
+    ['de', 'Neu laden'],
+    ['en', 'Reload'],
+  ] as const)('names itself in a tooltip in the %s phone language', async (locale, word) => {
+    navigate('/open-items')
+    const reload = mountHeader(locale).get('[data-test="reload"]')
+
+    await reload.trigger('mouseenter')
+
+    await vi.waitFor(() => expect(tooltipOf(reload)).toBe(word))
   })
 
   it('is not offered over the table plan', () => {

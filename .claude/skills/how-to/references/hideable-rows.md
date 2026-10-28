@@ -55,7 +55,9 @@ tooltip beside them (frontend rule 8).
 - `shared/components/BaseIconAction.vue` is an icon button whose name shows as a tooltip
   (`data-test="icon-action-label"`): the crossed-out eye "Ausblenden" of the festival list, the
   categories' crossed-out eye "Kategorie abschalten" on the Artikel tab, and on the phone the
-  details button at the end of every row of the shared order list.
+  details button at the end of every row of the shared order list. Its `location` prop (`top` by
+  default, `bottom` for a control at the top of the screen) says where the tooltip opens; the
+  waiter's bar (`AppHeader.vue`) uses it for the reload and the settings gear.
   `BaseEditButton.vue` is the pencil on it, named "Bearbeiten" (`admin.common.actions.edit`), the
   only way a row offers its edit dialog: every row of `HideableEntryList.vue`, the category
   headings and article rows of the Artikel tab and of the festival page, the station rows of the
