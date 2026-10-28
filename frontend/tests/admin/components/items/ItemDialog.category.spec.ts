@@ -58,7 +58,7 @@ describe('the category field', () => {
 
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain(
-        'Klicken Sie auf "Neue Kategorie". Es gibt noch keine Kategorie, die Sie auswählen können.',
+        'Keine Kategorien vorhanden',
       ),
     )
   })

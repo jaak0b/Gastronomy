@@ -43,13 +43,13 @@ describe('the waiting time written on an item row', () => {
   it('names the span between the quickest and the slowest station', () => {
     const row = mountRowWithEstimate({ min: 10, max: 62 })
 
-    expect(row.get('[data-test="estimate"]').text()).toBe('~10 - 62 Min.')
+    expect(row.get('[data-test="estimate"]').text()).toBe('~10 bis 62 Min.')
   })
 
   it('names the same span in English', () => {
     const row = mountRowWithEstimate({ min: 10, max: 62 }, 'en')
 
-    expect(row.get('[data-test="estimate"]').text()).toBe('~10 - 62 min')
+    expect(row.get('[data-test="estimate"]').text()).toBe('~10 to 62 min')
   })
 
   it('writes the price alone when the item carries no time of its own', () => {

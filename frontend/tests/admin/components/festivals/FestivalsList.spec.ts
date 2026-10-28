@@ -96,7 +96,7 @@ describe('the list of festivals', () => {
     await vi.waitFor(() => expect(list.find('[data-test="none-yet"]').exists()).toBe(true))
 
     expect(list.get('[data-test="none-yet"]').text()).toBe(
-      'Es ist noch kein Fest angelegt. Klicken Sie auf "Neues Fest".',
+      'Keine Feste vorhanden',
     )
   })
 

@@ -27,7 +27,7 @@ public sealed class DesktopTextProviderTest
     CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("de-DE");
     IDesktopTextProvider text = new DesktopTextProvider();
 
-    Assert.That(text.Get("desktop.button.quit"), Is.EqualTo("Programm beenden"));
+    Assert.That(text.Get("desktop.button.quit"), Is.EqualTo("Anwendung beenden"));
   }
 
   [Test]
@@ -38,7 +38,7 @@ public sealed class DesktopTextProviderTest
 
     text.UseLanguage("de");
 
-    Assert.That(text.Get("desktop.button.quit"), Is.EqualTo("Programm beenden"));
+    Assert.That(text.Get("desktop.button.quit"), Is.EqualTo("Anwendung beenden"));
   }
 
   [Test]

@@ -246,7 +246,7 @@ describe('removing an ingredient from the recipe', () => {
 
     await vi.waitFor(() => expect(isOnScreen(`${BUN_LINE} [data-test="refusal"]`)).toBe(true))
     expect(onScreen(`${BUN_LINE} [data-test="refusal"]`).textContent?.trim()).toBe(
-      'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.',
+      'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
     )
   })
 })

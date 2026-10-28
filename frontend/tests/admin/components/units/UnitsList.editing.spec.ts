@@ -64,7 +64,7 @@ describe('adding a unit', () => {
 
     await vi.waitFor(() =>
       expect(onScreen('[data-test="form-dialog"] [data-test="refusal"]').textContent?.trim()).toBe(
-        'Eine Einheit mit dem Namen Kiste gibt es bereits.',
+        'Die Einheit Kiste ist bereits vorhanden. Wählen Sie einen anderen Namen.',
       ),
     )
   })
@@ -86,7 +86,7 @@ describe('adding a unit', () => {
 
     await vi.waitFor(() =>
       expect(onScreen('[data-test="form-dialog"] [data-test="refusal"]').textContent?.trim()).toBe(
-        'Die Einheit kg ist deaktiviert. Aktivieren Sie sie, oder wählen Sie einen anderen Namen.',
+        'Die Einheit kg ist deaktiviert. Aktivieren Sie sie oder wählen Sie einen anderen Namen.',
       ),
     )
   })

@@ -68,6 +68,11 @@ Root rule 2 gives two kinds.
 A refusal that only means "not there" is a bare status: `NotFound` or `Unauthorized` without a
 `ProblemCode`, as `Refusal.Ingredients.IngredientNotFound` is. Nothing else may be answered bare.
 
+An action that fails in the browser itself, with no answer from the laptop and nothing more specific
+to say, shows the shared `common.errors.actionFailed` ("Die Aktion ist fehlgeschlagen.", "The action
+failed."), as the copy button of `InvitationPanel.vue` does when the browser offers no clipboard.
+Never add a key of its own for such a failure.
+
 ## Steps
 
 1. **The factory.** Add a `public static Error` to the partial file of its area in

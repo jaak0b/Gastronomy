@@ -22,7 +22,7 @@ import { anAdminArea, anAdminTable } from '../../../support/wireViews'
 enableAutoUnmount(afterEach)
 
 const STILL_OPEN =
-  'Ein Tischplan kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und kassiert ist.'
+  'Solange ein Fest aktiv ist, kann ein Tischplan erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und kassiert ist.'
 
 const TENT_WITH_ITEMS_TO_HAND_OUT = { ...TENT, hasItemsToHandOutOrSettleAtTheRunningFestival: true }
 
@@ -209,7 +209,7 @@ describe('the warnings of the table plan card', () => {
     await vi.waitFor(() => expect(isOnScreen('[data-test="no-area"]')).toBe(true))
 
     expect(textOnScreen('[data-test="no-area"]').trim()).toBe(
-      'Die Kellner sehen noch keinen Tischplan. Klicken Sie auf "Neuer Tischplan".',
+      'Die Kellner sehen noch keinen Tischplan. Klicken Sie auf „Neuer Tischplan“.',
     )
   })
 
@@ -221,29 +221,6 @@ describe('the warnings of the table plan card', () => {
 
     const warning = onScreen('[data-test="no-area"]')
     expect([isOnScreen('.mdi-alert', warning), warning.classList.contains('text-warning')]).toEqual([true, true])
-  })
-
-  it('point to the box for hidden areas when every area is hidden and the box is not ticked', async () => {
-    festivalLaptop({ areas: [{ ...OLD_TABLES, tables: [anAdminTable({ tableId: 'table-12', name: '12' })] }] })
-
-    mountPage()
-    await vi.waitFor(() => expect(isOnScreen('[data-test="all-areas-hidden"]')).toBe(true))
-
-    expect(textOnScreen('[data-test="all-areas-hidden"]').trim()).toBe(
-      'Alle Tischpläne sind ausgeblendet. Kreuzen Sie "Ausgeblendete anzeigen" an und blenden Sie einen davon wieder ein.',
-    )
-  })
-
-  it('leave the box out of the sentence once it is ticked and the hidden areas are listed', async () => {
-    festivalLaptop({ areas: [{ ...OLD_TABLES, tables: [anAdminTable({ tableId: 'table-12', name: '12' })] }] })
-    mountPage()
-    await vi.waitFor(() => expect(isOnScreen('[data-test="all-areas-hidden"]')).toBe(true))
-
-    await clickOn('[data-test="show-hidden-entries"] input')
-
-    expect(textOnScreen('[data-test="all-areas-hidden"]').trim()).toBe(
-      'Alle Tischpläne sind ausgeblendet. Blenden Sie einen davon wieder ein.',
-    )
   })
 
   it('stay away while the plan of the festival has not arrived', async () => {
@@ -268,7 +245,7 @@ describe('the warnings of the table plan card', () => {
     await vi.waitFor(() => expect(isOnScreen('[data-test="no-table"]')).toBe(true))
 
     expect(textOnScreen('[data-test="no-table"]').trim()).toBe(
-      'Die Kellner sehen noch keinen Tisch. Klicken Sie bei einem Tischplan auf "Tischplan öffnen".',
+      'Die Kellner sehen noch keinen Tisch. Klicken Sie bei einem Tischplan auf „Tischplan öffnen“.',
     )
   })
 
@@ -289,8 +266,7 @@ describe('the warnings of the table plan card', () => {
 
     expect([
       isOnScreen('[data-test="no-area"]'),
-      isOnScreen('[data-test="all-areas-hidden"]'),
       isOnScreen('[data-test="no-table"]'),
-    ]).toEqual([false, false, false])
+    ]).toEqual([false, false])
   })
 })

@@ -65,7 +65,7 @@ describe('adding an ingredient', () => {
 
     await vi.waitFor(() =>
       expect(onScreen('[data-test="form-dialog"] [data-test="refusal"]').textContent?.trim()).toBe(
-        'Eine Zutat mit diesem Namen gibt es schon.',
+        'Eine Zutat mit diesem Namen ist bereits vorhanden. Wählen Sie einen anderen Namen.',
       ),
     )
   })
@@ -87,7 +87,7 @@ describe('adding an ingredient', () => {
 
     await vi.waitFor(() =>
       expect(onScreen('[data-test="form-dialog"] [data-test="refusal"]').textContent?.trim()).toBe(
-        'Die Zutat Milch gibt es schon, sie ist aber deaktiviert. Aktivieren Sie sie unter "Zutaten".',
+        'Die Zutat Milch ist bereits vorhanden, aber deaktiviert. Aktivieren Sie sie unter „Zutaten“.',
       ),
     )
   })

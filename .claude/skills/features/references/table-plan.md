@@ -146,10 +146,9 @@ Frontend, under `frontend/src/`:
   festival runs and a table of the area has items to hand out or settle. A taken name shows in the
   dialog. The warnings appear under the heading only once the plan of this festival has arrived,
   each a `BaseWarningText.vue` like the stock card's, and count only what waiters see: no area at
-  all (`noArea`, naming "Neuer Tischplan"), only hidden areas (`allAreasHiddenAndNotListed`, naming
-  the checkbox, while it is unticked; `allAreasHidden` once it is ticked, which `HideableEntryList`
-  hands its `notices` slot as `showsHidden`), or shown areas without a shown table (`noTable`,
-  naming "Tischplan öffnen").
+  all (`noArea`, naming "Neuer Tischplan") or shown areas without a shown table (`noTable`, naming
+  "Tischplan öffnen"). When every area is hidden, no warning shows: the admin hid them and sees
+  them under "Ausgeblendete anzeigen".
 - "Tischplan öffnen" opens one area's editor on its own page at `/admin/festivals/{festivalId}/areas/{areaId}`:
   `shared/router/route.ts` reads it as the admin route with `areaId`, and `admin/views/AdminShell.vue`
   chooses `admin/components/tablePlan/TablePlanEditor.vue` (`festivalId`, `areaId`) and lets it fill
@@ -291,8 +290,8 @@ Frontend, under `frontend/src/`:
 - Texts: `phone.tablePlan.*`.
 - Texts: `admin.tablePlan.*` (the dialog's `areaName`, `tableName`, `newArea`, `editArea`,
   `newTable`, `editTable`, `openPlan`, the toolbar's `addStation` and `hiddenTables`, the menu's `copy`, `paste`, the hide questions `hideAreaTitle`, `hideTableTitle` with
-  `hideAreaBody`, `hideTableBody`, the removal body `removeStationBody`, the warnings `noArea`,
-  `allAreasHidden`, `allAreasHiddenAndNotListed` and `noTable`), and the shared "Einblenden", "Ausgeblendet", "Ausgeblendete anzeigen"
+  `hideAreaBody`, `hideTableBody`, the removal body `removeStationBody`, the warnings `noArea`
+  and `noTable`), and the shared "Einblenden", "Ausgeblendet", "Ausgeblendete anzeigen"
   (`admin.common.actions.showHidden`), "Bearbeiten", "Ausgabestelle entfernen" and "Ausgabestelle
   hinzufügen" from `admin.festivals.*`, `admin.common.*`. The two hide refusals double as the
   tooltips of the disabled trash icons. On screen an area is always "Tischplan" (der Tischplan, des

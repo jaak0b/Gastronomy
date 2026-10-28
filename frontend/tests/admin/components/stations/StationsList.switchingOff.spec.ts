@@ -49,7 +49,7 @@ describe('switching a station off', () => {
   })
 })
 
-const ITEMS_TO_HAND_OUT = 'Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden.'
+const ITEMS_TO_HAND_OUT = 'Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht deaktiviert werden.'
 
 function stationsLaptop(station: Parameters<typeof anAdminStation>[0]) {
   stubLaptop().answersEverythingElse(answer({ stations: [anAdminStation({ stationId: STATION_ID, ...station })] }))
@@ -132,7 +132,7 @@ describe('a station that is switched off', () => {
     expect(list.get('[data-test="deactivated"]').text()).toBe('Deaktiviert')
   })
 
-  it('offers to switch it back on through the open eye, named "Ausgabestelle einschalten"', async () => {
+  it('offers to switch it back on through the open eye, named "Ausgabestelle aktivieren"', async () => {
     stubLaptop().answersEverythingElse(answer(ONE_STATION_SWITCHED_OFF))
     const list = mountList()
     await flushPromises()
@@ -142,7 +142,7 @@ describe('a station that is switched off', () => {
     await list.get('[data-test="reactivate"]').trigger('mouseenter')
 
     expect(list.get('[data-test="reactivate"] .v-icon').classes()).toContain('mdi-eye')
-    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Ausgabestelle einschalten'))
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Ausgabestelle aktivieren'))
   })
 
   it('switches it back on at its own address', async () => {
@@ -233,7 +233,7 @@ describe('a station the laptop refuses to switch off', () => {
     await deactivateFirstStation(list)
 
     expect(list.get('[data-test="refusal"]').text()).toBe(
-      'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.',
+      'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
     )
   })
 })

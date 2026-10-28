@@ -39,7 +39,7 @@ describe('the waiting time on the ordering screen', () => {
     ])
     expect(view.findAll('[data-test="item-row"] [data-test="estimate"]').map((element) => element.text())).toEqual([
       '~10 Min.',
-      '~10 - 60 Min.',
+      '~10 bis 60 Min.',
     ])
   })
 

@@ -58,7 +58,7 @@ describe('the waiter\'s home screen', () => {
 
     const view = await mountThePlan()
 
-    expect(view.get('[data-test="no-tables"]').text()).toBe('Es sind noch keine Tische angelegt.')
+    expect(view.get('[data-test="no-tables"]').text()).toBe('Keine Tische angelegt')
   })
 
   it('says the same in English', async () => {
@@ -67,7 +67,7 @@ describe('the waiter\'s home screen', () => {
 
     const view = await mountThePlan('en')
 
-    expect(view.get('[data-test="no-tables"]').text()).toBe('No tables have been set up yet.')
+    expect(view.get('[data-test="no-tables"]').text()).toBe('No tables set up')
   })
 
   it('says that no festival is active when none runs', async () => {
@@ -76,7 +76,7 @@ describe('the waiter\'s home screen', () => {
 
     const view = await mountThePlan()
 
-    expect(view.get('[data-test="no-festival"]').text()).toBe('Es ist kein Fest aktiv.')
+    expect(view.get('[data-test="no-festival"]').text()).toBe('Zurzeit ist kein Fest aktiv.')
   })
 
   it('claims nothing about the tables while it is not yet known whether a festival runs', async () => {
@@ -98,7 +98,7 @@ describe('the waiter\'s home screen', () => {
     expect({
       sentence: view.get('[data-test="no-tables-in-area"]').text(),
       drawn: view.find(DRAWING).exists(),
-    }).toEqual({ sentence: 'In diesem Tischplan ist noch kein Tisch angelegt.', drawn: true })
+    }).toEqual({ sentence: 'Keine Tische in diesem Tischplan', drawn: true })
   })
 
   it('claims nothing about the tables before the plan has arrived', async () => {

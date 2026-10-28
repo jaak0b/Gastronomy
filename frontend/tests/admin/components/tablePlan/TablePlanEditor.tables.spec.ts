@@ -40,13 +40,13 @@ enableAutoUnmount(afterEach)
 const TABLES_PATH = '/api/admin/festivals/fest-1/tables'
 
 const NAME_TAKEN =
-  'Ein Tisch dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.'
+  'Der Name ist in diesem Fest bereits an einen Tisch vergeben, auch an einen ausgeblendeten. Wählen Sie einen anderen Namen.'
 
 const STILL_OPEN =
-  'Ein Tisch kann bei einem aktiven Fest erst ausgeblendet werden, wenn dort alles zubereitet und kassiert ist.'
+  'Solange ein Fest aktiv ist, kann ein Tisch erst ausgeblendet werden, wenn alle seine Positionen zubereitet und kassiert sind.'
 
 const FAILED =
-  'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.'
+  'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.'
 
 const HIDDEN_A3 = anAdminTable({ tableId: 'table-a3', name: 'A3', isHidden: true, geometry: aGeometry({ y: 300 }) })
 

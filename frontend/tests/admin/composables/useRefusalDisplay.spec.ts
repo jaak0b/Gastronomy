@@ -41,7 +41,7 @@ describe('the refusal a screen shows', () => {
 
     expect(wasRefused).toBe(true)
     expect(display.refusalText.value).toBe(
-      'Diese Kategorie hat noch eingeschaltete Artikel. Schalten Sie die Artikel ab und danach die Kategorie.',
+      'Die Kategorie hat noch aktive Artikel. Deaktivieren Sie zuerst die Artikel und danach die Kategorie.',
     )
   })
 
@@ -51,7 +51,7 @@ describe('the refusal a screen shows', () => {
     display.showRefusalOf(HAS_ACTIVE_ITEMS)
 
     expect(display.refusalText.value).toBe(
-      'This category still has items switched on. Switch the items off first, then the category.',
+      'The category still has active items. Deactivate the items first, then the category.',
     )
   })
 

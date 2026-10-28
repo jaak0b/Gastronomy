@@ -30,7 +30,7 @@ describe('an item change the laptop refuses', () => {
   }
 
   const REFUSAL_TEXT =
-    'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.'
+    'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.'
 
   it('puts the station selection back where the laptop has it and says why', async () => {
     festivalLaptop({

@@ -49,15 +49,6 @@ const rows = computed<ReadinessRow[]>(() => {
       count: withoutStation,
     })
   }
-  for (const station of stations.stations) {
-    if (station.isAtFestival && station.isActive && !station.hasDevice) {
-      readiness.push({
-        key: 'admin.overview.messages.stationWithoutTablet',
-        parameters: { name: station.name },
-        count: null,
-      })
-    }
-  }
   return readiness
 })
 

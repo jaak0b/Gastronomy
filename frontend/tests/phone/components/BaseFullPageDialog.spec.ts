@@ -12,7 +12,7 @@ describe('a page that covers the whole phone screen', () => {
 
   it('shows its title, its content and its buttons below the content', async () => {
     mount(BaseFullPageDialog, {
-      props: { title: 'Wie viel hat der Tisch bezahlt?' },
+      props: { title: 'Geben Sie den bezahlten Betrag ein' },
       slots: {
         default: '<p data-test="content">Ausgewählt: 7,00 €</p>',
         actions: '<button data-test="action">Abbrechen</button>',
@@ -28,7 +28,7 @@ describe('a page that covers the whole phone screen', () => {
       content: document.querySelector('[data-test="full-page"] [data-test="card"] [data-test="content"]')?.textContent,
       action: document.querySelector('[data-test="full-page"] [data-test="actions"] [data-test="action"]')?.textContent,
     }).toEqual({
-      title: 'Wie viel hat der Tisch bezahlt?',
+      title: 'Geben Sie den bezahlten Betrag ein',
       content: 'Ausgewählt: 7,00 €',
       action: 'Abbrechen',
     })

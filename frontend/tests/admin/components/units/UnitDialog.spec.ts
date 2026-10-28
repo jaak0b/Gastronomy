@@ -87,10 +87,10 @@ describe('the form for a unit', () => {
   })
 
   it('shows the reason the laptop refused the unit', async () => {
-    await mountDialog(null, 'Eine Einheit mit dem Namen g gibt es bereits.')
+    await mountDialog(null, 'Die Einheit g ist bereits vorhanden. Wählen Sie einen anderen Namen.')
 
     expect(onScreen('[data-test="form-dialog"] [data-test="refusal"]').textContent?.trim()).toBe(
-      'Eine Einheit mit dem Namen g gibt es bereits.',
+      'Die Einheit g ist bereits vorhanden. Wählen Sie einen anderen Namen.',
     )
   })
 })

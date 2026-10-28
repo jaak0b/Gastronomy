@@ -73,7 +73,7 @@ describe('deactivating an item', () => {
     await wrapper.trigger('mouseenter')
     await vi.waitFor(() =>
       expect(refusalReasonsOnScreen()).toContain(
-        'Ein Artikel auf der Karte eines aktiven Festes kann nicht abgeschaltet werden.',
+        'Ein Artikel auf der Karte eines aktiven Festes kann nicht deaktiviert werden.',
       ),
     )
 
@@ -126,7 +126,7 @@ describe('an item that is deactivated', () => {
 
     await vi.waitFor(() =>
       expect(list.get('[data-test="item-refusal"]').text()).toBe(
-        'Die Zutat Zwiebeln ist deaktiviert. Aktivieren Sie sie zuerst unter "Zutaten".',
+        'Die Zutat Zwiebeln ist deaktiviert. Aktivieren Sie sie zuerst unter „Zutaten“.',
       ),
     )
   })

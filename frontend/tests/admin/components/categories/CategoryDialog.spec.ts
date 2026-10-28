@@ -86,11 +86,11 @@ describe('the dialog for a category', () => {
   })
 
   it('shows the reason the laptop refused the category', async () => {
-    mountDialog(null, 'Es gibt schon eine Kategorie mit diesem Namen.')
+    mountDialog(null, 'Eine Kategorie mit diesem Namen ist bereits vorhanden.')
     await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).not.toBeNull())
 
     expect(document.querySelector('[data-test="form-dialog"] [data-test="refusal"]')!.textContent).toContain(
-      'Es gibt schon eine Kategorie mit diesem Namen.',
+      'Eine Kategorie mit diesem Namen ist bereits vorhanden.',
     )
   })
 

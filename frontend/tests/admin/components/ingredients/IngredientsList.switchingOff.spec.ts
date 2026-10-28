@@ -69,7 +69,7 @@ describe('deleting an ingredient', () => {
 
     await vi.waitFor(() =>
       expect(list.get('[data-test="refusal"]').text()).toBe(
-        'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.',
+        'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
       ),
     )
   })
@@ -98,7 +98,7 @@ describe('an ingredient an active article still uses', () => {
 
     await vi.waitFor(() =>
       expect(refusalReasonsOnScreen()).toContain(
-        'Diese Zutat wird noch bei Bratwurst, Currywurst verwendet. Nehmen Sie sie dort zuerst heraus, unter "Artikel".',
+        'Die Zutat wird noch bei Bratwurst, Currywurst verwendet. Nehmen Sie die Zutat zuerst unter „Artikel“ aus diesen Artikeln heraus.',
       ),
     )
   })
@@ -114,7 +114,7 @@ describe('an ingredient an active article still uses', () => {
 
     await vi.waitFor(() =>
       expect(refusalReasonsOnScreen()).toContain(
-        'This ingredient is still used in Bratwurst, Currywurst. Take it out of those items first, under "Items".',
+        'The ingredient is still used in Bratwurst, Currywurst. Under "Items", take the ingredient out of these items first.',
       ),
     )
   })

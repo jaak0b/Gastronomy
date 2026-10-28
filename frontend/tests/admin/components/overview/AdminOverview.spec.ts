@@ -53,7 +53,7 @@ describe('the overview while no festival is running', () => {
     await flushPromises()
 
     expect(overview.get('[data-test="not-running"]').text()).toBe(
-      'Zurzeit ist kein Fest aktiv. Sehen Sie unter "Feste" nach.',
+      'Kein Fest aktiv',
     )
     expect(overview.findAll('[data-test="readiness-row"]')).toHaveLength(0)
   })
@@ -64,7 +64,7 @@ describe('the overview while no festival is running', () => {
     const overview = mountOverview('en')
     await flushPromises()
 
-    expect(overview.get('[data-test="not-running"]').text()).toBe('No festival is active right now. Look under "Festivals".')
+    expect(overview.get('[data-test="not-running"]').text()).toBe('No festival active')
   })
 
   it('asks the laptop for nothing that belongs to a festival', async () => {
@@ -110,56 +110,6 @@ describe('the overview of the festival that is running', () => {
 
     expect(overview.findAll('[data-test="readiness-row"]').map((row) => row.text())).toContain(
       'Fügen Sie diesem Fest eine Ausgabestelle hinzu, zum Beispiel Küche und Theke.',
-    )
-  })
-
-  it('asks for the tablet of a station that has none yet', async () => {
-    overviewLaptop([SUMMER], {
-      stations: [
-        {
-          stationId: 'station-kueche',
-          name: 'Küche',
-          sortOrder: 1,
-          isActive: true,
-          hasDevice: false,
-          isAtFestival: true,
-          hasItemsToHandOutAtTheRunningFestival: false,
-          strandedItemCountWhenSwitchedOff: null,
-          strandedItemCountWhenRemovedFromTheFestival: null,
-        },
-      ],
-    })
-
-    const overview = mountOverview()
-    await flushPromises()
-
-    expect(overview.findAll('[data-test="readiness-row"]').map((row) => row.text())).toContain(
-      'Richten Sie das Tablet für Küche ein. Ohne Tablet sieht diese Ausgabestelle ihre Bestellungen nicht.',
-    )
-  })
-
-  it('says nothing about a station whose tablet is already set up', async () => {
-    overviewLaptop([SUMMER], {
-      stations: [
-        {
-          stationId: 'station-kueche',
-          name: 'Küche',
-          sortOrder: 1,
-          isActive: true,
-          hasDevice: true,
-          isAtFestival: true,
-          hasItemsToHandOutAtTheRunningFestival: false,
-          strandedItemCountWhenSwitchedOff: null,
-          strandedItemCountWhenRemovedFromTheFestival: null,
-        },
-      ],
-    })
-
-    const overview = mountOverview()
-    await flushPromises()
-
-    expect(overview.findAll('[data-test="readiness-row"]').map((row) => row.text())).not.toContain(
-      'Richten Sie das Tablet für Küche ein. Ohne Tablet sieht diese Ausgabestelle ihre Bestellungen nicht.',
     )
   })
 

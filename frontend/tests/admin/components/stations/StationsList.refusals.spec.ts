@@ -87,7 +87,7 @@ describe('two refusals one after the other', () => {
 
     await vi.waitFor(() =>
       expect(list.get('[data-test="refusal"]').text()).toBe(
-        'Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden.',
+        'Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht deaktiviert werden.',
       ),
     )
   })

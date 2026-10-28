@@ -11,7 +11,7 @@ const wording: Translate = (key, values = {}) => {
     return `~${values.count} Min.`
   }
   if (key === 'common.estimates.inMinuteRange') {
-    return `~${values.min} - ${values.max} Min.`
+    return `~${values.min} bis ${values.max} Min.`
   }
   return `${values.line} (${values.estimate})`
 }
@@ -44,15 +44,15 @@ describe('the waiting time behind a station', () => {
   })
 
   it('names the span between the quickest and the slowest station', () => {
-    expect(estimateRangeText({ min: 10, max: 62 }, wording, 'de')).toBe('~10 - 62 Min.')
+    expect(estimateRangeText({ min: 10, max: 62 }, wording, 'de')).toBe('~10 bis 62 Min.')
   })
 
   it('rounds both ends of the span up to whole minutes', () => {
-    expect(estimateRangeText({ min: 1.5, max: 2.5 }, wording, 'de')).toBe('~2 - 3 Min.')
+    expect(estimateRangeText({ min: 1.5, max: 2.5 }, wording, 'de')).toBe('~2 bis 3 Min.')
   })
 
   it('rounds both ends of the span up to whole minutes in English too', () => {
-    expect(estimateRangeText({ min: 1.5, max: 2.5 }, wording, 'en')).toBe('~2 - 3 Min.')
+    expect(estimateRangeText({ min: 1.5, max: 2.5 }, wording, 'en')).toBe('~2 bis 3 Min.')
   })
 
   it('names one number when both ends round up to the same minute', () => {

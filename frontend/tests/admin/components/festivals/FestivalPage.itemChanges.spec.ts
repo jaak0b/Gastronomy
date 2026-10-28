@@ -78,7 +78,7 @@ describe('the items of this festival', () => {
 
     await wrapper.trigger('mouseenter')
     await vi.waitFor(() =>
-      expect(refusalReasonsOnScreen()).toContain('Ein Artikel kann von einem aktiven Fest nicht entfernt werden.'),
+      expect(refusalReasonsOnScreen()).toContain('Aus einem aktiven Fest kann kein Artikel entfernt werden.'),
     )
   })
 

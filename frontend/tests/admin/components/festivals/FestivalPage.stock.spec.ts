@@ -196,7 +196,7 @@ describe('the ingredient stock of the festival', () => {
 
     await vi.waitFor(() =>
       expect(ingredientRow(page, 'ingredient-mehl').get('[data-test="refusal"]').text()).toBe(
-        'Geben Sie null oder mehr an, oder lassen Sie das Feld leer.',
+        'Geben Sie null oder mehr ein oder lassen Sie das Feld leer.',
       ),
     )
     expect((page.get('[data-test="amount-input"] input').element as HTMLInputElement).value).toBe('0')
@@ -210,7 +210,7 @@ describe('the ingredient stock of the festival', () => {
 
     await vi.waitFor(() =>
       expect(ingredientRow(page, 'ingredient-mehl').get('[data-test="refusal"]').text()).toBe(
-        'Geben Sie null oder mehr an, oder lassen Sie das Feld leer.',
+        'Geben Sie null oder mehr ein oder lassen Sie das Feld leer.',
       ),
     )
   })

@@ -23,7 +23,7 @@ describe('a station tablet that has lost contact with the laptop', () => {
     const page = await mountPage()
 
     expect(page.get('[data-test="load-failed"]').text()).toBe(
-      'Laden Sie die Seite neu. Der Rechner war nicht erreichbar. Diese Liste kann veraltet sein.',
+      'Der Rechner ist nicht erreichbar, die Liste ist möglicherweise veraltet. Laden Sie die Seite neu.',
     )
   })
 })
@@ -46,7 +46,7 @@ describe('a station tablet the laptop turned away', () => {
 
     const page = await mountPage()
 
-    expect(page.get('[data-test="load-failed"]').text()).toBe('Es ist kein Fest aktiv.')
+    expect(page.get('[data-test="load-failed"]').text()).toBe('Zurzeit ist kein Fest aktiv.')
   })
 
   it('says the station does not belong to this festival', async () => {
@@ -57,7 +57,7 @@ describe('a station tablet the laptop turned away', () => {
     const page = await mountPage()
 
     expect(page.get('[data-test="load-failed"]').text()).toBe(
-      'Diese Ausgabestelle gehört nicht zum laufenden Fest.',
+      'Diese Ausgabestelle gehört nicht zum aktiven Fest.',
     )
   })
 })

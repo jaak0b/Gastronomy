@@ -92,13 +92,13 @@ describe('the copy button beside the address', () => {
     expect(panel.find('[data-test="copy-unavailable"]').exists()).toBe(false)
   })
 
-  it('says to type the address instead when the browser offers no clipboard', async () => {
+  it('says the action failed when the browser offers no clipboard', async () => {
     const panel = mountPanel()
 
     await panel.get('[data-test="copy-url"]').trigger('click')
 
     expect(panel.get('[data-test="copy-unavailable"]').text()).toBe(
-      'Tippen Sie die Adresse oben von Hand ab. Das Kopieren ist auf dieser Seite nicht möglich.',
+      'Die Aktion ist fehlgeschlagen.',
     )
   })
 
@@ -111,7 +111,7 @@ describe('the copy button beside the address', () => {
     await panel.get('[data-test="copy-url"]').trigger('click')
 
     expect(panel.get('[data-test="copy-unavailable"]').text()).toBe(
-      'Type the address above by hand. Copying is not available on this page.',
+      'The action failed.',
     )
   })
 })
@@ -159,7 +159,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
     })
 
     expect(panel.get('[data-test="qr-gone"]').text()).toBe(
-      'Erstellen Sie einen neuen QR-Code. Dieser wurde schon von einem Gerät benutzt.',
+      'Der QR-Code wurde bereits von einem Gerät verwendet. Klicken Sie auf „Neuen QR-Code erstellen“.',
     )
   })
 
@@ -176,7 +176,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
     })
 
     expect(panel.get('[data-test="qr-gone"]').text()).toBe(
-      'Create a new QR code. This one has already been used by a device.',
+      'This QR code has already been used by a device. Click "Create a new QR code".',
     )
   })
 
@@ -187,7 +187,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
     })
 
     expect(panel.get('[data-test="qr-gone"]').text()).toBe(
-      'Erstellen Sie einen neuen QR-Code. Dieser wurde fünf Minuten lang nicht gescannt.',
+      'Der QR-Code wurde fünf Minuten lang nicht gescannt und ist abgelaufen. Klicken Sie auf „Neuen QR-Code erstellen“.',
     )
   })
 

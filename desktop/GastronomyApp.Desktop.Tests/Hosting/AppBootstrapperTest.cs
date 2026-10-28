@@ -148,7 +148,7 @@ public sealed class AppBootstrapperTest
 
     bootstrapper.Start();
 
-    Assert.That(bootstrapper.MainWindowViewModel!.ErrorMessage, Is.EqualTo("Look on the task bar for a window of this program. If there is none, restart the computer and open the program again."));
+    Assert.That(bootstrapper.MainWindowViewModel!.ErrorMessage, Is.EqualTo("The program could not check whether it is already running. Look on the taskbar for an open window, and if there is none, restart the computer."));
   }
 
   [Test]

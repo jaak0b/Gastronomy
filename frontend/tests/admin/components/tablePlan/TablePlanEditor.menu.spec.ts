@@ -27,7 +27,7 @@ import {
 enableAutoUnmount(afterEach)
 
 const STILL_OPEN =
-  'Ein Tisch kann bei einem aktiven Fest erst ausgeblendet werden, wenn dort alles zubereitet und kassiert ist.'
+  'Solange ein Fest aktiv ist, kann ein Tisch erst ausgeblendet werden, wenn alle seine Positionen zubereitet und kassiert sind.'
 
 const MENU_ENTRIES = '[data-test="table-plan-menu"] .v-list-item'
 

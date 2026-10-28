@@ -20,10 +20,10 @@ import { AREAS_PATH, HALL, OLD_TABLES, TENT, areaRow } from './festivalTablePlan
 
 enableAutoUnmount(afterEach)
 
-const ACTION_FAILED = 'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.'
+const ACTION_FAILED = 'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.'
 
 const AREA_NAME_TAKEN =
-  'Ein Tischplan dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.'
+  'Der Name ist in diesem Fest bereits an einen Tischplan vergeben, auch an einen ausgeblendeten. Wählen Sie einen anderen Namen.'
 
 async function openThePageWith(laptop: StubbedLaptop): Promise<StubbedLaptop> {
   mountPage()
@@ -240,7 +240,7 @@ describe('hiding and showing an area', () => {
 
     await waitUntil(() =>
       expect(refusalOnTheRowOf('area-zelt')).toBe(
-        'Ein Tischplan kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und kassiert ist.',
+        'Solange ein Fest aktiv ist, kann ein Tischplan erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und kassiert ist.',
       ),
     )
   })

@@ -200,7 +200,7 @@ describe('taking an order at a table while another table\'s order is not sent ye
     await askedAboutTheOrderForTable3()
 
     expect(textOnScreen('[data-test="unsent-order-text"]').trim()).toBe(
-      'Tisch 3 hat 1 Artikel für 2,00 €, der noch nicht gesendet ist.',
+      'Die Bestellung für Tisch 3 mit 1 Artikel über 2,00 € wurde noch nicht gesendet.',
     )
   })
 
@@ -217,14 +217,14 @@ describe('taking an order at a table while another table\'s order is not sent ye
     await clickOn('[data-test="take-order"]')
 
     expect(textOnScreen('[data-test="unsent-order-text"]').trim()).toBe(
-      'Tisch 3 hat 2 Artikel für 4,00 €, die noch nicht gesendet sind.',
+      'Die Bestellung für Tisch 3 mit 2 Artikeln über 4,00 € wurde noch nicht gesendet.',
     )
   })
 
   it('says the same in English on an English phone', async () => {
     await askedAboutTheOrderForTable3('en')
 
-    expect(textOnScreen('[data-test="unsent-order-text"]').trim()).toBe('Table 3 has 1 unsent item for €2.00.')
+    expect(textOnScreen('[data-test="unsent-order-text"]').trim()).toBe('The order for table 3 with 1 item for €2.00 has not been sent yet.')
   })
 
   it('offers to go to that table, to discard its items and to go back', async () => {
@@ -255,7 +255,7 @@ describe('taking an order at a table while another table\'s order is not sent ye
     await clickOn('[data-test="take-order"]')
 
     expect(textOnScreen('[data-test="unsent-order-text"]').trim()).toBe(
-      'Tisch 14 hat 1 Artikel für 2,00 €, der noch nicht gesendet ist.',
+      'Die Bestellung für Tisch 14 mit 1 Artikel über 2,00 € wurde noch nicht gesendet.',
     )
   })
 

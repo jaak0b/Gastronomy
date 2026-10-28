@@ -44,7 +44,7 @@ describe('an order the laptop refused with a reason', () => {
     const review = await reviewAfterARefusal(prepareOrder())
 
     expect(review.get('[data-test="send-failure"] [data-test="failure-message"]').text()).toBe(
-      'Ein Artikel steht nicht mehr auf der Karte. Nehmen Sie ihn von der Bestellung.',
+      'Der Artikel ist nicht mehr auf der Karte. Entfernen Sie ihn aus der Bestellung.',
     )
   })
 
@@ -112,7 +112,7 @@ describe('an order the laptop answered but could not save', () => {
     const review = await reviewAfterTheAnswer()
 
     expect(review.get('[data-test="send-failure"] [data-test="failure-message"]').text()).toBe(
-      'Der Rechner konnte die Bestellung nicht speichern. Senden Sie sie noch einmal.',
+      'Der Rechner konnte die Bestellung nicht speichern. Tippen Sie auf „Erneut senden“.',
     )
   })
 

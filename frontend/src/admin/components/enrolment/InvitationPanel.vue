@@ -80,7 +80,7 @@ async function copyUrl(): Promise<void> {
           />
         </div>
         <p v-if="copyingIsUnavailable" class="copy-unavailable text-medium-emphasis mt-2" data-test="copy-unavailable">
-          {{ t('admin.enrolment.messages.copyUnavailable') }}
+          {{ t('common.errors.actionFailed') }}
         </p>
       </template>
       <v-alert v-else class="qr-gone" data-test="qr-gone" type="warning" variant="tonal">

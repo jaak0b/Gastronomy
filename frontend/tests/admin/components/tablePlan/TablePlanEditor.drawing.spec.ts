@@ -247,7 +247,7 @@ describe('dragging a shape', () => {
 
     expect([table.x(), table.y()]).toEqual([20, 30])
     expect(textOnScreen('[data-test="plan-refusal"]').trim()).toBe(
-      'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.',
+      'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
     )
   })
 })

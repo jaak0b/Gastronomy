@@ -74,7 +74,7 @@ describe('the units tab', () => {
     await vi.waitFor(() => expect(list.find('[data-test="none-yet"]').exists()).toBe(true))
 
     expect(list.get('[data-test="none-yet"]').text()).toBe(
-      'Es gibt noch keine Einheiten. Klicken Sie auf "Neue Einheit".',
+      'Keine Einheiten vorhanden',
     )
     expect(list.get('[data-test="new-unit"]').text()).toBe('Neue Einheit')
   })
@@ -86,7 +86,7 @@ describe('the units tab', () => {
     await vi.waitFor(() => expect(list.find('[data-test="none-yet"]').exists()).toBe(true))
 
     expect(list.get('[data-test="none-yet"]').text()).toBe(
-      'There are no units yet. Click "New unit".',
+      'No units',
     )
   })
 

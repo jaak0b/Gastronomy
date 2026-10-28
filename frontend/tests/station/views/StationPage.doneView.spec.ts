@@ -142,6 +142,6 @@ describe('the done view', () => {
     await page.get('[data-test="show-done"]').trigger('click')
     await flushPromises()
 
-    expect(page.get('[data-test="nothing-done"]').text()).toBe('Es ist noch keine Bestellung zubereitet.')
+    expect(page.get('[data-test="nothing-done"]').text()).toBe('Noch keine Bestellung zubereitet')
   })
 })

@@ -44,7 +44,7 @@ describe('the notices above the screen', () => {
     order.acceptedOrderNumber = 1
     await nextTick()
 
-    expect(notices.get('[data-test="sent"]').text()).toBe('Bestellung 1 ist angekommen.')
+    expect(notices.get('[data-test="sent"]').text()).toBe('Die Bestellung 1 ist angekommen.')
   })
 })
 
@@ -63,7 +63,7 @@ describe('the notice that an order in progress was lost', () => {
     await nextTick()
 
     expect(notices.get('[data-test="draft-lost"]').text()).toBe(
-      'Die angefangene Bestellung konnte nicht gelesen werden. Geben Sie sie noch einmal ein.',
+      'Die begonnene Bestellung konnte nicht wiederhergestellt werden. Geben Sie die Bestellung erneut ein.',
     )
   })
 
@@ -74,7 +74,7 @@ describe('the notice that an order in progress was lost', () => {
     await nextTick()
 
     expect(notices.get('[data-test="draft-lost"]').text()).toBe(
-      'The order you had started could not be read. Enter it again.',
+      'The order you had started could not be restored. Enter the order again.',
     )
   })
 

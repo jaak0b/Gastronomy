@@ -28,9 +28,6 @@ const tableCountTexts = computed(
     ),
 )
 const hasNoArea = computed(() => hasLoadedThePlan.value && tablePlan.areas.length === 0)
-const hasOnlyHiddenAreas = computed(
-  () => hasLoadedThePlan.value && tablePlan.areas.length > 0 && shownAreas.value.length === 0,
-)
 const hasNoShownTable = computed(
   () =>
     hasLoadedThePlan.value
@@ -84,22 +81,12 @@ function hidingRefusalOf(area: AdminAreaView): string | null {
           <template #heading>
             <h2 class="section-heading text-h6" data-test="section-heading">{{ t('admin.tablePlan.title') }}</h2>
           </template>
-          <template #notices="{ showsHidden }">
+          <template #notices>
             <BaseWarningText
               v-if="hasNoArea"
               class="no-area mb-3"
               data-test="no-area"
               :text="t('admin.tablePlan.messages.noArea')"
-            />
-            <BaseWarningText
-              v-else-if="hasOnlyHiddenAreas"
-              class="all-areas-hidden mb-3"
-              data-test="all-areas-hidden"
-              :text="
-                showsHidden
-                  ? t('admin.tablePlan.messages.allAreasHidden')
-                  : t('admin.tablePlan.messages.allAreasHiddenAndNotListed')
-              "
             />
             <BaseWarningText
               v-else-if="hasNoShownTable"

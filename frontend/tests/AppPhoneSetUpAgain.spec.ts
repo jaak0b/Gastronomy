@@ -211,7 +211,7 @@ describe('a waiter whose order was already frozen when the phone was set up agai
     await flushPromises()
 
     expect(phone?.find('[data-test="send-failure"] [data-test="failure-message"]').text()).toBe(
-      'Es ist nicht klar, ob die Bestellung angekommen ist. Tippen Sie auf "Erneut senden".',
+      'Die Bestellung ist möglicherweise nicht angekommen. Tippen Sie auf „Erneut senden“.',
     )
   })
 

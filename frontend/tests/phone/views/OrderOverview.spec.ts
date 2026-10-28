@@ -246,7 +246,7 @@ describe('the orders of a table, shown to read', () => {
 
     const screen = await mountTheOrders()
 
-    expect(screen.get('[data-test="no-orders"]').text()).toBe('An diesem Tisch passt keine Bestellung zu dieser Auswahl.')
+    expect(screen.get('[data-test="no-orders"]').text()).toBe('Keine passenden Bestellungen an diesem Tisch')
   })
 
   it('sends the waiter to the table plan when no table was chosen, as after a reload', async () => {

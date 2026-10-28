@@ -45,7 +45,7 @@ describe('the controls beside a category name', () => {
     await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Bearbeiten'))
   })
 
-  it('name the crossed-out eye "Kategorie abschalten" when the admin points at it', async () => {
+  it('name the crossed-out eye "Kategorie deaktivieren" when the admin points at it', async () => {
     itemsListLaptop()
     const list = mountList()
     await vi.waitFor(() => expect(list.find('[data-test="deactivate-category"]').exists()).toBe(true))
@@ -53,7 +53,7 @@ describe('the controls beside a category name', () => {
     await list.get('[data-test="deactivate-category"]').trigger('mouseenter')
 
     expect(list.get('[data-test="deactivate-category"] .v-icon').classes()).toContain('mdi-eye-off')
-    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Kategorie abschalten'))
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Kategorie deaktivieren'))
   })
 
   it('move the category up at its own address', async () => {
@@ -131,7 +131,7 @@ describe('the controls beside a category name', () => {
     )
   })
 
-  it('say why the laptop kept the category switched on', async () => {
+  it('say why the laptop kept the category active', async () => {
     itemsListLaptop({
       refusal: {
         status: 409,
@@ -151,7 +151,7 @@ describe('the controls beside a category name', () => {
 
     await vi.waitFor(() =>
       expect(list.get('[data-test="category-refusal"]').text()).toContain(
-        'Diese Kategorie hat noch eingeschaltete Artikel.',
+        'Die Kategorie hat noch aktive Artikel.',
       ),
     )
   })
@@ -181,7 +181,7 @@ describe('a category that is switched off', () => {
     expect(list.get('[data-test="category-section"] [data-test="category-deactivated"]').text()).toBe('Deaktiviert')
   })
 
-  it('offers to switch it on again through the open eye, named "Kategorie einschalten"', async () => {
+  it('offers to switch it on again through the open eye, named "Kategorie aktivieren"', async () => {
     itemsListLaptop({
       categories: { categories: [{ ...TWO_CATEGORIES.categories[0], isActive: false }] },
       items: { items: [] },
@@ -192,7 +192,7 @@ describe('a category that is switched off', () => {
     await list.get('[data-test="activate-category"]').trigger('mouseenter')
 
     expect(list.get('[data-test="activate-category"] .v-icon').classes()).toContain('mdi-eye')
-    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Kategorie einschalten'))
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Kategorie aktivieren'))
   })
 
   it('offers to switch it on again without asking a question first', async () => {
@@ -283,7 +283,7 @@ describe('adding a category from the item list', () => {
 
     await vi.waitFor(() =>
       expect(list.findComponent(CategoryDialog).props('errorText')).toBe(
-        'Es gibt schon eine Kategorie mit diesem Namen. Wählen Sie einen anderen.',
+        'Eine Kategorie mit diesem Namen ist bereits vorhanden. Wählen Sie einen anderen Namen.',
       ),
     )
   })

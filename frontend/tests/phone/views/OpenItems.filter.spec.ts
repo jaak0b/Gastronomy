@@ -139,7 +139,7 @@ describe('the filter on the settle screen', () => {
   })
 })
 
-const NO_ORDER_MATCHES = 'An diesem Tisch passt keine Bestellung zu dieser Auswahl.'
+const NO_ORDER_MATCHES = 'Keine passenden Bestellungen an diesem Tisch'
 
 describe('the empty answer under a filter the waiter picked', () => {
   it('says that no order matches on the settle screen, not that nothing is left to settle', async () => {
@@ -206,7 +206,7 @@ describe('the filter on the cancel screen', () => {
 
     const screen = await mountScreenToCancelItems()
 
-    expect(screen.get('[data-test="no-orders"]').text()).toBe('An diesem Tisch gibt es nichts mehr zu stornieren.')
+    expect(screen.get('[data-test="no-orders"]').text()).toBe('An diesem Tisch ist nichts mehr zu stornieren.')
   })
 
   it('lets the waiter tick a paid item', async () => {

@@ -10,8 +10,7 @@ tooltip beside them (frontend rule 8).
 - `HideableEntryList.vue` draws a whole list of named entries the way the festival page's station
   card draws its rows. Its heading line takes the list's heading through the `heading` slot and puts
   "Ausgeblendete anzeigen" at its right; the `notices` slot sits between that line and the rows, for
-  warnings about the whole list, and receives `showsHidden`, so a warning tells the admin to tick
-  the box only while it is unticked. A row has the name as text, the "Ausgeblendet" chip, a
+  warnings about the whole list, and receives no values. A row has the name as text, the "Ausgeblendet" chip, a
   `details` slot for what is particular to the entry (the area's table count and "Tischplan
   öffnen"), the up and down arrows when `moveThrough` is given, the pencil, the trash icon that
   hides or the open eye "Einblenden" on a hidden row, and a refusal under the row, flush with it.
@@ -52,7 +51,7 @@ tooltip beside them (frontend rule 8).
   removal icon of `RemovableStationRows.vue`.
 - `shared/components/BaseIconAction.vue` is an icon button whose name shows as a tooltip
   (`data-test="icon-action-label"`): the crossed-out eye "Ausblenden" of the festival list, the
-  categories' crossed-out eye "Kategorie abschalten" on the Artikel tab, and on the phone the
+  categories' crossed-out eye "Kategorie deaktivieren" on the Artikel tab, and on the phone the
   details button at the end of every row of the shared order list. Its `location` prop (`top` by
   default, `bottom` for a control at the top of the screen) says where the tooltip opens; the
   waiter's bar (`AppHeader.vue`) uses it for the reload and the settings gear.
@@ -64,8 +63,8 @@ tooltip beside them (frontend rule 8).
   `BaseShowButton.vue` is the open eye on it, with the word of its action as `label`: "Einblenden"
   on every hidden row (the festival list and `HideableEntryList.vue`) and in the hidden tables
   dropdown of the table plan editor, and "Artikel aktivieren",
-  "Kategorie einschalten", "Zutat aktivieren", "Einheit aktivieren", "Ausgabestelle einschalten" and
-  "Kellner wieder aufnehmen" for a deactivated entry of the global tabs.
+  "Kategorie aktivieren", "Zutat aktivieren", "Einheit aktivieren", "Ausgabestelle aktivieren" and
+  "Kellner aktivieren" for a deactivated entry of the global tabs.
 - `BaseMoveButtons.vue` is the pair of arrows that emits `move` with `up` or `down`
   (`data-test="move-up"`, `"move-down"`). Consumers: the category headings of the Artikel tab and the
   area rows. Each store sends one move after the other through `admin/core/oneAtATime.ts`. A move

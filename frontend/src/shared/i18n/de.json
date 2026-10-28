@@ -16,7 +16,7 @@
       "together": "Gemeinsam"
     },
     "estimates": {
-      "inMinuteRange": "~{min} - {max} Min.",
+      "inMinuteRange": "~{min} bis {max} Min.",
       "inMinutes": "~{count} Min.",
       "withEstimate": "{line} ({estimate})"
     },
@@ -31,6 +31,9 @@
     "language": {
       "english": "English",
       "german": "Deutsch"
+    },
+    "errors": {
+      "actionFailed": "Die Aktion ist fehlgeschlagen."
     }
   },
   "shared": {
@@ -43,10 +46,10 @@
         "carryOn": "Mit diesem Telefon weiterarbeiten"
       },
       "errors": {
-        "codeRetired": "Lassen Sie sich am Rechner einen neuen QR-Code geben. Dieser Code wurde zu oft falsch eingegeben und wird nicht mehr angenommen.",
-        "codeUsed": "Lassen Sie sich am Rechner einen neuen QR-Code geben. Dieser Code gilt nicht mehr.",
-        "codeWrong": "Lesen Sie die sechs Ziffern noch einmal vom Rechner ab. Dieser Code stimmt nicht.",
-        "noConnection": "Prüfen Sie, ob Sie im WLAN des Festes sind. Dieses Telefon erreicht den Rechner nicht."
+        "codeRetired": "Der Code wurde zu oft falsch eingegeben und wird nicht mehr angenommen. Lassen Sie sich am Rechner einen neuen QR-Code anzeigen.",
+        "codeUsed": "Der Code gilt nicht mehr. Lassen Sie sich am Rechner einen neuen QR-Code anzeigen.",
+        "codeWrong": "Der Code stimmt nicht. Lesen Sie die sechs Ziffern am Rechner noch einmal ab.",
+        "noConnection": "Das Telefon erreicht den Rechner nicht. Prüfen Sie, ob Sie mit dem WLAN des Festes verbunden sind."
       }
     },
     "startup": {
@@ -56,11 +59,11 @@
       },
       "messages": {
         "deviceNotSetUp": "Dieses Gerät ist noch nicht eingerichtet.",
-        "tapOpen": "Tippen Sie auf Öffnen, um fortzufahren."
+        "tapOpen": "Tippen Sie auf „Öffnen“, um fortzufahren."
       },
       "errors": {
-        "couldNotStart": "Der Rechner hat nicht richtig geantwortet. Versuchen Sie es noch einmal.",
-        "laptopNotReached": "Der Rechner antwortet nicht. Versuchen Sie es noch einmal."
+        "couldNotStart": "Der Rechner hat nicht richtig geantwortet. Tippen Sie auf „Noch einmal versuchen“.",
+        "laptopNotReached": "Der Rechner antwortet nicht. Tippen Sie auf „Noch einmal versuchen“."
       }
     }
   },
@@ -92,11 +95,11 @@
         "settings": "Einstellungen"
       },
       "messages": {
-        "backOnline": "Die Verbindung ist wieder da.",
+        "backOnline": "Verbindung zum Rechner wiederhergestellt",
         "reconnecting": "Keine Verbindung zum Rechner."
       },
       "errors": {
-        "draftLost": "Die angefangene Bestellung konnte nicht gelesen werden. Geben Sie sie noch einmal ein."
+        "draftLost": "Die begonnene Bestellung konnte nicht wiederhergestellt werden. Geben Sie die Bestellung erneut ein."
       }
     },
     "openItems": {
@@ -105,8 +108,8 @@
       "labels": {
         "amountPaidField": "Bezahlter Betrag",
         "amountPaidReason": "Grund",
-        "amountPaidTitle": "Wie viel hat der Tisch bezahlt?",
-        "cancelTitle": "Wollen Sie diese Positionen stornieren?",
+        "amountPaidTitle": "Geben Sie den bezahlten Betrag ein",
+        "cancelTitle": "Positionen stornieren?",
         "order": "Bestellung {order}",
         "paid": "Bezahlt",
         "reasonPlaceholder": "Zum Beispiel: Essen für die Kapelle",
@@ -125,15 +128,15 @@
         "wholeTable": "Ganzen Tisch auswählen"
       },
       "messages": {
-        "cashToReturn": "Der Gast bekommt {amount} bar zurück.",
-        "someWereAlreadySettled": "Jemand anderes hatte {count} Position aus Ihrer Auswahl schon kassiert. Geben Sie dem Gast {amount} zurück. | Jemand anderes hatte {count} Positionen aus Ihrer Auswahl schon kassiert. Geben Sie dem Gast {amount} zurück.",
-        "nothingToCancel": "An diesem Tisch gibt es nichts mehr zu stornieren.",
+        "cashToReturn": "Geben Sie dem Gast {amount} in bar zurück.",
+        "someWereAlreadySettled": "Eine andere Person hat {count} Position aus Ihrer Auswahl bereits kassiert. Geben Sie dem Gast {amount} zurück. | Eine andere Person hat {count} Positionen aus Ihrer Auswahl bereits kassiert. Geben Sie dem Gast {amount} zurück.",
+        "nothingToCancel": "An diesem Tisch ist nichts mehr zu stornieren.",
         "nothingToSettle": "An diesem Tisch ist nichts mehr zu kassieren."
       },
       "errors": {
-        "cancelAnswerNeverCame": "Es ist nicht klar, ob die Stornierung angekommen ist. Laden Sie die Seite neu. Schauen Sie nach, ob die Positionen storniert sind.",
-        "loadFailed": "Der Rechner war nicht erreichbar. Laden Sie die Seite neu.",
-        "settleAnswerNeverCame": "Es ist nicht klar, ob die Zahlung gespeichert wurde. Laden Sie die Seite neu. Schauen Sie nach, ob die Positionen noch offen sind.",
+        "cancelAnswerNeverCame": "Die Stornierung wurde möglicherweise nicht gespeichert. Laden Sie die Seite neu und prüfen Sie die Positionen.",
+        "loadFailed": "Der Rechner ist nicht erreichbar. Laden Sie die Seite neu.",
+        "settleAnswerNeverCame": "Die Zahlung wurde möglicherweise nicht gespeichert. Laden Sie die Seite neu und prüfen Sie die Positionen.",
         "settleFailed": "Die Zahlung wurde nicht gespeichert. Versuchen Sie es noch einmal.",
         "tableCouldNotBeLoaded": "Dieser Tisch konnte nicht geladen werden. Öffnen Sie ihn noch einmal über den Tischplan."
       }
@@ -153,7 +156,7 @@
         "partiallyHandedOut": "Teilweise ausgegeben"
       },
       "messages": {
-        "noOrderMatches": "An diesem Tisch passt keine Bestellung zu dieser Auswahl."
+        "noOrderMatches": "Keine passenden Bestellungen an diesem Tisch"
       }
     },
     "itemHistory": {
@@ -190,13 +193,13 @@
         "writtenDown": "Bestellung ist aufgeschrieben"
       },
       "messages": {
-        "sendStillUnknown": "Die Bestellung konnte noch nicht bestätigt werden. Sie ist vielleicht trotzdem angekommen.",
-        "sent": "Bestellung {number} ist angekommen.",
-        "writeItDown": "Schreiben Sie die Bestellung auf einen Zettel und schauen Sie an der Ausgabestelle auf das Tablet."
+        "sendStillUnknown": "Die aufgegebene Bestellung konnte nicht bestätigt werden. Möglicherweise ist sie trotzdem angekommen.",
+        "sent": "Die Bestellung {number} ist angekommen.",
+        "writeItDown": "Notieren Sie die Bestellung auf einem Zettel und prüfen Sie an der Ausgabestelle auf dem Tablet, ob sie dort angekommen ist."
       },
       "errors": {
-        "sendFailed": "Die Bestellung konnte nicht gesendet werden. Tippen Sie auf \"Erneut senden\".",
-        "sendInterrupted": "Es ist nicht klar, ob die Bestellung angekommen ist. Tippen Sie auf \"Erneut senden\"."
+        "sendFailed": "Die Bestellung wurde nicht gesendet. Tippen Sie auf „Erneut senden“.",
+        "sendInterrupted": "Die Bestellung ist möglicherweise nicht angekommen. Tippen Sie auf „Erneut senden“."
       }
     },
     "tablePlan": {
@@ -210,10 +213,10 @@
         "showOrders": "Bestellungen anzeigen"
       },
       "messages": {
-        "noFestivalIsActive": "Es ist kein Fest aktiv.",
-        "noTables": "Es sind noch keine Tische angelegt.",
-        "noTablesInArea": "In diesem Tischplan ist noch kein Tisch angelegt.",
-        "unsentOrder": "Tisch {table} hat {count} Artikel für {total}, der noch nicht gesendet ist. | Tisch {table} hat {count} Artikel für {total}, die noch nicht gesendet sind."
+        "noFestivalIsActive": "Zurzeit ist kein Fest aktiv.",
+        "noTables": "Keine Tische angelegt",
+        "noTablesInArea": "Keine Tische in diesem Tischplan",
+        "unsentOrder": "Die Bestellung für Tisch {table} mit {count} Artikel über {total} wurde noch nicht gesendet. | Die Bestellung für Tisch {table} mit {count} Artikeln über {total} wurde noch nicht gesendet."
       },
       "errors": {
         "loadFailed": "Der Tischplan konnte nicht geladen werden. Laden Sie die Seite neu."
@@ -255,9 +258,9 @@
         "showDone": "Zubereitete anzeigen"
       },
       "errors": {
-        "actionFailed": "Versuchen Sie es noch einmal. Die Änderung wurde nicht gespeichert.",
-        "actionNotReached": "Tippen Sie noch einmal. Der Rechner war nicht erreichbar. Es wurde nichts geändert.",
-        "loadFailed": "Laden Sie die Seite neu. Der Rechner war nicht erreichbar. Diese Liste kann veraltet sein."
+        "actionFailed": "Die Änderung wurde nicht gespeichert. Versuchen Sie es noch einmal.",
+        "actionNotReached": "Der Rechner ist nicht erreichbar, es wurde nichts geändert. Versuchen Sie es noch einmal.",
+        "loadFailed": "Der Rechner ist nicht erreichbar, die Liste ist möglicherweise veraltet. Laden Sie die Seite neu."
       }
     },
     "done": {
@@ -266,7 +269,7 @@
         "putBack": "Zurücklegen"
       },
       "messages": {
-        "nothingDone": "Es ist noch keine Bestellung zubereitet."
+        "nothingDone": "Noch keine Bestellung zubereitet"
       }
     }
   },
@@ -274,17 +277,17 @@
     "categories": {
       "labels": {
         "colour": "Farbe",
-        "deactivateTitle": "Kategorie abschalten?",
+        "deactivateTitle": "Kategorie deaktivieren?",
         "name": "Name der Kategorie"
       },
       "actions": {
-        "activate": "Kategorie einschalten",
-        "deactivateConfirm": "Kategorie abschalten",
+        "activate": "Kategorie aktivieren",
+        "deactivateConfirm": "Kategorie deaktivieren",
         "edit": "Kategorie bearbeiten",
         "new": "Neue Kategorie"
       },
       "messages": {
-        "noneYet": "Klicken Sie auf \"Neue Kategorie\". Es gibt noch keine Kategorie, die Sie auswählen können."
+        "noneYet": "Keine Kategorien vorhanden"
       }
     },
     "common": {
@@ -317,13 +320,12 @@
         "newQrCode": "Neuen QR-Code erstellen"
       },
       "messages": {
-        "copyUnavailable": "Tippen Sie die Adresse oben von Hand ab. Das Kopieren ist auf dieser Seite nicht möglich.",
         "done": "{name} hat das Telefon eingerichtet.",
         "doneStation": "Das Tablet an der Ausgabestelle {name} ist eingerichtet.",
         "forSomebodyKnown": "Scannen Sie diesen QR-Code mit der Kamera des Telefons.",
         "forSomebodyNew": "Scannen Sie diesen QR-Code mit der Kamera des Telefons. Geben Sie danach am Telefon den Namen ein.",
         "forStation": "Scannen Sie diesen QR-Code mit der Kamera des Tablets an der Ausgabestelle {name}.",
-        "validity": "Der QR-Code gilt fünf Minuten und für ein Gerät."
+        "validity": "Der QR-Code ist fünf Minuten lang für ein Gerät gültig."
       },
       "errors": {
         "qrUnreachable": "Der QR-Code konnte nicht geladen werden. Laden Sie die Seite neu."
@@ -362,9 +364,9 @@
       },
       "messages": {
         "needsAStationFirst": "Dieses Fest hat noch keine Ausgabestelle. Fügen Sie zuerst eine hinzu.",
-        "noneYet": "Es ist noch kein Fest angelegt. Klicken Sie auf \"Neues Fest\".",
-        "removeItemBody": "Der Artikel wird nur von diesem Fest entfernt.",
-        "removeStationBody": "Die Ausgabestelle wird nur von diesem Fest entfernt."
+        "noneYet": "Keine Feste vorhanden",
+        "removeItemBody": "Der Artikel wird nur aus diesem Fest entfernt.",
+        "removeStationBody": "Die Ausgabestelle wird nur aus diesem Fest entfernt."
       },
       "errors": {
         "namedItemNeedsAStation": "{item} braucht mindestens eine Ausgabestelle."
@@ -391,13 +393,11 @@
         "paste": "Einfügen"
       },
       "messages": {
-        "noArea": "Die Kellner sehen noch keinen Tischplan. Klicken Sie auf \"Neuer Tischplan\".",
-        "noTable": "Die Kellner sehen noch keinen Tisch. Klicken Sie bei einem Tischplan auf \"Tischplan öffnen\".",
+        "noArea": "Die Kellner sehen noch keinen Tischplan. Klicken Sie auf „Neuer Tischplan“.",
+        "noTable": "Die Kellner sehen noch keinen Tisch. Klicken Sie bei einem Tischplan auf „Tischplan öffnen“.",
         "hideAreaBody": "Die Kellner sehen diesen Tischplan dann nicht mehr.",
         "hideTableBody": "Die Kellner sehen diesen Tisch dann nicht mehr.",
-        "removeStationBody": "Die Ausgabestelle wird nur aus diesem Tischplan entfernt.",
-        "allAreasHidden": "Alle Tischpläne sind ausgeblendet. Blenden Sie einen davon wieder ein.",
-        "allAreasHiddenAndNotListed": "Alle Tischpläne sind ausgeblendet. Kreuzen Sie \"Ausgeblendete anzeigen\" an und blenden Sie einen davon wieder ein."
+        "removeStationBody": "Die Ausgabestelle wird nur aus diesem Tischplan entfernt."
       }
     },
     "ingredients": {
@@ -427,10 +427,10 @@
         "history": "Verlauf"
       },
       "messages": {
-        "noneYet": "Es gibt noch keine Zutaten. Klicken Sie auf \"Neue Zutat\".",
-        "noIngredientsToAdd": "Es gibt keine weitere Zutat zum Hinzufügen. Klicken Sie auf \"Neue Zutat\".",
+        "noneYet": "Keine Zutaten vorhanden",
+        "noIngredientsToAdd": "Alle Zutaten sind bereits hinzugefügt. Klicken Sie auf „Neue Zutat“.",
         "removeFromRecipeBody": "Die Zutat wird nur bei {item} entfernt.",
-        "usedByActiveItems": "Diese Zutat wird noch bei {items} verwendet. Nehmen Sie sie dort zuerst heraus, unter \"Artikel\"."
+        "usedByActiveItems": "Die Zutat wird noch bei {items} verwendet. Nehmen Sie die Zutat zuerst unter „Artikel“ aus diesen Artikeln heraus."
       },
       "history": {
         "used": "Verbraucht",
@@ -455,8 +455,8 @@
         "deactivateConfirm": "Einheit deaktivieren"
       },
       "messages": {
-        "noneYet": "Es gibt noch keine Einheiten. Klicken Sie auf \"Neue Einheit\".",
-        "usedByIngredients": "Diese Einheit wird noch bei den Zutaten {ingredients} verwendet. Ändern Sie bei diesen Zutaten zuerst die Einheit, unter \"Zutaten\"."
+        "noneYet": "Keine Einheiten vorhanden",
+        "usedByIngredients": "Die Einheit wird noch bei den Zutaten {ingredients} verwendet. Ändern Sie zuerst unter „Zutaten“ die Einheit dieser Zutaten."
       }
     },
     "items": {
@@ -481,26 +481,25 @@
     "overview": {
       "title": "Übersicht",
       "messages": {
-        "itemsWithoutStation": "Ordnen Sie {count} Artikel einer Ausgabestelle zu. Ohne Ausgabestelle kann er nicht bestellt werden. | Ordnen Sie {count} Artikeln eine Ausgabestelle zu. Ohne Ausgabestelle können sie nicht bestellt werden.",
+        "itemsWithoutStation": "{count} Artikel hat keine Ausgabestelle und kann nicht bestellt werden. Ordnen Sie ihn einer Ausgabestelle zu. | {count} Artikel haben keine Ausgabestelle und können nicht bestellt werden. Ordnen Sie sie einer Ausgabestelle zu.",
         "missingCategory": "Legen Sie eine Kategorie an, zum Beispiel Speisen und Getränke.",
         "missingFestival": "Legen Sie zuerst ein Fest an.",
         "missingItems": "Fügen Sie diesem Fest Artikel hinzu und tragen Sie die Preise ein.",
         "missingStation": "Fügen Sie diesem Fest eine Ausgabestelle hinzu, zum Beispiel Küche und Theke.",
-        "noFestivalIsRunning": "Zurzeit ist kein Fest aktiv. Sehen Sie unter \"Feste\" nach.",
-        "ready": "Alles ist eingerichtet. Sie können jetzt die Telefone und die Tablets einrichten.",
-        "stationWithoutTablet": "Richten Sie das Tablet für {name} ein. Ohne Tablet sieht diese Ausgabestelle ihre Bestellungen nicht."
+        "noFestivalIsRunning": "Kein Fest aktiv",
+        "ready": "Alles ist eingerichtet. Sie können jetzt die Telefone und die Tablets einrichten."
       }
     },
     "staff": {
       "title": "Kellner",
       "labels": {
-        "deactivateTitle": "Kellner aus der Liste nehmen?",
+        "deactivateTitle": "Kellner deaktivieren?",
         "name": "Name",
         "noPhone": "Kein Telefon eingerichtet"
       },
       "actions": {
-        "activate": "Kellner wieder aufnehmen",
-        "deactivateConfirm": "Kellner herausnehmen",
+        "activate": "Kellner aktivieren",
+        "deactivateConfirm": "Kellner deaktivieren",
         "new": "Neuer Kellner",
         "newCode": "Telefon neu einrichten",
         "rename": "Namen ändern"
@@ -512,12 +511,12 @@
     "stations": {
       "title": "Ausgabestellen",
       "labels": {
-        "deactivateTitle": "Ausgabestelle abschalten?",
+        "deactivateTitle": "Ausgabestelle deaktivieren?",
         "noTablet": "Kein Tablet eingerichtet"
       },
       "actions": {
-        "activate": "Ausgabestelle einschalten",
-        "deactivateConfirm": "Ausgabestelle abschalten",
+        "activate": "Ausgabestelle aktivieren",
+        "deactivateConfirm": "Ausgabestelle deaktivieren",
         "edit": "Ausgabestelle bearbeiten",
         "new": "Neue Ausgabestelle",
         "setUpDevice": "Tablet einrichten"
@@ -529,109 +528,109 @@
   },
   "errors": {
     "admin": {
-      "actionFailed": "Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.",
+      "actionFailed": "Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.",
       "categories": {
         "colourInvalid": "Wählen Sie eine Farbe aus, bevor Sie speichern.",
-        "hasActiveItems": "Diese Kategorie hat noch eingeschaltete Artikel. Schalten Sie die Artikel ab und danach die Kategorie.",
+        "hasActiveItems": "Die Kategorie hat noch aktive Artikel. Deaktivieren Sie zuerst die Artikel und danach die Kategorie.",
         "nameMissing": "Geben Sie der Kategorie einen Namen, bevor Sie speichern.",
-        "nameTaken": "Es gibt schon eine Kategorie mit diesem Namen. Wählen Sie einen anderen."
+        "nameTaken": "Eine Kategorie mit diesem Namen ist bereits vorhanden. Wählen Sie einen anderen Namen."
       },
       "festivals": {
-        "areaNameTaken": "Ein Tischplan dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.",
-        "areaWithItemsToHandOutOrSettleStaysShown": "Ein Tischplan kann bei einem aktiven Fest erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und kassiert ist.",
+        "areaNameTaken": "Der Name ist in diesem Fest bereits an einen Tischplan vergeben, auch an einen ausgeblendeten. Wählen Sie einen anderen Namen.",
+        "areaWithItemsToHandOutOrSettleStaysShown": "Solange ein Fest aktiv ist, kann ein Tischplan erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und kassiert ist.",
         "itemNeedsAStation": "Wählen Sie mindestens eine Ausgabestelle für den Artikel.",
         "itemPriceOutOfRange": "Tragen Sie einen Preis zwischen 0,00 und 999,99 Euro ein.",
-        "itemStaysOnTheMenuWhileTheFestivalRuns": "Ein Artikel kann von einem aktiven Fest nicht entfernt werden.",
+        "itemStaysOnTheMenuWhileTheFestivalRuns": "Aus einem aktiven Fest kann kein Artikel entfernt werden.",
         "nameMissing": "Geben Sie dem Fest einen Namen.",
         "overlaps": "Das Fest {name} überschneidet sich mit diesem Zeitraum. Verschieben Sie den Beginn oder das Ende.",
         "periodInvalid": "Das Ende muss nach dem Beginn liegen. Tragen Sie beim Ende einen späteren Zeitpunkt ein.",
         "runningFestivalStaysShown": "Ein aktives Fest kann nicht ausgeblendet werden.",
-        "stationHasOrdersAtTheFestival": "Eine Ausgabestelle mit offenen Bestellungen kann von einem aktiven Fest nicht entfernt werden.",
-        "tableNameTaken": "Ein Tisch dieses Festes hat diesen Namen schon, egal ob er sichtbar oder ausgeblendet ist. Wählen Sie einen anderen Namen.",
+        "stationHasOrdersAtTheFestival": "Aus einem aktiven Fest kann keine Ausgabestelle mit offenen Bestellungen entfernt werden.",
+        "tableNameTaken": "Der Name ist in diesem Fest bereits an einen Tisch vergeben, auch an einen ausgeblendeten. Wählen Sie einen anderen Namen.",
         "tableCopyNameTooLong": "Der Name einer Kopie wäre länger als 40 Zeichen. Kürzen Sie den Namen des Tisches.",
-        "tableWithItemsToHandOutOrSettleStaysShown": "Ein Tisch kann bei einem aktiven Fest erst ausgeblendet werden, wenn dort alles zubereitet und kassiert ist."
+        "tableWithItemsToHandOutOrSettleStaysShown": "Solange ein Fest aktiv ist, kann ein Tisch erst ausgeblendet werden, wenn alle seine Positionen zubereitet und kassiert sind."
       },
       "ingredients": {
         "nameMissing": "Geben Sie einen Namen für die Zutat an.",
-        "nameTaken": "Eine Zutat mit diesem Namen gibt es schon.",
-        "nameBelongsToDeactivatedIngredient": "Die Zutat {name} gibt es schon, sie ist aber deaktiviert. Aktivieren Sie sie unter \"Zutaten\".",
+        "nameTaken": "Eine Zutat mit diesem Namen ist bereits vorhanden. Wählen Sie einen anderen Namen.",
+        "nameBelongsToDeactivatedIngredient": "Die Zutat {name} ist bereits vorhanden, aber deaktiviert. Aktivieren Sie sie unter „Zutaten“.",
         "amountInvalid": "Geben Sie eine Menge größer als null an.",
-        "stockInvalid": "Geben Sie null oder mehr an, oder lassen Sie das Feld leer."
+        "stockInvalid": "Geben Sie null oder mehr ein oder lassen Sie das Feld leer."
       },
       "items": {
-        "categoryIsOff": "Diese Kategorie ist abgeschaltet. Schalten Sie zuerst die Kategorie ein.",
+        "categoryIsOff": "Die Kategorie ist deaktiviert. Aktivieren Sie zuerst die Kategorie.",
         "categoryUnknown": "Wählen Sie eine Kategorie aus, bevor Sie speichern.",
-        "ingredientIsDeactivated": "Die Zutat {name} ist deaktiviert. Aktivieren Sie sie zuerst unter \"Zutaten\".",
-        "isOnTheRunningFestivalsMenu": "Ein Artikel auf der Karte eines aktiven Festes kann nicht abgeschaltet werden.",
+        "ingredientIsDeactivated": "Die Zutat {name} ist deaktiviert. Aktivieren Sie sie zuerst unter „Zutaten“.",
+        "isOnTheRunningFestivalsMenu": "Ein Artikel auf der Karte eines aktiven Festes kann nicht deaktiviert werden.",
         "nameMissing": "Geben Sie dem Artikel einen Namen, bevor Sie ihn speichern.",
-        "nameTaken": "Dieser Name ist schon vergeben. Wählen Sie einen anderen Namen.",
-        "productionMinutesOutOfRange": "Tragen Sie Minuten von 0 bis 600 ein."
+        "nameTaken": "Dieser Name ist bereits vergeben. Wählen Sie einen anderen Namen.",
+        "productionMinutesOutOfRange": "Geben Sie eine Zeit von 0 bis 600 Minuten ein."
       },
       "staff": {
         "nameMissing": "Geben Sie dem Kellner einen Namen, bevor Sie speichern."
       },
       "stations": {
-        "hasUnfinishedItems": "Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden.",
+        "hasUnfinishedItems": "Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht deaktiviert werden.",
         "itemsWouldHaveNoStation": "@:admin.stations.messages.itemsWouldHaveNoStation Ordnen Sie ihn zuerst einer anderen Ausgabestelle zu. | @:admin.stations.messages.itemsWouldHaveNoStation Ordnen Sie sie zuerst einer anderen Ausgabestelle zu.",
         "nameMissing": "Geben Sie der Ausgabestelle einen Namen, bevor Sie sie speichern."
       },
       "units": {
         "nameMissing": "Geben Sie einen Namen für die Einheit ein.",
-        "nameTaken": "Eine Einheit mit dem Namen {name} gibt es bereits.",
-        "nameBelongsToDeactivatedUnit": "Die Einheit {name} ist deaktiviert. Aktivieren Sie sie, oder wählen Sie einen anderen Namen."
+        "nameTaken": "Die Einheit {name} ist bereits vorhanden. Wählen Sie einen anderen Namen.",
+        "nameBelongsToDeactivatedUnit": "Die Einheit {name} ist deaktiviert. Aktivieren Sie sie oder wählen Sie einen anderen Namen."
       }
     },
     "auth": {
       "wrongDeviceKind": "Dieses Gerät ist für diesen Bildschirm nicht eingerichtet. Lassen Sie es am Rechner neu einrichten."
     },
     "cancellation": {
-      "alreadyCancelled": "{name} ist schon storniert. Laden Sie die Seite neu. Wählen Sie die Positionen noch einmal aus.",
-      "cannotBeProcessed": "Die Stornierung konnte nicht verarbeitet werden. Laden Sie die Seite neu. Versuchen Sie es noch einmal.",
-      "unknownItem": "Eine der ausgewählten Positionen gibt es am Rechner nicht mehr. Laden Sie die Seite neu. Wählen Sie die Positionen noch einmal aus."
+      "alreadyCancelled": "{name} wurde bereits storniert. Laden Sie die Seite neu und wählen Sie die Positionen noch einmal aus.",
+      "cannotBeProcessed": "Das Stornieren ist fehlgeschlagen. Laden Sie die Seite neu und versuchen Sie es noch einmal.",
+      "unknownItem": "Der Rechner kennt eine der ausgewählten Positionen nicht mehr. Laden Sie die Seite neu und wählen Sie die Positionen noch einmal aus."
     },
     "enrolment": {
       "atMostOneOwner": "Der QR-Code konnte nicht erstellt werden. Versuchen Sie es noch einmal.",
-      "codeMissing": "Scannen Sie den QR-Code am Rechner noch einmal. Diese Seite wurde ohne Code geöffnet.",
-      "codeNoLongerValid": "Dieser Code gilt nicht mehr. Lassen Sie sich am Rechner einen neuen Code zeigen.",
-      "codeUnknown": "Diesen Code kennt der Rechner nicht. Lassen Sie sich am Rechner einen neuen Code zeigen.",
-      "nameMissing": "Tragen Sie Ihren Namen ein, damit die Küche weiß, wer die Bestellung aufgenommen hat.",
-      "qrAlreadyUsed": "Erstellen Sie einen neuen QR-Code. Dieser wurde schon von einem Gerät benutzt.",
-      "qrExpired": "Erstellen Sie einen neuen QR-Code. Dieser wurde fünf Minuten lang nicht gescannt.",
-      "qrReplaced": "Erstellen Sie einen neuen QR-Code. Dieser hier gilt nicht mehr.",
-      "qrUnavailable": "Erstellen Sie einen neuen QR-Code. Dieser lässt sich nicht mehr anzeigen.",
-      "staffMemberIsOffTheList": "Lassen Sie sich am Rechner einen neuen QR-Code zeigen. Dieser Kellner steht nicht mehr in der Liste.",
-      "stationIsOffTheList": "Lassen Sie sich am Rechner einen neuen QR-Code zeigen. Diese Ausgabestelle ist abgeschaltet."
+      "codeMissing": "Die Seite wurde ohne Code geöffnet. Scannen Sie den QR-Code am Rechner noch einmal.",
+      "codeNoLongerValid": "Der Code gilt nicht mehr. Lassen Sie sich am Rechner einen neuen QR-Code anzeigen.",
+      "codeUnknown": "Der Rechner kennt diesen Code nicht. Lassen Sie sich am Rechner einen neuen QR-Code anzeigen.",
+      "nameMissing": "Geben Sie Ihren Namen ein.",
+      "qrAlreadyUsed": "Der QR-Code wurde bereits von einem Gerät verwendet. Klicken Sie auf „Neuen QR-Code erstellen“.",
+      "qrExpired": "Der QR-Code wurde fünf Minuten lang nicht gescannt und ist abgelaufen. Klicken Sie auf „Neuen QR-Code erstellen“.",
+      "qrReplaced": "Dieser QR-Code gilt nicht mehr. Klicken Sie auf „Neuen QR-Code erstellen“.",
+      "qrUnavailable": "Der QR-Code kann nicht mehr angezeigt werden. Klicken Sie auf „Neuen QR-Code erstellen“.",
+      "staffMemberIsOffTheList": "Der Kellner ist deaktiviert. Lassen Sie sich am Rechner einen neuen QR-Code anzeigen.",
+      "stationIsOffTheList": "Die Ausgabestelle ist deaktiviert. Lassen Sie sich am Rechner einen neuen QR-Code anzeigen."
     },
     "itemHistory": {
-      "unknownItem": "Diese Position gibt es am Rechner nicht mehr. Schließen Sie das Fenster. Laden Sie die Seite neu."
+      "unknownItem": "Der Rechner kennt diese Position nicht mehr. Schließen Sie das Fenster und laden Sie die Seite neu."
     },
     "order": {
-      "cannotBeProcessed": "Die Bestellung konnte nicht verarbeitet werden. Geben Sie sie an der Ausgabestelle persönlich auf.",
+      "cannotBeProcessed": "Die Bestellung konnte nicht verarbeitet werden. Geben Sie die Bestellung persönlich an der Ausgabestelle auf.",
       "itemSoldOut": "{name} ist gerade ausverkauft.",
-      "unknownItem": "Ein Artikel steht nicht mehr auf der Karte. Nehmen Sie ihn von der Bestellung."
+      "unknownItem": "Der Artikel ist nicht mehr auf der Karte. Entfernen Sie ihn aus der Bestellung."
     },
     "session": {
-      "tooManyRequests": "Warten Sie einen Moment und versuchen Sie es dann noch einmal. Der Rechner bekommt gerade zu viele Anfragen auf einmal.",
-      "unsupportedLanguage": "Diese Sprache gibt es im Programm nicht. Wählen Sie Deutsch oder Englisch."
+      "tooManyRequests": "Der Rechner erhält gerade zu viele Anfragen. Warten Sie einen Moment und versuchen Sie es dann noch einmal.",
+      "unsupportedLanguage": "Diese Sprache wird nicht unterstützt. Wählen Sie Deutsch oder Englisch."
     },
     "settlement": {
-      "cannotBeProcessed": "Die Aktion konnte nicht verarbeitet werden. Schreiben Sie auf einen Zettel, was der Tisch bezahlt hat.",
-      "itemWasCancelled": "{name} wurde inzwischen storniert. Laden Sie die Seite neu. Wählen Sie die Positionen noch einmal aus.",
+      "cannotBeProcessed": "Das Kassieren ist fehlgeschlagen. Notieren Sie die Zahlung des Tisches auf einem Zettel.",
+      "itemWasCancelled": "{name} wurde inzwischen storniert. Laden Sie die Seite neu und wählen Sie die Positionen noch einmal aus.",
       "noItemsSelected": "Wählen Sie zuerst die Positionen aus, die Sie kassieren wollen.",
       "unknownItem": "Der Rechner kennt eine der ausgewählten Positionen nicht mehr. Es wurde nichts kassiert. Laden Sie die Seite neu."
     },
     "station": {
       "changeNotSaved": "Die Bestellung konnte nicht aktualisiert werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
-      "itemNotAtThisStation": "Laden Sie die Seite neu. Diese Position gehört nicht zu dieser Ausgabestelle.",
+      "itemNotAtThisStation": "Diese Position gehört nicht zu dieser Ausgabestelle. Laden Sie die Seite neu.",
       "itemWasCancelled": "{name} wurde inzwischen storniert. Wählen Sie die Positionen noch einmal aus.",
-      "noFestivalIsRunning": "Es ist kein Fest aktiv.",
+      "noFestivalIsRunning": "Zurzeit ist kein Fest aktiv.",
       "noItemsSelected": "Tippen Sie eine Position an.",
-      "notPartOfTheFestival": "Diese Ausgabestelle gehört nicht zum laufenden Fest.",
+      "notPartOfTheFestival": "Diese Ausgabestelle gehört nicht zum aktiven Fest.",
       "orderNotAtThisStation": "Diese Bestellung gehört nicht zu dieser Ausgabestelle. Laden Sie die Seite neu und versuchen Sie es erneut."
     },
     "storage": {
-      "conflictingChange": "Jemand anderes hat im selben Moment etwas geändert. Versuchen Sie es noch einmal.",
-      "databaseUnavailable": "Der Rechner konnte die Bestellung nicht speichern. Senden Sie sie noch einmal."
+      "conflictingChange": "Eine andere Person hat gleichzeitig etwas geändert. Versuchen Sie es noch einmal.",
+      "databaseUnavailable": "Der Rechner konnte die Bestellung nicht speichern. Tippen Sie auf „Erneut senden“."
     }
   }
 }

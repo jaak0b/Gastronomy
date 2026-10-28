@@ -95,7 +95,7 @@ describe('resizing a table', () => {
     expect(geometryOfTheNode(table)).toEqual({ x: 20, y: 30, width: 80, height: 40, rotation: 0 })
     expect(anchorOf(theDrawing(), 'bottom-right')).toEqual({ x: 156, y: 111 })
     expect(textOnScreen('[data-test="plan-refusal"]').trim()).toBe(
-      'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.',
+      'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
     )
   })
 })

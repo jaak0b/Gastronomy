@@ -306,7 +306,7 @@ public sealed class MainWindowViewModelTest
       Assert.Multiple(() =>
                       {
                         Assert.That(viewModel.AdminButtonLabel, Is.EqualTo("Verwaltung öffnen"));
-                        Assert.That(viewModel.QuitButtonLabel, Is.EqualTo("Programm beenden"));
+                        Assert.That(viewModel.QuitButtonLabel, Is.EqualTo("Anwendung beenden"));
                         Assert.That(changedProperties, Does.Contain(string.Empty));
                       });
     }

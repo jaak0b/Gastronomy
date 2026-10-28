@@ -69,8 +69,8 @@ describe('choosing an ingredient to add', () => {
   })
 
   it.each([
-    ['de', 'Es gibt keine weitere Zutat zum Hinzufügen. Klicken Sie auf "Neue Zutat".'],
-    ['en', 'There is no other ingredient to add. Click "New ingredient".'],
+    ['de', 'Alle Zutaten sind bereits hinzugefügt. Klicken Sie auf „Neue Zutat“.'],
+    ['en', 'Every ingredient has already been added. Click "New ingredient".'],
   ] as const)('points in %s to the new ingredient button when nothing is left to choose', async (locale, expected) => {
     recipeLaptopWithNothingLeftToAdd()
     await loadIngredientsAndMountDialog(locale)
@@ -244,11 +244,11 @@ describe('creating an ingredient from the recipe', () => {
 
   it.each([
     ['errors.admin.ingredients.nameMissing', {}, 'Geben Sie einen Namen für die Zutat an.'],
-    ['errors.admin.ingredients.nameTaken', {}, 'Eine Zutat mit diesem Namen gibt es schon.'],
+    ['errors.admin.ingredients.nameTaken', {}, 'Eine Zutat mit diesem Namen ist bereits vorhanden. Wählen Sie einen anderen Namen.'],
     [
       'errors.admin.ingredients.nameBelongsToDeactivatedIngredient',
       { name: 'Honig' },
-      'Die Zutat Honig gibt es schon, sie ist aber deaktiviert. Aktivieren Sie sie unter "Zutaten".',
+      'Die Zutat Honig ist bereits vorhanden, aber deaktiviert. Aktivieren Sie sie unter „Zutaten“.',
     ],
   ])('shows the refusal %s inside the form and chooses nothing', async (messageKey, parameters, expected) => {
     recipeLaptop().answers(

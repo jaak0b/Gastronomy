@@ -218,7 +218,7 @@ describe('the dialog that asks what the table handed over', () => {
     await flushPromises()
 
     expect(document.querySelector('[data-test="amount-paid-dialog"] [data-test="page-title"]')?.textContent).toBe(
-      'Wie viel hat der Tisch bezahlt?',
+      'Geben Sie den bezahlten Betrag ein',
     )
   })
 

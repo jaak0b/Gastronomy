@@ -76,16 +76,16 @@
     <value>Verwaltung öffnen</value>
   </data>
     <data name="desktop.button.quit" xml:space="preserve">
-    <value>Programm beenden</value>
+    <value>Anwendung beenden</value>
   </data>
     <data name="desktop.minimised" xml:space="preserve">
-    <value>Das Programm nimmt weiter Bestellungen an.</value>
+    <value>Die Anwendung nimmt weiter Bestellungen an.</value>
   </data>
     <data name="desktop.quit.title" xml:space="preserve">
-    <value>Programm wirklich beenden?</value>
+    <value>Anwendung beenden?</value>
   </data>
     <data name="desktop.quit.body" xml:space="preserve">
-    <value>Die Telefone können danach keine Bestellungen mehr aufgeben.</value>
+    <value>Danach können die Telefone keine Bestellungen mehr aufgeben.</value>
   </data>
     <data name="desktop.quit.confirm" xml:space="preserve">
     <value>Beenden</value>
@@ -94,16 +94,16 @@
     <value>Weiterlaufen lassen</value>
   </data>
     <data name="desktop.error.quitFailed" xml:space="preserve">
-    <value>Das Programm konnte den Server nicht beenden und läuft weiter. Versuchen Sie es noch einmal.</value>
+    <value>Die Anwendung konnte nicht beendet werden und läuft weiter. Versuchen Sie es noch einmal.</value>
   </data>
     <data name="desktop.error.dataFolderRepair" xml:space="preserve">
-    <value>Klicken Sie auf "Einrichtung reparieren". In den Ordner {path} lässt sich nichts schreiben. Windows fragt dabei einmal nach.</value>
+    <value>In den Ordner {path} kann nicht geschrieben werden. Klicken Sie auf „Einrichtung reparieren“ und bestätigen Sie die Nachfrage von Windows.</value>
   </data>
     <data name="desktop.error.noNetwork" xml:space="preserve">
-    <value>Verbinden Sie den Rechner mit dem WLAN, in dem auch die Telefone sind. Der Rechner ist zurzeit in keinem Netzwerk.</value>
+    <value>Der Rechner ist mit keinem Netzwerk verbunden. Verbinden Sie ihn mit dem WLAN der Telefone.</value>
   </data>
     <data name="desktop.error.startFailed" xml:space="preserve">
-    <value>Der Server konnte nicht gestartet werden. Beenden Sie das Programm und starten Sie es neu. Hilft das nicht, klicken Sie auf "Einrichtung reparieren".</value>
+    <value>Die Anwendung konnte nicht gestartet werden. Beenden Sie die Anwendung und starten Sie sie neu.</value>
   </data>
     <data name="desktop.error.showFailureDetail" xml:space="preserve">
     <value>Technische Fehlermeldung anzeigen</value>
@@ -121,34 +121,34 @@
     <value>Einrichtung reparieren</value>
   </data>
     <data name="desktop.settings.repairDeclined" xml:space="preserve">
-    <value>Öffnen Sie in den Windows-Einstellungen "Firewall &amp; Netzwerkschutz" und erlauben Sie diesem Programm die eingehende Verbindung in allen Netzwerken. Für den Datenordner brauchen Sie jemanden, der die Nachfrage von Windows bestätigen kann.</value>
+    <value>Die Nachfrage von Windows wurde abgelehnt. Erlauben Sie dieser Anwendung unter „Firewall &amp; Netzwerkschutz“ in den Windows-Einstellungen die eingehende Verbindung in allen Netzwerken und bitten Sie jemanden, die Nachfrage für den Datenordner zu bestätigen.</value>
   </data>
     <data name="desktop.firstRun.title" xml:space="preserve">
     <value>Einmalige Einrichtung</value>
   </data>
     <data name="desktop.firstRun.body" xml:space="preserve">
-    <value>Bestätigen Sie die Nachfrage von Windows. Das Programm gibt dabei den Zugriff aus dem Netzwerk frei und legt seinen Datenordner an.</value>
+    <value>Die Anwendung gibt den Zugriff aus dem Netzwerk frei und legt ihren Datenordner an. Bestätigen Sie dazu die Nachfrage von Windows.</value>
   </data>
     <data name="desktop.firstRun.declined" xml:space="preserve">
-    <value>Das Programm läuft auch so. Wenn die Telefone den Rechner später nicht erreichen, klicken Sie auf "Einrichtung reparieren".</value>
+    <value>Die Anwendung läuft auch so. Wenn die Telefone den Rechner später nicht erreichen, klicken Sie auf „Einrichtung reparieren“.</value>
   </data>
     <data name="desktop.firstRun.setupFailed" xml:space="preserve">
-    <value>Die Einrichtung konnte nicht abgeschlossen werden, obwohl Sie die Nachfrage von Windows bestätigt haben. Das Programm läuft trotzdem. Wenn die Telefone den Rechner nicht erreichen oder Bestellungen nicht gespeichert werden können, klicken Sie auf "Einrichtung reparieren".</value>
+    <value>Die Einrichtung konnte nicht abgeschlossen werden, die Anwendung läuft aber weiter. Wenn die Telefone den Rechner nicht erreichen oder Bestellungen nicht gespeichert werden, klicken Sie auf „Einrichtung reparieren“.</value>
   </data>
     <data name="desktop.settings.repairFailed" xml:space="preserve">
-    <value>Die Einrichtung konnte nicht abgeschlossen werden, obwohl Sie die Nachfrage von Windows bestätigt haben. Klicken Sie noch einmal auf "Einrichtung reparieren". Hilft das nicht, klicken Sie auf "Datenordner öffnen" und geben Sie die neueste Datei im Ordner "logs" jemandem, der sich mit dem Rechner auskennt.</value>
+    <value>Die Einrichtung konnte nicht abgeschlossen werden. Klicken Sie noch einmal auf „Einrichtung reparieren“.</value>
   </data>
     <data name="desktop.settings.repairDone" xml:space="preserve">
-    <value>Die Einrichtung wurde repariert. Starten Sie das Programm noch einmal, damit die Änderung wirkt.</value>
+    <value>Die Einrichtung wurde repariert. Starten Sie die Anwendung neu.</value>
   </data>
     <data name="desktop.notice.addressChanged" xml:space="preserve">
-    <value>Alle müssen ihr Telefon noch einmal einrichten, da sich die Serveradresse geändert hat.</value>
+    <value>Die Adresse des Rechners hat sich geändert. Richten Sie alle Telefone neu ein.</value>
   </data>
     <data name="desktop.error.noPortAvailable" xml:space="preserve">
-    <value>Ein anderes Programm auf diesem Rechner blockiert die Verbindung. Starten Sie den Rechner neu und öffnen Sie das Programm noch einmal.</value>
+    <value>Ein anderes Programm auf diesem Rechner blockiert die Verbindung. Starten Sie den Rechner neu und öffnen Sie die Anwendung noch einmal.</value>
   </data>
     <data name="desktop.error.instanceCheckFailed" xml:space="preserve">
-    <value>Sehen Sie in der Taskleiste nach, ob ein Fenster dieses Programms schon offen ist. Wenn nicht, starten Sie den Rechner neu und öffnen Sie das Programm noch einmal.</value>
+    <value>Es konnte nicht geprüft werden, ob die Anwendung schon läuft. Sehen Sie in der Taskleiste nach, ob ein Fenster offen ist, und starten Sie andernfalls den Rechner neu.</value>
   </data>
     <data name="desktop.version" xml:space="preserve">
     <value>{version}</value>

@@ -114,7 +114,7 @@ describe('an edit session of the admin screens', () => {
 
     expect({ isOpen: session.isOpen.value, refusal: session.refusalText.value }).toEqual({
       isOpen: true,
-      refusal: 'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.',
+      refusal: 'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
     })
   })
 

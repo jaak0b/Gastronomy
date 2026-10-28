@@ -123,7 +123,7 @@ describe('the page that confirms the cancellation', () => {
       buttons: Array.from(document.querySelectorAll(`${CONFIRMATION} [data-test="actions"] button`)).map((button) =>
         button.textContent?.trim(),
       ),
-    }).toEqual({ title: 'Wollen Sie diese Positionen stornieren?', buttons: ['Stornieren', 'Zurück'] })
+    }).toEqual({ title: 'Positionen stornieren?', buttons: ['Stornieren', 'Zurück'] })
   })
 
   it('says how much cash the guest gets back when a paid item is among them', async () => {
@@ -135,7 +135,7 @@ describe('the page that confirms the cancellation', () => {
     await openTheConfirmation(screen)
 
     expect(textOnScreen(`${CONFIRMATION} [data-test="cash-to-return"]`).trim()).toBe(
-      'Der Gast bekommt 2,00 € bar zurück.',
+      'Geben Sie dem Gast 2,00 € in bar zurück.',
     )
   })
 
@@ -147,7 +147,7 @@ describe('the page that confirms the cancellation', () => {
     await openTheConfirmation(screen)
 
     expect(textOnScreen(`${CONFIRMATION} [data-test="cash-to-return"]`).trim()).toBe(
-      'The guest gets €2.00 back in cash.',
+      'Give the guest €2.00 back in cash.',
     )
   })
 
@@ -197,7 +197,7 @@ describe('the page that confirms the cancellation', () => {
       reason: textOnScreen(`${CONFIRMATION} [data-test="settle-notice"]`).trim(),
       reload: textOnScreen(`${CONFIRMATION} [data-test="reload-after-refusal"]`).trim(),
     }).toEqual({
-      reason: 'Bratwurst ist schon storniert. Laden Sie die Seite neu. Wählen Sie die Positionen noch einmal aus.',
+      reason: 'Bratwurst wurde bereits storniert. Laden Sie die Seite neu und wählen Sie die Positionen noch einmal aus.',
       reload: 'Neu laden',
     })
   })
@@ -255,7 +255,7 @@ describe('the page that confirms the cancellation', () => {
     await clickOn(`${CONFIRMATION} [data-test="confirm-cancel"]`)
 
     expect(textOnScreen(`${CONFIRMATION} [data-test="settle-notice"]`).trim()).toBe(
-      'Es ist nicht klar, ob die Stornierung angekommen ist. Laden Sie die Seite neu. Schauen Sie nach, ob die Positionen storniert sind.',
+      'Die Stornierung wurde möglicherweise nicht gespeichert. Laden Sie die Seite neu und prüfen Sie die Positionen.',
     )
   })
 

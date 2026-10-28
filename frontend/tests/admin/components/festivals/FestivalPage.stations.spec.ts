@@ -213,7 +213,7 @@ describe('the stations of this festival', () => {
 
     await vi.waitFor(() =>
       expect(refusalReasonsOnScreen()).toContain(
-        'Eine Ausgabestelle mit offenen Bestellungen kann von einem aktiven Fest nicht entfernt werden.',
+        'Aus einem aktiven Fest kann keine Ausgabestelle mit offenen Bestellungen entfernt werden.',
       ),
     )
     expect(refusalReasonsOnScreen()).not.toContain(ONE_ARTICLE_WITHOUT_A_STATION)
@@ -276,7 +276,7 @@ describe('the stations of this festival', () => {
 
     await vi.waitFor(() =>
       expect(stationRow(page, KITCHEN_ID).get('[data-test="refusal"]').text()).toBe(
-        'Eine Ausgabestelle mit offenen Bestellungen kann von einem aktiven Fest nicht entfernt werden.',
+        'Aus einem aktiven Fest kann keine Ausgabestelle mit offenen Bestellungen entfernt werden.',
       ),
     )
   })

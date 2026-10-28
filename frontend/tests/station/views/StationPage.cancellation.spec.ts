@@ -67,7 +67,7 @@ describe('a card with an item a waiter cancelled while it was open', () => {
     await flushPromises()
 
     expect(page.get('[data-test="action-failed"]').text()).toBe(
-      'Tippen Sie noch einmal. Der Rechner war nicht erreichbar. Es wurde nichts geändert.',
+      'Der Rechner ist nicht erreichbar, es wurde nichts geändert. Versuchen Sie es noch einmal.',
     )
     expect(itemOnCard(cardInTheQueue(page, 'station-order-1'), 'b').classes()).toContain('selected')
   })

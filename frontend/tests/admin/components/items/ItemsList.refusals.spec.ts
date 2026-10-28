@@ -43,7 +43,7 @@ describe('a refusal beside an open item form', () => {
 
     await vi.waitFor(() =>
       expect(list.get('[data-test="category-refusal"]').text()).toContain(
-        'Diese Kategorie hat noch eingeschaltete Artikel.',
+        'Die Kategorie hat noch aktive Artikel.',
       ),
     )
   })

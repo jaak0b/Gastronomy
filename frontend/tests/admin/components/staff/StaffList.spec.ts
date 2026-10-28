@@ -125,7 +125,7 @@ describe('a staff member taken off the list', () => {
     expect(list.get('[data-test="deactivated"]').text()).toBe('Deaktiviert')
   })
 
-  it('offers to put them back through the open eye, named "Kellner wieder aufnehmen"', async () => {
+  it('offers to put them back through the open eye, named "Kellner aktivieren"', async () => {
     staffLaptopListing(OFF_THE_LIST)
     const list = mountList()
     await list.get('[data-test="show-deactivated"] input').setValue(true)
@@ -134,7 +134,7 @@ describe('a staff member taken off the list', () => {
     await list.get('[data-test="reactivate"]').trigger('mouseenter')
 
     expect(list.get('[data-test="reactivate"] .v-icon').classes()).toContain('mdi-eye')
-    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Kellner wieder aufnehmen'))
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Kellner aktivieren'))
   })
 
   it('puts them back on the list without asking a question first', async () => {

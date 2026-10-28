@@ -75,7 +75,7 @@ describe('deleting a unit', () => {
 
     await vi.waitFor(() =>
       expect(list.get('[data-test="refusal"]').text()).toBe(
-        'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.',
+        'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
       ),
     )
   })
@@ -104,7 +104,7 @@ describe('a unit an ingredient still uses', () => {
 
     await vi.waitFor(() =>
       expect(refusalReasonsOnScreen()).toContain(
-        'Diese Einheit wird noch bei den Zutaten Mehl, Zucker verwendet. Ändern Sie bei diesen Zutaten zuerst die Einheit, unter "Zutaten".',
+        'Die Einheit wird noch bei den Zutaten Mehl, Zucker verwendet. Ändern Sie zuerst unter „Zutaten“ die Einheit dieser Zutaten.',
       ),
     )
   })
@@ -120,7 +120,7 @@ describe('a unit an ingredient still uses', () => {
 
     await vi.waitFor(() =>
       expect(refusalReasonsOnScreen()).toContain(
-        'This unit is still used by the ingredients Mehl, Zucker. Change the unit of these ingredients first, under "Ingredients".',
+        'The unit is still used by the ingredients Mehl, Zucker. Under "Ingredients", change the unit of these ingredients first.',
       ),
     )
   })

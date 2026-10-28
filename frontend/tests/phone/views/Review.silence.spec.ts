@@ -129,7 +129,7 @@ describe('an order the laptop did not confirm', () => {
     await review.get('[data-test="send-again"]').trigger('click')
     await vi.waitFor(() =>
       expect(review.get('[data-test="write-it-down"]').text()).toContain(
-        'Die Bestellung konnte noch nicht bestätigt werden.',
+        'Die aufgegebene Bestellung konnte nicht bestätigt werden.',
       ),
     )
   })
@@ -168,7 +168,7 @@ describe('an order the laptop did not confirm', () => {
 
     await vi.waitFor(() =>
       expect(review.get('[data-test="write-it-down"]').text()).toContain(
-        'Schreiben Sie die Bestellung auf einen Zettel',
+        'Notieren Sie die Bestellung auf einem Zettel',
       ),
     )
     expect(review.find('[data-test="written-down"]').exists()).toBe(true)

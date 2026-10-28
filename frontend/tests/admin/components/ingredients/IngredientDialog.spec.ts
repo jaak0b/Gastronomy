@@ -134,10 +134,10 @@ describe('the form for an ingredient', () => {
   })
 
   it('shows the reason the laptop refused the ingredient', async () => {
-    await mountDialog(null, 'Eine Zutat mit diesem Namen gibt es schon.')
+    await mountDialog(null, 'Eine Zutat mit diesem Namen ist bereits vorhanden. Wählen Sie einen anderen Namen.')
 
     expect(onScreen('[data-test="form-dialog"] [data-test="refusal"]').textContent?.trim()).toBe(
-      'Eine Zutat mit diesem Namen gibt es schon.',
+      'Eine Zutat mit diesem Namen ist bereits vorhanden. Wählen Sie einen anderen Namen.',
     )
   })
 })

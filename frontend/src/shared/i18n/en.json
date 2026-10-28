@@ -16,7 +16,7 @@
       "together": "Combined"
     },
     "estimates": {
-      "inMinuteRange": "~{min} - {max} min",
+      "inMinuteRange": "~{min} to {max} min",
       "inMinutes": "~{count} min",
       "withEstimate": "{line} ({estimate})"
     },
@@ -31,6 +31,9 @@
     "language": {
       "english": "English",
       "german": "Deutsch"
+    },
+    "errors": {
+      "actionFailed": "The action failed."
     }
   },
   "shared": {
@@ -43,10 +46,10 @@
         "carryOn": "Carry on with this phone"
       },
       "errors": {
-        "codeRetired": "Ask at the computer for a new QR code. This code was entered wrongly too often and is not accepted any more.",
-        "codeUsed": "Ask at the computer for a new QR code. This code is no longer valid.",
-        "codeWrong": "Read the six digits from the computer again. This code is not correct.",
-        "noConnection": "Check that you are on the festival WiFi. This phone cannot reach the computer."
+        "codeRetired": "This code was entered wrongly too often and is no longer accepted. Ask for a new QR code at the computer.",
+        "codeUsed": "This code is no longer valid. Ask for a new QR code at the computer.",
+        "codeWrong": "This code is not correct. Read the six digits on the computer again.",
+        "noConnection": "The phone cannot reach the computer. Check that it is connected to the festival WiFi."
       }
     },
     "startup": {
@@ -56,11 +59,11 @@
       },
       "messages": {
         "deviceNotSetUp": "This device is not set up yet.",
-        "tapOpen": "Tap Open to continue."
+        "tapOpen": "Tap \"Open\" to continue."
       },
       "errors": {
-        "couldNotStart": "The computer did not answer properly. Try again.",
-        "laptopNotReached": "The computer is not answering. Try again."
+        "couldNotStart": "The computer did not answer properly. Tap \"Try again\".",
+        "laptopNotReached": "The computer is not answering. Tap \"Try again\"."
       }
     }
   },
@@ -92,11 +95,11 @@
         "settings": "Settings"
       },
       "messages": {
-        "backOnline": "The connection is back.",
+        "backOnline": "Connection to the computer restored",
         "reconnecting": "No connection to the computer."
       },
       "errors": {
-        "draftLost": "The order you had started could not be read. Enter it again."
+        "draftLost": "The order you had started could not be restored. Enter the order again."
       }
     },
     "openItems": {
@@ -105,8 +108,8 @@
       "labels": {
         "amountPaidField": "Amount paid",
         "amountPaidReason": "Reason",
-        "amountPaidTitle": "How much did the table pay?",
-        "cancelTitle": "Do you want to cancel these items?",
+        "amountPaidTitle": "Enter the amount paid",
+        "cancelTitle": "Cancel these items?",
         "order": "Order {order}",
         "paid": "Paid",
         "reasonPlaceholder": "For example: food for the band",
@@ -125,15 +128,15 @@
         "wholeTable": "Select the whole table"
       },
       "messages": {
-        "cashToReturn": "The guest gets {amount} back in cash.",
-        "someWereAlreadySettled": "Somebody else had already taken payment for {count} item in your selection. Give the guest {amount} back. | Somebody else had already taken payment for {count} items in your selection. Give the guest {amount} back.",
+        "cashToReturn": "Give the guest {amount} back in cash.",
+        "someWereAlreadySettled": "Somebody else has already taken payment for {count} item in your selection. Give the guest {amount} back. | Somebody else has already taken payment for {count} items in your selection. Give the guest {amount} back.",
         "nothingToCancel": "There is nothing left to cancel at this table.",
         "nothingToSettle": "There is nothing left to take payment for at this table."
       },
       "errors": {
-        "cancelAnswerNeverCame": "It is not clear whether the cancellation arrived. Reload the page. Check whether the items are cancelled.",
-        "loadFailed": "The computer could not be reached. Reload the page.",
-        "settleAnswerNeverCame": "It is not clear whether the payment reached the computer. Reload the page. Check whether the items are still open.",
+        "cancelAnswerNeverCame": "The cancellation may not have been saved. Reload the page and check the items.",
+        "loadFailed": "The computer cannot be reached. Reload the page.",
+        "settleAnswerNeverCame": "The payment may not have been saved. Reload the page and check the items.",
         "settleFailed": "Taking the payment failed. Try again.",
         "tableCouldNotBeLoaded": "This table could not be loaded. Open it again from the table plan."
       }
@@ -153,7 +156,7 @@
         "partiallyHandedOut": "Partly handed out"
       },
       "messages": {
-        "noOrderMatches": "No order at this table matches this filter."
+        "noOrderMatches": "No matching orders at this table"
       }
     },
     "itemHistory": {
@@ -190,13 +193,13 @@
         "writtenDown": "The order is written down"
       },
       "messages": {
-        "sendStillUnknown": "The order could not be confirmed yet. It may have arrived anyway.",
+        "sendStillUnknown": "The order you placed could not be confirmed. It may have arrived anyway.",
         "sent": "Order {number} has arrived.",
-        "writeItDown": "Write the order on a slip of paper and check the tablet at the station."
+        "writeItDown": "Write the order on a slip of paper and check on the tablet at the station whether it has arrived there."
       },
       "errors": {
-        "sendFailed": "The order could not be sent. Tap \"Send again\".",
-        "sendInterrupted": "It is not clear whether the order arrived. Tap \"Send again\"."
+        "sendFailed": "The order was not sent. Tap \"Send again\".",
+        "sendInterrupted": "The order may not have arrived. Tap \"Send again\"."
       }
     },
     "tablePlan": {
@@ -210,10 +213,10 @@
         "showOrders": "Show orders"
       },
       "messages": {
-        "noFestivalIsActive": "No festival is active.",
-        "noTables": "No tables have been set up yet.",
-        "noTablesInArea": "No table has been set up in this table plan yet.",
-        "unsentOrder": "Table {table} has {count} unsent item for {total}. | Table {table} has {count} unsent items for {total}."
+        "noFestivalIsActive": "No festival is active at the moment.",
+        "noTables": "No tables set up",
+        "noTablesInArea": "No tables in this table plan",
+        "unsentOrder": "The order for table {table} with {count} item for {total} has not been sent yet. | The order for table {table} with {count} items for {total} has not been sent yet."
       },
       "errors": {
         "loadFailed": "The table plan could not be loaded. Reload the page."
@@ -255,9 +258,9 @@
         "showDone": "Show prepared orders"
       },
       "errors": {
-        "actionFailed": "Try again. The change was not saved.",
-        "actionNotReached": "Tap again. The computer could not be reached. Nothing was changed.",
-        "loadFailed": "Reload the page. The computer could not be reached. This list may be out of date."
+        "actionFailed": "The change was not saved. Try again.",
+        "actionNotReached": "The computer cannot be reached. Nothing was changed. Try again.",
+        "loadFailed": "The computer cannot be reached and this list may be out of date. Reload the page."
       }
     },
     "done": {
@@ -266,7 +269,7 @@
         "putBack": "Put back"
       },
       "messages": {
-        "nothingDone": "No order is prepared yet."
+        "nothingDone": "No orders prepared yet"
       }
     }
   },
@@ -274,17 +277,17 @@
     "categories": {
       "labels": {
         "colour": "Colour",
-        "deactivateTitle": "Switch this category off?",
+        "deactivateTitle": "Deactivate this category?",
         "name": "Category name"
       },
       "actions": {
-        "activate": "Switch the category on",
-        "deactivateConfirm": "Switch the category off",
+        "activate": "Activate the category",
+        "deactivateConfirm": "Deactivate the category",
         "edit": "Edit the category",
         "new": "New category"
       },
       "messages": {
-        "noneYet": "Click \"New category\". There is no category to choose yet."
+        "noneYet": "No categories"
       }
     },
     "common": {
@@ -317,7 +320,6 @@
         "newQrCode": "Create a new QR code"
       },
       "messages": {
-        "copyUnavailable": "Type the address above by hand. Copying is not available on this page.",
         "done": "{name} has set up their phone.",
         "doneStation": "The tablet at {name} is set up.",
         "forSomebodyKnown": "Scan this QR code with the phone camera.",
@@ -362,7 +364,7 @@
       },
       "messages": {
         "needsAStationFirst": "This festival has no station yet. Add one first.",
-        "noneYet": "No festival has been set up yet. Click \"New festival\".",
+        "noneYet": "No festivals",
         "removeItemBody": "This removes the item from this festival only.",
         "removeStationBody": "This removes the station from this festival only."
       },
@@ -395,9 +397,7 @@
         "noTable": "Waiters cannot see any table yet. Click \"Open table plan\" on one of the table plans.",
         "hideAreaBody": "Waiters will no longer see this table plan.",
         "hideTableBody": "Waiters will no longer see this table.",
-        "removeStationBody": "This removes the station from this table plan only.",
-        "allAreasHidden": "Every table plan is hidden. Show one of them again.",
-        "allAreasHiddenAndNotListed": "Every table plan is hidden. Tick \"Show hidden entries\" and show one of them again."
+        "removeStationBody": "This removes the station from this table plan only."
       }
     },
     "ingredients": {
@@ -427,10 +427,10 @@
         "history": "History"
       },
       "messages": {
-        "noneYet": "There are no ingredients yet. Click \"New ingredient\".",
-        "noIngredientsToAdd": "There is no other ingredient to add. Click \"New ingredient\".",
+        "noneYet": "No ingredients",
+        "noIngredientsToAdd": "Every ingredient has already been added. Click \"New ingredient\".",
         "removeFromRecipeBody": "The ingredient is removed from {item} only.",
-        "usedByActiveItems": "This ingredient is still used in {items}. Take it out of those items first, under \"Items\"."
+        "usedByActiveItems": "The ingredient is still used in {items}. Under \"Items\", take the ingredient out of these items first."
       },
       "history": {
         "used": "Used",
@@ -455,8 +455,8 @@
         "deactivateConfirm": "Deactivate the unit"
       },
       "messages": {
-        "noneYet": "There are no units yet. Click \"New unit\".",
-        "usedByIngredients": "This unit is still used by the ingredients {ingredients}. Change the unit of these ingredients first, under \"Ingredients\"."
+        "noneYet": "No units",
+        "usedByIngredients": "The unit is still used by the ingredients {ingredients}. Under \"Ingredients\", change the unit of these ingredients first."
       }
     },
     "items": {
@@ -481,26 +481,25 @@
     "overview": {
       "title": "Overview",
       "messages": {
-        "itemsWithoutStation": "Give {count} item a station. Without one it cannot be ordered. | Give {count} items a station. Without one they cannot be ordered.",
+        "itemsWithoutStation": "{count} item has no station and cannot be ordered. Assign it to a station. | {count} items have no station and cannot be ordered. Assign them to a station.",
         "missingCategory": "Create a category, for example Food and Drinks.",
         "missingFestival": "Create a festival first.",
         "missingItems": "Add items to this festival and fill in their prices.",
         "missingStation": "Add a station to this festival, for example Kitchen and Bar.",
-        "noFestivalIsRunning": "No festival is active right now. Look under \"Festivals\".",
-        "ready": "Everything is set up. You can now set up the phones and the tablets.",
-        "stationWithoutTablet": "Set the tablet up for {name}. Without a tablet this station cannot see its orders."
+        "noFestivalIsRunning": "No festival active",
+        "ready": "Everything is set up. You can now set up the phones and the tablets."
       }
     },
     "staff": {
       "title": "Waiters",
       "labels": {
-        "deactivateTitle": "Take this waiter off the list?",
+        "deactivateTitle": "Deactivate this waiter?",
         "name": "Name",
         "noPhone": "No phone set up"
       },
       "actions": {
-        "activate": "Put the waiter back on the list",
-        "deactivateConfirm": "Take the waiter off",
+        "activate": "Activate the waiter",
+        "deactivateConfirm": "Deactivate the waiter",
         "new": "New waiter",
         "newCode": "Set the phone up again",
         "rename": "Change the name"
@@ -512,12 +511,12 @@
     "stations": {
       "title": "Stations",
       "labels": {
-        "deactivateTitle": "Switch this station off?",
+        "deactivateTitle": "Deactivate this station?",
         "noTablet": "No tablet set up"
       },
       "actions": {
-        "activate": "Switch this station on",
-        "deactivateConfirm": "Switch the station off",
+        "activate": "Activate the station",
+        "deactivateConfirm": "Deactivate the station",
         "edit": "Edit the station",
         "new": "New station",
         "setUpDevice": "Set up the tablet"
@@ -529,16 +528,16 @@
   },
   "errors": {
     "admin": {
-      "actionFailed": "The action failed. Try again, otherwise reload the page.",
+      "actionFailed": "The action failed. Try again or reload the page.",
       "categories": {
         "colourInvalid": "Choose a colour before you save.",
-        "hasActiveItems": "This category still has items switched on. Switch the items off first, then the category.",
+        "hasActiveItems": "The category still has active items. Deactivate the items first, then the category.",
         "nameMissing": "Give the category a name before you save.",
-        "nameTaken": "There is already a category with this name. Choose a different one."
+        "nameTaken": "A category with this name already exists. Choose a different name."
       },
       "festivals": {
-        "areaNameTaken": "A table plan at this festival already has this name, whether it is shown or hidden. Choose a different name.",
-        "areaWithItemsToHandOutOrSettleStaysShown": "A table plan cannot be hidden at an active festival until everything ordered at its tables is prepared and paid.",
+        "areaNameTaken": "A table plan at this festival already has this name, even if it is hidden. Choose a different name.",
+        "areaWithItemsToHandOutOrSettleStaysShown": "While a festival is active, a table plan can only be hidden once everything at its tables is prepared and paid.",
         "itemNeedsAStation": "Choose at least one station for the item.",
         "itemPriceOutOfRange": "Enter a price between 0.00 and 999.99 euros.",
         "itemStaysOnTheMenuWhileTheFestivalRuns": "An item cannot be removed from an active festival.",
@@ -547,91 +546,91 @@
         "periodInvalid": "The end has to come after the start. Set the end to a later time.",
         "runningFestivalStaysShown": "An active festival cannot be hidden.",
         "stationHasOrdersAtTheFestival": "A station with open orders cannot be removed from an active festival.",
-        "tableNameTaken": "A table at this festival already has this name, whether it is shown or hidden. Choose a different name.",
+        "tableNameTaken": "A table at this festival already has this name, even if it is hidden. Choose a different name.",
         "tableCopyNameTooLong": "The name of a copy would be longer than 40 characters. Shorten the table's name.",
-        "tableWithItemsToHandOutOrSettleStaysShown": "A table cannot be hidden at an active festival until everything ordered there is prepared and paid."
+        "tableWithItemsToHandOutOrSettleStaysShown": "While a festival is active, a table can only be hidden once all its items are prepared and paid."
       },
       "ingredients": {
         "nameMissing": "Enter a name for the ingredient.",
-        "nameTaken": "An ingredient with this name already exists.",
+        "nameTaken": "An ingredient with this name already exists. Choose a different name.",
         "nameBelongsToDeactivatedIngredient": "The ingredient {name} already exists but is deactivated. Activate it under \"Ingredients\".",
         "amountInvalid": "Enter an amount above zero.",
         "stockInvalid": "Enter zero or more, or leave the field empty."
       },
       "items": {
-        "categoryIsOff": "This category is switched off. Switch the category on first.",
+        "categoryIsOff": "The category is deactivated. Activate the category first.",
         "categoryUnknown": "Choose a category before you save.",
         "ingredientIsDeactivated": "The ingredient {name} is deactivated. Activate it under \"Ingredients\" first.",
-        "isOnTheRunningFestivalsMenu": "An item on an active festival's menu cannot be switched off.",
+        "isOnTheRunningFestivalsMenu": "An item on an active festival's menu cannot be deactivated.",
         "nameMissing": "Give the item a name before you save it.",
-        "nameTaken": "There is already an item with this name. Choose a different one.",
-        "productionMinutesOutOfRange": "Enter minutes from 0 to 600."
+        "nameTaken": "There is already an item with this name. Choose a different name.",
+        "productionMinutesOutOfRange": "Enter a time from 0 to 600 minutes."
       },
       "staff": {
         "nameMissing": "Give the waiter a name before you save."
       },
       "stations": {
-        "hasUnfinishedItems": "While a festival is active, a station with open orders cannot be switched off.",
+        "hasUnfinishedItems": "While a festival is active, a station with open orders cannot be deactivated.",
         "itemsWouldHaveNoStation": "@:admin.stations.messages.itemsWouldHaveNoStation Assign it to another station first. | @:admin.stations.messages.itemsWouldHaveNoStation Assign them to another station first.",
         "nameMissing": "Give the station a name before you save it."
       },
       "units": {
         "nameMissing": "Enter a name for the unit.",
-        "nameTaken": "A unit named {name} already exists.",
-        "nameBelongsToDeactivatedUnit": "The unit {name} is deactivated. Activate it, or choose another name."
+        "nameTaken": "The unit {name} already exists. Choose a different name.",
+        "nameBelongsToDeactivatedUnit": "The unit {name} is deactivated. Activate it or choose a different name."
       }
     },
     "auth": {
       "wrongDeviceKind": "This device is not set up for this screen. Have it set up again at the computer."
     },
     "cancellation": {
-      "alreadyCancelled": "{name} has already been cancelled. Reload the page. Select the items again.",
-      "cannotBeProcessed": "The cancellation could not be processed. Reload the page. Try again.",
-      "unknownItem": "One of the selected items is no longer on the laptop. Reload the page. Select the items again."
+      "alreadyCancelled": "{name} has already been cancelled. Reload the page and select the items again.",
+      "cannotBeProcessed": "Cancelling failed. Reload the page and try again.",
+      "unknownItem": "The computer no longer knows one of the selected items. Reload the page and select the items again."
     },
     "enrolment": {
       "atMostOneOwner": "The QR code could not be created. Try again.",
-      "codeMissing": "Scan the QR code on the computer again. This page was opened without a code.",
-      "codeNoLongerValid": "This code is no longer valid. Ask for a new code at the computer.",
-      "codeUnknown": "The computer does not know this code. Ask for a new code at the computer.",
-      "nameMissing": "Enter your name so the kitchen knows who took the order.",
-      "qrAlreadyUsed": "Create a new QR code. This one has already been used by a device.",
-      "qrExpired": "Create a new QR code. This one was not scanned for five minutes.",
-      "qrReplaced": "Create a new QR code. This one is no longer valid.",
-      "qrUnavailable": "Create a new QR code. This one cannot be shown any more.",
-      "staffMemberIsOffTheList": "Ask for a new QR code at the computer. This waiter is no longer on the list.",
-      "stationIsOffTheList": "Ask for a new QR code at the computer. This station is switched off."
+      "codeMissing": "This page was opened without a code. Scan the QR code on the computer again.",
+      "codeNoLongerValid": "This code is no longer valid. Ask for a new QR code at the computer.",
+      "codeUnknown": "The computer does not know this code. Ask for a new QR code at the computer.",
+      "nameMissing": "Enter your name.",
+      "qrAlreadyUsed": "This QR code has already been used by a device. Click \"Create a new QR code\".",
+      "qrExpired": "This QR code was not scanned within five minutes and has expired. Click \"Create a new QR code\".",
+      "qrReplaced": "This QR code is no longer valid. Click \"Create a new QR code\".",
+      "qrUnavailable": "This QR code can no longer be shown. Click \"Create a new QR code\".",
+      "staffMemberIsOffTheList": "This waiter is deactivated. Ask for a new QR code at the computer.",
+      "stationIsOffTheList": "This station is deactivated. Ask for a new QR code at the computer."
     },
     "itemHistory": {
-      "unknownItem": "This item is no longer on the laptop. Close this window. Reload the page."
+      "unknownItem": "The computer no longer knows this item. Close the window and reload the page."
     },
     "order": {
-      "cannotBeProcessed": "The order could not be processed. Take it to the station yourself.",
+      "cannotBeProcessed": "The order could not be processed. Take the order to the station yourself.",
       "itemSoldOut": "{name} is sold out.",
-      "unknownItem": "One item is no longer on the menu. Take it off the order."
+      "unknownItem": "This item is no longer on the menu. Remove it from the order."
     },
     "session": {
-      "tooManyRequests": "Wait a moment and try again. The computer is getting too many requests at once.",
-      "unsupportedLanguage": "The program does not have that language. Choose German or English."
+      "tooManyRequests": "The computer is getting too many requests right now. Wait a moment and try again.",
+      "unsupportedLanguage": "This language is not supported. Choose German or English."
     },
     "settlement": {
-      "cannotBeProcessed": "The action could not be processed. Write on a slip of paper what the table paid.",
-      "itemWasCancelled": "{name} has been cancelled in the meantime. Reload the page. Select the items again.",
+      "cannotBeProcessed": "Taking payment failed. Write the table's payment on a slip of paper.",
+      "itemWasCancelled": "{name} has been cancelled in the meantime. Reload the page and select the items again.",
       "noItemsSelected": "First choose the items you want to take payment for.",
       "unknownItem": "The computer no longer knows one of the selected items. No payment was taken. Reload the page."
     },
     "station": {
       "changeNotSaved": "The order could not be updated. Reload the page and try again.",
-      "itemNotAtThisStation": "Reload the page. This item does not belong to this station.",
+      "itemNotAtThisStation": "This item does not belong to this station. Reload the page.",
       "itemWasCancelled": "{name} has been cancelled in the meantime. Select the items again.",
-      "noFestivalIsRunning": "No festival is active.",
+      "noFestivalIsRunning": "No festival is active at the moment.",
       "noItemsSelected": "Tap an item.",
-      "notPartOfTheFestival": "This station is not part of the festival that is running.",
+      "notPartOfTheFestival": "This station is not part of the active festival.",
       "orderNotAtThisStation": "This order is not at this station. Reload the page and try again."
     },
     "storage": {
-      "conflictingChange": "Somebody else changed something at the same moment. Try again.",
-      "databaseUnavailable": "The computer could not save the order. Send it again."
+      "conflictingChange": "Somebody else changed something at the same time. Try again.",
+      "databaseUnavailable": "The computer could not save the order. Tap \"Send again\"."
     }
   }
 }

@@ -85,7 +85,7 @@ describe('the ingredients tab', () => {
     await vi.waitFor(() => expect(list.find('[data-test="none-yet"]').exists()).toBe(true))
 
     expect(list.get('[data-test="none-yet"]').text()).toBe(
-      'Es gibt noch keine Zutaten. Klicken Sie auf "Neue Zutat".',
+      'Keine Zutaten vorhanden',
     )
     expect(list.get('[data-test="new-ingredient"]').text()).toBe('Neue Zutat')
   })
@@ -97,7 +97,7 @@ describe('the ingredients tab', () => {
     await vi.waitFor(() => expect(list.find('[data-test="none-yet"]').exists()).toBe(true))
 
     expect(list.get('[data-test="none-yet"]').text()).toBe(
-      'There are no ingredients yet. Click "New ingredient".',
+      'No ingredients',
     )
   })
 

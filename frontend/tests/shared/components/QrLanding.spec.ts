@@ -134,7 +134,7 @@ describe('landing on a QR code link', () => {
 
     await vi.waitFor(() => expect(landing.find('[data-test="redeem-error"]').exists()).toBe(true))
     expect(landing.get('[data-test="redeem-error"]').text()).toBe(
-      'Warten Sie einen Moment und versuchen Sie es dann noch einmal. Der Rechner bekommt gerade zu viele Anfragen auf einmal.',
+      'Der Rechner erhält gerade zu viele Anfragen. Warten Sie einen Moment und versuchen Sie es dann noch einmal.',
     )
   })
 
@@ -143,7 +143,7 @@ describe('landing on a QR code link', () => {
 
     const notice = await failureNoticeOf(mountLanding())
 
-    expect(notice).toContain('Dieser Code gilt nicht mehr.')
+    expect(notice).toContain('Der Code gilt nicht mehr.')
   })
 
   it('names the WiFi when the phone cannot reach the laptop', async () => {
@@ -151,15 +151,15 @@ describe('landing on a QR code link', () => {
 
     const notice = await failureNoticeOf(mountLanding())
 
-    expect(notice).toContain('Prüfen Sie, ob Sie im WLAN des Festes sind.')
+    expect(notice).toContain('Prüfen Sie, ob Sie mit dem WLAN des Festes verbunden sind.')
   })
 
-  it('names the waiter being off the list when the laptop says so', async () => {
+  it('names the waiter being deactivated when the laptop says so', async () => {
     answerWith(410, { code: 'StaffMemberIsOffTheList', messageKey: 'errors.enrolment.staffMemberIsOffTheList', parameters: {}, details: null })
 
     const notice = await failureNoticeOf(mountLanding())
 
-    expect(notice).toContain('Dieser Kellner steht nicht mehr in der Liste.')
+    expect(notice).toContain('Der Kellner ist deaktiviert.')
   })
 
   it('reads the six digit code as wrong when the laptop knows no such code', async () => {
@@ -167,7 +167,7 @@ describe('landing on a QR code link', () => {
 
     const notice = await failureNoticeOf(mountLanding())
 
-    expect(notice).toContain('Dieser Code stimmt nicht.')
+    expect(notice).toContain('Der Code stimmt nicht.')
   })
 
   it('offers to carry on when the phone is already set up', async () => {
@@ -177,7 +177,7 @@ describe('landing on a QR code link', () => {
     const landing = mountLanding()
     const notice = await failureNoticeOf(landing)
 
-    expect(notice).toContain('Dieser Code gilt nicht mehr.')
+    expect(notice).toContain('Der Code gilt nicht mehr.')
     expect(landing.get('[data-test="carry-on"]').text()).toContain('Mit diesem Telefon weiterarbeiten')
   })
 })

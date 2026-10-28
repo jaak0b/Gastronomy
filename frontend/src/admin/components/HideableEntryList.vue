@@ -36,7 +36,7 @@ const props = defineProps<{
 const emit = defineEmits<{ saved: [saved: TSaved, mode: EditSessionMode] }>()
 defineSlots<{
   heading: () => unknown
-  notices?: (scope: { showsHidden: boolean }) => unknown
+  notices?: () => unknown
   details?: (scope: { entry: TEntry }) => unknown
   dialog: (scope: {
     entry: TEntry | null
@@ -106,7 +106,7 @@ async function move(entry: TEntry, direction: MoveDirection): Promise<void> {
       <slot name="heading" />
     </BaseHeadingWithCheckbox>
 
-    <slot name="notices" :shows-hidden="showsHidden" />
+    <slot name="notices" />
 
     <div v-if="listedEntries.length > 0" class="rows mb-3">
       <BaseListRow
