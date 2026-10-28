@@ -22,10 +22,9 @@ import {
   TABLE_A2_SHAPE_ID,
   TENT,
   editorLaptop,
+  isHighlighted,
   mountEditor,
   shapesWithTheHandles,
-  stationRow,
-  tableRow,
   theDrawing,
 } from './tablePlanEditorFixture'
 import { aGeometry, anAdminTable } from '../../../support/wireViews'
@@ -68,8 +67,8 @@ describe('selecting several tables', () => {
     await tapTheShape(TABLE_A2_SHAPE_ID, { ctrlKey: true })
 
     expect([
-      tableRow('table-a1').classList.contains('selected-row'),
-      tableRow('table-a2').classList.contains('selected-row'),
+      isHighlighted('table-table-a1'),
+      isHighlighted('table-table-a2'),
       shapesWithTheHandles(),
     ]).toEqual([true, true, []])
   })
@@ -81,7 +80,7 @@ describe('selecting several tables', () => {
     await tapTheShape(TABLE_A1_SHAPE_ID)
     await tapTheShape(TABLE_A2_SHAPE_ID, { shiftKey: true })
 
-    expect(tableRow('table-a2').classList.contains('selected-row')).toBe(true)
+    expect(isHighlighted('table-table-a2')).toBe(true)
   })
 
   it('leaves only the table under a plain click selected', async () => {
@@ -93,8 +92,8 @@ describe('selecting several tables', () => {
     await tapTheShape(TABLE_A2_SHAPE_ID)
 
     expect([
-      tableRow('table-a1').classList.contains('selected-row'),
-      tableRow('table-a2').classList.contains('selected-row'),
+      isHighlighted('table-table-a1'),
+      isHighlighted('table-table-a2'),
       shapesWithTheHandles(),
     ]).toEqual([false, true, [TABLE_A2_SHAPE_ID]])
   })
@@ -109,6 +108,18 @@ describe('selecting several tables', () => {
   })
 })
 
+describe('a selected table', () => {
+  it('gets a border three units wide in the primary colour', async () => {
+    editorLaptop({ areas: twoTables() })
+    await mountEditor()
+
+    await tapTheShape(TABLE_A1_SHAPE_ID)
+
+    const border = shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID).findOne<Konva.Rect>('Rect')
+    expect([border?.stroke(), border?.strokeWidth()]).toEqual(['#1f2937', 3])
+  })
+})
+
 describe('a marquee on an empty spot', () => {
   it('selects every table its box touches', async () => {
     editorLaptop({ areas: twoTables() })
@@ -117,9 +128,9 @@ describe('a marquee on an empty spot', () => {
     await dragTheMarquee({ x: 6, y: 6 }, { x: 456, y: 306 })
 
     expect([
-      tableRow('table-a1').classList.contains('selected-row'),
-      tableRow('table-a2').classList.contains('selected-row'),
-      stationRow('station-schank').classList.contains('selected-row'),
+      isHighlighted('table-table-a1'),
+      isHighlighted('table-table-a2'),
+      isHighlighted('station-station-schank'),
     ]).toEqual([true, true, false])
   })
 
@@ -147,8 +158,8 @@ describe('a marquee on an empty spot', () => {
     await dragTheMarquee({ x: 6, y: 126 }, { x: 156, y: 216 })
 
     expect([
-      tableRow('table-a1').classList.contains('selected-row'),
-      tableRow('table-a2').classList.contains('selected-row'),
+      isHighlighted('table-table-a1'),
+      isHighlighted('table-table-a2'),
     ]).toEqual([false, true])
   })
 
@@ -163,8 +174,8 @@ describe('a marquee on an empty spot', () => {
     await releaseOnTheDrawingAt(stage, { x: 156, y: 216 })
 
     expect([
-      tableRow('table-a1').classList.contains('selected-row'),
-      tableRow('table-a2').classList.contains('selected-row'),
+      isHighlighted('table-table-a1'),
+      isHighlighted('table-table-a2'),
     ]).toEqual([true, true])
   })
 
@@ -175,7 +186,7 @@ describe('a marquee on an empty spot', () => {
 
     await tapAt(theDrawing(), { x: 525, y: 375 })
 
-    await waitUntil(() => expect(tableRow('table-a1').classList.contains('selected-row')).toBe(false))
+    await waitUntil(() => expect(isHighlighted('table-table-a1')).toBe(false))
   })
 })
 
@@ -256,7 +267,7 @@ describe('dragging a group of tables', () => {
     expect(laptop.writes()).toHaveLength(1)
     expect(laptop.writes()[0].url).toBe(MOVE_PATH)
     expect([first.x(), first.y(), second.x(), second.y()]).toEqual([20, 30, 20, 100])
-    expect(textOnScreen('[data-test="table-plan-drawing-column"] [data-test="refusal"]').trim()).toBe(
+    expect(textOnScreen('[data-test="plan-refusal"]').trim()).toBe(
       'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.',
     )
   })

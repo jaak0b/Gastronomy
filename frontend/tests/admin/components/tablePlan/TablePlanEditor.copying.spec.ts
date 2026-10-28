@@ -1,10 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
-import { isOnScreen, inputOf, onScreen, textOnScreen, waitUntil } from '../../../support/dom'
+import { isOnScreen, onScreen, textOnScreen, waitUntil } from '../../../support/dom'
 import {
   centreOf,
-  layOutTheScreen,
   rightClickAt,
   shapeWithId,
   tapAt,
@@ -20,9 +19,9 @@ import {
   TABLE_A2_SHAPE_ID,
   TENT,
   editorLaptop,
+  isHighlighted,
   mountEditor,
   shapesWithTheHandles,
-  tableRow,
   theDrawing,
 } from './tablePlanEditorFixture'
 import { aGeometry, anAdminTable } from '../../../support/wireViews'
@@ -126,7 +125,7 @@ describe('copying with the keyboard', () => {
     await mountEditor()
     await clickTheShape(TABLE_A1_SHAPE_ID)
     await pressCtrl('c')
-    onScreen('[data-test="new-entry"]', onScreen('[data-test="table-plan-table-list"]')).click()
+    onScreen('[data-test="new-table"]').click()
     await flushPromises()
 
     await pressCtrl('v')
@@ -139,7 +138,7 @@ describe('copying with the keyboard', () => {
     await mountEditor()
     await clickTheShape(TABLE_A1_SHAPE_ID)
     await pressCtrl('c')
-    const field = inputOf('[data-test="station-search"]')
+    const field = document.body.appendChild(document.createElement('input'))
     field.focus()
 
     const event = new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true, cancelable: true })
@@ -170,7 +169,7 @@ describe('the context menu on a table', () => {
         },
       ],
     })
-    expect(tableRow('table-a1').classList.contains('selected-row')).toBe(true)
+    expect(isHighlighted('table-table-a1')).toBe(true)
   })
 
   it('copies nothing when the table menu is dismissed without choosing Kopieren', async () => {
@@ -187,7 +186,6 @@ describe('the context menu on a table', () => {
 
     expect(laptop.writes()).toEqual([])
     expect(isOnScreen('[data-test="table-plan-menu"]')).toBe(false)
-    expect(isOnScreen('[data-test="table-row"][data-test-id="table-copy-1"]')).toBe(false)
   })
 
   it('keeps the whole selection when a selected table is right-clicked and copies all of it', async () => {
@@ -205,8 +203,8 @@ describe('the context menu on a table', () => {
 
     await rightClickTheShape(TABLE_A1_SHAPE_ID)
     const selectionAfterTheRightClick = [
-      tableRow('table-a1').classList.contains('selected-row'),
-      tableRow('table-a2').classList.contains('selected-row'),
+      isHighlighted('table-table-a1'),
+      isHighlighted('table-table-a2'),
     ]
     await waitForTheMenu('copy-table')
     await pressCtrl('v')
@@ -226,8 +224,8 @@ describe('the context menu on a table', () => {
       ],
     })
     expect(selectionAfterTheRightClick).toEqual([true, true])
-    await waitUntil(() => expect(tableRow('table-copy-1').classList.contains('selected-row')).toBe(true))
-    expect(tableRow('table-copy-2').classList.contains('selected-row')).toBe(true)
+    await waitUntil(() => expect(isHighlighted('table-table-copy-1')).toBe(true))
+    expect(isHighlighted('table-table-copy-2')).toBe(true)
   })
 })
 
@@ -263,16 +261,16 @@ describe('the context menu on an empty spot', () => {
     expect(isOnScreen('[data-test="table-plan-menu"]')).toBe(false)
   })
 
-  it('shows no menu on a station, even with something copied', async () => {
+  it('offers no paste on a station, even with something copied', async () => {
     editorLaptop({ areas: twoTables() })
     await mountEditor()
     await clickTheShape(TABLE_A1_SHAPE_ID)
     await pressCtrl('c')
 
     await rightClickTheShape(SCHANK_SHAPE_ID)
-    await flushPromises()
+    await waitUntil(() => expect(isOnScreen('[data-test="table-plan-menu"]')).toBe(true))
 
-    expect(isOnScreen('[data-test="table-plan-menu"]')).toBe(false)
+    expect(isOnScreen('[data-test="paste-table"]')).toBe(false)
   })
 
   it('suppresses the browser menu over the drawing, and only there', async () => {
@@ -282,7 +280,7 @@ describe('the context menu on an empty spot', () => {
     const onTheDrawing = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 100, clientY: 100 })
     theDrawing().content.dispatchEvent(onTheDrawing)
     const besideTheDrawing = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 100, clientY: 100 })
-    onScreen('[data-test="lists-column"]').dispatchEvent(besideTheDrawing)
+    onScreen('[data-test="table-plan-toolbar"]').dispatchEvent(besideTheDrawing)
 
     expect([onTheDrawing.defaultPrevented, besideTheDrawing.defaultPrevented]).toEqual([true, false])
   })
@@ -290,7 +288,6 @@ describe('the context menu on an empty spot', () => {
 
 describe('the plan after a paste', () => {
   it('selects the new tables and scrolls the first one into view', async () => {
-    layOutTheScreen({ width: 0, height: 150 })
     editorLaptop({
       areas: twoTables(),
       planReply: inTurn(
@@ -299,16 +296,16 @@ describe('the plan after a paste', () => {
       ),
       writeReply: answer({ tableIds: ['table-copy-1', 'table-copy-2'] }, 201),
     })
-    await mountEditor()
+    await mountEditor('de', [], HALL_WITH_TWO_TABLES.areaId, { width: 612, height: 150 })
     await clickTheShape(TABLE_A1_SHAPE_ID)
     await clickTheShape(TABLE_A2_SHAPE_ID, { ctrlKey: true })
     await pressCtrl('c')
 
     await pressCtrl('v')
 
-    await waitUntil(() => expect(tableRow('table-copy-1').classList.contains('selected-row')).toBe(true))
+    await waitUntil(() => expect(isHighlighted('table-table-copy-1')).toBe(true))
     expect([
-      tableRow('table-copy-2').classList.contains('selected-row'),
+      isHighlighted('table-table-copy-2'),
       shapesWithTheHandles(),
       onScreen('[data-test="drawing-scroll"]').scrollTop > 0,
     ]).toEqual([true, [], true])
@@ -327,7 +324,7 @@ describe('the plan after a paste', () => {
     await pressCtrl('v')
 
     await waitUntil(() =>
-      expect(textOnScreen('[data-test="table-plan-drawing-column"] [data-test="refusal"]').trim()).toBe(
+      expect(textOnScreen('[data-test="plan-refusal"]').trim()).toBe(
         'Der Name einer Kopie wäre länger als 40 Zeichen. Kürzen Sie den Namen des Tisches.',
       ),
     )

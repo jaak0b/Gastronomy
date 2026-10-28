@@ -9,7 +9,6 @@ import {
   centreOf,
   dragBy,
   hasShapeWithId,
-  layOutTheScreen,
   movePointerTo,
   pressAt,
   releaseAt,
@@ -26,10 +25,10 @@ import {
   TABLE_A1_SHAPE_ID,
   drawingScrollArea,
   editorLaptop,
+  isHighlighted,
   mountEditor,
   selectTheShape,
   shapesWithTheHandles,
-  tableRow,
   theDrawing,
 } from './tablePlanEditorFixture'
 import { aGeometry, anAdminArea, anAdminTable } from '../../../support/wireViews'
@@ -96,30 +95,28 @@ describe('the drawing of the area', () => {
     ])
   })
 
-  it('shows the drawing width with a margin at one and a half times its units and reaches below the lowest shape', async () => {
+  it('fits the width of a tall window and fills its height below the shapes', async () => {
     editorLaptop()
 
-    await mountEditor()
+    await mountEditor('de', [], HALL.areaId, { width: 612, height: 1000 })
 
-    expect([theDrawing().width(), theDrawing().height(), theDrawing().scaleX()]).toEqual([612, 417, 1.5])
+    expect([theDrawing().width(), theDrawing().height(), theDrawing().scaleX()]).toEqual([612, 1000, 1.5])
   })
 
-  it('grows down to fill a tall window when its shapes end higher up', async () => {
-    layOutTheScreen({ width: 0, height: 900 })
+  it('fits the height of a wide window, so the whole area shows without scrolling', async () => {
     editorLaptop()
 
-    await mountEditor()
+    await mountEditor('de', [], HALL.areaId, { width: 1600, height: 556 })
 
-    expect(theDrawing().height()).toBe(912)
+    expect([theDrawing().width(), theDrawing().height(), theDrawing().scaleX()]).toEqual([816, 556, 2])
   })
 
-  it('keeps its size and scale when the window narrows', async () => {
-    layOutTheScreen({ width: 300, height: 0 })
+  it('stops shrinking at half its units in a very small window and scrolls instead', async () => {
     editorLaptop()
 
-    await mountEditor()
+    await mountEditor('de', [], HALL.areaId, { width: 100, height: 100 })
 
-    expect([theDrawing().width(), theDrawing().scaleX()]).toEqual([612, 1.5])
+    expect([theDrawing().width(), theDrawing().scaleX()]).toEqual([204, 0.5])
   })
 
   it('keeps the whole border of a table at the top left edge on screen', async () => {
@@ -211,7 +208,7 @@ describe('dragging a shape', () => {
 
   it('shows the line it snaps to while the table is dragged and removes it on the drop', async () => {
     editorLaptop()
-    await mountEditor()
+    await mountEditor('de', [], HALL.areaId, { width: 612, height: 417 })
     const from = centreOf(shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID))
     await pressAt(theDrawing(), from)
     await movePointerTo({ x: from.x + 10, y: from.y })
@@ -249,21 +246,21 @@ describe('dragging a shape', () => {
     await dragBy(theDrawing(), table, { x: 49.5, y: 175.5 })
 
     expect([table.x(), table.y()]).toEqual([20, 30])
-    expect(textOnScreen('[data-test="table-plan-drawing-column"] [data-test="refusal"]').trim()).toBe(
+    expect(textOnScreen('[data-test="plan-refusal"]').trim()).toBe(
       'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.',
     )
   })
 })
 
 describe('selecting in the drawing', () => {
-  it('puts the resize handles on the tapped table and highlights its row', async () => {
+  it('puts the resize handles on the tapped table and highlights it', async () => {
     editorLaptop()
     await mountEditor()
 
     await selectTheShape(TABLE_A1_SHAPE_ID)
 
     expect(shapesWithTheHandles()).toEqual([TABLE_A1_SHAPE_ID])
-    expect(tableRow('table-a1').classList.contains('selected-row')).toBe(true)
+    expect(isHighlighted('table-table-a1')).toBe(true)
   })
 
   it('lets go of the table when the admin taps an empty spot of the drawing', async () => {
@@ -273,7 +270,7 @@ describe('selecting in the drawing', () => {
 
     await tapAt(theDrawing(), { x: 525, y: 375 })
 
-    await waitUntil(() => expect(tableRow('table-a1').classList.contains('selected-row')).toBe(false))
+    await waitUntil(() => expect(isHighlighted('table-table-a1')).toBe(false))
     expect(shapesWithTheHandles()).toEqual([])
   })
 })
@@ -282,19 +279,17 @@ describe('the view of a long drawing', () => {
   const FAR_DOWN = anAdminTable({ tableId: 'table-b9', name: 'B9', geometry: aGeometry({ x: 20, y: 300 }) })
 
   it('scrolls a table below the visible part into view when it is selected', async () => {
-    layOutTheScreen({ width: 0, height: 150 })
     editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, FAR_DOWN] }] })
-    await mountEditor()
+    await mountEditor('de', [], HALL.areaId, { width: 612, height: 150 })
 
     await selectTheShape('table-table-b9')
 
-    expect(drawingScrollArea().scrollTop).toBe(432)
+    expect(drawingScrollArea().scrollTop).toBe(128)
   })
 
   it('stays where it is when the selected table is already in view', async () => {
-    layOutTheScreen({ width: 0, height: 150 })
     editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, FAR_DOWN] }] })
-    await mountEditor()
+    await mountEditor('de', [], HALL.areaId, { width: 612, height: 150 })
 
     await selectTheShape(TABLE_A1_SHAPE_ID)
 

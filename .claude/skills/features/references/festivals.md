@@ -109,8 +109,7 @@ Frontend, under `frontend/src/`:
   alone, so that sentence is written once per language.
   Both reasons are chosen in `admin/composables/useStationRefusalReasons.ts`, shared with the
   Ausgabestellen tab. The
-  station rows are `stations/RemovableStationRows.vue`, which the table plan editor's station list
-  uses too; a refusal that comes back anyway shows on the row. The article and station removals ask
+  station rows are `stations/RemovableStationRows.vue`; a refusal that comes back anyway shows on the row. The article and station removals ask
   through `BaseRemoveConfirmDialog.vue`. The station card's and the article card's search and add
   button are `BaseSearchAddLine.vue`, with "Neu…" in its slot; with nothing to add the station search
   says either that every station switched on is already here (`noStationsToAdd`) or that none is

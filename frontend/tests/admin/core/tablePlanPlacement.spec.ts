@@ -6,6 +6,8 @@ import {
   editorDrawingLength,
   fitsTheDrawing,
   geometryForANewShapeIn,
+  hiddenTablesOf,
+  scaleFittingTheView,
   pastedCopiesAt,
   pastedCopiesBeside,
 } from '../../../src/admin/core/tablePlanPlacement'
@@ -22,6 +24,33 @@ const HALL = anAdminArea({ tables: [SHOWN_TABLE, HIDDEN_TABLE], stationShapes: [
 describe('what the editor draws of an area', () => {
   it('is every shown table, never a hidden one', () => {
     expect(drawnTablesOf(HALL)).toEqual([SHOWN_TABLE])
+  })
+})
+
+describe('what the hidden tables menu of an area offers', () => {
+  it('is every hidden table, never a shown one', () => {
+    expect(hiddenTablesOf(HALL)).toEqual([HIDDEN_TABLE])
+  })
+
+  it('lists the names alphabetically, ignoring case', () => {
+    const hidden = (name: string) => anAdminTable({ tableId: name, name, isHidden: true })
+    const area = anAdminArea({ tables: [hidden('b1'), hidden('A2'), hidden('a1')] })
+
+    expect(hiddenTablesOf(area).map((table) => table.name)).toEqual(['a1', 'A2', 'b1'])
+  })
+})
+
+describe('the scale of the drawing in the editor', () => {
+  it('follows the width when the window is taller than the drawing needs', () => {
+    expect(scaleFittingTheView({ width: 816, height: 2000 }, { width: 408, height: 278 })).toBe(2)
+  })
+
+  it('follows the height when the window is wider than the drawing needs', () => {
+    expect(scaleFittingTheView({ width: 1600, height: 556 }, { width: 408, height: 278 })).toBe(2)
+  })
+
+  it('never goes below half the drawing units', () => {
+    expect(scaleFittingTheView({ width: 100, height: 50 }, { width: 408, height: 278 })).toBe(0.5)
   })
 })
 

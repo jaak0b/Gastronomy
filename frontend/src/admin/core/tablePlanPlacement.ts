@@ -5,6 +5,7 @@ import {
   lowestEdgeOf,
   type PlanPoint,
 } from '../../shared/core/tablePlanDrawing'
+import { compareNames } from '../../shared/core/compareNames'
 import { SNAP_GRID } from './tablePlanSnapping'
 
 const ROOM_BELOW_THE_LOWEST_SHAPE = 200
@@ -12,6 +13,8 @@ const ROOM_BELOW_THE_LOWEST_SHAPE = 200
 const SHORTEST_SHAPE_SIDE = 20
 
 const MEASURING_TOLERANCE = 1e-6
+
+export const SMALLEST_EDITOR_SCALE = 0.5
 
 interface ShapeSize {
   width: number
@@ -35,6 +38,19 @@ export const NEW_STATION_SIZE: ShapeSize = { width: 120, height: 40 }
 
 export function drawnTablesOf(area: AdminAreaView): AdminTableView[] {
   return area.tables.filter((table) => !table.isHidden)
+}
+
+export function hiddenTablesOf(area: AdminAreaView): AdminTableView[] {
+  return area.tables
+    .filter((table) => table.isHidden)
+    .sort((left, right) => compareNames(left.name, right.name))
+}
+
+export function scaleFittingTheView(view: ShapeSize, drawing: ShapeSize): number {
+  return Math.max(
+    SMALLEST_EDITOR_SCALE,
+    Math.min(view.width / drawing.width, view.height / drawing.height),
+  )
 }
 
 export function geometryForANewShapeIn(area: AdminAreaView, size: ShapeSize): AreaShapeGeometry {

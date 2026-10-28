@@ -12,7 +12,6 @@ const props = defineProps<{
   idOf: (station: TStation) => string
   nameOf: (station: TStation) => string
   removalRefusalOf: (station: TStation) => string | null
-  isSelected?: (station: TStation) => boolean
   rowTestName: string
   removeTitle: string
   removeBody: string
@@ -52,7 +51,6 @@ async function confirmRemoval(): Promise<void> {
       v-for="(station, position) in stations"
       :key="idOf(station)"
       :position="position"
-      :is-selected="isSelected?.(station) === true"
       :data-test="rowTestName"
       :data-test-id="idOf(station)"
     >

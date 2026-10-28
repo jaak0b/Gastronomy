@@ -376,7 +376,6 @@
         "areaName": "Table plan name",
         "tableName": "Table name",
         "tableCount": "{count} table | {count} tables",
-        "tables": "Tables",
         "hideAreaTitle": "Hide the table plan",
         "hideTableTitle": "Hide the table"
       },
@@ -384,6 +383,8 @@
         "newArea": "New table plan",
         "editArea": "Edit the table plan",
         "newTable": "New table",
+        "addStation": "Add a station",
+        "hiddenTables": "Hidden tables",
         "editTable": "Edit the table",
         "openPlan": "Open table plan",
         "copy": "Copy",

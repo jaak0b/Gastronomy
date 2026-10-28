@@ -24,9 +24,9 @@ owns the rows; it keeps one refusal per row id.
 Current consumers: `admin/composables/useFestivalItemRows.ts` (rows keyed by item id),
 `admin/components/items/ItemIngredientsDialog.vue` (recipe lines keyed by ingredient id),
 `admin/components/festivals/FestivalStock.vue` (stock rows keyed by ingredient id),
-`admin/components/HideableEntryList.vue` (the table plan's areas and tables, keyed by their id; see
+`admin/components/HideableEntryList.vue` (the table plan's areas, keyed by their id; see
 `hideable-rows.md`) and `admin/components/stations/RemovableStationRows.vue` (the station rows of the
-festival page and of the table plan editor, keyed by station id).
+festival page, keyed by station id).
 
 Keep the rows' state in a component that stays mounted while the person moves between rows. A
 refusal kept by a component that is keyed on the selection is lost unseen when the person selects

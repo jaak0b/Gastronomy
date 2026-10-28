@@ -4,8 +4,8 @@ import type Konva from 'konva'
 import type { Plugin } from 'vue'
 import TablePlanEditor from '../../../../src/admin/components/tablePlan/TablePlanEditor.vue'
 import type { AdminAreaView, AdminFestivalView, AdminStationView } from '../../../../src/shared/api/generatedSchemas'
-import { onScreen, waitUntil } from '../../../support/dom'
-import { drawingIn, shapeWithId, centreOf, tapAt } from '../../../support/konvaDrawing'
+import { isOnScreen, onScreen, waitUntil } from '../../../support/dom'
+import { drawingIn, layOutTheScreen, rightClickAt, shapeWithId, centreOf, tapAt } from '../../../support/konvaDrawing'
 import { answer, stubLaptop, type LaptopReply, type StubbedLaptop } from '../../../support/laptop'
 import { testPlugins } from '../../../support/plugins'
 import {
@@ -92,11 +92,15 @@ export function editorLaptop(scenario: EditorScenario = {}): StubbedLaptop {
     .answers('GET', PLAN_PATH, scenario.planReply ?? answer({ areas: scenario.areas ?? [HALL, TENT] }))
 }
 
+export const WINDOW_AT_ONE_AND_A_HALF = { width: 612, height: 1000 }
+
 export async function mountEditor(
   locale: 'de' | 'en' = 'de',
   extraPlugins: Plugin[] = [],
   areaId = HALL.areaId,
+  screen = WINDOW_AT_ONE_AND_A_HALF,
 ) {
+  layOutTheScreen(screen)
   const editor = mount(TablePlanEditor, {
     props: { festivalId: FESTIVAL_ID, areaId },
     global: { plugins: [...testPlugins(locale), ...extraPlugins] },
@@ -121,12 +125,34 @@ export async function selectTheShape(id: string): Promise<void> {
   await waitUntil(() => expect(shapesWithTheHandles()).toEqual([id]))
 }
 
-export function tableRow(tableId: string): HTMLElement {
-  return onScreen(`[data-test="table-row"][data-test-id="${tableId}"]`)
+export function isHighlighted(shapeId: string): boolean {
+  return shapeWithId(theDrawing(), shapeId).findOne<Konva.Rect>('Rect')?.strokeWidth() === 3
 }
 
-export function stationRow(stationId: string): HTMLElement {
-  return onScreen(`[data-test="station-row"][data-test-id="${stationId}"]`)
+export async function pressInTheToolbar(testName: string): Promise<void> {
+  onScreen(`[data-test="table-plan-toolbar"] [data-test="${testName}"]`).click()
+  await flushPromises()
+}
+
+export async function openTheMenuOf(shapeId: string): Promise<void> {
+  const stage = theDrawing()
+  await rightClickAt(stage, centreOf(shapeWithId(stage, shapeId)))
+  await waitUntil(() => expect(isOnScreen('[data-test="table-plan-menu"]')).toBe(true))
+}
+
+export async function chooseInTheMenuOf(shapeId: string, entry: string): Promise<void> {
+  await openTheMenuOf(shapeId)
+  onScreen(`[data-test="${entry}"]`).click()
+  await flushPromises()
+}
+
+export function planRefusalText(): string {
+  return onScreen('[data-test="plan-refusal"]').textContent?.trim() ?? ''
+}
+
+export async function openTheToolbarMenu(testName: 'add-station' | 'hidden-tables', entry: string): Promise<void> {
+  await pressInTheToolbar(testName)
+  await waitUntil(() => expect(isOnScreen(`[data-test="${entry}"]`)).toBe(true))
 }
 
 export function drawingScrollArea(): HTMLElement {

@@ -23,7 +23,12 @@ import { DARK_TABLE_PLAN_COLOURS, LIGHT_TABLE_PLAN_COLOURS } from '../../../shar
 import { LARGEST_NAME_FONT_SIZE, nameFontSizeKeepingWordsWhole } from '../../../shared/core/shapeNameFit'
 import { TABLE_PLAN_DRAWING_WIDTH, type PlanPoint } from '../../../shared/core/tablePlanDrawing'
 import type { AdminActionResult } from '../../core/adminActionResult'
-import { drawnTablesOf, editorDrawingLength, fitsTheDrawing } from '../../core/tablePlanPlacement'
+import {
+  drawnTablesOf,
+  editorDrawingLength,
+  fitsTheDrawing,
+  scaleFittingTheView,
+} from '../../core/tablePlanPlacement'
 import {
   isTableSelected,
   nodeIdOfStation,
@@ -34,6 +39,7 @@ import {
   tableIdsInMarquee,
   withTableToggled,
   type PlanShape,
+  type SoleSelectedShape,
   type TablePlanSelection,
 } from '../../core/tablePlanSelection'
 import {
@@ -44,10 +50,10 @@ import {
   type SnapGuide,
   type SnapStops,
 } from '../../core/tablePlanSnapping'
-import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import { useAdminTablePlanStore } from '../../stores/tablePlan'
+import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 
-const DRAWING_SCALE = 1.5
+const SELECTED_BORDER_WIDTH = 3
 
 const MARGIN_AROUND_THE_DRAWING = 4
 
@@ -89,7 +95,7 @@ interface GroupDrag {
 interface ContextMenuState {
   at: [number, number]
   drawingPoint: PlanPoint
-  on: 'table' | 'empty'
+  on: PlanShape['kind'] | 'empty'
 }
 
 interface MarqueeStart {
@@ -97,18 +103,29 @@ interface MarqueeStart {
   adds: boolean
 }
 
-const props = defineProps<{ festivalId: string; area: AdminAreaView }>()
+const props = defineProps<{
+  festivalId: string
+  area: AdminAreaView
+  soleSelectedShape: SoleSelectedShape | null
+  removalRefusal: string | null
+}>()
 const selection = defineModel<TablePlanSelection | null>('selection', { required: true })
+const emit = defineEmits<{
+  edit: []
+  remove: []
+  actionStarted: []
+  actionFinished: [result: AdminActionResult<unknown>]
+}>()
 
 const { t } = useI18n()
 const tablePlan = useAdminTablePlanStore()
 const colours = useThemedValue(LIGHT_TABLE_PLAN_COLOURS, DARK_TABLE_PLAN_COLOURS)
-const { refusal, refusalText, showRefusalOf } = useRefusalDisplay()
 const stage = useTemplateRef<VueKonvaRef<Konva.Stage>>('stage')
 const scrollArea = useTemplateRef<HTMLElement>('scrollArea')
 const layer = useTemplateRef<VueKonvaRef<Konva.Layer>>('layer')
 const transformer = useTemplateRef<VueKonvaRef<Konva.Transformer>>('transformer')
 const visibleHeight = ref(0)
+const visibleWidth = ref(0)
 const guides = ref<SnapGuide[]>([])
 const marqueeBox = ref<PlanBox | null>(null)
 const contextMenu = ref<ContextMenuState | null>(null)
@@ -161,7 +178,7 @@ const drawnShapes = computed<DrawnShape[]>(() => {
           height: table.geometry.height,
           fill: palette.table,
           stroke: selected ? palette.station : palette.ink,
-          strokeWidth: selected ? 2 : 1,
+          strokeWidth: selected ? SELECTED_BORDER_WIDTH : 1,
           cornerRadius: 4,
         },
         text: {
@@ -179,6 +196,7 @@ const drawnShapes = computed<DrawnShape[]>(() => {
       }
     }),
     ...props.area.stationShapes.map((stationShape): DrawnShape => {
+      const selected = selection.value?.kind === 'station' && selection.value.stationId === stationShape.stationId
       const shape: ShapeOnThePlan = {
         shape: { kind: 'station', stationId: stationShape.stationId },
         geometry: stationShape.geometry,
@@ -205,7 +223,7 @@ const drawnShapes = computed<DrawnShape[]>(() => {
           height: stationShape.geometry.height,
           fill: palette.station,
           stroke: palette.station,
-          strokeWidth: 1,
+          strokeWidth: selected ? SELECTED_BORDER_WIDTH : 1,
         },
         text: {
           ...nameText,
@@ -219,18 +237,27 @@ const drawnShapes = computed<DrawnShape[]>(() => {
   ]
 })
 
-const drawingLength = computed(() =>
-  editorDrawingLength(
-    drawnShapes.value.map((shape) => shape.geometry),
-    visibleHeight.value / DRAWING_SCALE,
+const drawnGeometry = computed(() => drawnShapes.value.map((shape) => shape.geometry))
+
+const drawingScale = computed(() =>
+  scaleFittingTheView(
+    { width: visibleWidth.value, height: visibleHeight.value },
+    {
+      width: TABLE_PLAN_DRAWING_WIDTH + 2 * MARGIN_AROUND_THE_DRAWING,
+      height: editorDrawingLength(drawnGeometry.value, 0) + 2 * MARGIN_AROUND_THE_DRAWING,
+    },
   ),
 )
 
+const drawingLength = computed(() =>
+  editorDrawingLength(drawnGeometry.value, visibleHeight.value / drawingScale.value - 2 * MARGIN_AROUND_THE_DRAWING),
+)
+
 const stageConfig = computed(() => ({
-  width: (TABLE_PLAN_DRAWING_WIDTH + 2 * MARGIN_AROUND_THE_DRAWING) * DRAWING_SCALE,
-  height: (drawingLength.value + 2 * MARGIN_AROUND_THE_DRAWING) * DRAWING_SCALE,
-  scaleX: DRAWING_SCALE,
-  scaleY: DRAWING_SCALE,
+  width: (TABLE_PLAN_DRAWING_WIDTH + 2 * MARGIN_AROUND_THE_DRAWING) * drawingScale.value,
+  height: (drawingLength.value + 2 * MARGIN_AROUND_THE_DRAWING) * drawingScale.value,
+  scaleX: drawingScale.value,
+  scaleY: drawingScale.value,
 }))
 
 const marqueeFillConfig = computed(() => ({
@@ -320,10 +347,10 @@ function geometryOf(node: Konva.Node): AreaShapeGeometry {
 
 function boxThatFitsTheDrawing(oldBox: Box, newBox: Box): Box {
   const fits = fitsTheDrawing({
-    x: newBox.x / DRAWING_SCALE - MARGIN_AROUND_THE_DRAWING,
-    y: newBox.y / DRAWING_SCALE - MARGIN_AROUND_THE_DRAWING,
-    width: newBox.width / DRAWING_SCALE,
-    height: newBox.height / DRAWING_SCALE,
+    x: newBox.x / drawingScale.value - MARGIN_AROUND_THE_DRAWING,
+    y: newBox.y / drawingScale.value - MARGIN_AROUND_THE_DRAWING,
+    width: newBox.width / drawingScale.value,
+    height: newBox.height / drawingScale.value,
     rotation: (newBox.rotation * 180) / Math.PI,
   })
   return fits ? newBox : oldBox
@@ -336,15 +363,15 @@ function snapTheResizedCorner(previous: Vector2d, wanted: Vector2d): Vector2d {
   }
   const snapped = snapResizeCorner(
     {
-      x: wanted.x / DRAWING_SCALE - MARGIN_AROUND_THE_DRAWING,
-      y: wanted.y / DRAWING_SCALE - MARGIN_AROUND_THE_DRAWING,
+      x: wanted.x / drawingScale.value - MARGIN_AROUND_THE_DRAWING,
+      y: wanted.y / drawingScale.value - MARGIN_AROUND_THE_DRAWING,
     },
     stopsBeside(resized),
   )
   guides.value = snapped.guides
   return {
-    x: (snapped.x + MARGIN_AROUND_THE_DRAWING) * DRAWING_SCALE,
-    y: (snapped.y + MARGIN_AROUND_THE_DRAWING) * DRAWING_SCALE,
+    x: (snapped.x + MARGIN_AROUND_THE_DRAWING) * drawingScale.value,
+    y: (snapped.y + MARGIN_AROUND_THE_DRAWING) * drawingScale.value,
   }
 }
 
@@ -372,8 +399,13 @@ function chooseTheShape(shape: PlanShape, addsToSelection: boolean): void {
     : selectionOfTables([shape.tableId])
 }
 
+function isRefusedOnceReported(result: AdminActionResult<unknown>): boolean {
+  emit('actionFinished', result)
+  return result.kind === 'failed'
+}
+
 function startDragging(shape: ShapeOnThePlan): void {
-  refusal.value = null
+  emit('actionStarted')
   const current = selection.value
   if (
     shape.shape.kind === 'table'
@@ -406,7 +438,7 @@ function startDragging(shape: ShapeOnThePlan): void {
 }
 
 function startTransforming(shape: ShapeOnThePlan): void {
-  refusal.value = null
+  emit('actionStarted')
   groupDrag = null
   chooseTheShape(shape.shape, false)
 }
@@ -465,7 +497,7 @@ async function saveTheNewGeometry(
   guides.value = []
   const group = event.currentTarget
   const saved = await shape.saveGeometry(geometryOf(group))
-  if (showRefusalOf(saved)) {
+  if (isRefusedOnceReported(saved)) {
     drawGeometryOn(group, shape.geometry)
     transformer.value?.getNode().forceUpdate()
   }
@@ -498,7 +530,7 @@ async function saveTheMovedGroup(): Promise<void> {
     return
   }
   const saved = await tablePlan.moveTables(props.festivalId, moves)
-  if (showRefusalOf(saved)) {
+  if (isRefusedOnceReported(saved)) {
     putTheTablesBack(state.startGeometry)
   }
 }
@@ -514,8 +546,8 @@ function drawingPointOfClient(at: { clientX: number; clientY: number }): PlanPoi
   const container = stage.value?.getNode().container()
   const frame = container?.getBoundingClientRect()
   return {
-    x: (at.clientX - (frame?.left ?? 0)) / DRAWING_SCALE - MARGIN_AROUND_THE_DRAWING,
-    y: (at.clientY - (frame?.top ?? 0)) / DRAWING_SCALE - MARGIN_AROUND_THE_DRAWING,
+    x: (at.clientX - (frame?.left ?? 0)) / drawingScale.value - MARGIN_AROUND_THE_DRAWING,
+    y: (at.clientY - (frame?.top ?? 0)) / drawingScale.value - MARGIN_AROUND_THE_DRAWING,
   }
 }
 
@@ -537,7 +569,7 @@ function stretchTheMarquee(event: MouseEvent): void {
     return
   }
   const pointer = drawingPointOfClient(event)
-  const moved = Math.hypot(pointer.x - start.from.x, pointer.y - start.from.y) * DRAWING_SCALE
+  const moved = Math.hypot(pointer.x - start.from.x, pointer.y - start.from.y) * drawingScale.value
   if (moved < PIXELS_BEFORE_A_DRAG_STARTS && marqueeBox.value === null) {
     return
   }
@@ -586,11 +618,11 @@ function copyTheSelection(): void {
 }
 
 async function pasteTables(at?: PlanPoint): Promise<void> {
-  refusal.value = null
+  emit('actionStarted')
   const pasted = await tablePlan.pasteInto(props.festivalId, props.area.areaId, at)
+  emit('actionFinished', pasted)
   switch (pasted.kind) {
     case 'failed':
-      showRefusalOf(pasted)
       return
     case 'ok':
       selection.value = selectionOfTables(pasted.value.tableIds)
@@ -602,19 +634,29 @@ async function pasteTables(at?: PlanPoint): Promise<void> {
   }
 }
 
-function openTheTableMenu(shape: PlanShape, event: KonvaEventObject<MouseEvent, Konva.Group>): void {
+function selectForTheMenu(shape: PlanShape): void {
+  switch (shape.kind) {
+    case 'table':
+      if (!isTableSelected(selection.value, shape.tableId)) {
+        selection.value = selectionOfTables([shape.tableId])
+      }
+      return
+    case 'station':
+      selection.value = { kind: 'station', stationId: shape.stationId }
+      return
+    default:
+      assertNever(shape)
+  }
+}
+
+function openTheShapeMenu(shape: PlanShape, event: KonvaEventObject<MouseEvent, Konva.Group>): void {
   event.evt.preventDefault()
   event.cancelBubble = true
-  if (shape.kind !== 'table') {
-    return
-  }
-  if (!isTableSelected(selection.value, shape.tableId)) {
-    selection.value = selectionOfTables([shape.tableId])
-  }
+  selectForTheMenu(shape)
   contextMenu.value = {
     at: [event.evt.clientX, event.evt.clientY],
     drawingPoint: drawingPointOfClient(event.evt),
-    on: 'table',
+    on: shape.kind,
   }
   contextMenuOpen.value = true
 }
@@ -644,6 +686,16 @@ function handleTheDrawingMenu(event: KonvaEventObject<MouseEvent>): void {
 function copyFromTheMenu(): void {
   copyTheSelection()
   contextMenuOpen.value = false
+}
+
+function editFromTheMenu(): void {
+  contextMenuOpen.value = false
+  emit('edit')
+}
+
+function removeFromTheMenu(): void {
+  contextMenuOpen.value = false
+  emit('remove')
 }
 
 async function pasteFromTheMenu(): Promise<void> {
@@ -703,7 +755,7 @@ function listenersOf(shape: ShapeOnThePlan): Konva.GroupConfig {
     },
     onTap: () => chooseTheShape(shape.shape, false),
     onContextmenu: (event: KonvaEventObject<MouseEvent, Konva.Group>) =>
-      openTheTableMenu(shape.shape, event),
+      openTheShapeMenu(shape.shape, event),
     onDragstart: () => startDragging(shape),
     onDragmove: (event: KonvaEventObject<DragEvent, Konva.Group>) =>
       groupDrag === null ? snapWhileDragging(event) : snapTheGroupWhileDragging(event),
@@ -780,6 +832,7 @@ function scrollToTheSelectedShape(): void {
 
 function measureTheView(): void {
   visibleHeight.value = scrollArea.value?.clientHeight ?? 0
+  visibleWidth.value = scrollArea.value?.clientWidth ?? 0
 }
 
 watch([selection, drawnShapes], attachTheTransformer, { flush: 'post' })
@@ -806,9 +859,6 @@ onUnmounted(() => {
 
 <template>
   <section class="table-plan-drawing" data-test="table-plan-drawing-column">
-    <v-alert v-if="refusalText !== null" class="refusal mb-2" data-test="refusal" type="warning" variant="tonal">
-      {{ refusalText }}
-    </v-alert>
     <div ref="scrollArea" class="drawing-scroll" data-test="drawing-scroll">
       <div class="drawing-frame" data-test="table-plan-drawing">
         <KonvaStage
@@ -860,20 +910,58 @@ onUnmounted(() => {
       scroll-strategy="none"
     >
       <v-list v-if="contextMenu !== null" data-test="table-plan-menu">
+        <template v-if="contextMenu.on === 'table'">
+          <v-list-item
+            data-test="copy-table"
+            prepend-icon="mdi-content-copy"
+            :title="t('admin.tablePlan.actions.copy')"
+            @click="copyFromTheMenu"
+          />
+          <template v-if="soleSelectedShape?.kind === 'table'">
+            <v-list-item
+              data-test="edit-table-from-menu"
+              prepend-icon="mdi-pencil"
+              :title="t('admin.common.actions.edit')"
+              @click="editFromTheMenu"
+            />
+            <BaseActionWithRefusalReason
+              class="d-flex"
+              data-test="remove-table-from-menu-wrapper"
+              :refusal-reason="removalRefusal"
+            >
+              <template #default="{ refused }">
+                <v-list-item
+                  class="flex-grow-1"
+                  data-test="remove-table-from-menu"
+                  :title="t('admin.festivals.actions.hide')"
+                  :disabled="refused"
+                  @click="removeFromTheMenu"
+                >
+                  <template #prepend>
+                    <v-icon icon="mdi-delete" color="error" />
+                  </template>
+                </v-list-item>
+              </template>
+            </BaseActionWithRefusalReason>
+          </template>
+        </template>
         <v-list-item
-          v-if="contextMenu.on === 'table'"
-          data-test="copy-table"
-          @click="copyFromTheMenu"
+          v-else-if="contextMenu.on === 'station'"
+          data-test="remove-station-from-menu"
+          :title="t('admin.festivals.actions.remove')"
+          @click="removeFromTheMenu"
         >
-          <v-list-item-title>{{ t('admin.tablePlan.actions.copy') }}</v-list-item-title>
+          <template #prepend>
+            <v-icon icon="mdi-delete" color="error" />
+          </template>
         </v-list-item>
         <v-list-item
           v-else
           data-test="paste-table"
+          prepend-icon="mdi-content-paste"
+          :title="t('admin.tablePlan.actions.paste')"
           @click="pasteFromTheMenu"
-        >
-          <v-list-item-title>{{ t('admin.tablePlan.actions.paste') }}</v-list-item-title>
-        </v-list-item>
+        />
       </v-list>
     </v-menu>
   </section>
@@ -887,15 +975,15 @@ onUnmounted(() => {
 }
 
 .drawing-scroll {
-  border: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
   flex: 1 1 0;
   min-height: 0;
-  overflow-y: auto;
+  overflow: auto;
   scrollbar-gutter: stable;
-  width: fit-content;
 }
 
 .drawing-frame {
   background-color: rgb(var(--v-theme-surface));
+  margin: 0 auto;
+  width: fit-content;
 }
 </style>

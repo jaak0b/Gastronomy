@@ -23,19 +23,17 @@ tooltip beside them (frontend rule 8).
   `moveThrough` (store actions returning an `AdminActionResult`; `moveThrough` also receives whether
   "Ausgeblendete anzeigen" is ticked, which the move request carries so a move passes over the
   hidden entries the admin cannot see), `rowTestName` for the rows'
-  `data-test`, and `isSelected` to highlight a row and scroll it into view. It emits `saved` with
-  the answer and the mode, for a screen that selects what was just created. Consumers:
-  `festivals/FestivalTablePlan.vue` (areas, with the arrows) and `tablePlan/TablePlanTableList.vue`
-  (tables). Both put `tablePlan/TablePlanNameDialog.vue` in the slot: the name only, with the
-  title, the field's label and the saved name as props, a limit of 40 characters, and the name as
-  the draft it saves.
+  `data-test`. It emits `saved` with the answer and the mode, for a screen that selects what was
+  just created. Consumer: `festivals/FestivalTablePlan.vue` (areas, with the arrows), which puts
+  `tablePlan/TablePlanNameDialog.vue` in the slot: the name only, with the title, the field's label
+  and the saved name as props, a limit of 40 characters, and the name as the draft it saves. The
+  table plan editor opens the same dialog from its toolbar and its context menu.
 - `stations/RemovableStationRows.vue` draws station rows that are removed, not hidden: the name, a
   `badges` and an `actions` slot, the trash icon inside `BaseActionWithRefusalReason`
   (`removalRefusalOf`; the festival page's comes from `admin/composables/useStationRefusalReasons.ts`), the question before the removal, `removeThrough`, and the refusal under its
-  row. Consumers: `festivals/FestivalStations.vue` and `tablePlan/TablePlanStationList.vue`.
+  row. Consumer: `festivals/FestivalStations.vue`.
 - `BaseListRow.vue` is one row of any of these lists: the line between rows, the tint on every
-  second row (`position`), the stronger tint of the selected row (`isSelected`), and scrolling a row
-  into view when it becomes selected. `HideableEntryList`, `RemovableStationRows` and the article
+  second row (`position`). `HideableEntryList`, `RemovableStationRows` and the article
   rows of `FestivalItems.vue` use it; a list grouped under headings numbers its rows on through the
   groups with `numberRowsAcrossGroups` (`admin/core/alternatingRows.ts`).
 - `BaseHeadingWithCheckbox.vue` is a heading with its checkbox at the right of the same line, the
@@ -47,8 +45,8 @@ tooltip beside them (frontend rule 8).
   `:disabled`; the wrapper carries the tooltip (`data-test="refusal-reason"`), because a disabled
   button sends no hover. Consumers: the article rows of `FestivalItems.vue` and of the Artikel tab,
   the ingredient rows of the Zutaten tab, the unit rows of the Einheiten tab, the station rows of
-  the Ausgabestellen tab, the festival list's crossed-out eye, `HideableEntryList.vue` and
-  `RemovableStationRows.vue`.
+  the Ausgabestellen tab, the festival list's crossed-out eye, `HideableEntryList.vue`,
+  `RemovableStationRows.vue`, and the menu's "Ausblenden" in the table plan editor.
 - `BaseTrashButton.vue` is the red trash icon of the festival page, the Artikel, Zutaten, Einheiten
   and Kellner tabs, the recipe dialog's lines, the hiding icon of `HideableEntryList.vue` and the
   removal icon of `RemovableStationRows.vue`.
@@ -64,7 +62,8 @@ tooltip beside them (frontend rule 8).
   festival page and of the Ausgabestellen tab, the Zutaten and Einheiten tabs, the festival list (it
   opens the festival page) and the Kellner tab (it changes the name).
   `BaseShowButton.vue` is the open eye on it, with the word of its action as `label`: "Einblenden"
-  on every hidden row (the festival list and `HideableEntryList.vue`), and "Artikel aktivieren",
+  on every hidden row (the festival list and `HideableEntryList.vue`) and in the hidden tables
+  dropdown of the table plan editor, and "Artikel aktivieren",
   "Kategorie einschalten", "Zutat aktivieren", "Einheit aktivieren", "Ausgabestelle einschalten" and
   "Kellner wieder aufnehmen" for a deactivated entry of the global tabs.
 - `BaseMoveButtons.vue` is the pair of arrows that emits `move` with `up` or `down`
@@ -74,12 +73,12 @@ tooltip beside them (frontend rule 8).
   request carries the state of "Ausgeblendete anzeigen", and the Artikel tab shows every category,
   deactivated ones with their chip, so a category's move counts every category.
 - `BaseHideConfirmDialog.vue` asks before hiding, with the festival list's "Ausblenden" confirm label
-  and an optional sentence on what follows. Consumers: `FestivalsList.vue`, `HideableEntryList.vue`.
+  and an optional sentence on what follows. Consumers: `FestivalsList.vue`, `HideableEntryList.vue`
+  and `tablePlan/TablePlanEditor.vue`.
 - `BaseRemoveConfirmDialog.vue` asks before removing, with "Entfernen". Consumers: the article rows
-  of the festival page and `RemovableStationRows.vue`.
+  of the festival page, `RemovableStationRows.vue` and `tablePlan/TablePlanEditor.vue`.
 - `BaseSearchAddLine.vue` is the festival page's type-to-search field and add button, with a slot
-  for the "Neu…" button beside them. Consumers: `FestivalStations.vue`, `FestivalItems.vue` and
-  `tablePlan/TablePlanStationList.vue`.
+  for the "Neu…" button beside them. Consumers: `FestivalStations.vue` and `FestivalItems.vue`.
 
 ## The order of a row's actions
 

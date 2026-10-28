@@ -20,7 +20,6 @@ const props = defineProps<{
   nameOf: (entry: TEntry) => string
   isHidden: (entry: TEntry) => boolean
   hidingRefusalOf: (entry: TEntry) => string | null
-  isSelected?: (entry: TEntry) => boolean
   rowTestName: string
   newLabel: string
   hideTitle: string
@@ -114,7 +113,6 @@ async function move(entry: TEntry, direction: MoveDirection): Promise<void> {
         v-for="(entry, position) in listedEntries"
         :key="idOf(entry)"
         :position="position"
-        :is-selected="isSelected?.(entry) === true"
         :data-test="rowTestName"
         :data-test-id="idOf(entry)"
       >

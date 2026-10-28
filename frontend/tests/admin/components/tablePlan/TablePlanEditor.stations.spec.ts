@@ -1,17 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { enableAutoUnmount, type VueWrapper } from '@vue/test-utils'
-import { VAutocomplete } from 'vuetify/components'
+import { enableAutoUnmount } from '@vue/test-utils'
 import {
   allOnScreen,
   clickOn,
   dialogText,
   isOnScreen,
-  onScreen,
   pressInDialog,
+  textOnScreen,
   waitForDialog,
   waitUntil,
 } from '../../../support/dom'
+import type Konva from 'konva'
+import { hasShapeWithId, shapeWithId } from '../../../support/konvaDrawing'
 import { answer, inTurn, noConnection } from '../../../support/laptop'
 import {
   HALL,
@@ -22,10 +23,15 @@ import {
   TABLE_A1,
   TENT,
   editorLaptop,
+  isHighlighted,
   mountEditor,
+  chooseInTheMenuOf,
+  openTheMenuOf,
+  openTheToolbarMenu,
+  planRefusalText,
   selectTheShape,
   shapesWithTheHandles,
-  stationRow,
+  theDrawing,
 } from './tablePlanEditorFixture'
 import { aGeometry, anAdminStation, anAdminStationShape, anAdminTable } from '../../../support/wireViews'
 
@@ -47,13 +53,13 @@ const TENT_WITH_THE_BAR = {
   stationShapes: [anAdminStationShape({ stationId: 'station-theke', stationName: 'Theke' })],
 }
 
-function stationSearchOf(editor: VueWrapper) {
-  return editor.getComponent<typeof VAutocomplete>('[data-test="station-search"]')
+function stationsOffered(): string[] {
+  return allOnScreen('[data-test="station-to-place"]').map((entry) => entry.textContent?.trim() ?? '')
 }
 
-async function putTheKitchenHere(editor: VueWrapper): Promise<void> {
-  await stationSearchOf(editor).setValue('station-kueche')
-  await clickOn('[data-test="add-station"]')
+async function putTheKitchenHere(): Promise<void> {
+  await openTheToolbarMenu('add-station', 'station-to-place')
+  await clickOn('[data-test="station-to-place"][data-test-id="station-kueche"]')
 }
 
 beforeEach(() => {
@@ -66,69 +72,43 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('the stations beside the drawing', () => {
-  it('list the stations on this plan as rows', async () => {
-    editorLaptop({ areas: [HALL, TENT_WITH_THE_BAR], stations: [KITCHEN, SCHANK, BAR] })
-
-    await mountEditor()
-
-    expect(allOnScreen('[data-test="station-row"] [data-test="station-name"]').map((name) => name.textContent?.trim())).toEqual([
-      'Schank',
-    ])
-  })
-
-  it('offer to add only the stations of the festival that are on no plan', async () => {
+describe('the station dropdown of the toolbar', () => {
+  it('offers only the stations of the festival that are on no plan', async () => {
     editorLaptop({ areas: [HALL, TENT_WITH_THE_BAR], stations: [KITCHEN, SCHANK, BAR, NOT_AT_THE_FESTIVAL] })
-
-    const editor = await mountEditor()
-
-    expect((stationSearchOf(editor).props('items') as { name: string }[]).map((station) => station.name)).toEqual([
-      'Küche',
-    ])
-  })
-
-  it('highlight the row of the station the admin taps in the drawing', async () => {
-    editorLaptop()
     await mountEditor()
 
-    await selectTheShape(SCHANK_SHAPE_ID)
+    await openTheToolbarMenu('add-station', 'station-to-place')
 
-    expect(stationRow('station-schank').classList.contains('selected-row')).toBe(true)
+    expect(stationsOffered()).toEqual(['Küche'])
   })
 
-  it('bring the row of the station the admin taps in the drawing into view', async () => {
-    const scrolledIntoView = vi.spyOn(Element.prototype, 'scrollIntoView')
-    editorLaptop()
-    await mountEditor()
-
-    await selectTheShape(SCHANK_SHAPE_ID)
-
-    expect(scrolledIntoView.mock.contexts).toContain(stationRow('station-schank'))
-  })
-
-  it('say that every station of the festival is already on a table plan when nothing is left to add', async () => {
+  it('says that every station of the festival is already on a table plan when nothing is left to add', async () => {
     editorLaptop({ areas: [HALL, TENT_WITH_THE_BAR], stations: [SCHANK, BAR] })
+    await mountEditor()
 
-    const editor = await mountEditor()
+    await openTheToolbarMenu('add-station', 'no-station-to-place')
 
-    expect(stationSearchOf(editor).props('noDataText')).toBe('Alle Ausgabestellen dieses Festes stehen schon in einem Tischplan.')
+    expect(textOnScreen('[data-test="no-station-to-place"]').trim()).toBe(
+      'Alle Ausgabestellen dieses Festes stehen schon in einem Tischplan.',
+    )
   })
 
-  it('say that the festival has no station yet when none belongs to it', async () => {
+  it('says that the festival has no station yet when none belongs to it', async () => {
     editorLaptop({ areas: [{ ...HALL, stationShapes: [] }, TENT], stations: [NOT_AT_THE_FESTIVAL] })
+    await mountEditor()
 
-    const editor = await mountEditor()
+    await openTheToolbarMenu('add-station', 'no-station-to-place')
 
-    expect(stationSearchOf(editor).props('noDataText')).toBe('Zu diesem Fest gehört noch keine Ausgabestelle.')
+    expect(textOnScreen('[data-test="no-station-to-place"]').trim()).toBe('Zu diesem Fest gehört noch keine Ausgabestelle.')
   })
 })
 
 describe('adding a station to this area', () => {
   it('places the chosen station below the lowest shape of the area', async () => {
     const laptop = editorLaptop()
-    const editor = await mountEditor()
+    await mountEditor()
 
-    await putTheKitchenHere(editor)
+    await putTheKitchenHere()
 
     expect(laptop.writes()).toEqual([
       {
@@ -142,9 +122,9 @@ describe('adding a station to this area', () => {
   it('goes below a hidden table of the area too, the way a new table does', async () => {
     const hiddenA2 = anAdminTable({ tableId: 'table-a2', name: 'A2', isHidden: true, geometry: aGeometry({ x: 10, y: 80 }) })
     const laptop = editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, hiddenA2] }, TENT] })
-    const editor = await mountEditor()
+    await mountEditor()
 
-    await putTheKitchenHere(editor)
+    await putTheKitchenHere()
 
     expect(laptop.writtenBodies()).toEqual([
       { areaId: 'area-halle', geometry: { x: 10, y: 130, width: 120, height: 40, rotation: 0 } },
@@ -159,41 +139,80 @@ describe('adding a station to this area', () => {
         answer({ areas: [{ ...HALL, stationShapes: [SCHANK_SHAPE, kitchenShape] }, TENT] }),
       ),
     })
-    const editor = await mountEditor()
+    await mountEditor()
 
-    await putTheKitchenHere(editor)
+    await putTheKitchenHere()
 
     await waitUntil(() => expect(shapesWithTheHandles()).toEqual(['station-station-kueche']))
   })
 
-  it('shows the reason under the field when the laptop cannot be reached', async () => {
+  it('shows the reason above the drawing when the laptop cannot be reached', async () => {
     editorLaptop({ writeReply: noConnection() })
-    const editor = await mountEditor()
+    await mountEditor()
 
-    await putTheKitchenHere(editor)
+    await putTheKitchenHere()
 
     await waitUntil(() =>
-      expect(onScreen('[data-test="add-station-to-plan"] [data-test="refusal"]').textContent?.trim()).toBe(
+      expect(planRefusalText()).toBe(
         'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.',
       ),
     )
   })
 })
 
-describe('taking a station off this plan', () => {
-  it('is offered as the trash icon of the station rows on the festival page', async () => {
+describe('a station the admin taps in the drawing', () => {
+  it('is highlighted', async () => {
     editorLaptop()
-
     await mountEditor()
 
-    expect(onScreen('[data-test="remove-station"]', stationRow('station-schank')).querySelector('.mdi-delete')).not.toBeNull()
+    await selectTheShape(SCHANK_SHAPE_ID)
+
+    expect(isHighlighted(SCHANK_SHAPE_ID)).toBe(true)
   })
 
+  it('gets the border of a selected table, in the same colour and width', async () => {
+    editorLaptop()
+    await mountEditor()
+
+    await selectTheShape(SCHANK_SHAPE_ID)
+
+    const border = shapeWithId(theDrawing(), SCHANK_SHAPE_ID).findOne<Konva.Rect>('Rect')
+    expect([border?.stroke(), border?.strokeWidth()]).toEqual(['#1f2937', 3])
+  })
+
+})
+
+describe('the context menu on a station', () => {
+  it('offers only Entfernen, with the trash icon before the text', async () => {
+    editorLaptop()
+    await mountEditor()
+
+    await openTheMenuOf(SCHANK_SHAPE_ID)
+
+    expect(
+      allOnScreen('[data-test="table-plan-menu"] .v-list-item').map((entry) => [
+        isOnScreen('.v-list-item__prepend .mdi-delete', entry),
+        entry.querySelector('.v-list-item-title')?.textContent?.trim(),
+      ]),
+    ).toEqual([[true, 'Entfernen']])
+  })
+
+  it('selects the station it was opened on', async () => {
+    editorLaptop()
+    await mountEditor()
+
+    await openTheMenuOf(SCHANK_SHAPE_ID)
+
+    expect(isHighlighted(SCHANK_SHAPE_ID)).toBe(true)
+  })
+})
+
+describe('taking a station off this plan from its menu', () => {
   it('asks first, the way the festival page asks before removing a station', async () => {
     const laptop = editorLaptop()
     await mountEditor()
 
-    await clickOn('[data-test="remove-station"]', stationRow('station-schank'))
+    await chooseInTheMenuOf(SCHANK_SHAPE_ID, 'remove-station-from-menu')
     await waitForDialog()
 
     expect([dialogText('[data-test="confirm-title"]'), dialogText('[data-test="confirm-body"]')]).toEqual([
@@ -206,7 +225,7 @@ describe('taking a station off this plan', () => {
   it('deletes its shape once the admin confirms', async () => {
     const laptop = editorLaptop()
     await mountEditor()
-    await clickOn('[data-test="remove-station"]', stationRow('station-schank'))
+    await chooseInTheMenuOf(SCHANK_SHAPE_ID, 'remove-station-from-menu')
 
     await pressInDialog('[data-test="confirm"]')
 
@@ -217,15 +236,13 @@ describe('taking a station off this plan', () => {
 
   it('offers the station to add again once the laptop has taken its shape off', async () => {
     editorLaptop({ planReply: inTurn(answer({ areas: [HALL, TENT] }), answer({ areas: [{ ...HALL, stationShapes: [] }, TENT] })) })
-    const editor = await mountEditor()
-    await clickOn('[data-test="remove-station"]', stationRow('station-schank'))
-
+    await mountEditor()
+    await chooseInTheMenuOf(SCHANK_SHAPE_ID, 'remove-station-from-menu')
     await pressInDialog('[data-test="confirm"]')
+    await waitUntil(() => expect(hasShapeWithId(theDrawing(), SCHANK_SHAPE_ID)).toBe(false))
 
-    await waitUntil(() => expect(isOnScreen('[data-test="station-row"][data-test-id="station-schank"]')).toBe(false))
-    expect((stationSearchOf(editor).props('items') as { name: string }[]).map((station) => station.name)).toEqual([
-      'Küche',
-      'Schank',
-    ])
+    await openTheToolbarMenu('add-station', 'station-to-place')
+
+    expect(stationsOffered()).toEqual(['Küche', 'Schank'])
   })
 })

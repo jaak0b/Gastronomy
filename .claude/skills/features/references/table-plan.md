@@ -165,30 +165,50 @@ Frontend, under `frontend/src/`:
   selected alone. A press on empty space becomes a marquee once it passes the editor's 3-pixel drag
   threshold: the dashed `marquee` rectangle with the translucent `marquee-fill` selects every table
   its box touches, a plain marquee replaces the selection and a Ctrl or Shift marquee adds to it. A
-  press shorter than the threshold is the plain click that clears the selection. The page is one
-  block centred in the window, at most 1100 pixels wide like the festival page:
-  `TablePlanDrawing.vue` (the Konva drawing) with the lists to its right, at most a form column
-  wide, or below it in a window too narrow for both. `TablePlanTableList.vue` draws the table rows
-  with the same `HideableEntryList.vue` as the card: the heading line "Tische" with "Ausgeblendete
-  anzeigen", the name as text, the pencil opening `TablePlanNameDialog.vue`, the hiding trash icon
-  (disabled with the reason while the festival runs and the table has items to hand out or settle)
-  or the open eye "Einblenden", and "Neuer Tisch" at the right (the table goes below the lowest
-  table of the area, hidden ones included, and below the station shapes, and is selected).
-  `TablePlanStationList.vue` draws its rows with `admin/components/stations/RemovableStationRows.vue`,
-  the rows of the festival page's station card: one row per station on this plan with the trash
-  icon, which asks first (`BaseRemoveConfirmDialog`) and deletes its shape, and below them the shared
-  `admin/components/BaseSearchAddLine.vue` offering only the festival's stations on no plan. With
-  nothing to offer it says either that every station of the festival is in an area
-  (`noStationsToPlace`) or that the festival has no station yet (`festivalHasNoStations`).
-  Tapping a shape in the drawing highlights its row and scrolls the list to it, a table row and a
-  station row alike (`BaseListRow.vue`). The resize handles appear only for exactly one selected
-  shape; a table selection of several shows its tables with the primary border and no handles.
+  press shorter than the threshold is the plain click that clears the selection. There is no
+  double-click action. A selected shape, table or station alike, is drawn with a 3-unit `primary`
+  border, and the resize handles appear only for exactly one selected shape. The page is one block
+  centred in the window, at most 1100 pixels wide like the festival page: one refusal line, then
+  one framed box (`data-test="plan-frame"`) holding the toolbar as its top strip and
+  `TablePlanDrawing.vue` (the Konva drawing) below it, filling the rest of the width and the
+  height. There is no list beside the drawing.
+- The toolbar is `TablePlanToolbar.vue`, the top strip of the frame, which stays on screen while
+  the drawing scrolls. From left to right: "Neuer Tisch", text only like every "Neu…" button (opens
+  `TablePlanNameDialog.vue` empty; the table goes below the lowest table of the area, hidden ones
+  included, and below the station shapes, and is selected), "Ausgabestelle hinzufügen" / "Add a
+  station" (`admin.tablePlan.actions.addStation`) as a dropdown listing only the festival's
+  stations on no plan (a pick places the station below the lowest shape and selects it; with
+  nothing to offer the list holds one disabled line saying either that every station of the
+  festival is in an area, `noStationsToPlace`, or that the festival has no station yet,
+  `festivalHasNoStations`), and at the right "Ausgeblendete Tische" / "Hidden tables"
+  (`admin.tablePlan.actions.hiddenTables`), a dropdown of the area's hidden tables that opens
+  downward under its button, at most 20rem high and scrolling inside. It lists them by name with
+  the shared `compareNames` (`hiddenTablesOf` in `admin/core/tablePlanPlacement.ts`), each with the
+  open eye "Einblenden" (`BaseShowButton`)
+  that shows it again without asking, so it is drawn again where it stood. While the area has no
+  hidden table the dropdown is not there at all.
+- Editing, hiding and removing live only in the context menu of the drawing. What they act on is
+  `soleSelectedShapeOf` in `admin/core/tablePlanSelection.ts`: exactly one shown table, or the
+  selected station, otherwise nothing. The editor owns the dialogs and the actions. Hiding a table
+  asks first through `BaseHideConfirmDialog` (`hideTableTitle`, `hideTableBody`); removing a
+  station asks through `BaseRemoveConfirmDialog` (`removeStationTitle`, `removeStationBody`) and
+  takes its shape off this plan. There is one refusal line above the frame
+  (`data-test="plan-refusal"`, one `useRefusalDisplay` in the editor): a refused hide, show, placing
+  or removal, and the drawing's refused move, resize or paste (the drawing emits each answer as
+  `actionFinished` and the editor's display reads it) all show there. The line clears when the selection changes and when the next action starts (the
+  drawing emits `actionStarted`).
 - Copy and paste live in the drawing. Ctrl+C copies the selected tables (a station is never
   copied), Ctrl+V pastes them, and the context menu opened by a right click offers "Kopieren" on a
-  table and "Einfügen" on an empty spot. A right click keeps the current table selection when the
+  table, followed by "Bearbeiten" and "Ausblenden" only while exactly that one table is selected
+  (with several tables selected the two entries are not shown at all), "Entfernen" alone on a
+  station (a right click selects it), and "Einfügen" on an empty spot. Every entry shows its icon
+  before its text: `mdi-content-copy`, the pencil, the red `mdi-delete` and `mdi-content-paste`.
+  "Ausblenden" is disabled with `tableWithItemsToHandOutOrSettleStaysShown` as a tooltip
+  (`BaseActionWithRefusalReason`) while the festival runs and the table has items to hand out or
+  settle. A right click keeps the current table selection when the
   clicked table is already in it and selects just that table otherwise; it never copies by itself.
   "Kopieren" copies whatever is selected then, so a selected table copies the whole selection and an
-  unselected one copies just itself. A station shows no menu. The browsers' own menu is suppressed only over the drawing. The keyboard shortcuts
+  unselected one copies just itself. The browsers' own menu is suppressed only over the drawing. The keyboard shortcuts
   are ignored from an input, textarea, select or contenteditable, and while a dialog is open;
   the browser default is prevented only when the app handles the key. The listener is added while
   the editor is mounted and removed when it closes. A paste reloads the plan, selects every new
@@ -267,7 +287,7 @@ Frontend, under `frontend/src/`:
   refetch on `GroupsJoined` reloads it.
 - Texts: `phone.tablePlan.*`.
 - Texts: `admin.tablePlan.*` (the dialog's `areaName`, `tableName`, `newArea`, `editArea`,
-  `newTable`, `editTable`, `openPlan`, the menu's `copy`, `paste`, the hide questions `hideAreaTitle`, `hideTableTitle` with
+  `newTable`, `editTable`, `openPlan`, the toolbar's `addStation` and `hiddenTables`, the menu's `copy`, `paste`, the hide questions `hideAreaTitle`, `hideTableTitle` with
   `hideAreaBody`, `hideTableBody`, the removal body `removeStationBody`, the warnings `noArea`,
   `allAreasHidden`, `allAreasHiddenAndNotListed`, `noTable`, `noStationsToPlace` and
   `festivalHasNoStations`), and the shared "Einblenden", "Ausgeblendet", "Ausgeblendete anzeigen"
@@ -363,13 +383,16 @@ Frontend, under `frontend/src/`:
   reapplies a value that changed. A shape's listeners go in its group config (`onDragmove` and so
   on), which vue-konva registers on the node: listeners written as `@dragmove` on a vue-konva
   `Group`, whose root is a fragment, make Vue warn on every shape.
-- **The drawing is 400 units wide and as long as its lowest shape.** The editor shows it at one
-  fixed scale of 1.5 (`DRAWING_SCALE` in `TablePlanDrawing.vue`) with a margin of 4 units around it
-  (`MARGIN_AROUND_THE_DRAWING`, the layer's offset), 612 pixels wide on every window, so it never
-  shrinks when the window narrows and a border at the edge is drawn whole; the transformer's
-  bounds take the margin off before they compare. Its visible height follows the window and it
-  scrolls inside for long areas. It adds 200 units below the lowest drawn shape, or more to fill its visible
-  height, and draws no hidden table. A new table and a new station both go below the lowest table
+- **The drawing is 400 units wide and as long as its lowest shape.** The editor shows it with a
+  margin of 4 units around it (`MARGIN_AROUND_THE_DRAWING`, the layer's offset) at the scale that
+  fits the whole area into its frame: the smaller of the width scale and the height scale
+  (`scaleFittingTheView` in `admin/core/tablePlanPlacement.ts`), recomputed whenever the frame
+  changes size, so at common window sizes neither the page nor the drawing scrolls. It never goes
+  below half a pixel per unit (`SMALLEST_EDITOR_SCALE`, 204 pixels wide); below that the drawing
+  scrolls inside its frame, sideways and down. A border at the edge is drawn whole; the
+  transformer's bounds, the pointer and the snapping all divide by the current scale. The height
+  it fits is the lowest drawn shape plus 200 units; it then fills the rest of the frame's height,
+  and draws no hidden table. A new table and a new station both go below the lowest table
   of the area, hidden ones included, and below the station shapes, so neither takes the place of a
   hidden table, and showing a table again moves nothing. Nothing about the length is stored.
 - **Names of areas and tables are typed in a dialog and never guessed.** One dialog,
@@ -381,8 +404,8 @@ Frontend, under `frontend/src/`:
   saved at once, and each press passes over the hidden areas the admin cannot see; a new area goes
   last, numbered by the laptop. A move, a resize and a group move save when they are dropped.
   Hiding and taking a station off the plan ask first, showing asks nothing, and hiding is disabled
-  with the reason while the laptop would refuse it. A refusal that comes back anyway shows on its row,
-  under the station field, or above the drawing for a move or a resize.
+  with the reason while the laptop would refuse it. A refusal that comes back anyway shows in the
+  one refusal line above the frame.
 - **The two colour states are computed on every read and never stored.** Handed out (the fill):
   leave out every order of the table whose items are all handed out, at every one of its stations.
   Of the orders left, none with an item handed out is `None`, at least one handed-out item is
@@ -485,7 +508,7 @@ Frontend, under `frontend/src/`:
 - `frontend/tests`: `admin/core/tablePlanSnapping.spec.ts`, `tablePlanPlacement.spec.ts` (including
   the paste placements: one grid step in the same area, unchanged coordinates in another, the menu
   anchor, the fit-left rule and never a left edge below zero), `tablePlanSelection.spec.ts` (the
-  multi-table selection, the station, the toggle and the marquee intersection), `oneAtATime.spec.ts`;
+  multi-table selection, the station, the toggle, the marquee intersection and `soleSelectedShapeOf`; the placement spec also covers `hiddenTablesOf` and `scaleFittingTheView`), `oneAtATime.spec.ts`;
   `shared/core/tablePlanDrawing.spec.ts`,
   `tablePlanColours.spec.ts` and `themeColours.spec.ts`; the store in
   `admin/stores/tablePlan.loading.spec.ts` (the gate, `ConfigurationChanged`, `OrdersChanged`,
@@ -502,15 +525,20 @@ Frontend, under `frontend/src/`:
   `admin/components/tablePlan/TablePlanEditor.drawing.spec.ts` (Konva on `canvas`: a hidden table
   never drawn, the size kept when the window narrows, a border at the edge drawn whole, a name never
   broken inside a word, the measuring text let go when the editor closes, drag, snap, guide lines,
-  selecting, scrolling a selected shape into view, refusal, theme switch, the drawing growing to
-  fill a tall window), `.resizing` (the 20-unit and width limits, a refused resize, a station
-  shape), `.tables` (the rows, the pencil before the trash icon, the box for hidden tables, the row highlighted and scrolled to, the
-  dialog for a new table below the lowest table, a hidden one included, and for editing one, hiding
-  that asks first, is disabled with its reason and takes the table out of the drawing, showing that
-  moves nothing), `.stations` (the rows on this plan, a row highlighted and scrolled to, a new
-  station placed below a hidden table, the add line
-  with the stations on no plan and its two sentences when it has none, the trash icon that asks
-  first, a station offered again once its shape is gone), `.selection.spec.ts` (Ctrl and Shift
+  selecting and highlighting, scrolling a selected shape into view, refusal, theme switch, the
+  fit to a tall window, to a wide one and the smallest scale), `.resizing` (the 20-unit and width
+  limits, a refused resize, a station shape), `.tables` (the toolbar's order inside the frame, the
+  dialog for a new table below the lowest table, a hidden one included, editing and hiding from the
+  menu, hiding that asks first and takes the table out of the drawing, the one refusal line showing
+  only the newest refusal and clearing on a new selection, the hidden tables dropdown, absent
+  without hidden tables, with its eye showing a table again and drawing it),
+  `.stations` (the dropdown with the stations on no plan and its two sentences when it has none, a
+  new station placed below a hidden table and selected, a selected station with the table's border,
+  its menu with only Entfernen, its removal that asks first, and a station offered again once its
+  shape is gone), `.menu` (each menu entry's icon and text, Bearbeiten and Ausblenden from the menu,
+  Ausblenden disabled with its reason, both left out for several tables), `TablePlanToolbar.spec.ts`
+  (the English names, the picked station and the shown table handed to the editor),
+  `.selection.spec.ts` (Ctrl and Shift
   clicks, the plain click, the marquee with its dashed box and translucent fill, a plain and a Ctrl
   marquee, the short press that clears, the transformer only for one shape, a group drag sending one
   snapped move request and causing one reload with the laptop's answer, and a refused group move

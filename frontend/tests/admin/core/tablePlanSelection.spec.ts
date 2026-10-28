@@ -7,6 +7,7 @@ import {
   selectedTableIds,
   selectionOfTables,
   shapeNodeIdOf,
+  soleSelectedShapeOf,
   tableIdsInMarquee,
   withTableToggled,
 } from '../../../src/admin/core/tablePlanSelection'
@@ -16,9 +17,11 @@ const A1 = anAdminTable({ tableId: 'table-a1', geometry: aGeometry({ x: 20, y: 3
 
 const A2 = anAdminTable({ tableId: 'table-a2', geometry: aGeometry({ x: 150, y: 30, width: 80, height: 40 }) })
 
+const SCHANK_SHAPE = anAdminStationShape({ stationId: 'station-schank' })
+
 const HALL = anAdminArea({
   tables: [A1, A2],
-  stationShapes: [anAdminStationShape({ stationId: 'station-schank' })],
+  stationShapes: [SCHANK_SHAPE],
 })
 
 describe('the id a shape carries in the drawing', () => {
@@ -127,5 +130,32 @@ describe('which table a selection names', () => {
       isTableSelected(selectionOfTables(['table-a1']), 'table-a2'),
       isTableSelected({ kind: 'station', stationId: 'station-schank' }, 'table-a1'),
     ]).toEqual([true, false, false])
+  })
+})
+
+describe('the one shape the toolbar acts on', () => {
+  it('is the table when exactly one table is selected', () => {
+    expect(soleSelectedShapeOf(HALL, selectionOfTables(['table-a1']))).toEqual({ kind: 'table', table: A1 })
+  })
+
+  it('is the station when the station is selected', () => {
+    expect(soleSelectedShapeOf(HALL, { kind: 'station', stationId: 'station-schank' })).toEqual({
+      kind: 'station',
+      stationShape: SCHANK_SHAPE,
+    })
+  })
+
+  it('is nothing while several tables are selected', () => {
+    expect(soleSelectedShapeOf(HALL, selectionOfTables(['table-a1', 'table-a2']))).toBeNull()
+  })
+
+  it('is nothing while nothing is selected', () => {
+    expect(soleSelectedShapeOf(HALL, null)).toBeNull()
+  })
+
+  it('is nothing when the selected table is hidden', () => {
+    const hallWithAHiddenTable = anAdminArea({ tables: [anAdminTable({ tableId: 'table-a1', isHidden: true })] })
+
+    expect(soleSelectedShapeOf(hallWithAHiddenTable, selectionOfTables(['table-a1']))).toBeNull()
   })
 })

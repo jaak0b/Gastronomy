@@ -1,34 +1,36 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
+import { enableAutoUnmount } from '@vue/test-utils'
 import {
   allOnScreen,
   clickOn,
-  iconActionLabelsOnScreen,
   dialogText,
+  iconActionLabelsOnScreen,
   inputOf,
   isOnScreen,
   onScreen,
   pressInDialog,
-  refusalReasonsOnScreen,
   textOnScreen,
   typeIn,
   waitForDialog,
   waitUntil,
 } from '../../../support/dom'
 import { saveTheTablePlanNameDialog } from '../../../support/formDialogs'
-import { hasShapeWithId } from '../../../support/konvaDrawing'
+import { dragBy, hasShapeWithId, shapeWithId } from '../../../support/konvaDrawing'
 import { answer, inTurn, refusal } from '../../../support/laptop'
 import {
   HALL,
   TABLE_A1,
   TABLE_A1_SHAPE_ID,
   TENT,
+  chooseInTheMenuOf,
   editorLaptop,
   mountEditor,
+  openTheToolbarMenu,
+  planRefusalText,
+  pressInTheToolbar,
   selectTheShape,
   shapesWithTheHandles,
-  tableRow,
   theDrawing,
 } from './tablePlanEditorFixture'
 import { aGeometry, anAdminTable } from '../../../support/wireViews'
@@ -43,22 +45,10 @@ const NAME_TAKEN =
 const STILL_OPEN =
   'Ein Tisch kann bei einem aktiven Fest erst ausgeblendet werden, wenn dort alles zubereitet und kassiert ist.'
 
-const TABLE_A2 = anAdminTable({ tableId: 'table-a2', name: 'A2', geometry: aGeometry({ x: 20, y: 100 }) })
+const FAILED =
+  'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.'
 
 const HIDDEN_A3 = anAdminTable({ tableId: 'table-a3', name: 'A3', isHidden: true, geometry: aGeometry({ y: 300 }) })
-
-const A1_WITH_ITEMS_TO_HAND_OUT = { ...TABLE_A1, hasItemsToHandOutOrSettleAtTheRunningFestival: true }
-
-const TABLE_LIST = '[data-test="table-plan-table-list"]'
-
-function hideButtonOf(tableId: string): HTMLButtonElement {
-  return onScreen('[data-test="hide-entry"]', tableRow(tableId)) as HTMLButtonElement
-}
-
-async function openTheNewTableDialog(): Promise<void> {
-  await clickOn('[data-test="new-entry"]', onScreen(TABLE_LIST))
-  await flushPromises()
-}
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -70,73 +60,23 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('the tables of the area', () => {
-  it('are listed by name beside the drawing in the order of the laptop', async () => {
-    editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, TABLE_A2] }, TENT] })
-
-    await mountEditor()
-
-    expect(allOnScreen('[data-test="table-row"] [data-test="entry-name"]').map((name) => name.textContent?.trim())).toEqual([
-      'A1',
-      'A2',
-    ])
-  })
-
-  it('offer the pencil and then the trash icon on each row', async () => {
-    editorLaptop()
+describe('the toolbar above the drawing', () => {
+  it('offers a new table, a station and the hidden tables from left to right', async () => {
+    editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, HIDDEN_A3] }, TENT] })
 
     await mountEditor()
 
     expect(
-      allOnScreen('[data-test="edit-entry"], [data-test="hide-entry"]', tableRow('table-a1')).map((action) =>
-        action.getAttribute('data-test'),
-      ),
-    ).toEqual(['edit-entry', 'hide-entry'])
+      allOnScreen('[data-test="table-plan-toolbar"] .v-btn').map((button) => button.getAttribute('data-test')),
+    ).toEqual(['new-table', 'add-station', 'hidden-tables'])
   })
 
-  it('leave a hidden table out of the list until the admin asks for hidden tables', async () => {
-    editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, HIDDEN_A3] }, TENT] })
+  it('sits inside the frame of the drawing, as its top strip', async () => {
+    editorLaptop()
 
     await mountEditor()
 
-    expect(isOnScreen('[data-test="table-row"][data-test-id="table-a3"]')).toBe(false)
-  })
-
-  it('show a hidden table, marked hidden and offered to show again, once the box for hidden tables is ticked', async () => {
-    editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, HIDDEN_A3] }, TENT] })
-    await mountEditor()
-
-    await clickOn('[data-test="show-hidden-entries"] input', onScreen(TABLE_LIST))
-    onScreen('[data-test="show-entry"]', tableRow('table-a3')).dispatchEvent(new MouseEvent('mouseenter'))
-
-    expect([
-      textOnScreen('[data-test="hidden"]', tableRow('table-a3')).trim(),
-      isOnScreen('[data-test="show-entry"] .mdi-eye', tableRow('table-a3')),
-    ]).toEqual(['Ausgeblendet', true])
-    await waitUntil(() =>
-      expect(iconActionLabelsOnScreen()).toContain('Einblenden'),
-    )
-  })
-})
-
-describe('a table the admin taps in the drawing', () => {
-  it('highlights its row', async () => {
-    editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, TABLE_A2] }, TENT] })
-    await mountEditor()
-
-    await selectTheShape('table-table-a2')
-
-    expect(tableRow('table-a2').classList.contains('selected-row')).toBe(true)
-  })
-
-  it('brings its row into view in the list beside the drawing', async () => {
-    const scrolledIntoView = vi.spyOn(Element.prototype, 'scrollIntoView')
-    editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, TABLE_A2] }, TENT] })
-    await mountEditor()
-
-    await selectTheShape('table-table-a2')
-
-    expect(scrolledIntoView.mock.contexts).toContain(tableRow('table-a2'))
+    expect(isOnScreen('[data-test="plan-frame"] [data-test="table-plan-toolbar"] + [data-test="table-plan-drawing-column"]')).toBe(true)
   })
 })
 
@@ -145,7 +85,7 @@ describe('a new table', () => {
     editorLaptop()
     await mountEditor()
 
-    await openTheNewTableDialog()
+    await pressInTheToolbar('new-table')
 
     expect([dialogText('[data-test="form-dialog-title"]'), inputOf('[data-test="table-plan-name-field"]').value]).toEqual([
       'Neuer Tisch',
@@ -156,7 +96,7 @@ describe('a new table', () => {
   it('cannot be saved while the name is blank', async () => {
     editorLaptop()
     await mountEditor()
-    await openTheNewTableDialog()
+    await pressInTheToolbar('new-table')
 
     await typeIn('[data-test="table-plan-name-field"]', '  ')
 
@@ -166,7 +106,7 @@ describe('a new table', () => {
   it('sends the typed name and puts the table below the lowest shape in the drawing', async () => {
     const laptop = editorLaptop({ writeReply: answer({ tableId: 'table-a2' }, 201) })
     await mountEditor()
-    await openTheNewTableDialog()
+    await pressInTheToolbar('new-table')
 
     await saveTheTablePlanNameDialog('A2')
 
@@ -186,7 +126,7 @@ describe('a new table', () => {
       writeReply: answer({ tableId: 'table-a3' }, 201),
     })
     await mountEditor()
-    await openTheNewTableDialog()
+    await pressInTheToolbar('new-table')
 
     await saveTheTablePlanNameDialog('A3')
 
@@ -205,7 +145,7 @@ describe('a new table', () => {
       ),
     })
     await mountEditor()
-    await openTheNewTableDialog()
+    await pressInTheToolbar('new-table')
 
     await saveTheTablePlanNameDialog('A2')
 
@@ -215,7 +155,7 @@ describe('a new table', () => {
   it('keeps the dialog open with the reason when another table has the name', async () => {
     editorLaptop({ writeReply: refusal('errors.admin.festivals.tableNameTaken') })
     await mountEditor()
-    await openTheNewTableDialog()
+    await pressInTheToolbar('new-table')
 
     await saveTheTablePlanNameDialog('a1')
 
@@ -225,13 +165,12 @@ describe('a new table', () => {
   })
 })
 
-describe('editing a table', () => {
+describe('editing a table from its menu', () => {
   it('opens the dialog with the name the laptop keeps', async () => {
     editorLaptop()
     await mountEditor()
 
-    await clickOn('[data-test="edit-entry"]', tableRow('table-a1'))
-    await flushPromises()
+    await chooseInTheMenuOf(TABLE_A1_SHAPE_ID, 'edit-table-from-menu')
 
     expect([dialogText('[data-test="form-dialog-title"]'), inputOf('[data-test="table-plan-name-field"]').value]).toEqual([
       'Tisch bearbeiten',
@@ -242,8 +181,7 @@ describe('editing a table', () => {
   it('sends the new name with where the table is drawn', async () => {
     const laptop = editorLaptop()
     await mountEditor()
-    await clickOn('[data-test="edit-entry"]', tableRow('table-a1'))
-    await flushPromises()
+    await chooseInTheMenuOf(TABLE_A1_SHAPE_ID, 'edit-table-from-menu')
 
     await saveTheTablePlanNameDialog('A12')
 
@@ -257,12 +195,12 @@ describe('editing a table', () => {
   })
 })
 
-describe('hiding and showing a table', () => {
+describe('hiding a table from its menu', () => {
   it('asks first, as the festival list does, and says what follows', async () => {
     const laptop = editorLaptop()
     await mountEditor()
 
-    await clickOn('[data-test="hide-entry"]', tableRow('table-a1'))
+    await chooseInTheMenuOf(TABLE_A1_SHAPE_ID, 'remove-table-from-menu')
     await waitForDialog()
 
     expect([dialogText('[data-test="confirm-title"]'), dialogText('[data-test="confirm-body"]')]).toEqual([
@@ -275,7 +213,7 @@ describe('hiding and showing a table', () => {
   it('hides the table once the admin confirms', async () => {
     const laptop = editorLaptop()
     await mountEditor()
-    await clickOn('[data-test="hide-entry"]', tableRow('table-a1'))
+    await chooseInTheMenuOf(TABLE_A1_SHAPE_ID, 'remove-table-from-menu')
 
     await pressInDialog('[data-test="confirm"]')
 
@@ -290,8 +228,7 @@ describe('hiding and showing a table', () => {
       ),
     })
     await mountEditor()
-    await selectTheShape(TABLE_A1_SHAPE_ID)
-    await clickOn('[data-test="hide-entry"]', tableRow('table-a1'))
+    await chooseInTheMenuOf(TABLE_A1_SHAPE_ID, 'remove-table-from-menu')
 
     await pressInDialog('[data-test="confirm"]')
 
@@ -299,46 +236,109 @@ describe('hiding and showing a table', () => {
     expect(shapesWithTheHandles()).toEqual([])
   })
 
-  it('cannot be asked for while the festival runs and the table still has items to hand out or settle', async () => {
-    editorLaptop({ areas: [{ ...HALL, tables: [A1_WITH_ITEMS_TO_HAND_OUT] }, TENT] })
-
-    await mountEditor()
-
-    expect(hideButtonOf('table-a1').disabled).toBe(true)
-  })
-
-  it('names the reason on the disabled trash icon', async () => {
-    editorLaptop({ areas: [{ ...HALL, tables: [A1_WITH_ITEMS_TO_HAND_OUT] }, TENT] })
-    await mountEditor()
-
-    onScreen('[data-test="hide-entry-wrapper"]', tableRow('table-a1')).dispatchEvent(new MouseEvent('mouseenter'))
-
-    await waitUntil(() =>
-      expect(refusalReasonsOnScreen()).toContain(
-        STILL_OPEN,
-      ),
-    )
-  })
-
-  it('shows the reason on the row when the laptop still refuses to hide it', async () => {
+  it('shows the reason above the drawing when the laptop still refuses to hide it', async () => {
     editorLaptop({ writeReply: refusal('errors.admin.festivals.tableWithItemsToHandOutOrSettleStaysShown') })
     await mountEditor()
-    await clickOn('[data-test="hide-entry"]', tableRow('table-a1'))
+    await chooseInTheMenuOf(TABLE_A1_SHAPE_ID, 'remove-table-from-menu')
 
     await pressInDialog('[data-test="confirm"]')
 
-    await waitUntil(() =>
-      expect(tableRow('table-a1').querySelector('[data-test="refusal"]')?.textContent?.trim()).toBe(STILL_OPEN),
-    )
+    await waitUntil(() => expect(planRefusalText()).toBe(STILL_OPEN))
+  })
+})
+
+describe('the one refusal line above the drawing', () => {
+  it('shows only the newest refusal when a refused hide follows a refused move', async () => {
+    editorLaptop({
+      writeReply: inTurn(
+        refusal('errors.admin.actionFailed', { status: 400 }),
+        refusal('errors.admin.festivals.tableWithItemsToHandOutOrSettleStaysShown'),
+      ),
+    })
+    await mountEditor()
+    await selectTheShape(TABLE_A1_SHAPE_ID)
+    await dragBy(theDrawing(), shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID), { x: 75, y: 150 })
+    await waitUntil(() => expect(planRefusalText()).toBe(FAILED))
+
+    await chooseInTheMenuOf(TABLE_A1_SHAPE_ID, 'remove-table-from-menu')
+    await pressInDialog('[data-test="confirm"]')
+
+    await waitUntil(() => expect(planRefusalText()).toBe(STILL_OPEN))
+    expect(allOnScreen('.v-alert')).toHaveLength(1)
   })
 
-  it('shows a hidden table again where it stood, without asking and without moving anything', async () => {
+  it('goes away when the admin selects another shape', async () => {
+    editorLaptop({ writeReply: refusal('errors.admin.actionFailed', { status: 400 }) })
+    await mountEditor()
+    await selectTheShape(TABLE_A1_SHAPE_ID)
+    await dragBy(theDrawing(), shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID), { x: 75, y: 150 })
+    await waitUntil(() => expect(isOnScreen('[data-test="plan-refusal"]')).toBe(true))
+
+    await selectTheShape('station-station-schank')
+
+    await waitUntil(() => expect(isOnScreen('[data-test="plan-refusal"]')).toBe(false))
+  })
+})
+
+describe('the hidden tables of the area', () => {
+  it('are offered in the dropdown at the right of the toolbar, and only they', async () => {
+    editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, HIDDEN_A3] }, TENT] })
+    await mountEditor()
+
+    await openTheToolbarMenu('hidden-tables', 'hidden-table')
+
+    expect(allOnScreen('[data-test="hidden-table"]').map((row) => row.textContent?.trim())).toEqual(['A3'])
+  })
+
+  it('are named Ausgeblendete Tische in the toolbar', async () => {
+    editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, HIDDEN_A3] }, TENT] })
+
+    await mountEditor()
+
+    expect(textOnScreen('[data-test="hidden-tables"]').trim()).toBe('Ausgeblendete Tische')
+  })
+
+  it('offer each one the open eye that shows it again', async () => {
+    editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, HIDDEN_A3] }, TENT] })
+    await mountEditor()
+    await openTheToolbarMenu('hidden-tables', 'hidden-table')
+
+    onScreen('[data-test="show-table"]').dispatchEvent(new MouseEvent('mouseenter'))
+
+    expect(isOnScreen('[data-test="hidden-table"][data-test-id="table-a3"] [data-test="show-table"] .mdi-eye')).toBe(true)
+    await waitUntil(() => expect(iconActionLabelsOnScreen()).toContain('Einblenden'))
+  })
+
+  it('leave no dropdown in the toolbar while the area has no hidden table', async () => {
+    editorLaptop()
+
+    await mountEditor()
+
+    expect(isOnScreen('[data-test="hidden-tables"]')).toBe(false)
+  })
+
+  it('show a hidden table again without asking', async () => {
     const laptop = editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, HIDDEN_A3] }, TENT] })
     await mountEditor()
-    await clickOn('[data-test="show-hidden-entries"] input', onScreen(TABLE_LIST))
+    await openTheToolbarMenu('hidden-tables', 'hidden-table')
 
-    await clickOn('[data-test="show-entry"]', tableRow('table-a3'))
+    await clickOn('[data-test="hidden-table"][data-test-id="table-a3"] [data-test="show-table"]')
 
     expect(laptop.writes()).toEqual([{ url: `${TABLES_PATH}/table-a3/show`, method: 'POST', body: undefined }])
+  })
+
+  it('draw a table on the plan again once the laptop shows it', async () => {
+    editorLaptop({
+      planReply: inTurn(
+        answer({ areas: [{ ...HALL, tables: [TABLE_A1, HIDDEN_A3] }, TENT] }),
+        answer({ areas: [{ ...HALL, tables: [TABLE_A1, { ...HIDDEN_A3, isHidden: false }] }, TENT] }),
+      ),
+    })
+    await mountEditor()
+    await openTheToolbarMenu('hidden-tables', 'hidden-table')
+
+    await clickOn('[data-test="hidden-table"][data-test-id="table-a3"] [data-test="show-table"]')
+
+    await waitUntil(() => expect(hasShapeWithId(theDrawing(), 'table-table-a3')).toBe(true))
   })
 })

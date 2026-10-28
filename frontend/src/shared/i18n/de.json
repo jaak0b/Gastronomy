@@ -376,7 +376,6 @@
         "areaName": "Name des Tischplans",
         "tableName": "Name des Tisches",
         "tableCount": "{count} Tisch | {count} Tische",
-        "tables": "Tische",
         "hideAreaTitle": "Tischplan ausblenden",
         "hideTableTitle": "Tisch ausblenden"
       },
@@ -384,6 +383,8 @@
         "newArea": "Neuer Tischplan",
         "editArea": "Tischplan bearbeiten",
         "newTable": "Neuer Tisch",
+        "addStation": "Ausgabestelle hinzufügen",
+        "hiddenTables": "Ausgeblendete Tische",
         "editTable": "Tisch bearbeiten",
         "openPlan": "Tischplan öffnen",
         "copy": "Kopieren",

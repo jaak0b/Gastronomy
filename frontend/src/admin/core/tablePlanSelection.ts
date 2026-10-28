@@ -1,4 +1,4 @@
-import type { AdminAreaView } from '../../shared/api/generatedSchemas'
+import type { AdminAreaView, AdminStationShapeView, AdminTableView } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
 import { cornersOf } from '../../shared/core/tablePlanDrawing'
 import { drawnTablesOf } from './tablePlanPlacement'
@@ -9,6 +9,10 @@ export type PlanShape = { kind: 'table'; tableId: string } | { kind: 'station'; 
 export type TablePlanSelection =
   | { kind: 'tables'; tableIds: readonly string[] }
   | { kind: 'station'; stationId: string }
+
+export type SoleSelectedShape =
+  | { kind: 'table'; table: AdminTableView }
+  | { kind: 'station'; stationShape: AdminStationShapeView }
 
 export function nodeIdOfTable(tableId: string): string {
   return `table-${tableId}`
@@ -102,4 +106,27 @@ export function tableIdsInMarquee(area: AdminAreaView, marquee: PlanBox): string
       )
     })
     .map((table) => table.tableId)
+}
+
+export function soleSelectedShapeOf(
+  area: AdminAreaView,
+  selection: TablePlanSelection | null,
+): SoleSelectedShape | null {
+  if (selection === null) {
+    return null
+  }
+  switch (selection.kind) {
+    case 'tables': {
+      const table = selection.tableIds.length === 1
+        ? drawnTablesOf(area).find((candidate) => candidate.tableId === selection.tableIds[0])
+        : undefined
+      return table === undefined ? null : { kind: 'table', table }
+    }
+    case 'station': {
+      const stationShape = area.stationShapes.find((shape) => shape.stationId === selection.stationId)
+      return stationShape === undefined ? null : { kind: 'station', stationShape }
+    }
+    default:
+      return assertNever(selection)
+  }
 }
