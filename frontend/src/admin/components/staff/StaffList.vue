@@ -119,9 +119,6 @@ onUnmounted(() => {
     >
       {{ refusalText }}
     </v-alert>
-    <v-alert v-if="staff.loadFailed" class="error" type="error" variant="tonal">
-      {{ t('admin.common.errors.loadFailed') }}
-    </v-alert>
 
     <v-card v-for="staffMember in shown" :key="staffMember.staffMemberId" class="staff-row mb-3" data-test="staff-row">
       <v-card-actions class="staff-row-line" data-test="staff-row-line">

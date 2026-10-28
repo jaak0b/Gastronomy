@@ -18,6 +18,7 @@ const connectionKey = computed<string | null>(() => {
   switch (state) {
     case 'connected':
       return connection.recovered ? 'phone.header.messages.backOnline' : null
+    case 'connecting':
     case 'reconnecting':
     case 'offline':
       return 'phone.header.messages.reconnecting'

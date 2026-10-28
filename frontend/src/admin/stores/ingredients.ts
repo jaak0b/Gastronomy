@@ -5,7 +5,7 @@ import {
   type SaveIngredientRequest,
 } from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
-import { useConnectionStore } from '../../shared/stores/connection'
+import { useAdminLoadStateStore } from './adminLoadState'
 import { adminListDefinition, defineAdminList, withActivation, withCreating } from './adminList'
 
 export interface IngredientDraft {
@@ -42,7 +42,7 @@ export const useAdminIngredientsStore = defineStore('adminIngredients', () => {
   }
 
   function listen(): () => void {
-    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], load)
+    return useAdminLoadStateStore().listenToTheLaptop(['ConfigurationChanged'], load, loadFailed)
   }
 
   return {

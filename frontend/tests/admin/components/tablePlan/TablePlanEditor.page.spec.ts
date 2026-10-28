@@ -88,8 +88,8 @@ describe('the editor of one area', () => {
     })
   })
 
-  it('stays on the page when the plan cannot be read, and says so', async () => {
-    editorLaptop({ planReply: answer({ message: 'kaputt' }, 500) })
+  it('stays on the page when the plan cannot be read', async () => {
+    const laptop = editorLaptop({ planReply: answer({ message: 'kaputt' }, 500) })
 
     mount(TablePlanEditor, {
       props: { festivalId: FESTIVAL_ID, areaId: 'area-halle' },
@@ -97,11 +97,8 @@ describe('the editor of one area', () => {
       attachTo: document.body,
     })
 
-    await waitUntil(() =>
-      expect(textOnScreen('[data-test="load-failed"]').trim()).toBe(
-        'Laden Sie die Seite neu. Die Daten konnten nicht geladen werden.',
-      ),
-    )
+    await waitUntil(() => expect(laptop.urls()).toContain(PLAN_PATH))
+    await flushPromises()
     expect(currentRoute.value).toEqual({
       name: 'admin',
       section: 'festivals',

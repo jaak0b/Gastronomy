@@ -38,7 +38,11 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
    The store takes the route of each call it makes from the screen that uses it, so a route is
    whatever the laptop's service for that screen offers, and a screen without an activate call
    passes none. Loads go through the latest request gate.
-4. **Reload.** `listen()` returns `useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], load)`.
+4. **Reload.** `listen()` returns
+   `useAdminLoadStateStore().listenToTheLaptop(['ConfigurationChanged'], load, loadFailed)` from
+   `stores/adminLoadState.ts`, never the connection store's own `listenToTheLaptop`: passing
+   `loadFailed` is what puts the list under the admin's load failure bar while a screen shows it
+   (`tests/admin/stores/adminLoadState.spec.ts` fails for an admin store that skips it).
    A list whose entries carry a flag derived from orders (the stations'
    `hasItemsToHandOutAtTheRunningFestival`, the table plan's `hasItemsToHandOutOrSettleAtTheRunningFestival`) listens to `OrdersChanged` too, or a button the flag
    disables stays wrong until the screen is opened again. The component calls it in `onMounted`,
@@ -51,9 +55,10 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
    deactivated entries are listed, so a row is listed when `isActive || showsDeactivated`. A `v-chip` with `admin.common.labels.deactivated` marks a deactivated
    entry, which offers activating in place of switching off: the open eye `BaseShowButton.vue` with
    the action's own word as its `label` ("Zutat aktivieren"). A row's actions follow the order in
-   `hideable-rows.md`: text buttons, then the pencil, then switching off or on. A `v-alert` with
-   `admin.common.errors.loadFailed` reports `store.loadFailed`, and the text for an empty list shows
-   only when the list is empty and the load did not fail.
+   `hideable-rows.md`: text buttons, then the pencil, then switching off or on. The screen shows no
+   load failure of its own: the shared bar under the tabs reports it (see the `admin-screens` page
+   of `features`). The text for an empty list shows only when the list is empty and the load did
+   not fail.
 6. **Create and edit.** `useEditSession` (`admin/composables/useEditSession.ts`) takes a `saveThrough`
    that creates when nothing is being edited and saves otherwise. The id field has the entity's own
    name:
@@ -102,6 +107,7 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
 Copy the Zutaten set in `frontend/tests/admin`: `stores/<things>.spec.ts` for the store, a fixture module
 beside the list specs (`ingredientsListFixture.ts` and `unitsListFixture.ts` give the stubbed laptop
 and `mountList`), list specs split by scenario (`.listing`, `.editing`, `.switchingOff`), and a
-dialog spec. Add the store to `stores/screenListening.spec.ts` and the section to
+dialog spec. A failed load of the new tab is shown by the shared bar, so add a case for the tab to
+`components/AdminLoadFailureBar.spec.ts` instead of testing a failure in the list. Add the store to `stores/screenListening.spec.ts` and the section to
 `views/AdminShell.spec.ts` and `shared/router/adminRoute.spec.ts`. How to write them is in
 `frontend-test-with-the-laptop`.

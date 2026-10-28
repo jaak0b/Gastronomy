@@ -8,7 +8,7 @@ import {
 } from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
 import { reloadOrFailureOf } from '../core/adminMutation'
-import { useConnectionStore } from '../../shared/stores/connection'
+import { useAdminLoadStateStore } from './adminLoadState'
 import { adminListDefinition, defineAdminList, withCreating } from './adminList'
 
 export interface FestivalDraft {
@@ -75,7 +75,11 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
   }
 
   function listen(): () => void {
-    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged', 'OrdersChanged'], load)
+    return useAdminLoadStateStore().listenToTheLaptop(
+      ['ConfigurationChanged', 'OrdersChanged'],
+      load,
+      loadFailed,
+    )
   }
 
   return {

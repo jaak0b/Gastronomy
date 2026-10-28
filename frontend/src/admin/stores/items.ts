@@ -3,7 +3,7 @@ import { requestAction } from '../../shared/api/client'
 import { AdminItemListView, AdminItemView, type SaveItemRequest } from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
 import { reloadOrFailureOf } from '../core/adminMutation'
-import { useConnectionStore } from '../../shared/stores/connection'
+import { useAdminLoadStateStore } from './adminLoadState'
 import { defineFestivalScopedList } from './festivalScopedList'
 
 export interface AdminItemDraft {
@@ -113,7 +113,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
   }
 
   function listen(): () => void {
-    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], reload)
+    return useAdminLoadStateStore().listenToTheLaptop(['ConfigurationChanged'], reload, loadFailed)
   }
 
   return {

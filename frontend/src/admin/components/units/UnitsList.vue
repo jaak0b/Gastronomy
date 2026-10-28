@@ -101,15 +101,6 @@ onUnmounted(() => {
     >
       {{ refusalText }}
     </v-alert>
-    <v-alert
-      v-if="units.loadFailed"
-      class="error"
-      data-test="load-failed"
-      type="error"
-      variant="tonal"
-    >
-      {{ t('admin.common.errors.loadFailed') }}
-    </v-alert>
 
     <p v-if="showsNoneYet" class="none-yet text-medium-emphasis mb-4" data-test="none-yet">
       {{ t('admin.units.messages.noneYet') }}

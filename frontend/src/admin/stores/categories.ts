@@ -9,7 +9,7 @@ import {
 import { adminOk, type AdminActionResult } from '../core/adminActionResult'
 import { adminFailureFrom } from '../core/adminMutation'
 import { oneAtATime } from '../core/oneAtATime'
-import { useConnectionStore } from '../../shared/stores/connection'
+import { useAdminLoadStateStore } from './adminLoadState'
 import { adminListDefinition, defineAdminList, withActivation, withCreating } from './adminList'
 
 export interface AdminCategoryDraft {
@@ -70,7 +70,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
   }
 
   function listen(): () => void {
-    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], load)
+    return useAdminLoadStateStore().listenToTheLaptop(['ConfigurationChanged'], load, loadFailed)
   }
 
   return {

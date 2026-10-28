@@ -5,7 +5,7 @@ import {
   type SaveUnitRequest,
 } from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
-import { useConnectionStore } from '../../shared/stores/connection'
+import { useAdminLoadStateStore } from './adminLoadState'
 import { adminListDefinition, defineAdminList, withActivation, withCreating } from './adminList'
 
 export interface UnitDraft {
@@ -35,7 +35,7 @@ export const useAdminUnitsStore = defineStore('adminUnits', () => {
   }
 
   function listen(): () => void {
-    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], load)
+    return useAdminLoadStateStore().listenToTheLaptop(['ConfigurationChanged'], load, loadFailed)
   }
 
   return {

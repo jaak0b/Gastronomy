@@ -241,15 +241,6 @@ onUnmounted(() => {
         </v-btn>
         <h1 v-if="area !== null" class="area-name text-h5" data-test="area-name">{{ area.name }}</h1>
       </div>
-      <v-alert
-        v-if="festivals.loadFailed || tablePlan.loadFailed || stations.loadFailed"
-        class="error mb-2"
-        data-test="load-failed"
-        type="error"
-        variant="tonal"
-      >
-        {{ t('admin.common.errors.loadFailed') }}
-      </v-alert>
 
       <template v-if="area !== null">
         <v-alert

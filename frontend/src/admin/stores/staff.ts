@@ -5,7 +5,7 @@ import {
   type RenameStaffMemberRequest,
 } from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
-import { useConnectionStore } from '../../shared/stores/connection'
+import { useAdminLoadStateStore } from './adminLoadState'
 import { combineReleases } from '../../shared/core/combineReleases'
 import { useAdminEnrolmentStore } from './enrolment'
 import { adminListDefinition, defineAdminList, withActivation } from './adminList'
@@ -37,7 +37,7 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
 
   function listen(): () => void {
     return combineReleases(
-      useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], load),
+      useAdminLoadStateStore().listenToTheLaptop(['ConfigurationChanged'], load, loadFailed),
       useAdminEnrolmentStore().listen(() => {
         void load()
       }),

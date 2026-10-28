@@ -18,7 +18,7 @@ import {
 } from '../../shared/api/generatedSchemas'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import type { PlanPoint } from '../../shared/core/tablePlanDrawing'
-import { useConnectionStore } from '../../shared/stores/connection'
+import { useAdminLoadStateStore } from './adminLoadState'
 import type { AdminActionResult } from '../core/adminActionResult'
 import { adminFailed } from '../core/adminActionResult'
 import { GENERIC_ADMIN_ERROR_KEY, adminErrorMessageForKey } from '../core/adminErrorMessage'
@@ -266,7 +266,11 @@ export const useAdminTablePlanStore = defineStore('adminTablePlan', () => {
   }
 
   function listen(): () => void {
-    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged', 'OrdersChanged'], reload)
+    return useAdminLoadStateStore().listenToTheLaptop(
+      ['ConfigurationChanged', 'OrdersChanged'],
+      reload,
+      loadFailed,
+    )
   }
 
   return {

@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import IngredientsList from '../../../../src/admin/components/ingredients/IngredientsList.vue'
 import type { AdminIngredientView, AdminUnitView } from '../../../../src/shared/api/generatedSchemas'
 import { testPlugins } from '../../../support/plugins'
-import { answer, emptyAnswer, noConnection, stubLaptop, type LaptopReply, type StubbedLaptop } from '../../../support/laptop'
+import { answer, emptyAnswer, stubLaptop, type LaptopReply, type StubbedLaptop } from '../../../support/laptop'
 import { anAdminIngredient, SEEDED_UNITS } from '../../../support/wireViews'
 
 export const MUSTARD = anAdminIngredient({
@@ -25,20 +25,14 @@ export const OLD_MILK = anAdminIngredient({
 export interface IngredientsListScenario {
   ingredients?: AdminIngredientView[]
   units?: AdminUnitView[]
-  unitsFailed?: boolean
   writes?: LaptopReply
 }
 
 export function ingredientsListLaptop(scenario: IngredientsListScenario = {}): StubbedLaptop {
-  const unitsAnswer =
-    scenario.unitsFailed === true
-      ? noConnection()
-      : answer({ units: scenario.units ?? SEEDED_UNITS })
-
   return stubLaptop()
     .answersEverythingElse(scenario.writes ?? emptyAnswer(204))
     .answers('GET', '/api/admin/ingredients', answer({ ingredients: scenario.ingredients ?? [BUN, MUSTARD, OLD_MILK] }))
-    .answers('GET', '/api/admin/units', unitsAnswer)
+    .answers('GET', '/api/admin/units', answer({ units: scenario.units ?? SEEDED_UNITS }))
 }
 
 export function mountList(locale: 'de' | 'en' = 'de') {

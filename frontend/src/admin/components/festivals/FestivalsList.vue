@@ -150,9 +150,6 @@ onUnmounted(() => {
     >
       {{ refusalText }}
     </v-alert>
-    <v-alert v-if="festivals.loadFailed" class="error mb-4" type="error" variant="tonal">
-      {{ t('admin.common.errors.loadFailed') }}
-    </v-alert>
 
     <p v-if="shown.length === 0" class="none-yet text-medium-emphasis mb-4" data-test="none-yet">
       {{ t('admin.festivals.messages.noneYet') }}

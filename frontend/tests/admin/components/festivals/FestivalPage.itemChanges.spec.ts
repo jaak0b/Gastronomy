@@ -282,20 +282,4 @@ describe('the items of this festival', () => {
     theAnswer.release()
     await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).toBeNull())
   })
-
-  it('says the items could not be loaded when the laptop cannot answer', async () => {
-    festivalLaptop({
-      refuses: (call) =>
-        call.method === 'GET' && call.url.startsWith('/api/admin/items')
-          ? { status: 500, body: null }
-          : null,
-    })
-
-    const page = mountPage()
-    await vi.waitFor(() => expect(page.find('[data-test="festival-items"] [data-test="load-failed"]').exists()).toBe(true))
-
-    expect(page.get('[data-test="festival-items"] [data-test="load-failed"]').text()).toBe(
-      'Laden Sie die Seite neu. Die Daten konnten nicht geladen werden.',
-    )
-  })
 })

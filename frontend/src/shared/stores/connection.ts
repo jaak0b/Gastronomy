@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { HubConnectionBuilder, HubConnectionState, type HubConnection } from '@microsoft/signalr'
 import { combineReleases } from '../core/combineReleases'
 
-export type ConnectionState = 'connected' | 'reconnecting' | 'offline'
+export type ConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'offline'
 
 export type ReloadEventName = 'ConfigurationChanged' | 'OrdersChanged'
 
@@ -16,7 +16,7 @@ export const RECONNECT_DELAYS_MS = [0, 2000, 5000, 10000, 30000] as const
 export const RECOVERED_NOTICE_MS = 5000
 
 export const useConnectionStore = defineStore('connection', () => {
-  const state = ref<ConnectionState>('offline')
+  const state = ref<ConnectionState>('connecting')
   const recovered = ref(false)
   const refetchCallbacks: (() => Promise<void>)[] = []
   const eventHandlers = new Map<string, ((payload: unknown) => void)[]>()
@@ -108,6 +108,7 @@ export const useConnectionStore = defineStore('connection', () => {
       .withAutomaticReconnect([...RECONNECT_DELAYS_MS])
       .build()
     connection = built
+    state.value = 'connecting'
     for (const [eventName, handlers] of eventHandlers) {
       for (const handler of handlers) {
         built.on(eventName, handler)

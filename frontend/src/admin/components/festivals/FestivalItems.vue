@@ -100,8 +100,6 @@ const stillToAdd = computed(() =>
     .sort((left, right) => compareNames(left.name, right.name)),
 )
 
-const listsFailedToLoad = computed(() => items.loadFailed || categories.loadFailed)
-
 const showsItemRefusal = computed(() => itemRefusalText.value !== null && !isItemDialogOpen.value)
 
 const chosenItem = computed(
@@ -148,16 +146,6 @@ async function remove(): Promise<void> {
     <v-card variant="outlined">
       <div class="pa-4">
         <h2 class="section-heading text-h6 mb-3" data-test="section-heading">{{ t('admin.items.title') }}</h2>
-
-        <v-alert
-          v-if="listsFailedToLoad"
-          class="error mb-3"
-          data-test="load-failed"
-          type="error"
-          variant="tonal"
-        >
-          {{ t('admin.common.errors.loadFailed') }}
-        </v-alert>
 
         <div v-if="festivalStations.length === 0" class="festival-item-placeholder" data-test="festival-item-placeholder">
           <div class="item-line d-flex align-center flex-wrap ga-3 py-2 px-3">

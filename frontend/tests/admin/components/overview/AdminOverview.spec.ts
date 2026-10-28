@@ -3,8 +3,10 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AdminOverview from '../../../../src/admin/components/overview/AdminOverview.vue'
 import { testPlugins } from '../../../support/plugins'
-import { stubLaptop, answer, type StubbedLaptop } from '../../../support/laptop'
+import { stubLaptop, answer, noConnection, type StubbedLaptop } from '../../../support/laptop'
 import { aFestival } from '../../../support/wireViews'
+import { useConnectionStore } from '../../../../src/shared/stores/connection'
+import { useAdminLoadStateStore } from '../../../../src/admin/stores/adminLoadState'
 
 const SUMMER = aFestival()
 
@@ -201,5 +203,59 @@ describe('the overview of the festival that is running', () => {
 
     expect(overview.find('img').exists()).toBe(false)
     expect(overview.find('canvas').exists()).toBe(false)
+  })
+})
+
+describe('the overview after the laptop has put the admin back into its groups', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    window.history.replaceState({}, '', '/admin')
+  })
+
+  it('reads the festivals, stations, categories and items of the running festival again', async () => {
+    const laptop = overviewLaptop([SUMMER])
+    mountOverview()
+    await flushPromises()
+    laptop.forgetCalls()
+
+    await useConnectionStore().refetchAll()
+    await flushPromises()
+
+    expect([...laptop.urls()].sort()).toEqual([
+      '/api/admin/categories',
+      '/api/admin/festivals',
+      '/api/admin/items?festivalId=fest-1',
+      '/api/admin/stations?festivalId=fest-1',
+    ])
+  })
+})
+
+describe('the overview once the admin has moved to another screen', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    window.history.replaceState({}, '', '/admin')
+  })
+
+  it('reads nothing again when the laptop puts the admin back into its groups', async () => {
+    const laptop = overviewLaptop([SUMMER])
+    const overview = mountOverview()
+    await flushPromises()
+    overview.unmount()
+    laptop.forgetCalls()
+
+    await useConnectionStore().refetchAll()
+
+    expect(laptop.urls()).toEqual([])
+  })
+
+  it('no longer keeps the load failure bar up for its items that failed', async () => {
+    overviewLaptop([SUMMER]).answers('GET', '/api/admin/items?festivalId=fest-1', noConnection())
+    useConnectionStore().state = 'connected'
+    const overview = mountOverview()
+    await flushPromises()
+
+    overview.unmount()
+
+    expect(useAdminLoadStateStore().showsLoadFailure).toBe(false)
   })
 })

@@ -13,6 +13,8 @@ Frontend, under `frontend/src/`:
   area. `shared/router/route.ts` reads `/admin/<section>` and holds the tabs in `ADMIN_SECTIONS`, in
   the order Übersicht, Feste, Ausgabestellen, Artikel, Zutaten, Einheiten, Kellner.
 - `admin/components/overview/AdminOverview.vue` is Übersicht, the report on the running festival.
+- `admin/components/AdminLoadFailureBar.vue` is the one load failure bar, mounted by `AdminShell.vue`
+  directly below the tabs. It reads `showsLoadFailure` from `admin/stores/adminLoadState.ts`.
 - The global tabs: `festivals/FestivalsList.vue` (see the `festivals` page),
   `stations/StationsList.vue`, `items/ItemsList.vue`, `ingredients/IngredientsList.vue` (see the
   `ingredients` page), `units/UnitsList.vue` (see the `units` page) and `staff/StaffList.vue`. How a
@@ -39,12 +41,25 @@ Frontend, under `frontend/src/`:
   Ausgabestellen tab, an ingredient still in a switched-on article on the Zutaten tab, and a unit an
   ingredient still uses on the Einheiten tab. The units list names those ingredients in the refusal
   text.
+- **One bar reports every load failure, the same on every screen.** Directly below the tabs, full
+  width and in the flow of the page, it shows `admin.common.errors.loadFailed` while the last load
+  of any admin list the current screen shows failed, or while the hub connection to the laptop is
+  reconnecting or closed. It is hidden while the first connection is still starting. No screen
+  shows a load failure of its own. A list counts while its screen listens to it: every admin store
+  listens through `useAdminLoadStateStore().listenToTheLaptop(events, reload, loadFailed)`, which
+  registers the store's `loadFailed` until the screen closes, so a list a former screen failed to
+  load never keeps the bar up. After the laptop restarts, the reconnect's `GroupsJoined` reloads
+  every listening list, each successful load clears its `loadFailed`, and the bar goes away
+  without a click. Übersicht listens to its four lists like every other screen.
 - **Everything about one festival is on its page** (see the `festivals` page), and an unknown
   festival id returns to Übersicht without a word.
 
 ## Tests
 
 `frontend/tests/admin/views/AdminShell.spec.ts`, `shared/router/adminRoute.spec.ts`,
+`admin/components/AdminLoadFailureBar.spec.ts` (the bar on several tabs, once on the festival page,
+on a lost connection and gone after the reconnect), `admin/stores/adminLoadState.spec.ts` (the
+derivation, and that every admin store listens through it),
 `admin/components/overview/AdminOverview.spec.ts` and `shared/theme.spec.ts`. The disabled switch off
 of the Ausgabestellen tab, with both reasons and the one named when both apply, is in
 `admin/components/stations/StationsList.switchingOff.spec.ts`. The Einheiten tab is covered by

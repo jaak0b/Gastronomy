@@ -147,14 +147,6 @@ onUnmounted(() => {
     >
       {{ t('common.actions.back') }}
     </v-btn>
-    <v-alert
-      v-if="festivals.loadFailed || stock.loadFailed || tablePlan.loadFailed"
-      class="error mb-4"
-      type="error"
-      variant="tonal"
-    >
-      {{ t('admin.common.errors.loadFailed') }}
-    </v-alert>
 
     <template v-if="festival !== null">
       <v-card class="festival-fields mb-4" variant="outlined">

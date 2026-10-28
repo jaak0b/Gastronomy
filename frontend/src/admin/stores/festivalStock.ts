@@ -9,7 +9,7 @@ import type { AdminActionResult } from '../core/adminActionResult'
 import { reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/listLoading'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
-import { useConnectionStore } from '../../shared/stores/connection'
+import { useAdminLoadStateStore } from './adminLoadState'
 
 export const useAdminFestivalStockStore = defineStore('adminFestivalStock', () => {
   const ingredients = ref<AdminFestivalIngredientView[]>([])
@@ -59,7 +59,11 @@ export const useAdminFestivalStockStore = defineStore('adminFestivalStock', () =
   }
 
   function listen(): () => void {
-    return useConnectionStore().listenToTheLaptop(['ConfigurationChanged', 'OrdersChanged'], reload)
+    return useAdminLoadStateStore().listenToTheLaptop(
+      ['ConfigurationChanged', 'OrdersChanged'],
+      reload,
+      loadFailed,
+    )
   }
 
   return {

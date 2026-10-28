@@ -18,6 +18,7 @@ import IngredientsList from '../components/ingredients/IngredientsList.vue'
 import UnitsList from '../components/units/UnitsList.vue'
 import StaffList from '../components/staff/StaffList.vue'
 import NotOnLaptop from '../components/NotOnLaptop.vue'
+import AdminLoadFailureBar from '../components/AdminLoadFailureBar.vue'
 import { useLocaleBinding } from '../../shared/composables/useLocaleBinding'
 import { useAppLanguageStore } from '../stores/appLanguage'
 import { useLaptopProbe } from '../composables/useLaptopProbe'
@@ -81,7 +82,7 @@ void isThisTheLaptop().then((isLaptop) => {
     data-test="admin-shell"
     :class="{ 'fills-the-screen': areaId !== null }"
   >
-    <v-toolbar class="admin-nav" density="comfortable" color="surface">
+    <v-toolbar class="admin-nav" data-test="admin-nav" density="comfortable" color="surface">
       <v-tabs :model-value="section" class="admin-tabs" data-test="admin-tabs">
         <v-tab
           v-for="value in sections"
@@ -95,6 +96,7 @@ void isThisTheLaptop().then((isLaptop) => {
         </v-tab>
       </v-tabs>
     </v-toolbar>
+    <AdminLoadFailureBar />
     <TablePlanEditor
       v-if="festivalId !== null && areaId !== null"
       :key="`${festivalId}-${areaId}`"

@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import UnitsList from '../../../../src/admin/components/units/UnitsList.vue'
 import type { AdminUnitView } from '../../../../src/shared/api/generatedSchemas'
 import { testPlugins } from '../../../support/plugins'
-import { answer, emptyAnswer, noConnection, stubLaptop, type LaptopReply, type StubbedLaptop } from '../../../support/laptop'
+import { answer, emptyAnswer, stubLaptop, type LaptopReply, type StubbedLaptop } from '../../../support/laptop'
 import { SEEDED_UNITS, anAdminUnit } from '../../../support/wireViews'
 
 const [PIECE_UNIT, GRAM_UNIT, , MILLILITRE_UNIT] = SEEDED_UNITS
@@ -19,19 +19,13 @@ export const LISTED_UNITS = [PIECE_UNIT, GRAM_UNIT, MILLILITRE_UNIT, OLD_KILOGRA
 
 export interface UnitsListScenario {
   units?: AdminUnitView[]
-  unitsFailed?: boolean
   writes?: LaptopReply
 }
 
 export function unitsListLaptop(scenario: UnitsListScenario = {}): StubbedLaptop {
-  const unitsAnswer =
-    scenario.unitsFailed === true
-      ? noConnection()
-      : answer({ units: scenario.units ?? LISTED_UNITS })
-
   return stubLaptop()
     .answersEverythingElse(scenario.writes ?? emptyAnswer(204))
-    .answers('GET', '/api/admin/units', unitsAnswer)
+    .answers('GET', '/api/admin/units', answer({ units: scenario.units ?? LISTED_UNITS }))
 }
 
 export function mountList(locale: 'de' | 'en' = 'de') {

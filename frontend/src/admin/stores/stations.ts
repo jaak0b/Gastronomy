@@ -7,7 +7,7 @@ import {
 } from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
 import { reloadOrFailureOf } from '../core/adminMutation'
-import { useConnectionStore } from '../../shared/stores/connection'
+import { useAdminLoadStateStore } from './adminLoadState'
 import { combineReleases } from '../../shared/core/combineReleases'
 import { useAdminEnrolmentStore } from './enrolment'
 import { defineFestivalScopedList } from './festivalScopedList'
@@ -64,7 +64,11 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
 
   function listen(): () => void {
     return combineReleases(
-      useConnectionStore().listenToTheLaptop(['ConfigurationChanged', 'OrdersChanged'], reload),
+      useAdminLoadStateStore().listenToTheLaptop(
+        ['ConfigurationChanged', 'OrdersChanged'],
+        reload,
+        loadFailed,
+      ),
       useAdminEnrolmentStore().listen(() => {
         void reload()
       }),

@@ -69,15 +69,6 @@ const showsCategoryRefusal = computed(
   () => categoryRefusalText.value !== null && !isCategoryDialogOpen.value,
 )
 
-const listsFailedToLoad = computed(
-  () =>
-    items.loadFailed
-    || categories.loadFailed
-    || festivals.loadFailed
-    || ingredients.loadFailed
-    || units.loadFailed,
-)
-
 const recipeItem = computed(
   () => items.items.find((item) => item.itemId === recipeItemId.value) ?? null,
 )
@@ -210,15 +201,6 @@ onUnmounted(() => {
       variant="tonal"
     >
       {{ categoryRefusalText }}
-    </v-alert>
-    <v-alert
-      v-if="listsFailedToLoad"
-      class="error"
-      data-test="load-failed"
-      type="error"
-      variant="tonal"
-    >
-      {{ t('admin.common.errors.loadFailed') }}
     </v-alert>
 
     <ItemsListCategorySection

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminStationsStore } from '../../stores/stations'
 import { useAdminItemsStore } from '../../stores/items'
 import { useAdminCategoriesStore } from '../../stores/categories'
 import { useAdminFestivalsStore } from '../../stores/festivals'
+import { combineReleases } from '../../../shared/core/combineReleases'
 
 const { t } = useI18n()
 const stations = useAdminStationsStore()
@@ -17,6 +18,8 @@ interface ReadinessRow {
   parameters: Record<string, string | number>
   count: number | null
 }
+
+let stopListening: (() => void) | null = null
 
 const noFestivalExists = computed(() => festivals.shownFestivals.length === 0)
 const runningFestival = computed(() => festivals.runningFestival)
@@ -59,6 +62,12 @@ const rows = computed<ReadinessRow[]>(() => {
 })
 
 onMounted(async () => {
+  stopListening = combineReleases(
+    festivals.listen(),
+    stations.listen(),
+    categories.listen(),
+    items.listen(),
+  )
   await festivals.load()
   const festival = festivals.runningFestival
   if (festival === null) {
@@ -67,6 +76,11 @@ onMounted(async () => {
   await stations.loadAtTheFestival(festival.festivalId)
   await categories.load()
   await items.loadAtTheFestival(festival.festivalId)
+})
+
+onUnmounted(() => {
+  stopListening?.()
+  stopListening = null
 })
 </script>
 
