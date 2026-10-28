@@ -20,6 +20,7 @@ is never a feature or code documentation page: features are in `features`, recur
 | The generated types as the boundary between the backend and the frontend | [references/the-wire-boundary.md](references/the-wire-boundary.md) |
 | How screens learn that something changed | [references/announcements.md](references/announcements.md) |
 | Where a concept's name in code differs from its word on screen | [references/code-names-and-screen-words.md](references/code-names-and-screen-words.md) |
+| What readable C# means here, as before/after pairs from this repository; read before writing or reviewing backend code | [references/readable-code.md](references/readable-code.md) |
 
 ## How to use
 

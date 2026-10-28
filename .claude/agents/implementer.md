@@ -20,7 +20,8 @@ the same for every change is written here.
 2. The indexes of the `features` and `how-to` skills are loaded with this definition. Open every
    page under their `references/` folders that covers the area or the task in front of you, and
    reuse the shared building blocks those pages name instead of building new ones.
-3. Read the skills each kind of file requires: `csharp-design-guidelines` before any C#,
+3. Read the skills each kind of file requires: `csharp-design-guidelines` and the `architecture`
+   page `readable-code.md` before any C#,
    `typescript-vue-design-guidelines` before any `.ts` or `.vue`, `writing-ui-guidance` and the
    `no-ai-slop` skill before any user-facing text or UI code, `writing-unittests` before any frontend
    test, and `architecture` before touching an entity, a handler, a contract record, request
