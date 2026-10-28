@@ -36,7 +36,7 @@ function save(): void {
       class="station-name-field"
       data-test="station-name-field"
       maxlength="40"
-      :label="t('admin.stations.title')"
+      :label="t('admin.festivals.labels.stationName')"
     />
   </BaseFormDialog>
 </template>
