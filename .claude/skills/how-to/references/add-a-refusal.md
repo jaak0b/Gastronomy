@@ -61,8 +61,9 @@ Root rule 2 gives two kinds.
 - **A guard against a broken program.** The screen already stops the person from doing it, so the call
   did not come from that screen. The server keeps the check and writes the exact reason in
   `Description`; the person gets the shared sentence and no new text exists. The `Code` is
-  `errors.admin.actionFailed` on an admin screen, `RefusalMessageKeys.OrderCannotBeProcessed` for an
-  order and `SettlementCannotBeProcessed` for a settlement. Examples:
+  `common.errors.actionFailed` (`RefusalMessageKeys.ActionFailed`) on an admin screen,
+  `RefusalMessageKeys.OrderCannotBeProcessed` for an order and `SettlementCannotBeProcessed` for a
+  settlement. Examples:
   `Refusal.Ingredients.UsedByActiveItems`, `Refusal.Order.StationRequired`.
 
 A refusal that only means "not there" is a bare status: `NotFound` or `Unauthorized` without a
@@ -90,7 +91,7 @@ Never add a key of its own for such a failure.
 4. **The sentence.** For the first kind, add `errors.<area>.<name>` to
    `frontend/src/shared/i18n/de.json` and `en.json` with the same `{placeholders}` as the metadata
    names. Read `no-ai-slop` first. An admin screen shows a key the German file lacks as
-   `errors.admin.actionFailed`.
+   `common.errors.actionFailed`.
 5. **The caller.** A service method returns `ErrorOr<T>` with the factory call. A list of refusals answers
    with its first entry and logs all of them.
 

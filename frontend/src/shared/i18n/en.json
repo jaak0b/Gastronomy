@@ -258,7 +258,6 @@
         "showDone": "Show prepared orders"
       },
       "errors": {
-        "actionFailed": "The change was not saved. Try again.",
         "actionNotReached": "The computer cannot be reached. Nothing was changed. Try again.",
         "loadFailed": "The computer cannot be reached and this list may be out of date. Reload the page."
       }
@@ -528,7 +527,6 @@
   },
   "errors": {
     "admin": {
-      "actionFailed": "The action failed. Try again or reload the page.",
       "categories": {
         "colourInvalid": "Choose a colour before you save.",
         "hasActiveItems": "The category still has active items. Deactivate the items first, then the category.",
@@ -540,12 +538,12 @@
         "areaWithItemsToHandOutOrSettleStaysShown": "While a festival is active, a table plan can only be hidden once everything at its tables is prepared and paid.",
         "itemNeedsAStation": "Choose at least one station for the item.",
         "itemPriceOutOfRange": "Enter a price between 0.00 and 999.99 euros.",
-        "itemStaysOnTheMenuWhileTheFestivalRuns": "An item cannot be removed from an active festival.",
+        "itemStaysOnTheMenuWhileTheFestivalRuns": "While a festival is active, no item can be removed.",
         "nameMissing": "Give the festival a name.",
         "overlaps": "The festival {name} overlaps this period. Move the start or the end.",
         "periodInvalid": "The end has to come after the start. Set the end to a later time.",
         "runningFestivalStaysShown": "An active festival cannot be hidden.",
-        "stationHasOrdersAtTheFestival": "A station with open orders cannot be removed from an active festival.",
+        "stationHasOrdersAtTheFestival": "While a festival is active, no station with open orders can be removed.",
         "tableNameTaken": "A table at this festival already has this name, even if it is hidden. Choose a different name.",
         "tableCopyNameTooLong": "The name of a copy would be longer than 40 characters. Shorten the table's name.",
         "tableWithItemsToHandOutOrSettleStaysShown": "While a festival is active, a table can only be hidden once all its items are prepared and paid."

@@ -233,7 +233,7 @@ describe('a station the laptop refuses to switch off', () => {
     await deactivateFirstStation(list)
 
     expect(list.get('[data-test="refusal"]').text()).toBe(
-      'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
+      'Die Aktion ist fehlgeschlagen.',
     )
   })
 })

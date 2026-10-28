@@ -120,7 +120,7 @@ describe('the clipboard of another festival', () => {
 
     expect(pasted).toEqual({
       kind: 'failed',
-      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
+      message: { key: 'common.errors.actionFailed', parameters: {}, count: null },
     })
     expect(laptop.calls).toEqual([])
   })

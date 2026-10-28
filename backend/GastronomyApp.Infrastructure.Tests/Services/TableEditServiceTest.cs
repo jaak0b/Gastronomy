@@ -88,7 +88,7 @@ public sealed class TableEditServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(created.FirstError.NumericType, Is.EqualTo(RefusalType.BadRequest));
-                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                     });
     Assert.That(await _fixture.DbContext.Tables.CountAsync(TestContext.CurrentContext.CancellationToken), Is.Zero);
   }
@@ -175,7 +175,7 @@ public sealed class TableEditServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(updated.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(updated.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(stored.AreaId, Is.EqualTo(_gardenId));
                     });
   }
@@ -416,7 +416,7 @@ public sealed class TableEditServiceTest
                                           },
                                           TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(copies.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+    Assert.That(copies.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
     Assert.That(await _fixture.DbContext.Tables.CountAsync(TestContext.CurrentContext.CancellationToken), Is.EqualTo(1));
   }
 
@@ -458,7 +458,7 @@ public sealed class TableEditServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(copies.FirstError.NumericType, Is.EqualTo(RefusalType.BadRequest));
-                      Assert.That(copies.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(copies.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(copies.RefusalDescription(), Does.Contain("no source table"));
                     });
     Assert.That(await _fixture.DbContext.Tables.CountAsync(TestContext.CurrentContext.CancellationToken), Is.Zero);
@@ -484,7 +484,7 @@ public sealed class TableEditServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(copies.FirstError.NumericType, Is.EqualTo(RefusalType.BadRequest));
-                      Assert.That(copies.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(copies.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(copies.RefusalDescription(), Does.Contain("more than once"));
                     });
     Assert.That(await _fixture.DbContext.Tables.CountAsync(TestContext.CurrentContext.CancellationToken), Is.EqualTo(1));
@@ -576,7 +576,7 @@ public sealed class TableEditServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(moved.FirstError.NumericType, Is.EqualTo(RefusalType.BadRequest));
-                      Assert.That(moved.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(moved.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(moved.RefusalDescription(), Does.Contain("no table"));
                     });
   }
@@ -601,7 +601,7 @@ public sealed class TableEditServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(moved.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(moved.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(moved.RefusalDescription(), Does.Contain("more than once"));
                       Assert.That(first.X, Is.EqualTo(10));
                     });

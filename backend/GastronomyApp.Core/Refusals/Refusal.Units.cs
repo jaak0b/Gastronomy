@@ -36,7 +36,7 @@ public static partial class Refusal
 
     public static Error UsedByIngredients(Guid unitId, IReadOnlyList<string> ingredientNames)
     {
-      return Conflict(RefusalMessageKeys.AdminActionFailed,
+      return Conflict(RefusalMessageKeys.ActionFailed,
                       $"The unit {unitId} stays switched on because the ingredients {string.Join(", ", ingredientNames)} still use it. The units page disables the delete control while an ingredient uses the unit, so this call did not come from that screen.",
                       new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "UnitUsedByIngredients" });
     }

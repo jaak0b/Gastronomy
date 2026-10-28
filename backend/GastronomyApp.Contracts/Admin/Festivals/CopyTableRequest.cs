@@ -8,6 +8,6 @@ public sealed record CopyTableRequest
 {
   public required Guid SourceTableId { get; init; }
 
-  [Required(ErrorMessage = RefusalMessageKeys.AdminActionFailed)]
+  [Required(ErrorMessage = RefusalMessageKeys.ActionFailed)]
   public required AreaShapeGeometry? Geometry { get; init; }
 }

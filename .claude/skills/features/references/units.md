@@ -59,7 +59,7 @@ Frontend, under `frontend/src/`:
   refused with `errors.admin.units.nameTaken`; the name of a deactivated unit is refused with
   `errors.admin.units.nameBelongsToDeactivatedUnit` and the parameter `name`.
 - A unit cannot be deactivated while an ingredient uses it. The server refuses with
-  `errors.admin.actionFailed` and problem code `UnitUsedByIngredients`; the list disables the button
+  `common.errors.actionFailed` and problem code `UnitUsedByIngredients`; the list disables the button
   and names the ingredients, because the screen already prevents the call.
 - An ingredient may change its unit at any time. The numeric amounts stay exactly as they were
   entered, and no conversion happens anywhere: a recipe line or stock amount is the number in the

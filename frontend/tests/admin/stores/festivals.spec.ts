@@ -172,7 +172,7 @@ describe('setting a festival up', () => {
 
     expect(wasSaved).toEqual({
       kind: 'failed',
-      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
+      message: { key: 'common.errors.actionFailed', parameters: {}, count: null },
     })
   })
 })

@@ -100,7 +100,7 @@
     <value>In den Ordner {path} kann nicht geschrieben werden. Klicken Sie auf „Einrichtung reparieren“ und bestätigen Sie die Nachfrage von Windows.</value>
   </data>
     <data name="desktop.error.noNetwork" xml:space="preserve">
-    <value>Der Rechner ist mit keinem Netzwerk verbunden. Verbinden Sie ihn mit dem WLAN der Telefone.</value>
+    <value>Der Computer ist mit keinem Netzwerk verbunden. Verbinden Sie ihn mit dem WLAN der Telefone.</value>
   </data>
     <data name="desktop.error.startFailed" xml:space="preserve">
     <value>Die Anwendung konnte nicht gestartet werden. Beenden Sie die Anwendung und starten Sie sie neu.</value>
@@ -127,13 +127,13 @@
     <value>Einmalige Einrichtung</value>
   </data>
     <data name="desktop.firstRun.body" xml:space="preserve">
-    <value>Die Anwendung gibt den Zugriff aus dem Netzwerk frei und legt ihren Datenordner an. Bestätigen Sie dazu die Nachfrage von Windows.</value>
+    <value>Bestätigen Sie die Nachfrage von Windows, damit die Anwendung eingerichtet werden kann.</value>
   </data>
     <data name="desktop.firstRun.declined" xml:space="preserve">
-    <value>Die Anwendung läuft auch so. Wenn die Telefone den Rechner später nicht erreichen, klicken Sie auf „Einrichtung reparieren“.</value>
+    <value>Die Anwendung läuft auch so. Wenn die Telefone den Computer später nicht erreichen, klicken Sie auf „Einrichtung reparieren“.</value>
   </data>
     <data name="desktop.firstRun.setupFailed" xml:space="preserve">
-    <value>Die Einrichtung konnte nicht abgeschlossen werden, die Anwendung läuft aber weiter. Wenn die Telefone den Rechner nicht erreichen oder Bestellungen nicht gespeichert werden, klicken Sie auf „Einrichtung reparieren“.</value>
+    <value>Die Einrichtung konnte nicht abgeschlossen werden, die Anwendung läuft aber weiter. Wenn die Telefone den Computer nicht erreichen oder Bestellungen nicht gespeichert werden, klicken Sie auf „Einrichtung reparieren“.</value>
   </data>
     <data name="desktop.settings.repairFailed" xml:space="preserve">
     <value>Die Einrichtung konnte nicht abgeschlossen werden. Klicken Sie noch einmal auf „Einrichtung reparieren“.</value>
@@ -142,13 +142,13 @@
     <value>Die Einrichtung wurde repariert. Starten Sie die Anwendung neu.</value>
   </data>
     <data name="desktop.notice.addressChanged" xml:space="preserve">
-    <value>Die Adresse des Rechners hat sich geändert. Richten Sie alle Telefone neu ein.</value>
+    <value>Die Adresse des Computers hat sich geändert. Richten Sie alle Telefone neu ein.</value>
   </data>
     <data name="desktop.error.noPortAvailable" xml:space="preserve">
-    <value>Ein anderes Programm auf diesem Rechner blockiert die Verbindung. Starten Sie den Rechner neu und öffnen Sie die Anwendung noch einmal.</value>
+    <value>Ein anderes Programm auf diesem Computer blockiert die Verbindung. Starten Sie den Computer neu und öffnen Sie die Anwendung noch einmal.</value>
   </data>
     <data name="desktop.error.instanceCheckFailed" xml:space="preserve">
-    <value>Es konnte nicht geprüft werden, ob die Anwendung schon läuft. Sehen Sie in der Taskleiste nach, ob ein Fenster offen ist, und starten Sie andernfalls den Rechner neu.</value>
+    <value>Es konnte nicht geprüft werden, ob die Anwendung schon läuft. Sehen Sie in der Taskleiste nach, ob ein Fenster offen ist, und starten Sie andernfalls den Computer neu.</value>
   </data>
     <data name="desktop.version" xml:space="preserve">
     <value>{version}</value>

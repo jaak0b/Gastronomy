@@ -23,14 +23,14 @@ describe('an item change the laptop refuses', () => {
     status: 400,
     body: {
       code: 'Conflict',
-      messageKey: 'errors.admin.actionFailed',
+      messageKey: 'common.errors.actionFailed',
       parameters: {},
       details: null,
     },
   }
 
   const REFUSAL_TEXT =
-    'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.'
+    'Die Aktion ist fehlgeschlagen.'
 
   it('puts the station selection back where the laptop has it and says why', async () => {
     festivalLaptop({
@@ -75,7 +75,7 @@ describe('an item change the laptop refuses', () => {
         status: 400,
         body: {
           code: 'Conflict',
-          messageKey: 'errors.admin.actionFailed',
+          messageKey: 'common.errors.actionFailed',
           parameters: {},
           details: null,
         },

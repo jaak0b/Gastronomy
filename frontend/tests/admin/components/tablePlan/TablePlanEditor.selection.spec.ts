@@ -254,7 +254,7 @@ describe('dragging a group of tables', () => {
   it('leaves both tables where they started when the laptop refuses the group move', async () => {
     const laptop = editorLaptop({
       areas: twoTables(),
-      writeReply: refusal('errors.admin.actionFailed', { status: 400 }),
+      writeReply: refusal('common.errors.actionFailed', { status: 400 }),
     })
     await mountEditor()
     await tapTheShape(TABLE_A1_SHAPE_ID)
@@ -268,7 +268,7 @@ describe('dragging a group of tables', () => {
     expect(laptop.writes()[0].url).toBe(MOVE_PATH)
     expect([first.x(), first.y(), second.x(), second.y()]).toEqual([20, 30, 20, 100])
     expect(textOnScreen('[data-test="plan-refusal"]').trim()).toBe(
-      'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
+      'Die Aktion ist fehlgeschlagen.',
     )
   })
 })

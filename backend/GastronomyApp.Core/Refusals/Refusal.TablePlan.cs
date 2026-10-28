@@ -34,7 +34,7 @@ public static partial class Refusal
 
     public static Error AreaOutsideTheFestival(Guid festivalId, Guid areaId)
     {
-      return BadRequest(RefusalMessageKeys.AdminActionFailed,
+      return BadRequest(RefusalMessageKeys.ActionFailed,
                         $"The area {areaId} named in the request does not belong to the festival {festivalId}. The plan editor offers only that festival's areas, so this call did not come from that screen.",
                         new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
     }
@@ -70,28 +70,28 @@ public static partial class Refusal
 
     public static Error TableCopyWithoutSourceTables(Guid festivalId)
     {
-      return BadRequest(RefusalMessageKeys.AdminActionFailed,
+      return BadRequest(RefusalMessageKeys.ActionFailed,
                         $"The copy request for the festival {festivalId} listed no source table. The plan editor copies only a table selection, so this call did not come from that screen.",
                         new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
     }
 
     public static Error TableCopyRepeatsASourceTable(Guid festivalId, Guid tableId)
     {
-      return BadRequest(RefusalMessageKeys.AdminActionFailed,
+      return BadRequest(RefusalMessageKeys.ActionFailed,
                         $"The copy request for the festival {festivalId} named the source table {tableId} more than once. The plan editor copies each selected table once, so this call did not come from that screen.",
                         new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
     }
 
     public static Error TableMoveWithoutTables(Guid festivalId)
     {
-      return BadRequest(RefusalMessageKeys.AdminActionFailed,
+      return BadRequest(RefusalMessageKeys.ActionFailed,
                         $"The move request for the festival {festivalId} listed no table. The plan editor moves only a table selection, so this call did not come from that screen.",
                         new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
     }
 
     public static Error TableMoveRepeatsATable(Guid festivalId, Guid tableId)
     {
-      return BadRequest(RefusalMessageKeys.AdminActionFailed,
+      return BadRequest(RefusalMessageKeys.ActionFailed,
                         $"The move request for the festival {festivalId} named the table {tableId} more than once. The plan editor moves each selected table once, so this call did not come from that screen.",
                         new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
     }

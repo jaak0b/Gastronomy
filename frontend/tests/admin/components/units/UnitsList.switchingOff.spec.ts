@@ -66,7 +66,7 @@ describe('deleting a unit', () => {
   })
 
   it('shows on the page why the laptop refused it', async () => {
-    unitsListLaptop({ writes: refusal('errors.admin.actionFailed') })
+    unitsListLaptop({ writes: refusal('common.errors.actionFailed') })
     const list = mountList()
     await vi.waitFor(() => expect(list.find(GRAM_ROW).exists()).toBe(true))
     await list.get(`${GRAM_ROW} [data-test="deactivate"]`).trigger('click')
@@ -75,7 +75,7 @@ describe('deleting a unit', () => {
 
     await vi.waitFor(() =>
       expect(list.get('[data-test="refusal"]').text()).toBe(
-        'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
+        'Die Aktion ist fehlgeschlagen.',
       ),
     )
   })

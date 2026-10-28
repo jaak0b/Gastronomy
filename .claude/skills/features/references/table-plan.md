@@ -327,7 +327,7 @@ Frontend, under `frontend/src/`:
   so the restricting key never fires.
 - **An id that does not belong to the festival is a broken program.** An unknown area, table,
   station or station shape in the route answers a bare 404; an area of another festival named in a
-  body answers 400 with `RefusalMessageKeys.AdminActionFailed`, and so do a blank name and a missing
+  body answers 400 with `RefusalMessageKeys.ActionFailed`, and so do a blank name and a missing
   geometry.
 - **A paste is one request and one transaction, and the laptop names every copy.** `POST
   /tables/copy` carries the target area and, per copy, the source table id and the geometry it takes.
@@ -337,7 +337,7 @@ Frontend, under `frontend/src/`:
   or proposes a copy name. The copies are new `Table` rows, so the one commit sends
   `ConfigurationChanged` once and no service sends it. An unknown or foreign source table answers the existing `TableNotFound`;
   an empty or duplicate source list is a broken-program guard that answers
-  `errors.admin.actionFailed` and names the exact reason in the developer message the screen never
+  `common.errors.actionFailed` and names the exact reason in the developer message the screen never
   sends.
 - **A copy's name counts up the source name's ending.** `TableCopyNaming` keeps the text before a
   trailing ASCII digit run and that run's digit count, and counts the number up (`A1` to `A2`, `A09`

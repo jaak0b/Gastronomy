@@ -118,7 +118,7 @@
     <value>One-time setup</value>
   </data>
     <data name="desktop.firstRun.body" xml:space="preserve">
-    <value>The program allows access from the network and creates its data folder. Confirm the question Windows asks to let it do that.</value>
+    <value>Confirm the question Windows asks so that the program can be set up.</value>
   </data>
     <data name="desktop.firstRun.declined" xml:space="preserve">
     <value>The program runs anyway. If the phones cannot reach the computer later, click "Repair the setup".</value>

@@ -171,6 +171,11 @@ function keysTheLaptopCanSend(): Map<string, string> {
     for (const match of source.matchAll(/"(errors\.[a-zA-Z][\w.]*)"/g)) {
       sent.set(match[1], file.substring(BACKEND_ROOT.length + 1))
     }
+    if (file.endsWith('RefusalMessageKeys.cs')) {
+      for (const match of source.matchAll(/const string \w+ = "([^"]+)"/g)) {
+        sent.set(match[1], file.substring(BACKEND_ROOT.length + 1))
+      }
+    }
   }
   return sent
 }
@@ -196,6 +201,7 @@ describe('every message the laptop can send back', () => {
     const sent = keysTheLaptopCanSend()
 
     expect(sent.has('errors.enrolment.codeUnknown')).toBe(true)
+    expect(sent.has('common.errors.actionFailed')).toBe(true)
     expect(sent.size).toBeGreaterThan(30)
   })
 })

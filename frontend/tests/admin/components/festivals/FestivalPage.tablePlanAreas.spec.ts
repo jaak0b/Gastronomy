@@ -20,7 +20,7 @@ import { AREAS_PATH, HALL, OLD_TABLES, TENT, areaRow } from './festivalTablePlan
 
 enableAutoUnmount(afterEach)
 
-const ACTION_FAILED = 'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.'
+const ACTION_FAILED = 'Die Aktion ist fehlgeschlagen.'
 
 const AREA_NAME_TAKEN =
   'Der Name ist in diesem Fest bereits an einen Tischplan vergeben, auch an einen ausgeblendeten. Wählen Sie einen anderen Namen.'
@@ -191,7 +191,7 @@ describe('moving an area on the festival page', () => {
       festivalLaptop({ areas: [HALL, TENT] }).answers(
         'POST',
         `${AREAS_PATH}/area-zelt/move`,
-        refusal('errors.admin.actionFailed', { status: 404, code: 'NotFound' }),
+        refusal('common.errors.actionFailed', { status: 404, code: 'NotFound' }),
       ),
     )
 

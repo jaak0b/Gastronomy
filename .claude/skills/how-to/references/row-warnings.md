@@ -53,7 +53,7 @@ Tischplan card in `festivals/FestivalTablePlan.vue`. A refusal stays a `v-alert`
 `admin/core/adminErrorMessage.ts` is the only place a refusal becomes a sentence. A store action
 returns `{ kind: 'failed', message }` (`admin/core/adminActionResult.ts`), where `message` was built
 by `adminErrorMessage(body)` from the laptop's `ApiErrorBody`: a missing body, or a `messageKey` the
-German locale file does not hold, becomes `errors.admin.actionFailed`. `adminErrorMessageText(t,
+German locale file does not hold, becomes `common.errors.actionFailed`. `adminErrorMessageText(t,
 message)` translates it with its parameters, and also passes the count whenever the message has one:
 `adminErrorMessage` takes it from a `count` parameter that is a whole number (or a string holding
 one) and leaves it `null` otherwise. A component never calls `t(message.key)` on its own.

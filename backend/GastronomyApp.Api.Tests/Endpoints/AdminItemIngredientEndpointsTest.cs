@@ -172,7 +172,7 @@ public sealed class AdminItemIngredientEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.GetProperty("code").GetString(), Is.EqualTo("DeactivatedIngredientCannotJoinRecipe"));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(await database.CatalogItemIngredients.CountAsync(), Is.Zero);
                     });
   }

@@ -70,14 +70,14 @@ Frontend, under `frontend/src/`:
   `ActivateAsync` on an article refuses while its recipe holds one, with one refusal per ingredient
   ordered by name, of which the first is answered.
 - The first two refusals are guards for what the screens already prevent, so they answer
-  `errors.admin.actionFailed`: an ingredient that an active article uses cannot be switched off from
+  `common.errors.actionFailed`: an ingredient that an active article uses cannot be switched off from
   the Zutaten tab, which names those articles, and a recipe can only add an active ingredient.
 - A name is compared without regard to case, in SQL through `NamedQueries.Namesakes`. Creating or renaming to the name of a deactivated
   ingredient is refused with `errors.admin.ingredients.nameBelongsToDeactivatedIngredient` and the
   parameter `name`; an active namesake gets `nameTaken`.
 - A unit must exist and be active when an ingredient is created, and when an existing ingredient
   changes to another unit. The picker offers only active units, so an unknown or switched-off unit
-  answers `errors.admin.actionFailed`; an edit keeps the ingredient's current unit available from its
+  answers `common.errors.actionFailed`; an edit keeps the ingredient's current unit available from its
   carried `unitName`. A unit change never converts an amount: the recipe line and the stock row keep
   the number the admin entered, because the amount field has no unit of its own and no conversion
   helper exists.

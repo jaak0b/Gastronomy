@@ -130,7 +130,7 @@ describe('adminErrorMessage, a key this app does not know', () => {
       details: null,
     })
 
-    expect(message.key).toBe('errors.admin.actionFailed')
+    expect(message.key).toBe('common.errors.actionFailed')
   })
 
   it('falls back rather than mislabelling the refusal', () => {
@@ -158,7 +158,7 @@ describe('adminErrorMessage, a key this app does not know', () => {
   it('falls back when the laptop sent no error body at all', () => {
     const message = adminErrorMessage(null)
 
-    expect(message).toEqual({ key: 'errors.admin.actionFailed', parameters: {}, count: null })
+    expect(message).toEqual({ key: 'common.errors.actionFailed', parameters: {}, count: null })
   })
 })
 

@@ -134,7 +134,7 @@ public sealed class AdminIngredientEndpointsTest
     Assert.Multiple(async () =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(await database.Ingredients.CountAsync(), Is.Zero);
                     });
   }
@@ -158,7 +158,7 @@ public sealed class AdminIngredientEndpointsTest
     Assert.Multiple(async () =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(await database.Ingredients.CountAsync(), Is.Zero);
                     });
   }
@@ -348,7 +348,7 @@ public sealed class AdminIngredientEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.GetProperty("code").GetString(), Is.EqualTo("IngredientUsedByActiveItems"));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(stored.IsActive, Is.True);
                     });
   }

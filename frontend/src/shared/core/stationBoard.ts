@@ -37,10 +37,10 @@ export function stationFailureMessage(failure: StationFailure): StationMessage {
       return { key: 'station.board.errors.actionNotReached', parameters: {} }
     case 'error':
       return failure.body === null
-        ? { key: 'station.board.errors.actionFailed', parameters: {} }
+        ? { key: 'common.errors.actionFailed', parameters: {} }
         : { key: failure.body.messageKey, parameters: failure.body.parameters }
     case 'unreadableAnswer':
-      return { key: 'station.board.errors.actionFailed', parameters: {} }
+      return { key: 'common.errors.actionFailed', parameters: {} }
     default:
       return assertNever(failure)
   }

@@ -65,7 +65,7 @@ describe('an item the laptop would not save', () => {
 
     expect(result).toEqual({
       kind: 'failed',
-      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
+      message: { key: 'common.errors.actionFailed', parameters: {}, count: null },
     })
   })
 
@@ -94,7 +94,7 @@ describe('an item the laptop would not save', () => {
 
     expect(result).toEqual({
       kind: 'failed',
-      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
+      message: { key: 'common.errors.actionFailed', parameters: {}, count: null },
     })
   })
 })
@@ -116,7 +116,7 @@ describe('an item the laptop would not switch on or off', () => {
 
     expect(result).toEqual({
       kind: 'failed',
-      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
+      message: { key: 'common.errors.actionFailed', parameters: {}, count: null },
     })
   })
 
@@ -128,7 +128,7 @@ describe('an item the laptop would not switch on or off', () => {
 
     expect(result).toEqual({
       kind: 'failed',
-      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
+      message: { key: 'common.errors.actionFailed', parameters: {}, count: null },
     })
   })
 

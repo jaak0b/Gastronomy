@@ -60,7 +60,7 @@ describe('deleting an ingredient', () => {
   })
 
   it('shows on the page why the laptop refused it', async () => {
-    ingredientsListLaptop({ writes: refusal('errors.admin.actionFailed') })
+    ingredientsListLaptop({ writes: refusal('common.errors.actionFailed') })
     const list = mountList()
     await vi.waitFor(() => expect(list.find(MUSTARD_ROW).exists()).toBe(true))
     await list.get(`${MUSTARD_ROW} [data-test="deactivate"]`).trigger('click')
@@ -69,7 +69,7 @@ describe('deleting an ingredient', () => {
 
     await vi.waitFor(() =>
       expect(list.get('[data-test="refusal"]').text()).toBe(
-        'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
+        'Die Aktion ist fehlgeschlagen.',
       ),
     )
   })

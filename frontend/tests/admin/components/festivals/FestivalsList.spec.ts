@@ -259,7 +259,7 @@ describe('the list of festivals', () => {
     festivalsLaptop([]).answers(
       'POST',
       /./,
-      refusal('errors.admin.actionFailed', { status: 400, code: 'ValidationFailed' }),
+      refusal('common.errors.actionFailed', { status: 400, code: 'ValidationFailed' }),
     )
 
     const list = mountList()

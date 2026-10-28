@@ -8,7 +8,7 @@ export interface AdminErrorMessage {
   count: number | null
 }
 
-export const GENERIC_ADMIN_ERROR_KEY = 'errors.admin.actionFailed'
+export const GENERIC_ADMIN_ERROR_KEY = 'common.errors.actionFailed'
 
 interface MessageTree {
   [key: string]: string | MessageTree

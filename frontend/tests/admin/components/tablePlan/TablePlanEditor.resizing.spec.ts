@@ -85,7 +85,7 @@ describe('resizing a table', () => {
   })
 
   it('puts the table and its handles back when the laptop refuses the new size', async () => {
-    editorLaptop({ writeReply: refusal('errors.admin.actionFailed', { status: 400 }) })
+    editorLaptop({ writeReply: refusal('common.errors.actionFailed', { status: 400 }) })
     await mountEditor()
     await selectTheShape(TABLE_A1_SHAPE_ID)
     const table = shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID)
@@ -95,7 +95,7 @@ describe('resizing a table', () => {
     expect(geometryOfTheNode(table)).toEqual({ x: 20, y: 30, width: 80, height: 40, rotation: 0 })
     expect(anchorOf(theDrawing(), 'bottom-right')).toEqual({ x: 156, y: 111 })
     expect(textOnScreen('[data-test="plan-refusal"]').trim()).toBe(
-      'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
+      'Die Aktion ist fehlgeschlagen.',
     )
   })
 })

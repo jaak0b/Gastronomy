@@ -107,19 +107,19 @@ describe('an edit session of the admin screens', () => {
   })
 
   it('stays open and names the refusal when the laptop refused', async () => {
-    const session = mountTheSession({ saveThrough: refusedWith('errors.admin.actionFailed') })
+    const session = mountTheSession({ saveThrough: refusedWith('common.errors.actionFailed') })
     session.openForCreate()
 
     await session.save('Bar')
 
     expect({ isOpen: session.isOpen.value, refusal: session.refusalText.value }).toEqual({
       isOpen: true,
-      refusal: 'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
+      refusal: 'Die Aktion ist fehlgeschlagen.',
     })
   })
 
   it('forgets the refusal when the admin closes it', async () => {
-    const session = mountTheSession({ saveThrough: refusedWith('errors.admin.actionFailed') })
+    const session = mountTheSession({ saveThrough: refusedWith('common.errors.actionFailed') })
     session.openForCreate()
     await session.save('Bar')
 

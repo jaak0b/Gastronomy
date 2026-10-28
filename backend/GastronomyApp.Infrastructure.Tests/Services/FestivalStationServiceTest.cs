@@ -246,7 +246,7 @@ public sealed class FestivalStationServiceTest
     Assert.Multiple(async () =>
                     {
                       Assert.That(placed.FirstError.NumericType, Is.EqualTo(RefusalType.BadRequest));
-                      Assert.That(placed.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(placed.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(placed.RefusalDescription(), Does.Contain(strangerAreaId.ToString()));
                       Assert.That(await readContext.FestivalStationShapes.CountAsync(TestContext.CurrentContext.CancellationToken), Is.Zero);
                     });

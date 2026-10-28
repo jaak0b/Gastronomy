@@ -2,7 +2,7 @@
 
 public static class RefusalMessageKeys
 {
-  public const string AdminActionFailed = "errors.admin.actionFailed";
+  public const string ActionFailed = "common.errors.actionFailed";
 
   public const string AdminCategoryColourInvalid = "errors.admin.categories.colourInvalid";
 

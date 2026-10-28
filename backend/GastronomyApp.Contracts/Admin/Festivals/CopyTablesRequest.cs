@@ -7,6 +7,6 @@ public sealed record CopyTablesRequest
 {
   public required Guid AreaId { get; init; }
 
-  [Required(ErrorMessage = RefusalMessageKeys.AdminActionFailed)]
+  [Required(ErrorMessage = RefusalMessageKeys.ActionFailed)]
   public required IReadOnlyList<CopyTableRequest>? Tables { get; init; }
 }

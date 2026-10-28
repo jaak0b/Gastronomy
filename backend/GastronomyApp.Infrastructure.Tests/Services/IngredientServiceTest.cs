@@ -158,7 +158,7 @@ public sealed class IngredientServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(StoredIngredientCount(), Is.EqualTo(1));
                     });
   }
@@ -170,7 +170,7 @@ public sealed class IngredientServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(StoredIngredientCount(), Is.EqualTo(1));
                     });
   }
@@ -182,7 +182,7 @@ public sealed class IngredientServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(StoredIngredientCount(), Is.EqualTo(1));
                     });
   }
@@ -264,7 +264,7 @@ public sealed class IngredientServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(updated.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(updated.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(_fixture.DbContext.Ingredients.Single().Name, Is.EqualTo("Senf"));
                     });
   }
@@ -292,7 +292,7 @@ public sealed class IngredientServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(deactivated.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(deactivated.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(deactivated.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
                       Assert.That(deactivated.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("IngredientUsedByActiveItems"));
                       Assert.That(_fixture.DbContext.Ingredients.Single().IsActive, Is.True);

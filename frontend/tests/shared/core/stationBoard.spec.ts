@@ -294,7 +294,7 @@ describe('stationFailureMessage, what the tablet says when a change did not go t
 
   it('falls back to a plain failure when the laptop named nothing', () => {
     expect(stationFailureMessage({ kind: 'error', status: 500, body: null, raw: null })).toEqual({
-      key: 'station.board.errors.actionFailed',
+      key: 'common.errors.actionFailed',
       parameters: {},
     })
   })

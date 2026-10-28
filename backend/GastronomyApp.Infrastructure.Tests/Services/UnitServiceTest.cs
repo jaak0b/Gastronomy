@@ -219,7 +219,7 @@ public sealed class UnitServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(deactivated.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(deactivated.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(deactivated.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
                       Assert.That(deactivated.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("UnitUsedByIngredients"));
                       Assert.That(deactivated.RefusalDescription(), Does.Contain("Senf, Zwiebeln"));
@@ -238,7 +238,7 @@ public sealed class UnitServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(deactivated.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(deactivated.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(deactivated.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
                       Assert.That(deactivated.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("UnitUsedByIngredients"));
                       Assert.That(deactivated.RefusalDescription(), Does.Contain("Dill"));

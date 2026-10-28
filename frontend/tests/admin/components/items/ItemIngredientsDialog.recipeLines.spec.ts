@@ -238,7 +238,7 @@ describe('removing an ingredient from the recipe', () => {
   })
 
   it('shows under that line why the laptop refused the removal', async () => {
-    recipeLaptop().answers('DELETE', /./, refusal('errors.admin.actionFailed', { status: 409 }))
+    recipeLaptop().answers('DELETE', /./, refusal('common.errors.actionFailed', { status: 409 }))
     await loadIngredientsAndMountDialog()
     onScreen(`${BUN_LINE} [data-test="remove-recipe-line"]`).click()
 
@@ -246,7 +246,7 @@ describe('removing an ingredient from the recipe', () => {
 
     await vi.waitFor(() => expect(isOnScreen(`${BUN_LINE} [data-test="refusal"]`)).toBe(true))
     expect(onScreen(`${BUN_LINE} [data-test="refusal"]`).textContent?.trim()).toBe(
-      'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
+      'Die Aktion ist fehlgeschlagen.',
     )
   })
 })

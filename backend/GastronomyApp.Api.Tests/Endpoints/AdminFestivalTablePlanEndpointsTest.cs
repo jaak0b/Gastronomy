@@ -264,7 +264,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                     });
   }
 
@@ -385,7 +385,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                     });
   }
 
@@ -419,7 +419,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                     });
   }
 
@@ -474,7 +474,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(table.AreaId, Is.EqualTo(gardenId));
                     });
   }
@@ -617,7 +617,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                     });
   }
 
@@ -841,7 +841,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(tableCount, Is.EqualTo(2));
                     });
   }
@@ -862,7 +862,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(body.GetProperty("parameters").TryGetProperty("member", out _), Is.False);
                     });
   }
@@ -891,7 +891,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(body.GetProperty("parameters").TryGetProperty("member", out _), Is.False);
                       Assert.That(tableCount, Is.EqualTo(2));
                     });
@@ -971,7 +971,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(body.GetProperty("parameters").TryGetProperty("member", out _), Is.False);
                     });
   }
@@ -999,7 +999,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(body.GetProperty("parameters").TryGetProperty("member", out _), Is.False);
                       Assert.That(table.X, Is.EqualTo(12.5));
                       Assert.That(table.Y, Is.EqualTo(-7.25));

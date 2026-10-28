@@ -155,7 +155,7 @@ describe('adding a station to this area', () => {
 
     await waitUntil(() =>
       expect(planRefusalText()).toBe(
-        'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
+        'Die Aktion ist fehlgeschlagen.',
       ),
     )
   })

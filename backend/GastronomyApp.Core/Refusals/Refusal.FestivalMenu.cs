@@ -24,7 +24,7 @@ public static partial class Refusal
 
     public static Error StationsDoNotBelongToTheFestival(Guid festivalId, Guid catalogItemId, IReadOnlyList<Guid> stationIdsOutsideTheFestival)
     {
-      return BadRequest(RefusalMessageKeys.AdminActionFailed,
+      return BadRequest(RefusalMessageKeys.ActionFailed,
                         $"The article {catalogItemId} was not put on the menu of the festival {festivalId} because the stations {string.Join(", ", stationIdsOutsideTheFestival)} do not belong to that festival. The article screen offers only that festival's stations, so this call did not come from that screen.",
                         new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
     }

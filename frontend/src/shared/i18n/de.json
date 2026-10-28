@@ -258,7 +258,6 @@
         "showDone": "Zubereitete anzeigen"
       },
       "errors": {
-        "actionFailed": "Die Änderung wurde nicht gespeichert. Versuchen Sie es noch einmal.",
         "actionNotReached": "Der Rechner ist nicht erreichbar, es wurde nichts geändert. Versuchen Sie es noch einmal.",
         "loadFailed": "Der Rechner ist nicht erreichbar, die Liste ist möglicherweise veraltet. Laden Sie die Seite neu."
       }
@@ -528,7 +527,6 @@
   },
   "errors": {
     "admin": {
-      "actionFailed": "Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.",
       "categories": {
         "colourInvalid": "Wählen Sie eine Farbe aus, bevor Sie speichern.",
         "hasActiveItems": "Die Kategorie hat noch aktive Artikel. Deaktivieren Sie zuerst die Artikel und danach die Kategorie.",
@@ -540,12 +538,12 @@
         "areaWithItemsToHandOutOrSettleStaysShown": "Solange ein Fest aktiv ist, kann ein Tischplan erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und kassiert ist.",
         "itemNeedsAStation": "Wählen Sie mindestens eine Ausgabestelle für den Artikel.",
         "itemPriceOutOfRange": "Tragen Sie einen Preis zwischen 0,00 und 999,99 Euro ein.",
-        "itemStaysOnTheMenuWhileTheFestivalRuns": "Aus einem aktiven Fest kann kein Artikel entfernt werden.",
+        "itemStaysOnTheMenuWhileTheFestivalRuns": "Solange ein Fest aktiv ist, kann kein Artikel entfernt werden.",
         "nameMissing": "Geben Sie dem Fest einen Namen.",
         "overlaps": "Das Fest {name} überschneidet sich mit diesem Zeitraum. Verschieben Sie den Beginn oder das Ende.",
         "periodInvalid": "Das Ende muss nach dem Beginn liegen. Tragen Sie beim Ende einen späteren Zeitpunkt ein.",
         "runningFestivalStaysShown": "Ein aktives Fest kann nicht ausgeblendet werden.",
-        "stationHasOrdersAtTheFestival": "Aus einem aktiven Fest kann keine Ausgabestelle mit offenen Bestellungen entfernt werden.",
+        "stationHasOrdersAtTheFestival": "Solange ein Fest aktiv ist, kann keine Ausgabestelle mit offenen Bestellungen entfernt werden.",
         "tableNameTaken": "Der Name ist in diesem Fest bereits an einen Tisch vergeben, auch an einen ausgeblendeten. Wählen Sie einen anderen Namen.",
         "tableCopyNameTooLong": "Der Name einer Kopie wäre länger als 40 Zeichen. Kürzen Sie den Namen des Tisches.",
         "tableWithItemsToHandOutOrSettleStaysShown": "Solange ein Fest aktiv ist, kann ein Tisch erst ausgeblendet werden, wenn alle seine Positionen zubereitet und kassiert sind."

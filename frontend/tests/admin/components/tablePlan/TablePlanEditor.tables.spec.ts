@@ -46,7 +46,7 @@ const STILL_OPEN =
   'Solange ein Fest aktiv ist, kann ein Tisch erst ausgeblendet werden, wenn alle seine Positionen zubereitet und kassiert sind.'
 
 const FAILED =
-  'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.'
+  'Die Aktion ist fehlgeschlagen.'
 
 const HIDDEN_A3 = anAdminTable({ tableId: 'table-a3', name: 'A3', isHidden: true, geometry: aGeometry({ y: 300 }) })
 
@@ -251,7 +251,7 @@ describe('the one refusal line above the drawing', () => {
   it('shows only the newest refusal when a refused hide follows a refused move', async () => {
     editorLaptop({
       writeReply: inTurn(
-        refusal('errors.admin.actionFailed', { status: 400 }),
+        refusal('common.errors.actionFailed', { status: 400 }),
         refusal('errors.admin.festivals.tableWithItemsToHandOutOrSettleStaysShown'),
       ),
     })
@@ -268,7 +268,7 @@ describe('the one refusal line above the drawing', () => {
   })
 
   it('goes away when the admin selects another shape', async () => {
-    editorLaptop({ writeReply: refusal('errors.admin.actionFailed', { status: 400 }) })
+    editorLaptop({ writeReply: refusal('common.errors.actionFailed', { status: 400 }) })
     await mountEditor()
     await selectTheShape(TABLE_A1_SHAPE_ID)
     await dragBy(theDrawing(), shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID), { x: 75, y: 150 })

@@ -8,6 +8,6 @@ public sealed record MoveTableRequest
 {
   public required Guid TableId { get; init; }
 
-  [Required(ErrorMessage = RefusalMessageKeys.AdminActionFailed)]
+  [Required(ErrorMessage = RefusalMessageKeys.ActionFailed)]
   public required AreaShapeGeometry? Geometry { get; init; }
 }

@@ -239,7 +239,7 @@ describe('dragging a shape', () => {
   })
 
   it('puts the table back where the laptop keeps it when the laptop refuses the move', async () => {
-    editorLaptop({ writeReply: refusal('errors.admin.actionFailed', { status: 400 }) })
+    editorLaptop({ writeReply: refusal('common.errors.actionFailed', { status: 400 }) })
     await mountEditor()
     const table = shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID)
 
@@ -247,7 +247,7 @@ describe('dragging a shape', () => {
 
     expect([table.x(), table.y()]).toEqual([20, 30])
     expect(textOnScreen('[data-test="plan-refusal"]').trim()).toBe(
-      'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal oder laden Sie die Seite neu.',
+      'Die Aktion ist fehlgeschlagen.',
     )
   })
 })

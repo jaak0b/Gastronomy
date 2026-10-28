@@ -500,7 +500,7 @@ public sealed class AdminFestivalEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                     });
   }
 

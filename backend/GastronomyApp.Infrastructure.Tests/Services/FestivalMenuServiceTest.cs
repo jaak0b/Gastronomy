@@ -70,7 +70,7 @@ public sealed class FestivalMenuServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(putOn.IsError, Is.True);
-                      Assert.That(putOn.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(putOn.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(putOn.RefusalDescription(), Does.Contain(strangerStationId.ToString()));
                     });
   }

@@ -528,7 +528,7 @@ public sealed class CatalogItemServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(saved.RefusalMessageKey(), Is.EqualTo("errors.admin.actionFailed"));
+                      Assert.That(saved.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(saved.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
                       Assert.That(saved.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("DeactivatedIngredientCannotJoinRecipe"));
                       Assert.That(_fixture.DbContext.CatalogItemIngredients.Count(), Is.Zero);

@@ -54,7 +54,7 @@ describe('a refusal beside an open item form', () => {
         status: 409,
         body: {
           code: 'Conflict',
-          messageKey: 'errors.admin.actionFailed',
+          messageKey: 'common.errors.actionFailed',
           parameters: {},
           details: null,
         },
@@ -77,7 +77,7 @@ describe('a refusal beside an open item form', () => {
         status: 409,
         body: {
           code: 'Conflict',
-          messageKey: 'errors.admin.actionFailed',
+          messageKey: 'common.errors.actionFailed',
           parameters: {},
           details: null,
         },
@@ -114,7 +114,7 @@ describe('a refusal the admin has walked away from', () => {
       .answersEverythingElse(answer(ONE_ITEM))
       .answers('GET', '/api/admin/stations', answer(ONE_STATION))
       .answers('GET', '/api/admin/categories', answer(TWO_CATEGORIES))
-      .answers('ANY', (call) => call.method !== 'GET', refusal('errors.admin.actionFailed'))
+      .answers('ANY', (call) => call.method !== 'GET', refusal('common.errors.actionFailed'))
   }
 
   function mountFestivalItems() {

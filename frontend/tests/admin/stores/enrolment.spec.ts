@@ -183,7 +183,7 @@ describe('creating an invitation from the admin screen', () => {
             },
             201,
           ),
-          refusal('errors.admin.actionFailed'),
+          refusal('common.errors.actionFailed'),
         ),
       )
       .answers('ANY', /\/qr\.svg$/, () => renderedQr())

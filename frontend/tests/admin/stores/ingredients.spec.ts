@@ -141,7 +141,7 @@ describe('writing an ingredient', () => {
 
     expect(result).toEqual({
       kind: 'failed',
-      message: { key: 'errors.admin.actionFailed', parameters: {}, count: null },
+      message: { key: 'common.errors.actionFailed', parameters: {}, count: null },
     })
   })
 })
