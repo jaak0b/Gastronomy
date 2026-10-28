@@ -22,14 +22,15 @@ back for the paid ones, and cancels them on confirming. A cancellation is final.
 Frontend, under `frontend/src/phone/`:
 
 - `views/OpenItems.vue` (route `/open-items`) is the settle view of one table, titled "Kassieren":
-  the reload button ("Neu laden"), the shared filter
+  the title (`components/orderList/OrderListTitle.vue`), the shared filter
   (`components/orderList/OrderListFilter.vue`, see the `showing-a-tables-orders` page), the sentence when the table could not be loaded, the sentence when nothing is left
   (`phone.openItems.messages.nothingToSettle` or `nothingToCancel`, replaced by `phone.orderOverview.messages.noOrderMatches` once the waiter changed the filter), the notice after settling, the table's orders and
   the bottom bar with the selected total and the one Kassieren button that opens the amount page. It
   goes back to the plan when no table is open, as after a reload, and closes the table when the
   waiter leaves. In cancel mode it is titled "Stornieren" (`phone.openItems.cancellingTitle`), the footer counts the selection
-  (`phone.openItems.labels.selectedCount`) and its "Stornieren" opens `CancelItemsDialog.vue`. The header (`components/header/AppHeader.vue`) shows the table's current name and
-  "Tischplan".
+  (`phone.openItems.labels.selectedCount`) and its "Stornieren" opens `CancelItemsDialog.vue`. The bar at the top (`components/header/AppHeader.vue`, see the
+  `table-plan` page) shows the table's current name, "Tischplan" and the reload "Neu laden"
+  that the refusal notices name.
 - `components/openItems/`: `TableOrders.vue` (the box for the whole table, then one shared
   `components/orderList/OrderListCard.vue` per order with the view's purpose and ticks, see the
   `showing-a-tables-orders` page; the whole-order box sits in the order's header line, an item is
@@ -194,7 +195,7 @@ Backend, under `backend/`:
 ## Tests
 
 - `frontend/tests/phone/views`, on `openItemsFixture.ts`: `OpenItems.table.spec.ts` (loading by id,
-  the title, a paid position, nothing left to take payment for, the reload, the 404 in German and English, no table after a
+  the title, a paid position, nothing left to take payment for, the laptop out of reach, the 404 in German and English, no table after a
   reload, closing on leaving, the ticks of an order just sent, a cancelled item struck through with
   an empty tick box cell, the details button on both screens opening the price and the history
   without ticking, a row tap ticking on both screens and unticking again, a row tap on a paid item

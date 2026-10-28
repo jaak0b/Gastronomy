@@ -1,19 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { stubLaptop, answer } from './support/laptop'
+import { stubLaptop, answer, inTurn, type StubbedLaptop } from './support/laptop'
+import { TABLE_REPORT } from './phone/views/openItemsFixture'
 import { nextTick } from 'vue'
 
 vi.mock('@microsoft/signalr', async () => (await import('./support/hubConnection')).signalrModuleFake())
 
 const { navigate } = await import('../src/shared/router/router')
 const { useConnectionStore } = await import('../src/shared/stores/connection')
+const { useOpenItemsStore } = await import('../src/phone/stores/openItems')
 const { TOKEN_STORAGE_KEY } = await import('../src/shared/stores/session')
 const App = (await import('../src/App.vue')).default
 const { testPlugins } = await import('./support/plugins')
 
-function phoneLaptop(): void {
-  stubLaptop()
+function phoneLaptop(): StubbedLaptop {
+  return stubLaptop()
     .answersEverythingElse(
       answer({
         deviceId: 'device-1',
@@ -94,5 +96,35 @@ describe('where the app bar stands', () => {
 
     expect(app.find('[data-test="app-header"]').exists()).toBe(false)
     expect(app.find('[data-test="connection"]').exists()).toBe(true)
+  })
+})
+
+describe('the reload in the bar over a table being settled', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    sessionStorage.setItem('theDoorAnchor', 'yes')
+    document.body.innerHTML = ''
+  })
+
+  it('loads the table again after the laptop could not be reached and shows its orders', async () => {
+    phoneLaptop().answers(
+      'POST',
+      '/api/open-items/tables/table-12/search',
+      inTurn(answer({}, 500), answer(TABLE_REPORT)),
+    )
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
+    useOpenItemsStore().openTable('table-12')
+    navigate('/open-items')
+    const app = mount(App, { global: { plugins: testPlugins() }, attachTo: document.body })
+    await flushPromises()
+
+    await app.get('[data-test="app-header"] [data-test="reload"]').trigger('click')
+    await flushPromises()
+
+    expect({
+      failure: app.find('[data-test="load-failed"]').exists(),
+      orders: app.findAll('[data-test="order-card"]').length,
+    }).toEqual({ failure: false, orders: 3 })
   })
 })

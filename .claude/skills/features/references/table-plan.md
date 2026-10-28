@@ -245,9 +245,14 @@ Frontend, under `frontend/src/`:
   `phone/components/tablePlan/AreaList.vue` (one large button per area, in the laptop's order),
   `AreaPlan.vue` (the read-only Konva drawing of one area with its scroll bars), `TableActionSheet.vue`
   (the table's name and five buttons: "Bestellung aufnehmen", "Bestellungen anzeigen", "Position kassieren", "Position stornieren", "Zurück") and `UnsentOrderDialog.vue` (the
-  question when another table's unsent items are on the phone; see the `taking-an-order` page). `phone/components/header/AppHeader.vue` carries
-  the back control ("Tischpläne" from a plan when there are several areas, "Tischplan" from the
-  ordering screen, the order overview and the settle view) and the area or table name.
+  question when another table's unsent items are on the phone; see the `taking-an-order` page). `phone/components/header/AppHeader.vue` is
+  the waiter's bar, one `v-app-bar` at the top of every waiter screen except the summary. From left
+  to right it carries the back control ("Tischpläne" from a plan when there are several areas,
+  "Tischplan" from the ordering screen, the order overview and the settle view), the area or table
+  name, the reload ("Neu laden" under a refresh icon, `phone.openItems.actions.reload`, only over
+  the order overview and the settle view, where it calls that screen's store `load`) and the
+  settings gear. The table plan has no reload in the bar; it keeps the one next to its failure
+  message.
 - `phone/core/tablePlanCamera.ts` is the camera of the phone's drawing: `cameraFittingTheWidth`,
   `clampedPosition`, `pinchOf`, `pinchedCamera` (zoom about the point between the fingers, from the
   width of the screen up to `DEEPEST_ZOOM`, four times that) and `waiterDrawingLength` (the lowest
@@ -531,4 +536,6 @@ Frontend, under `frontend/src/`:
   station, stations not tappable, the fit, fill and border per state in both themes, a tap, a pan that opens nothing, the
   clamped pan) and `TablePlan.sheet.spec.ts` (each button, the question about unsent items with its
   three choices);
-  `phone/components/header/AppHeader.spec.ts` for the back control and the names.
+  `phone/components/header/AppHeader.spec.ts` for the back control, the names and the reload, and
+  `tests/AppLayout.spec.ts` for that reload filling the settle view again after the laptop was out
+  of reach.

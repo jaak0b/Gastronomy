@@ -12,6 +12,8 @@ import SettingsSheet from './SettingsSheet.vue'
 
 type BackDestination = 'areaList' | 'tablePlan' | 'none'
 
+type ReloadableList = 'openItems' | 'orderOverview' | 'none'
+
 const { t } = useI18n()
 const tablePlan = useTablePlanStore()
 const openItems = useOpenItemsStore()
@@ -86,6 +88,41 @@ const title = computed(() =>
     : t('common.labels.table', { name: shownTableName.value }),
 )
 
+const reloadableList = computed<ReloadableList>(() => {
+  const route = currentRoute.value
+  switch (route.name) {
+    case 'openItems':
+      return 'openItems'
+    case 'orderOverview':
+      return 'orderOverview'
+    case 'home':
+    case 'catalog':
+    case 'review':
+    case 'enrolQr':
+    case 'stations':
+    case 'admin':
+      return 'none'
+    default:
+      return assertNever(route)
+  }
+})
+
+async function reloadTheList(): Promise<void> {
+  const list = reloadableList.value
+  switch (list) {
+    case 'openItems':
+      await openItems.load()
+      return
+    case 'orderOverview':
+      await orderOverview.load()
+      return
+    case 'none':
+      return
+    default:
+      assertNever(list)
+  }
+}
+
 function goBack(): void {
   const destination = backDestination.value
   switch (destination) {
@@ -119,6 +156,18 @@ function goBack(): void {
     <span v-if="title !== null" class="header-title text-h6 px-3" data-test="header-title">{{ title }}</span>
     <v-spacer />
     <v-btn
+      v-if="reloadableList !== 'none'"
+      class="reload"
+      data-test="reload"
+      prepend-icon="mdi-refresh"
+      variant="text"
+      height="64"
+      stacked
+      @click="reloadTheList"
+    >
+      <span class="reload-label text-caption">{{ t('phone.openItems.actions.reload') }}</span>
+    </v-btn>
+    <v-btn
       class="settings"
       data-test="settings"
       icon="mdi-cog"
@@ -133,7 +182,8 @@ function goBack(): void {
 </template>
 
 <style scoped>
-.back-button {
+.back-button,
+.reload {
   text-transform: none;
   letter-spacing: normal;
 }
