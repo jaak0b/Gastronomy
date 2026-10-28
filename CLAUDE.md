@@ -141,26 +141,44 @@ Every rule binds every agent, main or sub, with no exception it does not name.
    both languages in the same change. A string that exists in one language only is an incomplete
    change. This binds the backend, the frontend, and the desktop shell.
 
-9. **UI text is plain, complete prose aimed at a non-technical volunteer.** Complete grammatical
-   sentences, neutral register, no clipped fragments, no jargon, no invented abbreviations. One term
-   per concept in each language, used consistently. Assume the reader is holding a phone in one hand
-   at a loud festival and has never been trained on the tool.
+9. **UI text is short, neutral and professional, worded the way an established business system such
+   as SAP or Microsoft Dynamics addresses its users.** No jargon, no invented abbreviations, no
+   chatty phrasing. One term per concept in each language, used consistently. The reader has never
+   been trained on the tool and may be holding a phone at a loud festival, so less text is better
+   text.
 
    **Read the `no-ai-slop` skill before writing or changing any user-facing text or any UI code, and
    before reviewing either.** Text that reads as machine-generated fails review regardless of
    whether it is accurate. The frontend's `writing-ui-guidance` skill governs structure and placement;
    `no-ai-slop` governs the prose itself.
 
-  **Write the plain fact in one sentence, the way you would say it across a counter.** A refusal, a
-  status or a rule states its condition and what follows, and stops: "Solange ein Fest aktiv ist,
-  kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden." Add an instruction
-  only where the reader has a control on that screen and something to do with it, and keep it
-  equally plain. Never a formula, never a second sentence of reassurance, never an account of what
-  the program did internally. Never join a fact and its consequence with "deshalb", "daher" or an
-  English ", so": each stands as a sentence of its own. Name only controls that exist on the screen where the sentence
-  appears. Write each language for itself; a sentence translated word for word from the other one
-  reads as machine-written even when every word is correct. Read it aloud before you ship it, and if
-  you would not say it to a colleague across a counter, write it again.
+  **The form follows the text's job.**
+  - A label, an empty list, or a short status or tooltip of a few words is a noun phrase without a
+    period: "Keine Ausgabestellen verfügbar", "Keine Treffer", "No stations available", "No
+    matches".
+  - Every other message is one or two complete, grammatical sentences: articles and verbs stay, and
+    the reader is addressed with "Sie". State the fact first, then the instruction, and only where
+    the reader has a control on that screen that helps: "Die Zahlung wurde möglicherweise nicht
+    gespeichert. Laden Sie die Seite neu und prüfen Sie die Positionen." / "The payment may not have
+    been saved. Reload the page and check the items." Never drop articles or write an instruction as
+    a bare infinitive ("Seite neu laden."): that is telegram style, not professional German.
+  - A confirmation of a destructive action asks the action as its title ("Positionen stornieren?")
+    and names the cost in one sentence.
+
+  Texts the owner approved as the model to follow:
+  - "Keine Artikel verfügbar"
+  - "Der Rechner ist nicht erreichbar, die Liste ist möglicherweise veraltet. Laden Sie die Seite
+    neu."
+  - "Die Zahlung wurde möglicherweise nicht gespeichert. Laden Sie die Seite neu und prüfen Sie die
+    Positionen."
+  - "Für {name} ist kein Tablet eingerichtet. Ohne Tablet erhält die Ausgabestelle keine
+    Bestellungen."
+
+  Never a formula, never reassurance, never an account of what the program did internally, never
+  "Es gibt …" or "Bitte …". Name only controls that exist on the screen where the text appears.
+  Write each language for itself; a line translated word for word from the other one reads as
+  machine-written even when every word is correct. Read each sentence aloud: if it is not correct,
+  natural German that a professional business application would show, write it again.
 
   **A sentence belongs on a screen only if it changes what the reader does.** Before adding a hint,
   a caption or an explanatory paragraph, name the decision or action it changes. If you cannot, it
