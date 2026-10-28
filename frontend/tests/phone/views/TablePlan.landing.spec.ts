@@ -116,7 +116,7 @@ describe('the waiter\'s home screen', () => {
     stubLaptop().answers('GET', '/api/table-plan', inTurn(noConnection(), answer({ areas: [HALL] })))
     const view = await mountThePlan()
     expect(view.get('[data-test="table-plan-load-failed"]').text()).toContain(
-      'Der Tischplan konnte nicht geladen werden. Tippen Sie auf "Neu laden".',
+      'Der Tischplan konnte nicht geladen werden. Laden Sie die Seite neu.',
     )
 
     await view.get('[data-test="reload-the-plan"]').trigger('click')

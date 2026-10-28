@@ -197,7 +197,7 @@ describe('the page that confirms the cancellation', () => {
       reason: textOnScreen(`${CONFIRMATION} [data-test="settle-notice"]`).trim(),
       reload: textOnScreen(`${CONFIRMATION} [data-test="reload-after-refusal"]`).trim(),
     }).toEqual({
-      reason: 'Bratwurst ist schon storniert. Tippen Sie auf "Neu laden" und wählen Sie die Positionen noch einmal aus.',
+      reason: 'Bratwurst ist schon storniert. Laden Sie die Seite neu. Wählen Sie die Positionen noch einmal aus.',
       reload: 'Neu laden',
     })
   })
@@ -255,7 +255,7 @@ describe('the page that confirms the cancellation', () => {
     await clickOn(`${CONFIRMATION} [data-test="confirm-cancel"]`)
 
     expect(textOnScreen(`${CONFIRMATION} [data-test="settle-notice"]`).trim()).toBe(
-      'Es ist nicht klar, ob die Stornierung angekommen ist. Tippen Sie auf "Neu laden" und schauen Sie nach, ob die Positionen storniert sind.',
+      'Es ist nicht klar, ob die Stornierung angekommen ist. Laden Sie die Seite neu. Schauen Sie nach, ob die Positionen storniert sind.',
     )
   })
 

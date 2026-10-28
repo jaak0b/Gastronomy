@@ -131,9 +131,9 @@
         "nothingToSettle": "There is nothing left to take payment for at this table."
       },
       "errors": {
-        "cancelAnswerNeverCame": "It is not clear whether the cancellation arrived. Tap \"Reload\" and check whether the items are cancelled.",
-        "loadFailed": "The computer could not be reached. Tap \"Reload\".",
-        "settleAnswerNeverCame": "It is not clear whether the payment reached the computer. Tap \"Reload\" and check whether the items are still open.",
+        "cancelAnswerNeverCame": "It is not clear whether the cancellation arrived. Reload the page. Check whether the items are cancelled.",
+        "loadFailed": "The computer could not be reached. Reload the page.",
+        "settleAnswerNeverCame": "It is not clear whether the payment reached the computer. Reload the page. Check whether the items are still open.",
         "settleFailed": "Taking the payment failed. Try again.",
         "tableCouldNotBeLoaded": "This table could not be loaded. Open it again from the table plan."
       }
@@ -216,7 +216,7 @@
         "unsentOrder": "Table {table} has {count} unsent item for {total}. | Table {table} has {count} unsent items for {total}."
       },
       "errors": {
-        "loadFailed": "The table plan could not be loaded. Tap \"Reload\"."
+        "loadFailed": "The table plan could not be loaded. Reload the page."
       }
     },
     "settings": {
@@ -586,9 +586,9 @@
       "wrongDeviceKind": "This device is not set up for this screen. Have it set up again at the computer."
     },
     "cancellation": {
-      "alreadyCancelled": "{name} has already been cancelled. Tap \"Reload\" and select the items again.",
-      "cannotBeProcessed": "The cancellation could not be processed. Tap \"Reload\" and try again.",
-      "unknownItem": "One of the selected items is no longer on the laptop. Tap \"Reload\" and select the items again."
+      "alreadyCancelled": "{name} has already been cancelled. Reload the page. Select the items again.",
+      "cannotBeProcessed": "The cancellation could not be processed. Reload the page. Try again.",
+      "unknownItem": "One of the selected items is no longer on the laptop. Reload the page. Select the items again."
     },
     "enrolment": {
       "atMostOneOwner": "The QR code could not be created. Try again.",
@@ -604,7 +604,7 @@
       "stationIsOffTheList": "Ask for a new QR code at the computer. This station is switched off."
     },
     "itemHistory": {
-      "unknownItem": "This item is no longer on the laptop. Close this window and tap \"Reload\"."
+      "unknownItem": "This item is no longer on the laptop. Close this window. Reload the page."
     },
     "order": {
       "cannotBeProcessed": "The order could not be processed. Take it to the station yourself.",
@@ -617,9 +617,9 @@
     },
     "settlement": {
       "cannotBeProcessed": "The action could not be processed. Write on a slip of paper what the table paid.",
-      "itemWasCancelled": "{name} has been cancelled in the meantime. Tap \"Reload\" and select the items again.",
+      "itemWasCancelled": "{name} has been cancelled in the meantime. Reload the page. Select the items again.",
       "noItemsSelected": "First choose the items you want to take payment for.",
-      "unknownItem": "The computer no longer knows one of the selected items. No payment was taken. Tap \"Reload\"."
+      "unknownItem": "The computer no longer knows one of the selected items. No payment was taken. Reload the page."
     },
     "station": {
       "changeNotSaved": "The order could not be updated. Reload the page and try again.",

@@ -76,7 +76,7 @@ describe('the orders of the table the waiter chose to settle', () => {
     const screen = await mountScreen()
 
     expect(screen.get('[data-test="load-failed"]').text()).toBe(
-      'Der Rechner war nicht erreichbar. Tippen Sie auf "Neu laden".',
+      'Der Rechner war nicht erreichbar. Laden Sie die Seite neu.',
     )
   })
 

@@ -183,7 +183,7 @@ describe('the history of an item the laptop no longer knows', () => {
       reason: textOnScreen('[data-test="history-failed"]').trim(),
       reload: isOnScreen('[data-test="history-reload"]'),
     }).toEqual({
-      reason: 'Diese Position gibt es am Rechner nicht mehr. Schließen Sie das Fenster und tippen Sie auf "Neu laden".',
+      reason: 'Diese Position gibt es am Rechner nicht mehr. Schließen Sie das Fenster. Laden Sie die Seite neu.',
       reload: false,
     })
   })
@@ -195,7 +195,7 @@ describe('the history of an item the laptop no longer knows', () => {
     await flushPromises()
 
     expect(textOnScreen('[data-test="history-failed"]').trim()).toBe(
-      'This item is no longer on the laptop. Close this window and tap "Reload".',
+      'This item is no longer on the laptop. Close this window. Reload the page.',
     )
   })
 })
@@ -210,7 +210,7 @@ describe('the history when the laptop does not answer', () => {
     expect({
       reason: textOnScreen('[data-test="history-failed"]').trim(),
       reload: textOnScreen('[data-test="history-reload"]').trim(),
-    }).toEqual({ reason: 'Der Rechner war nicht erreichbar. Tippen Sie auf "Neu laden".', reload: 'Neu laden' })
+    }).toEqual({ reason: 'Der Rechner war nicht erreichbar. Laden Sie die Seite neu.', reload: 'Neu laden' })
   })
 
   it('shows the history once the waiter loads again and the laptop answers', async () => {

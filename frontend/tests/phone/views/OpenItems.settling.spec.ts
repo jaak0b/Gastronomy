@@ -141,7 +141,7 @@ describe('settling what the table actually handed over', () => {
 
     expect(document.querySelector('[data-test="amount-paid-dialog"]')).toBeNull()
     expect(screen.get('[data-test="settle-notice"]').text()).toBe(
-      'Es ist nicht klar, ob die Zahlung gespeichert wurde. Tippen Sie auf "Neu laden" und schauen Sie nach, ob die Positionen noch offen sind.',
+      'Es ist nicht klar, ob die Zahlung gespeichert wurde. Laden Sie die Seite neu. Schauen Sie nach, ob die Positionen noch offen sind.',
     )
     expect(useOpenItemsStore().selectedItemIds).toEqual(['item-1'])
   })
@@ -179,7 +179,7 @@ describe('settling what the table actually handed over', () => {
       reason: document.querySelector(`${AMOUNT_DIALOG} [data-test="settle-notice"]`)?.textContent?.trim(),
       reload: document.querySelector(`${AMOUNT_DIALOG} [data-test="reload-after-refusal"]`)?.textContent?.trim(),
     }).toEqual({
-      reason: 'Bratwurst wurde inzwischen storniert. Tippen Sie auf "Neu laden" und wählen Sie die Positionen noch einmal aus.',
+      reason: 'Bratwurst wurde inzwischen storniert. Laden Sie die Seite neu. Wählen Sie die Positionen noch einmal aus.',
       reload: 'Neu laden',
     })
   })
