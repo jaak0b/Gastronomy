@@ -79,20 +79,23 @@ public sealed class GastronomyAppDbContextTest
                                   StationOrderNumber = 1,
                                   DeliveryMode = DeliveryMode.Together
                                 };
-    stationOrder.Items.Add(new()
-                           {
-                             Id = orderItemId,
-                             StationOrderId = stationOrder.Id,
-                             CatalogItemId = seeded.SausageItemId,
-                             ItemName = "Bratwurst",
-                             UnitPriceCents = 350,
-                             SettledAtUtc = settledAtUtc,
-                             ChargedPriceCents = 350,
-                             SettledByStaffMemberId = seeded.StaffMemberId
-                           });
+    OrderItemStatusSeeder statusSeeder = new();
+    stationOrder.Items.Add(statusSeeder.Open(new()
+                                             {
+                                               Id = orderItemId,
+                                               StationOrderId = stationOrder.Id,
+                                               CatalogItemId = seeded.SausageItemId,
+                                               ItemName = "Bratwurst",
+                                               UnitPriceCents = 350,
+                                               SettledAtUtc = settledAtUtc,
+                                               ChargedPriceCents = 350,
+                                               SettledByStaffMemberId = seeded.StaffMemberId
+                                             },
+                                             seeded.StaffMemberId,
+                                             settledAtUtc));
     order.StationOrders.Add(stationOrder);
     fixture.DbContext.Orders.Add(order);
-    await fixture.DbContext.SaveChangesAsync();
+    await statusSeeder.SaveAsync(fixture.DbContext, CancellationToken.None);
 
     using var readingContext = fixture.CreateContext();
     var loaded = await readingContext.OrderItems.Include(item => item.StationOrder)
@@ -143,42 +146,49 @@ public sealed class GastronomyAppDbContextTest
                                   StationOrderNumber = 1,
                                   DeliveryMode = DeliveryMode.Together
                                 };
-    stationOrder.Items.Add(new()
-                           {
-                             Id = paidItemId,
-                             StationOrderId = stationOrder.Id,
-                             CatalogItemId = seeded.SausageItemId,
-                             ItemName = "Bratwurst",
-                             UnitPriceCents = 350,
-                             SettledAtUtc = settledAtUtc,
-                             ChargedPriceCents = 350,
-                             SettledByStaffMemberId = seeded.StaffMemberId,
-                             PaymentMethod = PaymentMethod.Card
-                           });
-    stationOrder.Items.Add(new()
-                           {
-                             Id = freeItemId,
-                             StationOrderId = stationOrder.Id,
-                             CatalogItemId = seeded.SausageItemId,
-                             ItemName = "Bratwurst",
-                             UnitPriceCents = 350,
-                             SettledAtUtc = settledAtUtc,
-                             ChargedPriceCents = 0,
-                             SettledByStaffMemberId = seeded.StaffMemberId,
-                             PaymentNotice = "Kapelle",
-                             PaymentMethod = PaymentMethod.None
-                           });
-    stationOrder.Items.Add(new()
-                           {
-                             Id = openItemId,
-                             StationOrderId = stationOrder.Id,
-                             CatalogItemId = seeded.SausageItemId,
-                             ItemName = "Bratwurst",
-                             UnitPriceCents = 350
-                           });
+    OrderItemStatusSeeder statusSeeder = new();
+    stationOrder.Items.Add(statusSeeder.Open(new()
+                                             {
+                                               Id = paidItemId,
+                                               StationOrderId = stationOrder.Id,
+                                               CatalogItemId = seeded.SausageItemId,
+                                               ItemName = "Bratwurst",
+                                               UnitPriceCents = 350,
+                                               SettledAtUtc = settledAtUtc,
+                                               ChargedPriceCents = 350,
+                                               SettledByStaffMemberId = seeded.StaffMemberId,
+                                               PaymentMethod = PaymentMethod.Card
+                                             },
+                                             seeded.StaffMemberId,
+                                             settledAtUtc));
+    stationOrder.Items.Add(statusSeeder.Open(new()
+                                             {
+                                               Id = freeItemId,
+                                               StationOrderId = stationOrder.Id,
+                                               CatalogItemId = seeded.SausageItemId,
+                                               ItemName = "Bratwurst",
+                                               UnitPriceCents = 350,
+                                               SettledAtUtc = settledAtUtc,
+                                               ChargedPriceCents = 0,
+                                               SettledByStaffMemberId = seeded.StaffMemberId,
+                                               PaymentNotice = "Kapelle",
+                                               PaymentMethod = PaymentMethod.None
+                                             },
+                                             seeded.StaffMemberId,
+                                             settledAtUtc));
+    stationOrder.Items.Add(statusSeeder.Open(new()
+                                             {
+                                               Id = openItemId,
+                                               StationOrderId = stationOrder.Id,
+                                               CatalogItemId = seeded.SausageItemId,
+                                               ItemName = "Bratwurst",
+                                               UnitPriceCents = 350
+                                             },
+                                             seeded.StaffMemberId,
+                                             settledAtUtc));
     order.StationOrders.Add(stationOrder);
     fixture.DbContext.Orders.Add(order);
-    await fixture.DbContext.SaveChangesAsync();
+    await statusSeeder.SaveAsync(fixture.DbContext, CancellationToken.None);
 
     using var readingContext = fixture.CreateContext();
     Dictionary<Guid, PaymentMethod?> loaded = await readingContext.OrderItems.ToDictionaryAsync(item => item.Id, item => item.PaymentMethod);
