@@ -3763,8 +3763,6 @@
       },
       "OrderItemHistoryView": {
         "required": [
-          "orderedByStaffMemberName",
-          "orderedAtUtc",
           "statusChanges",
           "settledAtUtc",
           "chargedPriceCents",
@@ -3774,13 +3772,6 @@
         ],
         "type": "object",
         "properties": {
-          "orderedByStaffMemberName": {
-            "type": "string"
-          },
-          "orderedAtUtc": {
-            "type": "string",
-            "format": "date-time"
-          },
           "statusChanges": {
             "type": "array",
             "items": {
@@ -4845,7 +4836,6 @@
           "itemName",
           "note",
           "unitPriceCents",
-          "orderedAtUtc",
           "state",
           "stateSetAtUtc",
           "wasHandedOutWhenCancelled",
@@ -4878,10 +4868,6 @@
           "unitPriceCents": {
             "type": "integer",
             "format": "int32"
-          },
-          "orderedAtUtc": {
-            "type": "string",
-            "format": "date-time"
           },
           "state": {
             "$ref": "#/components/schemas/OrderItemState"

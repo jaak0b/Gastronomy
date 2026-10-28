@@ -427,8 +427,6 @@ public sealed class OpenItemsServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(read.Value.OrderedByStaffMemberName, Is.EqualTo("Anna"));
-                      Assert.That(read.Value.OrderedAtUtc, Is.EqualTo(_orderedAtUtc));
                       Assert.That(read.Value.StatusChanges,
                                   Is.EqualTo(new[]
                                              {

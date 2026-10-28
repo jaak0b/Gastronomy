@@ -962,7 +962,7 @@ public sealed class OpenItemEndpointsTest
   }
 
   [Test]
-  public async Task GetItemHistory_AnItemHandedOutPaidShortAndCancelled_AnswersWhoOrderedItEveryChangeWithItsAuthorAndThePaymentWithItsReason()
+  public async Task GetItemHistory_AnItemHandedOutPaidShortAndCancelled_AnswersEveryChangeWithItsAuthorAndThePaymentWithItsReason()
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync(_context.World.TableId);
     var kitchenToken = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
@@ -988,8 +988,6 @@ public sealed class OpenItemEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(history.GetProperty("orderedByStaffMemberName").GetString(), Is.EqualTo("Anna"));
-                      Assert.That(history.GetProperty("orderedAtUtc").ValueKind, Is.EqualTo(JsonValueKind.String));
                       Assert.That(changes.Select(change => change.GetProperty("state").GetString()),
                                   Is.EqualTo(new[]
                                              {

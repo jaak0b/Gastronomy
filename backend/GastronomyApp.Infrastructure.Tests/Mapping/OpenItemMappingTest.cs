@@ -41,7 +41,6 @@ public sealed class OpenItemMappingTest
                       Assert.That(view.OrderItemId, Is.EqualTo(limonade.Id));
                       Assert.That(view.OrderId, Is.EqualTo(order.Id));
                       Assert.That(view.GlobalOrderNumber, Is.EqualTo(order.GlobalOrderNumber));
-                      Assert.That(view.OrderedAtUtc, Is.EqualTo(order.CreatedAtUtc));
                       Assert.That(view.State, Is.EqualTo(OrderItemState.HandedOut));
                       Assert.That(view.StateSetAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(20)));
                       Assert.That(view.SettledAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(25)));

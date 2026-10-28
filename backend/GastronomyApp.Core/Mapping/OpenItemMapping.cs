@@ -16,7 +16,6 @@ public sealed class OpenItemMapping : IRegister
           .Map(view => view.OrderItemId, item => item.Id)
           .Map(view => view.OrderId, item => item.StationOrder.Order.Id)
           .Map(view => view.GlobalOrderNumber, item => item.StationOrder.Order.GlobalOrderNumber)
-          .Map(view => view.OrderedAtUtc, item => item.StationOrder.Order.CreatedAtUtc)
           .Map(view => view.State, item => item.State())
           .Map(view => view.StateSetAtUtc, item => item.StateSetAtUtc())
           .Map(view => view.WasHandedOutWhenCancelled, item => item.WasHandedOutWhenCancelled());
@@ -31,8 +30,6 @@ public sealed class OpenItemMapping : IRegister
           .Map(view => view.Items, searched => searched.ShownItems.OrderBy(item => item.ItemName, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Note, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Id).ToList());
 
     config.NewConfig<OrderItem, OrderItemHistoryView>()
-          .Map(view => view.OrderedByStaffMemberName, item => item.StationOrder.Order.StaffMember.Name)
-          .Map(view => view.OrderedAtUtc, item => item.StationOrder.Order.CreatedAtUtc)
           .Map(view => view.StatusChanges, item => item.Statuses.OrderBy(status => status.CreatedAtUtc))
           .Map(view => view.SettledAtUtc, item => item.SettledAtUtc)
           .Map(view => view.ChargedPriceCents, item => item.ChargedPriceCents)
