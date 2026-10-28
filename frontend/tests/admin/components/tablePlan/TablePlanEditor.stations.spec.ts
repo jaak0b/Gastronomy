@@ -6,8 +6,9 @@ import {
   clickOn,
   dialogText,
   isOnScreen,
+  onScreen,
   pressInDialog,
-  textOnScreen,
+  refusalReasonsOnScreen,
   waitForDialog,
   waitUntil,
 } from '../../../support/dom'
@@ -82,24 +83,24 @@ describe('the station dropdown of the toolbar', () => {
     expect(stationsOffered()).toEqual(['Küche'])
   })
 
-  it('says that every station of the festival is already on a table plan when nothing is left to add', async () => {
+  it('is disabled with the reason when every station of the festival is already on a plan', async () => {
     editorLaptop({ areas: [HALL, TENT_WITH_THE_BAR], stations: [SCHANK, BAR] })
     await mountEditor()
 
-    await openTheToolbarMenu('add-station', 'no-station-to-place')
+    onScreen('[data-test="add-station-wrapper"]').dispatchEvent(new MouseEvent('mouseenter'))
 
-    expect(textOnScreen('[data-test="no-station-to-place"]').trim()).toBe(
-      'Alle Ausgabestellen dieses Festes stehen schon in einem Tischplan.',
-    )
+    await waitUntil(() => expect(refusalReasonsOnScreen()).toContain('Keine Ausgabestellen verfügbar'))
+    expect((onScreen('[data-test="add-station"]') as HTMLButtonElement).disabled).toBe(true)
   })
 
-  it('says that the festival has no station yet when none belongs to it', async () => {
+  it('is disabled with the same reason when no station belongs to the festival', async () => {
     editorLaptop({ areas: [{ ...HALL, stationShapes: [] }, TENT], stations: [NOT_AT_THE_FESTIVAL] })
     await mountEditor()
 
-    await openTheToolbarMenu('add-station', 'no-station-to-place')
+    onScreen('[data-test="add-station-wrapper"]').dispatchEvent(new MouseEvent('mouseenter'))
 
-    expect(textOnScreen('[data-test="no-station-to-place"]').trim()).toBe('Zu diesem Fest gehört noch keine Ausgabestelle.')
+    await waitUntil(() => expect(refusalReasonsOnScreen()).toContain('Keine Ausgabestellen verfügbar'))
+    expect((onScreen('[data-test="add-station"]') as HTMLButtonElement).disabled).toBe(true)
   })
 })
 

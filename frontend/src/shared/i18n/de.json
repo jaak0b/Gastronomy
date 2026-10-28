@@ -298,6 +298,9 @@
         "showHidden": "Ausgeblendete anzeigen"
       },
       "messages": {
+        "noItemsAvailable": "Keine Artikel verfügbar",
+        "noMatches": "Keine Treffer",
+        "noStationsAvailable": "Keine Ausgabestellen verfügbar",
         "notOnLaptop": "Die Verwaltung lässt sich nur am Rechner öffnen."
       },
       "errors": {
@@ -359,10 +362,7 @@
       },
       "messages": {
         "needsAStationFirst": "Dieses Fest hat noch keine Ausgabestelle. Fügen Sie zuerst eine hinzu.",
-        "noItemsToAdd": "Alle eingeschalteten Artikel gehören schon zu diesem Fest. Klicken Sie auf \"Neuer Artikel\".",
         "noneYet": "Es ist noch kein Fest angelegt. Klicken Sie auf \"Neues Fest\".",
-        "noStationsToAdd": "Alle eingeschalteten Ausgabestellen gehören schon zu diesem Fest. Klicken Sie auf \"Neue Ausgabestelle\".",
-        "noStationSwitchedOn": "Es ist keine Ausgabestelle eingeschaltet. Klicken Sie auf \"Neue Ausgabestelle\".",
         "removeItemBody": "Der Artikel wird nur von diesem Fest entfernt.",
         "removeStationBody": "Die Ausgabestelle wird nur von diesem Fest entfernt."
       },
@@ -397,9 +397,7 @@
         "hideTableBody": "Die Kellner sehen diesen Tisch dann nicht mehr.",
         "removeStationBody": "Die Ausgabestelle wird nur aus diesem Tischplan entfernt.",
         "allAreasHidden": "Alle Tischpläne sind ausgeblendet. Blenden Sie einen davon wieder ein.",
-        "allAreasHiddenAndNotListed": "Alle Tischpläne sind ausgeblendet. Kreuzen Sie \"Ausgeblendete anzeigen\" an und blenden Sie einen davon wieder ein.",
-        "noStationsToPlace": "Alle Ausgabestellen dieses Festes stehen schon in einem Tischplan.",
-        "festivalHasNoStations": "Zu diesem Fest gehört noch keine Ausgabestelle."
+        "allAreasHiddenAndNotListed": "Alle Tischpläne sind ausgeblendet. Kreuzen Sie \"Ausgeblendete anzeigen\" an und blenden Sie einen davon wieder ein."
       }
     },
     "ingredients": {

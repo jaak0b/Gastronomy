@@ -97,6 +97,39 @@ describe('the items of this festival', () => {
     ).toEqual(['Bier'])
   })
 
+  it('disables the search and the add button with the reason when every item switched on is already here', async () => {
+    festivalLaptop({ items: [SAUSAGE, { ...BEER, isActive: false }] })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="item-search"]').exists()).toBe(true))
+    await page.get('[data-test="item-search-wrapper"]').trigger('mouseenter')
+
+    await vi.waitFor(() => expect(refusalReasonsOnScreen()).toContain('Keine Artikel verfügbar'))
+    expect(page.getComponent<typeof VAutocomplete>('[data-test="item-search"]').props('disabled')).toBe(true)
+    expect((page.get('[data-test="add-item"]').element as HTMLButtonElement).disabled).toBe(true)
+    expect((page.get('[data-test="new-item"]').element as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('keeps the item search enabled and names no reason while an item can be added', async () => {
+    festivalLaptop({ items: [SAUSAGE, BEER] })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="item-search"]').exists()).toBe(true))
+    await page.get('[data-test="item-search-wrapper"]').trigger('mouseenter')
+
+    expect(page.getComponent<typeof VAutocomplete>('[data-test="item-search"]').props('disabled')).toBe(false)
+    expect(refusalReasonsOnScreen()).not.toContain('Keine Artikel verfügbar')
+  })
+
+  it('shows that nothing matches when the typed name matches no item', async () => {
+    festivalLaptop({ items: [SAUSAGE, BEER] })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="item-search"]').exists()).toBe(true))
+
+    expect(page.getComponent<typeof VAutocomplete>('[data-test="item-search"]').props('noDataText')).toBe('Keine Treffer')
+  })
+
   it('offers the items still to add with capitals ignored and umlauts after Z', async () => {
     festivalLaptop({
       items: [

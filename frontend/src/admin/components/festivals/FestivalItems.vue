@@ -100,6 +100,10 @@ const stillToAdd = computed(() =>
     .sort((left, right) => compareNames(left.name, right.name)),
 )
 
+const itemsUnavailableReason = computed(() =>
+  stillToAdd.value.length === 0 ? t('admin.common.messages.noItemsAvailable') : null,
+)
+
 const showsItemRefusal = computed(() => itemRefusalText.value !== null && !isItemDialogOpen.value)
 
 const chosenItem = computed(
@@ -263,7 +267,7 @@ async function remove(): Promise<void> {
             entry-title="name"
             entry-value="itemId"
             :label="t('admin.festivals.labels.itemName')"
-            :no-entries-text="t('admin.festivals.messages.noItemsToAdd')"
+            :unavailable-reason="itemsUnavailableReason"
             :add-label="t('admin.festivals.actions.addItem')"
             search-test-name="item-search"
             add-test-name="add-item"

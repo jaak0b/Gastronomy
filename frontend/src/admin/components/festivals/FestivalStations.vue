@@ -29,10 +29,8 @@ const atTheFestival = computed(() =>
 const stillToAdd = computed(() =>
   stations.stations.filter((station) => station.isActive && !station.isAtFestival),
 )
-const noStationsToAddText = computed(() =>
-  stations.stations.some((station) => station.isActive)
-    ? t('admin.festivals.messages.noStationsToAdd')
-    : t('admin.festivals.messages.noStationSwitchedOn'),
+const stationsUnavailableReason = computed(() =>
+  stillToAdd.value.length === 0 ? t('admin.common.messages.noStationsAvailable') : null,
 )
 
 async function removeFromTheFestival(station: AdminStationView): Promise<AdminActionResult<null>> {
@@ -152,7 +150,7 @@ async function saveStation(station: StationDraft): Promise<void> {
           entry-title="name"
           entry-value="stationId"
           :label="t('admin.festivals.labels.stationName')"
-          :no-entries-text="noStationsToAddText"
+          :unavailable-reason="stationsUnavailableReason"
           :add-label="t('admin.festivals.actions.addStation')"
           search-test-name="station-search"
           add-test-name="add-station"

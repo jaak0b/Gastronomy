@@ -79,6 +79,8 @@ tooltip beside them (frontend rule 8).
   of the festival page, `RemovableStationRows.vue` and `tablePlan/TablePlanEditor.vue`.
 - `BaseSearchAddLine.vue` is the festival page's type-to-search field and add button, with a slot
   for the "Neu…" button beside them. Consumers: `FestivalStations.vue` and `FestivalItems.vue`.
+  Its `unavailable-reason` is required (a string, or null) and disables the field and the button and shows the
+  reason as their tooltip; a search that matches nothing always shows `admin.common.messages.noMatches`.
 
 ## The order of a row's actions
 

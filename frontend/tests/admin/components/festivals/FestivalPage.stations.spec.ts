@@ -51,26 +51,52 @@ describe('the stations of this festival', () => {
     expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('items')).toEqual([BAR])
   })
 
-  it('says that every station switched on is already here when nothing is left to add', async () => {
+  it('disables the search and the add button with the reason when every station switched on is already here', async () => {
     festivalLaptop({ stations: [KITCHEN, { ...BAR, isActive: false }] })
 
     const page = mountPage()
     await vi.waitFor(() => expect(page.find('[data-test="station-search"]').exists()).toBe(true))
+    await page.get('[data-test="station-search-wrapper"]').trigger('mouseenter')
 
-    expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('noDataText')).toBe(
-      'Alle eingeschalteten Ausgabestellen gehören schon zu diesem Fest. Klicken Sie auf "Neue Ausgabestelle".',
+    await vi.waitFor(() =>
+      expect(refusalReasonsOnScreen()).toContain('Keine Ausgabestellen verfügbar'),
     )
+    expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('disabled')).toBe(true)
+    expect((page.get('[data-test="add-station"]').element as HTMLButtonElement).disabled).toBe(true)
+    expect((page.get('[data-test="new-station"]').element as HTMLButtonElement).disabled).toBe(false)
   })
 
-  it('says that no station is switched on when there is none to add', async () => {
+  it('disables them with the same reason when no station is switched on', async () => {
     festivalLaptop({ stations: [{ ...BAR, isActive: false }] })
 
     const page = mountPage()
     await vi.waitFor(() => expect(page.find('[data-test="station-search"]').exists()).toBe(true))
+    await page.get('[data-test="station-search-wrapper"]').trigger('mouseenter')
 
-    expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('noDataText')).toBe(
-      'Es ist keine Ausgabestelle eingeschaltet. Klicken Sie auf "Neue Ausgabestelle".',
+    await vi.waitFor(() =>
+      expect(refusalReasonsOnScreen()).toContain('Keine Ausgabestellen verfügbar'),
     )
+    expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('disabled')).toBe(true)
+  })
+
+  it('keeps the search enabled and names no reason while a station can be added', async () => {
+    festivalLaptop()
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="station-search"]').exists()).toBe(true))
+    await page.get('[data-test="station-search-wrapper"]').trigger('mouseenter')
+
+    expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('disabled')).toBe(false)
+    expect(refusalReasonsOnScreen()).not.toContain('Keine Ausgabestellen verfügbar')
+  })
+
+  it('shows that nothing matches when the typed name matches no station', async () => {
+    festivalLaptop()
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="station-search"]').exists()).toBe(true))
+
+    expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('noDataText')).toBe('Keine Treffer')
   })
 
   it('waits for the button before it adds the station the admin picked', async () => {

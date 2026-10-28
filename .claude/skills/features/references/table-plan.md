@@ -178,9 +178,8 @@ Frontend, under `frontend/src/`:
   included, and below the station shapes, and is selected), "Ausgabestelle hinzufügen" / "Add a
   station" (`admin.tablePlan.actions.addStation`) as a dropdown listing only the festival's
   stations on no plan (a pick places the station below the lowest shape and selects it; with
-  nothing to offer the list holds one disabled line saying either that every station of the
-  festival is in an area, `noStationsToPlace`, or that the festival has no station yet,
-  `festivalHasNoStations`), and at the right "Ausgeblendete Tische" / "Hidden tables"
+  nothing to offer, for any reason, the button is disabled and a tooltip through
+  `BaseActionWithRefusalReason` says `admin.common.messages.noStationsAvailable`), and at the right "Ausgeblendete Tische" / "Hidden tables"
   (`admin.tablePlan.actions.hiddenTables`), a dropdown of the area's hidden tables that opens
   downward under its button, at most 20rem high and scrolling inside. It lists them by name with
   the shared `compareNames` (`hiddenTablesOf` in `admin/core/tablePlanPlacement.ts`), each with the
@@ -293,8 +292,7 @@ Frontend, under `frontend/src/`:
 - Texts: `admin.tablePlan.*` (the dialog's `areaName`, `tableName`, `newArea`, `editArea`,
   `newTable`, `editTable`, `openPlan`, the toolbar's `addStation` and `hiddenTables`, the menu's `copy`, `paste`, the hide questions `hideAreaTitle`, `hideTableTitle` with
   `hideAreaBody`, `hideTableBody`, the removal body `removeStationBody`, the warnings `noArea`,
-  `allAreasHidden`, `allAreasHiddenAndNotListed`, `noTable`, `noStationsToPlace` and
-  `festivalHasNoStations`), and the shared "Einblenden", "Ausgeblendet", "Ausgeblendete anzeigen"
+  `allAreasHidden`, `allAreasHiddenAndNotListed` and `noTable`), and the shared "Einblenden", "Ausgeblendet", "Ausgeblendete anzeigen"
   (`admin.common.actions.showHidden`), "Bearbeiten", "Ausgabestelle entfernen" and "Ausgabestelle
   hinzufügen" from `admin.festivals.*`, `admin.common.*`. The two hide refusals double as the
   tooltips of the disabled trash icons. On screen an area is always "Tischplan" (der Tischplan, des

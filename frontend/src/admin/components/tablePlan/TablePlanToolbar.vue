@@ -3,12 +3,12 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminAreaView, AdminStationView, AdminTableView } from '../../../shared/api/generatedSchemas'
 import { hiddenTablesOf } from '../../core/tablePlanPlacement'
+import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseShowButton from '../BaseShowButton.vue'
 
 const props = defineProps<{
   area: AdminAreaView
   stationsOnNoPlan: AdminStationView[]
-  festivalHasStations: boolean
 }>()
 const emit = defineEmits<{
   newTable: []
@@ -20,10 +20,8 @@ const { t } = useI18n()
 
 const hiddenTables = computed(() => hiddenTablesOf(props.area))
 
-const noStationsToPlaceText = computed(() =>
-  props.festivalHasStations
-    ? t('admin.tablePlan.messages.noStationsToPlace')
-    : t('admin.tablePlan.messages.festivalHasNoStations'),
+const stationsUnavailableReason = computed(() =>
+  props.stationsOnNoPlan.length === 0 ? t('admin.common.messages.noStationsAvailable') : null,
 )
 </script>
 
@@ -38,35 +36,38 @@ const noStationsToPlaceText = computed(() =>
       {{ t('admin.tablePlan.actions.newTable') }}
     </v-btn>
 
-    <v-menu location="bottom start">
-      <template #activator="{ props: menuActivator }">
-        <v-btn
-          v-bind="menuActivator"
-          class="add-station"
-          data-test="add-station"
-          variant="text"
-          append-icon="mdi-menu-down"
-        >
-          {{ t('admin.tablePlan.actions.addStation') }}
-        </v-btn>
+    <BaseActionWithRefusalReason
+      class="add-station-wrapper"
+      data-test="add-station-wrapper"
+      :refusal-reason="stationsUnavailableReason"
+    >
+      <template #default="{ refused }">
+        <v-menu location="bottom start">
+          <template #activator="{ props: menuActivator }">
+            <v-btn
+              v-bind="menuActivator"
+              class="add-station"
+              data-test="add-station"
+              variant="text"
+              append-icon="mdi-menu-down"
+              :disabled="refused"
+            >
+              {{ t('admin.tablePlan.actions.addStation') }}
+            </v-btn>
+          </template>
+          <v-list data-test="stations-to-place" max-height="20rem">
+            <v-list-item
+              v-for="station in stationsOnNoPlan"
+              :key="station.stationId"
+              data-test="station-to-place"
+              :data-test-id="station.stationId"
+              :title="station.name"
+              @click="emit('placeStation', station.stationId)"
+            />
+          </v-list>
+        </v-menu>
       </template>
-      <v-list data-test="stations-to-place" max-height="20rem">
-        <v-list-item
-          v-for="station in stationsOnNoPlan"
-          :key="station.stationId"
-          data-test="station-to-place"
-          :data-test-id="station.stationId"
-          :title="station.name"
-          @click="emit('placeStation', station.stationId)"
-        />
-        <v-list-item
-          v-if="stationsOnNoPlan.length === 0"
-          data-test="no-station-to-place"
-          disabled
-          :title="noStationsToPlaceText"
-        />
-      </v-list>
-    </v-menu>
+    </BaseActionWithRefusalReason>
 
     <v-spacer />
 

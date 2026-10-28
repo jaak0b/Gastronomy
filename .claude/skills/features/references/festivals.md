@@ -111,9 +111,11 @@ Frontend, under `frontend/src/`:
   Ausgabestellen tab. The
   station rows are `stations/RemovableStationRows.vue`; a refusal that comes back anyway shows on the row. The article and station removals ask
   through `BaseRemoveConfirmDialog.vue`. The station card's and the article card's search and add
-  button are `BaseSearchAddLine.vue`, with "Neu…" in its slot; with nothing to add the station search
-  says either that every station switched on is already here (`noStationsToAdd`) or that none is
-  switched on (`noStationSwitchedOn`). Every row of the page's lists is a `BaseListRow.vue`, the one
+  button are `BaseSearchAddLine.vue`, with "Neu…" in its slot; with nothing to add, for any
+  reason, the search and its add button are disabled and a tooltip says
+  `admin.common.messages.noStationsAvailable` / `noItemsAvailable` (its `unavailableReason`). A
+  search that matches nothing shows `admin.common.messages.noMatches`, the line's built-in
+  no-data text. Every row of the page's lists is a `BaseListRow.vue`, the one
   home of the tint on every second row. Name, start and end save when a field is left or Enter is
   pressed, with no save button. Its sections are `FestivalStations.vue`, `FestivalTablePlan.vue`
   (see the `table-plan` page), `FestivalItems.vue` (with `FestivalPlacementDialog.vue`,

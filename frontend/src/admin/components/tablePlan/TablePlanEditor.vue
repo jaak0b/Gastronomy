@@ -55,7 +55,6 @@ let stopListening: (() => void) | null = null
 const { loadTheFestivalOrLeave } = useOpenedFestival(() => props.festivalId)
 const area = computed(() => tablePlan.areas.find((candidate) => candidate.areaId === props.areaId) ?? null)
 const isUnknownArea = computed(() => tablePlan.loadedFestivalId === props.festivalId && area.value === null)
-const festivalHasStations = computed(() => stations.stations.some((station) => station.isAtFestival))
 const stationsOnNoPlan = computed(() => {
   const stationIdsOnAPlan = new Set(
     tablePlan.areas.flatMap((each) => each.stationShapes.map((shape) => shape.stationId)),
@@ -256,7 +255,6 @@ onUnmounted(() => {
           <TablePlanToolbar
             :area="area"
             :stations-on-no-plan="stationsOnNoPlan"
-            :festival-has-stations="festivalHasStations"
             @new-table="tableSession.openForCreate()"
             @place-station="placeTheStation"
             @show-table="showAgain"

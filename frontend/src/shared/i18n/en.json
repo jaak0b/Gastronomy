@@ -298,6 +298,9 @@
         "showHidden": "Show hidden entries"
       },
       "messages": {
+        "noItemsAvailable": "No items available",
+        "noMatches": "No matches",
+        "noStationsAvailable": "No stations available",
         "notOnLaptop": "The admin pages are only available on the computer."
       },
       "errors": {
@@ -359,10 +362,7 @@
       },
       "messages": {
         "needsAStationFirst": "This festival has no station yet. Add one first.",
-        "noItemsToAdd": "Every item that is switched on already belongs to this festival. Click \"New item\".",
         "noneYet": "No festival has been set up yet. Click \"New festival\".",
-        "noStationsToAdd": "Every station that is switched on already belongs to this festival. Click \"New station\".",
-        "noStationSwitchedOn": "No station is switched on. Click \"New station\".",
         "removeItemBody": "This removes the item from this festival only.",
         "removeStationBody": "This removes the station from this festival only."
       },
@@ -397,9 +397,7 @@
         "hideTableBody": "Waiters will no longer see this table.",
         "removeStationBody": "This removes the station from this table plan only.",
         "allAreasHidden": "Every table plan is hidden. Show one of them again.",
-        "allAreasHiddenAndNotListed": "Every table plan is hidden. Tick \"Show hidden entries\" and show one of them again.",
-        "noStationsToPlace": "Every station of this festival is already on a table plan.",
-        "festivalHasNoStations": "This festival has no stations yet."
+        "allAreasHiddenAndNotListed": "Every table plan is hidden. Tick \"Show hidden entries\" and show one of them again."
       }
     },
     "ingredients": {
