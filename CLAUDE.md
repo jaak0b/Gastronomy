@@ -171,8 +171,12 @@ Every rule binds every agent, main or sub, with no exception it does not name.
     neu."
   - "Die Zahlung wurde möglicherweise nicht gespeichert. Laden Sie die Seite neu und prüfen Sie die
     Positionen."
-  - "Für {name} ist kein Tablet eingerichtet. Ohne Tablet erhält die Ausgabestelle keine
-    Bestellungen."
+  - "Das Stornieren ist fehlgeschlagen. Laden Sie die Seite neu und versuchen Sie es noch einmal."
+    A failed action is always named this way: "Das <Aktion> ist fehlgeschlagen."
+
+  A failure that needs no more specific wording uses the one shared text "Die Aktion ist
+  fehlgeschlagen." Never show a message that only reminds the reader of a state they created
+  themselves, such as "everything is hidden": the admin is one person and knows what they did.
 
   Never a formula, never reassurance, never an account of what the program did internally, never
   "Es gibt …" or "Bitte …". Name only controls that exist on the screen where the text appears.
