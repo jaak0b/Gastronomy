@@ -4,9 +4,11 @@ import { useI18n } from 'vue-i18n'
 import { assertNever } from '../../shared/core/assertNever'
 import { formatPrice } from '../../shared/core/money'
 import { navigate } from '../../shared/router/router'
+import { defaultFilterFor } from '../core/openItems'
 import { useOpenItemsStore } from '../stores/openItems'
 import { useSessionStore } from '../../shared/stores/session'
 import { useSettleDialog } from '../composables/useSettleDialog'
+import OrderListFilter from '../components/orderList/OrderListFilter.vue'
 import TableOrders from '../components/openItems/TableOrders.vue'
 import AmountPaidDialog from '../components/openItems/AmountPaidDialog.vue'
 import CancelItemsDialog from '../components/openItems/CancelItemsDialog.vue'
@@ -33,7 +35,20 @@ const title = computed(() => {
   }
 })
 
+const filterIsTheDefault = computed(() => {
+  const standard = defaultFilterFor(openItems.purpose)
+  const picked = openItems.filter
+  return (
+    picked.orderStatus === standard.orderStatus &&
+    picked.paymentStatus === standard.paymentStatus &&
+    picked.includeCancelled === standard.includeCancelled
+  )
+})
+
 const emptyText = computed(() => {
+  if (!filterIsTheDefault.value) {
+    return t('phone.orderOverview.messages.noOrderMatches')
+  }
   switch (openItems.purpose) {
     case 'settling':
       return t('phone.openItems.messages.nothingToSettle')
@@ -126,15 +141,7 @@ onUnmounted(() => {
         {{ t('phone.openItems.actions.reload') }}
       </v-btn>
     </div>
-    <v-checkbox
-      class="show-every-item"
-      data-test="show-every-item"
-      density="comfortable"
-      hide-details
-      :label="t('phone.openItems.actions.showEveryItem')"
-      :model-value="openItems.showsEveryItem"
-      @update:model-value="openItems.showEveryItem($event === true)"
-    />
+    <OrderListFilter class="mb-3" :filter="openItems.filter" @change="openItems.changeFilter" />
     <v-alert
       v-if="openItems.loadFailureKey !== null"
       class="load-failed mb-2"

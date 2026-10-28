@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 import type { TableOrderRecordItemView, TableOrderRecordView } from '../../../shared/api/generatedSchemas'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { formatFestivalMoment } from '../../../shared/core/moments'
-import { formatPrice } from '../../../shared/core/money'
 import { isCancelled, isHandedOut } from '../../../shared/core/orderItemStates'
 import {
   canBeSelected,
@@ -12,6 +11,7 @@ import {
   selectionStateOf,
   type SelectionPurpose,
 } from '../../core/openItems'
+import BaseIconAction from '../../../shared/components/BaseIconAction.vue'
 import ItemHistoryDialog from './ItemHistoryDialog.vue'
 
 const props = withDefaults(
@@ -30,9 +30,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const itemWithHistoryShown = ref<TableOrderRecordItemView | null>(null)
+const itemWithDetailsShown = ref<TableOrderRecordItemView | null>(null)
 
-const isSelecting = computed(() => props.purpose !== undefined)
+const hasTickColumn = computed(() => selectableItemIds.value.length > 0)
 
 const selectableItemIds = computed(() =>
   props.purpose === undefined ? [] : selectableItemIdsInOrder(props.order, props.purpose),
@@ -58,6 +58,12 @@ function isSelectable(item: TableOrderRecordItemView): boolean {
   return props.purpose !== undefined && canBeSelected(item, props.purpose)
 }
 
+function toggleWhenSelectable(item: TableOrderRecordItemView): void {
+  if (isSelectable(item)) {
+    emit('toggle-item', item.orderItemId)
+  }
+}
+
 function isMarkedHandedOut(item: TableOrderRecordItemView): boolean {
   return isCancelled(item.state) ? item.wasHandedOutWhenCancelled : isHandedOut(item.state)
 }
@@ -73,12 +79,13 @@ function markColourFor(isDone: boolean): string {
 
 <template>
   <v-card class="order-list-card mb-3" data-test="order-card" :data-test-id="order.globalOrderNumber">
-    <v-card-text class="order-grid" :class="{ selecting: isSelecting }">
+    <v-card-text class="order-grid" :class="{ selecting: hasTickColumn }">
       <div class="grid-row" data-test="order-header">
-        <div v-if="isSelecting" class="tick-cell">
+        <div v-if="hasTickColumn" class="tick-cell">
           <v-checkbox-btn
             v-if="selectableItemIds.length > 0"
             data-test="whole-order"
+            density="compact"
             :model-value="orderSelection === 'all'"
             :indeterminate="orderSelection === 'some'"
             @update:model-value="emit('set-whole-order', order, orderSelection !== 'all')"
@@ -92,24 +99,27 @@ function markColourFor(isDone: boolean): string {
         </div>
       </div>
       <div class="grid-row" data-test="column-headings">
-        <span class="done-counter text-body-2" data-test="done-counter">{{ doneCounterText }}</span>
+        <span class="done-counter text-body-2 text-medium-emphasis" data-test="done-counter">{{ doneCounterText }}</span>
         <span class="column-heading text-body-2" data-test="paid-heading">{{ t('phone.openItems.labels.paid') }}</span>
         <span class="column-heading text-body-2" data-test="handed-out-heading">
           {{ t('phone.orderOverview.labels.handedOut') }}
         </span>
+        <span />
       </div>
       <div
         v-for="item in order.items"
         :key="item.orderItemId"
         class="grid-row order-line"
+        :class="{ selectable: isSelectable(item) }"
         data-test="order-line"
         :data-test-id="item.orderItemId"
-        @click="itemWithHistoryShown = item"
+        @click="toggleWhenSelectable(item)"
       >
-        <div v-if="isSelecting" class="tick-cell" data-test="tick-cell" :data-test-id="item.orderItemId">
+        <div v-if="hasTickColumn" class="tick-cell" data-test="tick-cell" :data-test-id="item.orderItemId">
           <div v-if="isSelectable(item)" @click.stop>
             <v-checkbox-btn
               data-test="line-tick"
+              density="compact"
               :model-value="selectedItemIds.includes(item.orderItemId)"
               @update:model-value="emit('toggle-item', item.orderItemId)"
             />
@@ -121,14 +131,6 @@ function markColourFor(isDone: boolean): string {
             {{ t('common.labels.note', { note: item.note }) }}
           </div>
         </div>
-        <span
-          v-if="isSelecting"
-          class="line-price text-body-1"
-          :class="{ 'cancelled-item': isCancelled(item.state) }"
-          data-test="line-price"
-        >
-          {{ formatPrice(item.unitPriceCents, language) }}
-        </span>
         <v-icon
           class="line-mark"
           data-test="paid-mark"
@@ -143,13 +145,22 @@ function markColourFor(isDone: boolean): string {
           :color="markColourFor(isMarkedHandedOut(item))"
           :icon="markIconFor(isMarkedHandedOut(item))"
         />
+        <BaseIconAction
+          class="details-button"
+          data-test="item-details"
+          :data-test-id="item.orderItemId"
+          density="comfortable"
+          icon="mdi-information-outline"
+          :label="t('phone.itemHistory.actions.showDetails')"
+          @click.stop="itemWithDetailsShown = item"
+        />
       </div>
     </v-card-text>
     <ItemHistoryDialog
-      v-if="itemWithHistoryShown !== null"
-      :item="itemWithHistoryShown"
+      v-if="itemWithDetailsShown !== null"
+      :item="itemWithDetailsShown"
       :language="language"
-      @close="itemWithHistoryShown = null"
+      @close="itemWithDetailsShown = null"
     />
   </v-card>
 </template>
@@ -157,14 +168,14 @@ function markColourFor(isDone: boolean): string {
 <style scoped>
 .order-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   align-items: center;
-  column-gap: 1rem;
+  column-gap: 0.5rem;
   row-gap: 0.75rem;
 }
 
 .order-grid.selecting {
-  grid-template-columns: 2.5rem minmax(0, 1fr) auto auto auto;
+  grid-template-columns: 2rem minmax(0, 1fr) auto auto auto;
 }
 
 .order-head {
@@ -180,7 +191,7 @@ function markColourFor(isDone: boolean): string {
 }
 
 .order-grid.selecting .done-counter {
-  grid-column: 1 / span 3;
+  grid-column: 1 / span 2;
 }
 
 .column-heading,
@@ -192,14 +203,13 @@ function markColourFor(isDone: boolean): string {
   display: contents;
 }
 
-.order-line {
+.order-line.selectable {
   cursor: pointer;
 }
 
 .tick-cell {
   display: flex;
   justify-content: center;
-  margin-inline: -0.5rem;
 }
 
 .line-name-cell {
@@ -207,8 +217,7 @@ function markColourFor(isDone: boolean): string {
   overflow-wrap: anywhere;
 }
 
-.line-price {
-  justify-self: end;
-  white-space: nowrap;
+.details-button {
+  margin-inline: -0.25rem;
 }
 </style>

@@ -52,9 +52,10 @@ tooltip beside them (frontend rule 8).
 - `BaseTrashButton.vue` is the red trash icon of the festival page, the Artikel, Zutaten, Einheiten
   and Kellner tabs, the recipe dialog's lines, the hiding icon of `HideableEntryList.vue` and the
   removal icon of `RemovableStationRows.vue`.
-- `BaseIconAction.vue` is an icon button whose name shows as a tooltip
-  (`data-test="icon-action-label"`): the crossed-out eye "Ausblenden" of the festival list and the
-  categories' crossed-out eye "Kategorie abschalten" on the Artikel tab.
+- `shared/components/BaseIconAction.vue` is an icon button whose name shows as a tooltip
+  (`data-test="icon-action-label"`): the crossed-out eye "Ausblenden" of the festival list, the
+  categories' crossed-out eye "Kategorie abschalten" on the Artikel tab, and on the phone the
+  details button at the end of every row of the shared order list.
   `BaseEditButton.vue` is the pencil on it, named "Bearbeiten" (`admin.common.actions.edit`), the
   only way a row offers its edit dialog: every row of `HideableEntryList.vue`, the category
   headings and article rows of the Artikel tab and of the festival page, the station rows of the

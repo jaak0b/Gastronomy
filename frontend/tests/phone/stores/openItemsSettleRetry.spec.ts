@@ -14,7 +14,6 @@ function itemOf(orderItemId: string, itemName: string, unitPriceCents: number) {
     itemName,
     note: null,
     unitPriceCents,
-    orderedAtUtc: '2026-09-05T18:00:00Z',
     state: 'open',
     stateSetAtUtc: '2026-09-05T18:00:00Z',
     wasHandedOutWhenCancelled: false,

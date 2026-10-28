@@ -22,6 +22,8 @@ export interface AmountPaidWithReason {
   paymentNotice: string | null
 }
 
+export type TableSearchFilter = Required<TableOrderSearchRequest>
+
 export type SelectionPurpose = 'settling' | 'cancelling'
 
 export interface SettleNotice {
@@ -37,15 +39,12 @@ export function shareStateOf(count: number, total: number): ShareState {
   return count === 0 ? 'none' : 'some'
 }
 
-export function searchOptionsFor(purpose: SelectionPurpose, showsEveryItem: boolean): TableOrderSearchRequest {
-  if (showsEveryItem) {
-    return {}
-  }
+export function defaultFilterFor(purpose: SelectionPurpose): TableSearchFilter {
   switch (purpose) {
     case 'settling':
-      return { paymentStatus: 'notPaid', includeCancelled: false }
+      return { orderStatus: null, paymentStatus: 'notPaid', includeCancelled: false }
     case 'cancelling':
-      return { includeCancelled: false }
+      return { orderStatus: null, paymentStatus: null, includeCancelled: false }
     default:
       return assertNever(purpose)
   }

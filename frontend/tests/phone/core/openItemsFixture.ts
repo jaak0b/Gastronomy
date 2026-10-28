@@ -13,7 +13,6 @@ export function itemWith(
     itemName: 'Bratwurst',
     note: null,
     unitPriceCents,
-    orderedAtUtc: '2026-09-05T18:00:00Z',
     state: handedOutAtUtc === null ? 'open' : 'handedOut',
     stateSetAtUtc: handedOutAtUtc ?? '2026-09-05T18:00:00Z',
     wasHandedOutWhenCancelled: false,

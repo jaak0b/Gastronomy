@@ -1,6 +1,7 @@
 import { request } from '../../shared/api/client'
-import { TableOrderReportView, type TableOrderSearchRequest } from '../../shared/api/generatedSchemas'
+import { TableOrderReportView } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
+import type { TableSearchFilter } from '../core/openItems'
 
 const TABLE_NOT_FOUND = 404
 
@@ -11,12 +12,12 @@ export type TableSearchAnswer =
 
 export async function searchTheTable(
   tableId: string,
-  options: TableOrderSearchRequest,
+  filter: TableSearchFilter,
   token: string,
 ): Promise<TableSearchAnswer> {
   const result = await request(`/api/open-items/tables/${encodeURIComponent(tableId)}/search`, {
     method: 'POST',
-    body: options,
+    body: filter,
     token,
     schema: TableOrderReportView,
   })

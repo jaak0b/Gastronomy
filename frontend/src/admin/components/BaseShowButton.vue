@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import BaseIconAction from './BaseIconAction.vue'
+import BaseIconAction from '../../shared/components/BaseIconAction.vue'
 
 defineProps<{ label: string }>()
 </script>

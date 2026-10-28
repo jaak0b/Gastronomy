@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { navigate } from '../../shared/router/router'
 import { useSessionStore } from '../../shared/stores/session'
 import { useOrderOverviewStore } from '../stores/orderOverview'
-import OrderOverviewFilter from '../components/orderOverview/OrderOverviewFilter.vue'
+import OrderListFilter from '../components/orderList/OrderListFilter.vue'
 import OrderListCard from '../components/orderList/OrderListCard.vue'
 
 const { t } = useI18n()
@@ -40,7 +40,7 @@ onUnmounted(() => {
         {{ t('phone.openItems.actions.reload') }}
       </v-btn>
     </div>
-    <OrderOverviewFilter class="mb-3" :filter="orderOverview.filter" @change="orderOverview.changeFilter" />
+    <OrderListFilter class="mb-3" :filter="orderOverview.filter" @change="orderOverview.changeFilter" />
     <v-alert
       v-if="orderOverview.loadFailureKey !== null"
       class="mb-2"

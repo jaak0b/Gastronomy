@@ -12,8 +12,9 @@ import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import {
   cashToReturnCents,
+  defaultFilterFor,
+  type TableSearchFilter,
   noticeAfterSettling,
-  searchOptionsFor,
   type SentSettleLine,
   selectedAmountCents,
   selectedItems,
@@ -40,7 +41,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   const isSettling = ref(false)
   const isCancelling = ref(false)
   const purpose = ref<SelectionPurpose>('settling')
-  const showsEveryItem = ref(false)
+  const filter = ref<TableSearchFilter>(defaultFilterFor('settling'))
   const notice = ref<SettleNotice | null>(null)
   const preselectedItemIds = ref<string[] | null>(null)
 
@@ -64,7 +65,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     loadGate.startRequest()
     tableId.value = openedTableId
     purpose.value = 'settling'
-    showsEveryItem.value = false
+    filter.value = defaultFilterFor('settling')
     report.value = null
     loadFailureKey.value = null
     selectedItemIds.value = []
@@ -80,12 +81,13 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   function openTableToCancelItems(openedTableId: string): void {
     openTable(openedTableId)
     purpose.value = 'cancelling'
+    filter.value = defaultFilterFor('cancelling')
   }
 
   function closeTable(): void {
     loadGate.startRequest()
     tableId.value = null
-    showsEveryItem.value = false
+    filter.value = defaultFilterFor(purpose.value)
     report.value = null
     loadFailureKey.value = null
     selectedItemIds.value = []
@@ -112,7 +114,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
       return
     }
     const gateNumber = loadGate.startRequest()
-    const answer = await searchTheTable(shownTableId, searchOptionsFor(purpose.value, showsEveryItem.value), token)
+    const answer = await searchTheTable(shownTableId, filter.value, token)
     if (!loadGate.isNewestRequest(gateNumber)) {
       return
     }
@@ -138,8 +140,8 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     }
   }
 
-  async function showEveryItem(isWanted: boolean): Promise<void> {
-    showsEveryItem.value = isWanted
+  async function changeFilter(changed: TableSearchFilter): Promise<void> {
+    filter.value = changed
     await load()
   }
 
@@ -263,7 +265,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   return {
     tableId,
     purpose,
-    showsEveryItem,
+    filter,
     report,
     loadFailureKey,
     selectedItemIds,
@@ -278,7 +280,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     openTableToCancelItems,
     closeTable,
     load,
-    showEveryItem,
+    changeFilter,
     listen,
     dismissNotice,
     toggleItem,

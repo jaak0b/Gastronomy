@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import BaseIconAction from './BaseIconAction.vue'
+import BaseIconAction from '../../shared/components/BaseIconAction.vue'
 
 const { t } = useI18n()
 </script>

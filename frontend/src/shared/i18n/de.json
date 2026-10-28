@@ -122,8 +122,7 @@
         "settleInCash": "Bar kassieren",
         "settleItems": "Position kassieren",
         "settleSelected": "Kassieren",
-        "wholeTable": "Ganzen Tisch auswählen",
-        "showEveryItem": "Alle Positionen anzeigen"
+        "wholeTable": "Ganzen Tisch auswählen"
       },
       "messages": {
         "cashToReturn": "Der Gast bekommt {amount} bar zurück.",
@@ -158,6 +157,9 @@
       }
     },
     "itemHistory": {
+      "actions": {
+        "showDetails": "Details anzeigen"
+      },
       "events": {
         "ordered": "Bestellt",
         "handedOut": "Ausgegeben",
@@ -169,7 +171,8 @@
       "labels": {
         "paidInCash": "{amount} bar",
         "paidByCard": "{amount} mit Karte",
-        "paymentNotice": "Grund: {notice}"
+        "paymentNotice": "Grund: {notice}",
+        "price": "Preis: {price}"
       }
     },
     "review": {

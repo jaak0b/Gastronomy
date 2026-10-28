@@ -5,7 +5,7 @@ import type { TableOrderRecordItemView } from '../../../shared/api/generatedSche
 import { assertNever } from '../../../shared/core/assertNever'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { createLatestRequestGate } from '../../../shared/core/latestRequestGate'
-import { formatTimeOfDay } from '../../../shared/core/moments'
+import { formatFestivalMoment } from '../../../shared/core/moments'
 import { formatPrice } from '../../../shared/core/money'
 import { useSessionStore } from '../../../shared/stores/session'
 import { readTheItemHistory, type ItemHistoryAnswer } from '../../api/itemHistory'
@@ -52,8 +52,12 @@ async function load(): Promise<void> {
   }
 }
 
-function timeOf(entry: ItemHistoryEntry): string {
-  return formatTimeOfDay(new Date(entry.atUtc), props.language, false)
+const priceText = computed(() =>
+  t('phone.itemHistory.labels.price', { price: formatPrice(props.item.unitPriceCents, props.language) }),
+)
+
+function momentOf(entry: ItemHistoryEntry): string {
+  return formatFestivalMoment(entry.atUtc, props.language)
 }
 
 function eventTextOf(entry: ItemHistoryEntry): string {
@@ -102,9 +106,10 @@ onMounted(load)
 
 <template>
   <BaseFullPageDialog class="item-history-dialog" data-test="item-history" :title="item.itemName">
-    <p v-if="item.note !== null" class="text-body-2 text-medium-emphasis mb-3" data-test="history-note">
+    <p v-if="item.note !== null" class="text-body-2 text-medium-emphasis mb-2" data-test="history-note">
       {{ t('common.labels.note', { note: item.note }) }}
     </p>
+    <p class="text-h6 mb-4" data-test="details-price">{{ priceText }}</p>
     <v-progress-circular v-if="answer === null" class="d-block mx-auto my-6" data-test="history-loading" indeterminate />
     <v-alert v-if="failureKey !== null" data-test="history-failed" type="warning" variant="tonal">
       {{ t(failureKey) }}
@@ -117,9 +122,9 @@ onMounted(load)
         data-test="history-entry"
         :data-test-id="entry.kind"
       >
-        <span class="entry-time text-h6" data-test="entry-time">{{ timeOf(entry) }}</span>
         <span class="entry-dot" />
         <div class="entry-body">
+          <div class="entry-time text-body-2 text-medium-emphasis" data-test="entry-time">{{ momentOf(entry) }}</div>
           <div class="text-body-1 font-weight-medium" data-test="entry-event">{{ eventTextOf(entry) }}</div>
           <div v-if="entry.by !== null" class="text-body-2 text-medium-emphasis" data-test="entry-by">{{ entry.by }}</div>
           <div v-if="paymentTextOf(entry) !== null" class="text-body-1" data-test="entry-payment">
@@ -157,7 +162,7 @@ onMounted(load)
 
 .timeline-entry {
   display: grid;
-  grid-template-columns: 4rem 1rem minmax(0, 1fr);
+  grid-template-columns: 1rem minmax(0, 1fr);
   column-gap: 0.75rem;
   position: relative;
   padding-bottom: 1.25rem;
@@ -172,7 +177,7 @@ onMounted(load)
   position: absolute;
   top: 0.75rem;
   bottom: 0;
-  left: calc(4rem + 0.75rem + 0.5rem - 1px);
+  left: calc(0.5rem - 1px);
   width: 2px;
   background: rgba(var(--v-border-color), var(--v-border-opacity));
 }
@@ -182,15 +187,13 @@ onMounted(load)
 }
 
 .entry-time {
-  text-align: end;
-  line-height: 1.5rem;
   font-variant-numeric: tabular-nums;
 }
 
 .entry-dot {
   width: 0.75rem;
   height: 0.75rem;
-  margin: 0.375rem auto 0;
+  margin: 0.25rem auto 0;
   border-radius: 50%;
   background: rgb(var(--v-theme-on-surface));
   position: relative;

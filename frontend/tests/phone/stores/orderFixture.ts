@@ -69,7 +69,6 @@ function openItemOf(orderItemId: string) {
     itemName: 'Wasser',
     note: null,
     unitPriceCents: 800,
-    orderedAtUtc: '2026-09-05T18:20:00Z',
     state: 'open',
     stateSetAtUtc: '2026-09-05T18:20:00Z',
     wasHandedOutWhenCancelled: false,

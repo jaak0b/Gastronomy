@@ -243,14 +243,33 @@ describe('the open table a phone follows', () => {
     await vi.waitFor(() => expect(laptop.urls()).toEqual([TABLE_PATH]))
   })
 
-  it('loads the table again with the options of its screen when something happens to an order', async () => {
+  it('loads the table again with the filter the waiter picked when something happens to an order', async () => {
     const laptop = await aPhoneFollowingTisch12()
-    await useOpenItemsStore().showEveryItem(true)
+    const picked = { orderStatus: 'open' as const, paymentStatus: 'paid' as const, includeCancelled: true }
+    await useOpenItemsStore().changeFilter(picked)
     laptop.forgetCalls()
 
     fireHubEvent('OrdersChanged')
 
-    await vi.waitFor(() => expect(laptop.bodiesSentTo('POST', TABLE_PATH)).toEqual([{}]))
+    await vi.waitFor(() => expect(laptop.bodiesSentTo('POST', TABLE_PATH)).toEqual([picked]))
+  })
+
+  it('applies only the newest answer when the waiter changes the filter while a load is on its way', async () => {
+    const older = deferredResponse()
+    const newer = deferredResponse()
+    stubLaptop().answers('POST', TABLE_PATH, inTurn(() => older.promise, () => newer.promise))
+    aWaiterPhone()
+    const openItems = useOpenItemsStore()
+    openItems.openTable('table-12')
+
+    const firstLoad = openItems.load()
+    const newestLoad = openItems.changeFilter({ orderStatus: 'fulfilled', paymentStatus: null, includeCancelled: false })
+    newer.answerWith({ ...TABLE_REPORT, orders: [] })
+    await newestLoad
+    older.answerWith(TABLE_REPORT)
+    await firstLoad
+
+    expect(openItems.report?.orders).toEqual([])
   })
 
   it('loads the table again when the admin changes the plan, so a renamed table shows its new name', async () => {

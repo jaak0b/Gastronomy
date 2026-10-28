@@ -5,7 +5,9 @@ that table with its items, read only. The orders are drawn by the shared order l
 and Stornieren use too: each item has two columns, "Bezahlt" and "Ausgegeben", with a green check
 when it is done and a red cross when it is not, and a cancelled item is struck through. Two dropdowns
 at the top ("Bestellungen", "Positionen") and the box "Stornierte Positionen anzeigen" narrow the
-list. Tapping an item opens its whole history.
+list; Kassieren and Stornieren show the same filter. The info button at the end of every item opens
+its details: the price, then its whole history with date and time on every step. No row shows a
+price.
 
 ## Where the code lives
 
@@ -13,14 +15,16 @@ Frontend, under `frontend/src/phone/`:
 
 - `views/OrderOverview.vue` (route `/order-overview`, route and screen name `orderOverview`): the
   title "Bestellungen", "Neu laden", the filter, the sentence when the table could not be loaded, one
-  `OrderListCard` per order without a purpose (no tick boxes, no prices), and
+  `OrderListCard` per order without a purpose (no tick boxes; a tap on a row does nothing), and
   `phone.orderOverview.messages.noOrderMatches` when the laptop sends no order. It goes back to the
   plan when no table is open, as after a reload, and closes the table when the waiter leaves. The
   header shows the table's current name and "Tischplan".
-- `components/orderOverview/OrderOverviewFilter.vue`: two `v-select`s side by side, "Bestellungen"
-  ("Alle", "Offen", "Teilweise ausgegeben", "Ausgegeben") and "Positionen" ("Alle", "Bezahlt",
-  "Nicht bezahlt"), and below them the box "Stornierte Positionen anzeigen". "Alle" is the option
-  value `every` inside the component and goes out as `null`.
+- `components/orderList/OrderListFilter.vue` is the one filter of all three screens: two
+  `v-select`s side by side, "Bestellungen" ("Alle", "Offen", "Teilweise ausgegeben", "Ausgegeben")
+  and "Positionen" ("Alle", "Bezahlt", "Nicht bezahlt"), and below them the box "Stornierte
+  Positionen anzeigen". It takes a `TableSearchFilter` (`core/openItems.ts`, the three options of
+  the search with none left out) and emits `change` with the new one. "Alle" is the option value
+  `every` inside the component and goes out as `null`.
 - `components/orderList/OrderListCard.vue` is the shared order list, one card per order, used by
   this screen and by `components/openItems/TableOrders.vue` (Kassieren and Stornieren). Props:
   `order`, `language`, and for the two acting screens `purpose` (a `SelectionPurpose`) and
@@ -28,19 +32,27 @@ Frontend, under `frontend/src/phone/`:
   card, so every row shares its columns: the header line (with a purpose, the whole-order tick box
   in the first column, then the order number and "{time} · {name}"), the column heading line (the
   done counter "x / y zubereitet" on the left from the wire's `handedOutItemCount` and
-  `notCancelledItemCount`, then "Bezahlt" and "Ausgegeben"), and one line per item. With a purpose
-  the first column is the tick box column on every line, left empty where `canBeSelected` says no,
-  so the names line up, and a price column stands before the marks. The "Bezahlt" mark is
-  `settledAtUtc !== null`; the "Ausgegeben" mark is `isHandedOut(state)`, or
-  `wasHandedOutWhenCancelled` for a cancelled item. A cancelled item's name and price carry the
-  shared `cancelled-item` class. Tapping a line opens `ItemHistoryDialog`; tapping its tick box only
-  ticks.
-- `components/orderList/ItemHistoryDialog.vue`: the item's history on `BaseFullPageDialog`, titled
-  with the item name and its note below. It loads once when it opens, through the latest request
+  `notCancelledItemCount`, then "Bezahlt" and "Ausgegeben"), and one line per item: the name with
+  its note, the two marks, and the details button (`data-test="item-details"`, the
+  `mdi-information-outline` icon on `shared/components/BaseIconAction.vue`, named
+  `phone.itemHistory.actions.showDetails` in its tooltip). When at least one item can be ticked
+  (`canBeSelected`), the first column is a narrow tick box column on every line, left empty where
+  `canBeSelected` says no, so the names line up; a card with nothing to tick has no such column and
+  starts at its left edge like the overview card. The done counter is small grey secondary text. The two mark columns are as wide as their headings and the gaps are small, so the name and
+  its note get the rest of a phone's width. The "Bezahlt" mark is `settledAtUtc !== null`; the
+  "Ausgegeben" mark is `isHandedOut(state)`, or `wasHandedOutWhenCancelled` for a cancelled item. A
+  cancelled item's name carries the shared `cancelled-item` class. With a purpose, a tap anywhere on
+  a line whose item can be ticked ticks or unticks it (`toggle-item`), and a tap on the tick box
+  itself ticks once; without a purpose, or on an item that cannot be ticked, a tap on the line does
+  nothing. The details button opens `ItemHistoryDialog` and never ticks.
+- `components/orderList/ItemHistoryDialog.vue`: the item's details on `BaseFullPageDialog`, titled
+  with the item name, its note below, then its price from the list's item
+  (`phone.itemHistory.labels.price`, "Preis: 3,50 €"), then the history. It loads once when it
+  opens, through the latest request
   gate, and never on hub events: a spinner while waiting, the laptop's refusal
   (`errors.itemHistory.unknownItem`), or `phone.openItems.errors.loadFailed` with "Neu laden" when no
-  answer came; "Schließen" closes it. The timeline shows per step the time of day, the event and
-  who made it; the payment adds the amount with "bar" or "mit Karte" (the amount alone for `none` or
+  answer came; "Schließen" closes it. The timeline shows per step the date and time in the format
+  of the order's header (`formatFestivalMoment`, "27.10.2026, 23:05"), the event and who made it; the payment adds the amount with "bar" or "mit Karte" (the amount alone for `none` or
   a method the laptop never stored) and "Grund: …" when a reason was typed.
 - `core/itemHistory.ts` (`historyEntriesOf`): turns the `OrderItemHistoryView` into the timeline.
   The first status change is the order ("Bestellt"), a later `open` is a put back ("Zurückgelegt"),
@@ -49,8 +61,8 @@ Frontend, under `frontend/src/phone/`:
   `GET /api/open-items/items/{orderItemId}/history`: `found`, `refused` with the message key, or
   `unanswered`.
 - `stores/orderOverview.ts` (`useOrderOverviewStore`: `openTable`, `closeTable`, `load`,
-  `changeFilter`, `listen`, `tableId`, `filter`, `report`, `loadFailureKey`; `EVERY_ORDER` and the
-  type `OrderOverviewFilter`). `views/TablePlan.vue` opens a table with `openTable`.
+  `changeFilter`, `listen`, `tableId`, `filter`, `report`, `loadFailureKey`; `EVERY_ORDER`).
+  `views/TablePlan.vue` opens a table with `openTable`.
 - `api/tableSearch.ts` (`searchTheTable`) is the one call of `POST /api/open-items/tables/{tableId}/search`,
   shared with the settle and cancel view: it answers `found`, `refused` with the message key (a 404
   becomes `phone.openItems.errors.tableCouldNotBeLoaded`) or `unanswered`.
@@ -67,7 +79,9 @@ payment with its reason) is `GET /api/open-items/items/{orderItemId}/history` on
 
 ## Invariants
 
-- **Read only.** Nothing on this screen can be ticked, settled or cancelled, and it shows no prices.
+- **Read only.** Nothing on this screen can be ticked, settled or cancelled, and a tap on a row does
+  nothing.
+- **No price in a row.** On all three screens the price of an item is shown only in its details.
 - **The counter is the laptop's.** The phone shows the two counts of the wire and never counts the
   items it received, because a filter can leave items out.
 - **The filter is sent as picked.** The screen opens with every order (`orderStatus` and
@@ -84,14 +98,18 @@ payment with its reason) is `GET /api/open-items/items/{orderItemId}/history` on
 
 - `frontend/tests/phone/views/OrderOverview.spec.ts` (the column headings in German and English,
   the checks and crosses, a cancelled item struck through, the marks of an item cancelled after hand
-  out and after payment, the counter from the wire with and without a filter, no tick box and no
-  price, no order matching, no table after a reload, the filter's first search, each order status,
-  each payment status, back to "Alle", the cancelled box, two picks together, the dropdown names and
-  their options in English, a tap on an item opening its history).
+  out and after payment, the counter from the wire with and without a filter, no tick box, no order
+  matching, no table after a reload, the filter's first search, each order status, each payment
+  status, back to "Alle", the cancelled box, two picks together, the dropdown names and their
+  options in English, the details button opening the price and the history, a tap on the row
+  opening nothing).
 - `frontend/tests/phone/components/orderList/OrderListCard.spec.ts` (each mode's columns, the
-  heading line, the empty tick box cells, the whole-order box in the header line, the history on a
-  row tap and not on a tick box tap, closing it) and `ItemHistoryDialog.spec.ts` (the request, the
-  spinner, the title and note, the timeline with times and authors, the payment in German and
+  heading line, the empty tick box cells, the whole-order box in the header line, the details
+  button on every screen opening the details without ticking, closing them, a row tap ticking on
+  both acting screens, ticking nothing on an item that cannot be ticked and opening nothing on the
+  overview, a tap on the tick box ticking once) and `ItemHistoryDialog.spec.ts` (the request, the
+  spinner, the title and note, the price in German and English, the timeline with date and time
+  and authors, the payment in German and
   English with its reason, a payment without a method, the refusal in both languages, no answer and
   loading again, closing); `frontend/tests/phone/core/itemHistory.spec.ts`.
 - `frontend/tests/phone/stores/orderOverview.spec.ts` (the first search, a filter change, the gate, a

@@ -6,7 +6,15 @@ import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
 import { testPlugins } from '../../support/plugins'
-import { TABLE_REPORT, TISCH_12, lineNamed, orderCard, mountScreen, openItemsLaptop } from './openItemsFixture'
+import {
+  TABLE_REPORT,
+  TISCH_12,
+  lineNamed,
+  orderCard,
+  mountScreen,
+  mountScreenToCancelItems,
+  openItemsLaptop,
+} from './openItemsFixture'
 import { answer, emptyAnswer, inTurn, stubLaptop } from '../../support/laptop'
 
 enableAutoUnmount(afterEach)
@@ -197,10 +205,8 @@ describe('a table with an item a waiter cancelled', () => {
   })
 })
 
-describe('tapping an item on the settle screen', () => {
+describe('tapping an item on the settle and the cancel screen', () => {
   const BRATWURST_HISTORY = {
-    orderedByStaffMemberName: 'Anna',
-    orderedAtUtc: '2026-09-05T18:00:00Z',
     statusChanges: [{ state: 'open', changedAtUtc: '2026-09-05T18:00:00Z', staffMemberName: 'Anna', stationName: null }],
     settledAtUtc: null,
     chargedPriceCents: null,
@@ -220,17 +226,56 @@ describe('tapping an item on the settle screen', () => {
     vi.unstubAllGlobals()
   })
 
-  it('opens the history of the item and ticks nothing when the waiter taps its name', async () => {
+  it.each([
+    ['settle', mountScreen],
+    ['cancel', mountScreenToCancelItems],
+  ])('opens the price and the history and ticks nothing when the waiter taps the details button on the %s screen', async (_, mountTheScreen) => {
     openItemsLaptop(TISCH_12).answers('GET', '/api/open-items/items/item-1/history', answer(BRATWURST_HISTORY))
-    const screen = await mountScreen()
+    const screen = await mountTheScreen()
+
+    await lineNamed(screen, 'Bratwurst').get('[data-test="item-details"]').trigger('click')
+    await flushPromises()
+
+    expect({
+      price: document.querySelector('[data-test="details-price"]')?.textContent?.trim(),
+      history: document.querySelector('[data-test="entry-event"]')?.textContent?.trim(),
+      ticked: useOpenItemsStore().selectedItemIds,
+    }).toEqual({ price: 'Preis: 3,50 €', history: 'Bestellt', ticked: [] })
+  })
+
+  it.each([
+    ['settle', mountScreen],
+    ['cancel', mountScreenToCancelItems],
+  ])('ticks the item and opens no history when the waiter taps its row on the %s screen', async (_, mountTheScreen) => {
+    const laptop = openItemsLaptop(TISCH_12)
+    const screen = await mountTheScreen()
 
     await lineNamed(screen, 'Bratwurst').get('[data-test="line-name"]').trigger('click')
     await flushPromises()
 
     expect({
-      history: document.querySelector('[data-test="entry-event"]')?.textContent?.trim(),
+      historyAsked: laptop.callsTo('GET', '/api/open-items/items/item-1/history').length,
       ticked: useOpenItemsStore().selectedItemIds,
-    }).toEqual({ history: 'Bestellt', ticked: [] })
+    }).toEqual({ historyAsked: 0, ticked: ['item-1'] })
+  })
+
+  it('unticks the item when the waiter taps its row again', async () => {
+    openItemsLaptop(TISCH_12)
+    const screen = await mountScreen()
+    await lineNamed(screen, 'Bratwurst').get('[data-test="line-name"]').trigger('click')
+
+    await lineNamed(screen, 'Bratwurst').get('[data-test="line-name"]').trigger('click')
+
+    expect(useOpenItemsStore().selectedItemIds).toEqual([])
+  })
+
+  it('ticks nothing when the waiter taps the row of a paid item while taking payment', async () => {
+    openItemsLaptop(TABLE_REPORT)
+    const screen = await mountScreen()
+
+    await lineNamed(screen, 'Wasser').get('[data-test="line-name"]').trigger('click')
+
+    expect(useOpenItemsStore().selectedItemIds).toEqual([])
   })
 
   it('ticks the item and opens no history when the waiter taps its tick box', async () => {

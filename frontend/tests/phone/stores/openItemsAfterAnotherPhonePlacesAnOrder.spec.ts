@@ -16,7 +16,6 @@ function bratwurstOf(orderItemId: string, orderId: string, globalOrderNumber: nu
     itemName: 'Bratwurst',
     note: null,
     unitPriceCents,
-    orderedAtUtc: '2026-09-05T18:00:00Z',
     state: 'open',
     stateSetAtUtc: '2026-09-05T18:00:00Z',
     wasHandedOutWhenCancelled: false,

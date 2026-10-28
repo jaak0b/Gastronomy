@@ -4,7 +4,7 @@ import { AdminCategoryView, AdminItemView, type MoveDirection } from '../../../s
 import { letteringColourOn } from '../../../shared/core/letteringColour'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseEditButton from '../BaseEditButton.vue'
-import BaseIconAction from '../BaseIconAction.vue'
+import BaseIconAction from '../../../shared/components/BaseIconAction.vue'
 import BaseMoveButtons from '../BaseMoveButtons.vue'
 import BaseShowButton from '../BaseShowButton.vue'
 import BaseTrashButton from '../BaseTrashButton.vue'

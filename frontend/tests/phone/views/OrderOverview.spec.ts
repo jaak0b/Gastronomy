@@ -28,7 +28,6 @@ function itemOfOrder141(
     itemName,
     note: null,
     unitPriceCents: 400,
-    orderedAtUtc: '2026-09-05T18:20:00Z',
     state,
     stateSetAtUtc: '2026-09-05T18:25:00Z',
     wasHandedOutWhenCancelled,
@@ -58,8 +57,6 @@ const TISCH_12 = {
 }
 
 const WASSER_HISTORY = {
-  orderedByStaffMemberName: 'Anna',
-  orderedAtUtc: '2026-09-05T18:20:00Z',
   statusChanges: [
     { state: 'open', changedAtUtc: '2026-09-05T18:20:00Z', staffMemberName: 'Anna', stationName: null },
     { state: 'handedOut', changedAtUtc: '2026-09-05T18:25:00Z', staffMemberName: null, stationName: 'Schänke' },
@@ -236,14 +233,6 @@ describe('the orders of a table, shown to read', () => {
     expect(screen.findAll('[data-test="tick-cell"], [data-test="whole-order"], [data-test="line-tick"]')).toHaveLength(0)
   })
 
-  it('shows no prices', async () => {
-    stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
-
-    const screen = await mountTheOrders()
-
-    expect(screen.findAll('[data-test="line-price"]')).toHaveLength(0)
-  })
-
   it('says that no order matches when the laptop finds none', async () => {
     stubLaptop().answers('POST', SEARCH, answer({ ...TISCH_12, orders: [] }))
 
@@ -377,18 +366,27 @@ describe('the filter above the orders of a table', () => {
 })
 
 describe('tapping an item on the overview', () => {
-  it('opens the history the laptop holds for that item', async () => {
+  it('opens the price and the history of the item when the waiter taps its details button', async () => {
     stubLaptop()
       .answers('POST', SEARCH, answer(TISCH_12))
       .answers('GET', '/api/open-items/items/wasser/history', answer(WASSER_HISTORY))
     const screen = await mountTheOrders()
 
+    await tap(screen, '[data-test="item-details"][data-test-id="wasser"]')
+
+    expect({
+      price: allOnScreen('[data-test="details-price"]').map((price) => price.textContent?.trim()),
+      events: allOnScreen('[data-test="entry-event"]').map((event) => event.textContent?.trim()),
+    }).toEqual({ price: ['Preis: 4,00 €'], events: ['Bestellt', 'Ausgegeben', 'Bezahlt'] })
+  })
+
+  it('opens nothing when the waiter taps the row itself', async () => {
+    const laptop = stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
+    const screen = await mountTheOrders()
+    laptop.forgetCalls()
+
     await tap(screen, '[data-test="order-line"][data-test-id="wasser"] [data-test="line-name"]')
 
-    expect(allOnScreen('[data-test="entry-event"]').map((event) => event.textContent?.trim())).toEqual([
-      'Bestellt',
-      'Ausgegeben',
-      'Bezahlt',
-    ])
+    expect({ open: isOnScreen('[data-test="item-history"]'), asked: laptop.urls() }).toEqual({ open: false, asked: [] })
   })
 })

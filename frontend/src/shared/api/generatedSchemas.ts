@@ -179,7 +179,7 @@ export type PaymentMethod = __TypedOpenapi.Schemas.PaymentMethod;
 export const PaymentMethod = z.union([z.literal("none"), z.literal("cash"), z.literal("card"), z.literal(null)]);
 
 export type OrderItemHistoryView = __TypedOpenapi.Schemas.OrderItemHistoryView;
-export const OrderItemHistoryView = z.strictObject({ orderedByStaffMemberName: z.string(), orderedAtUtc: z.string(), statusChanges: z.array(OrderItemStatusChangeView), settledAtUtc: z.string().nullable(), chargedPriceCents: z.number().int().nullable(), paymentMethod: PaymentMethod.nullable(), settledByStaffMemberName: z.string().nullable(), paymentNotice: z.string().nullable() });
+export const OrderItemHistoryView = z.strictObject({ statusChanges: z.array(OrderItemStatusChangeView), settledAtUtc: z.string().nullable(), chargedPriceCents: z.number().int().nullable(), paymentMethod: PaymentMethod.nullable(), settledByStaffMemberName: z.string().nullable(), paymentNotice: z.string().nullable() });
 
 export type OrderItemRequest = __TypedOpenapi.Schemas.OrderItemRequest;
 export const OrderItemRequest = z.strictObject({ catalogItemId: z.string(), unitPriceCents: z.number().int(), note: z.string().nullable().optional(), stationId: z.string().nullable().optional() });
@@ -302,7 +302,7 @@ export type StationQueueView = __TypedOpenapi.Schemas.StationQueueView;
 export const StationQueueView = z.strictObject({ station: StationSummaryView, orders: z.array(StationOrderQueueView), asItComes: z.array(StationOrderQueueView) });
 
 export type TableOrderRecordItemView = __TypedOpenapi.Schemas.TableOrderRecordItemView;
-export const TableOrderRecordItemView = z.strictObject({ orderItemId: z.string(), orderId: z.string(), globalOrderNumber: z.number().int(), itemName: z.string(), note: z.string().nullable(), unitPriceCents: z.number().int(), orderedAtUtc: z.string(), state: OrderItemState, stateSetAtUtc: z.string(), wasHandedOutWhenCancelled: z.boolean(), settledAtUtc: z.string().nullable(), chargedPriceCents: z.number().int().nullable() });
+export const TableOrderRecordItemView = z.strictObject({ orderItemId: z.string(), orderId: z.string(), globalOrderNumber: z.number().int(), itemName: z.string(), note: z.string().nullable(), unitPriceCents: z.number().int(), state: OrderItemState, stateSetAtUtc: z.string(), wasHandedOutWhenCancelled: z.boolean(), settledAtUtc: z.string().nullable(), chargedPriceCents: z.number().int().nullable() });
 
 export type TableOrderRecordView = __TypedOpenapi.Schemas.TableOrderRecordView;
 export const TableOrderRecordView = z.strictObject({ orderId: z.string(), globalOrderNumber: z.number().int(), createdAtUtc: z.string(), staffMemberName: z.string(), notCancelledItemCount: z.number().int(), handedOutItemCount: z.number().int(), items: z.array(TableOrderRecordItemView) });

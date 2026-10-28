@@ -122,8 +122,7 @@
         "settleInCash": "Take cash payment",
         "settleItems": "Take payment",
         "settleSelected": "Take payment",
-        "wholeTable": "Select the whole table",
-        "showEveryItem": "Show all items"
+        "wholeTable": "Select the whole table"
       },
       "messages": {
         "cashToReturn": "The guest gets {amount} back in cash.",
@@ -158,6 +157,9 @@
       }
     },
     "itemHistory": {
+      "actions": {
+        "showDetails": "Show details"
+      },
       "events": {
         "ordered": "Ordered",
         "handedOut": "Handed out",
@@ -169,7 +171,8 @@
       "labels": {
         "paidInCash": "{amount} in cash",
         "paidByCard": "{amount} by card",
-        "paymentNotice": "Reason: {notice}"
+        "paymentNotice": "Reason: {notice}",
+        "price": "Price: {price}"
       }
     },
     "review": {

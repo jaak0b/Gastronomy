@@ -4,8 +4,6 @@ import { historyEntriesOf } from '../../../src/phone/core/itemHistory'
 
 function historyOf(overrides: Partial<OrderItemHistoryView>): OrderItemHistoryView {
   return {
-    orderedByStaffMemberName: 'Anna',
-    orderedAtUtc: '2026-09-05T18:00:00Z',
     statusChanges: [
       { state: 'open', changedAtUtc: '2026-09-05T18:00:00Z', staffMemberName: 'Anna', stationName: null },
     ],

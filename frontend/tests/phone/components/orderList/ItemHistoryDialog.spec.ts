@@ -19,7 +19,6 @@ const BIER = {
   itemName: 'Bier',
   note: 'ohne Schaum',
   unitPriceCents: 400,
-  orderedAtUtc: '2026-09-05T18:00:00Z',
   state: 'cancelled' as const,
   stateSetAtUtc: '2026-09-05T18:06:00Z',
   wasHandedOutWhenCancelled: false,
@@ -28,8 +27,6 @@ const BIER = {
 }
 
 const WHOLE_LIFE = {
-  orderedByStaffMemberName: 'Anna',
-  orderedAtUtc: '2026-09-05T18:00:00Z',
   statusChanges: [
     { state: 'open', changedAtUtc: '2026-09-05T18:00:00Z', staffMemberName: 'Anna', stationName: null },
     { state: 'handedOut', changedAtUtc: '2026-09-05T18:02:00Z', staffMemberName: null, stationName: 'Schänke' },
@@ -100,7 +97,20 @@ describe('the history of one item', () => {
     ])
   })
 
-  it('lists every step in the order it happened, each with its time', async () => {
+  it('shows the price of the item at the top, in German and in English', async () => {
+    stubLaptop().answers('GET', HISTORY, answer(WHOLE_LIFE))
+    mountTheHistory()
+    await flushPromises()
+    const german = textOnScreen('[data-test="details-price"]').trim()
+    document.body.innerHTML = ''
+
+    mountTheHistory('en')
+    await flushPromises()
+
+    expect([german, textOnScreen('[data-test="details-price"]').trim()]).toEqual(['Preis: 4,00 €', 'Price: €4.00'])
+  })
+
+  it('lists every step in the order it happened, each with its date and time', async () => {
     stubLaptop().answers('GET', HISTORY, answer(WHOLE_LIFE))
 
     mountTheHistory()
@@ -108,7 +118,14 @@ describe('the history of one item', () => {
 
     expect({ events: textsOf('[data-test="entry-event"]'), times: textsOf('[data-test="entry-time"]') }).toEqual({
       events: ['Bestellt', 'Ausgegeben', 'Zurückgelegt', 'Bezahlt', 'Storniert', 'Stornierung bestätigt'],
-      times: ['20:00', '20:02', '20:03', '20:04', '20:06', '20:07'],
+      times: [
+        '05.09.2026, 20:00',
+        '05.09.2026, 20:02',
+        '05.09.2026, 20:03',
+        '05.09.2026, 20:04',
+        '05.09.2026, 20:06',
+        '05.09.2026, 20:07',
+      ],
     })
   })
 

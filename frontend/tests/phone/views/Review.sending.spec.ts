@@ -191,7 +191,6 @@ describe('sending an order the guest pays on the spot', () => {
                   itemName: 'Wasser',
                   note: null,
                   unitPriceCents: 200,
-                  orderedAtUtc: '2026-09-05T18:00:00Z',
                   state: 'open',
                   stateSetAtUtc: '2026-09-05T18:00:00Z',
                   wasHandedOutWhenCancelled: false,

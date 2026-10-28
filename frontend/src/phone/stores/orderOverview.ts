@@ -1,15 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { TableOrderReportView, TableOrderSearchRequest } from '../../shared/api/generatedSchemas'
+import type { TableOrderReportView } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { searchTheTable } from '../api/tableSearch'
+import type { TableSearchFilter } from '../core/openItems'
 import { useConnectionStore } from '../../shared/stores/connection'
 import { useSessionStore } from '../../shared/stores/session'
 
-export type OrderOverviewFilter = Required<TableOrderSearchRequest>
-
-export const EVERY_ORDER: OrderOverviewFilter = {
+export const EVERY_ORDER: TableSearchFilter = {
   orderStatus: null,
   paymentStatus: null,
   includeCancelled: true,
@@ -17,7 +16,7 @@ export const EVERY_ORDER: OrderOverviewFilter = {
 
 export const useOrderOverviewStore = defineStore('orderOverview', () => {
   const tableId = ref<string | null>(null)
-  const filter = ref<OrderOverviewFilter>({ ...EVERY_ORDER })
+  const filter = ref<TableSearchFilter>({ ...EVERY_ORDER })
   const report = ref<TableOrderReportView | null>(null)
   const loadFailureKey = ref<string | null>(null)
 
@@ -68,7 +67,7 @@ export const useOrderOverviewStore = defineStore('orderOverview', () => {
     }
   }
 
-  async function changeFilter(changed: OrderOverviewFilter): Promise<void> {
+  async function changeFilter(changed: TableSearchFilter): Promise<void> {
     filter.value = changed
     await load()
   }
