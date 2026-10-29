@@ -1,4 +1,4 @@
-interface PositionedRow<TItem> {
+export interface PositionedRow<TItem> {
   item: TItem
   position: number
 }

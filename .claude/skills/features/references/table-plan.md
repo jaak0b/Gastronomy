@@ -167,7 +167,7 @@ Frontend, under `frontend/src/`:
   press shorter than the threshold is the plain click that clears the selection. There is no
   double-click action. A selected shape, table or station alike, is drawn with a 3-unit `primary`
   border, and the resize handles appear only for exactly one selected shape. The page is one block
-  centred in the window, at most 1100 pixels wide like the festival page: one refusal line, then
+  centred in the window, at most `--admin-page-width` wide like the festival page: one refusal line, then
   one framed box (`data-test="plan-frame"`) holding the toolbar as its top strip and
   `TablePlanDrawing.vue` (the Konva drawing) below it, filling the rest of the width and the
   height. There is no list beside the drawing.

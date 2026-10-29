@@ -105,7 +105,7 @@ async function copyUrl(): Promise<void> {
 <style scoped>
 .qr-url {
   background-color: rgb(var(--v-theme-surface-light));
-  font-size: var(--admin-small-text-size);
+  font-size: var(--app-small-text-size);
   overflow-wrap: anywhere;
 }
 </style>

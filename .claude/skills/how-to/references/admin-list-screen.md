@@ -57,8 +57,9 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
    the action's own word as its `label` ("Zutat aktivieren"). A row's actions follow the order in
    `hideable-rows.md`: text buttons, then the pencil, then switching off or on. The screen shows no
    load failure of its own: the shared bar under the tabs reports it (see the `admin-screens` page
-   of `features`). The text for an empty list shows only when the list is empty and the load did
-   not fail.
+   of `features`). Each entry is one `BaseListRow` (`hideable-rows.md`) with the name, its chips
+   in `facts` and its buttons in `actions`. The text for an empty list is `BaseEmptyListText` and
+   shows only when the list is empty and the load did not fail.
 6. **Create and edit.** `useEditSession` (`admin/composables/useEditSession.ts`) takes a `saveThrough`
    that creates when nothing is being edited and saves otherwise. The id field has the entity's own
    name:
@@ -92,8 +93,9 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
    both apply; see `hideable-rows.md`). The tooltip is the
    text of the refusal the laptop would send, cut to its first sentence when the rest names controls
    the screen does not have. A
-   refusal that comes back anyway is one page level `v-alert` (`type="warning"`,
-   `data-test="refusal"`), shown only while the form dialog is closed, because an open dialog shows its
+   refusal that comes back anyway is one page level `BaseRefusalAlert`
+   (`shared/components/BaseRefusalAlert.vue`, `class="admin-section-gap"`), shown only while the
+   form dialog is closed, because an open dialog shows its
    own refusal through `:error-text`.
 8. **Texts.** `admin.<section>.{title,labels,actions,messages}` and, for refusals the laptop sends,
    `errors.admin.<section>.*`, in `shared/i18n/de.json` and `en.json` in the same change. Read

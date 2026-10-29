@@ -115,8 +115,10 @@ Frontend, under `frontend/src/`:
   reason, the search and its add button are disabled and a tooltip says
   `admin.common.messages.noStationsAvailable` / `noItemsAvailable` (its `unavailableReason`). A
   search that matches nothing shows `admin.common.messages.noMatches`, the line's built-in
-  no-data text. Every row of the page's lists is a `BaseListRow.vue`, the one
-  home of the tint on every second row. Name, start and end save when a field is left or Enter is
+  no-data text. Every row of the page's lists is a `BaseListRow.vue`, the same row as on the
+  Feste tab and the other global tabs. The station card keeps one row's height while no station
+  belongs to the festival, with no row drawn. The article card's category headings are
+  `categories/CategoryLabel.vue`. Name, start and end save when a field is left or Enter is
   pressed, with no save button. Its sections are `FestivalStations.vue`, `FestivalTablePlan.vue`
   (see the `table-plan` page), `FestivalItems.vue` (with `FestivalPlacementDialog.vue`,
   `StationSelect.vue` and `admin/composables/useFestivalItemRows.ts`) and `FestivalStock.vue` (see

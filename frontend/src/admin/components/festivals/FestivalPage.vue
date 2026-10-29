@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import { navigate } from '../../../shared/router/router'
 import { assertNever } from '../../../shared/core/assertNever'
 import { combineReleases } from '../../../shared/core/combineReleases'
@@ -152,7 +153,7 @@ onUnmounted(() => {
       <v-card class="festival-fields admin-section-gap" variant="outlined">
         <div class="admin-card-body">
           <div class="festival-heading d-flex align-center flex-wrap ga-3 admin-section-gap">
-            <h1 class="festival-name admin-page-title" data-test="festival-name">{{ festival.name }}</h1>
+            <h1 class="festival-name app-page-title" data-test="festival-name">{{ festival.name }}</h1>
             <v-chip v-if="festival.isRunning" class="running" data-test="running" color="success">
               {{ t('admin.festivals.labels.running') }}
             </v-chip>
@@ -193,12 +194,10 @@ onUnmounted(() => {
               @keyup.enter="saveTheFields"
             />
           </div>
-          <p v-if="refusedField === 'period'" class="period-refusal text-error admin-small-text mt-2">
+          <p v-if="refusedField === 'period'" class="period-refusal text-error app-small-text mt-2">
             {{ t('errors.admin.festivals.periodInvalid') }}
           </p>
-          <v-alert v-if="refusalText !== null" class="refusal mt-3" data-test="refusal" type="warning" variant="tonal">
-            {{ refusalText }}
-          </v-alert>
+          <BaseRefusalAlert v-if="refusalText !== null" class="mt-3" :text="refusalText" />
         </div>
       </v-card>
 
@@ -212,7 +211,7 @@ onUnmounted(() => {
 
 <style scoped>
 .admin-festival {
-  max-width: 1100px;
+  max-width: var(--admin-page-width);
 }
 
 .festival-start-field,

@@ -359,7 +359,7 @@ describe('a staff member who already has a phone', () => {
     await firstStaffMember(list)
 
     const parts = list
-      .get('[data-test="staff-row-line"]')
+      .get('[data-test="staff-row"] [data-test="row-line"]')
       .findAll('[data-test="name"], [data-test="new-code"], [data-test="rename"], [data-test="deactivate"]')
 
     expect(parts.map((part) => part.attributes('data-test'))).toEqual(['name', 'new-code', 'rename', 'deactivate'])

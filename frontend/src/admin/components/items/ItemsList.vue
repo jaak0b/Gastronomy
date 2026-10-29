@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { AdminCategoryView, AdminItemView, MoveDirection } from '../../../shared/api/generatedSchemas'
 import { combineReleases } from '../../../shared/core/combineReleases'
 import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
+import { numberRowsAcrossGroups } from '../../core/alternatingRows'
 import { useAdminCategoriesStore, type AdminCategoryDraft } from '../../stores/categories'
 import { useAdminFestivalsStore } from '../../stores/festivals'
 import { useAdminIngredientsStore } from '../../stores/ingredients'
@@ -13,6 +14,7 @@ import { useEditSession } from '../../composables/useEditSession'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
 import CategoryDialog from '../categories/CategoryDialog.vue'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
+import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import ItemDialog from './ItemDialog.vue'
 import ItemsListCategorySection from './ItemsListCategorySection.vue'
 import ItemIngredientsDialog from './ItemIngredientsDialog.vue'
@@ -54,19 +56,15 @@ const shownItems = computed(() =>
 )
 
 const groups = computed(() =>
-  groupByCategorySortingItemsByName(
-    categories.categories,
-    shownItems.value,
-    (category) => category.categoryId,
-    (item) => item.categoryId,
-    (item) => item.name,
+  numberRowsAcrossGroups(
+    groupByCategorySortingItemsByName(
+      categories.categories,
+      shownItems.value,
+      (category) => category.categoryId,
+      (item) => item.categoryId,
+      (item) => item.name,
+    ),
   ),
-)
-
-const showsItemRefusal = computed(() => itemRefusalText.value !== null && !isItemDialogOpen.value)
-
-const showsCategoryRefusal = computed(
-  () => categoryRefusalText.value !== null && !isCategoryDialogOpen.value,
 )
 
 const recipeItem = computed(
@@ -181,33 +179,27 @@ onUnmounted(() => {
       :checkbox-label="t('admin.common.actions.showDeactivated')"
       checkbox-test-name="show-deactivated"
     >
-      <h1 class="admin-page-title">{{ t('admin.items.title') }}</h1>
+      <h1 class="app-page-title">{{ t('admin.items.title') }}</h1>
     </BaseHeadingWithCheckbox>
 
-    <v-alert
-      v-if="showsItemRefusal"
-      class="refusal admin-section-gap"
+    <BaseRefusalAlert
+      v-if="itemRefusalText !== null && !isItemDialogOpen"
+      class="admin-section-gap"
       data-test="item-refusal"
-      type="warning"
-      variant="tonal"
-    >
-      {{ itemRefusalText }}
-    </v-alert>
-    <v-alert
-      v-if="showsCategoryRefusal"
-      class="refusal admin-section-gap"
+      :text="itemRefusalText"
+    />
+    <BaseRefusalAlert
+      v-if="categoryRefusalText !== null && !isCategoryDialogOpen"
+      class="admin-section-gap"
       data-test="category-refusal"
-      type="warning"
-      variant="tonal"
-    >
-      {{ categoryRefusalText }}
-    </v-alert>
+      :text="categoryRefusalText"
+    />
 
     <ItemsListCategorySection
       v-for="group in groups"
       :key="group.category.categoryId"
       :category="group.category"
-      :items="group.items"
+      :rows="group.rows"
       :is-a-festival-running="festivals.runningFestival !== null"
       @rename-category="startRenamingCategory(group.category)"
       @move-category="(direction) => moveCategory(group.category.categoryId, direction)"

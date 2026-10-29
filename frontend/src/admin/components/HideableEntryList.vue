@@ -113,15 +113,18 @@ async function move(entry: TEntry, direction: MoveDirection): Promise<void> {
         v-for="(entry, position) in listedEntries"
         :key="idOf(entry)"
         :position="position"
+        :name="nameOf(entry)"
+        name-test-name="entry-name"
+        :refusal-text="rowRefusals.refusalTextOf(idOf(entry))"
         :data-test="rowTestName"
         :data-test-id="idOf(entry)"
       >
-        <div class="row-line d-flex align-center flex-wrap admin-row">
-          <span class="entry-name" data-test="entry-name">{{ nameOf(entry) }}</span>
+        <template #facts>
           <v-chip v-if="isHidden(entry)" class="hidden" data-test="hidden" color="grey">
             {{ t('admin.festivals.labels.hidden') }}
           </v-chip>
-          <v-spacer />
+        </template>
+        <template #actions>
           <slot name="details" :entry="entry" />
           <BaseMoveButtons v-if="moveThrough !== undefined" @move="(direction) => move(entry, direction)" />
           <BaseEditButton class="edit-entry" data-test="edit-entry" @click="session.openForEdit(entry)" />
@@ -147,16 +150,7 @@ async function move(entry: TEntry, direction: MoveDirection): Promise<void> {
               />
             </template>
           </BaseActionWithRefusalReason>
-        </div>
-        <v-alert
-          v-if="rowRefusals.refusalTextOf(idOf(entry)) !== null"
-          class="refusal mb-2"
-          data-test="refusal"
-          type="warning"
-          variant="tonal"
-        >
-          {{ rowRefusals.refusalTextOf(idOf(entry)) }}
-        </v-alert>
+        </template>
       </BaseListRow>
     </div>
 

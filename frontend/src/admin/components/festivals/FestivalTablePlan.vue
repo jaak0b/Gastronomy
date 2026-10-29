@@ -79,7 +79,7 @@ function hidingRefusalOf(area: AdminAreaView): string | null {
           :move-through="moveTheArea"
         >
           <template #heading>
-            <h2 class="section-heading admin-section-title" data-test="section-heading">{{ t('admin.tablePlan.title') }}</h2>
+            <h2 class="section-heading app-section-title" data-test="section-heading">{{ t('admin.tablePlan.title') }}</h2>
           </template>
           <template #notices>
             <BaseWarningText
@@ -96,7 +96,7 @@ function hidingRefusalOf(area: AdminAreaView): string | null {
             />
           </template>
           <template #details="{ entry: area }">
-            <span class="table-count admin-small-text text-medium-emphasis" data-test="table-count">
+            <span class="table-count app-small-text text-medium-emphasis" data-test="table-count">
               {{ tableCountTexts.get(area.areaId) }}
             </span>
             <v-btn

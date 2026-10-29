@@ -86,7 +86,7 @@ describe('the item list', () => {
     const list = mountList()
     await vi.waitFor(() => expect(list.find('[data-test="item-row"]').exists()).toBe(true))
 
-    const line = list.get('[data-test="item-row"] [data-test="item-line"]')
+    const line = list.get('[data-test="item-row"] [data-test="row-line"]')
 
     expect(line.find('[data-test="item-name"]').exists()).toBe(true)
     expect(line.find('[data-test="edit-item"]').exists()).toBe(true)

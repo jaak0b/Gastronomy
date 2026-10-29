@@ -34,6 +34,9 @@ Frontend, under `frontend/src/`:
   `Core/Mapping/CatalogCategoryMapping.cs`, with the routes in `Api/Endpoints/AdminCategoryEndpoints.cs`. A name is
   trimmed and compared in SQL without regard to case (`NamedQueries.Namesakes`); deactivating is refused while
   an active article is in the category.
+- **Every row is the same row**: the global tabs and the festival page draw each entry with
+  `BaseListRow.vue`, so names, chips, the line between rows and the tint on every second row look
+  alike everywhere.
 - **Every row offers its actions the same way**: text buttons first, then the pencil "Bearbeiten"
   for the edit dialog, then switching off, hiding or removing, with the up and down arrows before
   the pencil where a list is ordered by hand. Showing or switching on again is the open eye named

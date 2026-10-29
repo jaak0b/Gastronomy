@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import type {
   AdminAreaView,
   AdminStationShapeView,
@@ -238,19 +239,16 @@ onUnmounted(() => {
         >
           {{ t('common.actions.back') }}
         </v-btn>
-        <h1 v-if="area !== null" class="area-name admin-page-title" data-test="area-name">{{ area.name }}</h1>
+        <h1 v-if="area !== null" class="area-name app-page-title" data-test="area-name">{{ area.name }}</h1>
       </div>
 
       <template v-if="area !== null">
-        <v-alert
+        <BaseRefusalAlert
           v-if="planRefusalText !== null"
           class="plan-refusal mb-2"
           data-test="plan-refusal"
-          type="warning"
-          variant="tonal"
-        >
-          {{ planRefusalText }}
-        </v-alert>
+          :text="planRefusalText"
+        />
         <div class="plan-frame" data-test="plan-frame">
           <TablePlanToolbar
             :area="area"
@@ -320,7 +318,7 @@ onUnmounted(() => {
   flex-direction: column;
   height: 100%;
   margin: 0 auto;
-  max-width: 1100px;
+  max-width: var(--admin-page-width);
 }
 
 .plan-frame {

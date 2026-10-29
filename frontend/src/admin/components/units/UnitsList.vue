@@ -5,9 +5,12 @@ import type { AdminUnitView } from '../../../shared/api/generatedSchemas'
 import { useAdminUnitsStore, type UnitDraft } from '../../stores/units'
 import { useEditSession } from '../../composables/useEditSession'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
+import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseEditButton from '../BaseEditButton.vue'
+import BaseEmptyListText from '../BaseEmptyListText.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
+import BaseListRow from '../BaseListRow.vue'
 import BaseShowButton from '../BaseShowButton.vue'
 import BaseTrashButton from '../BaseTrashButton.vue'
 import UnitDialog from './UnitDialog.vue'
@@ -52,10 +55,6 @@ const showsNoneYet = computed(
   () => units.units.length === 0 && !units.loadFailed,
 )
 
-const showsRefusal = computed(
-  () => refusalText.value !== null && !isUnitDialogOpen.value,
-)
-
 async function deactivate(): Promise<void> {
   const unitId = askingAboutId.value
   askingAboutId.value = null
@@ -89,32 +88,28 @@ onUnmounted(() => {
       :checkbox-label="t('admin.common.actions.showDeactivated')"
       checkbox-test-name="show-deactivated"
     >
-      <h1 class="admin-page-title">{{ t('admin.units.title') }}</h1>
+      <h1 class="app-page-title">{{ t('admin.units.title') }}</h1>
     </BaseHeadingWithCheckbox>
 
-    <v-alert
-      v-if="showsRefusal"
-      class="refusal admin-section-gap"
-      data-test="refusal"
-      type="warning"
-      variant="tonal"
-    >
-      {{ refusalText }}
-    </v-alert>
+    <BaseRefusalAlert
+      v-if="refusalText !== null && !isUnitDialogOpen"
+      class="admin-section-gap"
+      :text="refusalText"
+    />
 
-    <p v-if="showsNoneYet" class="none-yet text-medium-emphasis admin-section-gap" data-test="none-yet">
-      {{ t('admin.units.messages.noneYet') }}
-    </p>
+    <BaseEmptyListText v-if="showsNoneYet" class="admin-section-gap" :text="t('admin.units.messages.noneYet')" />
 
-    <v-card
-      v-for="row in rows"
+    <BaseListRow
+      v-for="(row, position) in rows"
       :key="row.unit.unitId"
-      class="unit-row admin-row-spacing"
+      class="unit-row"
       data-test="unit-row"
       :data-test-id="row.unit.unitId"
+      :position="position"
+      :name="row.unit.name"
+      name-test-name="name"
     >
-      <div class="d-flex align-center flex-wrap admin-row">
-        <span class="name admin-row-name" data-test="name">{{ row.unit.name }}</span>
+      <template #facts>
         <v-chip
           v-if="!row.unit.isActive"
           class="deactivated"
@@ -123,7 +118,8 @@ onUnmounted(() => {
         >
           {{ t('admin.common.labels.deactivated') }}
         </v-chip>
-        <v-spacer />
+      </template>
+      <template #actions>
         <BaseEditButton
           class="edit"
           data-test="edit"
@@ -151,8 +147,8 @@ onUnmounted(() => {
           :label="t('admin.units.actions.activate')"
           @click="reactivate(row.unit.unitId)"
         />
-      </div>
-    </v-card>
+      </template>
+    </BaseListRow>
 
     <v-btn
       class="new-unit admin-block-gap"

@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { AdminCategoryView, AdminItemView, type MoveDirection } from '../../../shared/api/generatedSchemas'
-import { letteringColourOn } from '../../../shared/core/letteringColour'
+import type { PositionedRow } from '../../core/alternatingRows'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseEditButton from '../BaseEditButton.vue'
+import BaseListRow from '../BaseListRow.vue'
 import BaseIconAction from '../../../shared/components/BaseIconAction.vue'
 import BaseMoveButtons from '../BaseMoveButtons.vue'
 import BaseShowButton from '../BaseShowButton.vue'
 import BaseTrashButton from '../BaseTrashButton.vue'
+import CategoryLabel from '../categories/CategoryLabel.vue'
 
 const props = defineProps<{
   category: AdminCategoryView
-  items: AdminItemView[]
+  rows: PositionedRow<AdminItemView>[]
   isAFestivalRunning: boolean
 }>()
 const emit = defineEmits<{
@@ -35,16 +37,7 @@ function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
 <template>
   <section class="category-section" data-test="category-section">
     <div class="category-heading d-flex align-center ga-2 py-2">
-      <h2
-        class="admin-section-title font-weight-bold px-3 py-1 rounded"
-        data-test="category-name"
-        :style="{
-          backgroundColor: category.colourHex,
-          color: letteringColourOn(category.colourHex),
-        }"
-      >
-        {{ category.name }}
-      </h2>
+      <CategoryLabel data-test="category-name" :category="category" :heading-level="2" />
       <v-chip
         v-if="!category.isActive"
         data-test="category-deactivated"
@@ -70,19 +63,21 @@ function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
         @click="emit('activate-category')"
       />
     </div>
-    <v-card
-      v-for="item in items"
+    <BaseListRow
+      v-for="{ item, position } in rows"
       :key="item.itemId"
-      class="mb-2"
       data-test="item-row"
       :data-test-id="item.itemId"
+      :position="position"
+      :name="item.name"
+      name-test-name="item-name"
     >
-      <div class="d-flex align-center flex-wrap admin-row" data-test="item-line">
-        <span data-test="item-name">{{ item.name }}</span>
+      <template #facts>
         <v-chip v-if="!item.isActive" data-test="item-deactivated" color="grey">
           {{ t('admin.common.labels.deactivated') }}
         </v-chip>
-        <v-spacer />
+      </template>
+      <template #actions>
         <v-btn data-test="edit-ingredients" variant="text" @click="emit('edit-ingredients', item)">
           {{ t('admin.ingredients.actions.edit') }}
         </v-btn>
@@ -103,7 +98,7 @@ function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
           :label="t('admin.items.actions.activate')"
           @click="emit('reactivate-item', item)"
         />
-      </div>
-    </v-card>
+      </template>
+    </BaseListRow>
   </section>
 </template>

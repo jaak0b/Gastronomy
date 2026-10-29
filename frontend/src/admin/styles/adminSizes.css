@@ -1,41 +1,22 @@
 .admin-sizes {
-  --admin-text-size: 0.875rem;
-  --admin-small-text-size: 0.8125rem;
-  --admin-page-title-size: 1.375rem;
-  --admin-section-title-size: 1.0625rem;
-  --admin-row-name-size: 0.9375rem;
+  --app-text-size: 0.875rem;
+  --app-small-text-size: 0.8125rem;
+  --app-page-title-size: 1.375rem;
+  --app-page-title-weight: 400;
+  --app-section-title-size: 1.0625rem;
+  --app-item-name-size: 0.9375rem;
+  --app-figure-size: 1.0625rem;
+  --admin-page-width: 1100px;
   --admin-row-height: 40px;
   --admin-row-padding-y: 4px;
   --admin-row-padding-x: 12px;
   --admin-row-gap: 8px;
-  --admin-row-spacing: 6px;
   --admin-card-padding: 12px;
   --admin-section-gap: 12px;
   --admin-block-gap: 16px;
   --admin-page-padding: 12px;
 
-  font-size: var(--admin-text-size);
-}
-
-.admin-page-title {
-  font-size: var(--admin-page-title-size);
-  font-weight: 400;
-  line-height: 1.3;
-}
-
-.admin-section-title {
-  font-size: var(--admin-section-title-size);
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.admin-row-name {
-  font-size: var(--admin-row-name-size);
-  font-weight: 500;
-}
-
-.admin-small-text {
-  font-size: var(--admin-small-text-size);
+  font-size: var(--app-text-size);
 }
 
 .admin-row {
@@ -51,10 +32,6 @@
 
 .admin-card-body {
   padding: var(--admin-card-padding);
-}
-
-.admin-row-spacing {
-  margin-bottom: var(--admin-row-spacing);
 }
 
 .admin-section-gap {

@@ -5,13 +5,13 @@ import type { AdminCategoryView, AdminItemView } from '../../../shared/api/gener
 import { assertNever } from '../../../shared/core/assertNever'
 import { compareNames } from '../../../shared/core/compareNames'
 import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
-import { letteringColourOn } from '../../../shared/core/letteringColour'
 import { numberRowsAcrossGroups } from '../../core/alternatingRows'
 import { useAdminCategoriesStore, type AdminCategoryDraft } from '../../stores/categories'
 import { useAdminItemsStore, type AdminItemDraft } from '../../stores/items'
 import { useAdminStationsStore } from '../../stores/stations'
 import { useEditSession } from '../../composables/useEditSession'
 import { useFestivalItemRows } from '../../composables/useFestivalItemRows'
+import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseEditButton from '../BaseEditButton.vue'
 import BaseListRow from '../BaseListRow.vue'
@@ -19,6 +19,7 @@ import BaseRemoveConfirmDialog from '../BaseRemoveConfirmDialog.vue'
 import BaseSearchAddLine from '../BaseSearchAddLine.vue'
 import BaseTrashButton from '../BaseTrashButton.vue'
 import CategoryDialog from '../categories/CategoryDialog.vue'
+import CategoryLabel from '../categories/CategoryLabel.vue'
 import ItemDialog from '../items/ItemDialog.vue'
 import FestivalPlacementDialog from './FestivalPlacementDialog.vue'
 import StationSelect from './StationSelect.vue'
@@ -104,8 +105,6 @@ const itemsUnavailableReason = computed(() =>
   stillToAdd.value.length === 0 ? t('admin.common.messages.noItemsAvailable') : null,
 )
 
-const showsItemRefusal = computed(() => itemRefusalText.value !== null && !isItemDialogOpen.value)
-
 const chosenItem = computed(
   () => items.items.find((item) => item.itemId === chosenItemId.value) ?? null,
 )
@@ -149,7 +148,7 @@ async function remove(): Promise<void> {
   <section class="festival-items admin-section-gap" data-test="festival-items">
     <v-card variant="outlined">
       <div class="admin-card-body">
-        <h2 class="section-heading admin-section-title mb-3" data-test="section-heading">{{ t('admin.items.title') }}</h2>
+        <h2 class="section-heading app-section-title mb-3" data-test="section-heading">{{ t('admin.items.title') }}</h2>
 
         <div v-if="festivalStations.length === 0" class="festival-item-placeholder" data-test="festival-item-placeholder">
           <div class="item-line d-flex align-center flex-wrap admin-row">
@@ -166,16 +165,12 @@ async function remove(): Promise<void> {
             class="category-section"
           >
             <div class="category-heading d-flex align-center flex-wrap ga-2 mb-1 mt-3">
-              <h3
-                class="category-name admin-section-title font-weight-bold px-3 py-1 rounded"
+              <CategoryLabel
+                class="category-name"
                 data-test="category-name"
-                :style="{
-                  backgroundColor: group.category.colourHex,
-                  color: letteringColourOn(group.category.colourHex),
-                }"
-              >
-                {{ group.category.name }}
-              </h3>
+                :category="group.category"
+                :heading-level="3"
+              />
               <BaseEditButton
                 class="edit-category"
                 data-test="edit-category"
@@ -189,14 +184,11 @@ async function remove(): Promise<void> {
               data-test="festival-item-row"
               :data-test-id="item.itemId"
               :position="position"
+              :name="item.name"
+              name-test-name="item-name"
+              :refusal-text="rowRefusalText(item.itemId)"
             >
-              <div class="item-line d-flex align-center flex-wrap admin-row">
-                <span
-                  class="name"
-                  data-test="item-name"
-                >
-                  {{ item.name }}
-                </span>
+              <template #facts>
                 <v-chip v-if="!item.isActive" class="deactivated" data-test="deactivated" color="grey">
                   {{ t('admin.common.labels.deactivated') }}
                 </v-chip>
@@ -219,7 +211,8 @@ async function remove(): Promise<void> {
                   :error-text="null"
                   @select="(stationIds: string[]) => changeStations(item.itemId, stationIds)"
                 />
-                <v-spacer />
+              </template>
+              <template #actions>
                 <v-switch
                   :key="`${item.itemId}-${item.atTheFestival.isAvailable}-${rowShownFor(item.itemId).soldOutSwitchRenderKey}`"
                   class="sold-out-switch flex-grow-0"
@@ -245,16 +238,7 @@ async function remove(): Promise<void> {
                     />
                   </template>
                 </BaseActionWithRefusalReason>
-              </div>
-              <v-alert
-                v-if="rowRefusalText(item.itemId) !== null"
-                class="refusal mb-2"
-                data-test="refusal"
-                type="warning"
-                variant="tonal"
-              >
-                {{ rowRefusalText(item.itemId) }}
-              </v-alert>
+              </template>
             </BaseListRow>
           </section>
 
@@ -275,15 +259,11 @@ async function remove(): Promise<void> {
               {{ t('admin.items.actions.new') }}
             </v-btn>
           </BaseSearchAddLine>
-          <v-alert
-            v-if="showsItemRefusal"
-            class="refusal mt-3"
-            data-test="refusal"
-            type="warning"
-            variant="tonal"
-          >
-            {{ itemRefusalText }}
-          </v-alert>
+          <BaseRefusalAlert
+            v-if="itemRefusalText !== null && !isItemDialogOpen"
+            class="mt-3"
+            :text="itemRefusalText"
+          />
         </template>
       </div>
     </v-card>
@@ -324,7 +304,7 @@ async function remove(): Promise<void> {
 </template>
 
 <style scoped>
-.festival-item-row .name {
+.festival-item-row :deep(.row-name) {
   flex: 0 1 12rem;
 }
 

@@ -8,9 +8,12 @@ import { formatFestivalMoment } from '../../../shared/core/moments'
 import { useAdminFestivalsStore, type FestivalDraft } from '../../stores/festivals'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseEditButton from '../BaseEditButton.vue'
+import BaseEmptyListText from '../BaseEmptyListText.vue'
 import BaseHideConfirmDialog from '../BaseHideConfirmDialog.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
+import BaseListRow from '../BaseListRow.vue'
 import BaseIconAction from '../../../shared/components/BaseIconAction.vue'
+import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import BaseShowButton from '../BaseShowButton.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import FestivalDialog from './FestivalDialog.vue'
@@ -138,74 +141,72 @@ onUnmounted(() => {
       :checkbox-label="t('admin.festivals.actions.showHidden')"
       checkbox-test-name="show-hidden"
     >
-      <h1 class="admin-page-title">{{ t('admin.festivals.title') }}</h1>
+      <h1 class="app-page-title">{{ t('admin.festivals.title') }}</h1>
     </BaseHeadingWithCheckbox>
 
-    <v-alert
+    <BaseRefusalAlert
       v-if="refusalText !== null && !isCreating && copiedFestival === null"
-      class="refusal admin-section-gap"
-      data-test="refusal"
-      type="warning"
-      variant="tonal"
-    >
-      {{ refusalText }}
-    </v-alert>
+      class="admin-section-gap"
+      :text="refusalText"
+    />
 
-    <p v-if="shown.length === 0" class="none-yet text-medium-emphasis admin-section-gap" data-test="none-yet">
-      {{ t('admin.festivals.messages.noneYet') }}
-    </p>
+    <BaseEmptyListText
+      v-if="shown.length === 0"
+      class="admin-section-gap"
+      :text="t('admin.festivals.messages.noneYet')"
+    />
 
-    <v-card
-      v-for="festival in shown"
+    <BaseListRow
+      v-for="(festival, position) in shown"
       :key="festival.festivalId"
-      class="festival-row admin-row-spacing"
+      class="festival-row"
       data-test="festival-row"
       :data-test-id="festival.festivalId"
+      :position="position"
+      :name="festival.name"
+      name-test-name="name"
     >
-      <div class="d-flex align-center flex-wrap admin-row">
-        <span class="name admin-row-name" data-test="name">{{ festival.name }}</span>
+      <template #facts>
         <v-chip v-if="festival.isRunning" class="running" data-test="running" color="success">
           {{ t('admin.festivals.labels.running') }}
         </v-chip>
         <v-chip v-if="festival.isHidden" class="hidden" color="grey">
           {{ t('admin.festivals.labels.hidden') }}
         </v-chip>
-        <v-spacer />
+      </template>
+      <template #actions>
         <div class="actions d-flex align-center ga-2" data-test="actions">
           <v-btn class="copy" data-test="copy" variant="text" @click="startCopying(festival)">
             {{ t('admin.festivals.actions.copy') }}
           </v-btn>
           <BaseEditButton class="open" data-test="open" @click="open(festival)" />
-          <span class="conditional-action" data-test="conditional-action">
-            <BaseShowButton
-              v-if="festival.isHidden"
-              class="show"
-              data-test="show"
-              :label="t('admin.festivals.actions.show')"
-              @click="show(festival.festivalId)"
-            />
-            <BaseActionWithRefusalReason
-              v-else
-              class="hide-wrapper"
-              data-test="hide-wrapper"
-              :refusal-reason="festival.isRunning ? t('errors.admin.festivals.runningFestivalStaysShown') : null"
-            >
-              <template #default="{ refused }">
-                <BaseIconAction
-                  class="hide"
-                  data-test="hide"
-                  icon="mdi-eye-off"
-                  color="error"
-                  :label="t('admin.festivals.actions.hide')"
-                  :disabled="refused"
-                  @click="hiddenFestival = festival"
-                />
-              </template>
-            </BaseActionWithRefusalReason>
-            <v-btn class="action-measure" data-test="action-measure" icon="mdi-eye" variant="text" tabindex="-1" />
-          </span>
+          <BaseShowButton
+            v-if="festival.isHidden"
+            class="show"
+            data-test="show"
+            :label="t('admin.festivals.actions.show')"
+            @click="show(festival.festivalId)"
+          />
+          <BaseActionWithRefusalReason
+            v-else
+            class="hide-wrapper"
+            data-test="hide-wrapper"
+            :refusal-reason="festival.isRunning ? t('errors.admin.festivals.runningFestivalStaysShown') : null"
+          >
+            <template #default="{ refused }">
+              <BaseIconAction
+                class="hide"
+                data-test="hide"
+                icon="mdi-eye-off"
+                color="error"
+                :label="t('admin.festivals.actions.hide')"
+                :disabled="refused"
+                @click="hiddenFestival = festival"
+              />
+            </template>
+          </BaseActionWithRefusalReason>
         </div>
-      </div>
+      </template>
       <div class="festival-facts d-flex flex-wrap admin-row-details text-medium-emphasis">
         <span class="period-start">
           {{ t('admin.festivals.labels.start') }}: {{ moment(festival.startsAtUtc) }}
@@ -223,7 +224,7 @@ onUnmounted(() => {
           {{ t('admin.festivals.labels.orderCount', { count: festival.orderCount }, festival.orderCount) }}
         </span>
       </div>
-    </v-card>
+    </BaseListRow>
 
     <v-btn class="new-festival admin-block-gap" data-test="new-festival" color="primary" @click="startCreating">
       {{ t('admin.festivals.actions.new') }}
@@ -260,18 +261,5 @@ onUnmounted(() => {
 <style scoped>
 .actions {
   flex: 0 0 auto;
-}
-
-.conditional-action {
-  display: grid;
-  flex: 0 0 auto;
-}
-
-.conditional-action > * {
-  grid-area: 1 / 1;
-}
-
-.action-measure {
-  visibility: hidden;
 }
 </style>

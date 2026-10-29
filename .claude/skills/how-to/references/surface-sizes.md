@@ -24,20 +24,23 @@ padding, a density or a font size that its surface should decide.
   chips, comfortable selects) and `stationSizes.css` (the class `station-sizes`). `StationPage.vue`
   wraps itself in the provider and carries the class on its root.
 - **Admin:** `src/admin/styles/adminSizes.ts` (`ADMIN_DEFAULTS`) and `adminSizes.css` (the class
-  `admin-sizes` with its `--admin-*` properties and `admin-*` classes). `AdminShell.vue` wraps
-  itself in the provider and carries the class on its root.
+  `admin-sizes` with its `--app-*` text values, its `--admin-*` layout values and the admin layout
+  classes). `AdminShell.vue` wraps itself in the provider and carries the class on its root.
 
-## Texts on the phone and the station tablet
+## Texts on every surface
 
 `src/shared/styles/surfaceText.css`, imported once by `main.ts`, holds the named text classes. Each
-reads a custom property that `phone-sizes` and `station-sizes` set to their own value, so a shared
-component such as `Welcome.vue` writes one class and takes the size of the surface it is on.
+reads a custom property that `phone-sizes`, `station-sizes` and `admin-sizes` set to their own
+value, so a shared component such as `Welcome.vue` writes one class and takes the size of the
+surface it is on. Where a surface wants another weight, the weight is a surface value too
+(`--app-page-title-weight`: 500 on the phone and the station tablet, 400 in the admin), never a
+second class.
 
 | Class | Use it for | Property |
 |---|---|---|
-| `app-page-title` | the title of a screen, the app bar title | `--app-page-title-size` |
+| `app-page-title` | the title of a screen, the app bar title | `--app-page-title-size`, `--app-page-title-weight` |
 | `app-section-title` | a section or column heading, the title of a card (the table on a station card) | `--app-section-title-size` |
-| `app-item-name` | the name of an article or an order line | `--app-item-name-size` |
+| `app-item-name` | the name of an article or an order line, the name of an admin list row | `--app-item-name-size` |
 | `app-figure` | an amount read at a glance (order total, selected total, a price) | `--app-figure-size` |
 | `app-text` | body text on an element that would otherwise get another size (a heading, a `v-card-text`, a button) | `--app-text-size` |
 | `app-small-text` | a secondary line: a note, who took the order, a time, a column heading | `--app-small-text-size` |
@@ -63,17 +66,19 @@ Plain text inside a surface needs no class: the surface class sets `font-size` t
    of use. Today: `PHONE_NOTICE_BAR_DEFAULTS` (the notice bars under the phone's app bar, compact
    and square) and `PHONE_ORDER_GRID_DEFAULTS` (the tick boxes compact and the details button
    comfortable inside the dense grid of `OrderListCard`).
-4. **A heading or a text** uses one of the classes above on the phone and the station tablet, and
-   the `admin-*` classes in the admin: `admin-page-title`, `admin-section-title`, `admin-row-name`
-   and `admin-small-text`.
-5. **An admin list row, card or section** uses the admin layout classes: a row is
-   `d-flex align-center flex-wrap admin-row`, the facts under it `admin-row-details`, a row card
-   is separated by `admin-row-spacing`, a card body is `admin-card-body`, sections are separated by
-   `admin-section-gap` and a button below a list keeps `admin-block-gap`. A scoped admin style reads
-   the `--admin-*` property (`padding: var(--admin-row-padding-y) var(--admin-row-padding-x)`).
+4. **A heading or a text** uses one of the classes above on every surface, the admin included.
+5. **An admin list row, card or section**: a row is `BaseListRow` (see `hideable-rows.md`), whose
+   line carries `admin-row`; the facts under a row are `admin-row-details`, a card body is
+   `admin-card-body`, sections are separated by `admin-section-gap` and a button below a list keeps
+   `admin-block-gap`. A page that is one centred block is at most `var(--admin-page-width)` wide
+   (the festival page, the table plan editor). A scoped admin style reads the `--admin-*` property
+   (`padding: var(--admin-row-padding-y) var(--admin-row-padding-x)`).
 6. **A small Vuetify spacing class** such as `mb-2`, `mt-3` or `ga-2` between two neighbours stays
-   as it is, and so does a layout size that belongs to one component's own geometry, such as the
-   minimum height of a catalog row.
+   as it is, and so does a layout size that belongs to one component's own geometry. The phone has
+   no shared row height or touch target, so these stay in their components: the catalog row of
+   `ItemRow.vue` (64px row, 48px stepper and price line, 2.25rem group lines), the tick column and
+   gaps of `OrderListCard.vue`'s grid, and the 3.5rem action buttons of `BaseFullPageDialog.vue`.
+   Their text sizes read the `--app-*` values.
 7. **A shared component** under `src/shared/` is never forked per surface. It writes no size of its
    own, so each surface's provider and class decide how it looks.
 8. **A drawing** keeps its own scale: a Konva stage computes its scale from the frame it is given.

@@ -7,9 +7,12 @@ import { useAdminIngredientsStore, type IngredientDraft } from '../../stores/ing
 import { useAdminUnitsStore } from '../../stores/units'
 import { useEditSession } from '../../composables/useEditSession'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
+import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseEditButton from '../BaseEditButton.vue'
+import BaseEmptyListText from '../BaseEmptyListText.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
+import BaseListRow from '../BaseListRow.vue'
 import BaseShowButton from '../BaseShowButton.vue'
 import BaseTrashButton from '../BaseTrashButton.vue'
 import IngredientDialog from './IngredientDialog.vue'
@@ -53,10 +56,6 @@ const showsNoneYet = computed(
   () => ingredients.ingredients.length === 0 && !ingredients.loadFailed,
 )
 
-const showsRefusal = computed(
-  () => refusalText.value !== null && !isIngredientDialogOpen.value,
-)
-
 async function deactivate(): Promise<void> {
   const ingredientId = askingAboutId.value
   askingAboutId.value = null
@@ -90,32 +89,28 @@ onUnmounted(() => {
       :checkbox-label="t('admin.common.actions.showDeactivated')"
       checkbox-test-name="show-deactivated"
     >
-      <h1 class="admin-page-title">{{ t('admin.ingredients.title') }}</h1>
+      <h1 class="app-page-title">{{ t('admin.ingredients.title') }}</h1>
     </BaseHeadingWithCheckbox>
 
-    <v-alert
-      v-if="showsRefusal"
-      class="refusal admin-section-gap"
-      data-test="refusal"
-      type="warning"
-      variant="tonal"
-    >
-      {{ refusalText }}
-    </v-alert>
+    <BaseRefusalAlert
+      v-if="refusalText !== null && !isIngredientDialogOpen"
+      class="admin-section-gap"
+      :text="refusalText"
+    />
 
-    <p v-if="showsNoneYet" class="none-yet text-medium-emphasis admin-section-gap" data-test="none-yet">
-      {{ t('admin.ingredients.messages.noneYet') }}
-    </p>
+    <BaseEmptyListText v-if="showsNoneYet" class="admin-section-gap" :text="t('admin.ingredients.messages.noneYet')" />
 
-    <v-card
-      v-for="row in rows"
+    <BaseListRow
+      v-for="(row, position) in rows"
       :key="row.ingredient.ingredientId"
-      class="ingredient-row admin-row-spacing"
+      class="ingredient-row"
       data-test="ingredient-row"
       :data-test-id="row.ingredient.ingredientId"
+      :position="position"
+      :name="row.ingredient.name"
+      name-test-name="name"
     >
-      <div class="d-flex align-center flex-wrap admin-row">
-        <span class="name admin-row-name" data-test="name">{{ row.ingredient.name }}</span>
+      <template #facts>
         <span class="unit text-medium-emphasis" data-test="unit">{{ row.ingredient.unitName }}</span>
         <v-chip
           v-if="!row.ingredient.isActive"
@@ -125,7 +120,8 @@ onUnmounted(() => {
         >
           {{ t('admin.common.labels.deactivated') }}
         </v-chip>
-        <v-spacer />
+      </template>
+      <template #actions>
         <BaseEditButton
           class="edit"
           data-test="edit"
@@ -153,8 +149,8 @@ onUnmounted(() => {
           :label="t('admin.ingredients.actions.activate')"
           @click="reactivate(row.ingredient.ingredientId)"
         />
-      </div>
-    </v-card>
+      </template>
+    </BaseListRow>
 
     <v-btn
       class="new-ingredient admin-block-gap"

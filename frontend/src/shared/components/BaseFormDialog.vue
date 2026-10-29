@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useTemplateRef, type ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
+import BaseRefusalAlert from './BaseRefusalAlert.vue'
 
 defineProps<{
   title: string
@@ -38,9 +39,7 @@ function focusTheFirstField(): void {
       <v-form @submit.prevent="emit('save')">
         <v-card-text>
           <slot />
-          <v-alert v-if="errorText !== null" class="refusal mt-4" data-test="refusal" type="warning" variant="tonal">
-            {{ errorText }}
-          </v-alert>
+          <BaseRefusalAlert v-if="errorText !== null" class="mt-4" :text="errorText" />
         </v-card-text>
         <v-card-actions>
           <v-spacer />

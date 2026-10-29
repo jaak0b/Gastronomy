@@ -31,10 +31,27 @@ tooltip beside them (frontend rule 8).
   `badges` and an `actions` slot, the trash icon inside `BaseActionWithRefusalReason`
   (`removalRefusalOf`; the festival page's comes from `admin/composables/useStationRefusalReasons.ts`), the question before the removal, `removeThrough`, and the refusal under its
   row. Consumer: `festivals/FestivalStations.vue`.
-- `BaseListRow.vue` is one row of any of these lists: the line between rows, the tint on every
-  second row (`position`). `HideableEntryList`, `RemovableStationRows` and the article
-  rows of `FestivalItems.vue` use it; a list grouped under headings numbers its rows on through the
-  groups with `numberRowsAcrossGroups` (`admin/core/alternatingRows.ts`).
+- `BaseListRow.vue` is the one row of every admin list, on the six global tabs and on the
+  festival page alike: the line between rows, the tint on every second row (`position`), and one
+  line (`data-test="row-line"`) holding the name, the `facts` slot right after it (chips, a unit, a
+  field), and the `actions` slot at the right. `name` is the text, `name-test-name` the name's
+  `data-test` that the list's specs read. `refusal-text` shows the row's refusal under the line
+  through `shared/components/BaseRefusalAlert.vue`, and the default slot holds what sits below the
+  line: the festival's facts, the invitation panel of a station or a waiter, the stock history. A
+  row is never a `v-card` of its own and never a hand-written flex line. Consumers: `FestivalsList`,
+  `StationsList`, `ItemsListCategorySection` (the Artikel tab), `IngredientsList`, `UnitsList`,
+  `StaffList`, `HideableEntryList`, `RemovableStationRows`, `FestivalItems` and `FestivalStock`
+  (which lays the line out in its own grid columns and has no `actions`, so the line draws no
+  spacer). A list grouped under headings numbers its rows on through the groups with
+  `numberRowsAcrossGroups` (`admin/core/alternatingRows.ts`), as the Artikel tab and the festival
+  page's article card do. A list that may be empty keeps its height with
+  `min-height: var(--admin-row-height)` on its rows container, as `FestivalStations.vue` does,
+  never with an invisible row.
+- `BaseEmptyListText.vue` is the text of a tab whose list is empty (`data-test="none-yet"`):
+  the Feste, Zutaten and Einheiten tabs.
+- `categories/CategoryLabel.vue` is a category's name painted in its colour with the lettering
+  colour from `shared/core/letteringColour.ts`, as a heading whose level its screen passes
+  (`heading-level`): `2` on the Artikel tab, `3` in the festival page's article card.
 - `BaseHeadingWithCheckbox.vue` is a heading with its checkbox at the right of the same line, the
   way the Ausgabestellen, Artikel, Zutaten, Einheiten and Kellner tabs place "Deaktivierte anzeigen";
   the Feste tab places "Ausgeblendete Feste anzeigen" the same way. Consumers: the six global tabs

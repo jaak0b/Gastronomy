@@ -9,9 +9,9 @@ answer of the laptop and turn it into text the same way.
 `frontend/src/admin/composables/useRowRefusals.ts`. Call it once in the component or composable that
 owns the rows; it keeps one refusal per row id.
 
-- `refusalTextOf(rowId)` is the sentence to render, or `null`. Render it under the row in a
-  `v-alert` with `type="warning"`, `variant="tonal"`, `class="refusal mb-2"` (flush with the row,
-  no side margin) and `data-test="refusal"`.
+- `refusalTextOf(rowId)` is the sentence to render, or `null`. Pass it to the row as
+  `BaseListRow`'s `refusal-text`, which draws it under the line, flush with the row; a line that
+  is not a list row (a recipe line) renders `BaseRefusalAlert` itself with `class="mb-2"`.
 - `showRefusalOf(rowId, result)` takes the `AdminActionResult` a store action returned and stores the
   refusal when the action failed. It does nothing for a success, so an old warning survives an
   accepted action unless it was forgotten first.
@@ -46,7 +46,16 @@ A warning that is not an answer to an action, but a gap the screen finds in its 
 ingredient that runs out soon, a table plan the waiters cannot use yet), is
 `admin/components/BaseWarningText.vue`: the `mdi-alert` icon beside its `text` in the `warning`
 colour, no box. Consumers: the stock rows of `festivals/FestivalStock.vue` and the warnings of the
-Tischplan card in `festivals/FestivalTablePlan.vue`. A refusal stays a `v-alert`.
+Tischplan card in `festivals/FestivalTablePlan.vue`. A refusal stays a `BaseRefusalAlert`.
+
+## The refusal itself: `BaseRefusalAlert`
+
+`shared/components/BaseRefusalAlert.vue` is every refusal on screen: the warning box with its
+`text`, `data-test="refusal"` unless the place gives it another name (`item-refusal`,
+`category-refusal`, `plan-refusal`). The place adds its `v-if` and its spacing class
+(`admin-section-gap` on a page, `mt-3` under a card's add line, `mt-4` in `BaseFormDialog`). Never
+write the `v-alert` by hand. Consumers: `BaseListRow`, `BaseFormDialog`, every global tab, the
+festival page and its cards, `ItemIngredientsDialog` and the table plan editor.
 
 ## One mapping to text: `adminErrorMessageText`
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import type { ParsedAmountInput } from '../../core/ingredientAmounts'
 import type {
   AdminIngredientView,
@@ -165,15 +166,7 @@ async function add(): Promise<void> {
             @click="ingredientIdOfLineToRemove = line.ingredientId"
           />
         </div>
-        <v-alert
-          v-if="line.refusalText !== null"
-          class="refusal mb-2"
-          data-test="refusal"
-          type="warning"
-          variant="tonal"
-        >
-          {{ line.refusalText }}
-        </v-alert>
+        <BaseRefusalAlert v-if="line.refusalText !== null" class="mb-2" :text="line.refusalText" />
       </div>
     </div>
 
@@ -225,15 +218,7 @@ async function add(): Promise<void> {
           {{ t('admin.ingredients.actions.new') }}
         </v-btn>
       </div>
-      <v-alert
-        v-if="addRefusalText !== null"
-        class="refusal mt-2"
-        data-test="refusal"
-        type="warning"
-        variant="tonal"
-      >
-        {{ addRefusalText }}
-      </v-alert>
+      <BaseRefusalAlert v-if="addRefusalText !== null" class="mt-2" :text="addRefusalText" />
     </div>
   </BaseFormDialog>
 

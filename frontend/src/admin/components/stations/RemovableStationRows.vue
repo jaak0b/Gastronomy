@@ -51,13 +51,16 @@ async function confirmRemoval(): Promise<void> {
       v-for="(station, position) in stations"
       :key="idOf(station)"
       :position="position"
+      :name="nameOf(station)"
+      name-test-name="station-name"
+      :refusal-text="stationRefusals.refusalTextOf(idOf(station))"
       :data-test="rowTestName"
       :data-test-id="idOf(station)"
     >
-      <div class="row-line d-flex align-center flex-wrap admin-row">
-        <span class="name" data-test="station-name">{{ nameOf(station) }}</span>
+      <template #facts>
         <slot name="badges" :station="station" />
-        <v-spacer />
+      </template>
+      <template #actions>
         <slot name="actions" :station="station" />
         <BaseActionWithRefusalReason
           class="remove-station-wrapper"
@@ -73,16 +76,7 @@ async function confirmRemoval(): Promise<void> {
             />
           </template>
         </BaseActionWithRefusalReason>
-      </div>
-      <v-alert
-        v-if="stationRefusals.refusalTextOf(idOf(station)) !== null"
-        class="refusal mb-2"
-        data-test="refusal"
-        type="warning"
-        variant="tonal"
-      >
-        {{ stationRefusals.refusalTextOf(idOf(station)) }}
-      </v-alert>
+      </template>
     </BaseListRow>
 
     <BaseRemoveConfirmDialog

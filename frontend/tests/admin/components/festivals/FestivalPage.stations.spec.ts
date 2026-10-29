@@ -28,16 +28,15 @@ describe('the stations of this festival', () => {
     expect(page.findAll('[data-test="station-name"]').map((row) => row.text())).toEqual(['Küche'])
   })
 
-  it('keeps an empty row in place while none belongs to the festival', async () => {
+  it('shows no station row while none belongs to the festival', async () => {
     festivalLaptop({ stations: [BAR] })
 
     const page = mountPage()
     await vi.waitFor(() =>
-      expect(page.find('[data-test="festival-station-placeholder"]').exists()).toBe(true),
+      expect(page.getComponent<typeof VAutocomplete>('[data-test="station-search"]').props('items')).toEqual([BAR]),
     )
 
-    expect(page.find('[data-test="festival-station-row"]').exists()).toBe(false)
-    expect(page.find('[data-test="station-search"]').exists()).toBe(true)
+    expect(page.get('[data-test="festival-station-rows"]').find('[data-test="festival-station-row"]').exists()).toBe(false)
   })
 
   it('offers only the stations that are switched on and not here yet', async () => {

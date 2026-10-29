@@ -110,8 +110,6 @@ describe('the list of festivals', () => {
     expect(rows[0].find('[data-test="actions"] [data-test="open"]').exists()).toBe(true)
     expect(rows[0].find('[data-test="actions"] [data-test="copy"]').exists()).toBe(true)
     expect(rows[1].find('[data-test="actions"] [data-test="hide"]').exists()).toBe(true)
-
-    expect(rows[0].find('[data-test="conditional-action"] [data-test="action-measure"]').exists()).toBe(true)
   })
 
   it('offers copying, the pencil and the eye in that order', async () => {

@@ -6,6 +6,7 @@ import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminStationsStore } from '../../stores/stations'
 import { useAdminEnrolmentStore } from '../../stores/enrolment'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
+import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import InvitationPanel from '../enrolment/InvitationPanel.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import { useStationRefusalReasons } from '../../composables/useStationRefusalReasons'
@@ -13,6 +14,7 @@ import StationDialog from './StationDialog.vue'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseEditButton from '../BaseEditButton.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
+import BaseListRow from '../BaseListRow.vue'
 import BaseShowButton from '../BaseShowButton.vue'
 import BaseTrashButton from '../BaseTrashButton.vue'
 
@@ -119,7 +121,7 @@ onUnmounted(() => {
       :checkbox-label="t('admin.common.actions.showDeactivated')"
       checkbox-test-name="show-deactivated"
     >
-      <h1 class="admin-page-title">{{ t('admin.stations.title') }}</h1>
+      <h1 class="app-page-title">{{ t('admin.stations.title') }}</h1>
     </BaseHeadingWithCheckbox>
 
     <v-alert
@@ -130,31 +132,30 @@ onUnmounted(() => {
     >
       {{ t('admin.enrolment.messages.doneStation', { name: enrolment.enrolledStationName }) }}
     </v-alert>
-    <v-alert
+    <BaseRefusalAlert
       v-if="refusalText !== null && !isStationDialogOpen"
-      class="refusal admin-section-gap"
-      data-test="refusal"
-      type="warning"
-      variant="tonal"
-    >
-      {{ refusalText }}
-    </v-alert>
+      class="admin-section-gap"
+      :text="refusalText"
+    />
 
-    <v-card
-      v-for="{ station, deactivationRefusal } in rows"
+    <BaseListRow
+      v-for="({ station, deactivationRefusal }, position) in rows"
       :key="station.stationId"
-      class="station-row admin-row-spacing"
+      class="station-row"
       data-test="station-row"
+      :position="position"
+      :name="station.name"
+      name-test-name="name"
     >
-      <div class="d-flex align-center flex-wrap admin-row">
-        <span class="name admin-row-name" data-test="name">{{ station.name }}</span>
+      <template #facts>
         <v-chip v-if="!station.isActive" class="deactivated" data-test="deactivated" color="grey">
           {{ t('admin.common.labels.deactivated') }}
         </v-chip>
         <v-chip v-if="!station.hasDevice" class="no-tablet" color="warning">
           {{ t('admin.stations.labels.noTablet') }}
         </v-chip>
-        <v-spacer />
+      </template>
+      <template #actions>
         <v-btn class="set-up-device" data-test="set-up-device" variant="text" @click="inviteStation(station.stationId)">
           {{ t('admin.stations.actions.setUpDevice') }}
         </v-btn>
@@ -181,7 +182,7 @@ onUnmounted(() => {
           :label="t('admin.stations.actions.activate')"
           @click="reactivate(station.stationId)"
         />
-      </div>
+      </template>
       <v-expand-transition>
         <InvitationPanel
           v-if="enrolment.invitation?.station?.id === station.stationId"
@@ -191,7 +192,7 @@ onUnmounted(() => {
           @renew="inviteStation(station.stationId)"
         />
       </v-expand-transition>
-    </v-card>
+    </BaseListRow>
 
     <v-btn class="new-station admin-block-gap" data-test="new-station" color="primary" @click="startCreating">
       {{ t('admin.stations.actions.new') }}

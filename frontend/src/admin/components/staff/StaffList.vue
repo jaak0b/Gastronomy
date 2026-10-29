@@ -6,11 +6,13 @@ import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminStaffStore } from '../../stores/staff'
 import { useAdminEnrolmentStore } from '../../stores/enrolment'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
+import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import InvitationPanel from '../enrolment/InvitationPanel.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import StaffRenameDialog from './StaffRenameDialog.vue'
 import BaseEditButton from '../BaseEditButton.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
+import BaseListRow from '../BaseListRow.vue'
 import BaseShowButton from '../BaseShowButton.vue'
 import BaseTrashButton from '../BaseTrashButton.vue'
 
@@ -99,7 +101,7 @@ onUnmounted(() => {
       :checkbox-label="t('admin.common.actions.showDeactivated')"
       checkbox-test-name="show-deactivated"
     >
-      <h1 class="admin-page-title">{{ t('admin.staff.title') }}</h1>
+      <h1 class="app-page-title">{{ t('admin.staff.title') }}</h1>
     </BaseHeadingWithCheckbox>
 
     <v-alert
@@ -110,26 +112,30 @@ onUnmounted(() => {
     >
       {{ t('admin.enrolment.messages.done', { name: enrolment.enrolledStaffMemberName }) }}
     </v-alert>
-    <v-alert
+    <BaseRefusalAlert
       v-if="refusalText !== null && renamingStaffMember === null"
-      class="refusal admin-section-gap"
-      data-test="refusal"
-      type="warning"
-      variant="tonal"
-    >
-      {{ refusalText }}
-    </v-alert>
+      class="admin-section-gap"
+      :text="refusalText"
+    />
 
-    <v-card v-for="staffMember in shown" :key="staffMember.staffMemberId" class="staff-row admin-row-spacing" data-test="staff-row">
-      <v-card-actions class="staff-row-line admin-row" data-test="staff-row-line">
-        <span class="name admin-row-name ms-2 me-2" data-test="name">{{ staffMember.name }}</span>
-        <v-chip v-if="!staffMember.isActive" class="deactivated me-2" data-test="deactivated" color="grey">
+    <BaseListRow
+      v-for="(staffMember, position) in shown"
+      :key="staffMember.staffMemberId"
+      class="staff-row"
+      data-test="staff-row"
+      :position="position"
+      :name="staffMember.name"
+      name-test-name="name"
+    >
+      <template #facts>
+        <v-chip v-if="!staffMember.isActive" class="deactivated" data-test="deactivated" color="grey">
           {{ t('admin.common.labels.deactivated') }}
         </v-chip>
-        <v-chip v-if="!staffMember.hasDevice" class="no-phone me-2" data-test="no-phone" color="warning">
+        <v-chip v-if="!staffMember.hasDevice" class="no-phone" data-test="no-phone" color="warning">
           {{ t('admin.staff.labels.noPhone') }}
         </v-chip>
-        <v-spacer />
+      </template>
+      <template #actions>
         <v-btn class="new-code" data-test="new-code" variant="text" @click="inviteStaffMember(staffMember.staffMemberId)">
           {{ t('admin.staff.actions.newCode') }}
         </v-btn>
@@ -151,7 +157,7 @@ onUnmounted(() => {
           :label="t('admin.staff.actions.activate')"
           @click="reactivate(staffMember.staffMemberId)"
         />
-      </v-card-actions>
+      </template>
       <v-expand-transition>
         <InvitationPanel
           v-if="enrolment.invitation?.staffMember?.id === staffMember.staffMemberId"
@@ -161,7 +167,7 @@ onUnmounted(() => {
           @renew="inviteStaffMember(staffMember.staffMemberId)"
         />
       </v-expand-transition>
-    </v-card>
+    </BaseListRow>
 
     <v-btn class="new-staff-member admin-block-gap" data-test="new-staff-member" color="primary" @click="inviteSomebodyNew">
       {{ t('admin.staff.actions.new') }}

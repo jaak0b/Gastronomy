@@ -1,6 +1,6 @@
 .app-page-title {
   font-size: var(--app-page-title-size);
-  font-weight: 500;
+  font-weight: var(--app-page-title-weight);
   line-height: 1.3;
 }
 

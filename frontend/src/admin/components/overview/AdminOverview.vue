@@ -77,7 +77,7 @@ onUnmounted(() => {
 
 <template>
   <v-container class="admin-overview">
-    <h1 class="admin-page-title admin-section-gap">{{ t('admin.overview.title') }}</h1>
+    <h1 class="app-page-title admin-section-gap">{{ t('admin.overview.title') }}</h1>
     <v-alert v-if="noFestivalExists" class="missing-festival admin-section-gap" data-test="missing-festival" type="warning" variant="tonal">
       {{ t('admin.overview.messages.missingFestival') }}
     </v-alert>
@@ -91,7 +91,7 @@ onUnmounted(() => {
       {{ t('admin.overview.messages.noFestivalIsRunning') }}
     </v-alert>
     <template v-else>
-      <h2 class="running-festival admin-section-title mb-2" data-test="running-festival">{{ runningFestival.name }}</h2>
+      <h2 class="running-festival app-section-title mb-2" data-test="running-festival">{{ runningFestival.name }}</h2>
       <v-alert v-if="rows.length === 0" class="ready admin-section-gap" type="success" variant="tonal">
         {{ t('admin.overview.messages.ready') }}
       </v-alert>

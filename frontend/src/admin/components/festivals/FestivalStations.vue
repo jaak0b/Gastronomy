@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import { AdminStationView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import type { AdminActionResult } from '../../core/adminActionResult'
@@ -113,9 +114,9 @@ async function saveStation(station: StationDraft): Promise<void> {
   <section class="festival-stations admin-section-gap" data-test="festival-stations">
     <v-card variant="outlined">
       <div class="admin-card-body">
-        <h2 class="section-heading admin-section-title mb-3" data-test="section-heading">{{ t('admin.stations.title') }}</h2>
+        <h2 class="section-heading app-section-title mb-3" data-test="section-heading">{{ t('admin.stations.title') }}</h2>
 
-        <div class="rows mb-3">
+        <div class="festival-station-rows mb-3" data-test="festival-station-rows">
           <RemovableStationRows
             :stations="atTheFestival"
             :id-of="(station) => station.stationId"
@@ -135,12 +136,6 @@ async function saveStation(station: StationDraft): Promise<void> {
               <BaseEditButton class="edit-station" data-test="edit-station" @click="startEditing(station)" />
             </template>
           </RemovableStationRows>
-
-          <div v-if="atTheFestival.length === 0" class="festival-station-placeholder" data-test="festival-station-placeholder">
-            <div class="row-line d-flex align-center flex-wrap admin-row">
-              <span>&nbsp;</span>
-            </div>
-          </div>
         </div>
 
         <BaseSearchAddLine
@@ -160,15 +155,7 @@ async function saveStation(station: StationDraft): Promise<void> {
             {{ t('admin.stations.actions.new') }}
           </v-btn>
         </BaseSearchAddLine>
-        <v-alert
-          v-if="refusalText !== null && !isCreating"
-          class="refusal mt-3"
-          data-test="refusal"
-          type="warning"
-          variant="tonal"
-        >
-          {{ refusalText }}
-        </v-alert>
+        <BaseRefusalAlert v-if="refusalText !== null && !isCreating" class="mt-3" :text="refusalText" />
       </div>
     </v-card>
 
@@ -189,3 +176,9 @@ async function saveStation(station: StationDraft): Promise<void> {
     />
   </section>
 </template>
+
+<style scoped>
+.festival-station-rows {
+  min-height: var(--admin-row-height);
+}
+</style>

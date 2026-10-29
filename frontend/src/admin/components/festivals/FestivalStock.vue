@@ -95,7 +95,7 @@ function toggleHistory(ingredientId: string): void {
   <section v-if="stock.ingredients.length > 0" class="festival-stock admin-section-gap" data-test="festival-stock">
     <v-card variant="outlined">
       <div class="admin-card-body">
-        <h2 class="section-heading admin-section-title mb-3" data-test="section-heading">{{ t('admin.ingredients.title') }}</h2>
+        <h2 class="section-heading app-section-title mb-3" data-test="section-heading">{{ t('admin.ingredients.title') }}</h2>
         <BaseListRow
           v-for="({ ingredient, warningText }, position) in rows"
           :key="ingredient.ingredientId"
@@ -103,14 +103,11 @@ function toggleHistory(ingredientId: string): void {
           data-test="festival-ingredient-row"
           :data-test-id="ingredient.ingredientId"
           :position="position"
+          :name="ingredient.name"
+          name-test-name="ingredient-name"
+          :refusal-text="ingredientRefusals.refusalTextOf(ingredient.ingredientId)"
         >
-          <div class="row-line admin-row">
-            <span
-              class="name"
-              data-test="ingredient-name"
-            >
-              {{ ingredient.name }}
-            </span>
+          <template #facts>
             <IngredientAmountField
               :unit-name="ingredient.unitName"
               :saved-amount="ingredient.availableAmount"
@@ -119,7 +116,7 @@ function toggleHistory(ingredientId: string): void {
               @amount-changed="changeAvailableAmount(ingredient.ingredientId, $event)"
             />
             <span
-              class="used-amount admin-small-text"
+              class="used-amount app-small-text"
               data-test="used-amount"
             >
               {{
@@ -147,20 +144,11 @@ function toggleHistory(ingredientId: string): void {
             >
               {{ t('admin.ingredients.actions.history') }}
             </v-btn>
-          </div>
-          <v-alert
-            v-if="ingredientRefusals.refusalTextOf(ingredient.ingredientId) !== null"
-            class="refusal mb-2"
-            data-test="refusal"
-            type="warning"
-            variant="tonal"
-          >
-            {{ ingredientRefusals.refusalTextOf(ingredient.ingredientId) }}
-          </v-alert>
+          </template>
           <template v-if="ingredientIdShowingHistory === ingredient.ingredientId">
             <p
               v-if="ingredient.usedAmount === 0"
-              class="nothing-used-yet admin-small-text text-medium-emphasis admin-row-details mb-0"
+              class="nothing-used-yet app-small-text text-medium-emphasis admin-row-details mb-0"
               data-test="nothing-used-yet"
             >
               {{ t('admin.ingredients.history.nothingUsedYet') }}
@@ -179,7 +167,7 @@ function toggleHistory(ingredientId: string): void {
 </template>
 
 <style scoped>
-.row-line {
+.festival-ingredient-row :deep(.row-line) {
   display: grid;
   grid-template-columns: minmax(8rem, 1fr) 16rem 10rem 17rem 7rem;
   align-items: center;
