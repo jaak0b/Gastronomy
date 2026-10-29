@@ -1,5 +1,6 @@
 import { config } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
+import { APP_VUETIFY_OPTIONS } from '../src/shared/styles/appVuetify'
 
 class ResizeObserverStub {
   observe(): void {}
@@ -45,4 +46,4 @@ if (window.matchMedia === undefined) {
   })
 }
 
-config.global.plugins = [...(config.global.plugins ?? []), createVuetify({ defaults: {} })]
+config.global.plugins = [...(config.global.plugins ?? []), createVuetify(APP_VUETIFY_OPTIONS)]

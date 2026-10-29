@@ -53,23 +53,22 @@ function choose(stationId: string): void {
         />
       </v-card-text>
       <v-card-actions class="flex-column align-stretch">
-        <v-btn
+        <v-btn-wide
           v-for="stationId in choices"
           :key="stationId"
           class="station-choice mb-2"
           data-test="station-choice"
           variant="tonal"
-          block
           @click="choose(stationId)"
         >
           {{ withEstimate(stationNameFor(stationId), estimateFor(stationId), t, language) }}
           <span v-if="stationId === currentStationId" class="station-current text-medium-emphasis">
             {{ t('phone.catalog.labels.currentStation') }}
           </span>
-        </v-btn>
-        <v-btn class="cancel-station-choice" data-test="cancel-station-choice" variant="text" block @click="emit('cancel')">
+        </v-btn-wide>
+        <v-btn-wide class="cancel-station-choice" data-test="cancel-station-choice" variant="text" @click="emit('cancel')">
           {{ t('common.actions.cancel') }}
-        </v-btn>
+        </v-btn-wide>
       </v-card-actions>
     </v-card>
   </v-dialog>

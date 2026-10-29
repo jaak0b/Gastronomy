@@ -62,8 +62,6 @@ function confirm(paymentMethod: SettlementPaymentMethod): void {
           class="confirm-in-cash"
           data-test="confirm-in-cash"
           color="primary"
-          variant="flat"
-          size="large"
           :disabled="isSettling || !canConfirm"
           @click="confirm('cash')"
         >
@@ -73,8 +71,6 @@ function confirm(paymentMethod: SettlementPaymentMethod): void {
           class="confirm-by-card"
           data-test="confirm-by-card"
           color="primary"
-          variant="flat"
-          size="large"
           :disabled="isSettling || !canConfirm"
           @click="confirm('card')"
         >
@@ -86,8 +82,6 @@ function confirm(paymentMethod: SettlementPaymentMethod): void {
         class="confirm-nothing-paid"
         data-test="confirm-nothing-paid"
         color="primary"
-        variant="flat"
-        size="large"
         :disabled="isSettling || !canConfirm"
         @click="confirm('none')"
       >
@@ -98,7 +92,6 @@ function confirm(paymentMethod: SettlementPaymentMethod): void {
         class="reload-after-refusal"
         data-test="reload-after-refusal"
         variant="outlined"
-        size="large"
         :disabled="isSettling"
         @click="emit('reload')"
       >
@@ -108,7 +101,6 @@ function confirm(paymentMethod: SettlementPaymentMethod): void {
         class="cancel"
         data-test="cancel"
         variant="outlined"
-        size="large"
         :disabled="isSettling"
         @click="emit('cancel')"
       >

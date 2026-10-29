@@ -24,9 +24,6 @@ function choose(language: AppLanguage): void {
     data-test="language-switch"
     :model-value="props.language"
     :items="options"
-    variant="outlined"
-    density="compact"
-    hide-details
     @update:model-value="choose"
   />
 </template>

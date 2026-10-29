@@ -24,8 +24,8 @@ const orderedLines = computed(() => linesByCount(props.lines))
 <template>
   <section class="station-open-board" data-test="station-open-board">
     <div class="board-head d-flex align-center ga-3 mb-4">
-      <h2 class="board-heading text-h5 flex-grow-1" data-test="board-heading">{{ t('station.board.labels.openArticlesHeading') }}</h2>
-      <v-btn class="back-to-orders" data-test="back-to-orders" variant="outlined" size="large" @click="emit('close')">
+      <h2 class="board-heading app-section-title flex-grow-1" data-test="board-heading">{{ t('station.board.labels.openArticlesHeading') }}</h2>
+      <v-btn class="back-to-orders" data-test="back-to-orders" variant="outlined" @click="emit('close')">
         {{ t('station.board.actions.backToOrders') }}
       </v-btn>
     </div>
@@ -38,7 +38,6 @@ const orderedLines = computed(() => linesByCount(props.lines))
         data-test="stat-together"
         :color="deliveryModeColourToken('together')"
         variant="flat"
-        size="large"
       >
         {{ t('station.board.labels.statsTogetherChip', { count: togetherCount }) }}
       </v-chip>
@@ -47,13 +46,12 @@ const orderedLines = computed(() => linesByCount(props.lines))
         data-test="stat-as-it-comes"
         :color="deliveryModeColourToken('asItComes')"
         variant="flat"
-        size="large"
       >
         {{ t('station.board.labels.statsAsItComesChip', { count: asItComesCount }) }}
       </v-chip>
     </div>
     <ul class="units">
-      <li v-for="line in orderedLines" :key="line.key" class="unit" data-test="unit">
+      <li v-for="line in orderedLines" :key="line.key" class="unit app-item-name" data-test="unit">
         {{ itemLineText(line, t) }}
       </li>
     </ul>
@@ -65,8 +63,6 @@ const orderedLines = computed(() => linesByCount(props.lines))
   margin: 1.25rem 0 0;
   padding: 0;
   list-style: none;
-  font-size: 1.5rem;
-  line-height: 1.35;
 }
 
 .unit + .unit {

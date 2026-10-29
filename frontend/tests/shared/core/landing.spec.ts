@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screenFor, waiterLandingFor } from '../../../src/shared/core/landing'
+import { isDrawnAtPhoneSizes, screenFor, waiterLandingFor } from '../../../src/shared/core/landing'
 
 const aStationTablet = { state: 'stationTablet' } as const
 const aWaiterPhone = { state: 'waiterPhone' } as const
@@ -129,5 +129,29 @@ describe('waiterLandingFor, what the waiter sees on the home screen', () => {
     expect(waiterLandingFor({ orderIsLocked: true, festivalIsRunning: true, areaIds: ['area-halle'], openedAreaId: null })).toEqual({
       kind: 'lockedOrder',
     })
+  })
+})
+
+describe('isDrawnAtPhoneSizes, which screens take the sizes of the phone', () => {
+  it.each(['tablePlan', 'catalog', 'review', 'openItems', 'orderOverview'] as const)(
+    'draws the waiter screen %s at the phone sizes',
+    (screen) => {
+      expect(isDrawnAtPhoneSizes(screen)).toBe(true)
+    },
+  )
+
+  it.each(['doorGate', 'enrolQr', 'welcome', 'startingUp'] as const)(
+    'draws the start screen %s, shown before the device knows whose it is, at the phone sizes',
+    (screen) => {
+      expect(isDrawnAtPhoneSizes(screen)).toBe(true)
+    },
+  )
+
+  it('leaves the station page to the station sizes', () => {
+    expect(isDrawnAtPhoneSizes('station')).toBe(false)
+  })
+
+  it('leaves the admin to the admin sizes', () => {
+    expect(isDrawnAtPhoneSizes('admin')).toBe(false)
   })
 })

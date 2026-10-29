@@ -17,21 +17,19 @@ const { t } = useI18n()
           <span class="label" data-test="label">{{ t('common.labels.table', { name: tableName }) }}</span>
         </div>
         <ul class="units">
-          <li v-for="line in lines" :key="line.key" class="unit" data-test="unit">
+          <li v-for="line in lines" :key="line.key" class="unit app-item-name" data-test="unit">
             {{ itemLineText(line, t) }}
           </li>
         </ul>
       </v-card-text>
       <v-card-actions class="actions justify-end" data-test="actions">
-        <v-btn class="cancel" data-test="cancel" variant="outlined" size="large" @click="emit('cancelled')">
+        <v-btn class="cancel" data-test="cancel" variant="outlined" @click="emit('cancelled')">
           {{ t('common.actions.cancel') }}
         </v-btn>
         <v-btn
           class="confirm"
           data-test="confirm"
           color="primary"
-          variant="flat"
-          size="large"
           @click="emit('confirmed')"
         >
           {{ t('station.board.actions.prepared') }}
@@ -48,7 +46,7 @@ const { t } = useI18n()
 }
 
 .body {
-  font-size: 1.05rem;
+  font-size: var(--app-text-size);
   line-height: 1.4;
 }
 
@@ -64,7 +62,6 @@ const { t } = useI18n()
   margin: 1rem 0 0;
   padding: 0;
   list-style: none;
-  font-size: 1.25rem;
 }
 
 .unit + .unit {

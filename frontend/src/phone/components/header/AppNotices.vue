@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { assertNever } from '../../../shared/core/assertNever'
 import { useConnectionStore } from '../../../shared/stores/connection'
 import { useOrderStore } from '../../stores/order'
+import { PHONE_NOTICE_BAR_DEFAULTS } from '../../styles/phoneSizes'
 
 const { t } = useI18n()
 const connection = useConnectionStore()
@@ -29,40 +30,36 @@ const connectionKey = computed<string | null>(() => {
 </script>
 
 <template>
-  <v-alert
-    v-if="hasArrived"
-    class="sent"
-    data-test="sent"
-    type="success"
-    variant="tonal"
-    rounded="0"
-    density="compact"
-    @click="order.dismissConfirmation"
-  >
-    {{ t('phone.review.messages.sent', { number: order.acceptedOrderNumber }) }}
-  </v-alert>
-  <v-alert
-    v-if="order.draftWasLost"
-    class="draft-lost"
-    data-test="draft-lost"
-    type="warning"
-    variant="tonal"
-    rounded="0"
-    density="compact"
-    closable
-    @click:close="order.dismissDraftLoss"
-  >
-    {{ t('phone.header.errors.draftLost') }}
-  </v-alert>
-  <v-alert
-    v-if="connectionKey !== null"
-    class="connection"
-    data-test="connection"
-    type="info"
-    variant="tonal"
-    rounded="0"
-    density="compact"
-  >
-    {{ t(connectionKey) }}
-  </v-alert>
+  <v-defaults-provider :defaults="PHONE_NOTICE_BAR_DEFAULTS">
+    <v-alert
+      v-if="hasArrived"
+      class="sent"
+      data-test="sent"
+      type="success"
+      variant="tonal"
+      @click="order.dismissConfirmation"
+    >
+      {{ t('phone.review.messages.sent', { number: order.acceptedOrderNumber }) }}
+    </v-alert>
+    <v-alert
+      v-if="order.draftWasLost"
+      class="draft-lost"
+      data-test="draft-lost"
+      type="warning"
+      variant="tonal"
+      closable
+      @click:close="order.dismissDraftLoss"
+    >
+      {{ t('phone.header.errors.draftLost') }}
+    </v-alert>
+    <v-alert
+      v-if="connectionKey !== null"
+      class="connection"
+      data-test="connection"
+      type="info"
+      variant="tonal"
+    >
+      {{ t(connectionKey) }}
+    </v-alert>
+  </v-defaults-provider>
 </template>

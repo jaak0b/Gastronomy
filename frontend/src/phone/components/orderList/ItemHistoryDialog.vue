@@ -106,10 +106,10 @@ onMounted(load)
 
 <template>
   <BaseFullPageDialog class="item-history-dialog" data-test="item-history" :title="item.itemName">
-    <p v-if="item.note !== null" class="text-body-2 text-medium-emphasis mb-2" data-test="history-note">
+    <p v-if="item.note !== null" class="app-small-text text-medium-emphasis mb-2" data-test="history-note">
       {{ t('common.labels.note', { note: item.note }) }}
     </p>
-    <p class="text-h6 mb-4" data-test="details-price">{{ priceText }}</p>
+    <p class="app-figure mb-4" data-test="details-price">{{ priceText }}</p>
     <v-progress-circular v-if="answer === null" class="d-block mx-auto my-6" data-test="history-loading" indeterminate />
     <v-alert v-if="failureKey !== null" data-test="history-failed" type="warning" variant="tonal">
       {{ t(failureKey) }}
@@ -124,13 +124,13 @@ onMounted(load)
       >
         <span class="entry-dot" />
         <div class="entry-body">
-          <div class="entry-time text-body-2 text-medium-emphasis" data-test="entry-time">{{ momentOf(entry) }}</div>
-          <div class="text-body-1 font-weight-medium" data-test="entry-event">{{ eventTextOf(entry) }}</div>
-          <div v-if="entry.by !== null" class="text-body-2 text-medium-emphasis" data-test="entry-by">{{ entry.by }}</div>
-          <div v-if="paymentTextOf(entry) !== null" class="text-body-1" data-test="entry-payment">
+          <div class="entry-time app-small-text text-medium-emphasis" data-test="entry-time">{{ momentOf(entry) }}</div>
+          <div class="app-text font-weight-medium" data-test="entry-event">{{ eventTextOf(entry) }}</div>
+          <div v-if="entry.by !== null" class="app-small-text text-medium-emphasis" data-test="entry-by">{{ entry.by }}</div>
+          <div v-if="paymentTextOf(entry) !== null" class="app-text" data-test="entry-payment">
             {{ paymentTextOf(entry) }}
           </div>
-          <div v-if="paymentNoticeOf(entry) !== null" class="text-body-2" data-test="entry-notice">
+          <div v-if="paymentNoticeOf(entry) !== null" class="app-small-text" data-test="entry-notice">
             {{ t('phone.itemHistory.labels.paymentNotice', { notice: paymentNoticeOf(entry) }) }}
           </div>
         </div>
@@ -141,12 +141,11 @@ onMounted(load)
         v-if="answer?.kind === 'unanswered'"
         data-test="history-reload"
         variant="outlined"
-        size="large"
         @click="load"
       >
         {{ t('phone.openItems.actions.reload') }}
       </v-btn>
-      <v-btn data-test="history-close" color="primary" variant="flat" size="large" @click="emit('close')">
+      <v-btn data-test="history-close" color="primary" @click="emit('close')">
         {{ t('common.actions.close') }}
       </v-btn>
     </template>

@@ -22,7 +22,7 @@ Frontend, under `frontend/src/`:
 - `shared/theme.ts` holds both palettes, with `defaultTheme: 'system'`.
 - `admin/styles/adminSizes.ts` and `adminSizes.css` hold every admin size: the Vuetify defaults
   `AdminShell.vue` provides to the admin and the CSS values its components read. The phone and the
-  station tablet keep their larger controls. See the `admin-sizes` page of `how-to`.
+  station tablet have their own, larger sizes. See the `surface-sizes` page of `how-to`.
 
 ## Invariants
 

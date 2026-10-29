@@ -43,11 +43,11 @@ onMounted(async () => {
 <template>
   <v-container v-if="asksForAName" class="enrolment" data-test="enrolment">
     <LanguageSwitch :language="session.language" @select="session.setLanguage" />
-    <h1 class="text-h4 mt-4">{{ t('shared.enrolment.title') }}</h1>
+    <h1 class="app-page-title mt-4">{{ t('shared.enrolment.title') }}</h1>
     <NameField v-model="name" class="mt-4" />
-    <v-btn class="continue mt-4" data-test="continue" color="primary" block :disabled="!canContinue" @click="submit">
+    <v-btn-wide class="continue mt-4" data-test="continue" color="primary" :disabled="!canContinue" @click="submit">
       {{ t('common.actions.continue') }}
-    </v-btn>
+    </v-btn-wide>
     <v-alert v-if="session.redeemErrorKey !== null" class="error mt-4" data-test="redeem-error" type="error" variant="tonal">
       {{ t(session.redeemErrorKey) }}
     </v-alert>
@@ -56,16 +56,15 @@ onMounted(async () => {
     <v-alert class="failure-notice" data-test="failure-notice" type="info" variant="tonal">
       {{ failureMessage }}
     </v-alert>
-    <v-btn
+    <v-btn-wide
       v-if="session.isEnrolled"
       class="carry-on mt-4"
       data-test="carry-on"
       color="primary"
-      block
       @click="navigate('/')"
     >
       {{ t('shared.enrolment.actions.carryOn') }}
-    </v-btn>
+    </v-btn-wide>
   </v-container>
   <v-container v-else class="enrolment-working" />
 </template>

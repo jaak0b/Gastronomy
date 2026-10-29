@@ -17,7 +17,7 @@ defineEmits<{ close: [] }>()
         <p v-if="session.staffMember !== null">
           {{ t('phone.settings.messages.servingAs', { name: session.staffMember.name }) }}
         </p>
-        <div class="text-subtitle-2 mt-4">{{ t('phone.settings.labels.language') }}</div>
+        <div class="app-small-text font-weight-medium mt-4">{{ t('phone.settings.labels.language') }}</div>
         <LanguageSwitch
           class="mt-2"
           :language="session.language"

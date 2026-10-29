@@ -27,7 +27,7 @@ const keyboardInset = useKeyboardInset()
 }
 
 .body {
-  font-size: 1.05rem;
+  font-size: var(--app-text-size);
   line-height: 1.4;
 }
 

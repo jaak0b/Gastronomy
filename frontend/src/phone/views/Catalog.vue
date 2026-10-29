@@ -184,18 +184,16 @@ function chooseStation(stationId: string, note: string | null): void {
   <v-container class="catalog" data-test="catalog">
     <template v-if="openCategory === null">
       <div class="category-grid my-2" data-test="category-grid">
-        <v-btn
+        <v-btn-wide
           v-for="category in catalog.catalog.categories"
           :key="category.categoryId"
           class="category-button"
           data-test="category-button"
-          size="x-large"
-          variant="flat"
           :style="paintedIn(category.colourHex)"
           @click="openTheCategory(category)"
         >
           {{ labelFor(category) }}
-        </v-btn>
+        </v-btn-wide>
       </div>
       <DockedStrip class="order-tray">
         <BasketBar
@@ -208,7 +206,7 @@ function chooseStation(stationId: string, note: string | null): void {
     </template>
     <template v-else>
       <h2
-        class="open-category-name text-h6 px-3 py-2 rounded"
+        class="open-category-name app-section-title px-3 py-2 rounded"
         data-test="open-category-name"
         :style="paintedIn(openCategory.colourHex)"
       >
@@ -243,16 +241,14 @@ function chooseStation(stationId: string, note: string | null): void {
       />
       <DockedStrip class="back-strip">
         <div class="py-3">
-          <v-btn
+          <v-btn-wide
             class="back-to-categories"
             data-test="back-to-categories"
-            block
-            size="x-large"
             variant="outlined"
             @click="closeOpenStep()"
           >
             {{ t('phone.catalog.actions.backToCategories') }}
-          </v-btn>
+          </v-btn-wide>
         </div>
       </DockedStrip>
     </template>

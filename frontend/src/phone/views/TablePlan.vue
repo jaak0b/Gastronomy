@@ -140,23 +140,21 @@ function discardTheDraft(): void {
         <v-alert class="mb-4" type="warning" variant="tonal">
           {{ t('phone.tablePlan.errors.loadFailed') }}
         </v-alert>
-        <v-btn
+        <v-btn-wide
           class="reload-the-plan"
           data-test="reload-the-plan"
           variant="outlined"
-          size="x-large"
-          block
           @click="tablePlan.load()"
         >
           {{ t('phone.tablePlan.actions.reload') }}
-        </v-btn>
+        </v-btn-wide>
       </div>
       <v-progress-linear v-else indeterminate data-test="table-plan-loading" />
     </template>
-    <p v-else-if="landing.kind === 'noFestival'" class="no-festival pa-4 text-body-1" data-test="no-festival">
+    <p v-else-if="landing.kind === 'noFestival'" class="no-festival pa-4 app-text" data-test="no-festival">
       {{ t('phone.tablePlan.messages.noFestivalIsActive') }}
     </p>
-    <p v-else-if="landing.kind === 'noTables'" class="no-tables pa-4 text-body-1" data-test="no-tables">
+    <p v-else-if="landing.kind === 'noTables'" class="no-tables pa-4 app-text" data-test="no-tables">
       {{ t('phone.tablePlan.messages.noTables') }}
     </p>
     <AreaList
@@ -168,7 +166,7 @@ function discardTheDraft(): void {
     <template v-else-if="landing.kind === 'plan' && shownArea !== null">
       <p
         v-if="shownArea.tables.length === 0"
-        class="no-tables-in-area pa-4 mb-0 text-body-1"
+        class="no-tables-in-area pa-4 mb-0 app-text"
         data-test="no-tables-in-area"
       >
         {{ t('phone.tablePlan.messages.noTablesInArea') }}

@@ -32,7 +32,7 @@ function priceTextFor(cents: number): string {
     data-test="cancel-items-dialog"
     :title="t('phone.openItems.labels.cancelTitle')"
   >
-    <v-list class="items-to-cancel" density="comfortable">
+    <v-list class="items-to-cancel">
       <v-list-item
         v-for="item in items"
         :key="item.orderItemId"
@@ -47,12 +47,12 @@ function priceTextFor(cents: number): string {
         <template #append>
           <span
             v-if="item.settledAtUtc !== null"
-            class="item-paid text-body-1"
+            class="item-paid app-text"
             data-test="item-paid"
           >
             {{ t('phone.openItems.labels.paid') }}
           </span>
-          <span class="item-price text-body-1" data-test="item-price">
+          <span class="item-price app-text" data-test="item-price">
             {{ priceTextFor(item.unitPriceCents) }}
           </span>
         </template>
@@ -73,8 +73,6 @@ function priceTextFor(cents: number): string {
         class="confirm-cancel"
         data-test="confirm-cancel"
         color="primary"
-        variant="flat"
-        size="large"
         :disabled="isCancelling || items.length === 0"
         @click="emit('confirm')"
       >
@@ -85,7 +83,6 @@ function priceTextFor(cents: number): string {
         class="reload-after-refusal"
         data-test="reload-after-refusal"
         variant="outlined"
-        size="large"
         :disabled="isCancelling"
         @click="emit('reload')"
       >
@@ -95,7 +92,6 @@ function priceTextFor(cents: number): string {
         class="back"
         data-test="back"
         variant="outlined"
-        size="large"
         :disabled="isCancelling"
         @click="emit('back')"
       >

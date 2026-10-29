@@ -78,7 +78,7 @@ function choose(part: StationPart, deliveryMode: DeliveryMode): void {
       data-test="station-part"
       variant="outlined"
     >
-      <v-card-title v-if="part.stationId !== null" class="station-name text-subtitle-1" data-test="station-name">
+      <v-card-title v-if="part.stationId !== null" class="station-name app-section-title" data-test="station-name">
         {{ withEstimate(t('phone.review.labels.goesTo', { name: part.stationName }), part.stationMinutes, t, language) }}
       </v-card-title>
       <v-divider v-if="part.stationId !== null" />
@@ -90,20 +90,20 @@ function choose(part: StationPart, deliveryMode: DeliveryMode): void {
         :class="{ 'is-unavailable': lineCannotBeOrdered(entry.line) }"
       >
         <fieldset class="line-body">
-          <legend v-if="lineCannotBeOrdered(entry.line)" class="reason sold-out text-body-2" data-test="sold-out">
+          <legend v-if="lineCannotBeOrdered(entry.line)" class="reason sold-out app-small-text" data-test="sold-out">
             {{ t('errors.order.itemSoldOut', { name: entry.line.name }) }}
           </legend>
           <div class="d-flex align-start">
-            <span class="line-name text-body-1 flex-grow-1" data-test="line-name">
+            <span class="line-name app-item-name flex-grow-1" data-test="line-name">
               {{ countedNameFor(entry) }}
             </span>
-            <span class="price text-body-1" data-test="price">
+            <span class="price app-text" data-test="price">
               {{ priceTextFor(entry) }}
             </span>
           </div>
           <div
             v-if="entry.line.note !== null"
-            class="line-note text-body-2 text-medium-emphasis ps-4"
+            class="line-note app-small-text text-medium-emphasis ps-4"
             data-test="line-note"
           >
             {{ entry.line.note }}
@@ -126,7 +126,6 @@ function choose(part: StationPart, deliveryMode: DeliveryMode): void {
               class="delivery-together"
               data-test="delivery-together"
               value="together"
-              size="large"
               :disabled="changesAreRefused"
             >
               {{ deliveryTextFor('together') }}
@@ -135,7 +134,6 @@ function choose(part: StationPart, deliveryMode: DeliveryMode): void {
               class="delivery-as-it-comes"
               data-test="delivery-as-it-comes"
               value="asItComes"
-              size="large"
               :disabled="changesAreRefused"
             >
               {{ deliveryTextFor('asItComes') }}
@@ -200,7 +198,7 @@ function choose(part: StationPart, deliveryMode: DeliveryMode): void {
   height: auto;
   min-height: 3.5rem;
   padding-block: 0.75rem;
-  font-size: 1.0625rem;
+  font-size: var(--app-text-size);
   text-transform: none;
   letter-spacing: normal;
 }

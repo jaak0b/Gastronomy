@@ -1,0 +1,10 @@
+.phone-sizes {
+  --app-text-size: 1rem;
+  --app-small-text-size: 0.875rem;
+  --app-page-title-size: 1.375rem;
+  --app-section-title-size: 1.125rem;
+  --app-item-name-size: 1.0625rem;
+  --app-figure-size: 1.375rem;
+
+  font-size: var(--app-text-size);
+}

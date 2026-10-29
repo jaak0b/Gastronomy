@@ -13,6 +13,7 @@ import {
 } from '../../core/openItems'
 import BaseIconAction from '../../../shared/components/BaseIconAction.vue'
 import ItemHistoryDialog from './ItemHistoryDialog.vue'
+import { PHONE_ORDER_GRID_DEFAULTS } from '../../styles/phoneSizes'
 
 const props = withDefaults(
   defineProps<{
@@ -79,83 +80,82 @@ function markColourFor(isDone: boolean): string {
 
 <template>
   <v-card class="order-list-card mb-3" data-test="order-card" :data-test-id="order.globalOrderNumber">
-    <v-card-text class="order-grid" :class="{ selecting: hasTickColumn }">
-      <div class="grid-row" data-test="order-header">
-        <div v-if="hasTickColumn" class="tick-cell">
-          <v-checkbox-btn
-            v-if="selectableItemIds.length > 0"
-            data-test="whole-order"
-            density="compact"
-            :model-value="orderSelection === 'all'"
-            :indeterminate="orderSelection === 'some'"
-            @update:model-value="emit('set-whole-order', order, orderSelection !== 'all')"
-          />
-        </div>
-        <div class="order-head d-flex flex-wrap align-baseline ga-2">
-          <span class="text-h6" data-test="order-number">
-            {{ t('phone.openItems.labels.order', { order: order.globalOrderNumber }) }}
-          </span>
-          <span class="text-body-2 text-medium-emphasis" data-test="taken-by">{{ takenByText }}</span>
-        </div>
-      </div>
-      <div class="grid-row" data-test="column-headings">
-        <span class="done-counter text-body-2 text-medium-emphasis" data-test="done-counter">{{ doneCounterText }}</span>
-        <span class="column-heading text-body-2" data-test="paid-heading">{{ t('phone.openItems.labels.paid') }}</span>
-        <span class="column-heading text-body-2" data-test="handed-out-heading">
-          {{ t('phone.orderOverview.labels.handedOut') }}
-        </span>
-        <span />
-      </div>
-      <div
-        v-for="item in order.items"
-        :key="item.orderItemId"
-        class="grid-row order-line"
-        :class="{ selectable: isSelectable(item) }"
-        data-test="order-line"
-        :data-test-id="item.orderItemId"
-        @click="toggleWhenSelectable(item)"
-      >
-        <div v-if="hasTickColumn" class="tick-cell" data-test="tick-cell" :data-test-id="item.orderItemId">
-          <div v-if="isSelectable(item)" @click.stop>
+    <v-defaults-provider :defaults="PHONE_ORDER_GRID_DEFAULTS">
+      <v-card-text class="order-grid" :class="{ selecting: hasTickColumn }">
+        <div class="grid-row" data-test="order-header">
+          <div v-if="hasTickColumn" class="tick-cell">
             <v-checkbox-btn
-              data-test="line-tick"
-              density="compact"
-              :model-value="selectedItemIds.includes(item.orderItemId)"
-              @update:model-value="emit('toggle-item', item.orderItemId)"
+              v-if="selectableItemIds.length > 0"
+              data-test="whole-order"
+              :model-value="orderSelection === 'all'"
+              :indeterminate="orderSelection === 'some'"
+              @update:model-value="emit('set-whole-order', order, orderSelection !== 'all')"
             />
           </div>
-        </div>
-        <div class="line-name-cell" :class="{ 'cancelled-item': isCancelled(item.state) }" data-test="line-name-cell">
-          <div class="text-body-1" data-test="line-name">{{ item.itemName }}</div>
-          <div v-if="item.note !== null" class="text-body-2 text-medium-emphasis" data-test="line-note">
-            {{ t('common.labels.note', { note: item.note }) }}
+          <div class="order-head d-flex flex-wrap align-baseline ga-2">
+            <span class="app-section-title" data-test="order-number">
+              {{ t('phone.openItems.labels.order', { order: order.globalOrderNumber }) }}
+            </span>
+            <span class="app-small-text text-medium-emphasis" data-test="taken-by">{{ takenByText }}</span>
           </div>
         </div>
-        <v-icon
-          class="line-mark"
-          data-test="paid-mark"
+        <div class="grid-row" data-test="column-headings">
+          <span class="done-counter app-small-text text-medium-emphasis" data-test="done-counter">{{ doneCounterText }}</span>
+          <span class="column-heading app-small-text" data-test="paid-heading">{{ t('phone.openItems.labels.paid') }}</span>
+          <span class="column-heading app-small-text" data-test="handed-out-heading">
+            {{ t('phone.orderOverview.labels.handedOut') }}
+          </span>
+          <span />
+        </div>
+        <div
+          v-for="item in order.items"
+          :key="item.orderItemId"
+          class="grid-row order-line"
+          :class="{ selectable: isSelectable(item) }"
+          data-test="order-line"
           :data-test-id="item.orderItemId"
-          :color="markColourFor(item.settledAtUtc !== null)"
-          :icon="markIconFor(item.settledAtUtc !== null)"
-        />
-        <v-icon
-          class="line-mark"
-          data-test="handed-out-mark"
-          :data-test-id="item.orderItemId"
-          :color="markColourFor(isMarkedHandedOut(item))"
-          :icon="markIconFor(isMarkedHandedOut(item))"
-        />
-        <BaseIconAction
-          class="details-button"
-          data-test="item-details"
-          :data-test-id="item.orderItemId"
-          density="comfortable"
-          icon="mdi-information-outline"
-          :label="t('phone.itemHistory.actions.showDetails')"
-          @click.stop="itemWithDetailsShown = item"
-        />
-      </div>
-    </v-card-text>
+          @click="toggleWhenSelectable(item)"
+        >
+          <div v-if="hasTickColumn" class="tick-cell" data-test="tick-cell" :data-test-id="item.orderItemId">
+            <div v-if="isSelectable(item)" @click.stop>
+              <v-checkbox-btn
+                data-test="line-tick"
+                :model-value="selectedItemIds.includes(item.orderItemId)"
+                @update:model-value="emit('toggle-item', item.orderItemId)"
+              />
+            </div>
+          </div>
+          <div class="line-name-cell" :class="{ 'cancelled-item': isCancelled(item.state) }" data-test="line-name-cell">
+            <div class="app-item-name" data-test="line-name">{{ item.itemName }}</div>
+            <div v-if="item.note !== null" class="app-small-text text-medium-emphasis" data-test="line-note">
+              {{ t('common.labels.note', { note: item.note }) }}
+            </div>
+          </div>
+          <v-icon
+            class="line-mark"
+            data-test="paid-mark"
+            :data-test-id="item.orderItemId"
+            :color="markColourFor(item.settledAtUtc !== null)"
+            :icon="markIconFor(item.settledAtUtc !== null)"
+          />
+          <v-icon
+            class="line-mark"
+            data-test="handed-out-mark"
+            :data-test-id="item.orderItemId"
+            :color="markColourFor(isMarkedHandedOut(item))"
+            :icon="markIconFor(isMarkedHandedOut(item))"
+          />
+          <BaseIconAction
+            class="details-button"
+            data-test="item-details"
+            :data-test-id="item.orderItemId"
+            icon="mdi-information-outline"
+            :label="t('phone.itemHistory.actions.showDetails')"
+            @click.stop="itemWithDetailsShown = item"
+          />
+        </div>
+      </v-card-text>
+    </v-defaults-provider>
     <ItemHistoryDialog
       v-if="itemWithDetailsShown !== null"
       :item="itemWithDetailsShown"

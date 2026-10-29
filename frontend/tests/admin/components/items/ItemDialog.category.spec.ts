@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import CategoryDialog from '../../../../src/admin/components/categories/CategoryDialog.vue'
 import { AdminCategoryView } from '../../../../src/shared/api/generatedSchemas'
 import { useAdminCategoriesStore } from '../../../../src/admin/stores/categories'
-import { typeInto } from '../../../support/dom'
+import { onScreen, typeInto } from '../../../support/dom'
 import { nextTick } from 'vue'
 import { saveTheCategoryDialog } from '../../../support/formDialogs'
 import { FOOD_ID, DRINKS_ID, DESSERT_ID, BRATWURST, mountDialog, pressSave, knownCategories, categoriesLaptop } from './itemDialogFixture'
@@ -88,7 +88,9 @@ describe('the category field', () => {
     await dialog.getComponent(VSelect).setValue(DRINKS_ID)
     await nextTick()
 
-    expect(document.querySelector('[data-test="category-field"] .v-messages')?.textContent).toBe('')
+    expect(onScreen('[data-test="category-field"]').textContent).not.toContain(
+      'Wählen Sie eine Kategorie aus, bevor Sie speichern.',
+    )
   })
 })
 

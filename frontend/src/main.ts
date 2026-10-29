@@ -4,6 +4,7 @@ import { createI18n } from 'vue-i18n'
 import 'vuetify/styles'
 import './shared/styles/controls.css'
 import './shared/styles/cancelledItems.css'
+import './shared/styles/surfaceText.css'
 import '@mdi/font/css/materialdesignicons.css'
 import { createVuetify } from 'vuetify'
 import { registerTheme, use } from 'echarts/core'
@@ -22,6 +23,7 @@ import de from './shared/i18n/de.json'
 import en from './shared/i18n/en.json'
 import { startRouter } from './shared/router/router'
 import { appTheme } from './shared/theme'
+import { APP_VUETIFY_OPTIONS } from './shared/styles/appVuetify'
 import { initialLanguage } from './shared/core/deviceLanguage'
 
 export const i18n = createI18n({
@@ -31,16 +33,7 @@ export const i18n = createI18n({
   messages: { de, en },
 })
 
-export const vuetify = createVuetify({
-  theme: appTheme,
-  defaults: {
-    VBtn: { size: 'large', variant: 'flat' },
-    VTextField: { variant: 'outlined', density: 'comfortable', hideDetails: 'auto' },
-    VNumberInput: { variant: 'outlined', density: 'comfortable', hideDetails: 'auto' },
-    VSelect: { variant: 'outlined', density: 'comfortable', hideDetails: 'auto' },
-    VCheckbox: { density: 'comfortable', hideDetails: 'auto' },
-  },
-})
+export const vuetify = createVuetify({ ...APP_VUETIFY_OPTIONS, theme: appTheme })
 
 use([
   LineChart,

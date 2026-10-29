@@ -25,19 +25,16 @@ async function askTheLaptopAgain(): Promise<void> {
       class="starting-up-spinner mb-4"
       data-test="starting-up-spinner"
       indeterminate
-      size="48"
     />
-    <p v-if="message !== null" class="starting-up-message text-body-1" data-test="starting-up-message">{{ message }}</p>
-    <v-btn
+    <p v-if="message !== null" class="starting-up-message app-text" data-test="starting-up-message">{{ message }}</p>
+    <v-btn-wide
       v-if="!isStillWaiting"
       class="starting-up-try-again mt-4"
       data-test="starting-up-try-again"
       color="primary"
-      block
-      size="x-large"
       @click="askTheLaptopAgain"
     >
       {{ t('shared.startup.actions.tryAgain') }}
-    </v-btn>
+    </v-btn-wide>
   </v-container>
 </template>

@@ -46,8 +46,6 @@ function setTheWholeTable(): void {
   <v-checkbox
     v-if="selectableItemIds.length > 0"
     data-test="whole-table"
-    density="comfortable"
-    hide-details
     :label="t('phone.openItems.actions.wholeTable')"
     :model-value="wholeTableSelection === 'all'"
     :indeterminate="wholeTableSelection === 'some'"

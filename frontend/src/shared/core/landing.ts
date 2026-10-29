@@ -32,6 +32,26 @@ export function isPhoneScreen(screen: ScreenName): screen is PhoneScreenName {
   }
 }
 
+export function isDrawnAtPhoneSizes(screen: ScreenName): boolean {
+  switch (screen) {
+    case 'tablePlan':
+    case 'catalog':
+    case 'review':
+    case 'openItems':
+    case 'orderOverview':
+    case 'doorGate':
+    case 'enrolQr':
+    case 'welcome':
+    case 'startingUp':
+      return true
+    case 'station':
+    case 'admin':
+      return false
+    default:
+      return assertNever(screen)
+  }
+}
+
 export type DeviceSession =
   | { state: 'notSetUp' }
   | { state: 'startingUp' }

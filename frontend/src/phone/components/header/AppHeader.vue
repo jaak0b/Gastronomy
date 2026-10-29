@@ -142,19 +142,18 @@ function goBack(): void {
 </script>
 
 <template>
-  <v-app-bar class="app-header" data-test="app-header" height="72">
+  <v-app-bar class="app-header" data-test="app-header">
     <v-btn
       v-if="backLabel !== null"
       class="back-button ms-1"
       data-test="header-back"
       prepend-icon="mdi-arrow-left"
       variant="text"
-      size="large"
       @click="goBack"
     >
       {{ backLabel }}
     </v-btn>
-    <span v-if="title !== null" class="header-title text-h6 px-3" data-test="header-title">{{ title }}</span>
+    <span v-if="title !== null" class="header-title app-page-title px-3" data-test="header-title">{{ title }}</span>
     <v-spacer />
     <BaseIconAction
       v-if="reloadableList !== 'none'"

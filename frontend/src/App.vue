@@ -8,7 +8,7 @@ import {
 } from './shared/router/backButtonTrap'
 import { useLocaleBinding } from './shared/composables/useLocaleBinding'
 import { screenTitle } from './shared/core/appTitle'
-import { isPhoneScreen, screenFor, type ScreenName } from './shared/core/landing'
+import { isDrawnAtPhoneSizes, isPhoneScreen, screenFor, type ScreenName } from './shared/core/landing'
 import { useSessionStore } from './shared/stores/session'
 import { useStationStore } from './station/stores/station'
 import { useCatalogStore } from './phone/stores/catalog'
@@ -28,6 +28,8 @@ import OpenItems from './phone/views/OpenItems.vue'
 import OrderOverview from './phone/views/OrderOverview.vue'
 import StationPage from './station/views/StationPage.vue'
 import AdminShell from './admin/views/AdminShell.vue'
+import { PHONE_DEFAULTS, PHONE_SIZES_CLASS } from './phone/styles/phoneSizes'
+import './phone/styles/phoneSizes.css'
 
 const session = useSessionStore()
 const station = useStationStore()
@@ -71,6 +73,8 @@ watch(
 )
 
 const isAWaiterScreen = computed(() => isPhoneScreen(screen.value))
+
+const showsThePhoneSizes = computed(() => isDrawnAtPhoneSizes(screen.value))
 
 const showsTheAppBar = computed(() => isAWaiterScreen.value && screen.value !== 'review')
 
@@ -128,22 +132,24 @@ onMounted(async () => {
 </script>
 
 <template>
-  <v-app>
-    <AppHeader v-if="showsTheAppBar" />
-    <v-main data-test="main" :class="{ 'fills-the-screen': screen === 'tablePlan' }">
-    <AppNotices v-if="isAWaiterScreen" />
-    <DoorGate v-if="screen === 'doorGate'" />
-    <EnrolQr v-else-if="screen === 'enrolQr'" />
-    <Welcome v-else-if="screen === 'welcome'" />
-    <StartingUp v-else-if="screen === 'startingUp'" />
-    <TablePlan v-else-if="screen === 'tablePlan'" />
-    <Catalog v-else-if="screen === 'catalog'" />
-    <Review v-else-if="screen === 'review'" />
-    <OpenItems v-else-if="screen === 'openItems'" />
-    <OrderOverview v-else-if="screen === 'orderOverview'" />
-    <StationPage v-else-if="screen === 'station'" />
-    <AdminShell v-else />
-    </v-main>
+  <v-app data-test="app" :class="{ [PHONE_SIZES_CLASS]: showsThePhoneSizes }">
+    <v-defaults-provider :defaults="PHONE_DEFAULTS" :disabled="!showsThePhoneSizes">
+      <AppHeader v-if="showsTheAppBar" />
+      <v-main data-test="main" :class="{ 'fills-the-screen': screen === 'tablePlan' }">
+      <AppNotices v-if="isAWaiterScreen" />
+      <DoorGate v-if="screen === 'doorGate'" />
+      <EnrolQr v-else-if="screen === 'enrolQr'" />
+      <Welcome v-else-if="screen === 'welcome'" />
+      <StartingUp v-else-if="screen === 'startingUp'" />
+      <TablePlan v-else-if="screen === 'tablePlan'" />
+      <Catalog v-else-if="screen === 'catalog'" />
+      <Review v-else-if="screen === 'review'" />
+      <OpenItems v-else-if="screen === 'openItems'" />
+      <OrderOverview v-else-if="screen === 'orderOverview'" />
+      <StationPage v-else-if="screen === 'station'" />
+      <AdminShell v-else />
+      </v-main>
+    </v-defaults-provider>
   </v-app>
 </template>
 

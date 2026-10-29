@@ -68,12 +68,12 @@ function backToItems(): void {
       :failure="order.failure"
     />
     <div class="review-heading d-flex align-center mb-2" data-test="review-heading">
-      <h1 class="table-name text-subtitle-1 text-medium-emphasis" data-test="table-name">
+      <h1 class="table-name app-text text-medium-emphasis" data-test="table-name">
         <template v-if="draftTableName !== null">
           {{ t('phone.review.labels.table', { name: draftTableName }) }}
         </template>
       </h1>
-      <span class="order-total text-h5" data-test="order-total">{{ total }}</span>
+      <span class="order-total app-figure" data-test="order-total">{{ total }}</span>
     </div>
     <LineList
       :lines="order.basketLines"
@@ -86,78 +86,66 @@ function backToItems(): void {
     <DockedStrip class="review-footer">
       <div class="pt-3 pb-4">
         <template v-if="order.changesAreRefused">
-          <v-btn
+          <v-btn-wide
             v-if="order.onlyWritingItDownIsLeft"
             class="written-down mt-2"
             data-test="written-down"
             color="primary"
-            block
-            size="x-large"
             @click="startTheNextOrder"
           >
             {{ t('phone.review.actions.writtenDown') }}
-          </v-btn>
-          <v-btn
+          </v-btn-wide>
+          <v-btn-wide
             class="send-again mt-2"
             data-test="send-again"
             color="primary"
             variant="outlined"
-            block
-            size="x-large"
             :disabled="order.isSending"
             @click="sendAgain"
           >
             {{ order.isSending ? t('phone.review.actions.sending') : t('phone.review.actions.retry') }}
-          </v-btn>
+          </v-btn-wide>
         </template>
-        <v-btn
+        <v-btn-wide
           v-else-if="order.hasLinesThatCannotBeOrdered"
           class="drop-lines-that-cannot-be-ordered mt-2"
           data-test="drop-lines-that-cannot-be-ordered"
           color="primary"
           variant="outlined"
-          block
-          size="x-large"
           @click="order.dropLinesThatCannotBeOrdered"
         >
           {{ t('phone.review.actions.removeLinesThatCannotBeOrdered') }}
-        </v-btn>
+        </v-btn-wide>
         <template v-else>
-          <v-btn
+          <v-btn-wide
             class="send-and-settle send-button mt-3"
             data-test="send-and-settle"
             color="primary"
-            variant="flat"
-            block
-            size="x-large"
             :disabled="!canSend"
             @click="send('settleRightAway')"
           >
             {{ t('phone.review.actions.sendAndSettle') }}
-          </v-btn>
-          <v-btn
+          </v-btn-wide>
+          <v-btn-wide
             class="send-and-settle-later send-button mt-2"
             data-test="send-and-settle-later"
             color="primary"
             variant="outlined"
-            block
-            size="x-large"
             :disabled="!canSend"
             @click="send('leaveOpen')"
           >
             {{ t('phone.review.actions.sendAndSettleLater') }}
-          </v-btn>
+          </v-btn-wide>
         </template>
-        <v-btn
+        <v-btn-wide
           v-if="!order.changesAreRefused"
           class="back mt-2"
           data-test="back"
           variant="text"
-          block
           @click="backToItems"
         >
           {{ t('common.actions.back') }}
-        </v-btn>
+        </v-btn-wide>
       </div>
     </DockedStrip>
   </v-container>

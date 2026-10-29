@@ -133,7 +133,7 @@ function stationNameForRow(group: PositionGroup): string | null {
             :disabled="isSoldOut"
             @click="emit('add')"
           >
-            <span class="name text-body-1" data-test="name">{{ item.name }}</span>
+            <span class="name app-item-name" data-test="name">{{ item.name }}</span>
           </v-btn>
           <div class="price-line d-flex align-start" data-test="price-line">
             <v-btn
@@ -144,7 +144,7 @@ function stationNameForRow(group: PositionGroup): string | null {
               :disabled="isSoldOut"
               @click="emit('add')"
             >
-              <span class="facts text-body-2 text-medium-emphasis" data-test="facts">
+              <span class="facts app-small-text text-medium-emphasis" data-test="facts">
                 <span class="fact">
                   <span data-test="unit-price">{{ unitPriceText }}</span>
                   <span v-if="factAfterThePrice !== null" data-test="fact-separator">&nbsp;&middot;</span>
@@ -152,7 +152,7 @@ function stationNameForRow(group: PositionGroup): string | null {
                 <span v-if="factAfterThePrice !== null" class="fact" :data-test="factAfterThePrice.kind">{{ factAfterThePrice.text }}</span>
               </span>
             </v-btn>
-            <span v-if="view.totalCount > 0" class="article-total text-body-1" data-test="article-total">{{ articleTotal }}</span>
+            <span v-if="view.totalCount > 0" class="article-total app-text" data-test="article-total">{{ articleTotal }}</span>
             <v-btn
               class="add-note"
               data-test="add-note"
@@ -174,7 +174,7 @@ function stationNameForRow(group: PositionGroup): string | null {
       data-test="note-group"
     >
       <span class="group-count" data-test="group-count">{{ group.indexes.length }}</span>
-      <div class="group-label text-body-2 text-start flex-grow-1 d-flex align-center" data-test="group-label">
+      <div class="group-label app-small-text text-start flex-grow-1 d-flex align-center" data-test="group-label">
         <button
           v-if="group.stationName !== null"
           class="group-station"
@@ -256,7 +256,7 @@ function stationNameForRow(group: PositionGroup): string | null {
 
 .group-count {
   min-width: 2ch;
-  font-size: 22px;
+  font-size: var(--app-figure-size);
   font-weight: 700;
   text-align: center;
 }

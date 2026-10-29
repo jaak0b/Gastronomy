@@ -7,19 +7,17 @@ const emit = defineEmits<{ 'open-area': [areaId: string] }>()
 
 <template>
   <div class="area-list" data-test="area-list">
-    <v-btn
+    <v-btn-wide
       v-for="area in areas"
       :key="area.areaId"
       class="area-button"
       data-test="area-button"
       :data-test-id="area.areaId"
       variant="outlined"
-      size="x-large"
-      block
       @click="emit('open-area', area.areaId)"
     >
       {{ area.name }}
-    </v-btn>
+    </v-btn-wide>
   </div>
 </template>
 

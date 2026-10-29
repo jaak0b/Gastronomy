@@ -30,42 +30,35 @@ const whatIsUnsent = computed(() =>
 <template>
   <v-dialog :model-value="true" max-width="480" persistent scrim="background" opacity="1">
     <v-card class="unsent-order" data-test="unsent-order">
-      <v-card-text class="unsent-order-text text-body-1" data-test="unsent-order-text">
+      <v-card-text class="unsent-order-text app-text" data-test="unsent-order-text">
         {{ whatIsUnsent }}
       </v-card-text>
       <v-card-actions class="flex-column align-stretch ga-2 pb-4">
-        <v-btn
+        <v-btn-wide
           class="back-to-the-draft"
           data-test="back-to-the-draft"
           color="primary"
-          variant="flat"
-          size="x-large"
-          block
           @click="emit('back-to-the-draft')"
         >
           {{ t('phone.tablePlan.actions.toTheUnsentTable', { table: draftTableName }) }}
-        </v-btn>
-        <v-btn
+        </v-btn-wide>
+        <v-btn-wide
           class="discard-the-draft"
           data-test="discard-the-draft"
           color="primary"
           variant="outlined"
-          size="x-large"
-          block
           @click="emit('discard-the-draft')"
         >
           {{ t('phone.tablePlan.actions.discard') }}
-        </v-btn>
-        <v-btn
+        </v-btn-wide>
+        <v-btn-wide
           class="stay-on-the-plan"
           data-test="stay-on-the-plan"
           variant="text"
-          size="x-large"
-          block
           @click="emit('stay-on-the-plan')"
         >
           {{ t('common.actions.back') }}
-        </v-btn>
+        </v-btn-wide>
       </v-card-actions>
     </v-card>
   </v-dialog>

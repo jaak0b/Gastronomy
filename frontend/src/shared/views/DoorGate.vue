@@ -10,10 +10,10 @@ const theIcon = '/favicon.svg'
   <v-container class="door-gate" data-test="door-gate" fluid>
     <div class="door-gate-panel text-center">
       <img class="door-gate-icon" :src="theIcon" alt="" />
-      <p class="door-gate-hint text-body-1 mb-6">{{ t('shared.startup.messages.tapOpen') }}</p>
-      <v-btn class="door-gate-open" color="primary" size="x-large" block @click="buildBackButtonTrap">
+      <p class="door-gate-hint app-text mb-6">{{ t('shared.startup.messages.tapOpen') }}</p>
+      <v-btn-wide class="door-gate-open" color="primary" @click="buildBackButtonTrap">
         {{ t('shared.startup.actions.open') }}
-      </v-btn>
+      </v-btn-wide>
     </div>
   </v-container>
 </template>

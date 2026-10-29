@@ -14,60 +14,49 @@ const { t } = useI18n()
         {{ t('common.labels.table', { name: tableName }) }}
       </v-card-title>
       <v-card-actions class="flex-column align-stretch ga-2 pb-4">
-        <v-btn
+        <v-btn-wide
           class="take-order"
           data-test="take-order"
           color="primary"
-          variant="flat"
-          size="x-large"
-          block
           @click="emit('take-order')"
         >
           {{ t('phone.tablePlan.actions.takeOrder') }}
-        </v-btn>
-        <v-btn
+        </v-btn-wide>
+        <v-btn-wide
           class="show-orders"
           data-test="show-orders"
           color="primary"
           variant="outlined"
-          size="x-large"
-          block
           @click="emit('show-orders')"
         >
           {{ t('phone.tablePlan.actions.showOrders') }}
-        </v-btn>
-        <v-btn
+        </v-btn-wide>
+        <v-btn-wide
           class="settle-table"
           data-test="settle-table"
           color="primary"
           variant="outlined"
-          size="x-large"
-          block
           @click="emit('settle')"
         >
           {{ t('phone.openItems.actions.settleItems') }}
-        </v-btn>
-        <v-btn
+        </v-btn-wide>
+        <v-btn-wide
           class="cancel-items"
           data-test="cancel-items"
           color="primary"
           variant="outlined"
-          size="x-large"
-          block
           @click="emit('cancel-items')"
         >
           {{ t('phone.openItems.actions.cancelItems') }}
-        </v-btn>
-        <v-btn
+        </v-btn-wide>
+        <v-btn-wide
           class="back-from-table-actions"
           data-test="back-from-table-actions"
           variant="text"
-          size="x-large"
-          block
           @click="emit('back')"
         >
           {{ t('common.actions.back') }}
-        </v-btn>
+        </v-btn-wide>
       </v-card-actions>
     </v-card>
   </v-bottom-sheet>

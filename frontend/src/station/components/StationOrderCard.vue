@@ -60,19 +60,19 @@ function isSelected(orderItemId: string): boolean {
     :delivery-mode-colour="deliveryModeColour"
   >
     <div class="station-order-head d-flex flex-wrap align-baseline ga-2">
-      <span class="table-name text-h5" data-test="table-name">
+      <span class="table-name app-section-title" data-test="table-name">
         {{ t('common.labels.table', { name: stationOrder.tableName }) }}
       </span>
-      <span class="station-order-heading text-body-2 text-medium-emphasis" data-test="station-order-heading">
+      <span class="station-order-heading app-small-text text-medium-emphasis" data-test="station-order-heading">
         {{ orderReference }}
       </span>
-      <span class="taken-by text-body-2 text-medium-emphasis" data-test="taken-by">
+      <span class="taken-by app-small-text text-medium-emphasis" data-test="taken-by">
         {{ takenByText }}
       </span>
-      <span class="done-counter text-body-2 ms-auto" data-test="done-counter">{{ doneCounter }}</span>
+      <span class="done-counter app-small-text ms-auto" data-test="done-counter">{{ doneCounter }}</span>
     </div>
     <div class="station-order-mode-row d-flex flex-wrap align-center ga-2 mb-1">
-      <span class="delivery-mode text-body-1 font-weight-medium" data-test="delivery-mode" :style="{ color: deliveryModeColour }">
+      <span class="delivery-mode app-text font-weight-medium" data-test="delivery-mode" :style="{ color: deliveryModeColour }">
         {{ deliveryText }}
       </span>
       <v-btn
@@ -97,23 +97,22 @@ function isSelected(orderItemId: string): boolean {
         :class="{ selected: isSelected(item.orderItemId) }"
         variant="tonal"
         block
-        size="large"
         @click="emit('toggleItem', item.orderItemId)"
       >
         <span class="item-text">
-          <span class="item-name" data-test="item-name" :class="{ 'cancelled-item': isCancelled(item.state) }">
+          <span class="item-name app-item-name" data-test="item-name" :class="{ 'cancelled-item': isCancelled(item.state) }">
             {{ item.itemName }}
           </span>
           <span
             v-if="item.note !== null"
-            class="item-note text-body-2"
+            class="item-note app-small-text"
             data-test="item-note"
             :class="{ 'cancelled-item': isCancelled(item.state) }"
           >
             <v-icon class="item-note-icon" data-test="item-note-icon" icon="mdi-note-text-outline" size="small" />
             {{ t('common.labels.note', { note: item.note }) }}
           </span>
-          <span v-if="isCancelled(item.state)" class="cancelled-at text-body-2" data-test="cancelled-at">
+          <span v-if="isCancelled(item.state)" class="cancelled-at app-small-text" data-test="cancelled-at">
             {{ cancellationText(item, t, locale) }}
           </span>
         </span>
@@ -124,7 +123,7 @@ function isSelected(orderItemId: string): boolean {
       <p
         v-for="line in groupedLines"
         :key="line.key"
-        class="grouped-line text-body-1 mb-0"
+        class="grouped-line app-item-name mb-0"
         data-test="grouped-line"
         :class="{ 'cancelled-item': line.isCancelled }"
       >
@@ -137,8 +136,6 @@ function isSelected(orderItemId: string): boolean {
         class="acknowledge"
         data-test="acknowledge"
         color="primary"
-        variant="flat"
-        size="large"
         :disabled="isWorking"
         @click="emit('acknowledge', cancelledSelectedHere)"
       >
@@ -149,8 +146,6 @@ function isSelected(orderItemId: string): boolean {
         class="fulfill"
         data-test="fulfill"
         color="primary"
-        variant="flat"
-        size="large"
         :disabled="selectedHere.length === 0 || isWorking"
         @click="emit('fulfill', stationOrder, selectedHere)"
       >
@@ -161,7 +156,6 @@ function isSelected(orderItemId: string): boolean {
         class="hide"
         data-test="hide"
         variant="outlined"
-        size="large"
         :disabled="isWorking"
         @click="emit('hide', stationOrder.stationOrderId)"
       >

@@ -24,22 +24,22 @@ const unitSummary = computed(() =>
 <template>
   <BaseStationCard class="station-fulfilled mb-4 bg-surface" data-test="station-fulfilled" :delivery-mode-colour="deliveryModeColour">
     <div class="station-order-head d-flex flex-wrap align-baseline ga-2">
-      <span class="table-name text-h5" data-test="table-name">
+      <span class="table-name app-section-title" data-test="table-name">
         {{ t('common.labels.table', { name: stationOrder.tableName }) }}
       </span>
-      <span class="station-order-heading text-body-2 text-medium-emphasis" data-test="station-order-heading">
+      <span class="station-order-heading app-small-text text-medium-emphasis" data-test="station-order-heading">
         {{ orderReference }}
       </span>
-      <span class="taken-by text-body-2 text-medium-emphasis" data-test="taken-by">
+      <span class="taken-by app-small-text text-medium-emphasis" data-test="taken-by">
         {{ takenByText }}
       </span>
-      <span class="done-counter text-body-2 ms-auto" data-test="done-counter">{{ doneCounter }}</span>
+      <span class="done-counter app-small-text ms-auto" data-test="done-counter">{{ doneCounter }}</span>
     </div>
     <div class="station-order-mode-row d-flex flex-wrap align-baseline ga-2 mb-1">
-      <span class="delivery-mode text-body-1 font-weight-medium" data-test="delivery-mode" :style="{ color: deliveryModeColour }">
+      <span class="delivery-mode app-text font-weight-medium" data-test="delivery-mode" :style="{ color: deliveryModeColour }">
         {{ deliveryText }}
       </span>
-      <span v-if="unitSummary !== ''" class="unit-summary text-body-1" data-test="unit-summary">{{ unitSummary }}</span>
+      <span v-if="unitSummary !== ''" class="unit-summary app-text" data-test="unit-summary">{{ unitSummary }}</span>
     </div>
     <v-divider class="my-2" />
     <div
@@ -52,18 +52,18 @@ const unitSummary = computed(() =>
     >
       <v-icon v-if="isHandedOut(item.state)" class="item-tick" data-test="item-tick" icon="mdi-check" />
       <div class="item-text flex-grow-1">
-        <div class="item-name text-body-1" data-test="item-name" :class="{ 'cancelled-item': isCancelled(item.state) }">
+        <div class="item-name app-item-name" data-test="item-name" :class="{ 'cancelled-item': isCancelled(item.state) }">
           {{ item.itemName }}
         </div>
         <div
           v-if="item.note !== null"
-          class="item-note text-body-2"
+          class="item-note app-small-text"
           data-test="item-note"
           :class="{ 'cancelled-item': isCancelled(item.state) }"
         >
           {{ t('common.labels.note', { note: item.note }) }}
         </div>
-        <div v-if="isCancelled(item.state)" class="cancelled-at text-body-2" data-test="cancelled-at">
+        <div v-if="isCancelled(item.state)" class="cancelled-at app-small-text" data-test="cancelled-at">
           {{ cancellationText(item, t, locale) }}
         </div>
       </div>
@@ -72,7 +72,6 @@ const unitSummary = computed(() =>
         class="put-back"
         data-test="put-back"
         variant="outlined"
-        size="large"
         :disabled="isWorking"
         @click="emit('putBack', item.orderItemId)"
       >

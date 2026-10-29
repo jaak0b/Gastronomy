@@ -165,19 +165,17 @@ onUnmounted(() => {
       @set-whole-order="openItems.setWholeOrder"
     />
     <v-sheet v-if="somethingIsSelected" class="settle-footer pt-3 pb-4" data-test="settle-footer" color="background">
-      <p class="selected-total text-h6 mb-2" data-test="selected-total">
+      <p class="selected-total app-figure mb-2" data-test="selected-total">
         {{ selectedText }}
       </p>
-      <v-btn
+      <v-btn-wide
         class="open-the-page-for-the-selection"
         :data-test="footerAction.test"
         color="primary"
-        block
-        size="x-large"
         @click="openThePageForTheSelection"
       >
         {{ footerAction.text }}
-      </v-btn>
+      </v-btn-wide>
     </v-sheet>
     <AmountPaidDialog
       v-if="amountPaidIsOpen"

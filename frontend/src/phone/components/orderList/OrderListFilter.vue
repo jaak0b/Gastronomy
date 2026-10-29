@@ -49,9 +49,6 @@ function pickPaymentStatus(choice: PaymentStatusChoice): void {
         :label="t('phone.orderOverview.filter.ordersHeading')"
         :items="orderStatusOptions"
         :model-value="filter.orderStatus ?? EVERY"
-        variant="outlined"
-        density="comfortable"
-        hide-details
         @update:model-value="pickOrderStatus"
       />
       <v-select
@@ -60,16 +57,11 @@ function pickPaymentStatus(choice: PaymentStatusChoice): void {
         :label="t('phone.orderOverview.filter.itemsHeading')"
         :items="paymentStatusOptions"
         :model-value="filter.paymentStatus ?? EVERY"
-        variant="outlined"
-        density="comfortable"
-        hide-details
         @update:model-value="pickPaymentStatus"
       />
     </div>
     <v-checkbox
       data-test="include-cancelled"
-      density="comfortable"
-      hide-details
       :label="t('phone.orderOverview.filter.includeCancelled')"
       :model-value="filter.includeCancelled === true"
       @update:model-value="emit('change', { ...filter, includeCancelled: $event === true })"
