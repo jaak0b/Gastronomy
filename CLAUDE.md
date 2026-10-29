@@ -199,7 +199,9 @@ Every rule binds every agent, main or sub, with no exception it does not name.
     modifiers). This binds source, documentation, commit messages, and UI text.
 
 11. **Git: commit at will on `main`.** The owner granted standing approval to commit directly to
-    `main`. **Pushes still require explicit approval.** Commit messages are a short single sentence:
+    `main`. **Pushes still require explicit approval.** Each change is committed on its own as soon
+    as its review has passed, never held back to go in together with other work. Commit messages are
+    a short single sentence:
     one line, no body, no bullet list. A change too big to describe in one sentence is split into
     smaller commits. Stage by explicit path, never with `git add -A` or `git add .` over the whole
     repository, and never stage `TODO.txt`: it is the owner's private notebook.
