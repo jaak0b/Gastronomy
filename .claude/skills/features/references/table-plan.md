@@ -282,6 +282,8 @@ Frontend, under `frontend/src/`:
   (`scrollBarsOf`: each bar's offset and length from the camera, the screen and the drawing's length)
   and `shared/core/shapeNameFit.ts` (`nameFontSizeKeepingWordsWhole`, the font size of the name
   inside a shape: a table's in the phone's drawing and the editor's, a station's in the phone's).
+  `phone/core/tablePlanFrame.ts` holds `rectangleToStrokeInside(size, strokeWidth)`, the rectangle a
+  stroke follows so that the whole stroke stays inside `size`, ready to spread into a Konva `Rect`.
 - `phone/stores/tablePlan.ts` (`useTablePlanStore`: `areas`, `hasLoaded`, `loadFailed`,
   `openedAreaId`, `load`, `listen`, `openArea`, `closeArea`) reads `GET /api/table-plan` through the
   latest request gate and reloads on `ConfigurationChanged` (the plan) and `OrdersChanged` (the
@@ -450,6 +452,12 @@ Frontend, under `frontend/src/`:
   closes. The editor draws a station's name at the largest size.
 - **The fill shows `handOutProgress` and the border shows `settlementProgress`**: none red, some
   amber, all green, with no legend. The words are one tap away, on the settle view.
+- **A table's frame lies entirely inside the table's own rectangle on the phone.** Konva centres a
+  stroke on the edge of its rectangle, so the drawing sets the rectangle inside the table's group
+  half a frame width in from every side (`rectangleToStrokeInside`) and the outer edge of the frame is the
+  rectangle the admin placed, at the same position and size. No table's frame can cover a
+  neighbour's, and where two tables touch both frames show side by side, a double line between two
+  tables of the same colour. The admin's drawing is not changed by this.
 - **Orders from before the plan keep their table.** `SwitchOrdersToTables` gives every festival
   with orders one hidden area "Bisherige Tische" holding one hidden table per table name its orders
   used, at one default position and size. Names that differ only in capitals (SQLite `NOCASE`)
@@ -553,7 +561,8 @@ Frontend, under `frontend/src/`:
 - The phone: `shared/core/landing.spec.ts` (`waiterLandingFor`: one area, several, an opened area,
   none, no festival, the locked order), `shared/core/statusTints.spec.ts`, `phone/core/tablePlanCamera.spec.ts` (fit, clamped pan, pinch limits),
   `phone/core/tablePlanScrollBars.spec.ts` (fitted with nothing hidden, a long area, zoomed in,
-  panned to each end), `shared/core/shapeNameFit.spec.ts`,
+  panned to each end), `phone/core/tablePlanFrame.spec.ts` (the rectangle a stroke follows to stay inside
+  a size), `shared/core/shapeNameFit.spec.ts`,
   `phone/stores/tablePlan.spec.ts` (the read, a failed read keeping the plan, the gate, the reloads
   on `GroupsJoined`, `OrdersChanged` and `ConfigurationChanged`), and on `tablePlanFixture.ts` in
   `phone/views`: `TablePlan.landing.spec.ts` (the landings, no festival, an area without tables,
@@ -562,8 +571,9 @@ Frontend, under `frontend/src/`:
   after the click a phone sends behind a quick tap and after the laptop's mouse click),
   `TablePlan.scrollBars.spec.ts` (the bars showing and hiding with the camera),
   `TablePlan.drawing.spec.ts` (geometry, names, a name kept whole in a narrow table and in a narrow
-  station, stations not tappable, the fit, fill and border per state in both themes, a tap, a pan that opens nothing, the
-  clamped pan) and `TablePlan.sheet.spec.ts` (each button, the question about unsent items with its
+  station, stations not tappable, the fit, fill and border per state in both themes, the frame
+  inside the table's rectangle and both frames visible where two tables touch, read from the
+  drawn pixels, a tap, a pan that opens nothing, the clamped pan) and `TablePlan.sheet.spec.ts` (each button, the question about unsent items with its
   three choices);
   `phone/components/header/AppHeader.spec.ts` for the back control, the names and the reload, and
   `tests/AppLayout.spec.ts` for that reload filling the settle view again after the laptop was out

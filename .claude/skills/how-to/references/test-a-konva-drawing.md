@@ -30,6 +30,8 @@ Wrap the `KonvaStage` in an element of our own with a `data-test`, because vue-k
   `findOne<Konva.Text>('Text')?.text()` for its lettering.
 - `centreOf(node)` is the centre of a node in stage pixels, `anchorOf(stage, anchor)` the centre of a
   transformer anchor.
+- `colourAt(stage, point)` is the colour one pixel of the drawn stage shows, in stage pixels, as
+  `[red, green, blue, alpha]`, so a spec can compare it with a colour written out as four numbers.
 - `tapAt(stage, point)` presses and releases on the stage, which Konva turns into `click`. Its third
   argument takes `{ ctrlKey, shiftKey }` for a modifier click, as a table multi-selection needs.
 - `rightClickAt(stage, point)` sends what a browser sends for a right click: `mousedown`, `contextmenu`
@@ -84,6 +86,14 @@ inside the laid-out screen.
 - A Konva node made outside the drawing, such as the text that measures the words of a table name:
   spy on its class's `destroy`, unmount the screen, and count the destroyed nodes of that kind
   (`TablePlanEditor.drawing.spec.ts` counts the texts without words).
+- Whether a shape's border reaches outside the rectangle it was given: `getClientRect({ skipTransform: true })`
+  of its group includes the stroke, so a border that sticks out makes it larger than that rectangle.
+  It cannot show a border drawn too far in when something else in the group, such as the name's
+  `Text`, already spans the whole rectangle, and it ignores the group's rotation, so it says nothing
+  about a rotated shape.
+- What a person sees where two shapes touch, which also catches a border drawn too far in or covered
+  by a neighbour: `colourAt(stage, point)` at a column or row inside each border, compared with the
+  colour as four numbers (`TablePlan.drawing.spec.ts`, "the frame of a table on the plan").
 - A colour: the shape's `fill()` or `stroke()` against the literal from `shared/theme.ts`. A spec that
   switches the theme mounts with `createVuetify({ theme: appTheme })` as an extra plugin and calls
   `vuetify.theme.change('dark')`.

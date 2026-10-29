@@ -8,6 +8,7 @@ import { appTheme } from '../../../src/shared/theme'
 import { isOnScreen, waitUntil } from '../../support/dom'
 import {
   centreOf,
+  colourAt,
   dragBy,
   layOutTheScreen,
   movePointerTo,
@@ -157,6 +158,71 @@ describe('the colours of a table on the plan', () => {
         stroke: tableNode('table-12').findOne<Konva.Rect>('Rect')?.stroke(),
       }).toEqual({ fill: '#5d3e43', stroke: '#ffd54f' }),
     )
+  })
+})
+
+const AMBER = [135, 90, 0, 255]
+const GREEN = [46, 139, 87, 255]
+const RED = [201, 79, 79, 255]
+
+describe('the frame of a table on the plan', () => {
+  it('reaches nowhere outside the rectangle the plan gives the table', async () => {
+    const table = aPlanTable({
+      tableId: 'table-7',
+      name: '7',
+      geometry: aGeometry({ x: 150, y: 120, width: 60, height: 30 }),
+    })
+    planLaptop([aPlanArea({ tables: [table] })])
+
+    await mountThePlan()
+
+    expect(tableNode('table-7').getClientRect({ skipTransform: true })).toEqual({ x: 0, y: 0, width: 60, height: 30 })
+  })
+
+  it('stays visible beside the frame of the table that touches it on the right', async () => {
+    const left = aPlanTable({
+      tableId: 'table-1',
+      name: '1',
+      settlementProgress: 'some',
+      geometry: aGeometry({ x: 20, y: 30, width: 80, height: 40 }),
+    })
+    const right = aPlanTable({
+      tableId: 'table-2',
+      name: '2',
+      settlementProgress: 'all',
+      geometry: aGeometry({ x: 100, y: 30, width: 80, height: 40 }),
+    })
+    planLaptop([aPlanArea({ tables: [left, right] })])
+
+    await mountThePlan()
+
+    expect({
+      lastColumnOfTheLeftFrame: colourAt(theDrawing(), { x: 99, y: 50 }),
+      firstColumnOfTheRightFrame: colourAt(theDrawing(), { x: 100, y: 50 }),
+    }).toEqual({ lastColumnOfTheLeftFrame: AMBER, firstColumnOfTheRightFrame: GREEN })
+  })
+
+  it('stays visible beside the frame of the table that touches it below', async () => {
+    const upper = aPlanTable({
+      tableId: 'table-1',
+      name: '1',
+      settlementProgress: 'all',
+      geometry: aGeometry({ x: 20, y: 30, width: 80, height: 40 }),
+    })
+    const lower = aPlanTable({
+      tableId: 'table-14',
+      name: '14',
+      settlementProgress: 'none',
+      geometry: aGeometry({ x: 20, y: 70, width: 80, height: 40 }),
+    })
+    planLaptop([aPlanArea({ tables: [upper, lower] })])
+
+    await mountThePlan()
+
+    expect({
+      lastRowOfTheUpperFrame: colourAt(theDrawing(), { x: 60, y: 69 }),
+      firstRowOfTheLowerFrame: colourAt(theDrawing(), { x: 60, y: 70 }),
+    }).toEqual({ lastRowOfTheUpperFrame: GREEN, firstRowOfTheLowerFrame: RED })
   })
 })
 

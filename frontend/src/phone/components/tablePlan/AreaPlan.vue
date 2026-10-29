@@ -26,6 +26,7 @@ import {
   type PlanCamera,
   type PlanViewport,
 } from '../../core/tablePlanCamera'
+import { rectangleToStrokeInside } from '../../core/tablePlanFrame'
 import { LARGEST_NAME_FONT_SIZE, nameFontSizeKeepingWordsWhole } from '../../../shared/core/shapeNameFit'
 import { scrollBarsOf } from '../../core/tablePlanScrollBars'
 
@@ -131,8 +132,7 @@ const drawnTables = computed(() => {
       },
     },
     rect: {
-      width: table.geometry.width,
-      height: table.geometry.height,
+      ...rectangleToStrokeInside(table.geometry, TABLE_BORDER_WIDTH),
       fill: palette.handOutFill[table.handOutProgress],
       stroke: palette.settlementBorder[table.settlementProgress],
       strokeWidth: TABLE_BORDER_WIDTH,

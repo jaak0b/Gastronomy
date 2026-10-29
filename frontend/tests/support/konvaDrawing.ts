@@ -50,6 +50,14 @@ export function centreOf(node: Konva.Node): StagePoint {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
 }
 
+export function colourAt(stage: Konva.Stage, at: StagePoint): number[] {
+  const context = stage.toCanvas({ pixelRatio: 1 }).getContext('2d')
+  if (context === null) {
+    throw new Error('the drawing has no 2d canvas to read a pixel from')
+  }
+  return Array.from(context.getImageData(at.x, at.y, 1, 1).data)
+}
+
 export function anchorOf(stage: Konva.Stage, anchor: TransformerAnchor): StagePoint {
   const handle = stage.findOne<Konva.Transformer>('Transformer')?.findOne(`.${anchor}`)
   if (handle === undefined) {
