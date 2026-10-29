@@ -13,7 +13,8 @@ waiter with a free hand still carries the tray. The admin sets each festival up 
 Everything runs on one laptop on site, operated by volunteers with little technical ability and
 often by nobody who has seen the tool before: no cloud, no internet and no IT support. The phones and
 the station tablets reach the laptop over a WiFi the fire department sets up themselves, with client
-isolation off.
+isolation off. The admin screens run full-screen on that laptop, typically a 14 inch 1080p display
+at 150% Windows scaling, so they are designed for a browser window of about 1280 x 720 pixels.
 
 What each part of the app does is in the `features` skill, the recurring tasks are in `how-to`, and
 the decisions that span the app are in `architecture`.
