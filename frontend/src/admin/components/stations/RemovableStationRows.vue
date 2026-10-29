@@ -54,8 +54,8 @@ async function confirmRemoval(): Promise<void> {
       :data-test="rowTestName"
       :data-test-id="idOf(station)"
     >
-      <div class="row-line d-flex align-center flex-wrap ga-3 py-2 px-3">
-        <span class="name text-body-1" data-test="station-name">{{ nameOf(station) }}</span>
+      <div class="row-line d-flex align-center flex-wrap admin-row">
+        <span class="name" data-test="station-name">{{ nameOf(station) }}</span>
         <slot name="badges" :station="station" />
         <v-spacer />
         <slot name="actions" :station="station" />

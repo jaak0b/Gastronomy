@@ -177,16 +177,16 @@ onUnmounted(() => {
   <v-container class="admin-items" data-test="admin-items">
     <BaseHeadingWithCheckbox
       v-model="showsDeactivated"
-      class="admin-heading mb-4"
+      class="admin-heading admin-section-gap"
       :checkbox-label="t('admin.common.actions.showDeactivated')"
       checkbox-test-name="show-deactivated"
     >
-      <h1 class="text-h5">{{ t('admin.items.title') }}</h1>
+      <h1 class="admin-page-title">{{ t('admin.items.title') }}</h1>
     </BaseHeadingWithCheckbox>
 
     <v-alert
       v-if="showsItemRefusal"
-      class="refusal mb-4"
+      class="refusal admin-section-gap"
       data-test="item-refusal"
       type="warning"
       variant="tonal"
@@ -195,7 +195,7 @@ onUnmounted(() => {
     </v-alert>
     <v-alert
       v-if="showsCategoryRefusal"
-      class="refusal mb-4"
+      class="refusal admin-section-gap"
       data-test="category-refusal"
       type="warning"
       variant="tonal"
@@ -219,7 +219,7 @@ onUnmounted(() => {
       @reactivate-item="(item) => reactivate(item.itemId)"
     />
 
-    <div class="d-flex ga-2 mt-6">
+    <div class="d-flex ga-2 admin-block-gap">
       <v-btn class="new-item" data-test="new-item" color="primary" @click="startCreatingItem">
         {{ t('admin.items.actions.new') }}
       </v-btn>

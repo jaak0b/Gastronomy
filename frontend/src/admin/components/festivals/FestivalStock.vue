@@ -92,10 +92,10 @@ function toggleHistory(ingredientId: string): void {
 </script>
 
 <template>
-  <section v-if="stock.ingredients.length > 0" class="festival-stock mb-4" data-test="festival-stock">
+  <section v-if="stock.ingredients.length > 0" class="festival-stock admin-section-gap" data-test="festival-stock">
     <v-card variant="outlined">
-      <div class="pa-4">
-        <h2 class="section-heading text-h6 mb-3" data-test="section-heading">{{ t('admin.ingredients.title') }}</h2>
+      <div class="admin-card-body">
+        <h2 class="section-heading admin-section-title mb-3" data-test="section-heading">{{ t('admin.ingredients.title') }}</h2>
         <BaseListRow
           v-for="({ ingredient, warningText }, position) in rows"
           :key="ingredient.ingredientId"
@@ -104,9 +104,9 @@ function toggleHistory(ingredientId: string): void {
           :data-test-id="ingredient.ingredientId"
           :position="position"
         >
-          <div class="row-line py-2 px-3">
+          <div class="row-line admin-row">
             <span
-              class="name text-body-1"
+              class="name"
               data-test="ingredient-name"
             >
               {{ ingredient.name }}
@@ -119,7 +119,7 @@ function toggleHistory(ingredientId: string): void {
               @amount-changed="changeAvailableAmount(ingredient.ingredientId, $event)"
             />
             <span
-              class="used-amount text-body-2"
+              class="used-amount admin-small-text"
               data-test="used-amount"
             >
               {{
@@ -142,7 +142,6 @@ function toggleHistory(ingredientId: string): void {
               class="history-toggle"
               data-test="history-toggle"
               variant="text"
-              size="small"
               :append-icon="historyToggleIconOf(ingredient.ingredientId)"
               @click="toggleHistory(ingredient.ingredientId)"
             >
@@ -161,14 +160,14 @@ function toggleHistory(ingredientId: string): void {
           <template v-if="ingredientIdShowingHistory === ingredient.ingredientId">
             <p
               v-if="ingredient.usedAmount === 0"
-              class="nothing-used-yet text-body-2 text-medium-emphasis px-3 pb-3 mb-0"
+              class="nothing-used-yet admin-small-text text-medium-emphasis admin-row-details mb-0"
               data-test="nothing-used-yet"
             >
               {{ t('admin.ingredients.history.nothingUsedYet') }}
             </p>
             <FestivalStockChart
               v-else
-              class="px-3 pb-3"
+              class="admin-row-details"
               :ingredient="ingredient"
               :festival="festival"
             />
@@ -184,6 +183,5 @@ function toggleHistory(ingredientId: string): void {
   display: grid;
   grid-template-columns: minmax(8rem, 1fr) 16rem 10rem 17rem 7rem;
   align-items: center;
-  column-gap: 0.75rem;
 }
 </style>

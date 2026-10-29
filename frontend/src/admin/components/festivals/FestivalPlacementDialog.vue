@@ -81,7 +81,6 @@ async function place(): Promise<void> {
     <v-text-field
       class="price-field"
       data-test="price-field"
-      density="compact"
       inputmode="decimal"
       hide-details="auto"
       :model-value="priceText"

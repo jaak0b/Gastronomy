@@ -73,7 +73,6 @@ function leaveTheField(event: KeyboardEvent): void {
       class="amount-input"
       data-test="amount-input"
       inputmode="decimal"
-      density="compact"
       hide-details="auto"
       :label="label"
       :error-messages="errorText ? [errorText] : []"
@@ -81,7 +80,7 @@ function leaveTheField(event: KeyboardEvent): void {
       @keydown.enter.prevent="leaveTheField"
     />
     <span
-      class="amount-unit text-body-1 pt-2"
+      class="amount-unit pt-2"
       data-test="amount-unit"
     >
       {{ unitName }}

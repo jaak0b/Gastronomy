@@ -49,14 +49,14 @@ function save(): void {
   >
     <v-text-field
       v-model="name"
-      class="festival-name-field mb-4"
+      class="festival-name-field admin-section-gap"
       data-test="festival-name-field"
       maxlength="80"
       :label="t('admin.festivals.labels.name')"
     />
     <v-text-field
       v-model="startsAt"
-      class="festival-start-field mb-4"
+      class="festival-start-field admin-section-gap"
       data-test="festival-start-field"
       type="datetime-local"
       :label="t('admin.festivals.labels.start')"

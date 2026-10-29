@@ -134,16 +134,16 @@ onUnmounted(() => {
   <v-container class="admin-festivals">
     <BaseHeadingWithCheckbox
       v-model="showsHidden"
-      class="admin-heading mb-4"
+      class="admin-heading admin-section-gap"
       :checkbox-label="t('admin.festivals.actions.showHidden')"
       checkbox-test-name="show-hidden"
     >
-      <h1 class="text-h5">{{ t('admin.festivals.title') }}</h1>
+      <h1 class="admin-page-title">{{ t('admin.festivals.title') }}</h1>
     </BaseHeadingWithCheckbox>
 
     <v-alert
       v-if="refusalText !== null && !isCreating && copiedFestival === null"
-      class="refusal mb-4"
+      class="refusal admin-section-gap"
       data-test="refusal"
       type="warning"
       variant="tonal"
@@ -151,23 +151,23 @@ onUnmounted(() => {
       {{ refusalText }}
     </v-alert>
 
-    <p v-if="shown.length === 0" class="none-yet text-medium-emphasis mb-4" data-test="none-yet">
+    <p v-if="shown.length === 0" class="none-yet text-medium-emphasis admin-section-gap" data-test="none-yet">
       {{ t('admin.festivals.messages.noneYet') }}
     </p>
 
     <v-card
       v-for="festival in shown"
       :key="festival.festivalId"
-      class="festival-row mb-2"
+      class="festival-row admin-row-spacing"
       data-test="festival-row"
       :data-test-id="festival.festivalId"
     >
-      <div class="d-flex align-center flex-wrap ga-2 px-4 py-2">
-        <span class="name text-h6" data-test="name">{{ festival.name }}</span>
-        <v-chip v-if="festival.isRunning" class="running" data-test="running" size="small" color="success">
+      <div class="d-flex align-center flex-wrap admin-row">
+        <span class="name admin-row-name" data-test="name">{{ festival.name }}</span>
+        <v-chip v-if="festival.isRunning" class="running" data-test="running" color="success">
           {{ t('admin.festivals.labels.running') }}
         </v-chip>
-        <v-chip v-if="festival.isHidden" class="hidden" size="small" color="grey">
+        <v-chip v-if="festival.isHidden" class="hidden" color="grey">
           {{ t('admin.festivals.labels.hidden') }}
         </v-chip>
         <v-spacer />
@@ -206,7 +206,7 @@ onUnmounted(() => {
           </span>
         </div>
       </div>
-      <div class="festival-facts d-flex flex-wrap ga-4 px-4 pb-3 text-medium-emphasis">
+      <div class="festival-facts d-flex flex-wrap admin-row-details text-medium-emphasis">
         <span class="period-start">
           {{ t('admin.festivals.labels.start') }}: {{ moment(festival.startsAtUtc) }}
         </span>
@@ -225,7 +225,7 @@ onUnmounted(() => {
       </div>
     </v-card>
 
-    <v-btn class="new-festival mt-6" data-test="new-festival" color="primary" @click="startCreating">
+    <v-btn class="new-festival admin-block-gap" data-test="new-festival" color="primary" @click="startCreating">
       {{ t('admin.festivals.actions.new') }}
     </v-btn>
 

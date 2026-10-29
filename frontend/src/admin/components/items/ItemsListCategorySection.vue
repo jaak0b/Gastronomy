@@ -36,7 +36,7 @@ function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
   <section class="category-section" data-test="category-section">
     <div class="category-heading d-flex align-center ga-2 py-2">
       <h2
-        class="text-subtitle-1 font-weight-bold px-3 py-1 rounded"
+        class="admin-section-title font-weight-bold px-3 py-1 rounded"
         data-test="category-name"
         :style="{
           backgroundColor: category.colourHex,
@@ -48,7 +48,6 @@ function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
       <v-chip
         v-if="!category.isActive"
         data-test="category-deactivated"
-        size="small"
         color="grey"
       >
         {{ t('admin.common.labels.deactivated') }}
@@ -78,9 +77,9 @@ function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
       data-test="item-row"
       :data-test-id="item.itemId"
     >
-      <div class="d-flex align-center flex-wrap ga-2 px-4 py-2" data-test="item-line">
-        <span class="text-body-1" data-test="item-name">{{ item.name }}</span>
-        <v-chip v-if="!item.isActive" data-test="item-deactivated" size="small" color="grey">
+      <div class="d-flex align-center flex-wrap admin-row" data-test="item-line">
+        <span data-test="item-name">{{ item.name }}</span>
+        <v-chip v-if="!item.isActive" data-test="item-deactivated" color="grey">
           {{ t('admin.common.labels.deactivated') }}
         </v-chip>
         <v-spacer />

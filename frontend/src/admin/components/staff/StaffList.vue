@@ -95,16 +95,16 @@ onUnmounted(() => {
   <v-container class="admin-staff">
     <BaseHeadingWithCheckbox
       v-model="showsDeactivated"
-      class="admin-heading mb-4"
+      class="admin-heading admin-section-gap"
       :checkbox-label="t('admin.common.actions.showDeactivated')"
       checkbox-test-name="show-deactivated"
     >
-      <h1 class="text-h5">{{ t('admin.staff.title') }}</h1>
+      <h1 class="admin-page-title">{{ t('admin.staff.title') }}</h1>
     </BaseHeadingWithCheckbox>
 
     <v-alert
       v-if="enrolment.enrolledStaffMemberName !== null"
-      class="enrolled mb-4"
+      class="enrolled admin-section-gap"
       type="success"
       variant="tonal"
     >
@@ -112,7 +112,7 @@ onUnmounted(() => {
     </v-alert>
     <v-alert
       v-if="refusalText !== null && renamingStaffMember === null"
-      class="refusal mb-4"
+      class="refusal admin-section-gap"
       data-test="refusal"
       type="warning"
       variant="tonal"
@@ -120,13 +120,13 @@ onUnmounted(() => {
       {{ refusalText }}
     </v-alert>
 
-    <v-card v-for="staffMember in shown" :key="staffMember.staffMemberId" class="staff-row mb-3" data-test="staff-row">
-      <v-card-actions class="staff-row-line" data-test="staff-row-line">
-        <span class="name text-h6 ms-2 me-2" data-test="name">{{ staffMember.name }}</span>
-        <v-chip v-if="!staffMember.isActive" class="deactivated me-2" data-test="deactivated" size="small" color="grey">
+    <v-card v-for="staffMember in shown" :key="staffMember.staffMemberId" class="staff-row admin-row-spacing" data-test="staff-row">
+      <v-card-actions class="staff-row-line admin-row" data-test="staff-row-line">
+        <span class="name admin-row-name ms-2 me-2" data-test="name">{{ staffMember.name }}</span>
+        <v-chip v-if="!staffMember.isActive" class="deactivated me-2" data-test="deactivated" color="grey">
           {{ t('admin.common.labels.deactivated') }}
         </v-chip>
-        <v-chip v-if="!staffMember.hasDevice" class="no-phone me-2" data-test="no-phone" size="small" color="warning">
+        <v-chip v-if="!staffMember.hasDevice" class="no-phone me-2" data-test="no-phone" color="warning">
           {{ t('admin.staff.labels.noPhone') }}
         </v-chip>
         <v-spacer />
@@ -163,7 +163,7 @@ onUnmounted(() => {
       </v-expand-transition>
     </v-card>
 
-    <v-btn class="new-staff-member mt-6" data-test="new-staff-member" color="primary" @click="inviteSomebodyNew">
+    <v-btn class="new-staff-member admin-block-gap" data-test="new-staff-member" color="primary" @click="inviteSomebodyNew">
       {{ t('admin.staff.actions.new') }}
     </v-btn>
 

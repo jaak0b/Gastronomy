@@ -142,7 +142,7 @@ async function add(): Promise<void> {
     wide
     @cancel="emit('close')"
   >
-    <div class="recipe-lines mb-4">
+    <div class="recipe-lines admin-section-gap">
       <div
         v-for="line in recipeLines"
         :key="line.ingredientId"
@@ -151,7 +151,7 @@ async function add(): Promise<void> {
         :data-test-id="line.ingredientId"
       >
         <div class="d-flex align-center flex-wrap ga-2 py-1">
-          <span class="recipe-ingredient-name text-body-1 flex-grow-1" data-test="recipe-ingredient-name">{{ line.name }}</span>
+          <span class="recipe-ingredient-name flex-grow-1" data-test="recipe-ingredient-name">{{ line.name }}</span>
           <IngredientAmountField
             :unit-name="line.unitName"
             :saved-amount="line.amount"
@@ -183,7 +183,6 @@ async function add(): Promise<void> {
           :model-value="chosenIngredientId"
           class="ingredient-search"
           data-test="ingredient-search"
-          density="compact"
           hide-details
           :label="t('admin.ingredients.labels.ingredient')"
           :items="offeredIngredients"
@@ -203,7 +202,6 @@ async function add(): Promise<void> {
           v-else
           class="amount-before-choosing"
           data-test="amount-input"
-          density="compact"
           hide-details
           disabled
           :label="t('admin.ingredients.labels.amount')"

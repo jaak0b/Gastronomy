@@ -29,7 +29,7 @@ function save(): void {
   >
     <v-text-field
       v-model="name"
-      class="category-name-field mb-4"
+      class="category-name-field admin-section-gap"
       data-test="category-name-field"
       maxlength="200"
       :label="t('admin.categories.labels.name')"
@@ -44,7 +44,7 @@ function save(): void {
 <style scoped>
 .category-colour-field {
   width: 64px;
-  height: 40px;
+  height: var(--admin-row-height);
   border: none;
   background: none;
   cursor: pointer;

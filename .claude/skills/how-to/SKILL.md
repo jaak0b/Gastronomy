@@ -17,5 +17,6 @@ description: Read before doing one of the recurring tasks it lists, so the work 
 | Write a frontend spec that talks to a fake laptop | [references/frontend-test-with-the-laptop.md](references/frontend-test-with-the-laptop.md) |
 | Test a Konva drawing: find a shape by its id or name, tap it, drag it, resize it | [references/test-a-konva-drawing.md](references/test-a-konva-drawing.md) |
 | Add a chart to an admin screen on the shared ECharts layer | [references/add-a-chart.md](references/add-a-chart.md) |
+| Size a control, a row, a heading or a gap on an admin screen with the shared admin sizes | [references/admin-sizes.md](references/admin-sizes.md) |
 | Format the C# files you created or edited | [references/format-csharp.md](references/format-csharp.md) |
 | Pin how many SQL statements a read of a service runs, with `QueryCounter` | [references/count-sql-statements.md](references/count-sql-statements.md) |

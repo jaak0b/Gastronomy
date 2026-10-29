@@ -60,9 +60,9 @@ function hidingRefusalOf(area: AdminAreaView): string | null {
 </script>
 
 <template>
-  <section class="festival-table-plan mb-4" data-test="festival-table-plan">
+  <section class="festival-table-plan admin-section-gap" data-test="festival-table-plan">
     <v-card variant="outlined">
-      <div class="pa-4">
+      <div class="admin-card-body">
         <HideableEntryList
           :entries="tablePlan.areas"
           :id-of="(area: AdminAreaView) => area.areaId"
@@ -79,7 +79,7 @@ function hidingRefusalOf(area: AdminAreaView): string | null {
           :move-through="moveTheArea"
         >
           <template #heading>
-            <h2 class="section-heading text-h6" data-test="section-heading">{{ t('admin.tablePlan.title') }}</h2>
+            <h2 class="section-heading admin-section-title" data-test="section-heading">{{ t('admin.tablePlan.title') }}</h2>
           </template>
           <template #notices>
             <BaseWarningText
@@ -96,7 +96,7 @@ function hidingRefusalOf(area: AdminAreaView): string | null {
             />
           </template>
           <template #details="{ entry: area }">
-            <span class="table-count text-body-2 text-medium-emphasis" data-test="table-count">
+            <span class="table-count admin-small-text text-medium-emphasis" data-test="table-count">
               {{ tableCountTexts.get(area.areaId) }}
             </span>
             <v-btn

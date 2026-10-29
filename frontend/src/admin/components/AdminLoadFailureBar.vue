@@ -14,7 +14,6 @@ const loadState = useAdminLoadStateStore()
     type="error"
     variant="tonal"
     rounded="0"
-    density="compact"
   >
     {{ t('admin.common.errors.loadFailed') }}
   </v-alert>

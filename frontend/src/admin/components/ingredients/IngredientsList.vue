@@ -86,16 +86,16 @@ onUnmounted(() => {
   <v-container class="admin-ingredients" data-test="admin-ingredients">
     <BaseHeadingWithCheckbox
       v-model="showsDeactivated"
-      class="admin-heading mb-4"
+      class="admin-heading admin-section-gap"
       :checkbox-label="t('admin.common.actions.showDeactivated')"
       checkbox-test-name="show-deactivated"
     >
-      <h1 class="text-h5">{{ t('admin.ingredients.title') }}</h1>
+      <h1 class="admin-page-title">{{ t('admin.ingredients.title') }}</h1>
     </BaseHeadingWithCheckbox>
 
     <v-alert
       v-if="showsRefusal"
-      class="refusal mb-4"
+      class="refusal admin-section-gap"
       data-test="refusal"
       type="warning"
       variant="tonal"
@@ -103,25 +103,24 @@ onUnmounted(() => {
       {{ refusalText }}
     </v-alert>
 
-    <p v-if="showsNoneYet" class="none-yet text-medium-emphasis mb-4" data-test="none-yet">
+    <p v-if="showsNoneYet" class="none-yet text-medium-emphasis admin-section-gap" data-test="none-yet">
       {{ t('admin.ingredients.messages.noneYet') }}
     </p>
 
     <v-card
       v-for="row in rows"
       :key="row.ingredient.ingredientId"
-      class="ingredient-row mb-2"
+      class="ingredient-row admin-row-spacing"
       data-test="ingredient-row"
       :data-test-id="row.ingredient.ingredientId"
     >
-      <div class="d-flex align-center flex-wrap ga-2 px-4 py-2">
-        <span class="name text-h6" data-test="name">{{ row.ingredient.name }}</span>
-        <span class="unit text-body-1 text-medium-emphasis" data-test="unit">{{ row.ingredient.unitName }}</span>
+      <div class="d-flex align-center flex-wrap admin-row">
+        <span class="name admin-row-name" data-test="name">{{ row.ingredient.name }}</span>
+        <span class="unit text-medium-emphasis" data-test="unit">{{ row.ingredient.unitName }}</span>
         <v-chip
           v-if="!row.ingredient.isActive"
           class="deactivated"
           data-test="deactivated"
-          size="small"
           color="grey"
         >
           {{ t('admin.common.labels.deactivated') }}
@@ -158,7 +157,7 @@ onUnmounted(() => {
     </v-card>
 
     <v-btn
-      class="new-ingredient mt-6"
+      class="new-ingredient admin-block-gap"
       data-test="new-ingredient"
       color="primary"
       @click="ingredientSession.openForCreate"

@@ -33,7 +33,6 @@ const { t } = useI18n()
           :items="entries"
           :item-title="entryTitle"
           :item-value="entryValue"
-          density="compact"
           hide-details
           :disabled="refused"
           :label="label"

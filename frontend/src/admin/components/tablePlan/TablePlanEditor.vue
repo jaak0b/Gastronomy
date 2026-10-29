@@ -228,7 +228,7 @@ onUnmounted(() => {
 <template>
   <div class="table-plan-editor" data-test="table-plan-editor">
     <div class="editor-block" data-test="editor-block">
-      <div class="editor-heading d-flex align-center flex-wrap ga-3 py-2">
+      <div class="editor-heading d-flex align-center flex-wrap">
         <v-btn
           class="back-to-festival"
           data-test="back-to-festival"
@@ -238,7 +238,7 @@ onUnmounted(() => {
         >
           {{ t('common.actions.back') }}
         </v-btn>
-        <h1 v-if="area !== null" class="area-name text-h5" data-test="area-name">{{ area.name }}</h1>
+        <h1 v-if="area !== null" class="area-name admin-page-title" data-test="area-name">{{ area.name }}</h1>
       </div>
 
       <template v-if="area !== null">
@@ -307,7 +307,12 @@ onUnmounted(() => {
   flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
-  padding: 0 1rem 1rem;
+  padding: 0 var(--admin-page-padding) var(--admin-page-padding);
+}
+
+.editor-heading {
+  gap: var(--admin-row-gap);
+  padding-block: var(--admin-row-padding-y);
 }
 
 .editor-block {

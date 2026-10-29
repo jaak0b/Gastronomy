@@ -20,6 +20,9 @@ Frontend, under `frontend/src/`:
   `ingredients` page), `units/UnitsList.vue` (see the `units` page) and `staff/StaffList.vue`. How a
   global tab is built is on the `admin-list-screen` page of `how-to`.
 - `shared/theme.ts` holds both palettes, with `defaultTheme: 'system'`.
+- `admin/styles/adminSizes.ts` and `adminSizes.css` hold every admin size: the Vuetify defaults
+  `AdminShell.vue` provides to the admin and the CSS values its components read. The phone and the
+  station tablet keep their larger controls. See the `admin-sizes` page of `how-to`.
 
 ## Invariants
 
@@ -60,7 +63,8 @@ Frontend, under `frontend/src/`:
 `admin/components/AdminLoadFailureBar.spec.ts` (the bar on several tabs, once on the festival page,
 on a lost connection and gone after the reconnect), `admin/stores/adminLoadState.spec.ts` (the
 derivation, and that every admin store listens through it),
-`admin/components/overview/AdminOverview.spec.ts` and `shared/theme.spec.ts`. The disabled switch off
+`admin/components/overview/AdminOverview.spec.ts`, `shared/theme.spec.ts` and
+`admin/views/AdminShell.compactSizes.spec.ts` (compact controls inside the admin, the phone's left as they are). The disabled switch off
 of the Ausgabestellen tab, with both reasons and the one named when both apply, is in
 `admin/components/stations/StationsList.switchingOff.spec.ts`. The Einheiten tab is covered by
 `admin/components/units/UnitsList.*.spec.ts`, `UnitDialog.spec.ts` and `admin/stores/units.spec.ts`;

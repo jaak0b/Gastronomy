@@ -52,7 +52,7 @@ function save(): void {
   >
     <v-text-field
       v-model="name"
-      class="ingredient-name-field mb-4"
+      class="ingredient-name-field admin-section-gap"
       data-test="ingredient-name-field"
       maxlength="200"
       :label="t('admin.ingredients.labels.name')"

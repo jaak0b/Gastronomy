@@ -1,0 +1,66 @@
+.admin-sizes {
+  --admin-text-size: 0.875rem;
+  --admin-small-text-size: 0.8125rem;
+  --admin-page-title-size: 1.375rem;
+  --admin-section-title-size: 1.0625rem;
+  --admin-row-name-size: 0.9375rem;
+  --admin-row-height: 40px;
+  --admin-row-padding-y: 4px;
+  --admin-row-padding-x: 12px;
+  --admin-row-gap: 8px;
+  --admin-row-spacing: 6px;
+  --admin-card-padding: 12px;
+  --admin-section-gap: 12px;
+  --admin-block-gap: 16px;
+  --admin-page-padding: 12px;
+
+  font-size: var(--admin-text-size);
+}
+
+.admin-page-title {
+  font-size: var(--admin-page-title-size);
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.admin-section-title {
+  font-size: var(--admin-section-title-size);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.admin-row-name {
+  font-size: var(--admin-row-name-size);
+  font-weight: 500;
+}
+
+.admin-small-text {
+  font-size: var(--admin-small-text-size);
+}
+
+.admin-row {
+  gap: var(--admin-row-gap);
+  min-height: var(--admin-row-height);
+  padding: var(--admin-row-padding-y) var(--admin-row-padding-x);
+}
+
+.admin-row-details {
+  column-gap: var(--admin-block-gap);
+  padding: 0 var(--admin-row-padding-x) var(--admin-card-padding);
+}
+
+.admin-card-body {
+  padding: var(--admin-card-padding);
+}
+
+.admin-row-spacing {
+  margin-bottom: var(--admin-row-spacing);
+}
+
+.admin-section-gap {
+  margin-bottom: var(--admin-section-gap);
+}
+
+.admin-block-gap {
+  margin-top: var(--admin-block-gap);
+}

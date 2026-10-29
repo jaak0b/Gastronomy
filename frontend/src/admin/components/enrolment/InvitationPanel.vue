@@ -74,7 +74,6 @@ async function copyUrl(): Promise<void> {
             class="copy-url"
             data-test="copy-url"
             variant="text"
-            size="small"
             :icon="wasCopied ? 'mdi-check' : 'mdi-content-copy'"
             @click="copyUrl"
           />
@@ -106,7 +105,7 @@ async function copyUrl(): Promise<void> {
 <style scoped>
 .qr-url {
   background-color: rgb(var(--v-theme-surface-light));
-  font-size: 0.85rem;
+  font-size: var(--admin-small-text-size);
   overflow-wrap: anywhere;
 }
 </style>

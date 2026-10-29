@@ -115,16 +115,16 @@ onUnmounted(() => {
   <v-container class="admin-stations">
     <BaseHeadingWithCheckbox
       v-model="showsDeactivated"
-      class="admin-heading mb-4"
+      class="admin-heading admin-section-gap"
       :checkbox-label="t('admin.common.actions.showDeactivated')"
       checkbox-test-name="show-deactivated"
     >
-      <h1 class="text-h5">{{ t('admin.stations.title') }}</h1>
+      <h1 class="admin-page-title">{{ t('admin.stations.title') }}</h1>
     </BaseHeadingWithCheckbox>
 
     <v-alert
       v-if="enrolment.enrolledStationName !== null"
-      class="enrolled mb-4"
+      class="enrolled admin-section-gap"
       type="success"
       variant="tonal"
     >
@@ -132,7 +132,7 @@ onUnmounted(() => {
     </v-alert>
     <v-alert
       v-if="refusalText !== null && !isStationDialogOpen"
-      class="refusal mb-4"
+      class="refusal admin-section-gap"
       data-test="refusal"
       type="warning"
       variant="tonal"
@@ -143,15 +143,15 @@ onUnmounted(() => {
     <v-card
       v-for="{ station, deactivationRefusal } in rows"
       :key="station.stationId"
-      class="station-row mb-2"
+      class="station-row admin-row-spacing"
       data-test="station-row"
     >
-      <div class="d-flex align-center flex-wrap ga-2 px-4 py-2">
-        <span class="name text-h6" data-test="name">{{ station.name }}</span>
-        <v-chip v-if="!station.isActive" class="deactivated" data-test="deactivated" size="small" color="grey">
+      <div class="d-flex align-center flex-wrap admin-row">
+        <span class="name admin-row-name" data-test="name">{{ station.name }}</span>
+        <v-chip v-if="!station.isActive" class="deactivated" data-test="deactivated" color="grey">
           {{ t('admin.common.labels.deactivated') }}
         </v-chip>
-        <v-chip v-if="!station.hasDevice" class="no-tablet" size="small" color="warning">
+        <v-chip v-if="!station.hasDevice" class="no-tablet" color="warning">
           {{ t('admin.stations.labels.noTablet') }}
         </v-chip>
         <v-spacer />
@@ -193,7 +193,7 @@ onUnmounted(() => {
       </v-expand-transition>
     </v-card>
 
-    <v-btn class="new-station mt-6" data-test="new-station" color="primary" @click="startCreating">
+    <v-btn class="new-station admin-block-gap" data-test="new-station" color="primary" @click="startCreating">
       {{ t('admin.stations.actions.new') }}
     </v-btn>
 

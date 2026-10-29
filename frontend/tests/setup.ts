@@ -45,4 +45,4 @@ if (window.matchMedia === undefined) {
   })
 }
 
-config.global.plugins = [...(config.global.plugins ?? []), createVuetify()]
+config.global.plugins = [...(config.global.plugins ?? []), createVuetify({ defaults: {} })]

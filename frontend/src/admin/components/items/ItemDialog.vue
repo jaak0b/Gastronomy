@@ -109,12 +109,12 @@ function commitThePreparationTime(event: KeyboardEvent): void {
   >
     <v-text-field
       v-model="name"
-      class="item-name-field mb-4"
+      class="item-name-field admin-section-gap"
       data-test="item-name-field"
       maxlength="200"
       :label="t('admin.items.title')"
     />
-    <div class="category-line d-flex align-center ga-2 mb-4">
+    <div class="category-line d-flex align-center ga-2 admin-section-gap">
       <v-select
         v-model="categoryId"
         class="category-field flex-grow-1"

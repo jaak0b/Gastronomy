@@ -149,11 +149,11 @@ onUnmounted(() => {
     </v-btn>
 
     <template v-if="festival !== null">
-      <v-card class="festival-fields mb-4" variant="outlined">
-        <div class="pa-4">
-          <div class="festival-heading d-flex align-center flex-wrap ga-3 mb-4">
-            <h1 class="festival-name text-h5" data-test="festival-name">{{ festival.name }}</h1>
-            <v-chip v-if="festival.isRunning" class="running" data-test="running" size="small" color="success">
+      <v-card class="festival-fields admin-section-gap" variant="outlined">
+        <div class="admin-card-body">
+          <div class="festival-heading d-flex align-center flex-wrap ga-3 admin-section-gap">
+            <h1 class="festival-name admin-page-title" data-test="festival-name">{{ festival.name }}</h1>
+            <v-chip v-if="festival.isRunning" class="running" data-test="running" color="success">
               {{ t('admin.festivals.labels.running') }}
             </v-chip>
           </div>
@@ -164,7 +164,6 @@ onUnmounted(() => {
               class="festival-name-field flex-grow-1"
               data-test="festival-name-field"
               maxlength="80"
-              density="compact"
               hide-details="auto"
               :error-messages="
                 refusedField === 'name' ? [t('errors.admin.festivals.nameMissing')] : []
@@ -178,7 +177,6 @@ onUnmounted(() => {
               class="festival-start-field"
               data-test="festival-start-field"
               type="datetime-local"
-              density="compact"
               hide-details
               :label="t('admin.festivals.labels.start')"
               @blur="saveTheFields"
@@ -189,14 +187,13 @@ onUnmounted(() => {
               class="festival-end-field"
               data-test="festival-end-field"
               type="datetime-local"
-              density="compact"
               hide-details
               :label="t('admin.festivals.labels.end')"
               @blur="saveTheFields"
               @keyup.enter="saveTheFields"
             />
           </div>
-          <p v-if="refusedField === 'period'" class="period-refusal text-error text-body-2 mt-2">
+          <p v-if="refusedField === 'period'" class="period-refusal text-error admin-small-text mt-2">
             {{ t('errors.admin.festivals.periodInvalid') }}
           </p>
           <v-alert v-if="refusalText !== null" class="refusal mt-3" data-test="refusal" type="warning" variant="tonal">

@@ -146,14 +146,14 @@ async function remove(): Promise<void> {
 </script>
 
 <template>
-  <section class="festival-items mb-4" data-test="festival-items">
+  <section class="festival-items admin-section-gap" data-test="festival-items">
     <v-card variant="outlined">
-      <div class="pa-4">
-        <h2 class="section-heading text-h6 mb-3" data-test="section-heading">{{ t('admin.items.title') }}</h2>
+      <div class="admin-card-body">
+        <h2 class="section-heading admin-section-title mb-3" data-test="section-heading">{{ t('admin.items.title') }}</h2>
 
         <div v-if="festivalStations.length === 0" class="festival-item-placeholder" data-test="festival-item-placeholder">
-          <div class="item-line d-flex align-center flex-wrap ga-3 py-2 px-3">
-            <span class="needs-a-station text-body-1" data-test="needs-a-station">
+          <div class="item-line d-flex align-center flex-wrap admin-row">
+            <span class="needs-a-station" data-test="needs-a-station">
               {{ t('admin.festivals.messages.needsAStationFirst') }}
             </span>
           </div>
@@ -167,7 +167,7 @@ async function remove(): Promise<void> {
           >
             <div class="category-heading d-flex align-center flex-wrap ga-2 mb-1 mt-3">
               <h3
-                class="category-name text-subtitle-1 font-weight-bold px-3 py-1 rounded"
+                class="category-name admin-section-title font-weight-bold px-3 py-1 rounded"
                 data-test="category-name"
                 :style="{
                   backgroundColor: group.category.colourHex,
@@ -190,20 +190,19 @@ async function remove(): Promise<void> {
               :data-test-id="item.itemId"
               :position="position"
             >
-              <div class="item-line d-flex align-center flex-wrap ga-3 py-2 px-3">
+              <div class="item-line d-flex align-center flex-wrap admin-row">
                 <span
-                  class="name text-body-1"
+                  class="name"
                   data-test="item-name"
                 >
                   {{ item.name }}
                 </span>
-                <v-chip v-if="!item.isActive" class="deactivated" data-test="deactivated" size="small" color="grey">
+                <v-chip v-if="!item.isActive" class="deactivated" data-test="deactivated" color="grey">
                   {{ t('admin.common.labels.deactivated') }}
                 </v-chip>
                 <v-text-field
                   class="price-field"
                   data-test="price-field"
-                  density="compact"
                   inputmode="decimal"
                   hide-details="auto"
                   :model-value="rowShownFor(item.itemId).price.edited"
@@ -225,7 +224,6 @@ async function remove(): Promise<void> {
                   :key="`${item.itemId}-${item.atTheFestival.isAvailable}-${rowShownFor(item.itemId).soldOutSwitchRenderKey}`"
                   class="sold-out-switch flex-grow-0"
                   data-test="sold-out-switch"
-                  density="compact"
                   color="primary"
                   hide-details
                   :model-value="!item.atTheFestival.isAvailable"
@@ -262,7 +260,7 @@ async function remove(): Promise<void> {
 
           <BaseSearchAddLine
             v-model:chosen-id="chosenItemId"
-            class="mt-6"
+            class="admin-block-gap"
             :entries="stillToAdd"
             entry-title="name"
             entry-value="itemId"

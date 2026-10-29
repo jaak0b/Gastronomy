@@ -10,7 +10,6 @@ const checked = defineModel<boolean>({ required: true })
       v-model="checked"
       class="heading-checkbox flex-grow-0"
       :data-test="checkboxTestName"
-      density="compact"
       hide-details
       :label="checkboxLabel"
     />

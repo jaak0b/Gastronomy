@@ -22,6 +22,8 @@ import AdminLoadFailureBar from '../components/AdminLoadFailureBar.vue'
 import { useLocaleBinding } from '../../shared/composables/useLocaleBinding'
 import { useAppLanguageStore } from '../stores/appLanguage'
 import { useLaptopProbe } from '../composables/useLaptopProbe'
+import { ADMIN_DEFAULTS, ADMIN_SIZES_CLASS } from '../styles/adminSizes'
+import '../styles/adminSizes.css'
 
 const { t } = useI18n()
 const appLanguage = useAppLanguageStore()
@@ -75,47 +77,50 @@ void isThisTheLaptop().then((isLaptop) => {
 </script>
 
 <template>
-  <NotOnLaptop v-if="!isReachable" />
-  <div
-    v-else
-    class="admin-shell"
-    data-test="admin-shell"
-    :class="{ 'fills-the-screen': areaId !== null }"
-  >
-    <v-toolbar class="admin-nav" data-test="admin-nav" density="comfortable" color="surface">
-      <v-tabs :model-value="section" class="admin-tabs" data-test="admin-tabs">
-        <v-tab
-          v-for="value in sections"
-          :key="value"
-          :value="value"
-          :data-selected="value === section"
-          data-test="admin-tab"
-          @click="navigate(`/admin/${value}`)"
-        >
-          {{ titleFor(value) }}
-        </v-tab>
-      </v-tabs>
-    </v-toolbar>
-    <AdminLoadFailureBar />
-    <TablePlanEditor
-      v-if="festivalId !== null && areaId !== null"
-      :key="`${festivalId}-${areaId}`"
-      :festival-id="festivalId"
-      :area-id="areaId"
-    />
-    <FestivalPage
-      v-else-if="section === 'festivals' && festivalId !== null"
-      :key="festivalId"
-      :festival-id="festivalId"
-    />
-    <FestivalsList v-else-if="section === 'festivals'" />
-    <AdminOverview v-else-if="section === 'overview'" />
-    <StationsList v-else-if="section === 'stations'" />
-    <ItemsList v-else-if="section === 'items'" />
-    <IngredientsList v-else-if="section === 'ingredients'" />
-    <UnitsList v-else-if="section === 'units'" />
-    <StaffList v-else-if="section === 'staff'" />
-  </div>
+  <v-defaults-provider :defaults="ADMIN_DEFAULTS">
+    <NotOnLaptop v-if="!isReachable" />
+    <div
+      v-else
+      class="admin-shell"
+      data-test="admin-shell"
+      :class="[ADMIN_SIZES_CLASS, { 'fills-the-screen': areaId !== null }]"
+    >
+      <v-toolbar class="admin-nav" data-test="admin-nav" color="surface">
+        <v-tabs :model-value="section" class="admin-tabs" data-test="admin-tabs">
+          <v-tab
+            v-for="value in sections"
+            :key="value"
+            :value="value"
+            :data-selected="value === section"
+            data-test="admin-tab"
+            @click="navigate(`/admin/${value}`)"
+          >
+            {{ titleFor(value) }}
+          </v-tab>
+        </v-tabs>
+      </v-toolbar>
+      <AdminLoadFailureBar />
+      <TablePlanEditor
+        v-if="festivalId !== null && areaId !== null"
+        :key="`${festivalId}-${areaId}`"
+        :festival-id="festivalId"
+        :area-id="areaId"
+      />
+      <FestivalPage
+        v-else-if="section === 'festivals' && festivalId !== null"
+        :key="festivalId"
+        :festival-id="festivalId"
+      />
+      <FestivalsList v-else-if="section === 'festivals'" />
+      <AdminOverview v-else-if="section === 'overview'" />
+      <StationsList v-else-if="section === 'stations'" />
+      <ItemsList v-else-if="section === 'items'" />
+      <IngredientsList v-else-if="section === 'ingredients'" />
+      <UnitsList v-else-if="section === 'units'" />
+      <StaffList v-else-if="section === 'staff'" />
+    </div>
+
+  </v-defaults-provider>
 </template>
 
 <style scoped>

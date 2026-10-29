@@ -116,9 +116,9 @@ async function move(entry: TEntry, direction: MoveDirection): Promise<void> {
         :data-test="rowTestName"
         :data-test-id="idOf(entry)"
       >
-        <div class="row-line d-flex align-center flex-wrap ga-3 py-2 px-3">
-          <span class="entry-name text-body-1" data-test="entry-name">{{ nameOf(entry) }}</span>
-          <v-chip v-if="isHidden(entry)" class="hidden" data-test="hidden" size="small" color="grey">
+        <div class="row-line d-flex align-center flex-wrap admin-row">
+          <span class="entry-name" data-test="entry-name">{{ nameOf(entry) }}</span>
+          <v-chip v-if="isHidden(entry)" class="hidden" data-test="hidden" color="grey">
             {{ t('admin.festivals.labels.hidden') }}
           </v-chip>
           <v-spacer />

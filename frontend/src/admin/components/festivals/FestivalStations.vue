@@ -110,10 +110,10 @@ async function saveStation(station: StationDraft): Promise<void> {
 </script>
 
 <template>
-  <section class="festival-stations mb-4" data-test="festival-stations">
+  <section class="festival-stations admin-section-gap" data-test="festival-stations">
     <v-card variant="outlined">
-      <div class="pa-4">
-        <h2 class="section-heading text-h6 mb-3" data-test="section-heading">{{ t('admin.stations.title') }}</h2>
+      <div class="admin-card-body">
+        <h2 class="section-heading admin-section-title mb-3" data-test="section-heading">{{ t('admin.stations.title') }}</h2>
 
         <div class="rows mb-3">
           <RemovableStationRows
@@ -127,7 +127,7 @@ async function saveStation(station: StationDraft): Promise<void> {
             :remove-through="removeFromTheFestival"
           >
             <template #badges="{ station }">
-              <v-chip v-if="!station.isActive" class="deactivated" data-test="deactivated" size="small" color="grey">
+              <v-chip v-if="!station.isActive" class="deactivated" data-test="deactivated" color="grey">
                 {{ t('admin.common.labels.deactivated') }}
               </v-chip>
             </template>
@@ -137,15 +137,15 @@ async function saveStation(station: StationDraft): Promise<void> {
           </RemovableStationRows>
 
           <div v-if="atTheFestival.length === 0" class="festival-station-placeholder" data-test="festival-station-placeholder">
-            <div class="row-line d-flex align-center flex-wrap ga-3 py-2 px-3">
-              <span class="text-body-1">&nbsp;</span>
+            <div class="row-line d-flex align-center flex-wrap admin-row">
+              <span>&nbsp;</span>
             </div>
           </div>
         </div>
 
         <BaseSearchAddLine
           v-model:chosen-id="chosenStationId"
-          class="mt-6"
+          class="admin-block-gap"
           :entries="stillToAdd"
           entry-title="name"
           entry-value="stationId"
