@@ -60,9 +60,9 @@ Frontend, under `frontend/src/shared/`:
   `shared/core/landing.ts`), never through what an entry of the history still holds.
 - The trap: `router/backButtonTrap.ts`, beside the router and never importing it,
   `views/DoorGate.vue`, `frontend/public/door.html` and the boot script in `frontend/index.html`; the
-  frontend `CLAUDE.md` says how it works. `returnPathFor` there is where a reload through the doors
-  lands, which is not the parent of a screen: the order flow starts again at home, as
-  `routeToStartAt` in `route.ts` does after any reload.
+  frontend `CLAUDE.md` says how it works. `returnPathFor` there is where the doors lead when a back
+  press reloads the start screen, which is not the parent of a screen: the order flow starts again
+  at home, as `routeToStartAt` in `route.ts` does after any reload.
 
 ## Invariants
 
@@ -107,8 +107,14 @@ Frontend, under `frontend/src/shared/`:
   page cancels, back keeps the dialog open: the router steps forward to its entry again, so the next
   back after the answer closes it.
 - **The trap returns to the address shown.** After every settled move (a tap, a redirect, a way up,
-  a back or forward press) the trap holds the address on display, so a reload through the doors
-  lands where the person was.
+  a back or forward press) the trap holds the address on display, so a back press onto the start
+  screen sends the tab through the doors to where the person was.
+- **A reload keeps its address.** A reloaded page, or a tab the browser restores after dropping it
+  from memory, stays on the address it showed instead of going through the doors. The entries the
+  page made before belong to the page that was dropped, so back from the first screen of the
+  reloaded page walks those earlier entries first, each loaded afresh at its own address (the plan,
+  for a screen of the order flow), before it reaches the start screen and the doors. It never leaves
+  the app.
 - **Back never touches the draft.** Leaving the order screen by back keeps the unsent order in
   `localStorage` exactly as the way up does, and nothing here loads the page again.
 - **The station screen is one screen.** Back closes the hand-out confirmation when it is open and
@@ -138,6 +144,8 @@ Frontend, under `frontend/src/shared/`:
   dropdown list, the screen or the dialog under it staying) and `AppBackPressInTheAdmin.spec.ts`
   (tabs and then back, the trap from the festival list, the editor of an area, its way back and then
   back), on `tests/waiterPhoneBackPressFixture.ts` and `tests/support/browserHistory.ts`.
-- The trap: `shared/router/doorPage.spec.ts` and `backButtonTrapArming.spec.ts`.
+- The trap: `shared/router/doorPage.spec.ts` (the start tap, the door page, the anchor coming back),
+  `doorPage.boot.spec.ts` (the real boot script on the address loaded, a reload included),
+  `currentAddress.spec.ts` and `backButtonTrapArming.spec.ts`.
 - Whether a real Chrome or Safari skips an entry is not something jsdom can show; check that on a
   phone.

@@ -7,11 +7,25 @@
     <title>GastronomyApp</title>
     <script>
       (function () {
+        function opensANewAddress() {
+          var timing = window.performance
+          var entries = timing && timing.getEntriesByType ? timing.getEntriesByType('navigation') : []
+          if (entries.length > 0) {
+            return entries[0].type === 'navigate'
+          }
+          return Boolean(timing && timing.navigation && timing.navigation.type === 0)
+        }
+
         if (sessionStorage.getItem('arrivedThroughTheDoor') === 'yes') {
           sessionStorage.removeItem('arrivedThroughTheDoor')
           return
         }
-        if (sessionStorage.getItem('theDoorAnchor') === 'yes') {
+        if (sessionStorage.getItem('theDoorAnchor') !== 'yes' || opensANewAddress()) {
+          return
+        }
+        var anchorAddress = sessionStorage.getItem('theDoorAnchorAddress')
+        var address = window.location.pathname + window.location.search + window.location.hash
+        if (anchorAddress === null || anchorAddress === address) {
           window.location.assign('/door.html?n=10&v=' + encodeURIComponent(document.lastModified || ''))
         }
       })()

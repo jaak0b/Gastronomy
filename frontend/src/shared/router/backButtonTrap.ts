@@ -1,17 +1,15 @@
 import { assertNever } from '../core/assertNever'
+import { currentAddress } from './currentAddress'
 import type { AppRoute } from './route'
 
 export const BACK_BUTTON_TRAP_RETURN_PATH_KEY = 'theDoorTarget'
 export const BACK_BUTTON_TRAP_FRESH_START_KEY = 'arrivedThroughTheDoor'
 export const BACK_BUTTON_TRAP_ANCHOR_KEY = 'theDoorAnchor'
+export const BACK_BUTTON_TRAP_ANCHOR_ADDRESS_KEY = 'theDoorAnchorAddress'
 
 let trapIsActive = false
 
 let thisDocumentIsTheAnchor = false
-
-function currentAddress(): string {
-  return window.location.pathname + window.location.search + window.location.hash
-}
 
 function trapChainUrl(): string {
   return '/door.html?n=10&v=' + encodeURIComponent(document.lastModified || '')
@@ -54,6 +52,7 @@ export function backButtonTrapNeedsBuilding(): boolean {
 
 export function buildBackButtonTrap(): void {
   sessionStorage.setItem(BACK_BUTTON_TRAP_ANCHOR_KEY, 'yes')
+  sessionStorage.setItem(BACK_BUTTON_TRAP_ANCHOR_ADDRESS_KEY, currentAddress())
   sessionStorage.setItem(BACK_BUTTON_TRAP_RETURN_PATH_KEY, currentAddress())
   thisDocumentIsTheAnchor = true
   window.location.assign(trapChainUrl())

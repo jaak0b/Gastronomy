@@ -1,108 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { readFileSync } from 'node:fs'
+import {
+  aBrowserReporting,
+  runTheBoot,
+  runTheDoor,
+  withAFakedTick,
+  type TheStorage,
+} from '../../support/doorScripts'
 
 const thePageBefore = '/the-page-before'
-
-type TheStorage = Map<string, string>
-
-function theSessionStorageOver(storage: TheStorage) {
-  return {
-    getItem: (key: string) => storage.get(key) ?? null,
-    setItem: (key: string, value: string) => storage.set(key, value),
-    removeItem: (key: string) => storage.delete(key),
-  }
-}
-
-function theInlineScriptOf(file: string): string {
-  const match = readFileSync(file, 'utf8').match(/<script>([\s\S]*?)<\/script>/)
-  if (match === null) {
-    throw new Error(`no inline script in ${file}`)
-  }
-  return match[1]
-}
-
-function runTheDoor(search: string, storage: TheStorage) {
-  const handlers = new Map<string, () => void>()
-  const assigned: string[] = []
-  const theWindow = {
-    addEventListener: (type: string, handler: () => void) => handlers.set(type, handler),
-    location: { search, assign: (url: string) => assigned.push(url) },
-  }
-  const script = theInlineScriptOf('public/door.html')
-  new Function('window', 'sessionStorage', 'URLSearchParams', script)(
-    theWindow,
-    theSessionStorageOver(storage),
-    URLSearchParams,
-  )
-  return { assigned, handlers }
-}
-
-function runTheBoot(pathname: string, storage: TheStorage) {
-  const navigated: string[] = []
-  const theWindow = {
-    location: {
-      pathname,
-      search: '',
-      hash: '',
-      assign: (url: string) => navigated.push(url),
-    },
-  }
-  const theDocument = { lastModified: 'build-a' }
-  const script = theInlineScriptOf('index.html')
-  new Function('window', 'sessionStorage', 'document', script)(
-    theWindow,
-    theSessionStorageOver(storage),
-    theDocument,
-  )
-  return { navigated }
-}
-
-async function withAFakedTick(run: () => void): Promise<void> {
-  vi.useFakeTimers()
-  run()
-  await vi.advanceTimersByTimeAsync(1)
-  vi.useRealTimers()
-}
-
-describe('the shell boot script', () => {
-  it('waits for the start button on a tab where the doors were never opened', () => {
-    const storage: TheStorage = new Map()
-
-    const { navigated } = runTheBoot('/', storage)
-
-    expect(navigated).toEqual([])
-    expect(storage.size).toBe(0)
-  })
-
-  it('sends an already opened tab back through the doors when it is loaded again', () => {
-    const storage: TheStorage = new Map([['theDoorAnchor', 'yes']])
-
-    const { navigated } = runTheBoot('/', storage)
-
-    expect(navigated).toEqual(['/door.html?n=10&v=build-a'])
-  })
-
-  it('waits for the start button when the stored anchor is not the one the door writes', () => {
-    const storage: TheStorage = new Map([['theDoorAnchor', '{"opened":true}']])
-
-    const { navigated } = runTheBoot('/', storage)
-
-    expect(navigated).toEqual([])
-  })
-
-  it('stays put when the door just handed the app over', () => {
-    const storage: TheStorage = new Map([
-      ['theDoorAnchor', 'yes'],
-      ['arrivedThroughTheDoor', 'yes'],
-    ])
-
-    const { navigated } = runTheBoot('/', storage)
-
-    expect(navigated).toEqual([])
-    expect(storage.has('arrivedThroughTheDoor')).toBe(false)
-  })
-})
 
 describe('the start button', () => {
   beforeEach(() => {
@@ -129,6 +35,15 @@ describe('the start button', () => {
     sessionStorage.setItem(BACK_BUTTON_TRAP_ANCHOR_KEY, '{"opened":true}')
 
     expect(backButtonTrapNeedsBuilding()).toBe(true)
+  })
+
+  it('stores the address it was tapped at, so the boot script can tell a back press onto it', async () => {
+    window.history.replaceState({}, '', '/j/CODE')
+    const { BACK_BUTTON_TRAP_ANCHOR_ADDRESS_KEY, buildBackButtonTrap } = await import('../../../src/shared/router/backButtonTrap')
+
+    buildBackButtonTrap()
+
+    expect(sessionStorage.getItem(BACK_BUTTON_TRAP_ANCHOR_ADDRESS_KEY)).toBe('/j/CODE')
   })
 
   it('is marked with a target the boot script can use', async () => {
@@ -181,7 +96,7 @@ describe('the door page', () => {
       storage.set(key, sessionStorage.getItem(key)!)
     }
 
-    const { navigated } = runTheBoot('/', storage)
+    const { navigated } = runTheBoot('/', storage, aBrowserReporting('back_forward'))
     expect(navigated).toHaveLength(1)
 
     const { assigned, handlers } = runTheDoor('?n=1&v=build-a', storage)

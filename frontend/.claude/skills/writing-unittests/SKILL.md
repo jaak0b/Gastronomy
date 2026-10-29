@@ -171,6 +171,13 @@ copy of anything listed here.
   `shownOnAStartedRouterAt(path, load, props)`, `aBrowserThatCountsTheTap()` and
   `aBrowserWithoutUserActivation()`, `pressBack()`, `theNextMoveThroughTheHistory()` and
   `theAppWasLeftByBack()`. The `how-to` page `add-a-screen-or-a-dialog.md` shows how.
+- `doorScripts.ts` runs the real boot script of `index.html` and the real `public/door.html` on a
+  given address: `runTheBoot(address, storage, browser)`, `runTheDoor(search, storage)`,
+  `withAFakedTick`, `whereTheTabEndsUp(address, storage, browser)` (the boot script, the doors and
+  the boot script again, to the address the tab ends at) and
+  `aTabOpenedThroughTheStartButtonAt(address)` (the session storage the real start tap writes). A
+  browser's navigation type comes from `aBrowserReporting(type)`, `anOlderBrowserReporting(type)` or
+  `A_BROWSER_THAT_REPORTS_NO_NAVIGATION_TYPE`.
 - `plugins.ts` gives `testPlugins(locale)` for mounting, `mountApp.ts` mounts the whole app,
   `hubConnection.ts` fakes the SignalR hub, and `sourceFiles.ts` lists source files for the specs
   that scan the source tree.

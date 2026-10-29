@@ -1,5 +1,6 @@
 import { nextTick, ref, shallowRef, type Ref } from 'vue'
 import { assertNever } from '../core/assertNever'
+import { currentAddress } from './currentAddress'
 import { resolveRoute, routeToStartAt, type AppRoute } from './route'
 import {
   noteRouteChangeForBackButtonTrap,
@@ -45,7 +46,7 @@ const TAP_EVENTS = ['pointerdown', 'mousedown', 'touchend', 'keydown', 'click']
 const THIS_ROUTER = crypto.getRandomValues(new Uint32Array(2)).join('-')
 
 const startPlace: Place = {
-  path: window.location.pathname + window.location.search + window.location.hash,
+  path: currentAddress(),
   route: routeToStartAt(window.location.pathname),
   steps: [],
 }
