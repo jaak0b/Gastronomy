@@ -119,7 +119,9 @@ never contradicts it.
   interaction, so no automatic back trap survives on its own. The start screen (`DoorGate.vue`) needs
   one tap: that activation makes the screen the unskippable anchor. Only then is the chain of real
   `door.html` pages built, and a back press from the first screen skips the chain and lands on the
-  anchor, which rebuilds it and returns the device to the app. The trap is its own module,
+  anchor, which rebuilds it and returns the device to the app. An address loaded into a tab that
+  already shows the app, typed, pasted or followed, opens there; only a load of the start screen's
+  own entry that is not a new navigation is sent through the doors. The trap is its own module,
   `src/shared/router/backButtonTrap.ts`, beside the router and never importing it. Never build the
   chain at load and never remove the start screen. A tab behind the trap grows its history only by
   the screens and dialogs the user tapped into, one entry each, and every other move replaces the
