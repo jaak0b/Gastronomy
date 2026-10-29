@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
+import { useBackStepForAMenu } from '../../../shared/composables/useBackStep'
 import type { ParsedAmountInput } from '../../core/ingredientAmounts'
 import type {
   AdminIngredientView,
@@ -32,6 +33,7 @@ const emit = defineEmits<{ close: [] }>()
 const { t } = useI18n()
 const ingredients = useAdminIngredientsStore()
 const items = useAdminItemsStore()
+const ingredientListIsOpen = useBackStepForAMenu()
 const lineRefusals = useRowRefusals()
 const ingredientIdOfLineToRemove = ref<string | null>(null)
 const chosenIngredientId = ref<string | null>(null)
@@ -173,6 +175,7 @@ async function add(): Promise<void> {
     <div class="add-recipe-line" data-test="add-recipe-line">
       <div class="d-flex align-start flex-wrap ga-2">
         <v-autocomplete
+          v-model:menu="ingredientListIsOpen"
           :model-value="chosenIngredientId"
           class="ingredient-search"
           data-test="ingredient-search"

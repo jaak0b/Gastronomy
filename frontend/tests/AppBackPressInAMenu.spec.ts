@@ -1,15 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DOMWrapper, enableAutoUnmount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import {
   aBrowserThatCountsTheTap,
   aBrowserWithoutUserActivation,
+  aTabThatOpenedTheAppAt,
   pressBack,
   shownOnAStartedRouterAt,
   theAppWasLeftByBack,
   theNextMoveThroughTheHistory,
 } from './support/browserHistory'
-import { clickOn, waitUntil } from './support/dom'
+import { clickOn, isVisibleOnScreen, waitUntil } from './support/dom'
 import { anAdminArea, anAdminStation, anAdminTable } from './support/wireViews'
 
 enableAutoUnmount(afterEach)
@@ -20,15 +21,18 @@ const HALLE_WITH_A_HIDDEN_TABLE = anAdminArea({
   areaId: 'area-halle',
   tables: [anAdminTable({ tableId: 'table-7', name: '7', isHidden: true })],
 })
-
-function theMenuShows(selector: string): boolean {
-  const element = document.querySelector(selector)
-  return element !== null && new DOMWrapper(element).isVisible()
-}
+const HALLE_WITHOUT_A_HIDDEN_TABLE = anAdminArea({
+  areaId: 'area-halle',
+  tables: [anAdminTable({ tableId: 'table-7', name: '7', isHidden: false })],
+})
+const HALLE_WITH_ANOTHER_HIDDEN_TABLE = anAdminArea({
+  areaId: 'area-halle',
+  tables: [anAdminTable({ tableId: 'table-7', name: '7', isHidden: false }), anAdminTable({ tableId: 'table-8', name: '8', isHidden: true })],
+})
 
 async function openTheMenuOf(activator: string, content: string): Promise<void> {
   await clickOn(activator)
-  await waitUntil(() => expect(theMenuShows(content)).toBe(true))
+  await waitUntil(() => expect(isVisibleOnScreen(content)).toBe(true))
 }
 
 beforeEach(() => {
@@ -53,7 +57,7 @@ describe('back while the station choice of an article is open', () => {
 
     await pressBack()
 
-    expect({ open: theMenuShows('[data-test="station-checkbox"]'), leftTheApp: theAppWasLeftByBack() }).toEqual({
+    expect({ open: isVisibleOnScreen('[data-test="station-checkbox"]'), leftTheApp: theAppWasLeftByBack() }).toEqual({
       open: false,
       leftTheApp: false,
     })
@@ -70,7 +74,7 @@ describe('back while a menu of the table plan editor is open', () => {
 
     await pressBack()
 
-    expect({ open: theMenuShows('[data-test="station-to-place"]'), leftTheApp: theAppWasLeftByBack() }).toEqual({
+    expect({ open: isVisibleOnScreen('[data-test="station-to-place"]'), leftTheApp: theAppWasLeftByBack() }).toEqual({
       open: false,
       leftTheApp: false,
     })
@@ -85,7 +89,7 @@ describe('back while a menu of the table plan editor is open', () => {
 
     await pressBack()
 
-    expect({ open: theMenuShows('[data-test="hidden-table"]'), leftTheApp: theAppWasLeftByBack() }).toEqual({
+    expect({ open: isVisibleOnScreen('[data-test="hidden-table"]'), leftTheApp: theAppWasLeftByBack() }).toEqual({
       open: false,
       leftTheApp: false,
     })
@@ -104,5 +108,58 @@ describe('back while a menu of the table plan editor is open', () => {
     await pressBack()
 
     expect(theAppWasLeftByBack()).toBe(true)
+  })
+})
+
+describe('the hidden tables of the table plan editor', () => {
+  it('stay closed when another table is hidden after the last hidden one was shown while the list was open', async () => {
+    const toolbar = await shownOnAStartedRouterAt('/admin/festivals/fest-1/areas/area-halle', () => import('../src/admin/components/tablePlan/TablePlanToolbar.vue'), {
+      area: HALLE_WITH_A_HIDDEN_TABLE,
+      stationsOnNoPlan: [BAR],
+    })
+    await openTheMenuOf('[data-test="hidden-tables"]', '[data-test="hidden-table"]')
+    await toolbar.setProps({ area: HALLE_WITHOUT_A_HIDDEN_TABLE })
+
+    await toolbar.setProps({ area: HALLE_WITH_ANOTHER_HIDDEN_TABLE })
+    await flushPromises()
+
+    expect(isVisibleOnScreen('[data-test="hidden-table"]')).toBe(false)
+  })
+})
+
+describe('back while the menu of a shape in the table plan editor is open', () => {
+  it('closes the menu and stays in the editor', async () => {
+    aTabThatOpenedTheAppAt('/admin/festivals/fest-1/areas/area-halle')
+    const { startRouter } = await import('../src/shared/router/router')
+    startRouter()
+    const editor = await import('./admin/components/tablePlan/tablePlanEditorFixture')
+    editor.editorLaptop()
+    await editor.mountEditor()
+    await editor.openTheMenuOf(editor.TABLE_A1_SHAPE_ID)
+
+    await pressBack()
+
+    expect({ open: isVisibleOnScreen('[data-test="table-plan-menu"]'), leftTheApp: theAppWasLeftByBack() }).toEqual({
+      open: false,
+      leftTheApp: false,
+    })
+  })
+
+  it('keeps the dialog a menu entry opened, so back closes that dialog and stays in the editor', async () => {
+    aTabThatOpenedTheAppAt('/admin/festivals/fest-1/areas/area-halle')
+    const { startRouter } = await import('../src/shared/router/router')
+    startRouter()
+    const editor = await import('./admin/components/tablePlan/tablePlanEditorFixture')
+    editor.editorLaptop()
+    await editor.mountEditor()
+    await editor.chooseInTheMenuOf(editor.TABLE_A1_SHAPE_ID, 'edit-table-from-menu')
+    await waitUntil(() => expect(isVisibleOnScreen('[data-test="form-dialog"]')).toBe(true))
+
+    await pressBack()
+
+    expect({ dialog: isVisibleOnScreen('[data-test="form-dialog"]'), leftTheApp: theAppWasLeftByBack() }).toEqual({
+      dialog: false,
+      leftTheApp: false,
+    })
   })
 })

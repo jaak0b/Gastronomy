@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminIngredientView } from '../../../shared/api/generatedSchemas'
+import { useBackStepForAMenu } from '../../../shared/composables/useBackStep'
 import type { IngredientDraft } from '../../stores/ingredients'
 import { useAdminUnitsStore } from '../../stores/units'
 import BaseFormDialog from '../../../shared/components/BaseFormDialog.vue'
@@ -11,6 +12,7 @@ const emit = defineEmits<{ save: [draft: IngredientDraft]; cancel: [] }>()
 
 const { t } = useI18n()
 const units = useAdminUnitsStore()
+const unitListIsOpen = useBackStepForAMenu()
 const name = ref(props.ingredient?.name ?? '')
 const unitId = ref<string | null>(props.ingredient?.unitId ?? null)
 
@@ -59,6 +61,7 @@ function save(): void {
     />
     <v-select
       v-model="unitId"
+      v-model:menu="unitListIsOpen"
       class="ingredient-unit-field"
       data-test="ingredient-unit-field"
       :label="t('admin.ingredients.labels.unit')"

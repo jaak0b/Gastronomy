@@ -4,6 +4,7 @@ import {
   historyMoveFor,
   placeToOpen,
   withStep,
+  withoutStep,
   type BackStep,
   type Place,
 } from '../../../src/shared/router/historyMoves'
@@ -274,5 +275,22 @@ describe('opening a step that is already open', () => {
     const place = withStep(at({ name: 'home' }, HALLE, TISCH_12), GARTEN)
 
     expect(place.steps).toEqual([GARTEN])
+  })
+})
+
+describe('closing a step', () => {
+  const CONTEXT_MENU: BackStep = { name: 'dialog-2', value: 'dialog-2', kind: 'dialog' }
+  const TABLE_DIALOG: BackStep = { name: 'dialog-3', value: 'dialog-3', kind: 'dialog' }
+
+  it('leaves a dialog that opened above a closing menu in the same move', () => {
+    const place = withoutStep(at(FESTIVAL_LIST, CONTEXT_MENU, TABLE_DIALOG), 'dialog-2')
+
+    expect(place.steps).toEqual([TABLE_DIALOG])
+  })
+
+  it('closes what was open on a level that closes', () => {
+    const place = withoutStep(at({ name: 'home' }, HALLE, TISCH_12), 'area')
+
+    expect(place.steps).toEqual([])
   })
 })

@@ -1,5 +1,5 @@
 import { expect, vi } from 'vitest'
-import { flushPromises } from '@vue/test-utils'
+import { DOMWrapper, flushPromises } from '@vue/test-utils'
 
 export function testIdSelector(testId: string, id?: string): string {
   return id === undefined
@@ -29,6 +29,11 @@ export function iconActionLabelsOnScreen(): string[] {
 
 export function isOnScreen(selector: string, root: ParentNode = document): boolean {
   return root.querySelector(selector) !== null
+}
+
+export function isVisibleOnScreen(selector: string): boolean {
+  const element = document.querySelector(selector)
+  return element !== null && new DOMWrapper(element).isVisible()
 }
 
 export function textOnScreen(selector: string, root: ParentNode = document): string {

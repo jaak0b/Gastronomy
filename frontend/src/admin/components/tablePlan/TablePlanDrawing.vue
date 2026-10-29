@@ -16,6 +16,7 @@ import {
   type VueKonvaRef,
 } from 'vue-konva'
 import type { AdminAreaView, AreaShapeGeometry } from '../../../shared/api/generatedSchemas'
+import { useBackStepForAMenu } from '../../../shared/composables/useBackStep'
 import { useShapeNameWordWidth } from '../../../shared/composables/useShapeNameWordWidth'
 import { useThemedValue } from '../../../shared/composables/useThemedValue'
 import { assertNever } from '../../../shared/core/assertNever'
@@ -128,7 +129,7 @@ const visibleWidth = ref(0)
 const guides = ref<SnapGuide[]>([])
 const marqueeBox = ref<PlanRectangle | null>(null)
 const contextMenu = ref<ContextMenuState | null>(null)
-const contextMenuOpen = ref(false)
+const contextMenuOpen = useBackStepForAMenu()
 let groupDrag: GroupDrag | null = null
 let marqueeStart: MarqueeStart | null = null
 let resizeObserver: ResizeObserver | null = null

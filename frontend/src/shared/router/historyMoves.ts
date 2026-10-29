@@ -1,3 +1,4 @@
+import { assertNever } from '../core/assertNever'
 import { isSameRoute, parentRouteOf, type AppRoute } from './route'
 
 type StepKind = 'level' | 'dialog'
@@ -70,9 +71,21 @@ export function withStep(place: Place, step: BackStep): Place {
   return { ...place, steps: [...kept, step] }
 }
 
+function stepsLeftAfterClosing(steps: readonly BackStep[], position: number): BackStep[] {
+  const closing = steps[position].kind
+  switch (closing) {
+    case 'level':
+      return steps.slice(0, position)
+    case 'dialog':
+      return [...steps.slice(0, position), ...steps.slice(position + 1)]
+    default:
+      return assertNever(closing)
+  }
+}
+
 export function withoutStep(place: Place, name: string): Place {
   const existing = place.steps.findIndex((open) => open.name === name)
-  return existing === -1 ? place : { ...place, steps: place.steps.slice(0, existing) }
+  return existing === -1 ? place : { ...place, steps: stepsLeftAfterClosing(place.steps, existing) }
 }
 
 function levelsOf(steps: readonly BackStep[]): BackStep[] {

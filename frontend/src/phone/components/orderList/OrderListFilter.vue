@@ -2,12 +2,15 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { OrderStatus, PaymentStatus } from '../../../shared/api/generatedSchemas'
+import { useBackStepForAMenu } from '../../../shared/composables/useBackStep'
 import type { TableSearchFilter } from '../../core/openItems'
 
 const props = defineProps<{ filter: TableSearchFilter }>()
 const emit = defineEmits<{ change: [filter: TableSearchFilter] }>()
 
 const { t } = useI18n()
+const orderStatusListIsOpen = useBackStepForAMenu()
+const paymentStatusListIsOpen = useBackStepForAMenu()
 
 const EVERY = 'every'
 
@@ -44,6 +47,7 @@ function pickPaymentStatus(choice: PaymentStatusChoice): void {
   <div class="order-list-filter" data-test="order-list-filter">
     <div class="d-flex ga-3">
       <v-select
+        v-model:menu="orderStatusListIsOpen"
         class="filter-choice"
         data-test="order-status-filter"
         :label="t('phone.orderOverview.filter.ordersHeading')"
@@ -52,6 +56,7 @@ function pickPaymentStatus(choice: PaymentStatusChoice): void {
         @update:model-value="pickOrderStatus"
       />
       <v-select
+        v-model:menu="paymentStatusListIsOpen"
         class="filter-choice"
         data-test="payment-status-filter"
         :label="t('phone.orderOverview.filter.itemsHeading')"

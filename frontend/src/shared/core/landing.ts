@@ -144,3 +144,15 @@ export function waiterLandingFor(facts: WaiterLandingFacts): WaiterLanding {
   }
   return { kind: 'areaList' }
 }
+
+export interface AreaOfThePlan {
+  areaId: string
+  tables: readonly { tableId: string }[]
+}
+
+export function areaToOpenForTheTable(areas: readonly AreaOfThePlan[], tableId: string): string | null {
+  if (areas.length < 2) {
+    return null
+  }
+  return areas.find((area) => area.tables.some((table) => table.tableId === tableId))?.areaId ?? null
+}

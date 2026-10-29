@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useBackStepForAMenu } from '../../shared/composables/useBackStep'
 import BaseActionWithRefusalReason from './BaseActionWithRefusalReason.vue'
 
 defineProps<{
@@ -16,6 +17,7 @@ const chosenId = defineModel<string | null>('chosenId', { required: true })
 const emit = defineEmits<{ add: [] }>()
 
 const { t } = useI18n()
+const searchListIsOpen = useBackStepForAMenu()
 </script>
 
 <template>
@@ -28,6 +30,7 @@ const { t } = useI18n()
       <template #default="{ refused }">
         <v-autocomplete
           v-model="chosenId"
+          v-model:menu="searchListIsOpen"
           class="search-field flex-grow-1"
           :data-test="searchTestName"
           :items="entries"

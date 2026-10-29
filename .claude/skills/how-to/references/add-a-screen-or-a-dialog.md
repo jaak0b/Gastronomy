@@ -39,20 +39,27 @@ that reads it, as `AREA_STEP` in `phone/stores/tablePlan.ts`.
 - A dialog mounted with `v-if` closes its step when it unmounts, so closing it by its own button
   needs nothing more, and a button that leads to another screen just navigates.
 
-## A menu
+## A menu or a dropdown list
 
-A `v-menu` takes its open state from `useBackStepForAMenu()` and binds it with `v-model`:
-`const stationChoiceIsOpen = useBackStepForAMenu()` and `<v-menu v-model="stationChoiceIsOpen">`,
-as `admin/components/festivals/StationSelect.vue` does. Back closes it; a selection or a click
-outside closes it and takes its step away again.
+- A `v-menu` takes its open state from `useBackStepForAMenu()` and binds it with `v-model`:
+  `const stationChoiceIsOpen = useBackStepForAMenu()` and `<v-menu v-model="stationChoiceIsOpen">`,
+  as `admin/components/festivals/StationSelect.vue` does.
+- A `v-select` or `v-autocomplete` binds the same open state to its dropdown list with
+  `v-model:menu`, one call per field: `<v-select v-model:menu="unitListIsOpen">`, as
+  `admin/components/ingredients/IngredientDialog.vue` does. Back then closes only the list, and the
+  dialog or screen under it stays.
+- A menu shown under its own `v-if` goes into a component of its own, rendered under that `v-if`,
+  as `TablePlanToolbarHiddenTables.vue` is, so its open state ends with the menu.
+- Back closes the menu; a selection or a click outside closes it and takes its step away again.
 
 ## Tests
 
 - A new parent is one row in `frontend/tests/shared/router/parentRoutes.spec.ts`.
-- A new dialog or menu gets a mounted test in `tests/AppBackPressInADialog.spec.ts` or
-  `tests/AppBackPressInAMenu.spec.ts`: `shownOnAStartedRouterAt(path, load, props)` from
-  `tests/support/browserHistory.ts` mounts it on a started router, then `pressBack()`, and the test
-  reads what it emitted or whether its menu still shows, and `theAppWasLeftByBack()`.
+- A new dialog, menu or dropdown list gets a mounted test in `tests/AppBackPressInADialog.spec.ts`,
+  `tests/AppBackPressInAMenu.spec.ts` or `tests/AppBackPressInADropdownList.spec.ts`:
+  `shownOnAStartedRouterAt(path, load, props)` from `tests/support/browserHistory.ts` mounts it on
+  a started router, then `pressBack()`, and the test reads what it emitted, whether its menu or list
+  still shows (`isVisibleOnScreen` from `tests/support/dom.ts`), and `theAppWasLeftByBack()`.
 - What back does across screens is a mounted spec built like `tests/AppBackPressOnThePhone.spec.ts`
   on `tests/waiterPhoneBackPressFixture.ts`: `aTabThatOpenedTheAppAt(path)` and
   `aBrowserThatCountsTheTap()` after `vi.resetModules()`, `startRouter()` from the freshly imported

@@ -62,10 +62,10 @@ Frontend, under `frontend/src/phone/`:
   mode per station (`order.chooseDeliveryMode`, with `core/stationOrders.ts` and
   `core/stationDeliveries.ts`), the order total and the two send buttons.
 - Once the laptop accepted the order, `composables/useSendAndLeave.ts` lands on the plan of the
-  area the order was taken in, with that area still open, for "Senden und später kassieren", or
-  opens the table's settle view with the new items ticked for "Senden und kassieren". It does so in
-  the continuation of the send the waiter started, whichever screen shows when the answer comes, so
-  a back press while the order is on its way changes nothing. Both moves are redirects that take the
+  area that holds the order's table, with that area open (`tablePlan.openTheAreaOfTheTable`), for
+  "Senden und später kassieren", or opens the table's settle view with the new items ticked for
+  "Senden und kassieren". It does so in the continuation of the send the waiter started, whichever
+  screen shows when the answer comes, so back presses while the order is on its way change nothing. Both moves are redirects that take the
   order screen and the summary out of the history, so neither back nor forward reopens the sent
   order (see the `back-button` page).
 - Texts: `phone.catalog.*`, `phone.tablePlan.*` (the action sheet and the question about unsent

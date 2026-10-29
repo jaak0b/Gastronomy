@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isDrawnAtPhoneSizes, screenFor, waiterLandingFor } from '../../../src/shared/core/landing'
+import { areaToOpenForTheTable, isDrawnAtPhoneSizes, screenFor, waiterLandingFor } from '../../../src/shared/core/landing'
 
 const aStationTablet = { state: 'stationTablet' } as const
 const aWaiterPhone = { state: 'waiterPhone' } as const
@@ -153,5 +153,22 @@ describe('isDrawnAtPhoneSizes, which screens take the sizes of the phone', () =>
 
   it('leaves the admin to the admin sizes', () => {
     expect(isDrawnAtPhoneSizes('admin')).toBe(false)
+  })
+})
+
+describe('the area to open so the plan shows a table', () => {
+  const HALLE = { areaId: 'area-halle', tables: [{ tableId: 'table-12' }] }
+  const GARTEN = { areaId: 'area-garten', tables: [{ tableId: 'table-31' }] }
+
+  it('is the area that holds the table when the festival has several', () => {
+    expect(areaToOpenForTheTable([HALLE, GARTEN], 'table-31')).toBe('area-garten')
+  })
+
+  it('is none when the festival has one area, whose plan shows without opening it', () => {
+    expect(areaToOpenForTheTable([HALLE], 'table-12')).toBeNull()
+  })
+
+  it('is none when no area holds the table any more', () => {
+    expect(areaToOpenForTheTable([HALLE, GARTEN], 'table-99')).toBeNull()
   })
 })

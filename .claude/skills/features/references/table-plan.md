@@ -298,7 +298,7 @@ Frontend, under `frontend/src/`:
   `rectangleToStrokeInside(size, strokeWidth)`, the `PlanRectangle` a stroke follows so that the
   whole stroke stays inside `size`, ready to spread into a Konva `Rect`.
 - `phone/stores/tablePlan.ts` (`useTablePlanStore`: `areas`, `hasLoaded`, `loadFailed`,
-  `openedAreaId`, `load`, `listen`, `openArea`, `closeArea`) reads `GET /api/table-plan` through the
+  `openedAreaId`, `load`, `listen`, `openArea`, `closeArea`, `openTheAreaOfTheTable`) reads `GET /api/table-plan` through the
   latest request gate and reloads on `ConfigurationChanged` (the plan) and `OrdersChanged` (the
   colours); `App.vue` starts its listeners and its first load with the catalog's, and the connection's
   refetch on `GroupsJoined` reloads it. The opened area is the router's step `area` and the sheet of

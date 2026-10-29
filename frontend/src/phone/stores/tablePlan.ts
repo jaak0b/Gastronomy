@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request } from '../../shared/api/client'
 import { TablePlanAreaView, TablePlanView } from '../../shared/api/generatedSchemas'
+import { areaToOpenForTheTable } from '../../shared/core/landing'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { closeStep, openStep, openStepValue } from '../../shared/router/router'
 import { useConnectionStore } from '../../shared/stores/connection'
@@ -50,5 +51,14 @@ export const useTablePlanStore = defineStore('tablePlan', () => {
     closeStep(AREA_STEP)
   }
 
-  return { areas, hasLoaded, loadFailed, openedAreaId, load, listen, openArea, closeArea }
+  function openTheAreaOfTheTable(tableId: string): void {
+    const areaId = areaToOpenForTheTable(areas.value, tableId)
+    if (areaId === null) {
+      closeArea()
+      return
+    }
+    openArea(areaId)
+  }
+
+  return { areas, hasLoaded, loadFailed, openedAreaId, load, listen, openArea, closeArea, openTheAreaOfTheTable }
 })

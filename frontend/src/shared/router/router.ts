@@ -258,18 +258,16 @@ export function openStep(step: BackStep, onBack?: BackHandler): void {
 }
 
 export function closeStep(name: string): void {
-  const steps = shownSteps.value
-  const position = steps.findIndex((step) => step.name === name)
+  const shown = shownPlace()
+  const stillShown = withoutStep(shown, name)
   const withoutTheClosedStep = withoutStep(currentEntryMinusClosedSteps, name)
   backHandlers.delete(name)
-  if (position === -1 && withoutTheClosedStep === currentEntryMinusClosedSteps) {
+  if (stillShown === shown && withoutTheClosedStep === currentEntryMinusClosedSteps) {
     return
   }
   currentEntryMinusClosedSteps = withoutTheClosedStep
-  if (position !== -1) {
-    shownSteps.value = steps.slice(0, position)
-    closeTheDialogsOf(steps.slice(position + 1))
-  }
+  shownSteps.value = stillShown.steps
+  closeTheDialogsOf(shown.steps.filter((step) => step.name !== name && !holdsTheStep(stillShown.steps, step)))
   queueTheHistory('tap')
 }
 

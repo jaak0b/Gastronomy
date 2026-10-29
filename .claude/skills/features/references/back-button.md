@@ -3,8 +3,8 @@
 On the phone, the station tablet and the laptop, the hardware or browser back button goes one step
 back inside the app, without loading it again. A step is a screen, a dialog or a menu the person
 tapped into: on the phone, back from the order screen shows the sheet of the table it was opened
-from, then the plan of that area, then the area list. Back with a dialog or a menu open closes it and
-stays on the screen. From a first screen (the area list or the plan of the only area, the station
+from, then the plan of that area, then the area list. Back with a dialog, a menu or a dropdown list
+open closes it and stays on the screen or the dialog under it. From a first screen (the area list or the plan of the only area, the station
 screen, the festival list in the admin) back reaches the back-button trap, which returns the device
 to the app. A tab opens through the start screen (`DoorGate.vue`), whose one tap builds that trap.
 
@@ -36,21 +36,28 @@ Frontend, under `frontend/src/shared/`:
   back or forward press through `popstate`, and tells the trap the address shown once a move has
   settled.
 - `composables/useBackStep.ts`: `useBackStep(close, { isOpen, refusesBackWhile })` gives a dialog
-  its step, and `useBackStepForAMenu()` gives a `v-menu` its open state (bound with `v-model`) with a
-  step. `BaseConfirmDialog.vue` and `BaseFormDialog.vue` call `useBackStep`, so back works like their
+  its step, and `useBackStepForAMenu()` gives a menu its open state with a step: a `v-menu` binds it
+  with `v-model`, a `v-select` or `v-autocomplete` with `v-model:menu` for its dropdown list. `BaseConfirmDialog.vue` and `BaseFormDialog.vue` call `useBackStep`, so back works like their
   cancel and is refused while the form dialog is `busy`. The other dialogs call it themselves:
   `SettingsSheet`, `UnsentOrderDialog`, `LineStationSheet`, `ItemNoteDialog` (with its own
   `isOpen`), `AmountPaidDialog` (refused while it settles), `CancelItemsDialog` (refused while it
   cancels), `ItemHistoryDialog` and `StationDoneDialog`. The menus: the station choice of an
-  article (`admin/components/festivals/StationSelect.vue`) and the two menus of
-  `admin/components/tablePlan/TablePlanToolbar.vue`. The menu of `TablePlanDrawing.vue` has no step
-  yet.
+  article (`admin/components/festivals/StationSelect.vue`), the stations to place in
+  `admin/components/tablePlan/TablePlanToolbar.vue`, the hidden tables in its own
+  `TablePlanToolbarHiddenTables.vue` (so its open state ends when the last hidden table goes) and the
+  context menu of `TablePlanDrawing.vue`. The dropdown lists: both lists of
+  `phone/components/orderList/OrderListFilter.vue` (the orders of a table and the settle view),
+  `shared/components/LanguageSwitch.vue`, the unit in `admin/components/ingredients/IngredientDialog.vue`,
+  the category in `admin/components/items/ItemDialog.vue`, the ingredient search in
+  `ItemIngredientsDialog.vue` and the search of `admin/components/BaseSearchAddLine.vue`.
 - The steps of the phone: `phone/stores/tablePlan.ts` keeps the opened area as the step `area`,
   `phone/views/TablePlan.vue` the sheet of a tapped table as the step `table` (kind `dialog`), and
   `phone/views/Catalog.vue` the open category as the step `category`.
 - Sending: `phone/composables/useSendAndLeave.ts` decides where the phone goes once the laptop
   accepted an order, in the continuation of the send the waiter started, whichever screen is on
-  display when the answer comes.
+  display when the answer comes. It remembers the order's table when the send starts and opens the
+  area that holds it through `tablePlan.openTheAreaOfTheTable` (`areaToOpenForTheTable` in
+  `shared/core/landing.ts`), never through what an entry of the history still holds.
 - The trap: `router/backButtonTrap.ts`, beside the router and never importing it,
   `views/DoorGate.vue`, `frontend/public/door.html` and the boot script in `frontend/index.html`; the
   frontend `CLAUDE.md` says how it works. `returnPathFor` there is where a reload through the doors
@@ -76,20 +83,25 @@ Frontend, under `frontend/src/shared/`:
 - **A redirect never adds an entry.** A move a screen makes on its own passes `'redirect'`: the
   locked order to the summary, an order screen without a table, a settle view or an order overview
   without a table, an unknown festival or area, and the move after sending.
-- **Once the laptop accepts an order, the phone goes where sending leads**, also when back was
+- **Once the laptop accepts an order, the phone goes where sending leads**, however often back was
   pressed while the order was on its way. "Senden und später kassieren" lands on the plan of the
-  area the order was taken in, with that area still open (the area list or the plan of the only
-  area when no area was open); "Senden und kassieren" puts the settle view in place of the order
-  screen, so back from it reaches the sheet of the table. Back never reaches the sent order.
+  area that holds the order's table, with that area open (with one area, its plan; with no area
+  holding the table any more, the area list); "Senden und kassieren" puts the settle view in place of
+  the order screen, so back from it reaches the sheet of the table. Back never reaches the sent
+  order.
 - **Forward never shows what the app itself left behind.** Entries the router went back past or
   wrote over (a sent order's screens, a dialog or menu closed by its own button, the screen a way up
   left) are dropped from its copy, and a forward press onto one returns at once. Forward still
   returns to an entry the person went back from, as long as nothing was written since: the sheet of
   a table opens again, because the router holds it; a dialog or a menu does not, because its owner
   holds whether it is open.
-- **A dialog closed by its own button takes its entry with it**, and so does a menu closed by a
-  selection or a click outside. A dialog whose button leads to another screen gives its entry to
-  that screen. The sheet of a table stays in the history when one of its buttons leads on, so back
+- **A dialog closed by its own button takes its entry with it**, and so does a menu or a dropdown
+  list closed by a selection or a click outside. A dialog whose button leads to another screen gives
+  its entry to that screen. Closing a dialog or a menu removes only its own step, so a dialog that a
+  menu entry opens in the same tap keeps its step; closing a level (an area, a category) closes what
+  was open on it.
+- **An open state ends with its menu.** A menu shown under its own `v-if` lives in a component of
+  its own, so its open state and its step go when the menu goes and it never reopens by itself. The sheet of a table stays in the history when one of its buttons leads on, so back
   returns to it.
 - **A dialog can refuse back.** While a form dialog saves, the amount page settles or the cancel
   page cancels, back keeps the dialog open: the router steps forward to its entry again, so the next
@@ -106,7 +118,9 @@ Frontend, under `frontend/src/shared/`:
 
 - `frontend/tests/shared/router/historyMoves.spec.ts` (deeper, siblings, up, after sending, a
   redirect, a dialog closed by its button or giving its entry away, nothing changed; whether a tap
-  may add an entry: active, passed, no API, after a back press; the steps a screen opens with),
+  may add an entry: active, passed, no API, after a back press; the steps a screen opens with;
+  closing a menu under a new dialog and closing a level), `shared/core/landing.spec.ts` (the area to
+  open for a table),
   `parentRoutes.spec.ts` (the parent table) and `historySteps.spec.ts` (the router on the jsdom
   history: a tapped move, no API, a tap after a back press, a redirect, a move up, a step closed by
   back and by its own button, the address the doors return to after a tap and after a way up, a
@@ -116,9 +130,12 @@ Frontend, under `frontend/src/shared/`:
   dialog, the way up and then back, the draft kept, "Tischpläne" and back),
   `AppBackPressAfterSending.spec.ts` (the landing on the area's plan, back pressed while the order
   was on its way, back after sending, forward after sending, "Senden und kassieren" and three back
-  presses), `AppBackPressInADialog.spec.ts` (every dialog, the busy form dialog, the amount page
-  while it settles, the cancel page while it cancels), `AppBackPressInAMenu.spec.ts` (the station
-  choice, both toolbar menus, a menu closed by its selection) and `AppBackPressInTheAdmin.spec.ts`
+  presses, three back presses while the order was on its way), `AppBackPressInADialog.spec.ts`
+  (every dialog, the busy form dialog, the amount page while it settles, the cancel page while it
+  cancels), `AppBackPressInAMenu.spec.ts` (the station choice, both toolbar menus, a menu closed by
+  its selection, the hidden tables staying closed after the last one went, the context menu of the
+  drawing and the dialog one of its entries opens), `AppBackPressInADropdownList.spec.ts` (every
+  dropdown list, the screen or the dialog under it staying) and `AppBackPressInTheAdmin.spec.ts`
   (tabs and then back, the trap from the festival list, the editor of an area, its way back and then
   back), on `tests/waiterPhoneBackPressFixture.ts` and `tests/support/browserHistory.ts`.
 - The trap: `shared/router/doorPage.spec.ts` and `backButtonTrapArming.spec.ts`.

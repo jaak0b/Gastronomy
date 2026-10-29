@@ -150,7 +150,7 @@ copy of anything listed here.
   `stubLaptopAnswering(payloadFor)` cover the two common table shapes.
   `aHold()` gives a reply gate for `heldUntil`: pass its `released` promise and call `release()` when
   the test wants the laptop to answer.
-- `dom.ts` finds and drives elements: `onScreen`, `allOnScreen`, `isOnScreen`, `textOnScreen`,
+- `dom.ts` finds and drives elements: `onScreen`, `allOnScreen`, `isOnScreen`, `isVisibleOnScreen`, `textOnScreen`,
   `inputOf`, `typeInto`, `typeIn`, `leave`, `clickOn`, `waitUntil`, and the confirmation dialog helpers
   `openDialog`, `waitForDialog`, `dialogText` and `pressInDialog`.
 - `formDialogs.ts` fills and saves or cancels the admin form dialogs.

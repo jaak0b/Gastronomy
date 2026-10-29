@@ -58,6 +58,20 @@ describe('sending an order to settle later', () => {
     await waitUntil(() => expect(whatThePhoneShows()).toEqual(THE_PLAN_OF_HALLE))
   })
 
+  it('lands on the plan of the area the order was taken in, however often back was pressed while it was on its way', async () => {
+    const hold = aHold()
+    aLaptopWithTwoAreas(heldUntil(hold.released, answer(AN_ACCEPTED_ORDER)))
+    await theSummaryOfTheOrderForTisch12InHalle()
+    await clickOn('[data-test="send-and-settle-later"]')
+    await pressBack()
+    await pressBack()
+    await pressBack()
+
+    hold.release()
+
+    await waitUntil(() => expect(whatThePhoneShows()).toEqual(THE_PLAN_OF_HALLE))
+  })
+
   it('goes from the plan of the area to the area list on back, never into the sent order', async () => {
     aLaptopWithTwoAreas()
     await theSummaryOfTheOrderForTisch12InHalle()

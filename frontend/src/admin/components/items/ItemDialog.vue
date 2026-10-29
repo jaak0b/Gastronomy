@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AdminItemView } from '../../../shared/api/generatedSchemas'
+import { useBackStepForAMenu } from '../../../shared/composables/useBackStep'
 import { assertNever } from '../../../shared/core/assertNever'
 import { LONGEST_PRODUCTION_MINUTES } from '../../../shared/core/productionMinutes'
 import {
@@ -22,6 +23,7 @@ const emit = defineEmits<{ save: [item: AdminItemDraft]; cancel: [] }>()
 
 const { t, locale } = useI18n()
 const categories = useAdminCategoriesStore()
+const categoryListIsOpen = useBackStepForAMenu()
 const name = ref(props.item?.name ?? '')
 const categoryId = ref<string | null>(props.item?.categoryId ?? null)
 const categoryIsMissing = ref(false)
@@ -117,6 +119,7 @@ function commitThePreparationTime(event: KeyboardEvent): void {
     <div class="category-line d-flex align-center ga-2 admin-section-gap">
       <v-select
         v-model="categoryId"
+        v-model:menu="categoryListIsOpen"
         class="category-field flex-grow-1"
         data-test="category-field"
         :label="t('admin.items.labels.category')"
