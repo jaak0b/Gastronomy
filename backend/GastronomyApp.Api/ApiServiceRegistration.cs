@@ -53,8 +53,8 @@ public sealed class ApiServiceRegistration
     services.AddScoped(provider => provider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext());
     services.AddScoped<IGastronomyDatabase>(provider => provider.GetRequiredService<GastronomyAppDbContext>());
 
-    services.AddSingleton<Pbkdf2SecretHasher>();
-    services.AddSingleton<ISecretHasher>(provider => provider.GetRequiredService<Pbkdf2SecretHasher>());
+    services.AddSingleton<SecretHasher>();
+    services.AddSingleton<ISecretHasher>(provider => provider.GetRequiredService<SecretHasher>());
     services.AddSingleton<SqliteFailureTranslator>();
 
     services.AddScoped<AfterCommitActions>();

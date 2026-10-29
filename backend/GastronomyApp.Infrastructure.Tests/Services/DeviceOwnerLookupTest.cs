@@ -22,6 +22,7 @@ public sealed class DeviceOwnerLookupTest
     _fixture.Dispose();
   }
 
+  private readonly ReleasedSecretHash _released = new();
   private EnrolmentComposition _composition = null!;
   private SqliteInMemoryFixture _fixture = null!;
   private SeededDomain _seeded = null!;
@@ -66,6 +67,31 @@ public sealed class DeviceOwnerLookupTest
   }
 
   [Test]
+  public async Task FindByTokenAsync_ATokenTheReleasedBuildStoredWithPbkdf2_NamesTheWaiterAndTheDevice()
+  {
+    var device = await GiveTheReleasedTokenAsync(_fixture.DbContext.StaffMembers.Where(staffMember => staffMember.Id == _seeded.StaffMemberId));
+
+    var owner = await _composition.Lookup.FindByTokenAsync(device.TokenLookupId, _released.Secret, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(owner, Is.InstanceOf<StaffMember>());
+                      Assert.That(owner!.Id, Is.EqualTo(_seeded.StaffMemberId));
+                      Assert.That(owner.Device!.Id, Is.EqualTo(device.Id));
+                    });
+  }
+
+  [Test]
+  public async Task FindByTokenAsync_AWrongSecretForATokenTheReleasedBuildStoredWithPbkdf2_NamesNobody()
+  {
+    var device = await GiveTheReleasedTokenAsync(_fixture.DbContext.StaffMembers.Where(staffMember => staffMember.Id == _seeded.StaffMemberId));
+
+    var owner = await _composition.Lookup.FindByTokenAsync(device.TokenLookupId, "wrong-secret", TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(owner, Is.Null);
+  }
+
+  [Test]
   public async Task FindByTokenAsync_AnUnknownLookupId_NamesNobody()
   {
     var owner = await _composition.Lookup.FindByTokenAsync(Guid.NewGuid().ToString("N"), "any-secret", TestContext.CurrentContext.CancellationToken);
@@ -101,19 +127,40 @@ public sealed class DeviceOwnerLookupTest
 
   private async Task<Device> GiveAsync<TOwner>(IQueryable<TOwner> owners) where TOwner : class, IDeviceOwner
   {
-    var hashed = new Pbkdf2SecretHasher().Hash(Secret);
+    var hashed = new SecretHasher().Hash(Secret);
     Device device = new()
                     {
                       Id = Guid.NewGuid(),
                       Language = "de",
                       TokenHash = hashed.Hash,
                       TokenSalt = hashed.Salt,
-                      TokenIterations = hashed.Iterations,
                       TokenAlgorithm = hashed.Algorithm,
                       TokenLookupId = Guid.NewGuid().ToString("N"),
                       CreatedAtUtc = DateTime.UtcNow
                     };
 
+    return await GiveAsync(owners, device);
+  }
+
+  private async Task<Device> GiveTheReleasedTokenAsync<TOwner>(IQueryable<TOwner> owners) where TOwner : class, IDeviceOwner
+  {
+    Device device = new()
+                    {
+                      Id = Guid.NewGuid(),
+                      Language = "de",
+                      TokenHash = _released.Hash,
+                      TokenSalt = _released.Salt,
+                      TokenIterations = _released.Iterations,
+                      TokenAlgorithm = _released.Algorithm,
+                      TokenLookupId = Guid.NewGuid().ToString("N"),
+                      CreatedAtUtc = DateTime.UtcNow
+                    };
+
+    return await GiveAsync(owners, device);
+  }
+
+  private async Task<Device> GiveAsync<TOwner>(IQueryable<TOwner> owners, Device device) where TOwner : class, IDeviceOwner
+  {
     _fixture.DbContext.Devices.Add(device);
     var owner = await owners.SingleAsync(TestContext.CurrentContext.CancellationToken);
     owner.DeviceId = device.Id;

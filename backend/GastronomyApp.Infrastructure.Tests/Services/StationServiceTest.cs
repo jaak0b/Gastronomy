@@ -345,7 +345,7 @@ public sealed class StationServiceTest
   {
     RunningFestivalLookup runningFestival = new(dbContext, new(), _clock);
 
-    return new(dbContext, new CoreMappingFactory().Create(), new(dbContext, new(dbContext, new Pbkdf2SecretHasher()), _announcer, _afterCommitActions, _clock), new(dbContext, _clock), new(dbContext, runningFestival));
+    return new(dbContext, new CoreMappingFactory().Create(), new(dbContext, new(dbContext, new SecretHasher()), _announcer, _afterCommitActions, _clock), new(dbContext, _clock), new(dbContext, runningFestival));
   }
 
   private async Task<int> CountStatementsOfListAsync()
@@ -384,8 +384,7 @@ public sealed class StationServiceTest
                         Language = "de",
                         TokenHash = [1],
                         TokenSalt = [1],
-                        TokenIterations = 1,
-                        TokenAlgorithm = "PBKDF2",
+                        TokenAlgorithm = "SHA-256",
                         TokenLookupId = Guid.NewGuid().ToString(),
                         CreatedAtUtc = _now
                       };
@@ -400,8 +399,7 @@ public sealed class StationServiceTest
                                          Id = Guid.NewGuid(),
                                          QRCodeHash = [1],
                                          QRCodeSalt = [1],
-                                         QRCodeIterations = 1,
-                                         QRCodeAlgorithm = "PBKDF2",
+                                         QRCodeAlgorithm = "SHA-256",
                                          CreatedAtUtc = _now,
                                          ExpiresAtUtc = _now.AddHours(1)
                                        };

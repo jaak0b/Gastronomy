@@ -4,11 +4,13 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Infrastructure.Tests.Persistence;
 
 public sealed class ReleasedDatabaseUpgradeTest
 {
+  private readonly ReleasedSecretHash _released = new();
   private readonly ReleasedSchemaScript _releasedSchema = new();
 
   [Test]
@@ -77,7 +79,7 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(orderItem.SettledAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 18, 0, 0)));
                       Assert.That(orderItem.SettledByStaffMemberId, Is.EqualTo(staffMemberId));
                       Assert.That(orderItem.PaymentMethod, Is.Null);
-                      Assert.That(appliedMigrations, Has.Count.EqualTo(12));
+                      Assert.That(appliedMigrations, Has.Count.EqualTo(13));
                       Assert.That(appliedMigrations[0], Is.EqualTo(_releasedSchema.MigrationId));
                       Assert.That(appliedMigrations[1], Does.EndWith("_CollateCategoryNamesAndCapitalizeQRColumns"));
                       Assert.That(appliedMigrations[2], Does.EndWith("_DropOrderNote"));
@@ -90,6 +92,7 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(appliedMigrations[9], Does.EndWith("_RemoveDeviceLastSeen"));
                       Assert.That(appliedMigrations[10], Does.EndWith("_NameColumnsIgnoreCase"));
                       Assert.That(appliedMigrations[11], Does.EndWith("_AddOrderItemStatusHistory"));
+                      Assert.That(appliedMigrations[12], Does.EndWith("_MakeHashIterationsOptional"));
                       Assert.That(ingredientCount, Is.Zero);
                       Assert.That(stockRowCount, Is.Zero);
                       Assert.That(recipeLineCount, Is.Zero);
@@ -177,6 +180,69 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(device.TokenAlgorithm, Is.EqualTo("PBKDF2-HMAC-SHA512"));
                       Assert.That(device.TokenLookupId, Is.EqualTo(deviceId.ToString("N")));
                       Assert.That(device.CreatedAtUtc, Is.EqualTo(new DateTime(2026, 9, 16, 18, 1, 0)));
+                    });
+  }
+
+  [Test]
+  public async Task MigrateAsync_OnReleasedDatabaseWithAPhoneSetUp_StillAcceptsThePhonesToken()
+  {
+    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
+    var deviceId = Guid.NewGuid();
+    var staffMemberId = Guid.NewGuid();
+
+    var connection = fixture.OpenConnection();
+    await ExecuteAsync(connection, _releasedSchema.Sql);
+    await InsertDeviceAsync(connection, deviceId, _released.Hash, _released.Salt);
+    await InsertStaffMemberAsync(connection, staffMemberId);
+    await PointStaffMemberAtDeviceAsync(connection, staffMemberId, deviceId);
+
+    var context = fixture.CreateContext();
+    await context.Database.MigrateAsync();
+
+    var owner = await new EnrolmentComposition(context, TimeProvider.System).Lookup.FindByTokenAsync(deviceId.ToString("N"), _released.Secret, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(owner, Is.InstanceOf<StaffMember>());
+                      Assert.That(owner!.Id, Is.EqualTo(staffMemberId));
+                      Assert.That(owner.Device!.Id, Is.EqualTo(deviceId));
+                    });
+  }
+
+  [Test]
+  public async Task MigrateAsync_OnReleasedDatabaseWithAnOutstandingInvitation_RedeemsItsCodeOnce()
+  {
+    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
+    FakeTimeProvider clock = new(new(2026, 9, 16, 18, 1, 0, TimeSpan.Zero));
+
+    var connection = fixture.OpenConnection();
+    await ExecuteAsync(connection, _releasedSchema.Sql);
+    await InsertEnrolmentInvitationAsync(connection, Guid.NewGuid(), _released.Hash, _released.Salt);
+
+    var context = fixture.CreateContext();
+    await context.Database.MigrateAsync();
+
+    var enrolment = new EnrolmentComposition(context, clock).Service;
+    var first = await enrolment.RedeemAsync(new()
+                                            {
+                                              Code = _released.Secret,
+                                              Name = "Ben"
+                                            },
+                                            "de",
+                                            TestContext.CurrentContext.CancellationToken);
+    var second = await enrolment.RedeemAsync(new()
+                                             {
+                                               Code = _released.Secret,
+                                               Name = "Ben"
+                                             },
+                                             "de",
+                                             TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(first.IsError, Is.False);
+                      Assert.That(first.Value.StaffMember!.Name, Is.EqualTo("Ben"));
+                      Assert.That(second.RefusalMessageKey(), Is.EqualTo("errors.enrolment.codeNoLongerValid"));
                     });
   }
 
@@ -679,7 +745,27 @@ public sealed class ReleasedDatabaseUpgradeTest
     await command.ExecuteNonQueryAsync();
   }
 
-  private async Task InsertDeviceAsync(SqliteConnection connection, Guid deviceId)
+  private Task InsertDeviceAsync(SqliteConnection connection, Guid deviceId)
+  {
+    return InsertDeviceAsync(connection,
+                             deviceId,
+                             new byte[]
+                             {
+                               17,
+                               18,
+                               19,
+                               20
+                             },
+                             new byte[]
+                             {
+                               21,
+                               22,
+                               23,
+                               24
+                             });
+  }
+
+  private async Task InsertDeviceAsync(SqliteConnection connection, Guid deviceId, byte[] tokenHash, byte[] tokenSalt)
   {
     await using var command = connection.CreateCommand();
     command.CommandText = """
@@ -688,22 +774,8 @@ public sealed class ReleasedDatabaseUpgradeTest
                           """;
     command.Parameters.AddWithValue("$id", ToStoredText(deviceId));
     command.Parameters.AddWithValue("$language", "de");
-    command.Parameters.AddWithValue("$tokenHash",
-                                    new byte[]
-                                    {
-                                      17,
-                                      18,
-                                      19,
-                                      20
-                                    });
-    command.Parameters.AddWithValue("$tokenSalt",
-                                    new byte[]
-                                    {
-                                      21,
-                                      22,
-                                      23,
-                                      24
-                                    });
+    command.Parameters.AddWithValue("$tokenHash", tokenHash);
+    command.Parameters.AddWithValue("$tokenSalt", tokenSalt);
     command.Parameters.AddWithValue("$iterations", 210000);
     command.Parameters.AddWithValue("$algorithm", "PBKDF2-HMAC-SHA512");
     command.Parameters.AddWithValue("$tokenLookupId", deviceId.ToString("N"));
@@ -756,6 +828,17 @@ public sealed class ReleasedDatabaseUpgradeTest
     command.Parameters.AddWithValue("$name", "Anna");
     command.Parameters.AddWithValue("$isActive", 1);
     command.Parameters.AddWithValue("$createdAtUtc", "2026-09-20 16:00:00");
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task PointStaffMemberAtDeviceAsync(SqliteConnection connection, Guid staffMemberId, Guid deviceId)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          UPDATE "StaffMembers" SET "DeviceId" = $deviceId WHERE "Id" = $id;
+                          """;
+    command.Parameters.AddWithValue("$id", ToStoredText(staffMemberId));
+    command.Parameters.AddWithValue("$deviceId", ToStoredText(deviceId));
     await command.ExecuteNonQueryAsync();
   }
 

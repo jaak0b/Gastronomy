@@ -16,7 +16,7 @@ public sealed class EnrolmentInvitationConfiguration : IEntityTypeConfiguration<
     builder.Property(invitation => invitation.Id).ValueGeneratedNever();
     builder.Property(invitation => invitation.QRCodeHash).IsRequired();
     builder.Property(invitation => invitation.QRCodeSalt).IsRequired();
-    builder.Property(invitation => invitation.QRCodeIterations).IsRequired();
+    builder.Property(invitation => invitation.QRCodeIterations).IsRequired(false);
     builder.Property(invitation => invitation.QRCodeAlgorithm).IsRequired().HasMaxLength(40);
     builder.Property(invitation => invitation.CreatedAtUtc).IsRequired();
     builder.Property(invitation => invitation.ExpiresAtUtc).IsRequired();

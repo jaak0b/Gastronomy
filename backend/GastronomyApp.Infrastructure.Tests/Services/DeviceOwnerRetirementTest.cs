@@ -116,8 +116,7 @@ public sealed class DeviceOwnerRetirementTest
                                        Id = Guid.NewGuid(),
                                        QRCodeHash = [1],
                                        QRCodeSalt = [2],
-                                       QRCodeIterations = 1,
-                                       QRCodeAlgorithm = "PBKDF2-HMAC-SHA512",
+                                       QRCodeAlgorithm = "SHA-256",
                                        CreatedAtUtc = _now.UtcDateTime,
                                        ExpiresAtUtc = _now.UtcDateTime.AddMinutes(5),
                                        ConsumedAtUtc = consumedAtUtc
@@ -138,8 +137,7 @@ public sealed class DeviceOwnerRetirementTest
                       Language = "de",
                       TokenHash = [1],
                       TokenSalt = [2],
-                      TokenIterations = 1,
-                      TokenAlgorithm = "PBKDF2-HMAC-SHA512",
+                      TokenAlgorithm = "SHA-256",
                       TokenLookupId = Guid.NewGuid().ToString("N"),
                       CreatedAtUtc = _now.UtcDateTime
                     };

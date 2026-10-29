@@ -19,7 +19,7 @@ public sealed class EnrolmentComposition
     var afterCommitActions = A.Fake<IAfterCommitActions>();
     A.CallTo(() => afterCommitActions.RunWhenCommittedAsync(A<Func<CancellationToken, Task>>._, A<CancellationToken>._)).ReturnsLazily(call => ((Func<CancellationToken, Task>)call.Arguments[0]!)(call.GetArgument<CancellationToken>(1)));
 
-    Pbkdf2SecretHasher hasher = new();
+    SecretHasher hasher = new();
     Lookup = new(dbContext, hasher);
     Retirement = new(dbContext, Lookup, RevocationAnnouncer, afterCommitActions, clock);
     Service = new(dbContext, new CoreMappingFactory().Create(), Lookup, Retirement, hasher, new DeviceTokenSplitter(), Cache, new LaptopAddress(), CompletionAnnouncer, afterCommitActions, clock, NullLogger<EnrolmentService>.Instance);

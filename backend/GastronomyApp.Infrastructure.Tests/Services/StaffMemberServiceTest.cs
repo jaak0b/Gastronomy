@@ -24,7 +24,7 @@ public sealed class StaffMemberServiceTest
     A.CallTo(() => afterCommitActions.RunWhenCommittedAsync(A<Func<CancellationToken, Task>>._, A<CancellationToken>._)).ReturnsLazily(call => ((Func<CancellationToken, Task>)call.Arguments[0]!)(call.GetArgument<CancellationToken>(1)));
     FakeTimeProvider clock = new(new(_now));
     var mapping = new CoreMappingFactory().Create();
-    _service = new(_fixture.DbContext, mapping, new(_fixture.DbContext, new(_fixture.DbContext, new Pbkdf2SecretHasher()), _announcer, afterCommitActions, clock));
+    _service = new(_fixture.DbContext, mapping, new(_fixture.DbContext, new(_fixture.DbContext, new SecretHasher()), _announcer, afterCommitActions, clock));
     _activation = new(_fixture.DbContext, mapping);
   }
 
@@ -192,8 +192,7 @@ public sealed class StaffMemberServiceTest
                         Language = "de",
                         TokenHash = [1],
                         TokenSalt = [1],
-                        TokenIterations = 1,
-                        TokenAlgorithm = "PBKDF2",
+                        TokenAlgorithm = "SHA-256",
                         TokenLookupId = Guid.NewGuid().ToString(),
                         CreatedAtUtc = _now
                       };
@@ -208,8 +207,7 @@ public sealed class StaffMemberServiceTest
                                          Id = Guid.NewGuid(),
                                          QRCodeHash = [1],
                                          QRCodeSalt = [1],
-                                         QRCodeIterations = 1,
-                                         QRCodeAlgorithm = "PBKDF2",
+                                         QRCodeAlgorithm = "SHA-256",
                                          CreatedAtUtc = _now,
                                          ExpiresAtUtc = _now.AddHours(1)
                                        };

@@ -152,7 +152,6 @@ public sealed class EnrolmentService
                                        Id = Guid.NewGuid(),
                                        QRCodeHash = hashedQRCode.Hash,
                                        QRCodeSalt = hashedQRCode.Salt,
-                                       QRCodeIterations = hashedQRCode.Iterations,
                                        QRCodeAlgorithm = hashedQRCode.Algorithm,
                                        CreatedAtUtc = now,
                                        ExpiresAtUtc = now.AddMinutes(InvitationLifetimeMinutes),
@@ -269,7 +268,6 @@ public sealed class EnrolmentService
                       Language = language,
                       TokenHash = hashedSecret.Hash,
                       TokenSalt = hashedSecret.Salt,
-                      TokenIterations = hashedSecret.Iterations,
                       TokenAlgorithm = hashedSecret.Algorithm,
                       TokenLookupId = tokenLookupId,
                       CreatedAtUtc = now

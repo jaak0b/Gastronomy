@@ -122,8 +122,7 @@ public sealed class ChangeAnnouncementInterceptorTest
                             Language = "de",
                             TokenHash = [1],
                             TokenSalt = [1],
-                            TokenIterations = 1,
-                            TokenAlgorithm = "test",
+                            TokenAlgorithm = "SHA-256",
                             TokenLookupId = "lookup",
                             CreatedAtUtc = DateTime.UtcNow
                           });

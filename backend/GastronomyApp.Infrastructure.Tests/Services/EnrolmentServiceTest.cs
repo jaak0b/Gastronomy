@@ -26,6 +26,7 @@ public sealed class EnrolmentServiceTest
     _fixture.Dispose();
   }
 
+  private readonly ReleasedSecretHash _released = new();
   private FakeTimeProvider _clock = null!;
   private EnrolmentComposition _composition = null!;
   private SqliteInMemoryFixture _fixture = null!;
@@ -72,6 +73,21 @@ public sealed class EnrolmentServiceTest
                       Assert.That(created.Value.InvitationId, Is.EqualTo(remembered!.InvitationId));
                       Assert.That(created.Value.QRUrl, Is.EqualTo($"http://192.168.0.5:5000/j/{remembered.QRCodeValue}"));
                       Assert.That(created.Value.ExpiresAtUtc, Is.EqualTo(_clock.GetUtcNow().UtcDateTime.AddMinutes(5)));
+                    });
+  }
+
+  [Test]
+  public async Task CreateInvitationAsync_AnyInvitation_StoresItsCodeAsOneSaltedSha256Hash()
+  {
+    var created = await _composition.Service.CreateInvitationAsync(null, null, TestContext.CurrentContext.CancellationToken);
+    _fixture.DbContext.ChangeTracker.Clear();
+
+    var invitation = await _fixture.DbContext.EnrolmentInvitations.SingleAsync(candidate => candidate.Id == created.Value.InvitationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(invitation.QRCodeAlgorithm, Is.EqualTo("SHA-256"));
+                      Assert.That(invitation.QRCodeIterations, Is.Null);
                     });
   }
 
@@ -330,6 +346,24 @@ public sealed class EnrolmentServiceTest
   }
 
   [Test]
+  public async Task RedeemAsync_AnInvitationTheReleasedBuildHashedWithPbkdf2_SetsTheWaiterUpOnceAndRefusesTheSecondScan()
+  {
+    var code = await CreateInvitationTheReleasedBuildHashedAsync(_seeded.StaffMemberId);
+
+    var first = await _composition.Service.RedeemAsync(RequestFor(code, null), "de", TestContext.CurrentContext.CancellationToken);
+    var second = await _composition.Service.RedeemAsync(RequestFor(code, null), "de", TestContext.CurrentContext.CancellationToken);
+    var deviceCount = await _fixture.DbContext.Devices.CountAsync(TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(first.IsError, Is.False);
+                      Assert.That(first.Value.StaffMember!.Id, Is.EqualTo(_seeded.StaffMemberId));
+                      Assert.That(second.RefusalMessageKey(), Is.EqualTo("errors.enrolment.codeNoLongerValid"));
+                      Assert.That(deviceCount, Is.EqualTo(1));
+                    });
+  }
+
+  [Test]
   public async Task RedeemAsync_TheCodeOfAnInvitationThatANewerOneReplaced_IsRefused()
   {
     var oldCode = await CreateInvitationCodeAsync(_seeded.StaffMemberId, null);
@@ -379,6 +413,22 @@ public sealed class EnrolmentServiceTest
                       Assert.That(owner, Is.Not.Null);
                       Assert.That(owner!.Id, Is.EqualTo(_seeded.StaffMemberId));
                       Assert.That(owner.Device!.Id, Is.EqualTo(redeemed.Value.DeviceId));
+                    });
+  }
+
+  [Test]
+  public async Task RedeemAsync_ASuccessfulRedemption_StoresTheDeviceTokenAsOneSaltedSha256Hash()
+  {
+    var code = await CreateInvitationCodeAsync(_seeded.StaffMemberId, null);
+
+    var redeemed = await _composition.Service.RedeemAsync(RequestFor(code, null), "de", TestContext.CurrentContext.CancellationToken);
+    _fixture.DbContext.ChangeTracker.Clear();
+    var device = await _fixture.DbContext.Devices.SingleAsync(candidate => candidate.Id == redeemed.Value.DeviceId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(device.TokenAlgorithm, Is.EqualTo("SHA-256"));
+                      Assert.That(device.TokenIterations, Is.Null);
                     });
   }
 
@@ -577,6 +627,20 @@ public sealed class EnrolmentServiceTest
     return _composition.Cache.Read()!.QRCodeValue;
   }
 
+  private async Task<string> CreateInvitationTheReleasedBuildHashedAsync(Guid staffMemberId)
+  {
+    await CreateInvitationCodeAsync(staffMemberId, null);
+    var invitation = await _fixture.DbContext.EnrolmentInvitations.SingleAsync(candidate => candidate.ConsumedAtUtc == null, TestContext.CurrentContext.CancellationToken);
+
+    invitation.QRCodeHash = _released.Hash;
+    invitation.QRCodeSalt = _released.Salt;
+    invitation.QRCodeIterations = _released.Iterations;
+    invitation.QRCodeAlgorithm = _released.Algorithm;
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    return _released.Secret;
+  }
+
   private RedeemEnrolmentRequest RequestFor(string code, string? name, string? previousDeviceToken = null)
   {
     return new()
@@ -607,11 +671,10 @@ public sealed class EnrolmentServiceTest
     const string secret = "known-secret";
     var kitchen = await _fixture.DbContext.Stations.Include(station => station.Device).SingleAsync(station => station.Id == _seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
     var device = kitchen.Device!;
-    var hashed = new Pbkdf2SecretHasher().Hash(secret);
+    var hashed = new SecretHasher().Hash(secret);
 
     device.TokenHash = hashed.Hash;
     device.TokenSalt = hashed.Salt;
-    device.TokenIterations = hashed.Iterations;
     device.TokenAlgorithm = hashed.Algorithm;
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 

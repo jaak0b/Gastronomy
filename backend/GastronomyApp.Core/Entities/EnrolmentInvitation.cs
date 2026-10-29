@@ -11,7 +11,7 @@ public sealed class EnrolmentInvitation : IEntity
 
   public required byte[] QRCodeSalt { get; set; }
 
-  public required int QRCodeIterations { get; set; }
+  public int? QRCodeIterations { get; set; }
 
   public required string QRCodeAlgorithm { get; set; }
 

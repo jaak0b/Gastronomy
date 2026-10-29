@@ -135,8 +135,7 @@ public sealed class DeviceSessionServiceTest
                       Language = language,
                       TokenHash = [1],
                       TokenSalt = [2],
-                      TokenIterations = 1,
-                      TokenAlgorithm = "PBKDF2-HMAC-SHA512",
+                      TokenAlgorithm = "SHA-256",
                       TokenLookupId = Guid.NewGuid().ToString("N"),
                       CreatedAtUtc = DateTime.UtcNow
                     };
