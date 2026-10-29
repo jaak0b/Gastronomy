@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { areaToOpenForTheTable, isDrawnAtPhoneSizes, screenFor, waiterLandingFor } from '../../../src/shared/core/landing'
+import { anAreaMustBeChosen, areaToOpenForTheTable, isDrawnAtPhoneSizes, screenFor, waiterLandingFor } from '../../../src/shared/core/landing'
 
 const aStationTablet = { state: 'stationTablet' } as const
 const aWaiterPhone = { state: 'waiterPhone' } as const
@@ -170,5 +170,15 @@ describe('the area to open so the plan shows a table', () => {
 
   it('is none when no area holds the table any more', () => {
     expect(areaToOpenForTheTable([HALLE, GARTEN], 'table-99')).toBeNull()
+  })
+})
+
+describe('whether the waiter must choose an area', () => {
+  it('must with more than one area', () => {
+    expect(anAreaMustBeChosen(2)).toBe(true)
+  })
+
+  it('need not with the one area, whose plan shows straight away', () => {
+    expect(anAreaMustBeChosen(1)).toBe(false)
   })
 })

@@ -294,3 +294,22 @@ describe('closing a step', () => {
     expect(place.steps).toEqual([])
   })
 })
+
+describe('a lower dialog that closes after a higher one opened on it', () => {
+  it('goes back to the entry of the lower dialog and puts the higher one there, so no dead entry stays', () => {
+    const LOWER: BackStep = { name: 'dialog-4', value: 'dialog-4', kind: 'dialog' }
+    const HIGHER: BackStep = { name: 'dialog-5', value: 'dialog-5', kind: 'dialog' }
+
+    const move = historyMoveFor(
+      {
+        entries: [at(FESTIVAL_LIST), at(FESTIVAL_LIST, LOWER), at(FESTIVAL_LIST, LOWER, HIGHER)],
+        index: 2,
+        currentEntryMinusClosedSteps: at(FESTIVAL_LIST, HIGHER),
+        wanted: at(FESTIVAL_LIST, HIGHER),
+      },
+      true,
+    )
+
+    expect(move).toEqual({ kind: 'goBackAndReplace', entries: 1 })
+  })
+})

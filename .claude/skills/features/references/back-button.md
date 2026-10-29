@@ -99,7 +99,8 @@ Frontend, under `frontend/src/shared/`:
   list closed by a selection or a click outside. A dialog whose button leads to another screen gives
   its entry to that screen. Closing a dialog or a menu removes only its own step, so a dialog that a
   menu entry opens in the same tap keeps its step; closing a level (an area, a category) closes what
-  was open on it.
+  was open on it. When a lower dialog closes after a higher one opened on it, the router goes back to
+  the lower one's entry and puts the higher one there, so no entry of a closed dialog stays behind.
 - **An open state ends with its menu.** A menu shown under its own `v-if` lives in a component of
   its own, so its open state and its step go when the menu goes and it never reopens by itself. The sheet of a table stays in the history when one of its buttons leads on, so back
   returns to it.
@@ -116,7 +117,8 @@ Frontend, under `frontend/src/shared/`:
   for a screen of the order flow), before it reaches the start screen and the doors. It never leaves
   the app.
 - **Back never touches the draft.** Leaving the order screen by back keeps the unsent order in
-  `localStorage` exactly as the way up does, and nothing here loads the page again.
+  `localStorage` exactly as the way up does, and nothing here loads the page again, apart from the
+  walk after a reload.
 - **The station screen is one screen.** Back closes the hand-out confirmation when it is open and
   otherwise reaches the trap.
 
@@ -125,12 +127,13 @@ Frontend, under `frontend/src/shared/`:
 - `frontend/tests/shared/router/historyMoves.spec.ts` (deeper, siblings, up, after sending, a
   redirect, a dialog closed by its button or giving its entry away, nothing changed; whether a tap
   may add an entry: active, passed, no API, after a back press; the steps a screen opens with;
-  closing a menu under a new dialog and closing a level), `shared/core/landing.spec.ts` (the area to
+  closing a menu under a new dialog, closing a level and a lower dialog closing under a higher one),
+  `shared/core/landing.spec.ts` (the area to
   open for a table),
   `parentRoutes.spec.ts` (the parent table) and `historySteps.spec.ts` (the router on the jsdom
   history: a tapped move, no API, a tap after a back press, a redirect, a move up, a step closed by
   back and by its own button, the address the doors return to after a tap and after a way up, a
-  forward press after a way up).
+  forward press after a way up, a lower dialog closing under a higher one leaving no dead entry).
 - Mounted: `frontend/tests/AppBackPressOnThePhone.spec.ts` (the sheet to the plan with the area
   kept, the order screen to the area list one step at a time, the trap from the first screen, a
   dialog, the way up and then back, the draft kept, "Tischpläne" and back),

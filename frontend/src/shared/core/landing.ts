@@ -129,6 +129,10 @@ export interface WaiterLandingFacts {
   openedAreaId: string | null
 }
 
+export function anAreaMustBeChosen(areaCount: number): boolean {
+  return areaCount > 1
+}
+
 export function waiterLandingFor(facts: WaiterLandingFacts): WaiterLanding {
   if (facts.orderIsLocked) {
     return { kind: 'lockedOrder' }
@@ -136,7 +140,7 @@ export function waiterLandingFor(facts: WaiterLandingFacts): WaiterLanding {
   if (facts.areaIds.length === 0) {
     return facts.festivalIsRunning ? { kind: 'noTables' } : { kind: 'noFestival' }
   }
-  if (facts.areaIds.length === 1) {
+  if (!anAreaMustBeChosen(facts.areaIds.length)) {
     return { kind: 'plan', areaId: facts.areaIds[0] }
   }
   if (facts.openedAreaId !== null && facts.areaIds.includes(facts.openedAreaId)) {
@@ -151,7 +155,7 @@ export interface AreaOfThePlan {
 }
 
 export function areaToOpenForTheTable(areas: readonly AreaOfThePlan[], tableId: string): string | null {
-  if (areas.length < 2) {
+  if (!anAreaMustBeChosen(areas.length)) {
     return null
   }
   return areas.find((area) => area.tables.some((table) => table.tableId === tableId))?.areaId ?? null

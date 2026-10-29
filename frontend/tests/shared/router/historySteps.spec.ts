@@ -8,6 +8,7 @@ import {
   theAppWasLeftByBack,
   theNextMoveThroughTheHistory,
 } from '../../support/browserHistory'
+import { waitUntil } from '../../support/dom'
 
 const FESTIVAL_LIST = { name: 'admin', section: 'festivals', festivalId: null }
 
@@ -183,5 +184,23 @@ describe('a forward press after a way up', () => {
     await flushPromises()
 
     expect(currentRoute.value).toEqual(FESTIVAL_LIST)
+  })
+})
+
+describe('a lower dialog that closes after a higher one opened on it', () => {
+  it('leaves no dead step, so back closes the higher one and the next back leaves the first screen', async () => {
+    const { closeStep, openStep } = await theRouterOfAnOpenedTab()
+    openStep({ name: 'dialog-lower', value: 'dialog-lower', kind: 'dialog' }, { close: () => undefined, refusesBack: () => false })
+    await flushPromises()
+    const theEntryOfTheLowerDialog: unknown = window.history.state
+    openStep({ name: 'dialog-higher', value: 'dialog-higher', kind: 'dialog' }, { close: () => undefined, refusesBack: () => false })
+    await flushPromises()
+    closeStep('dialog-lower')
+    await waitUntil(() => expect(window.history.state).toEqual(theEntryOfTheLowerDialog))
+
+    await pressBack()
+    await pressBack()
+
+    await waitUntil(() => expect(theAppWasLeftByBack()).toBe(true))
   })
 })

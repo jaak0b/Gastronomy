@@ -264,7 +264,9 @@ Frontend, under `frontend/src/`:
   `tablePlan`). `shared/core/landing.ts` decides what it shows (`waiterLandingFor`, read through
   `phone/composables/useWaiterLanding.ts`): the locked order first, then no festival active (the
   catalog names none) or no tables, the plan of the only area, the plan of the area the waiter
-  opened, or the area list. Until the plan has loaded, and while an empty plan waits for the catalog,
+  opened, or the area list. Whether an area has to be chosen at all is `anAreaMustBeChosen` there,
+  the one rule the landing, the header's "Tischpläne" and the landing after sending
+  (`areaToOpenForTheTable`) share. Until the plan has loaded, and while an empty plan waits for the catalog,
   it claims nothing. A plan of an area without tables says so above the drawing. It shows
   `phone/components/tablePlan/AreaList.vue` (one large button per area, in the laptop's order,
   inside the `v-container` the other waiter screens use),

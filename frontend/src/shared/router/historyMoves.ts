@@ -141,9 +141,9 @@ export function historyMoveFor(facts: HistoryFacts, mayAddAnEntry: boolean): His
   }
   const placeAt = (position: number): Place => (position === index ? currentEntryMinusClosedSteps : entries[position])
   const position = positionAfterTheClosedSteps(facts)
-  for (let candidate = position; candidate >= 0; candidate -= 1) {
-    if (isSamePlace(placeAt(candidate), wanted)) {
-      return candidate === index ? { kind: 'replace' } : { kind: 'goBack', entries: index - candidate }
+  for (let candidate = Math.min(position, index - 1); candidate >= 0; candidate -= 1) {
+    if (isSamePlace(entries[candidate], wanted)) {
+      return { kind: 'goBack', entries: index - candidate }
     }
   }
   for (let candidate = position; candidate >= 0; candidate -= 1) {

@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseIconAction from '../../../shared/components/BaseIconAction.vue'
 import { assertNever } from '../../../shared/core/assertNever'
+import { anAreaMustBeChosen } from '../../../shared/core/landing'
 import { currentRoute, navigate, parentRouteOf, type AppRoute } from '../../../shared/router/router'
 import { useDraftTableName } from '../../composables/useDraftTableName'
 import { useWaiterLanding } from '../../composables/useWaiterLanding'
@@ -33,7 +34,7 @@ const shownAreaName = computed(() => {
 function destinationInside(route: AppRoute): BackDestination {
   switch (route.name) {
     case 'home':
-      return shownAreaName.value !== null && tablePlan.areas.length > 1 ? 'areaList' : 'none'
+      return shownAreaName.value !== null && anAreaMustBeChosen(tablePlan.areas.length) ? 'areaList' : 'none'
     case 'catalog':
     case 'review':
     case 'openItems':
