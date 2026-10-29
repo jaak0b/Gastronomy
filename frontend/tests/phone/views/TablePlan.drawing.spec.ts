@@ -101,6 +101,16 @@ describe('the plan of one area on a waiter\'s phone', () => {
     expect(station.findOne<Konva.Text>('Text')?.textArr.map((line) => line.text)).toEqual(['Abcd'])
   })
 
+  it('draws a station name of two words whole in a station too low for both lines at the largest size', async () => {
+    const low = aPlanStationShape({ stationName: 'Bar Nord', geometry: aGeometry({ x: 150, y: 30, width: 50, height: 30 }) })
+    planLaptop([aPlanArea({ tables: [TISCH_12], stationShapes: [low] })])
+
+    await mountThePlan()
+
+    const station = shapesNamed(theDrawing(), 'plan-station')[0] as Konva.Group
+    expect(station.findOne<Konva.Text>('Text')?.textArr.map((line) => line.text)).toEqual(['Bar', 'Nord'])
+  })
+
   it('opens nothing when the waiter taps a station', async () => {
     planLaptop([HALL])
     await mountThePlan()
@@ -164,6 +174,38 @@ describe('the colours of a table on the plan', () => {
 const AMBER = [135, 90, 0, 255]
 const GREEN = [46, 139, 87, 255]
 const RED = [201, 79, 79, 255]
+const GREEN_TINT = [192, 220, 205, 255]
+
+describe('the name of a table on the plan', () => {
+  it('keeps a gap to the frame even when it needs the whole width of the table', async () => {
+    layOutTheScreen({ width: 800, height: 400 })
+    const narrow = aPlanTable({ tableId: 'table-9', name: 'H12', geometry: aGeometry({ x: 20, y: 30, width: 32, height: 40 }) })
+    planLaptop([aPlanArea({ tables: [narrow] })])
+
+    await mountThePlan()
+
+    expect({
+      firstColumnInsideTheFrame: colourAt(theDrawing(), { x: 48, y: 100 }),
+      secondColumnInsideTheFrame: colourAt(theDrawing(), { x: 49, y: 100 }),
+      thirdColumnInsideTheFrame: colourAt(theDrawing(), { x: 50, y: 100 }),
+      fourthColumnInsideTheFrame: colourAt(theDrawing(), { x: 51, y: 100 }),
+    }).toEqual({
+      firstColumnInsideTheFrame: GREEN_TINT,
+      secondColumnInsideTheFrame: GREEN_TINT,
+      thirdColumnInsideTheFrame: GREEN_TINT,
+      fourthColumnInsideTheFrame: GREEN_TINT,
+    })
+  })
+
+  it('keeps both lines of a name in a table just high enough for them', async () => {
+    const table = aPlanTable({ tableId: 'table-9', name: 'Tisch Mitte', geometry: aGeometry({ x: 20, y: 30, width: 56, height: 36 }) })
+    planLaptop([aPlanArea({ tables: [table] })])
+
+    await mountThePlan()
+
+    expect(tableNode('table-9').findOne<Konva.Text>('Text')?.textArr.map((line) => line.text)).toEqual(['Tisch', 'Mitte'])
+  })
+})
 
 describe('the frame of a table on the plan', () => {
   it('reaches nowhere outside the rectangle the plan gives the table', async () => {

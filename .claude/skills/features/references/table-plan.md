@@ -240,7 +240,13 @@ Frontend, under `frontend/src/`:
   the new table ids or the refusal. `moveTables` sends one `POST /tables/move` for a single drag, a
   resize or a whole group and reloads the plan once through the same helper.
 - `shared/core/tablePlanDrawing.ts` holds `TABLE_PLAN_DRAWING_WIDTH` (400 units, for the phone as
-  well), `cornersOf` and `lowestEdgeOf`. `admin/core/tablePlanSnapping.ts` holds the snapping
+  well), `cornersOf`, `lowestEdgeOf`, `scaleFittingTheWholeDrawing` (the smaller of the width ratio
+  and the height ratio, the one scale that shows a whole drawing in a view; the editor puts its floor
+  `SMALLEST_EDITOR_SCALE` around it in `scaleFittingTheView`, and the phone uses it without one) and
+  one type for each shape the phone and the admin share: `PlanPoint`, `PlanSize` (a width and a
+  height: a shape's size, the editor's frame, the phone's screen) and `PlanRectangle` (a position
+  and a size: the marquee, a box that snaps, the rectangle a frame follows).
+  `admin/core/tablePlanSnapping.ts` holds the snapping
   geometry adapted from Konva's Objects Snapping demo (`snapStopsBeside`, `snapDraggedBox`,
   `snapResizeCorner`, a grid of 10 units and a snap distance of 6), and
   `admin/core/tablePlanPlacement.ts` where a new shape goes, where a copied group is pasted, the
@@ -260,7 +266,8 @@ Frontend, under `frontend/src/`:
   catalog names none) or no tables, the plan of the only area, the plan of the area the waiter
   opened, or the area list. Until the plan has loaded, and while an empty plan waits for the catalog,
   it claims nothing. A plan of an area without tables says so above the drawing. It shows
-  `phone/components/tablePlan/AreaList.vue` (one large button per area, in the laptop's order),
+  `phone/components/tablePlan/AreaList.vue` (one large button per area, in the laptop's order,
+  inside the `v-container` the other waiter screens use),
   `AreaPlan.vue` (the read-only Konva drawing of one area with its scroll bars), `TableActionSheet.vue`
   (the table's name and five buttons: "Bestellung aufnehmen", "Bestellungen anzeigen", "Position kassieren", "Position stornieren", "Zurück") and `UnsentOrderDialog.vue` (the
   question when another table's unsent items are on the phone; see the `taking-an-order` page). `phone/components/header/AppHeader.vue` is
@@ -275,15 +282,21 @@ Frontend, under `frontend/src/`:
   connection is still starting), `reconnecting` and `offline` all show
   `phone.header.messages.reconnecting`, and `connected` shows `phone.header.messages.backOnline`
   for a few seconds after a reconnect and nothing otherwise.
-- `phone/core/tablePlanCamera.ts` is the camera of the phone's drawing: `cameraFittingTheWidth`,
+- `phone/core/tablePlanCamera.ts` is the camera of the phone's drawing: `startingCamera`,
   `clampedPosition`, `pinchOf`, `pinchedCamera` (zoom about the point between the fingers, from the
-  width of the screen up to `DEEPEST_ZOOM`, four times that) and `waiterDrawingLength` (the lowest
-  shape plus `ROOM_BELOW_THE_LOWEST_SHAPE`). Beside it, `phone/core/tablePlanScrollBars.ts`
-  (`scrollBarsOf`: each bar's offset and length from the camera, the screen and the drawing's length)
-  and `shared/core/shapeNameFit.ts` (`nameFontSizeKeepingWordsWhole`, the font size of the name
-  inside a shape: a table's in the phone's drawing and the editor's, a station's in the phone's).
-  `phone/core/tablePlanFrame.ts` holds `rectangleToStrokeInside(size, strokeWidth)`, the rectangle a
-  stroke follows so that the whole stroke stays inside `size`, ready to spread into a Konva `Rect`.
+  starting scale up to `DEEPEST_ZOOM`, four times that) and `waiterDrawingLength` (the lowest shape
+  plus `ROOM_BELOW_THE_LOWEST_SHAPE`). `AreaPlan.vue` passes `startingCamera` and `pinchedCamera`
+  the measured frame and `NARROWEST_SCREEN_SHOWING_THE_WHOLE_PLAN` (960 pixels, in
+  `phone/styles/phoneSizes.ts`), and the camera's `startingScale` compares the frame's width with
+  it. Beside it,
+  `phone/core/tablePlanScrollBars.ts` (`scrollBarsOf`: each bar's offset and length from the camera,
+  the screen and the drawing's length) and `shared/core/shapeNameFit.ts`:
+  `nameFontSizeFittingEveryWordAcross`, the font size at which every word of a name fits across its
+  shape (a table's name in the editor), and `nameFontSizeFittingEveryLineInside`, which starts there
+  and shrinks in tenths until every line of the wrapped name also fits the shape's height (a table's
+  or a station's name in the phone's drawing). `phone/core/tablePlanFrame.ts` holds
+  `rectangleToStrokeInside(size, strokeWidth)`, the `PlanRectangle` a stroke follows so that the
+  whole stroke stays inside `size`, ready to spread into a Konva `Rect`.
 - `phone/stores/tablePlan.ts` (`useTablePlanStore`: `areas`, `hasLoaded`, `loadFailed`,
   `openedAreaId`, `load`, `listen`, `openArea`, `closeArea`) reads `GET /api/table-plan` through the
   latest request gate and reloads on `ConfigurationChanged` (the plan) and `OrdersChanged` (the
@@ -419,10 +432,18 @@ Frontend, under `frontend/src/`:
   for both. Example: order 1 fully handed out, order 2 untouched, order 3 partly handed out is
   `Some`; once order 3 is fully handed out it is `None`; once order 2 is too it is `All`; a new
   order makes it `None` again.
-- **The phone draws the plan read-only, as large as the screen.** The stage is the size of the
-  frame under the header (`App.vue` gives the home screen the full height), and `stage.scale` and
-  `stage.position` are the camera, starting at the width of the screen over
-  `TABLE_PLAN_DRAWING_WIDTH`. The waiter pans by dragging the stage, held inside the drawing by
+- **The phone draws the plan read-only, as large as the screen allows.** The stage is the size of
+  the frame under the header (`App.vue` gives the home screen the full height), and `stage.scale`
+  and `stage.position` are the camera. A frame narrower than
+  `NARROWEST_SCREEN_SHOWING_THE_WHOLE_PLAN` (960 pixels, so every phone, upright or sideways) starts
+  at its width over `TABLE_PLAN_DRAWING_WIDTH`, at the top left, and the waiter scrolls down. From
+  that width on (a tablet, a laptop) the plan starts whole: the 400-unit width and the drawing's
+  length are both in view at `scaleFittingTheWholeDrawing`, centred across with empty space at the
+  sides, and a plan short for the screen fills its width. `clampedPosition` keeps a drawing narrower
+  than the frame in its middle, and a pinch never zooms out past the starting scale. The camera
+  starts over when the area or the starting camera changes. On a phone that is only the width; on a
+  wider screen it is also the frame's height and the drawing's length, so a connection notice
+  appearing under the header resets a tablet's zoom. The waiter pans by dragging the stage, held inside the drawing by
   `clampedPosition` as its `dragBoundFunc`, and zooms by pinching, following Konva's Multi-touch Scale
   Stage demo: `Konva.hitOnDragEnabled` is set when the plan mounts, and the stage's drag stops while
   two fingers touch and starts again when one is left. Konva blocks native scrolling on the canvas,
@@ -447,9 +468,13 @@ Frontend, under `frontend/src/`:
   `pointer-events: none`, so a tap near the edge reaches the table, and take `on-surface` at medium
   emphasis from the theme.
 - **A table's name, and on the phone a station's name, never breaks inside a word.** The name wraps
-  only between words, and when one word is wider than the shape, `nameFontSizeKeepingWordsWhole`
+  only between words, and when one word is wider than the shape, `nameFontSizeFittingEveryWordAcross`
   shrinks the font below its largest size (14 units) until that word fits, rounded down to a tenth.
-  The words are measured with a Konva text node in the drawing's own font, made by
+  On the phone a name is never cut either, a table's or a station's:
+  `nameFontSizeFittingEveryLineInside` starts from that size and shrinks the font further, in
+  tenths, until every line of the wrapped name fits inside the shape, its height included. Konva
+  always draws a first line, so a name that fits on one line keeps its size even in a low shape. The
+  editor keeps the word fit alone. The words are measured with a Konva text node in the drawing's own font, made by
   `shared/composables/useShapeNameWordWidth.ts` for both drawings and let go when the drawing
   closes. The editor draws a station's name at the largest size.
 - **The fill shows `handOutProgress` and the border shows `settlementProgress`**: none red, some
@@ -459,7 +484,10 @@ Frontend, under `frontend/src/`:
   half a frame width in from every side (`rectangleToStrokeInside`) and the outer edge of the frame is the
   rectangle the admin placed, at the same position and size. No table's frame can cover a
   neighbour's, and where two tables touch both frames show side by side, a double line between two
-  tables of the same colour. The admin's drawing is not changed by this.
+  tables of the same colour. The name keeps clear of the frame on every side: on the phone its
+  padding is the frame's width plus `GAP_BETWEEN_NAME_AND_FRAME` (2 units), `TABLE_NAME_PADDING` in
+  `AreaPlan.vue`. A station has no frame, so its name keeps a padding of 4 units
+  (`STATION_NAME_PADDING`). The admin's drawing is not changed by this.
 - **Orders from before the plan keep their table.** `SwitchOrdersToTables` gives every festival
   with orders one hidden area "Bisherige Tische" holding one hidden table per table name its orders
   used, at one default position and size. Names that differ only in capitals (SQLite `NOCASE`)
@@ -520,7 +548,7 @@ Frontend, under `frontend/src/`:
   the paste placements: one grid step in the same area, unchanged coordinates in another, the menu
   anchor, the fit-left rule and never a left edge below zero), `tablePlanSelection.spec.ts` (the
   multi-table selection, the station, the toggle, the marquee intersection and `soleSelectedShapeOf`; the placement spec also covers `hiddenTablesOf` and `scaleFittingTheView`), `oneAtATime.spec.ts`;
-  `shared/core/tablePlanDrawing.spec.ts`,
+  `shared/core/tablePlanDrawing.spec.ts` (including `scaleFittingTheWholeDrawing`),
   `tablePlanColours.spec.ts` and `themeColours.spec.ts`; the store in
   `admin/stores/tablePlan.loading.spec.ts` (the gate, `ConfigurationChanged`, `OrdersChanged`,
   the refetch), `tablePlan.areas.spec.ts` and `tablePlan.tables.spec.ts` on `tablePlanFixture.ts` (`loadedFestivalId`
@@ -561,10 +589,12 @@ Frontend, under `frontend/src/`:
   `admin/views/AdminShell.spec.ts`. The how-to page `test-a-konva-drawing.md` describes the drawing
   helpers.
 - The phone: `shared/core/landing.spec.ts` (`waiterLandingFor`: one area, several, an opened area,
-  none, no festival, the locked order), `shared/core/statusTints.spec.ts`, `phone/core/tablePlanCamera.spec.ts` (fit, clamped pan, pinch limits),
+  none, no festival, the locked order), `shared/core/statusTints.spec.ts`, `phone/core/tablePlanCamera.spec.ts` (the start on a phone, the whole plan centred on a wider screen and from 960 pixels on, a short plan filling a wide screen's width, the clamped pan, a narrow drawing held in the middle, the pinch limits on a phone and on a wider screen),
   `phone/core/tablePlanScrollBars.spec.ts` (fitted with nothing hidden, a long area, zoomed in,
   panned to each end), `phone/core/tablePlanFrame.spec.ts` (the rectangle a stroke follows to stay inside
-  a size), `shared/core/shapeNameFit.spec.ts`,
+  a size), `shared/core/shapeNameFit.spec.ts` (the editor's word fit, and the phone's line fit: two
+  lines that fit, two lines shrunk to the height, a name shrunk onto one line, a one-line name kept in
+  a low shape),
   `phone/stores/tablePlan.spec.ts` (the read, a failed read keeping the plan, the gate, the reloads
   on `GroupsJoined`, `OrdersChanged` and `ConfigurationChanged`), and on `tablePlanFixture.ts` in
   `phone/views`: `TablePlan.landing.spec.ts` (the landings, no festival, an area without tables,
@@ -573,9 +603,14 @@ Frontend, under `frontend/src/`:
   after the click a phone sends behind a quick tap and after the laptop's mouse click),
   `TablePlan.scrollBars.spec.ts` (the bars showing and hiding with the camera),
   `TablePlan.drawing.spec.ts` (geometry, names, a name kept whole in a narrow table and in a narrow
-  station, stations not tappable, the fit, fill and border per state in both themes, the frame
-  inside the table's rectangle and both frames visible where two tables touch, read from the
-  drawn pixels, a tap, a pan that opens nothing, the clamped pan) and `TablePlan.sheet.spec.ts` (each button, the question about unsent items with its
+  station, a two-word station name drawn whole in a low station, stations not tappable, the fit on a
+  phone, fill and border per state in both themes, the frame inside the table's rectangle, both
+  frames visible where two tables touch and the gap between a table's name and its frame, read from
+  the drawn pixels, both lines of a name kept in a table just high enough for them, a tap, a pan
+  that opens nothing, the clamped pan), `TablePlan.camera.spec.ts` (a phone 844 to 959 pixels wide
+  filling its width, the whole plan in the middle of a wider screen without a scroll bar and from
+  960 pixels on, starting over when a wide frame's height changes, the waiter's place kept when a
+  phone's frame changes height) and `TablePlan.sheet.spec.ts` (each button, the question about unsent items with its
   three choices);
   `phone/components/header/AppHeader.spec.ts` for the back control, the names and the reload,
   `tests/AppBackPressOnThePhone.spec.ts` for the back button through the area, the sheet and the

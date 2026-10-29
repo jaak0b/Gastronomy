@@ -1,16 +1,6 @@
-interface RectangleSize {
-  width: number
-  height: number
-}
+import type { PlanRectangle, PlanSize } from '../../shared/core/tablePlanDrawing'
 
-interface RectangleToStroke {
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
-export function rectangleToStrokeInside(size: RectangleSize, strokeWidth: number): RectangleToStroke {
+export function rectangleToStrokeInside(size: PlanSize, strokeWidth: number): PlanRectangle {
   const halfOfTheStroke = strokeWidth / 2
   return {
     x: halfOfTheStroke,

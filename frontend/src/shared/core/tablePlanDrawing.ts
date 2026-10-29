@@ -7,6 +7,18 @@ export interface PlanPoint {
   y: number
 }
 
+export interface PlanSize {
+  width: number
+  height: number
+}
+
+export interface PlanRectangle {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 export function cornersOf(geometry: AreaShapeGeometry): PlanPoint[] {
   const radians = (geometry.rotation * Math.PI) / 180
   const cosine = Math.cos(radians)
@@ -25,4 +37,8 @@ export function cornersOf(geometry: AreaShapeGeometry): PlanPoint[] {
 
 export function lowestEdgeOf(geometries: readonly AreaShapeGeometry[]): number {
   return Math.max(0, ...geometries.flatMap((geometry) => cornersOf(geometry).map((corner) => corner.y)))
+}
+
+export function scaleFittingTheWholeDrawing(view: PlanSize, drawing: PlanSize): number {
+  return Math.min(view.width / drawing.width, view.height / drawing.height)
 }

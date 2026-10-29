@@ -1,8 +1,7 @@
 import type { AdminAreaView, AdminStationShapeView, AdminTableView } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
-import { cornersOf } from '../../shared/core/tablePlanDrawing'
+import { cornersOf, type PlanRectangle } from '../../shared/core/tablePlanDrawing'
 import { drawnTablesOf } from './tablePlanPlacement'
-import type { PlanBox } from './tablePlanSnapping'
 
 export type PlanShape = { kind: 'table'; tableId: string } | { kind: 'station'; stationId: string }
 
@@ -90,7 +89,7 @@ export function isDrawnIn(area: AdminAreaView, selection: TablePlanSelection): b
   }
 }
 
-export function tableIdsInMarquee(area: AdminAreaView, marquee: PlanBox): string[] {
+export function tableIdsInMarquee(area: AdminAreaView, marquee: PlanRectangle): string[] {
   return drawnTablesOf(area)
     .filter((table) => {
       const corners = cornersOf(table.geometry)

@@ -15,28 +15,32 @@ import type { TablePlanAreaView, TablePlanTableView } from '../../../shared/api/
 import { useShapeNameWordWidth } from '../../../shared/composables/useShapeNameWordWidth'
 import { useThemedValue } from '../../../shared/composables/useThemedValue'
 import { DARK_TABLE_PLAN_COLOURS, LIGHT_TABLE_PLAN_COLOURS } from '../../../shared/core/tablePlanColours'
-import { TABLE_PLAN_DRAWING_WIDTH } from '../../../shared/core/tablePlanDrawing'
+import { TABLE_PLAN_DRAWING_WIDTH, type PlanSize } from '../../../shared/core/tablePlanDrawing'
 import {
-  cameraFittingTheWidth,
   clampedPosition,
   pinchedCamera,
   pinchOf,
+  startingCamera,
   waiterDrawingLength,
   type Pinch,
   type PlanCamera,
-  type PlanViewport,
 } from '../../core/tablePlanCamera'
 import { rectangleToStrokeInside } from '../../core/tablePlanFrame'
-import { LARGEST_NAME_FONT_SIZE, nameFontSizeKeepingWordsWhole } from '../../../shared/core/shapeNameFit'
+import { LARGEST_NAME_FONT_SIZE, nameFontSizeFittingEveryLineInside } from '../../../shared/core/shapeNameFit'
 import { scrollBarsOf } from '../../core/tablePlanScrollBars'
+import { NARROWEST_SCREEN_SHOWING_THE_WHOLE_PLAN } from '../../styles/phoneSizes'
 
 const TABLE_NAME = 'plan-table'
 
 const STATION_NAME = 'plan-station'
 
-const NAME_PADDING = 4
+const STATION_NAME_PADDING = 4
 
 const TABLE_BORDER_WIDTH = 4
+
+const GAP_BETWEEN_NAME_AND_FRAME = 2
+
+const TABLE_NAME_PADDING = TABLE_BORDER_WIDTH + GAP_BETWEEN_NAME_AND_FRAME
 
 const PIXELS_BEFORE_A_PAN_STARTS = 8
 
@@ -46,7 +50,7 @@ const emit = defineEmits<{ 'open-table': [table: TablePlanTableView] }>()
 const colours = useThemedValue(LIGHT_TABLE_PLAN_COLOURS, DARK_TABLE_PLAN_COLOURS)
 const frame = useTemplateRef<HTMLElement>('frame')
 const stage = useTemplateRef<VueKonvaRef<Konva.Stage>>('stage')
-const measured = ref<PlanViewport>({ width: 0, height: 0 })
+const measured = ref<PlanSize>({ width: 0, height: 0 })
 let resizeObserver: ResizeObserver | null = null
 let lastPinch: Pinch | null = null
 let panWasStoppedForAPinch = false
@@ -59,13 +63,17 @@ const drawingLength = computed(() =>
   ]),
 )
 
-const viewport = computed<PlanViewport>(() =>
+const viewport = computed<PlanSize>(() =>
   measured.value.width > 0 && measured.value.height > 0
     ? measured.value
     : { width: TABLE_PLAN_DRAWING_WIDTH, height: drawingLength.value },
 )
 
-const camera = ref<PlanCamera>(cameraFittingTheWidth(viewport.value))
+const cameraToStartWith = computed(() =>
+  startingCamera(viewport.value, drawingLength.value, NARROWEST_SCREEN_SHOWING_THE_WHOLE_PLAN),
+)
+
+const camera = ref<PlanCamera>(cameraToStartWith.value)
 
 function keepThePlanInView(position: Vector2d): Vector2d {
   return clampedPosition(position, camera.value.scale, viewport.value, drawingLength.value)
@@ -99,7 +107,6 @@ const nameText = {
   fontSize: LARGEST_NAME_FONT_SIZE,
   align: 'center',
   verticalAlign: 'middle',
-  padding: NAME_PADDING,
   wrap: 'word',
   ellipsis: true,
   listening: false,
@@ -140,9 +147,13 @@ const drawnTables = computed(() => {
     },
     text: {
       ...nameText,
-      fontSize: nameFontSizeKeepingWordsWhole(
+      padding: TABLE_NAME_PADDING,
+      fontSize: nameFontSizeFittingEveryLineInside(
         table.name,
-        table.geometry.width - 2 * NAME_PADDING,
+        {
+          width: table.geometry.width - 2 * TABLE_NAME_PADDING,
+          height: table.geometry.height - 2 * TABLE_NAME_PADDING,
+        },
         widthOfANameWord,
       ),
       width: table.geometry.width,
@@ -171,9 +182,13 @@ const drawnStations = computed(() => {
     },
     text: {
       ...nameText,
-      fontSize: nameFontSizeKeepingWordsWhole(
+      padding: STATION_NAME_PADDING,
+      fontSize: nameFontSizeFittingEveryLineInside(
         stationShape.stationName,
-        stationShape.geometry.width - 2 * NAME_PADDING,
+        {
+          width: stationShape.geometry.width - 2 * STATION_NAME_PADDING,
+          height: stationShape.geometry.height - 2 * STATION_NAME_PADDING,
+        },
         widthOfANameWord,
       ),
       width: stationShape.geometry.width,
@@ -226,7 +241,14 @@ function followTheFingers(event: KonvaEventObject<TouchEvent, Konva.Stage>): voi
     { x: touches[1].clientX - box.left, y: touches[1].clientY - box.top },
   )
   if (lastPinch !== null) {
-    camera.value = pinchedCamera(camera.value, lastPinch, pinch, viewport.value, drawingLength.value)
+    camera.value = pinchedCamera(
+      camera.value,
+      lastPinch,
+      pinch,
+      viewport.value,
+      drawingLength.value,
+      NARROWEST_SCREEN_SHOWING_THE_WHOLE_PLAN,
+    )
   }
   lastPinch = pinch
 }
@@ -239,8 +261,8 @@ function measureTheFrame(): void {
   measured.value = { width: frame.value?.clientWidth ?? 0, height: frame.value?.clientHeight ?? 0 }
 }
 
-watch([() => props.area.areaId, () => viewport.value.width], () => {
-  camera.value = cameraFittingTheWidth(viewport.value)
+watch([() => props.area.areaId, () => cameraToStartWith.value.scale, () => cameraToStartWith.value.x], () => {
+  camera.value = cameraToStartWith.value
 })
 
 onMounted(() => {

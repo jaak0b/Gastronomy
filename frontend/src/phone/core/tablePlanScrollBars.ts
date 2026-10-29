@@ -1,5 +1,5 @@
-import { TABLE_PLAN_DRAWING_WIDTH } from '../../shared/core/tablePlanDrawing'
-import type { PlanCamera, PlanViewport } from './tablePlanCamera'
+import { TABLE_PLAN_DRAWING_WIDTH, type PlanSize } from '../../shared/core/tablePlanDrawing'
+import type { PlanCamera } from './tablePlanCamera'
 
 const PIXELS_OUT_OF_VIEW_BEFORE_A_BAR_SHOWS = 1
 
@@ -24,7 +24,7 @@ function scrollBarAlong(screenLength: number, drawnLength: number, drawingPositi
   }
 }
 
-export function scrollBarsOf(camera: PlanCamera, viewport: PlanViewport, drawingLength: number): PlanScrollBars {
+export function scrollBarsOf(camera: PlanCamera, viewport: PlanSize, drawingLength: number): PlanScrollBars {
   return {
     vertical: scrollBarAlong(viewport.height, drawingLength * camera.scale, camera.y),
     horizontal: scrollBarAlong(viewport.width, TABLE_PLAN_DRAWING_WIDTH * camera.scale, camera.x),

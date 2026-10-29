@@ -6,7 +6,7 @@ const emit = defineEmits<{ 'open-area': [areaId: string] }>()
 </script>
 
 <template>
-  <div class="area-list" data-test="area-list">
+  <v-container class="area-list" data-test="area-list">
     <v-btn-wide
       v-for="area in areas"
       :key="area.areaId"
@@ -18,7 +18,7 @@ const emit = defineEmits<{ 'open-area': [areaId: string] }>()
     >
       {{ area.name }}
     </v-btn-wide>
-  </div>
+  </v-container>
 </template>
 
 <style scoped>

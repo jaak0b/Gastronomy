@@ -20,8 +20,8 @@ import { useShapeNameWordWidth } from '../../../shared/composables/useShapeNameW
 import { useThemedValue } from '../../../shared/composables/useThemedValue'
 import { assertNever } from '../../../shared/core/assertNever'
 import { DARK_TABLE_PLAN_COLOURS, LIGHT_TABLE_PLAN_COLOURS } from '../../../shared/core/tablePlanColours'
-import { LARGEST_NAME_FONT_SIZE, nameFontSizeKeepingWordsWhole } from '../../../shared/core/shapeNameFit'
-import { TABLE_PLAN_DRAWING_WIDTH, type PlanPoint } from '../../../shared/core/tablePlanDrawing'
+import { LARGEST_NAME_FONT_SIZE, nameFontSizeFittingEveryWordAcross } from '../../../shared/core/shapeNameFit'
+import { TABLE_PLAN_DRAWING_WIDTH, type PlanPoint, type PlanRectangle } from '../../../shared/core/tablePlanDrawing'
 import type { AdminActionResult } from '../../core/adminActionResult'
 import {
   drawnTablesOf,
@@ -46,7 +46,6 @@ import {
   snapDraggedBox,
   snapResizeCorner,
   snapStopsBeside,
-  type PlanBox,
   type SnapGuide,
   type SnapStops,
 } from '../../core/tablePlanSnapping'
@@ -127,7 +126,7 @@ const transformer = useTemplateRef<VueKonvaRef<Konva.Transformer>>('transformer'
 const visibleHeight = ref(0)
 const visibleWidth = ref(0)
 const guides = ref<SnapGuide[]>([])
-const marqueeBox = ref<PlanBox | null>(null)
+const marqueeBox = ref<PlanRectangle | null>(null)
 const contextMenu = ref<ContextMenuState | null>(null)
 const contextMenuOpen = ref(false)
 let groupDrag: GroupDrag | null = null
@@ -183,7 +182,7 @@ const drawnShapes = computed<DrawnShape[]>(() => {
         },
         text: {
           ...nameText,
-          fontSize: nameFontSizeKeepingWordsWhole(
+          fontSize: nameFontSizeFittingEveryWordAcross(
             table.name,
             table.geometry.width - 2 * NAME_PADDING,
             widthOfANameWord,
@@ -308,7 +307,7 @@ const guideLines = computed(() =>
   })),
 )
 
-function boxOf(node: Konva.Node): PlanBox {
+function boxOf(node: Konva.Node): PlanRectangle {
   return node.getClientRect({ relativeTo: node.getLayer() ?? undefined, skipStroke: true })
 }
 

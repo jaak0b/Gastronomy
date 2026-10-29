@@ -19,7 +19,9 @@ padding, a density or a font size that its surface should decide.
   wraps the app in `<v-defaults-provider :defaults="PHONE_DEFAULTS">` while
   `isDrawnAtPhoneSizes(screen)` from `shared/core/landing.ts` says so: on the five waiter screens
   and on the start screens (`DoorGate`, `EnrolQr`, `Welcome`, `StartingUp`), which are shown before
-  the device knows whose it is.
+  the device knows whose it is. `phoneSizes.ts` also holds `NARROWEST_SCREEN_SHOWING_THE_WHOLE_PLAN`
+  (960 pixels): a frame at least that wide shows the waiter's whole table plan at once (see the
+  `table-plan` feature page).
 - **Station tablet:** `src/station/styles/stationSizes.ts` (`STATION_DEFAULTS`: large buttons and
   chips, comfortable selects) and `stationSizes.css` (the class `station-sizes`). `StationPage.vue`
   wraps itself in the provider and carries the class on its root.

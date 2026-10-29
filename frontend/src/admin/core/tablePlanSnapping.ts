@@ -1,15 +1,8 @@
-import { TABLE_PLAN_DRAWING_WIDTH, type PlanPoint } from '../../shared/core/tablePlanDrawing'
+import { TABLE_PLAN_DRAWING_WIDTH, type PlanPoint, type PlanRectangle } from '../../shared/core/tablePlanDrawing'
 
 export const SNAP_GRID = 10
 
 const SNAP_DISTANCE = 6
-
-export interface PlanBox {
-  x: number
-  y: number
-  width: number
-  height: number
-}
 
 type GuideOrientation = 'vertical' | 'horizontal'
 
@@ -34,7 +27,7 @@ interface SpanSnap {
   guide: number | null
 }
 
-export function snapStopsBeside(otherBoxes: readonly PlanBox[]): SnapStops {
+export function snapStopsBeside(otherBoxes: readonly PlanRectangle[]): SnapStops {
   return {
     vertical: [
       0,
@@ -62,7 +55,7 @@ function snapSpan(start: number, size: number, stops: readonly number[]): SpanSn
   return { start: nearest.start, guide: nearest.guide }
 }
 
-export function snapDraggedBox(box: PlanBox, stops: SnapStops): SnappedPosition {
+export function snapDraggedBox(box: PlanRectangle, stops: SnapStops): SnappedPosition {
   const across = snapSpan(box.x, box.width, stops.vertical)
   const down = snapSpan(box.y, box.height, stops.horizontal)
   const x = Math.min(Math.max(across.start, 0), Math.max(0, TABLE_PLAN_DRAWING_WIDTH - box.width))

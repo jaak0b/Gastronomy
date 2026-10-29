@@ -170,7 +170,6 @@ function discardTheDraft(): void {
     </p>
     <AreaList
       v-else-if="landing.kind === 'areaList'"
-      class="pa-4"
       :areas="tablePlan.areas"
       @open-area="tablePlan.openArea"
     />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cornersOf, lowestEdgeOf } from '../../../src/shared/core/tablePlanDrawing'
+import { cornersOf, lowestEdgeOf, scaleFittingTheWholeDrawing } from '../../../src/shared/core/tablePlanDrawing'
 import { aGeometry } from '../../support/wireViews'
 
 describe('the corners of a shape in the plan', () => {
@@ -31,5 +31,15 @@ describe('the lowest edge of an area', () => {
 
   it('is the bottom of the lowest shape', () => {
     expect(lowestEdgeOf([aGeometry({ y: 30, height: 40 }), aGeometry({ y: 200, height: 50 })])).toBe(250)
+  })
+})
+
+describe('the scale that shows a whole drawing in a view', () => {
+  it('follows the height when the drawing is taller than the view allows', () => {
+    expect(scaleFittingTheWholeDrawing({ width: 1900, height: 940 }, { width: 400, height: 470 })).toBe(2)
+  })
+
+  it('follows the width when the drawing is wider than the view allows', () => {
+    expect(scaleFittingTheWholeDrawing({ width: 600, height: 940 }, { width: 400, height: 470 })).toBe(1.5)
   })
 })

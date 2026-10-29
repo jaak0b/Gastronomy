@@ -3,7 +3,9 @@ import {
   TABLE_PLAN_DRAWING_WIDTH,
   cornersOf,
   lowestEdgeOf,
+  scaleFittingTheWholeDrawing,
   type PlanPoint,
+  type PlanSize,
 } from '../../shared/core/tablePlanDrawing'
 import { compareNames } from '../../shared/core/compareNames'
 import { SNAP_GRID } from './tablePlanSnapping'
@@ -16,11 +18,6 @@ const MEASURING_TOLERANCE = 1e-6
 
 export const SMALLEST_EDITOR_SCALE = 0.5
 
-interface ShapeSize {
-  width: number
-  height: number
-}
-
 export interface TableCopy {
   sourceTableId: string
   geometry: AreaShapeGeometry
@@ -32,9 +29,9 @@ interface CopyBounds {
   top: number
 }
 
-export const NEW_TABLE_SIZE: ShapeSize = { width: 80, height: 40 }
+export const NEW_TABLE_SIZE: PlanSize = { width: 80, height: 40 }
 
-export const NEW_STATION_SIZE: ShapeSize = { width: 120, height: 40 }
+export const NEW_STATION_SIZE: PlanSize = { width: 120, height: 40 }
 
 export function drawnTablesOf(area: AdminAreaView): AdminTableView[] {
   return area.tables.filter((table) => !table.isHidden)
@@ -46,14 +43,11 @@ export function hiddenTablesOf(area: AdminAreaView): AdminTableView[] {
     .sort((left, right) => compareNames(left.name, right.name))
 }
 
-export function scaleFittingTheView(view: ShapeSize, drawing: ShapeSize): number {
-  return Math.max(
-    SMALLEST_EDITOR_SCALE,
-    Math.min(view.width / drawing.width, view.height / drawing.height),
-  )
+export function scaleFittingTheView(view: PlanSize, drawing: PlanSize): number {
+  return Math.max(SMALLEST_EDITOR_SCALE, scaleFittingTheWholeDrawing(view, drawing))
 }
 
-export function geometryForANewShapeIn(area: AdminAreaView, size: ShapeSize): AreaShapeGeometry {
+export function geometryForANewShapeIn(area: AdminAreaView, size: PlanSize): AreaShapeGeometry {
   const everyTableAndStation = [
     ...area.tables.map((table) => table.geometry),
     ...area.stationShapes.map((shape) => shape.geometry),

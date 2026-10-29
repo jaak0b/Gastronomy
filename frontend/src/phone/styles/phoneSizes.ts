@@ -2,6 +2,8 @@ import { surfaceDefaults, type VuetifyDefaults } from '../../shared/styles/appVu
 
 export const PHONE_SIZES_CLASS = 'phone-sizes'
 
+export const NARROWEST_SCREEN_SHOWING_THE_WHOLE_PLAN = 960
+
 const PHONE_CONTROL_DEFAULTS: VuetifyDefaults = {
   VAppBar: { height: 72 },
   VBtn: { size: 'large' },
