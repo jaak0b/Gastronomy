@@ -22,8 +22,8 @@ Backend, under `backend/`:
   `Refusal.EnrolmentRedemption.cs`, `Refusal.Session.cs` and `Refusal.DeviceLanguage.cs`. The
   mapping is `Core/Mapping/EnrolmentMapping.cs`.
 - Ports: `ISecretHasher` (implemented by `Infrastructure/Security/SecretHasher.cs`, which hashes
-  every new token and code with salted SHA-256 and verifies a stored hash by the algorithm stored
-  beside it), `IDeviceTokenSplitter` (`Infrastructure/Security/DeviceTokenSplitter.cs`),
+  every token and code with salted SHA-256 and accepts only a stored hash of that algorithm),
+  `IDeviceTokenSplitter` (`Infrastructure/Security/DeviceTokenSplitter.cs`),
   `IEnrolmentUrlBuilder` (`Api/Hosting/EnrolmentUrlBuilder.cs`) and
   `IOutstandingInvitationCache`. No repository stands in front of the database for this area.
 - Routes: `POST /api/admin/enrolment/invitations` (`AdminEnrolmentEndpoints.cs`), the QR picture at
@@ -55,11 +55,6 @@ Frontend, under `frontend/src/`:
   the laptop shows a starting screen until it does. That decision lives in
   `shared/core/landing.ts`, never in a component.
 - How a token is stored is backend hard rule 5.
-- **A device set up before an update keeps working.** Tokens and codes a released build stored carry
-  `PBKDF2-HMAC-SHA512` with their iteration count, and they are still verified that way, so nobody
-  scans again. Only new rows are SHA-256, and those leave the iteration count empty. An old token
-  stays on the slow PBKDF2 check until its device is set up again: the token check runs during
-  authentication, before the request transaction, so it cannot rewrite the hash.
 
 ## Tests
 
@@ -67,9 +62,8 @@ Frontend, under `frontend/src/`:
   `DeviceOwnerLookupTest` and `DeviceOwnerRetirementTest`, on the real DbContext with in-memory
   SQLite; `Security/DeviceTokenSplitterTest` and `SecretHasherTest`; `Configurations/DeviceConfigurationTest`
   and `EnrolmentInvitationConfigurationTest`; `Persistence/ReleasedDatabaseUpgradeTest`, which
-  checks that a phone token and an open invitation from the released database still work after the
-  migrations. `TestSupport/ReleasedSecretHash`, in this project and in `GastronomyApp.Api.Tests`,
-  holds a secret with the PBKDF2 hash the released build stored for it.
+  checks that the migrations remove the devices and invitations of the released database and leave
+  their waiters and stations without a device.
 - `GastronomyApp.Api.Tests`: `Endpoints/AdminEnrolmentEndpointsTest`, `EnrolmentEndpointsTest`,
   `EnrolmentLoggingTest`, `ConcurrentInvitationTest`, `InvitationQREndpointTest`,
   `SessionEndpointsTest`, `LanguageEndpointTest`, `Responders/InvitationQRResponderTest`,

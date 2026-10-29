@@ -52,7 +52,7 @@ public sealed class DeviceOwnerLookup
     if (device is null)
       return null;
 
-    var secretMatches = _secretHasher.Verify(secret, device.TokenHash, device.TokenSalt, device.TokenIterations, device.TokenAlgorithm);
+    var secretMatches = _secretHasher.Verify(secret, device.TokenHash, device.TokenSalt, device.TokenAlgorithm);
 
     if (!secretMatches)
       return null;

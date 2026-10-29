@@ -4,13 +4,11 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Infrastructure.Tests.Persistence;
 
 public sealed class ReleasedDatabaseUpgradeTest
 {
-  private readonly ReleasedSecretHash _released = new();
   private readonly ReleasedSchemaScript _releasedSchema = new();
 
   [Test]
@@ -19,29 +17,13 @@ public sealed class ReleasedDatabaseUpgradeTest
     using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
     var categoryId = Guid.NewGuid();
     var festivalId = Guid.NewGuid();
-    var invitationId = Guid.NewGuid();
     var staffMemberId = Guid.NewGuid();
     var orderId = Guid.NewGuid();
     var orderItemId = Guid.NewGuid();
-    byte[] qrCodeHash =
-    [
-      1,
-      2,
-      3,
-      4
-    ];
-    byte[] qrCodeSalt =
-    [
-      5,
-      6,
-      7,
-      8
-    ];
 
     var connection = fixture.OpenConnection();
     await ExecuteAsync(connection, _releasedSchema.Sql);
     await InsertCatalogCategoryAsync(connection, categoryId);
-    await InsertEnrolmentInvitationAsync(connection, invitationId, qrCodeHash, qrCodeSalt);
     await InsertFestivalAsync(connection, festivalId);
     await InsertStaffMemberAsync(connection, staffMemberId);
     await InsertOrderAsync(connection, orderId, festivalId, staffMemberId);
@@ -51,7 +33,6 @@ public sealed class ReleasedDatabaseUpgradeTest
     await context.Database.MigrateAsync();
 
     var category = await context.Set<CatalogCategory>().SingleAsync(persisted => persisted.Id == categoryId);
-    var invitation = await context.Set<EnrolmentInvitation>().SingleAsync(persisted => persisted.Id == invitationId);
     var order = await context.Set<Order>().Include(persisted => persisted.Table).ThenInclude(table => table.Area).SingleAsync(persisted => persisted.Id == orderId);
     var orderItem = await context.Set<OrderItem>().SingleAsync(persisted => persisted.Id == orderItemId);
     List<string> appliedMigrations = (await context.Database.GetAppliedMigrationsAsync()).ToList();
@@ -63,10 +44,6 @@ public sealed class ReleasedDatabaseUpgradeTest
     Assert.Multiple(() =>
                     {
                       Assert.That(category.Name, Is.EqualTo("Getränke"));
-                      Assert.That(invitation.QRCodeHash, Is.EqualTo(qrCodeHash));
-                      Assert.That(invitation.QRCodeSalt, Is.EqualTo(qrCodeSalt));
-                      Assert.That(invitation.QRCodeIterations, Is.EqualTo(210000));
-                      Assert.That(invitation.QRCodeAlgorithm, Is.EqualTo("PBKDF2-HMAC-SHA512"));
                       Assert.That(order.Table.Name, Is.EqualTo("Tisch 7"));
                       Assert.That(order.Table.FestivalId, Is.EqualTo(festivalId));
                       Assert.That(order.Table.IsHidden, Is.True);
@@ -79,7 +56,7 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(orderItem.SettledAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 18, 0, 0)));
                       Assert.That(orderItem.SettledByStaffMemberId, Is.EqualTo(staffMemberId));
                       Assert.That(orderItem.PaymentMethod, Is.Null);
-                      Assert.That(appliedMigrations, Has.Count.EqualTo(13));
+                      Assert.That(appliedMigrations, Has.Count.EqualTo(14));
                       Assert.That(appliedMigrations[0], Is.EqualTo(_releasedSchema.MigrationId));
                       Assert.That(appliedMigrations[1], Does.EndWith("_CollateCategoryNamesAndCapitalizeQRColumns"));
                       Assert.That(appliedMigrations[2], Does.EndWith("_DropOrderNote"));
@@ -93,6 +70,7 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(appliedMigrations[10], Does.EndWith("_NameColumnsIgnoreCase"));
                       Assert.That(appliedMigrations[11], Does.EndWith("_AddOrderItemStatusHistory"));
                       Assert.That(appliedMigrations[12], Does.EndWith("_MakeHashIterationsOptional"));
+                      Assert.That(appliedMigrations[13], Does.EndWith("_KeepOnlySha256Secrets"));
                       Assert.That(ingredientCount, Is.Zero);
                       Assert.That(stockRowCount, Is.Zero);
                       Assert.That(recipeLineCount, Is.Zero);
@@ -142,112 +120,58 @@ public sealed class ReleasedDatabaseUpgradeTest
   }
 
   [Test]
-  public async Task MigrateAsync_OnReleasedDatabaseWithDevices_KeepsTheDeviceAndItsToken()
+  public async Task MigrateAsync_OnReleasedDatabaseWithDevicesAndInvitations_RemovesThemAndLeavesEveryOwnerNotSetUp()
   {
     using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
-    var deviceId = Guid.NewGuid();
+    var festivalId = Guid.NewGuid();
+    var annaId = Guid.NewGuid();
+    var kitchenId = Guid.NewGuid();
+    var barId = Guid.NewGuid();
+    var phoneId = Guid.NewGuid();
+    var tabletId = Guid.NewGuid();
+    var barInvitationId = Guid.NewGuid();
 
     var connection = fixture.OpenConnection();
     await ExecuteAsync(connection, _releasedSchema.Sql);
-    await InsertDeviceAsync(connection, deviceId);
+    await InsertFestivalAsync(connection, festivalId);
+    await InsertStaffMemberAsync(connection, annaId);
+    await InsertFestivalStationAsync(connection, Guid.NewGuid(), festivalId, kitchenId, "Kueche", 1);
+    await InsertFestivalStationAsync(connection, Guid.NewGuid(), festivalId, barId, "Theke", 1);
+    await InsertDeviceAsync(connection, phoneId);
+    await InsertDeviceAsync(connection, tabletId);
+    await InsertConsumedEnrolmentInvitationAsync(connection, Guid.NewGuid(), phoneId);
+    await InsertConsumedEnrolmentInvitationAsync(connection, Guid.NewGuid(), Guid.NewGuid());
+    await InsertEnrolmentInvitationAsync(connection, barInvitationId);
+    await LinkOwnerAsync(connection, "StaffMembers", annaId, "DeviceId", phoneId);
+    await LinkOwnerAsync(connection, "Stations", kitchenId, "DeviceId", tabletId);
+    await LinkOwnerAsync(connection, "Stations", barId, "EnrolmentInvitationId", barInvitationId);
 
     var context = fixture.CreateContext();
     await context.Database.MigrateAsync();
 
-    var device = await context.Set<Device>().SingleAsync();
+    var deviceCount = await context.Set<Device>().CountAsync();
+    var invitationCount = await context.Set<EnrolmentInvitation>().CountAsync();
+    var anna = await context.Set<StaffMember>().SingleAsync(staffMember => staffMember.Id == annaId);
+    var kitchen = await context.Set<Station>().SingleAsync(station => station.Id == kitchenId);
+    var bar = await context.Set<Station>().SingleAsync(station => station.Id == barId);
+    var brokenLinks = await context.Database.SqlQueryRaw<string>("SELECT \"table\" AS \"Value\" FROM pragma_foreign_key_check").ToListAsync();
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(device.Id, Is.EqualTo(deviceId));
-                      Assert.That(device.Language, Is.EqualTo("de"));
-                      Assert.That(device.TokenHash,
-                                  Is.EqualTo(new byte[]
-                                             {
-                                               17,
-                                               18,
-                                               19,
-                                               20
-                                             }));
-                      Assert.That(device.TokenSalt,
-                                  Is.EqualTo(new byte[]
-                                             {
-                                               21,
-                                               22,
-                                               23,
-                                               24
-                                             }));
-                      Assert.That(device.TokenIterations, Is.EqualTo(210000));
-                      Assert.That(device.TokenAlgorithm, Is.EqualTo("PBKDF2-HMAC-SHA512"));
-                      Assert.That(device.TokenLookupId, Is.EqualTo(deviceId.ToString("N")));
-                      Assert.That(device.CreatedAtUtc, Is.EqualTo(new DateTime(2026, 9, 16, 18, 1, 0)));
+                      Assert.That(deviceCount, Is.Zero);
+                      Assert.That(invitationCount, Is.Zero);
+                      Assert.That(anna.DeviceId, Is.Null);
+                      Assert.That(anna.EnrolmentInvitationId, Is.Null);
+                      Assert.That(kitchen.DeviceId, Is.Null);
+                      Assert.That(kitchen.Name, Is.EqualTo("Kueche"));
+                      Assert.That(bar.EnrolmentInvitationId, Is.Null);
+                      Assert.That(bar.Name, Is.EqualTo("Theke"));
+                      Assert.That(brokenLinks, Is.Empty);
                     });
   }
 
   [Test]
-  public async Task MigrateAsync_OnReleasedDatabaseWithAPhoneSetUp_StillAcceptsThePhonesToken()
-  {
-    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
-    var deviceId = Guid.NewGuid();
-    var staffMemberId = Guid.NewGuid();
-
-    var connection = fixture.OpenConnection();
-    await ExecuteAsync(connection, _releasedSchema.Sql);
-    await InsertDeviceAsync(connection, deviceId, _released.Hash, _released.Salt);
-    await InsertStaffMemberAsync(connection, staffMemberId);
-    await PointStaffMemberAtDeviceAsync(connection, staffMemberId, deviceId);
-
-    var context = fixture.CreateContext();
-    await context.Database.MigrateAsync();
-
-    var owner = await new EnrolmentComposition(context, TimeProvider.System).Lookup.FindByTokenAsync(deviceId.ToString("N"), _released.Secret, TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(owner, Is.InstanceOf<StaffMember>());
-                      Assert.That(owner!.Id, Is.EqualTo(staffMemberId));
-                      Assert.That(owner.Device!.Id, Is.EqualTo(deviceId));
-                    });
-  }
-
-  [Test]
-  public async Task MigrateAsync_OnReleasedDatabaseWithAnOutstandingInvitation_RedeemsItsCodeOnce()
-  {
-    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
-    FakeTimeProvider clock = new(new(2026, 9, 16, 18, 1, 0, TimeSpan.Zero));
-
-    var connection = fixture.OpenConnection();
-    await ExecuteAsync(connection, _releasedSchema.Sql);
-    await InsertEnrolmentInvitationAsync(connection, Guid.NewGuid(), _released.Hash, _released.Salt);
-
-    var context = fixture.CreateContext();
-    await context.Database.MigrateAsync();
-
-    var enrolment = new EnrolmentComposition(context, clock).Service;
-    var first = await enrolment.RedeemAsync(new()
-                                            {
-                                              Code = _released.Secret,
-                                              Name = "Ben"
-                                            },
-                                            "de",
-                                            TestContext.CurrentContext.CancellationToken);
-    var second = await enrolment.RedeemAsync(new()
-                                             {
-                                               Code = _released.Secret,
-                                               Name = "Ben"
-                                             },
-                                             "de",
-                                             TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(first.IsError, Is.False);
-                      Assert.That(first.Value.StaffMember!.Name, Is.EqualTo("Ben"));
-                      Assert.That(second.RefusalMessageKey(), Is.EqualTo("errors.enrolment.codeNoLongerValid"));
-                    });
-  }
-
-  [Test]
-  public async Task MigrateAsync_OnConsumedInvitationsWithAndWithoutTheirDevice_KeepsOnlyTheOneWhoseDeviceExists()
+  public async Task MigrateAsync_UpToEntityNavigationsOnConsumedInvitationsWithAndWithoutTheirDevice_KeepsOnlyTheOneWhoseDeviceExists()
   {
     using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
     var survivingDeviceId = Guid.NewGuid();
@@ -261,14 +185,96 @@ public sealed class ReleasedDatabaseUpgradeTest
     await InsertConsumedEnrolmentInvitationAsync(connection, orphanedInvitationId, Guid.NewGuid());
 
     var context = fixture.CreateContext();
-    await context.Database.MigrateAsync();
+    await context.Database.MigrateAsync("20260921142207_AddEntityNavigations", TestContext.CurrentContext.CancellationToken);
 
-    List<EnrolmentInvitation> invitations = await context.Set<EnrolmentInvitation>().ToListAsync();
+    var invitationIds = await context.Database.SqlQueryRaw<string>("SELECT \"Id\" AS \"Value\" FROM \"EnrolmentInvitations\"").ToListAsync();
+    var consumingDeviceIds = await context.Database.SqlQueryRaw<string>("SELECT \"ConsumedByDeviceId\" AS \"Value\" FROM \"EnrolmentInvitations\"").ToListAsync();
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(invitations.Select(invitation => invitation.Id), Is.EquivalentTo(new[] { survivingInvitationId }));
-                      Assert.That(invitations.Single().ConsumedByDeviceId, Is.EqualTo(survivingDeviceId));
+                      Assert.That(invitationIds, Is.EquivalentTo(new[] { ToStoredText(survivingInvitationId) }));
+                      Assert.That(consumingDeviceIds, Is.EquivalentTo(new[] { ToStoredText(survivingDeviceId) }));
+                    });
+  }
+
+  [Test]
+  public async Task MigrateAsync_OnRowsStoredWithSha256BeforeTheOldOnesWereRemoved_KeepsThemAndTheirLinks()
+  {
+    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
+    var festivalId = Guid.NewGuid();
+    var annaId = Guid.NewGuid();
+    var kitchenId = Guid.NewGuid();
+    var phoneId = Guid.NewGuid();
+    var consumedInvitationId = Guid.NewGuid();
+    var outstandingInvitationId = Guid.NewGuid();
+
+    var connection = fixture.OpenConnection();
+    await ExecuteAsync(connection, _releasedSchema.Sql);
+    await InsertFestivalAsync(connection, festivalId);
+    await InsertStaffMemberAsync(connection, annaId);
+    await InsertFestivalStationAsync(connection, Guid.NewGuid(), festivalId, kitchenId, "Kueche", 1);
+
+    var context = fixture.CreateContext();
+    await context.Database.MigrateAsync("20261029213618_MakeHashIterationsOptional", TestContext.CurrentContext.CancellationToken);
+
+    await InsertSha256DeviceAsync(connection, phoneId);
+    await InsertConsumedSha256EnrolmentInvitationAsync(connection, consumedInvitationId, phoneId);
+    await InsertSha256EnrolmentInvitationAsync(connection, outstandingInvitationId);
+    await LinkOwnerAsync(connection, "StaffMembers", annaId, "DeviceId", phoneId);
+    await LinkOwnerAsync(connection, "Stations", kitchenId, "EnrolmentInvitationId", outstandingInvitationId);
+
+    await context.Database.MigrateAsync(TestContext.CurrentContext.CancellationToken);
+
+    var phone = await context.Set<Device>().SingleAsync();
+    var consumedInvitation = await context.Set<EnrolmentInvitation>().SingleAsync(invitation => invitation.Id == consumedInvitationId);
+    var outstandingInvitation = await context.Set<EnrolmentInvitation>().SingleAsync(invitation => invitation.Id == outstandingInvitationId);
+    var anna = await context.Set<StaffMember>().SingleAsync(staffMember => staffMember.Id == annaId);
+    var kitchen = await context.Set<Station>().SingleAsync(station => station.Id == kitchenId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(phone.Id, Is.EqualTo(phoneId));
+                      Assert.That(phone.TokenHash,
+                                  Is.EqualTo(new byte[]
+                                             {
+                                               31,
+                                               32,
+                                               33,
+                                               34
+                                             }));
+                      Assert.That(phone.TokenSalt,
+                                  Is.EqualTo(new byte[]
+                                             {
+                                               35,
+                                               36,
+                                               37,
+                                               38
+                                             }));
+                      Assert.That(phone.TokenAlgorithm, Is.EqualTo("SHA-256"));
+                      Assert.That(phone.TokenLookupId, Is.EqualTo(phoneId.ToString("N")));
+                      Assert.That(consumedInvitation.QRCodeHash,
+                                  Is.EqualTo(new byte[]
+                                             {
+                                               41,
+                                               42,
+                                               43,
+                                               44
+                                             }));
+                      Assert.That(consumedInvitation.QRCodeAlgorithm, Is.EqualTo("SHA-256"));
+                      Assert.That(consumedInvitation.ConsumedAtUtc, Is.EqualTo(new DateTime(2026, 10, 29, 21, 1, 0)));
+                      Assert.That(consumedInvitation.ConsumedByDeviceId, Is.EqualTo(phoneId));
+                      Assert.That(outstandingInvitation.QRCodeHash,
+                                  Is.EqualTo(new byte[]
+                                             {
+                                               41,
+                                               42,
+                                               43,
+                                               44
+                                             }));
+                      Assert.That(outstandingInvitation.QRCodeAlgorithm, Is.EqualTo("SHA-256"));
+                      Assert.That(outstandingInvitation.ConsumedAtUtc, Is.Null);
+                      Assert.That(anna.DeviceId, Is.EqualTo(phoneId));
+                      Assert.That(kitchen.EnrolmentInvitationId, Is.EqualTo(outstandingInvitationId));
                     });
   }
 
@@ -728,7 +734,7 @@ public sealed class ReleasedDatabaseUpgradeTest
     await command.ExecuteNonQueryAsync();
   }
 
-  private async Task InsertEnrolmentInvitationAsync(SqliteConnection connection, Guid invitationId, byte[] qrCodeHash, byte[] qrCodeSalt)
+  private async Task InsertEnrolmentInvitationAsync(SqliteConnection connection, Guid invitationId)
   {
     await using var command = connection.CreateCommand();
     command.CommandText = """
@@ -736,8 +742,22 @@ public sealed class ReleasedDatabaseUpgradeTest
                           VALUES ($id, $hash, $salt, $iterations, $algorithm, $createdAtUtc, $expiresAtUtc, NULL, NULL);
                           """;
     command.Parameters.AddWithValue("$id", ToStoredText(invitationId));
-    command.Parameters.AddWithValue("$hash", qrCodeHash);
-    command.Parameters.AddWithValue("$salt", qrCodeSalt);
+    command.Parameters.AddWithValue("$hash",
+                                    new byte[]
+                                    {
+                                      1,
+                                      2,
+                                      3,
+                                      4
+                                    });
+    command.Parameters.AddWithValue("$salt",
+                                    new byte[]
+                                    {
+                                      5,
+                                      6,
+                                      7,
+                                      8
+                                    });
     command.Parameters.AddWithValue("$iterations", 210000);
     command.Parameters.AddWithValue("$algorithm", "PBKDF2-HMAC-SHA512");
     command.Parameters.AddWithValue("$createdAtUtc", "2026-09-16 18:00:00");
@@ -745,27 +765,7 @@ public sealed class ReleasedDatabaseUpgradeTest
     await command.ExecuteNonQueryAsync();
   }
 
-  private Task InsertDeviceAsync(SqliteConnection connection, Guid deviceId)
-  {
-    return InsertDeviceAsync(connection,
-                             deviceId,
-                             new byte[]
-                             {
-                               17,
-                               18,
-                               19,
-                               20
-                             },
-                             new byte[]
-                             {
-                               21,
-                               22,
-                               23,
-                               24
-                             });
-  }
-
-  private async Task InsertDeviceAsync(SqliteConnection connection, Guid deviceId, byte[] tokenHash, byte[] tokenSalt)
+  private async Task InsertDeviceAsync(SqliteConnection connection, Guid deviceId)
   {
     await using var command = connection.CreateCommand();
     command.CommandText = """
@@ -774,8 +774,22 @@ public sealed class ReleasedDatabaseUpgradeTest
                           """;
     command.Parameters.AddWithValue("$id", ToStoredText(deviceId));
     command.Parameters.AddWithValue("$language", "de");
-    command.Parameters.AddWithValue("$tokenHash", tokenHash);
-    command.Parameters.AddWithValue("$tokenSalt", tokenSalt);
+    command.Parameters.AddWithValue("$tokenHash",
+                                    new byte[]
+                                    {
+                                      17,
+                                      18,
+                                      19,
+                                      20
+                                    });
+    command.Parameters.AddWithValue("$tokenSalt",
+                                    new byte[]
+                                    {
+                                      21,
+                                      22,
+                                      23,
+                                      24
+                                    });
     command.Parameters.AddWithValue("$iterations", 210000);
     command.Parameters.AddWithValue("$algorithm", "PBKDF2-HMAC-SHA512");
     command.Parameters.AddWithValue("$tokenLookupId", deviceId.ToString("N"));
@@ -817,6 +831,89 @@ public sealed class ReleasedDatabaseUpgradeTest
     await command.ExecuteNonQueryAsync();
   }
 
+  private async Task InsertSha256DeviceAsync(SqliteConnection connection, Guid deviceId)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "Devices" ("Id", "Language", "TokenHash", "TokenSalt", "TokenAlgorithm", "TokenLookupId", "CreatedAtUtc")
+                          VALUES ($id, 'de', $tokenHash, $tokenSalt, 'SHA-256', $tokenLookupId, '2026-10-29 21:01:00');
+                          """;
+    command.Parameters.AddWithValue("$id", ToStoredText(deviceId));
+    command.Parameters.AddWithValue("$tokenHash",
+                                    new byte[]
+                                    {
+                                      31,
+                                      32,
+                                      33,
+                                      34
+                                    });
+    command.Parameters.AddWithValue("$tokenSalt",
+                                    new byte[]
+                                    {
+                                      35,
+                                      36,
+                                      37,
+                                      38
+                                    });
+    command.Parameters.AddWithValue("$tokenLookupId", deviceId.ToString("N"));
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertSha256EnrolmentInvitationAsync(SqliteConnection connection, Guid invitationId)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "EnrolmentInvitations" ("Id", "QRCodeHash", "QRCodeSalt", "QRCodeAlgorithm", "CreatedAtUtc", "ExpiresAtUtc", "ConsumedAtUtc", "ConsumedByDeviceId")
+                          VALUES ($id, $hash, $salt, 'SHA-256', '2026-10-29 21:10:00', '2026-10-29 21:15:00', NULL, NULL);
+                          """;
+    command.Parameters.AddWithValue("$id", ToStoredText(invitationId));
+    command.Parameters.AddWithValue("$hash",
+                                    new byte[]
+                                    {
+                                      41,
+                                      42,
+                                      43,
+                                      44
+                                    });
+    command.Parameters.AddWithValue("$salt",
+                                    new byte[]
+                                    {
+                                      45,
+                                      46,
+                                      47,
+                                      48
+                                    });
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertConsumedSha256EnrolmentInvitationAsync(SqliteConnection connection, Guid invitationId, Guid consumedByDeviceId)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "EnrolmentInvitations" ("Id", "QRCodeHash", "QRCodeSalt", "QRCodeAlgorithm", "CreatedAtUtc", "ExpiresAtUtc", "ConsumedAtUtc", "ConsumedByDeviceId")
+                          VALUES ($id, $hash, $salt, 'SHA-256', '2026-10-29 21:00:00', '2026-10-29 21:05:00', '2026-10-29 21:01:00', $consumedByDeviceId);
+                          """;
+    command.Parameters.AddWithValue("$id", ToStoredText(invitationId));
+    command.Parameters.AddWithValue("$hash",
+                                    new byte[]
+                                    {
+                                      41,
+                                      42,
+                                      43,
+                                      44
+                                    });
+    command.Parameters.AddWithValue("$salt",
+                                    new byte[]
+                                    {
+                                      45,
+                                      46,
+                                      47,
+                                      48
+                                    });
+    command.Parameters.AddWithValue("$consumedByDeviceId", ToStoredText(consumedByDeviceId));
+    await command.ExecuteNonQueryAsync();
+  }
+
   private async Task InsertStaffMemberAsync(SqliteConnection connection, Guid staffMemberId)
   {
     await using var command = connection.CreateCommand();
@@ -831,14 +928,14 @@ public sealed class ReleasedDatabaseUpgradeTest
     await command.ExecuteNonQueryAsync();
   }
 
-  private async Task PointStaffMemberAtDeviceAsync(SqliteConnection connection, Guid staffMemberId, Guid deviceId)
+  private async Task LinkOwnerAsync(SqliteConnection connection, string ownerTable, Guid ownerId, string linkColumn, Guid linkedId)
   {
     await using var command = connection.CreateCommand();
-    command.CommandText = """
-                          UPDATE "StaffMembers" SET "DeviceId" = $deviceId WHERE "Id" = $id;
-                          """;
-    command.Parameters.AddWithValue("$id", ToStoredText(staffMemberId));
-    command.Parameters.AddWithValue("$deviceId", ToStoredText(deviceId));
+    command.CommandText = $"""
+                           UPDATE "{ownerTable}" SET "{linkColumn}" = $linkedId WHERE "Id" = $id;
+                           """;
+    command.Parameters.AddWithValue("$id", ToStoredText(ownerId));
+    command.Parameters.AddWithValue("$linkedId", ToStoredText(linkedId));
     await command.ExecuteNonQueryAsync();
   }
 

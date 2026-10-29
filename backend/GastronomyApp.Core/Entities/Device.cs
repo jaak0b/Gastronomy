@@ -13,8 +13,6 @@ public sealed class Device : IEntity
 
   public required byte[] TokenSalt { get; set; }
 
-  public int? TokenIterations { get; set; }
-
   public required string TokenAlgorithm { get; set; }
 
   public required string TokenLookupId { get; set; }

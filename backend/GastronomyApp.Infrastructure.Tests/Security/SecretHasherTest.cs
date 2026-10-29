@@ -1,12 +1,9 @@
 using GastronomyApp.Infrastructure.Security;
-using GastronomyApp.Infrastructure.Tests.TestSupport;
 
 namespace GastronomyApp.Infrastructure.Tests.Security;
 
 public sealed class SecretHasherTest
 {
-  private readonly ReleasedSecretHash _released = new();
-
   [Test]
   public void Hash_NullSecret_ThrowsArgumentNullException()
   {
@@ -21,7 +18,7 @@ public sealed class SecretHasherTest
     SecretHasher hasher = new();
     var hashed = hasher.Hash("the-secret");
 
-    Assert.That(() => hasher.Verify(null!, hashed.Hash, hashed.Salt, null, hashed.Algorithm), Throws.ArgumentNullException);
+    Assert.That(() => hasher.Verify(null!, hashed.Hash, hashed.Salt, hashed.Algorithm), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -30,7 +27,7 @@ public sealed class SecretHasherTest
     SecretHasher hasher = new();
     var hashed = hasher.Hash("the-secret");
 
-    Assert.That(() => hasher.Verify("the-secret", null!, hashed.Salt, null, hashed.Algorithm), Throws.ArgumentNullException);
+    Assert.That(() => hasher.Verify("the-secret", null!, hashed.Salt, hashed.Algorithm), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -39,7 +36,7 @@ public sealed class SecretHasherTest
     SecretHasher hasher = new();
     var hashed = hasher.Hash("the-secret");
 
-    Assert.That(() => hasher.Verify("the-secret", hashed.Hash, null!, null, hashed.Algorithm), Throws.ArgumentNullException);
+    Assert.That(() => hasher.Verify("the-secret", hashed.Hash, null!, hashed.Algorithm), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -48,7 +45,7 @@ public sealed class SecretHasherTest
     SecretHasher hasher = new();
     var hashed = hasher.Hash("the-secret");
 
-    Assert.That(() => hasher.Verify("the-secret", hashed.Hash, hashed.Salt, null, null!), Throws.ArgumentNullException);
+    Assert.That(() => hasher.Verify("the-secret", hashed.Hash, hashed.Salt, null!), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -68,7 +65,7 @@ public sealed class SecretHasherTest
 
     var hashed = hasher.Hash("the-secret");
 
-    Assert.That(hasher.Verify("the-secret", hashed.Hash, hashed.Salt, null, hashed.Algorithm), Is.True);
+    Assert.That(hasher.Verify("the-secret", hashed.Hash, hashed.Salt, hashed.Algorithm), Is.True);
   }
 
   [Test]
@@ -78,7 +75,7 @@ public sealed class SecretHasherTest
 
     var hashed = hasher.Hash("the-secret");
 
-    Assert.That(hasher.Verify("another-secret", hashed.Hash, hashed.Salt, null, hashed.Algorithm), Is.False);
+    Assert.That(hasher.Verify("another-secret", hashed.Hash, hashed.Salt, hashed.Algorithm), Is.False);
   }
 
   [Test]
@@ -105,44 +102,17 @@ public sealed class SecretHasherTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(hasher.Verify("stored-by-this-release", storedHash, storedSalt, null, "SHA-256"), Is.True);
-                      Assert.That(hasher.Verify("another-secret", storedHash, storedSalt, null, "SHA-256"), Is.False);
+                      Assert.That(hasher.Verify("stored-by-this-release", storedHash, storedSalt, "SHA-256"), Is.True);
+                      Assert.That(hasher.Verify("another-secret", storedHash, storedSalt, "SHA-256"), Is.False);
                     });
-  }
-
-  [Test]
-  public void Verify_ARowTheReleasedBuildStoredWithPbkdf2_AcceptsItsSecretAndRefusesAnother()
-  {
-    SecretHasher hasher = new();
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(hasher.Verify(_released.Secret, _released.Hash, _released.Salt, _released.Iterations, _released.Algorithm), Is.True);
-                      Assert.That(hasher.Verify("another-secret", _released.Hash, _released.Salt, _released.Iterations, _released.Algorithm), Is.False);
-                    });
-  }
-
-  [Test]
-  public void Verify_APbkdf2RowReadWithAnotherIterationCount_ReturnsFalse()
-  {
-    SecretHasher hasher = new();
-
-    Assert.That(hasher.Verify(_released.Secret, _released.Hash, _released.Salt, _released.Iterations + 1, _released.Algorithm), Is.False);
-  }
-
-  [Test]
-  public void Verify_APbkdf2RowWithoutItsIterationCount_ThrowsArgumentException()
-  {
-    SecretHasher hasher = new();
-
-    Assert.That(() => hasher.Verify(_released.Secret, _released.Hash, _released.Salt, null, _released.Algorithm), Throws.ArgumentException.With.Property(nameof(ArgumentException.ParamName)).EqualTo("storedIterations"));
   }
 
   [Test]
   public void Verify_AnAlgorithmItDoesNotKnow_ReturnsFalse()
   {
     SecretHasher hasher = new();
+    var hashed = hasher.Hash("the-secret");
 
-    Assert.That(hasher.Verify(_released.Secret, _released.Hash, _released.Salt, _released.Iterations, "PBKDF2-HMAC-SHA256"), Is.False);
+    Assert.That(hasher.Verify("the-secret", hashed.Hash, hashed.Salt, "SHA-512"), Is.False);
   }
 }

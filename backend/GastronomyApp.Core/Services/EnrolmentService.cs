@@ -208,7 +208,7 @@ public sealed class EnrolmentService
     if (invitation.ExpiresAtUtc <= now)
       return Refusal.EnrolmentRedemption.CodeExpired(invitation.Id);
 
-    var qrCodeMatches = _secretHasher.Verify(code, invitation.QRCodeHash, invitation.QRCodeSalt, invitation.QRCodeIterations, invitation.QRCodeAlgorithm);
+    var qrCodeMatches = _secretHasher.Verify(code, invitation.QRCodeHash, invitation.QRCodeSalt, invitation.QRCodeAlgorithm);
 
     if (!qrCodeMatches)
       return Refusal.EnrolmentRedemption.CodeInvalid(invitation.Id);

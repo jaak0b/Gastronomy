@@ -26,7 +26,6 @@ public sealed class EnrolmentServiceTest
     _fixture.Dispose();
   }
 
-  private readonly ReleasedSecretHash _released = new();
   private FakeTimeProvider _clock = null!;
   private EnrolmentComposition _composition = null!;
   private SqliteInMemoryFixture _fixture = null!;
@@ -84,11 +83,7 @@ public sealed class EnrolmentServiceTest
 
     var invitation = await _fixture.DbContext.EnrolmentInvitations.SingleAsync(candidate => candidate.Id == created.Value.InvitationId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(invitation.QRCodeAlgorithm, Is.EqualTo("SHA-256"));
-                      Assert.That(invitation.QRCodeIterations, Is.Null);
-                    });
+    Assert.That(invitation.QRCodeAlgorithm, Is.EqualTo("SHA-256"));
   }
 
   [Test]
@@ -346,24 +341,6 @@ public sealed class EnrolmentServiceTest
   }
 
   [Test]
-  public async Task RedeemAsync_AnInvitationTheReleasedBuildHashedWithPbkdf2_SetsTheWaiterUpOnceAndRefusesTheSecondScan()
-  {
-    var code = await CreateInvitationTheReleasedBuildHashedAsync(_seeded.StaffMemberId);
-
-    var first = await _composition.Service.RedeemAsync(RequestFor(code, null), "de", TestContext.CurrentContext.CancellationToken);
-    var second = await _composition.Service.RedeemAsync(RequestFor(code, null), "de", TestContext.CurrentContext.CancellationToken);
-    var deviceCount = await _fixture.DbContext.Devices.CountAsync(TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(first.IsError, Is.False);
-                      Assert.That(first.Value.StaffMember!.Id, Is.EqualTo(_seeded.StaffMemberId));
-                      Assert.That(second.RefusalMessageKey(), Is.EqualTo("errors.enrolment.codeNoLongerValid"));
-                      Assert.That(deviceCount, Is.EqualTo(1));
-                    });
-  }
-
-  [Test]
   public async Task RedeemAsync_TheCodeOfAnInvitationThatANewerOneReplaced_IsRefused()
   {
     var oldCode = await CreateInvitationCodeAsync(_seeded.StaffMemberId, null);
@@ -425,11 +402,7 @@ public sealed class EnrolmentServiceTest
     _fixture.DbContext.ChangeTracker.Clear();
     var device = await _fixture.DbContext.Devices.SingleAsync(candidate => candidate.Id == redeemed.Value.DeviceId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(device.TokenAlgorithm, Is.EqualTo("SHA-256"));
-                      Assert.That(device.TokenIterations, Is.Null);
-                    });
+    Assert.That(device.TokenAlgorithm, Is.EqualTo("SHA-256"));
   }
 
   [Test]
@@ -625,20 +598,6 @@ public sealed class EnrolmentServiceTest
     Assert.That(created.IsError, Is.False);
 
     return _composition.Cache.Read()!.QRCodeValue;
-  }
-
-  private async Task<string> CreateInvitationTheReleasedBuildHashedAsync(Guid staffMemberId)
-  {
-    await CreateInvitationCodeAsync(staffMemberId, null);
-    var invitation = await _fixture.DbContext.EnrolmentInvitations.SingleAsync(candidate => candidate.ConsumedAtUtc == null, TestContext.CurrentContext.CancellationToken);
-
-    invitation.QRCodeHash = _released.Hash;
-    invitation.QRCodeSalt = _released.Salt;
-    invitation.QRCodeIterations = _released.Iterations;
-    invitation.QRCodeAlgorithm = _released.Algorithm;
-    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
-
-    return _released.Secret;
   }
 
   private RedeemEnrolmentRequest RequestFor(string code, string? name, string? previousDeviceToken = null)

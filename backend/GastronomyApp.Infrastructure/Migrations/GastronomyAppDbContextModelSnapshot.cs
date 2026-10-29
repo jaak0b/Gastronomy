@@ -151,9 +151,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("BLOB");
 
-                    b.Property<int?>("TokenIterations")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("TokenLookupId")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -201,9 +198,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<byte[]>("QRCodeHash")
                         .IsRequired()
                         .HasColumnType("BLOB");
-
-                    b.Property<int?>("QRCodeIterations")
-                        .HasColumnType("INTEGER");
 
                     b.Property<byte[]>("QRCodeSalt")
                         .IsRequired()
