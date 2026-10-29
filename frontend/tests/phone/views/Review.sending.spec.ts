@@ -90,18 +90,14 @@ describe('sending the order from the review screen', () => {
     expect(review.get('[data-test="order-total"]').text()).toContain('2.00')
   })
 
-  it('takes the waiter home after sending to settle later, to the area list or the plan of the one area', async () => {
+  it('takes the waiter home after sending to settle later', async () => {
     const order = prepareOrder()
-    useTablePlanStore().openArea('area-zelt')
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
     await sendAndSettleLater(review)
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
-    expect({ route: currentRoute.value, openedArea: useTablePlanStore().openedAreaId }).toEqual({
-      route: { name: 'home' },
-      openedArea: null,
-    })
+    expect(currentRoute.value).toEqual({ name: 'home' })
   })
 
   it('takes the waiter back to the items from the back button at the bottom of the strip', async () => {

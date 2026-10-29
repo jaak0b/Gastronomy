@@ -6,7 +6,7 @@ import { useOpenItemsStore } from '../../../../src/phone/stores/openItems'
 import { useOrderOverviewStore } from '../../../../src/phone/stores/orderOverview'
 import { useOrderStore } from '../../../../src/phone/stores/order'
 import { useTablePlanStore } from '../../../../src/phone/stores/tablePlan'
-import { currentRoute, navigate, registerOpenStepCloser } from '../../../../src/shared/router/router'
+import { currentRoute, navigate } from '../../../../src/shared/router/router'
 import { testPlugins } from '../../../support/plugins'
 import { stubLaptop, answer } from '../../../support/laptop'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../../src/shared/stores/session'
@@ -134,18 +134,6 @@ describe('the header over an order being taken', () => {
     const header = mountHeader('en')
 
     expect(header.get('[data-test="header-back"]').text()).toBe('Table plan')
-  })
-
-  it('closes an open category on the way back, so the tap is answered instead of doing nothing', async () => {
-    let timesClosed = 0
-    registerOpenStepCloser(() => {
-      timesClosed += 1
-    })
-    const header = mountHeader()
-
-    await header.get('[data-test="header-back"]').trigger('click')
-
-    expect(timesClosed).toBe(1)
   })
 })
 

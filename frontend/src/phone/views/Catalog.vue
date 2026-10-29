@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CatalogCategoryView, CatalogItemView } from '../../shared/api/generatedSchemas'
 import { countCategoryPortions } from '../core/categoryPortions'
@@ -11,7 +11,7 @@ import { useCatalogStore } from '../stores/catalog'
 import { useEstimatesStore } from '../stores/estimates'
 import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../../shared/stores/session'
-import { closeOpenStep, navigate, registerOpenStepCloser } from '../../shared/router/router'
+import { closeStep, navigate, openStep, openStepValue } from '../../shared/router/router'
 import { useStationChoiceQuotes } from '../composables/useStationChoiceQuotes'
 import CategoryLabel from '../../shared/components/CategoryLabel.vue'
 import DockedStrip from '../components/DockedStrip.vue'
@@ -25,18 +25,19 @@ const estimates = useEstimatesStore()
 const order = useOrderStore()
 const session = useSessionStore()
 
-const tappedCategory = ref<string | null>(null)
+const CATEGORY_STEP = 'category'
+
 const itemAwaitingStation = ref<CatalogItemView | null>(null)
 const linesAwaitingStation = ref<number[]>([])
 const focusTheNoteField = ref(false)
 
 function leaveWhenTheOrderCannotBeBuiltHere(): void {
   if (order.changesAreRefused) {
-    navigate('/review')
+    navigate('/review', 'redirect')
     return
   }
   if (order.draft.table === null) {
-    navigate('/')
+    navigate('/', 'redirect')
   }
 }
 
@@ -47,21 +48,9 @@ onMounted(async () => {
 
 watch(() => order.draft.table, leaveWhenTheOrderCannotBeBuiltHere)
 
-onUnmounted(() => {
-  closeOpenStep()
-})
-
-const openCategory = computed<CatalogCategoryView | null>(
-  () =>
-    catalog.catalog.categories.find(
-      (category) => category.categoryId === tappedCategory.value,
-    ) ?? null,
-)
-
-watch(openCategory, (category) => {
-  if (category === null) {
-    closeOpenStep()
-  }
+const openCategory = computed<CatalogCategoryView | null>(() => {
+  const categoryId = openStepValue(CATEGORY_STEP)
+  return catalog.catalog.categories.find((category) => category.categoryId === categoryId) ?? null
 })
 
 function forgetTheStationQuestion(): void {
@@ -71,13 +60,18 @@ function forgetTheStationQuestion(): void {
 }
 
 function closeTheOpenCategory(): void {
-  tappedCategory.value = null
-  forgetTheStationQuestion()
+  closeStep(CATEGORY_STEP)
 }
 
+watch(openCategory, (category) => {
+  if (category === null) {
+    forgetTheStationQuestion()
+    closeTheOpenCategory()
+  }
+})
+
 function openTheCategory(category: CatalogCategoryView): void {
-  tappedCategory.value = category.categoryId
-  registerOpenStepCloser(closeTheOpenCategory)
+  openStep({ name: CATEGORY_STEP, value: category.categoryId, kind: 'level' })
 }
 
 const itemsInTheOpenCategory = computed(
@@ -241,7 +235,7 @@ function chooseStation(stationId: string, note: string | null): void {
             class="back-to-categories"
             data-test="back-to-categories"
             variant="outlined"
-            @click="closeOpenStep()"
+            @click="closeTheOpenCategory"
           >
             {{ t('phone.catalog.actions.backToCategories') }}
           </v-btn-wide>

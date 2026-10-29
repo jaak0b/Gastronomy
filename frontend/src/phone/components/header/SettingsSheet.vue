@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useBackStep } from '../../../shared/composables/useBackStep'
 import { useSessionStore } from '../../../shared/stores/session'
 import LanguageSwitch from '../../../shared/components/LanguageSwitch.vue'
 
 const { t } = useI18n()
 const session = useSessionStore()
 
-defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: [] }>()
+
+useBackStep(() => emit('close'))
 </script>
 
 <template>

@@ -11,7 +11,9 @@ Frontend, under `frontend/src/`:
 
 - `admin/views/AdminShell.vue` chooses between a global tab, the festival page and the editor of one
   area. `shared/router/route.ts` reads `/admin/<section>` and holds the tabs in `ADMIN_SECTIONS`, in
-  the order Übersicht, Feste, Ausgabestellen, Artikel, Zutaten, Einheiten, Kellner.
+  the order Übersicht, Feste, Ausgabestellen, Artikel, Zutaten, Einheiten, Kellner. The festival
+  list is the admin's first screen: switching tabs replaces the history entry, and back from any
+  tab or from a festival's page lands on the festival list (see the `back-button` page).
 - `admin/components/overview/AdminOverview.vue` is Übersicht, the report on the running festival.
 - `admin/components/AdminLoadFailureBar.vue` is the one load failure bar, mounted by `AdminShell.vue`
   directly below the tabs. It reads `showsLoadFailure` from `admin/stores/adminLoadState.ts`.

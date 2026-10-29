@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AdminStationView } from '../../../shared/api/generatedSchemas'
+import { useBackStepForAMenu } from '../../../shared/composables/useBackStep'
 
 const props = defineProps<{
   stations: AdminStationView[]
@@ -11,6 +12,7 @@ const props = defineProps<{
 const emit = defineEmits<{ select: [stationIds: string[]] }>()
 
 const { t } = useI18n()
+const stationChoiceIsOpen = useBackStepForAMenu()
 
 const summary = computed(() => {
   if (props.selectedStationIds.length === 0) {
@@ -36,7 +38,7 @@ function toggle(stationId: string): void {
 
 <template>
   <div class="station-select-field">
-    <v-menu :close-on-content-click="false">
+    <v-menu v-model="stationChoiceIsOpen" :close-on-content-click="false">
       <template #activator="{ props: activatorProps }">
         <v-btn
           v-bind="activatorProps"

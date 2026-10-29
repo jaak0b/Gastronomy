@@ -167,6 +167,10 @@ copy of anything listed here.
   `theWaiterTakesTheOrderAt(table)`.
 - `station.ts` holds the station tablet scenario: `KITCHEN`, `item` (open, or handed out at the
   time given), `cancelledItem`, `stationOrder`, `aQueue` and `enrolledStationTablet()`.
+- `browserHistory.ts` drives the back button: `aTabThatOpenedTheAppAt(path)`,
+  `shownOnAStartedRouterAt(path, load, props)`, `aBrowserThatCountsTheTap()` and
+  `aBrowserWithoutUserActivation()`, `pressBack()`, `theNextMoveThroughTheHistory()` and
+  `theAppWasLeftByBack()`. The `how-to` page `add-a-screen-or-a-dialog.md` shows how.
 - `plugins.ts` gives `testPlugins(locale)` for mounting, `mountApp.ts` mounts the whole app,
   `hubConnection.ts` fakes the SignalR hub, and `sourceFiles.ts` lists source files for the specs
   that scan the source tree.

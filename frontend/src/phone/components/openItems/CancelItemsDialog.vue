@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { TableOrderRecordItemView } from '../../../shared/api/generatedSchemas'
+import { useBackStep } from '../../../shared/composables/useBackStep'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { formatPrice } from '../../../shared/core/money'
 import type { SettleNotice } from '../../core/openItems'
@@ -18,6 +19,8 @@ const props = defineProps<{
 const emit = defineEmits<{ confirm: []; reload: []; back: [] }>()
 
 const { t } = useI18n()
+
+useBackStep(() => emit('back'), { refusesBackWhile: () => props.isCancelling })
 
 const cashToReturn = computed(() => formatPrice(props.cashToReturnCents, props.language))
 

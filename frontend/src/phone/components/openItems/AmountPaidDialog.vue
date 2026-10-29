@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useBackStep } from '../../../shared/composables/useBackStep'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { isAPaymentMethodNeeded, type SettleNotice, type SettlementPaymentMethod } from '../../core/openItems'
 import { formatPrice } from '../../../shared/core/money'
@@ -22,6 +23,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const amountFields = ref<InstanceType<typeof AmountPaidFields> | null>(null)
+
+useBackStep(() => emit('cancel'), { refusesBackWhile: () => props.isSettling })
 
 const selectedTotal = computed(() => formatPrice(props.selectedTotalCents, props.language))
 const canConfirm = computed(

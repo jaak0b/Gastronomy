@@ -88,7 +88,7 @@ watch(
   isUnknownArea,
   (isUnknown) => {
     if (isUnknown) {
-      navigate(`/admin/festivals/${props.festivalId}`)
+      navigate(`/admin/festivals/${props.festivalId}`, 'redirect')
     }
   },
   { immediate: true },

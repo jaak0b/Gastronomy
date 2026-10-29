@@ -8,6 +8,7 @@ description: Read before doing one of the recurring tasks it lists, so the work 
 | Task | Page |
 |---|---|
 | Add a global admin tab with a list, a form and a switch off, copying the Zutaten tab | [references/admin-list-screen.md](references/admin-list-screen.md) |
+| Add a screen, a level inside a screen, a dialog or a menu so that the back button steps through it | [references/add-a-screen-or-a-dialog.md](references/add-a-screen-or-a-dialog.md) |
 | Show a warning under one row of a list, one warning for a whole screen, or a standing warning about a gap in the data | [references/row-warnings.md](references/row-warnings.md) |
 | Add rows to an admin list (hidden, removed or moved), with the shared row, the order of its actions, pencil, trash icon, eye icons, arrows, disabled reason, confirmations, name dialog, heading checkbox and search add line | [references/hideable-rows.md](references/hideable-rows.md) |
 | Add a refusal on the laptop and the sentence the person reads | [references/add-a-refusal.md](references/add-a-refusal.md) |

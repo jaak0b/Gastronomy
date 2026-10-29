@@ -6,7 +6,6 @@ import { useSendAndLeave } from '../../../src/phone/composables/useSendAndLeave'
 import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { useOrderStore } from '../../../src/phone/stores/order'
-import { useTablePlanStore } from '../../../src/phone/stores/tablePlan'
 import { useSessionStore } from '../../../src/shared/stores/session'
 import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
@@ -137,17 +136,6 @@ describe('leaving the review once the laptop accepted the order', () => {
     expect(currentRoute.value).toEqual({ name: 'home' })
   })
 
-  it('lands on the area list rather than the area last opened, when the table settles later', async () => {
-    theLaptopPlacesTheOrderToSettleAfter(0)
-    prepareOrder()
-    useTablePlanStore().openArea('area-zelt')
-    const { sender } = mountTheSendingScreen()
-
-    await sender.send('leaveOpen')
-
-    expect(useTablePlanStore().openedAreaId).toBeNull()
-  })
-
   it('opens the open items of the table with the items just sent ticked when the guest pays on the spot', async () => {
     theLaptopPlacesTheOrderToSettleAfter(0)
     prepareOrder()
@@ -191,20 +179,20 @@ describe('leaving the review once the laptop accepted the order', () => {
     })
   })
 
-  it('neither navigates nor opens a table when the answer arrives after the waiter left the review', async () => {
+  it('still opens the table with the items just sent ticked when the answer arrives after the review was left', async () => {
     theLaptopPlacesTheOrderToSettleAfter(0)
-    const order = prepareOrder()
+    prepareOrder()
     const { host, sender } = mountTheSendingScreen()
     const sending = sender.send('settleRightAway')
-    navigate('/')
+    navigate('/catalog')
     host.unmount()
 
     await sending
 
-    expect({ state: order.sendState, route: currentRoute.value, table: useOpenItemsStore().tableId }).toEqual({
-      state: 'accepted',
-      route: { name: 'home' },
-      table: null,
+    expect(await whatOpenItemsShows()).toEqual({
+      route: { name: 'openItems' },
+      table: 'table-3',
+      ticked: ['new-wasser'],
     })
   })
 })

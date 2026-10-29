@@ -63,10 +63,6 @@ export function backButtonTrapNeedsRebuildOnRestore(persisted: boolean): boolean
   return persisted && thisDocumentIsTheAnchor
 }
 
-export function backButtonTrapIsActive(): boolean {
-  return trapIsActive
-}
-
 export function markBackButtonTrapActive(route: AppRoute): void {
   if (trapIsActive) {
     return

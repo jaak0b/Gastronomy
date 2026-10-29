@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CatalogItemView } from '../../../shared/api/generatedSchemas'
+import { useBackStep } from '../../../shared/composables/useBackStep'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { withEstimate } from '../../core/estimateWording'
 import { candidateStations } from '../../core/routingPreview'
@@ -23,6 +24,8 @@ const keyboardInset = useKeyboardInset()
 const choices = candidateStations(props.item)
 const typedNote = ref('')
 const noteInput = ref<{ focus: () => void } | null>(null)
+
+useBackStep(() => emit('cancel'))
 
 onMounted(() => {
   if (props.focusTheNote) {

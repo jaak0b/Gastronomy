@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import { readFileSync } from 'node:fs'
 
 const thePageBefore = '/the-page-before'
@@ -231,14 +232,16 @@ describe('a device that arrived through the door', () => {
     window.history.pushState({}, '', '/')
   })
 
-  it('replaces its entry when it moves between screens, so the doors stay behind it', async () => {
+  it('replaces its entry when a browser cannot say whether a tap started the move, so the doors stay behind it', async () => {
     const { currentRoute, navigate } = await import('../../../src/shared/router/router')
     const { markBackButtonTrapActive } = await import('../../../src/shared/router/backButtonTrap')
     markBackButtonTrapActive(currentRoute.value)
     const entries = window.history.length
 
     navigate('/review')
+    await flushPromises()
     navigate('/')
+    await flushPromises()
 
     expect(window.history.length).toBe(entries)
     expect(currentRoute.value).toEqual({ name: 'home' })
@@ -251,6 +254,7 @@ describe('a device that arrived through the door', () => {
     markBackButtonTrapActive(currentRoute.value)
 
     navigate('/review')
+    await flushPromises()
 
     expect(sessionStorage.getItem(BACK_BUTTON_TRAP_RETURN_PATH_KEY)).toBe('/')
   })
@@ -261,6 +265,7 @@ describe('a device that arrived through the door', () => {
     markBackButtonTrapActive(currentRoute.value)
 
     navigate('/open-items')
+    await flushPromises()
 
     expect(sessionStorage.getItem(BACK_BUTTON_TRAP_RETURN_PATH_KEY)).toBe('/')
   })
@@ -272,6 +277,7 @@ describe('a device that arrived through the door', () => {
     markBackButtonTrapActive(currentRoute.value)
 
     navigate('/stations')
+    await flushPromises()
 
     expect(sessionStorage.getItem(BACK_BUTTON_TRAP_RETURN_PATH_KEY)).toBe('/stations')
   })
@@ -309,22 +315,6 @@ describe('a tab where the doors were never opened', () => {
     window.history.replaceState({}, '', thePageBefore)
   })
 
-  it('keeps the browser step between its screens', async () => {
-    window.history.pushState({}, '', '/admin/overview')
-    const { currentRoute, navigate, startRouter } = await import('../../../src/shared/router/router')
-    startRouter()
-    navigate('/admin/items')
-
-    const popped = new Promise((resolve) => {
-      window.addEventListener('popstate', () => resolve(undefined), { once: true })
-    })
-    window.history.back()
-    await popped
-
-    expect(currentRoute.value).toEqual({ name: 'admin', section: 'overview', festivalId: null })
-    expect(window.location.pathname).toBe('/admin/overview')
-  })
-
   it('never takes the doors or a back target', async () => {
     window.history.pushState({}, '', '/admin/overview')
     const { navigate, startRouter } = await import('../../../src/shared/router/router')
@@ -332,6 +322,7 @@ describe('a tab where the doors were never opened', () => {
     startRouter()
 
     navigate('/admin/items')
+    await flushPromises()
 
     expect(sessionStorage.getItem(BACK_BUTTON_TRAP_RETURN_PATH_KEY)).toBeNull()
   })

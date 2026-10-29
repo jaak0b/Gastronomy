@@ -1,49 +1,280 @@
-import { ref, type Ref } from 'vue'
+import { nextTick, ref, shallowRef, type Ref } from 'vue'
+import { assertNever } from '../core/assertNever'
 import { resolveRoute, routeToStartAt, type AppRoute } from './route'
 import {
-  backButtonTrapIsActive,
   noteRouteChangeForBackButtonTrap,
   prepareBackButtonTrapForFreshStart,
   startBackButtonTrap,
 } from './backButtonTrap'
+import {
+  aTapMayAddAnEntry,
+  historyMoveFor,
+  holdsTheStep,
+  isSamePlace,
+  placeToOpen,
+  withStep,
+  withoutStep,
+  type BackStep,
+  type HistoryMove,
+  type NavigationReason,
+  type Place,
+  type UserActivationState,
+} from './historyMoves'
 
-export { ADMIN_SECTIONS, resolveRoute } from './route'
+export { ADMIN_SECTIONS, parentRouteOf, resolveRoute } from './route'
 export type { AdminSection, AppRoute } from './route'
 
-export const currentRoute: Ref<AppRoute> = ref(routeToStartAt(window.location.pathname))
-
-let closeTheOpenStep: (() => void) | null = null
-
-export function registerOpenStepCloser(close: () => void): void {
-  closeTheOpenStep = close
+export interface BackHandler {
+  close: () => void
+  refusesBack: () => boolean
 }
 
-export function closeOpenStep(): void {
-  const close = closeTheOpenStep
-  closeTheOpenStep = null
-  close?.()
+interface EntryStamp {
+  router: string
+  entry: number
 }
 
-function handlePopState(): void {
-  currentRoute.value = resolveRoute(window.location.pathname)
+interface Traversal {
+  entry: number
+  replaceWith: Place | null
+  abandonsTheEntriesAbove: boolean
+}
+
+const TAP_EVENTS = ['pointerdown', 'mousedown', 'touchend', 'keydown', 'click']
+
+const THIS_ROUTER = crypto.getRandomValues(new Uint32Array(2)).join('-')
+
+const startPlace: Place = {
+  path: window.location.pathname + window.location.search + window.location.hash,
+  route: routeToStartAt(window.location.pathname),
+  steps: [],
+}
+
+export const currentRoute: Ref<AppRoute> = ref(startPlace.route)
+
+const shownSteps = shallowRef<readonly BackStep[]>([])
+
+let shownPath = startPlace.path
+let entries: Place[] = [startPlace]
+let index = 0
+let currentEntryMinusClosedSteps: Place = startPlace
+let traversal: Traversal | null = null
+let historyIsQueued = false
+let aRedirectIsQueued = false
+let movedThroughTheHistorySinceTheLastTap = false
+const backHandlers = new Map<string, BackHandler>()
+
+function shownPlace(): Place {
+  return { path: shownPath, route: currentRoute.value, steps: shownSteps.value }
+}
+
+function show(place: Place): void {
+  shownPath = place.path
+  currentRoute.value = place.route
+  shownSteps.value = place.steps
+}
+
+function stampOf(entry: number): EntryStamp {
+  return { router: THIS_ROUTER, entry }
+}
+
+function entryStampedByThisRouterIn(state: unknown): number | null {
+  if (
+    typeof state === 'object'
+    && state !== null
+    && 'router' in state
+    && state.router === THIS_ROUTER
+    && 'entry' in state
+    && typeof state.entry === 'number'
+  ) {
+    return state.entry
+  }
+  return null
+}
+
+function userActivationOfThisBrowser(): UserActivationState | undefined {
+  const browser: { userActivation?: UserActivationState } = window.navigator
+  return browser.userActivation
+}
+
+function noteTheShownAddressForTheTrap(): void {
   noteRouteChangeForBackButtonTrap(currentRoute.value)
-  closeOpenStep()
+}
+
+function replaceTheEntry(place: Place): void {
+  entries = [...entries.slice(0, index), place]
+  window.history.replaceState(stampOf(index), '', place.path)
+  currentEntryMinusClosedSteps = place
+}
+
+function addAnEntry(place: Place): void {
+  if (!isSamePlace(currentEntryMinusClosedSteps, entries[index])) {
+    replaceTheEntry(currentEntryMinusClosedSteps)
+  }
+  entries = [...entries.slice(0, index + 1), place]
+  index += 1
+  window.history.pushState(stampOf(index), '', place.path)
+  currentEntryMinusClosedSteps = place
+}
+
+function traverseTo(entry: number, replaceWith: Place | null, abandonsTheEntriesAbove: boolean): void {
+  traversal = { entry, replaceWith, abandonsTheEntriesAbove }
+  window.history.go(entry - index)
+}
+
+function applyTheMove(move: HistoryMove, wanted: Place): void {
+  switch (move.kind) {
+    case 'stay':
+      currentEntryMinusClosedSteps = entries[index]
+      return
+    case 'replace':
+      replaceTheEntry(wanted)
+      return
+    case 'add':
+      addAnEntry(wanted)
+      return
+    case 'goBack':
+      traverseTo(index - move.entries, null, true)
+      return
+    case 'goBackAndReplace':
+      traverseTo(index - move.entries, wanted, true)
+      return
+    default:
+      assertNever(move)
+  }
+}
+
+function writeTheHistory(): void {
+  historyIsQueued = false
+  if (traversal !== null) {
+    return
+  }
+  const wanted = shownPlace()
+  const mayAddAnEntry = aTapMayAddAnEntry({
+    reason: aRedirectIsQueued ? 'redirect' : 'tap',
+    userActivation: userActivationOfThisBrowser(),
+    movedThroughTheHistorySinceTheLastTap,
+  })
+  aRedirectIsQueued = false
+  applyTheMove(historyMoveFor({ entries, index, currentEntryMinusClosedSteps, wanted }, mayAddAnEntry), wanted)
+  if (traversal === null) {
+    noteTheShownAddressForTheTrap()
+  }
+}
+
+function queueTheHistory(reason: NavigationReason): void {
+  if (reason === 'redirect') {
+    aRedirectIsQueued = true
+  }
+  if (historyIsQueued) {
+    return
+  }
+  historyIsQueued = true
+  void nextTick(writeTheHistory)
+}
+
+function closeTheDialogsOf(steps: readonly BackStep[]): void {
+  for (const step of steps) {
+    const handler = backHandlers.get(step.name)
+    backHandlers.delete(step.name)
+    handler?.close()
+  }
+}
+
+function aDialogRefusesToClose(steps: readonly BackStep[]): boolean {
+  return steps.some((step) => backHandlers.get(step.name)?.refusesBack() === true)
+}
+
+function showTheEntryTheUserWentTo(place: Place, closing: readonly BackStep[]): void {
+  currentEntryMinusClosedSteps = place
+  show(place)
+  noteTheShownAddressForTheTrap()
+  closeTheDialogsOf(closing)
+}
+
+function finishTheTraversal(finished: Traversal): void {
+  if (finished.replaceWith === null) {
+    currentEntryMinusClosedSteps = entries[index]
+  } else {
+    replaceTheEntry(finished.replaceWith)
+  }
+  if (finished.abandonsTheEntriesAbove) {
+    entries = entries.slice(0, index + 1)
+  }
+  writeTheHistory()
+}
+
+function handlePopState(event: PopStateEvent): void {
+  const arrived = entryStampedByThisRouterIn(event.state)
+  if (arrived === null) {
+    return
+  }
+  movedThroughTheHistorySinceTheLastTap = true
+  const ours = traversal
+  const cameFrom = index
+  traversal = null
+  index = arrived
+  if (ours !== null && ours.entry === arrived) {
+    finishTheTraversal(ours)
+    return
+  }
+  if (arrived >= entries.length) {
+    traverseTo(cameFrom, null, false)
+    return
+  }
+  const place = entries[arrived]
+  const closing = shownSteps.value.filter((step) => !holdsTheStep(place.steps, step))
+  if (aDialogRefusesToClose(closing)) {
+    traverseTo(cameFrom, null, false)
+    return
+  }
+  showTheEntryTheUserWentTo(place, closing)
+}
+
+function noteTheTap(): void {
+  movedThroughTheHistorySinceTheLastTap = false
 }
 
 export function startRouter(): void {
+  window.history.replaceState(stampOf(index), '')
   window.addEventListener('popstate', handlePopState)
+  for (const type of TAP_EVENTS) {
+    window.addEventListener(type, noteTheTap, { capture: true })
+  }
   startBackButtonTrap()
 }
 
-export function navigate(path: string): void {
-  closeOpenStep()
-  if (backButtonTrapIsActive()) {
-    window.history.replaceState(null, '', path)
-  } else {
-    window.history.pushState(null, '', path)
+export function navigate(path: string, reason: NavigationReason = 'tap'): void {
+  show(placeToOpen(path, resolveRoute(path), shownPlace(), entries, index))
+  queueTheHistory(reason)
+}
+
+export function openStep(step: BackStep, onBack?: BackHandler): void {
+  shownSteps.value = withStep(shownPlace(), step).steps
+  if (onBack !== undefined) {
+    backHandlers.set(step.name, onBack)
   }
-  currentRoute.value = resolveRoute(path)
-  noteRouteChangeForBackButtonTrap(currentRoute.value)
+  queueTheHistory('tap')
+}
+
+export function closeStep(name: string): void {
+  const steps = shownSteps.value
+  const position = steps.findIndex((step) => step.name === name)
+  const withoutTheClosedStep = withoutStep(currentEntryMinusClosedSteps, name)
+  backHandlers.delete(name)
+  if (position === -1 && withoutTheClosedStep === currentEntryMinusClosedSteps) {
+    return
+  }
+  currentEntryMinusClosedSteps = withoutTheClosedStep
+  if (position !== -1) {
+    shownSteps.value = steps.slice(0, position)
+    closeTheDialogsOf(steps.slice(position + 1))
+  }
+  queueTheHistory('tap')
+}
+
+export function openStepValue(name: string): string | null {
+  return shownSteps.value.find((step) => step.name === name)?.value ?? null
 }
 
 export function startOverAt(path: string): void {

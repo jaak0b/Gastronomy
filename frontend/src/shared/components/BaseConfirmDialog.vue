@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useBackStep } from '../composables/useBackStep'
 
 defineProps<{ title: string; body?: string; confirmLabel: string }>()
 const emit = defineEmits<{ confirm: []; cancel: [] }>()
 
 const { t } = useI18n()
+
+useBackStep(() => emit('cancel'))
 </script>
 
 <template>

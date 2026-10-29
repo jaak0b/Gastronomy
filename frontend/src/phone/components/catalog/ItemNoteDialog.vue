@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useBackStep } from '../../../shared/composables/useBackStep'
 import { useKeyboardInset } from '../../composables/useKeyboardInset'
 
 defineProps<{
@@ -13,6 +14,13 @@ const typedNote = defineModel<string>('note', { required: true })
 
 const { t } = useI18n()
 const keyboardInset = useKeyboardInset()
+
+useBackStep(
+  () => {
+    isOpen.value = false
+  },
+  { isOpen },
+)
 
 const canConfirm = computed(() => typedNote.value.trim().length > 0)
 

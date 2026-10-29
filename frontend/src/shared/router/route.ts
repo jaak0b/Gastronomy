@@ -64,6 +64,59 @@ export function resolveRoute(path: string): AppRoute {
   return { name: 'home' }
 }
 
+const THE_FESTIVAL_LIST: AppRoute = { name: 'admin', section: 'festivals', festivalId: null }
+
+function parentOfAnAdminRoute(section: AdminSection, festivalId: string | null, areaId: string | undefined): AppRoute | null {
+  if (festivalId !== null && areaId !== undefined) {
+    return { name: 'admin', section: 'festivals', festivalId }
+  }
+  if (section === 'festivals' && festivalId === null) {
+    return null
+  }
+  return THE_FESTIVAL_LIST
+}
+
+export function parentRouteOf(route: AppRoute): AppRoute | null {
+  switch (route.name) {
+    case 'home':
+    case 'stations':
+    case 'enrolQr':
+      return null
+    case 'catalog':
+    case 'openItems':
+    case 'orderOverview':
+      return { name: 'home' }
+    case 'review':
+      return { name: 'catalog' }
+    case 'admin':
+      return parentOfAnAdminRoute(route.section, route.festivalId, route.areaId)
+    default:
+      return assertNever(route)
+  }
+}
+
+function routeKey(route: AppRoute): string {
+  switch (route.name) {
+    case 'enrolQr':
+      return `enrolQr/${route.code}`
+    case 'admin':
+      return `admin/${route.section}/${route.festivalId ?? ''}/${route.areaId ?? ''}`
+    case 'home':
+    case 'catalog':
+    case 'review':
+    case 'openItems':
+    case 'orderOverview':
+    case 'stations':
+      return route.name
+    default:
+      return assertNever(route)
+  }
+}
+
+export function isSameRoute(first: AppRoute, second: AppRoute): boolean {
+  return routeKey(first) === routeKey(second)
+}
+
 export function routeToStartAt(path: string): AppRoute {
   const route = resolveRoute(path)
   switch (route.name) {

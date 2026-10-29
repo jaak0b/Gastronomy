@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { TablePlanAreaView, TablePlanTableView } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
-import { navigate } from '../../shared/router/router'
+import { closeStep, navigate, openStep, openStepValue } from '../../shared/router/router'
 import { openingTheOrderAt } from '../core/draftCart'
 import { useDraftTableName } from '../composables/useDraftTableName'
 import { useWaiterLanding } from '../composables/useWaiterLanding'
@@ -28,7 +28,8 @@ const session = useSessionStore()
 const { landing } = useWaiterLanding()
 const { draftTableName } = useDraftTableName()
 
-const tappedTable = ref<TablePlanTableView | null>(null)
+const TABLE_STEP = 'table'
+
 const tableAskingAboutTheDraft = ref<TablePlanTableView | null>(null)
 
 const shownArea = computed<TablePlanAreaView | null>(() => {
@@ -46,19 +47,32 @@ const shownArea = computed<TablePlanAreaView | null>(() => {
   }
 })
 
+const tappedTable = computed<TablePlanTableView | null>(() => {
+  const tableId = openStepValue(TABLE_STEP)
+  return shownArea.value?.tables.find((table) => table.tableId === tableId) ?? null
+})
+
 const whatIsRunningIsKnown = computed(
   () => tablePlan.hasLoaded && (tablePlan.areas.length > 0 || catalog.hasLoaded),
 )
 
 function goToTheLockedOrder(): void {
   if (landing.value.kind === 'lockedOrder') {
-    navigate('/review')
+    navigate('/review', 'redirect')
   }
 }
 
 onMounted(goToTheLockedOrder)
 
 watch(landing, goToTheLockedOrder)
+
+function openTheTable(table: TablePlanTableView): void {
+  openStep({ name: TABLE_STEP, value: table.tableId, kind: 'dialog' })
+}
+
+function closeTheTable(): void {
+  closeStep(TABLE_STEP)
+}
 
 function openTheOrderFor(table: TablePlanTableView): void {
   order.chooseTable({ tableId: table.tableId, name: table.name })
@@ -67,7 +81,6 @@ function openTheOrderFor(table: TablePlanTableView): void {
 
 function takeTheOrder(): void {
   const table = tappedTable.value
-  tappedTable.value = null
   if (table === null) {
     return
   }
@@ -80,6 +93,7 @@ function takeTheOrder(): void {
       openTheOrderFor(table)
       return
     case 'askBeforeDiscardingTheDraft':
+      closeTheTable()
       tableAskingAboutTheDraft.value = table
       return
     default:
@@ -89,7 +103,6 @@ function takeTheOrder(): void {
 
 function showTheOrdersOfTheTable(): void {
   const table = tappedTable.value
-  tappedTable.value = null
   if (table === null) {
     return
   }
@@ -99,7 +112,6 @@ function showTheOrdersOfTheTable(): void {
 
 function settleTheTable(): void {
   const table = tappedTable.value
-  tappedTable.value = null
   if (table === null) {
     return
   }
@@ -109,7 +121,6 @@ function settleTheTable(): void {
 
 function cancelItemsAtTheTable(): void {
   const table = tappedTable.value
-  tappedTable.value = null
   if (table === null) {
     return
   }
@@ -171,7 +182,7 @@ function discardTheDraft(): void {
       >
         {{ t('phone.tablePlan.messages.noTablesInArea') }}
       </p>
-      <AreaPlan :area="shownArea" @open-table="tappedTable = $event" />
+      <AreaPlan :area="shownArea" @open-table="openTheTable" />
     </template>
     <TableActionSheet
       v-if="tappedTable !== null"
@@ -180,7 +191,7 @@ function discardTheDraft(): void {
       @show-orders="showTheOrdersOfTheTable"
       @settle="settleTheTable"
       @cancel-items="cancelItemsAtTheTable"
-      @back="tappedTable = null"
+      @back="closeTheTable"
     />
     <UnsentOrderDialog
       v-if="tableAskingAboutTheDraft !== null && draftTableName !== null"

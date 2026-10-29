@@ -53,7 +53,7 @@ Frontend, under `frontend/src/phone/`:
   opens, through the latest request
   gate, and never on hub events: a spinner while waiting, the laptop's refusal
   (`errors.itemHistory.unknownItem`), or `phone.openItems.errors.loadFailed` with "Neu laden" when no
-  answer came; "Schließen" closes it. The timeline shows per step the date and time in the format
+  answer came; "Schließen" or the back button closes it. The timeline shows per step the date and time in the format
   of the order's header (`formatFestivalMoment`, "27.10.2026, 23:05"), the event and who made it; the payment adds the amount with "bar" or "mit Karte" (the amount alone for `none` or
   a method the laptop never stored) and "Grund: …" when a reason was typed.
 - `core/itemHistory.ts` (`historyEntriesOf`): turns the `OrderItemHistoryView` into the timeline.

@@ -49,7 +49,9 @@ Frontend, under `frontend/src/phone/`:
   "Neu laden" call `closeThePageAndReload` in `OpenItems.vue`, which closes the open page and loads
   the table through the latest request gate. Neu laden, Zurück and Abbrechen all go through
   `closeThePage`, which clears the store's notice (`dismissNotice`), so a refusal's reason never
-  stays on the table or comes back when the page opens again.
+  stays on the table or comes back when the page opens again. The back button closes either page
+  as its Abbrechen or Zurück does, and not while it settles or cancels (`useBackStep`, see the
+  `back-button` page).
 - `components/AmountPaidFields.vue`: the amount field, filled in with the selected total, and the
   reason field that appears once the amount falls short.
 - `core/openItems.ts`: the selection over one table's `TableOrderReportView` for a

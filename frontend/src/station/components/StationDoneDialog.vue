@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useBackStep } from '../../shared/composables/useBackStep'
 import { itemLineText, type ItemLine } from '../../shared/core/stationBoard'
 
 defineProps<{ tableName: string; lines: ItemLine[] }>()
 const emit = defineEmits<{ confirmed: []; cancelled: [] }>()
 
 const { t } = useI18n()
+
+useBackStep(() => emit('cancelled'))
 </script>
 
 <template>

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { useTemplateRef, type ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useBackStep } from '../composables/useBackStep'
 import BaseRefusalAlert from './BaseRefusalAlert.vue'
 
-defineProps<{
+const props = defineProps<{
   title: string
   errorText: string | null
   saveLabel?: string
@@ -17,6 +18,8 @@ const emit = defineEmits<{ save: []; cancel: [] }>()
 
 const { t } = useI18n()
 const card = useTemplateRef<ComponentPublicInstance>('card')
+
+useBackStep(() => emit('cancel'), { refusesBackWhile: () => props.busy === true })
 
 function focusTheFirstField(): void {
   const cardElement: unknown = card.value?.$el

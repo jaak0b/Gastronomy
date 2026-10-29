@@ -1,16 +1,19 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { request } from '../../shared/api/client'
 import { TablePlanAreaView, TablePlanView } from '../../shared/api/generatedSchemas'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
+import { closeStep, openStep, openStepValue } from '../../shared/router/router'
 import { useConnectionStore } from '../../shared/stores/connection'
 import { useSessionStore } from '../../shared/stores/session'
+
+const AREA_STEP = 'area'
 
 export const useTablePlanStore = defineStore('tablePlan', () => {
   const areas = ref<TablePlanAreaView[]>([])
   const hasLoaded = ref(false)
   const loadFailed = ref(false)
-  const openedAreaId = ref<string | null>(null)
+  const openedAreaId = computed(() => openStepValue(AREA_STEP))
 
   const loadGate = createLatestRequestGate()
 
@@ -40,11 +43,11 @@ export const useTablePlanStore = defineStore('tablePlan', () => {
   }
 
   function openArea(areaId: string): void {
-    openedAreaId.value = areaId
+    openStep({ name: AREA_STEP, value: areaId, kind: 'level' })
   }
 
   function closeArea(): void {
-    openedAreaId.value = null
+    closeStep(AREA_STEP)
   }
 
   return { areas, hasLoaded, loadFailed, openedAreaId, load, listen, openArea, closeArea }

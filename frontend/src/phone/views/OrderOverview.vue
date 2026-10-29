@@ -19,7 +19,7 @@ const foundNothing = computed(() => orderOverview.report !== null && orders.valu
 
 onMounted(async () => {
   if (orderOverview.tableId === null) {
-    navigate('/')
+    navigate('/', 'redirect')
     return
   }
   stopListening = orderOverview.listen()

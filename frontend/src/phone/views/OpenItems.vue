@@ -120,7 +120,7 @@ async function closeThePageAndReload(): Promise<void> {
 
 onMounted(async () => {
   if (openItems.tableId === null) {
-    navigate('/')
+    navigate('/', 'redirect')
     return
   }
   stopListening = openItems.listen()

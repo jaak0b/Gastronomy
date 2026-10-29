@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useBackStep } from '../../../shared/composables/useBackStep'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { formatPrice } from '../../../shared/core/money'
 
@@ -13,6 +14,8 @@ const props = defineProps<{
 const emit = defineEmits<{ 'back-to-the-draft': []; 'discard-the-draft': []; 'stay-on-the-plan': [] }>()
 
 const { t } = useI18n()
+
+useBackStep(() => emit('stay-on-the-plan'))
 
 const whatIsUnsent = computed(() =>
   t(

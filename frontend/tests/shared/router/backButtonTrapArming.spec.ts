@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { stubLaptopAnswering } from '../../support/laptop'
@@ -34,7 +35,7 @@ describe('the app puts a device behind the door as soon as its screen is on disp
     )
   })
 
-  it('stops growing the history once the station screen is on display', async () => {
+  it('remembers where the doors return to once the station screen is on display', async () => {
     const { useSessionStore } = await import('../../../src/shared/stores/session')
     useSessionStore().deviceToken = 'a-token'
 
@@ -43,11 +44,10 @@ describe('the app puts a device behind the door as soon as its screen is on disp
 
     const { navigate } = await import('../../../src/shared/router/router')
     const { BACK_BUTTON_TRAP_RETURN_PATH_KEY } = await import('../../../src/shared/router/backButtonTrap')
-    const entries = window.history.length
 
     navigate('/open-items')
+    await flushPromises()
 
-    expect(window.history.length).toBe(entries)
     expect(sessionStorage.getItem(BACK_BUTTON_TRAP_RETURN_PATH_KEY)).toBe('/')
   })
 

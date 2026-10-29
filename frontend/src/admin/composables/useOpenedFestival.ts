@@ -32,7 +32,7 @@ export function useOpenedFestival(festivalId: () => string): OpenedFestival {
       await untilTheFestivalsAreKnown()
     }
     if (festival.value === null && !festivals.loadFailed) {
-      navigate('/admin/overview')
+      navigate('/admin/overview', 'redirect')
     }
     return festival.value
   }

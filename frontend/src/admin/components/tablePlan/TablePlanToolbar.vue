@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminAreaView, AdminStationView, AdminTableView } from '../../../shared/api/generatedSchemas'
+import { useBackStepForAMenu } from '../../../shared/composables/useBackStep'
 import { hiddenTablesOf } from '../../core/tablePlanPlacement'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseShowButton from '../BaseShowButton.vue'
@@ -17,6 +18,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const stationsToPlaceAreOpen = useBackStepForAMenu()
+const hiddenTablesAreOpen = useBackStepForAMenu()
 
 const hiddenTables = computed(() => hiddenTablesOf(props.area))
 
@@ -42,7 +45,7 @@ const stationsUnavailableReason = computed(() =>
       :refusal-reason="stationsUnavailableReason"
     >
       <template #default="{ refused }">
-        <v-menu location="bottom start">
+        <v-menu v-model="stationsToPlaceAreOpen" location="bottom start">
           <template #activator="{ props: menuActivator }">
             <v-btn
               v-bind="menuActivator"
@@ -71,7 +74,7 @@ const stationsUnavailableReason = computed(() =>
 
     <v-spacer />
 
-    <v-menu v-if="hiddenTables.length > 0" location="bottom end">
+    <v-menu v-if="hiddenTables.length > 0" v-model="hiddenTablesAreOpen" location="bottom end">
       <template #activator="{ props: menuActivator }">
         <v-btn
           v-bind="menuActivator"

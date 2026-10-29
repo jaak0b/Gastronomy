@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseIconAction from '../../../shared/components/BaseIconAction.vue'
 import { assertNever } from '../../../shared/core/assertNever'
-import { currentRoute, navigate } from '../../../shared/router/router'
+import { currentRoute, navigate, parentRouteOf, type AppRoute } from '../../../shared/router/router'
 import { useDraftTableName } from '../../composables/useDraftTableName'
 import { useWaiterLanding } from '../../composables/useWaiterLanding'
 import { useOpenItemsStore } from '../../stores/openItems'
@@ -30,16 +30,14 @@ const shownAreaName = computed(() => {
     : null
 })
 
-const backDestination = computed<BackDestination>(() => {
-  const route = currentRoute.value
+function destinationInside(route: AppRoute): BackDestination {
   switch (route.name) {
     case 'home':
       return shownAreaName.value !== null && tablePlan.areas.length > 1 ? 'areaList' : 'none'
     case 'catalog':
+    case 'review':
     case 'openItems':
     case 'orderOverview':
-      return 'tablePlan'
-    case 'review':
     case 'enrolQr':
     case 'stations':
     case 'admin':
@@ -47,6 +45,28 @@ const backDestination = computed<BackDestination>(() => {
     default:
       return assertNever(route)
   }
+}
+
+function destinationUpTo(parent: AppRoute): BackDestination {
+  switch (parent.name) {
+    case 'home':
+      return 'tablePlan'
+    case 'catalog':
+    case 'review':
+    case 'openItems':
+    case 'orderOverview':
+    case 'enrolQr':
+    case 'stations':
+    case 'admin':
+      return 'none'
+    default:
+      return assertNever(parent)
+  }
+}
+
+const backDestination = computed<BackDestination>(() => {
+  const parent = parentRouteOf(currentRoute.value)
+  return parent === null ? destinationInside(currentRoute.value) : destinationUpTo(parent)
 })
 
 const backLabel = computed<string | null>(() => {

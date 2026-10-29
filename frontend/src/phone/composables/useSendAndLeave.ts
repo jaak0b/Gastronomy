@@ -1,19 +1,11 @@
-import { onUnmounted } from 'vue'
 import { assertNever } from '../../shared/core/assertNever'
 import { navigate } from '../../shared/router/router'
 import { useOpenItemsStore } from '../stores/openItems'
 import { useOrderStore, type SettlingIntent } from '../stores/order'
-import { useTablePlanStore } from '../stores/tablePlan'
 
 export function useSendAndLeave() {
   const order = useOrderStore()
   const openItems = useOpenItemsStore()
-  const tablePlan = useTablePlanStore()
-  let isMounted = true
-
-  onUnmounted(() => {
-    isMounted = false
-  })
 
   function openTheTableWithTheOrderTicked(): void {
     const acceptedForSettling = order.takeTheOrderAcceptedForSettling()
@@ -23,18 +15,17 @@ export function useSendAndLeave() {
         acceptedForSettling.itemIds,
       )
     }
-    navigate('/open-items')
+    navigate('/open-items', 'redirect')
   }
 
   function leaveIfTheLaptopAccepted(): void {
-    if (!isMounted || order.sendState !== 'accepted') {
+    if (order.sendState !== 'accepted') {
       return
     }
     const intent: SettlingIntent = order.settlingIntent
     switch (intent) {
       case 'leaveOpen':
-        tablePlan.closeArea()
-        navigate('/')
+        navigate('/', 'redirect')
         return
       case 'settleRightAway':
         openTheTableWithTheOrderTicked()

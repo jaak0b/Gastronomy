@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { TableOrderRecordItemView } from '../../../shared/api/generatedSchemas'
+import { useBackStep } from '../../../shared/composables/useBackStep'
 import { assertNever } from '../../../shared/core/assertNever'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { createLatestRequestGate } from '../../../shared/core/latestRequestGate'
@@ -18,6 +19,8 @@ const emit = defineEmits<{ close: [] }>()
 const { t } = useI18n()
 const session = useSessionStore()
 const loadGate = createLatestRequestGate()
+
+useBackStep(() => emit('close'))
 
 const answer = ref<ItemHistoryAnswer | null>(null)
 

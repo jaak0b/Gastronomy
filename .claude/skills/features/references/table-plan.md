@@ -288,7 +288,9 @@ Frontend, under `frontend/src/`:
   `openedAreaId`, `load`, `listen`, `openArea`, `closeArea`) reads `GET /api/table-plan` through the
   latest request gate and reloads on `ConfigurationChanged` (the plan) and `OrdersChanged` (the
   colours); `App.vue` starts its listeners and its first load with the catalog's, and the connection's
-  refetch on `GroupsJoined` reloads it.
+  refetch on `GroupsJoined` reloads it. The opened area is the router's step `area` and the sheet of
+  a tapped table the step `table` that `TablePlan.vue` opens, so back closes the sheet, then the
+  area, and returns to both from a screen the sheet led to (see the `back-button` page).
 - Texts: `phone.tablePlan.*`.
 - Texts: `admin.tablePlan.*` (the dialog's `areaName`, `tableName`, `newArea`, `editArea`,
   `newTable`, `editTable`, `openPlan`, the toolbar's `addStation` and `hiddenTables`, the menu's `copy`, `paste`, the hide questions `hideAreaTitle`, `hideTableTitle` with
@@ -575,6 +577,8 @@ Frontend, under `frontend/src/`:
   inside the table's rectangle and both frames visible where two tables touch, read from the
   drawn pixels, a tap, a pan that opens nothing, the clamped pan) and `TablePlan.sheet.spec.ts` (each button, the question about unsent items with its
   three choices);
-  `phone/components/header/AppHeader.spec.ts` for the back control, the names and the reload, and
+  `phone/components/header/AppHeader.spec.ts` for the back control, the names and the reload,
+  `tests/AppBackPressOnThePhone.spec.ts` for the back button through the area, the sheet and the
+  screens it leads to, and
   `tests/AppLayout.spec.ts` for that reload filling the settle view again after the laptop was out
   of reach.

@@ -28,7 +28,8 @@ Frontend, under `frontend/src/phone/`:
   (`components/catalog/BasketBar.vue`, which goes on to `/review`) and, once a category is open, its
   name as the shared `shared/components/CategoryLabel.vue` (the admin's category label at the
   phone's sizes), its articles in `components/catalog/ItemGrid.vue` and the button back to the
-  categories. It decides
+  categories. The open category is the router's step `category`, so back closes it before it
+  leaves the screen. It decides
   where a new portion goes: `addItem` places it straight away or opens the station question, and
   `chooseStation` answers it. It leaves for the summary while the order is locked and for the plan
   while the draft has no table. The header (`components/header/AppHeader.vue`) shows the table's
@@ -60,9 +61,13 @@ Frontend, under `frontend/src/phone/`:
 - `views/Review.vue` is the summary: the lines through `components/review/LineList.vue`, the delivery
   mode per station (`order.chooseDeliveryMode`, with `core/stationOrders.ts` and
   `core/stationDeliveries.ts`), the order total and the two send buttons.
-- After sending, `composables/useSendAndLeave.ts` closes the opened area and lands on the home
-  screen for "Senden und später kassieren", or opens the table's settle view with the new items
-  ticked for "Senden und kassieren".
+- Once the laptop accepted the order, `composables/useSendAndLeave.ts` lands on the plan of the
+  area the order was taken in, with that area still open, for "Senden und später kassieren", or
+  opens the table's settle view with the new items ticked for "Senden und kassieren". It does so in
+  the continuation of the send the waiter started, whichever screen shows when the answer comes, so
+  a back press while the order is on its way changes nothing. Both moves are redirects that take the
+  order screen and the summary out of the history, so neither back nor forward reopens the sent
+  order (see the `back-button` page).
 - Texts: `phone.catalog.*`, `phone.tablePlan.*` (the action sheet and the question about unsent
   items), `common.labels.soldOut` and `common.estimates.*` in `shared/i18n/de.json` and `en.json`.
 
@@ -178,7 +183,8 @@ Backend, under `backend/`:
   `draftCart.editing.spec.ts` (including `openingTheOrderAt`),
   `draftCart.storage.spec.ts`, `draftCart.unreadable.spec.ts` (including a draft with a typed table
   name), `submission.spec.ts`, `totals.spec.ts`, `estimates.spec.ts`, `estimateWording.spec.ts` and
-  `catalogItemState.spec.ts`; `frontend/tests/shared/router/bootPath.spec.ts` (a reload starts at
+  `catalogItemState.spec.ts`; `frontend/tests/AppBackPressAfterSending.spec.ts` (the landing after
+  sending, back during and after a send); `frontend/tests/shared/router/bootPath.spec.ts` (a reload starts at
   home).
 - `frontend/tests/phone/stores`: `order.reload.spec.ts` (the unreadable draft, an order frozen by a
   reload), `order.sending.spec.ts` (the table's id on the wire, a frozen order keeping its table) and

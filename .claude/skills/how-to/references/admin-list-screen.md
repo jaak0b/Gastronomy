@@ -18,7 +18,8 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
 
 1. **Route.** Add the name to `AdminSection` and to `ADMIN_SECTIONS` in
    `frontend/src/shared/router/route.ts`. The order of `ADMIN_SECTIONS` is the order of the tabs, and
-   the path is `/admin/<section>`.
+   the path is `/admin/<section>`. `parentRouteOf` gives the new tab the festival list as its parent
+   without a change, so back from it lands there.
 2. **Mount it.** In `frontend/src/admin/views/AdminShell.vue` import the list component, add its
    `case` to `titleFor` (it ends in `assertNever`, so a missing case fails the type check) and add
    one `v-else-if="section === '<section>'"` line. The tab itself comes from `ADMIN_SECTIONS`.
