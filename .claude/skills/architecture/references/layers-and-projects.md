@@ -20,7 +20,15 @@ application, and the desktop app hosts it in its own process. That one process s
 the SignalR hub and the built frontend from `wwwroot`, on one port.
 
 - **SQLite through EF Core**, in one file. A backup is a file copy, which is what a volunteer can
-  actually do.
+  actually do. Every connection the context opens goes through `SqliteConnectionInterceptor`
+  (`Api/Hosting`), registered once in `ApiServiceRegistration`. It sets the journal mode and the busy
+  timeout, and it logs every connection failure EF reports at Error with the exception and its
+  message. Only an `OperationCanceledException` while the operation's own token was cancelled is
+  logged at Debug, because the caller gave up. It only observes: the exception reaches the caller
+  unchanged. EF's own `ConnectionError` event names no reason, so the same registration lowers it
+  to Debug and each failure appears once. A start without a database file therefore logs one Error:
+  before migrating, EF checks whether the file exists by opening it. Covered by
+  `Api.Tests/Hosting/SqliteConnectionInterceptorTest` and `SqliteConnectionPolicyTest`.
 - **SignalR** for every push from the laptop: the configuration changed, the orders changed, a
   device enrolled or was revoked. Clients never poll for state the laptop already knows has changed;
   the `announcements` page holds the mechanism.
@@ -40,7 +48,9 @@ of `structure.md`; this page does not repeat them.
 
 Core logs the outcome of what it did through `Microsoft.Extensions.Logging.Abstractions`
 (`ILogger<T>` in the constructor): an enrolment invitation created, an invitation redeemed, a
-handed-over device signed out, items settled.
+handed-over device signed out, items settled. A log line is written at the moment its event happens,
+never deferred until after the commit: a later failure logs its own exception, and deferring adds
+machinery that can itself fail and hide what happened.
 
 ## The database interface
 

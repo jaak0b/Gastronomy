@@ -30,14 +30,14 @@ public sealed class TransactionProbeHostBuilder
     builder.Logging.ClearProviders();
     builder.WebHost.UseUrls("http://127.0.0.1:0");
 
-    SqliteConnectionFactory connectionFactory = new();
-    builder.Services.AddSingleton(connectionFactory);
+    builder.Services.AddSingleton<SqliteConnectionFactory>();
+    builder.Services.AddSingleton<SqliteConnectionInterceptor>();
     builder.Services.AddSingleton(probe);
     builder.Services.AddSingleton<SqliteFailureTranslator>();
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddSingleton<SystemTextJsonRecordingSerializer>();
     builder.Services.AddSingleton<ResultEnvelope>();
-    builder.Services.AddDbContextFactory<GastronomyAppDbContext>(contextOptions => contextOptions.UseSqlite($"Data Source={databasePath}").AddInterceptors(new SqliteConnectionPolicyInterceptor(connectionFactory)));
+    builder.Services.AddDbContextFactory<GastronomyAppDbContext>((provider, contextOptions) => contextOptions.UseSqlite($"Data Source={databasePath}").AddInterceptors(provider.GetRequiredService<SqliteConnectionInterceptor>()));
     builder.Services.AddScoped(provider => provider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext());
     builder.Services.AddSingleton(A.Fake<ICommittedChangeAnnouncer>());
     builder.Services.AddScoped<AfterCommitActions>();

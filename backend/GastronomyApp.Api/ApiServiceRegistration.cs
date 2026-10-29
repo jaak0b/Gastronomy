@@ -23,7 +23,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Api;
 
@@ -44,10 +46,13 @@ public sealed class ApiServiceRegistration
     services.AddSingleton(new MappingConfiguration().Build());
     services.AddScoped<IMapper, ServiceMapper>();
 
-    SqliteConnectionFactory connectionFactory = new();
-    services.AddSingleton(connectionFactory);
+    services.AddSingleton<SqliteConnectionFactory>();
+    services.AddSingleton<SqliteConnectionInterceptor>();
 
-    services.AddDbContextFactory<GastronomyAppDbContext>((provider, builder) => builder.UseSqlite($"Data Source={databasePath}").AddInterceptors(new SqliteConnectionPolicyInterceptor(connectionFactory), provider.GetRequiredService<ChangeAnnouncementInterceptor>()), ServiceLifetime.Scoped);
+    services.AddDbContextFactory<GastronomyAppDbContext>((provider, builder) => builder.UseSqlite($"Data Source={databasePath}")
+                                                                                       .ConfigureWarnings(warnings => warnings.Log((RelationalEventId.ConnectionError, LogLevel.Debug)))
+                                                                                       .AddInterceptors(provider.GetRequiredService<SqliteConnectionInterceptor>(), provider.GetRequiredService<ChangeAnnouncementInterceptor>()),
+                                                         ServiceLifetime.Scoped);
 
     services.AddScoped<ChangeAnnouncementInterceptor>();
     services.AddScoped(provider => provider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext());
