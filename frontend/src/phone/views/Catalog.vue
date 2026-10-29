@@ -5,7 +5,7 @@ import { CatalogCategoryView, CatalogItemView } from '../../shared/api/generated
 import { countCategoryPortions } from '../core/categoryPortions'
 import { positionsForItem, type ItemPosition } from '../core/itemPositions'
 import { estimateRangeForItem, type EstimateRange } from '../core/estimates'
-import { letteringColourOn } from '../../shared/core/letteringColour'
+import { paintOfCategoryColour } from '../../shared/core/letteringColour'
 import { needsStationChoice } from '../core/routingPreview'
 import { useCatalogStore } from '../stores/catalog'
 import { useEstimatesStore } from '../stores/estimates'
@@ -13,6 +13,7 @@ import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../../shared/stores/session'
 import { closeOpenStep, navigate, registerOpenStepCloser } from '../../shared/router/router'
 import { useStationChoiceQuotes } from '../composables/useStationChoiceQuotes'
+import CategoryLabel from '../../shared/components/CategoryLabel.vue'
 import DockedStrip from '../components/DockedStrip.vue'
 import ItemGrid from '../components/catalog/ItemGrid.vue'
 import LineStationSheet from '../components/catalog/LineStationSheet.vue'
@@ -111,10 +112,6 @@ function labelFor(category: CatalogCategoryView): string {
   return t('phone.catalog.labels.categoryWithCount', { count: portions, name: category.name })
 }
 
-function paintedIn(colourHex: string): Record<string, string> {
-  return { backgroundColor: colourHex, color: letteringColourOn(colourHex) }
-}
-
 function positionsFor(itemId: string): ItemPosition[] {
   const item = catalog.catalog.items.find((candidate) => candidate.id === itemId)
   return item === undefined ? [] : positionsForItem(order.draft, item, catalog.stationName)
@@ -189,7 +186,7 @@ function chooseStation(stationId: string, note: string | null): void {
           :key="category.categoryId"
           class="category-button"
           data-test="category-button"
-          :style="paintedIn(category.colourHex)"
+          :style="paintOfCategoryColour(category.colourHex)"
           @click="openTheCategory(category)"
         >
           {{ labelFor(category) }}
@@ -205,13 +202,12 @@ function chooseStation(stationId: string, note: string | null): void {
       </DockedStrip>
     </template>
     <template v-else>
-      <h2
-        class="open-category-name app-section-title px-3 py-2 rounded"
+      <CategoryLabel
+        class="open-category-name"
         data-test="open-category-name"
-        :style="paintedIn(openCategory.colourHex)"
-      >
-        {{ openCategory.name }}
-      </h2>
+        :category="openCategory"
+        :heading-level="2"
+      />
       <ItemGrid
         :items="itemsInTheOpenCategory"
         :language="session.language"

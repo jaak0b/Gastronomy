@@ -23,3 +23,7 @@ export function letteringColourOn(colourHex: string): string {
     ? DARK_LETTERING
     : LIGHT_LETTERING
 }
+
+export function paintOfCategoryColour(colourHex: string): Record<string, string> {
+  return { backgroundColor: colourHex, color: letteringColourOn(colourHex) }
+}

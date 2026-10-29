@@ -49,9 +49,12 @@ tooltip beside them (frontend rule 8).
   never with an invisible row.
 - `BaseEmptyListText.vue` is the text of a tab whose list is empty (`data-test="none-yet"`):
   the Feste, Zutaten and Einheiten tabs.
-- `categories/CategoryLabel.vue` is a category's name painted in its colour with the lettering
-  colour from `shared/core/letteringColour.ts`, as a heading whose level its screen passes
-  (`heading-level`): `2` on the Artikel tab, `3` in the festival page's article card.
+- `shared/components/CategoryLabel.vue` is the one category label of the app: a category's name
+  painted by `paintOfCategoryColour` from `shared/core/letteringColour.ts` (the phone's category
+  buttons use the same function), as a heading whose level its screen passes (`heading-level`): `2`
+  on the Artikel tab and on the phone's open category, `3` in the festival page's article card. Its
+  size, weight and padding are surface values (`surface-sizes.md`), so it is bold and compact in
+  the admin and larger on the phone.
 - `BaseHeadingWithCheckbox.vue` is a heading with its checkbox at the right of the same line, the
   way the Ausgabestellen, Artikel, Zutaten, Einheiten and Kellner tabs place "Deaktivierte anzeigen";
   the Feste tab places "Ausgeblendete Feste anzeigen" the same way. Consumers: the six global tabs

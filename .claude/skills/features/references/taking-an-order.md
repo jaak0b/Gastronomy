@@ -26,7 +26,9 @@ Frontend, under `frontend/src/phone/`:
 - `views/Catalog.vue` (route `/catalog`) is the whole ordering screen: the category buttons in two
   columns (`labelFor` adds the portion count from `core/categoryPortions.ts`), the basket bar
   (`components/catalog/BasketBar.vue`, which goes on to `/review`) and, once a category is open, its
-  articles in `components/catalog/ItemGrid.vue` and the button back to the categories. It decides
+  name as the shared `shared/components/CategoryLabel.vue` (the admin's category label at the
+  phone's sizes), its articles in `components/catalog/ItemGrid.vue` and the button back to the
+  categories. It decides
   where a new portion goes: `addItem` places it straight away or opens the station question, and
   `chooseStation` answers it. It leaves for the summary while the order is locked and for the plan
   while the draft has no table. The header (`components/header/AppHeader.vue`) shows the table's

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { letteringColourOn } from '../../../src/shared/core/letteringColour'
+import { letteringColourOn, paintOfCategoryColour } from '../../../src/shared/core/letteringColour'
 
 describe('the lettering on a category colour', () => {
   it('is black on a bright colour', () => {
@@ -31,5 +31,11 @@ describe('the lettering on a category colour', () => {
     expect(letteringColourOn('rot')).toBe('#000000')
     expect(letteringColourOn('#FFF')).toBe('#000000')
     expect(letteringColourOn('')).toBe('#000000')
+  })
+})
+
+describe('the paint of a category label or button', () => {
+  it('fills the category colour and letters it in the colour that reads on it', () => {
+    expect(paintOfCategoryColour('#C62828')).toEqual({ backgroundColor: '#C62828', color: '#FFFFFF' })
   })
 })

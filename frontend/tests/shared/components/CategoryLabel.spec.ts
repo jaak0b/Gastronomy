@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
-import type { AdminCategoryView } from '../../../../src/shared/api/generatedSchemas'
-import CategoryLabel from '../../../../src/admin/components/categories/CategoryLabel.vue'
+import type { AdminCategoryView } from '../../../src/shared/api/generatedSchemas'
+import CategoryLabel from '../../../src/shared/components/CategoryLabel.vue'
 
 function category(colourHex: string): AdminCategoryView {
   const food: AdminCategoryView = { categoryId: 'category-food', name: 'Speisen', colourHex, sortOrder: 1, isActive: true }

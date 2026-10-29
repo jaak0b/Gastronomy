@@ -34,7 +34,9 @@ reads a custom property that `phone-sizes`, `station-sizes` and `admin-sizes` se
 value, so a shared component such as `Welcome.vue` writes one class and takes the size of the
 surface it is on. Where a surface wants another weight, the weight is a surface value too
 (`--app-page-title-weight`: 500 on the phone and the station tablet, 400 in the admin), never a
-second class.
+second class. The same holds for the category label (`CategoryLabel.vue`):
+`--app-category-label-weight`, `--app-category-label-padding-y` and `--app-category-label-padding-x`
+(admin 700, 4px, 12px; phone and station tablet 500, 8px, 12px).
 
 | Class | Use it for | Property |
 |---|---|---|

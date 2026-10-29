@@ -9,7 +9,7 @@ import BaseIconAction from '../../../shared/components/BaseIconAction.vue'
 import BaseMoveButtons from '../BaseMoveButtons.vue'
 import BaseShowButton from '../BaseShowButton.vue'
 import BaseTrashButton from '../BaseTrashButton.vue'
-import CategoryLabel from '../categories/CategoryLabel.vue'
+import CategoryLabel from '../../../shared/components/CategoryLabel.vue'
 
 const props = defineProps<{
   category: AdminCategoryView

@@ -108,6 +108,9 @@ describe('the items of one category on the ordering screen', () => {
     await openCategory(view, 'Getränke')
 
     expect(view.get('[data-test="open-category-name"]').text()).toBe('Getränke')
+    expect(view.get('[data-test="open-category-name"]').element.tagName).toBe('H2')
+    expect(view.get('[data-test="open-category-name"]').attributes('style')).toContain('background-color: rgb(198, 40, 40)')
+    expect(view.get('[data-test="open-category-name"]').attributes('style')).toContain('color: rgb(255, 255, 255)')
     expect(view.findAll('[data-test="item-row"] [data-test="name"]').map((element) => element.text())).toEqual(['Wasser'])
     expect(view.find('[data-test="back-to-categories"]').exists()).toBe(true)
   })

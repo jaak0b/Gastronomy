@@ -118,7 +118,7 @@ Frontend, under `frontend/src/`:
   no-data text. Every row of the page's lists is a `BaseListRow.vue`, the same row as on the
   Feste tab and the other global tabs. The station card keeps one row's height while no station
   belongs to the festival, with no row drawn. The article card's category headings are
-  `categories/CategoryLabel.vue`. Name, start and end save when a field is left or Enter is
+  `shared/components/CategoryLabel.vue`. Name, start and end save when a field is left or Enter is
   pressed, with no save button. Its sections are `FestivalStations.vue`, `FestivalTablePlan.vue`
   (see the `table-plan` page), `FestivalItems.vue` (with `FestivalPlacementDialog.vue`,
   `StationSelect.vue` and `admin/composables/useFestivalItemRows.ts`) and `FestivalStock.vue` (see
