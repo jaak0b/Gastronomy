@@ -25,8 +25,10 @@ record have their pages in `how-to`.
    EntityFrameworkCore.Projectables, so that EF Core translates our extension methods inside a
    query.
 
-5. **Device tokens are treated as credentials.** Stored hashed with built-in PBKDF2-HMAC-SHA512, a
-   per-token random salt, and the iteration count plus algorithm stored alongside the hash. Never
+5. **Device tokens are treated as credentials.** Stored hashed with built-in SHA-256 and a per-token
+   random salt, with the algorithm stored alongside the hash. A token is 256 random bits that nobody
+   chose, so one fast hash protects it as well as a slow password hash would, and a slow hash would
+   cost every request its time. Never
    stored in plaintext, never logged, never reversible. Enrolment codes are single-use and
    short-lived: the first scan consumes the code, so a photographed QR cannot enrol a second device.
    Revoking a device invalidates its token immediately.
