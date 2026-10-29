@@ -118,11 +118,13 @@ never contradicts it.
   and WebKit skip history entries created by a page that navigated the user on without any
   interaction, so no automatic back trap survives on its own. The start screen (`DoorGate.vue`) needs
   one tap: that activation makes the screen the unskippable anchor. Only then is the chain of real
-  `door.html` pages built, and every back press skips the chain and lands on the anchor, which
-  rebuilds it and returns the device to the app. The trap is its own module,
+  `door.html` pages built, and a back press from the first screen skips the chain and lands on the
+  anchor, which rebuilds it and returns the device to the app. The trap is its own module,
   `src/shared/router/backButtonTrap.ts`, beside the router and never importing it. Never build the
-  chain at load, never remove the start screen, and never let a tab that sits behind the trap grow
-  its history, which is what `navigate` doing `replaceState` there preserves. The address of the
+  chain at load and never remove the start screen. A tab behind the trap grows its history only by
+  the screens and dialogs the user tapped into, one entry each, and every other move replaces the
+  current entry, so a back press goes one step up and only a back press from the first screen
+  reaches the trap. The address of the
   chain carries the page's last-modified stamp so a cached door from an older build can never be
   used.
 
