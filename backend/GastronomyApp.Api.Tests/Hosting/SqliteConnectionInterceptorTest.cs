@@ -100,15 +100,14 @@ public sealed class SqliteConnectionInterceptorTest
   [Test]
   public async Task ConnectionFailedAsync_ThePolicyStatementsOnAFileThatIsNotADatabase_LogOneErrorWithTheException()
   {
-    await using var context = ContextOn(new SqliteConnection($"Data Source={AFileThatIsNotADatabase()}"));
+    var path = AFileThatIsNotADatabase();
+    await using var contextWithoutThePolicy = ContextWithoutTheInterceptorOn(new SqliteConnection($"Data Source={path}"));
+    await using var context = ContextOn(new SqliteConnection($"Data Source={path}"));
 
+    Assert.That(async () => await contextWithoutThePolicy.Database.OpenConnectionAsync(), Throws.Nothing);
     var failure = Assert.ThrowsAsync<SqliteException>(async () => await context.Database.OpenConnectionAsync());
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(failure!.SqliteErrorCode, Is.EqualTo(26));
-                      Assert.That(failure.StackTrace, Does.Contain(nameof(SqliteConnectionFactory.ApplyConnectionPolicyAsync)));
-                    });
+    Assert.That(failure!.SqliteErrorCode, Is.EqualTo(26));
     A.CallTo(_logger).Where(call => IsLogAt(call, LogLevel.Error)).MustHaveHappenedOnceExactly();
     A.CallTo(_logger).Where(call => IsLogAt(call, LogLevel.Error) && call.GetArgument<Exception?>(3) == failure).MustHaveHappenedOnceExactly();
   }
@@ -116,15 +115,14 @@ public sealed class SqliteConnectionInterceptorTest
   [Test]
   public void ConnectionFailed_ThePolicyStatementsOfASynchronousOpenOnAFileThatIsNotADatabase_LogOneErrorWithTheException()
   {
-    using var context = ContextOn(new SqliteConnection($"Data Source={AFileThatIsNotADatabase()}"));
+    var path = AFileThatIsNotADatabase();
+    using var contextWithoutThePolicy = ContextWithoutTheInterceptorOn(new SqliteConnection($"Data Source={path}"));
+    using var context = ContextOn(new SqliteConnection($"Data Source={path}"));
 
+    Assert.That(() => contextWithoutThePolicy.Database.OpenConnection(), Throws.Nothing);
     var failure = Assert.Throws<SqliteException>(() => context.Database.OpenConnection());
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(failure!.SqliteErrorCode, Is.EqualTo(26));
-                      Assert.That(failure.StackTrace, Does.Contain(nameof(SqliteConnectionFactory.ApplyConnectionPolicy)));
-                    });
+    Assert.That(failure!.SqliteErrorCode, Is.EqualTo(26));
     A.CallTo(_logger).Where(call => IsLogAt(call, LogLevel.Error)).MustHaveHappenedOnceExactly();
     A.CallTo(_logger).Where(call => IsLogAt(call, LogLevel.Error) && call.GetArgument<Exception?>(3) == failure).MustHaveHappenedOnceExactly();
   }
@@ -132,6 +130,11 @@ public sealed class SqliteConnectionInterceptorTest
   private GastronomyAppDbContext ContextOn(SqliteConnection connection)
   {
     return new(new DbContextOptionsBuilder<GastronomyAppDbContext>().UseSqlite(connection, contextOwnsConnection: true).AddInterceptors(_interceptor).Options);
+  }
+
+  private GastronomyAppDbContext ContextWithoutTheInterceptorOn(SqliteConnection connection)
+  {
+    return new(new DbContextOptionsBuilder<GastronomyAppDbContext>().UseSqlite(connection, contextOwnsConnection: true).Options);
   }
 
   private string AFileInAFolderThatDoesNotExist()
