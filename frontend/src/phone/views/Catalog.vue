@@ -5,6 +5,7 @@ import { CatalogCategoryView, CatalogItemView } from '../../shared/api/generated
 import { countCategoryPortions } from '../core/categoryPortions'
 import { positionsForItem, type ItemPosition } from '../core/itemPositions'
 import { estimateRangeForItem, type EstimateRange } from '../core/estimates'
+import { showsTheEmptyListText } from '../../shared/core/emptyList'
 import { paintOfCategoryColour } from '../../shared/core/letteringColour'
 import { needsStationChoice } from '../core/routingPreview'
 import { useCatalogStore } from '../stores/catalog'
@@ -13,6 +14,7 @@ import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../../shared/stores/session'
 import { closeStep, navigate, openStep, openStepValue } from '../../shared/router/router'
 import { useStationChoiceQuotes } from '../composables/useStationChoiceQuotes'
+import BaseEmptyListText from '../../shared/components/BaseEmptyListText.vue'
 import CategoryLabel from '../../shared/components/CategoryLabel.vue'
 import DockedStrip from '../components/DockedStrip.vue'
 import ItemGrid from '../components/catalog/ItemGrid.vue'
@@ -79,6 +81,14 @@ const itemsInTheOpenCategory = computed(
     catalog.groups.find(
       (group) => group.category.categoryId === openCategory.value?.categoryId,
     )?.items ?? [],
+)
+
+const showsNoCategories = computed(() =>
+  showsTheEmptyListText(catalog, catalog.catalog.categories.length),
+)
+
+const showsNoItems = computed(() =>
+  showsTheEmptyListText(catalog, itemsInTheOpenCategory.value.length),
 )
 
 const itemBehindTheStationChoice = computed(() => {
@@ -186,6 +196,7 @@ function chooseStation(stationId: string, note: string | null): void {
           {{ labelFor(category) }}
         </v-btn-wide>
       </div>
+      <BaseEmptyListText v-if="showsNoCategories" class="my-2" data-test="no-categories" />
       <DockedStrip class="order-tray">
         <BasketBar
           :item-count="order.itemCount"
@@ -202,7 +213,9 @@ function chooseStation(stationId: string, note: string | null): void {
         :category="openCategory"
         :heading-level="2"
       />
+      <BaseEmptyListText v-if="showsNoItems" class="my-2" data-test="no-items" />
       <ItemGrid
+        v-else
         :items="itemsInTheOpenCategory"
         :language="session.language"
         :positions-for="positionsFor"

@@ -28,6 +28,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
   })
   const {
     entries: categories,
+    hasLoaded,
     loadFailed,
     entriesGate: categoriesGate,
     load,
@@ -75,6 +76,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
 
   return {
     categories,
+    hasLoaded,
     loadFailed,
     load,
     create,

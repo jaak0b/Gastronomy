@@ -241,12 +241,20 @@ describe('the orders of a table, shown to read', () => {
     expect(screen.findAll('[data-test="tick-cell"], [data-test="whole-order"], [data-test="line-tick"]')).toHaveLength(0)
   })
 
-  it('says that no order matches when the laptop finds none', async () => {
+  it('shows the shared text of an empty list when the laptop finds no order', async () => {
     stubLaptop().answers('POST', SEARCH, answer({ ...TISCH_12, orders: [] }))
 
     const screen = await mountTheOrders()
 
-    expect(screen.get('[data-test="no-orders"]').text()).toBe('Keine passenden Bestellungen an diesem Tisch')
+    expect(screen.get('[data-test="no-orders"]').text()).toBe('Keine Einträge')
+  })
+
+  it('shows no text of an empty list when the laptop could not be reached', async () => {
+    stubLaptop().answers('POST', SEARCH, answer({}, 500))
+
+    const screen = await mountTheOrders()
+
+    expect(screen.find('[data-test="no-orders"]').exists()).toBe(false)
   })
 
   it('sends the waiter to the table plan when no table was chosen, as after a reload', async () => {

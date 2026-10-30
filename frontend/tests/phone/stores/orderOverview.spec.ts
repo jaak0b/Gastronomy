@@ -129,3 +129,31 @@ describe('the orders of a table on a phone that follows the laptop', () => {
     )
   })
 })
+
+describe('what the order overview knows about its own loading', () => {
+  it('knows it has loaded once the laptop sent the table', async () => {
+    stubLaptop().answers('POST', TABLE_PATH, answer(TABLE_REPORT))
+    const orderOverview = useOrderOverviewStore()
+    orderOverview.openTable('table-12')
+
+    await orderOverview.load()
+
+    expect({ hasLoaded: orderOverview.hasLoaded, loadFailed: orderOverview.loadFailed }).toEqual({
+      hasLoaded: true,
+      loadFailed: false,
+    })
+  })
+
+  it('knows the load failed when the laptop cannot be reached', async () => {
+    stubLaptop().answers('POST', TABLE_PATH, noConnection())
+    const orderOverview = useOrderOverviewStore()
+    orderOverview.openTable('table-12')
+
+    await orderOverview.load()
+
+    expect({ hasLoaded: orderOverview.hasLoaded, loadFailed: orderOverview.loadFailed }).toEqual({
+      hasLoaded: false,
+      loadFailed: true,
+    })
+  })
+})

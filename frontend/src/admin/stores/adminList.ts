@@ -19,6 +19,7 @@ export interface AdminListDefinition<TEntry, TListResponse, TDraft, TBody> {
   requestBodyOf: (draft: TDraft) => TBody
   reloadAfterWriting?: () => Promise<void>
   currentView?: () => string | null
+  afterShowingEntries?: () => void
 }
 
 export interface AdminList<TEntry, TDraft> {
@@ -68,6 +69,7 @@ export function defineAdminList<TEntry, TListResponse, TDraft, TBody>(
       showItems: (loaded) => {
         entries.value = pendingCreatedEntries.mergeInto(loaded)
         hasLoaded.value = true
+        definition.afterShowingEntries?.()
       },
       setLoadFailed: (failed) => {
         loadFailed.value = failed

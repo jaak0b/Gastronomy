@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useAdminItemsStore } from '../../../src/admin/stores/items'
 import { useAdminStationsStore } from '../../../src/admin/stores/stations'
 import { useConnectionStore } from '../../../src/shared/stores/connection'
-import { stubLaptop, answer, type StubbedLaptop, refusal } from '../../support/laptop'
+import { aHold, answer, heldUntil, refusal, stubLaptop, type LaptopReply, type StubbedLaptop } from '../../support/laptop'
 import { anAdminStation } from '../../support/wireViews'
 
 const FESTIVAL_ID = 'fest-1'
@@ -188,5 +188,173 @@ describe('a station at a festival', () => {
         strandedItemCountWhenRemovedFromTheFestival: null,
       },
     })
+  })
+})
+
+describe('the festival that the lists the admin reads belong to', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('is named for the stations once the answer for that festival has arrived', async () => {
+    scopeLaptop()
+    const stations = useAdminStationsStore()
+
+    await stations.loadAtTheFestival(FESTIVAL_ID)
+
+    expect(stations.loadedFestivalId).toBe(FESTIVAL_ID)
+  })
+
+  it('is named for the items once the answer for that festival has arrived', async () => {
+    scopeLaptop()
+    const items = useAdminItemsStore()
+
+    await items.loadAtTheFestival(FESTIVAL_ID)
+
+    expect(items.loadedFestivalId).toBe(FESTIVAL_ID)
+  })
+
+  it('is no festival for the items once the answer for the global list has arrived', async () => {
+    scopeLaptop()
+    const items = useAdminItemsStore()
+    await items.loadAtTheFestival(FESTIVAL_ID)
+
+    await items.load()
+
+    expect(items.loadedFestivalId).toBeNull()
+  })
+})
+
+const FESTIVAL_A = 'fest-a'
+
+const FESTIVAL_B = 'fest-b'
+
+const KITCHEN_OF_A = anAdminStation({ stationId: 'station-a', name: 'Küche' })
+
+const BAR_OF_B = anAdminStation({ stationId: 'station-b', name: 'Theke' })
+
+const HEADQUARTERS = anAdminStation({ stationId: 'station-global', name: 'Zentrale', isAtFestival: false })
+
+interface StationAnswers {
+  forA?: LaptopReply
+  forB?: LaptopReply
+  forTheGlobalList?: LaptopReply
+}
+
+function stationsLaptop(answers: StationAnswers = {}): StubbedLaptop {
+  return stubLaptop()
+    .answers(
+      'GET',
+      (call) => call.url === `/api/admin/stations?festivalId=${FESTIVAL_A}`,
+      answers.forA ?? answer({ stations: [KITCHEN_OF_A] }),
+    )
+    .answers(
+      'GET',
+      (call) => call.url === `/api/admin/stations?festivalId=${FESTIVAL_B}`,
+      answers.forB ?? answer({ stations: [BAR_OF_B] }),
+    )
+    .answers(
+      'GET',
+      (call) => call.url === '/api/admin/stations',
+      answers.forTheGlobalList ?? answer({ stations: [HEADQUARTERS] }),
+    )
+}
+
+function whatTheStationsShow(stations: ReturnType<typeof useAdminStationsStore>) {
+  return { loadedFestivalId: stations.loadedFestivalId, names: stations.stations.map((station) => station.name) }
+}
+
+describe('the stations of one festival while the answers for others overtake each other', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('stay the stations of the festival on screen while the answer for another festival is on its way', async () => {
+    const holdB = aHold()
+    stationsLaptop({ forB: heldUntil(holdB.released, answer({ stations: [BAR_OF_B] })) })
+    const stations = useAdminStationsStore()
+    await stations.loadAtTheFestival(FESTIVAL_A)
+
+    const loadingB = stations.loadAtTheFestival(FESTIVAL_B)
+
+    expect(whatTheStationsShow(stations)).toEqual({ loadedFestivalId: FESTIVAL_A, names: ['Küche'] })
+    holdB.release()
+    await loadingB
+  })
+
+  it('become the stations of the other festival once its answer arrives', async () => {
+    const holdB = aHold()
+    stationsLaptop({ forB: heldUntil(holdB.released, answer({ stations: [BAR_OF_B] })) })
+    const stations = useAdminStationsStore()
+    await stations.loadAtTheFestival(FESTIVAL_A)
+    const loadingB = stations.loadAtTheFestival(FESTIVAL_B)
+
+    holdB.release()
+    await loadingB
+
+    expect(whatTheStationsShow(stations)).toEqual({ loadedFestivalId: FESTIVAL_B, names: ['Theke'] })
+  })
+
+  it('ignore a late answer for the earlier festival once the later festival was shown', async () => {
+    const holdA = aHold()
+    stationsLaptop({ forA: heldUntil(holdA.released, answer({ stations: [KITCHEN_OF_A] })) })
+    const stations = useAdminStationsStore()
+    const loadingA = stations.loadAtTheFestival(FESTIVAL_A)
+    await stations.loadAtTheFestival(FESTIVAL_B)
+
+    holdA.release()
+    await loadingA
+
+    expect(whatTheStationsShow(stations)).toEqual({ loadedFestivalId: FESTIVAL_B, names: ['Theke'] })
+  })
+
+  it('ignore a late answer of a global reload once a festival was shown', async () => {
+    const holdGlobal = aHold()
+    stationsLaptop({ forTheGlobalList: heldUntil(holdGlobal.released, answer({ stations: [HEADQUARTERS] })) })
+    const stations = useAdminStationsStore()
+    const loadingTheGlobalList = stations.load()
+    await stations.loadAtTheFestival(FESTIVAL_B)
+
+    holdGlobal.release()
+    await loadingTheGlobalList
+
+    expect(whatTheStationsShow(stations)).toEqual({ loadedFestivalId: FESTIVAL_B, names: ['Theke'] })
+  })
+
+  it('belong to no festival once the global list answers after a festival', async () => {
+    stationsLaptop()
+    const stations = useAdminStationsStore()
+    await stations.loadAtTheFestival(FESTIVAL_A)
+
+    await stations.load()
+
+    expect(whatTheStationsShow(stations)).toEqual({ loadedFestivalId: null, names: ['Zentrale'] })
+  })
+
+  it('claim no festival while an older answer is dropped and a newer request is still on its way', async () => {
+    const holdA = aHold()
+    const holdB = aHold()
+    stationsLaptop({
+      forA: heldUntil(holdA.released, answer({ stations: [KITCHEN_OF_A] })),
+      forB: heldUntil(holdB.released, answer({ stations: [BAR_OF_B] })),
+    })
+    const stations = useAdminStationsStore()
+    const loadingA = stations.loadAtTheFestival(FESTIVAL_A)
+    const loadingB = stations.loadAtTheFestival(FESTIVAL_B)
+
+    holdA.release()
+    await loadingA
+
+    expect(whatTheStationsShow(stations)).toEqual({ loadedFestivalId: null, names: [] })
+    holdB.release()
+    await loadingB
   })
 })

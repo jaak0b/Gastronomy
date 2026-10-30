@@ -5,7 +5,7 @@ import { VAutocomplete } from 'vuetify/components'
 import ItemsList from '../../../../src/admin/components/items/ItemsList.vue'
 import { testPlugins } from '../../../support/plugins'
 import { answer, type StubbedLaptop } from '../../../support/laptop'
-import { inputOf, onScreen, textOnScreen, typeInto } from '../../../support/dom'
+import { allOnScreen, inputOf, onScreen, textOnScreen, typeInto } from '../../../support/dom'
 import { anAdminIngredient, anAdminItemIngredient } from '../../../support/wireViews'
 import { mountList, itemsListLaptop, openTheRecipe, ITEM_ID, ONE_ITEM } from './itemsListFixture'
 
@@ -115,5 +115,27 @@ describe('adding an ingredient to the recipe of an article', () => {
     expect(laptop.writes()).toEqual([
       { url: `/api/admin/items/${ITEM_ID}/ingredients/ingredient-senf`, method: 'PUT', body: { amount: 20 } },
     ])
+  })
+})
+
+describe('the text of an empty recipe', () => {
+  it('is the shared text of an empty list in a recipe without a line', async () => {
+    itemsListLaptop({ items: ONE_ITEM })
+
+    const list = mountList()
+    await openTheRecipe(list)
+
+    expect(
+      allOnScreen('[data-test="form-dialog"] [data-test="empty-list-text"]').map((text) => text.textContent?.trim()),
+    ).toEqual(['Keine Einträge'])
+  })
+
+  it('stays away in a recipe with a line', async () => {
+    itemsListLaptop({ items: BRATWURST_WITH_MUSTARD })
+
+    const list = mountList()
+    await openTheRecipe(list)
+
+    expect(allOnScreen('[data-test="form-dialog"] [data-test="empty-list-text"]')).toHaveLength(0)
   })
 })

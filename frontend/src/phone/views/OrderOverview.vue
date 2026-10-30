@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { showsTheEmptyListText } from '../../shared/core/emptyList'
 import { navigate } from '../../shared/router/router'
 import { useSessionStore } from '../../shared/stores/session'
 import { useOrderOverviewStore } from '../stores/orderOverview'
+import BaseEmptyListText from '../../shared/components/BaseEmptyListText.vue'
 import OrderListFilter from '../components/orderList/OrderListFilter.vue'
 import OrderListTitle from '../components/orderList/OrderListTitle.vue'
 import OrderListCard from '../components/orderList/OrderListCard.vue'
@@ -15,7 +17,7 @@ let stopListening: (() => void) | null = null
 
 const orders = computed(() => orderOverview.report?.orders ?? [])
 
-const foundNothing = computed(() => orderOverview.report !== null && orders.value.length === 0)
+const showsEmptyListText = computed(() => showsTheEmptyListText(orderOverview, orders.value.length))
 
 onMounted(async () => {
   if (orderOverview.tableId === null) {
@@ -47,8 +49,6 @@ onUnmounted(() => {
       {{ t(orderOverview.loadFailureKey) }}
     </v-alert>
     <OrderListCard v-for="order in orders" :key="order.orderId" :order="order" :language="session.language" />
-    <v-alert v-if="foundNothing" data-test="no-orders" type="info" variant="tonal">
-      {{ t('phone.orderOverview.messages.noOrderMatches') }}
-    </v-alert>
+    <BaseEmptyListText v-if="showsEmptyListText" data-test="no-orders" />
   </v-container>
 </template>

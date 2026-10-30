@@ -23,6 +23,7 @@ export const useAdminUnitsStore = defineStore('adminUnits', () => {
   })
   const {
     entries: units,
+    hasLoaded,
     loadFailed,
     load,
     create,
@@ -40,6 +41,7 @@ export const useAdminUnitsStore = defineStore('adminUnits', () => {
 
   return {
     units,
+    hasLoaded,
     loadFailed,
     load,
     create,

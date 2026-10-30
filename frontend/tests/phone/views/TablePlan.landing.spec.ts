@@ -52,22 +52,22 @@ describe('the waiter\'s home screen', () => {
     expect(view.get(DRAWING).attributes('data-test-id')).toBe('area-halle')
   })
 
-  it('says plainly that no tables are set up when the festival has no area', async () => {
+  it('shows the shared text of an empty list when the festival has no area', async () => {
     planLaptop([])
     theCatalogNamesTheFestivalThatRuns(SOMMERFEST)
 
     const view = await mountThePlan()
 
-    expect(view.get('[data-test="no-tables"]').text()).toBe('Keine Tische angelegt')
+    expect(view.get('[data-test="no-tables"]').text()).toBe('Keine Einträge')
   })
 
-  it('says the same in English', async () => {
+  it('shows the shared text of an empty list in English', async () => {
     planLaptop([])
     theCatalogNamesTheFestivalThatRuns(SOMMERFEST)
 
     const view = await mountThePlan('en')
 
-    expect(view.get('[data-test="no-tables"]').text()).toBe('No tables set up')
+    expect(view.get('[data-test="no-tables"]').text()).toBe('No entries')
   })
 
   it('says that no festival is active when none runs', async () => {
@@ -90,15 +90,15 @@ describe('the waiter\'s home screen', () => {
     }).toEqual({ noTables: false, noFestival: false })
   })
 
-  it('says that no table is set up in an area that has none, and still draws its stations', async () => {
+  it('shows the shared text of an empty list in an area that has no table, and still draws its stations', async () => {
     planLaptop([aPlanArea({ areaId: 'area-garten', name: 'Garten', stationShapes: [aPlanStationShape()] })])
 
     const view = await mountThePlan()
 
     expect({
-      sentence: view.get('[data-test="no-tables-in-area"]').text(),
+      text: view.get('[data-test="no-tables-in-area"]').text(),
       drawn: view.find(DRAWING).exists(),
-    }).toEqual({ sentence: 'Keine Tische in diesem Tischplan', drawn: true })
+    }).toEqual({ text: 'Keine Einträge', drawn: true })
   })
 
   it('claims nothing about the tables before the plan has arrived', async () => {

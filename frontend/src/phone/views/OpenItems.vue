@@ -2,12 +2,13 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { assertNever } from '../../shared/core/assertNever'
+import { showsTheEmptyListText } from '../../shared/core/emptyList'
 import { formatPrice } from '../../shared/core/money'
 import { navigate } from '../../shared/router/router'
-import { defaultFilterFor } from '../core/openItems'
 import { useOpenItemsStore } from '../stores/openItems'
 import { useSessionStore } from '../../shared/stores/session'
 import { useSettleDialog } from '../composables/useSettleDialog'
+import BaseEmptyListText from '../../shared/components/BaseEmptyListText.vue'
 import OrderListFilter from '../components/orderList/OrderListFilter.vue'
 import OrderListTitle from '../components/orderList/OrderListTitle.vue'
 import TableOrders from '../components/openItems/TableOrders.vue'
@@ -36,29 +37,9 @@ const title = computed(() => {
   }
 })
 
-const filterIsTheDefault = computed(() => {
-  const standard = defaultFilterFor(openItems.purpose)
-  const picked = openItems.filter
-  return (
-    picked.orderStatus === standard.orderStatus &&
-    picked.paymentStatus === standard.paymentStatus &&
-    picked.includeCancelled === standard.includeCancelled
-  )
-})
-
-const emptyText = computed(() => {
-  if (!filterIsTheDefault.value) {
-    return t('phone.orderOverview.messages.noOrderMatches')
-  }
-  switch (openItems.purpose) {
-    case 'settling':
-      return t('phone.openItems.messages.nothingToSettle')
-    case 'cancelling':
-      return t('phone.openItems.messages.nothingToCancel')
-    default:
-      return assertNever(openItems.purpose)
-  }
-})
+const showsEmptyListText = computed(() =>
+  showsTheEmptyListText(openItems, openItems.report?.orders.length ?? 0),
+)
 
 const selectedText = computed(() => {
   switch (openItems.purpose) {
@@ -158,12 +139,12 @@ onUnmounted(() => {
       :report="openItems.report"
       :selected-item-ids="openItems.selectedItemIds"
       :purpose="openItems.purpose"
-      :empty-text="emptyText"
       :language="session.language"
       @toggle-item="openItems.toggleItem"
       @set-whole-table="openItems.setWholeTable"
       @set-whole-order="openItems.setWholeOrder"
     />
+    <BaseEmptyListText v-if="showsEmptyListText" data-test="no-orders" />
     <v-sheet v-if="somethingIsSelected" class="settle-footer pt-3 pb-4" data-test="settle-footer" color="background">
       <p class="selected-total app-figure mb-2" data-test="selected-total">
         {{ selectedText }}

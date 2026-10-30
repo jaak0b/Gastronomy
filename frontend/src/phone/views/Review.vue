@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { NOTHING_TO_LOAD, showsTheEmptyListText } from '../../shared/core/emptyList'
 import { formatPrice } from '../../shared/core/money'
 import { quoteLinesFor } from '../core/estimates'
 import { useEstimatesStore } from '../stores/estimates'
@@ -9,6 +10,7 @@ import { useSessionStore } from '../../shared/stores/session'
 import { navigate } from '../../shared/router/router'
 import { useDraftTableName } from '../composables/useDraftTableName'
 import { useSendAndLeave } from '../composables/useSendAndLeave'
+import BaseEmptyListText from '../../shared/components/BaseEmptyListText.vue'
 import DockedStrip from '../components/DockedStrip.vue'
 import LineList from '../components/review/LineList.vue'
 import SendFailurePanel from '../components/review/SendFailurePanel.vue'
@@ -35,6 +37,10 @@ onUnmounted(() => {
 })
 
 const total = computed(() => formatPrice(order.totalCents, session.language))
+
+const showsEmptyListText = computed(() =>
+  showsTheEmptyListText(NOTHING_TO_LOAD, order.basketLines.length),
+)
 
 const canSend = computed(
   () => order.draft.table !== null && order.basketLines.length > 0 && !order.isSending,
@@ -75,6 +81,7 @@ function backToItems(): void {
       </h1>
       <span class="order-total app-figure" data-test="order-total">{{ total }}</span>
     </div>
+    <BaseEmptyListText v-if="showsEmptyListText" class="my-2" data-test="no-lines" />
     <LineList
       :lines="order.basketLines"
       :language="session.language"

@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import BaseEmptyListText from '../../../shared/components/BaseEmptyListText.vue'
 import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import { AdminStationView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
+import { showsTheEmptyListText } from '../../../shared/core/emptyList'
 import type { AdminActionResult } from '../../core/adminActionResult'
+import { loadStateAtTheFestival } from '../../core/festivalListLoad'
 import { useAdminStationsStore, type StationDraft } from '../../stores/stations'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
 import { useStationRefusalReasons } from '../../composables/useStationRefusalReasons'
@@ -26,6 +29,9 @@ const { removalRefusalOf } = useStationRefusalReasons()
 
 const atTheFestival = computed(() =>
   stations.stations.filter((station) => station.isAtFestival),
+)
+const showsEmptyListText = computed(() =>
+  showsTheEmptyListText(loadStateAtTheFestival(stations, props.festivalId), atTheFestival.value.length),
 )
 const stillToAdd = computed(() =>
   stations.stations.filter((station) => station.isActive && !station.isAtFestival),
@@ -117,6 +123,7 @@ async function saveStation(station: StationDraft): Promise<void> {
         <h2 class="section-heading app-section-title mb-3" data-test="section-heading">{{ t('admin.stations.title') }}</h2>
 
         <div class="festival-station-rows mb-3" data-test="festival-station-rows">
+          <BaseEmptyListText v-if="showsEmptyListText" />
           <RemovableStationRows
             :stations="atTheFestival"
             :id-of="(station) => station.stationId"

@@ -25,6 +25,7 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
   })
   const {
     entries: staffMembers,
+    hasLoaded,
     loadFailed,
     load,
     update,
@@ -46,6 +47,7 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
 
   return {
     staffMembers,
+    hasLoaded,
     loadFailed,
     load,
     rename,

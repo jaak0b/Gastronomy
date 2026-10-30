@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { TableOrderReportView } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
@@ -21,6 +21,9 @@ export const useOrderOverviewStore = defineStore('orderOverview', () => {
   const loadFailureKey = ref<string | null>(null)
 
   const loadGate = createLatestRequestGate()
+
+  const hasLoaded = computed(() => report.value !== null)
+  const loadFailed = computed(() => loadFailureKey.value !== null)
 
   function openTable(openedTableId: string): void {
     loadGate.startRequest()
@@ -76,5 +79,17 @@ export const useOrderOverviewStore = defineStore('orderOverview', () => {
     return useConnectionStore().listenToTheLaptop(['ConfigurationChanged', 'OrdersChanged'], load)
   }
 
-  return { tableId, filter, report, loadFailureKey, openTable, closeTable, load, changeFilter, listen }
+  return {
+    tableId,
+    filter,
+    report,
+    hasLoaded,
+    loadFailed,
+    loadFailureKey,
+    openTable,
+    closeTable,
+    load,
+    changeFilter,
+    listen,
+  }
 })

@@ -3,9 +3,11 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AdminStaffMemberView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
+import { showsTheEmptyListText } from '../../../shared/core/emptyList'
 import { useAdminStaffStore } from '../../stores/staff'
 import { useAdminEnrolmentStore } from '../../stores/enrolment'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
+import BaseEmptyListText from '../../../shared/components/BaseEmptyListText.vue'
 import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import InvitationPanel from '../enrolment/InvitationPanel.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
@@ -27,6 +29,10 @@ let stopListening: (() => void) | null = null
 
 const shown = computed(() =>
   staff.staffMembers.filter((staffMember) => showsDeactivated.value || staffMember.isActive),
+)
+
+const showsEmptyListText = computed(() =>
+  showsTheEmptyListText(staff, staff.staffMembers.length),
 )
 
 async function inviteStaffMember(staffMemberId: string): Promise<void> {
@@ -117,6 +123,8 @@ onUnmounted(() => {
       class="admin-section-gap"
       :text="refusalText"
     />
+
+    <BaseEmptyListText v-if="showsEmptyListText" class="admin-section-gap" />
 
     <BaseListRow
       v-for="(staffMember, position) in shown"

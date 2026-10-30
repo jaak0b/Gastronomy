@@ -23,6 +23,7 @@
     "labels": {
       "countTimesItem": "{count} x {item}",
       "doneCounter": "{fulfilled} / {total} prepared",
+      "noEntries": "No entries",
       "note": "Note: {note}",
       "soldOut": "Sold out",
       "table": "Table {name}",
@@ -129,9 +130,7 @@
       },
       "messages": {
         "cashToReturn": "Give the guest {amount} back in cash.",
-        "someWereAlreadySettled": "Somebody else has already taken payment for {count} item in your selection. Give the guest {amount} back. | Somebody else has already taken payment for {count} items in your selection. Give the guest {amount} back.",
-        "nothingToCancel": "There is nothing left to cancel at this table.",
-        "nothingToSettle": "There is nothing left to take payment for at this table."
+        "someWereAlreadySettled": "Somebody else has already taken payment for {count} item in your selection. Give the guest {amount} back. | Somebody else has already taken payment for {count} items in your selection. Give the guest {amount} back."
       },
       "errors": {
         "cancelAnswerNeverCame": "The cancellation may not have been saved. Reload the page and check the items.",
@@ -154,9 +153,6 @@
         "open": "Open",
         "ordersHeading": "Orders",
         "partiallyHandedOut": "Partly handed out"
-      },
-      "messages": {
-        "noOrderMatches": "No matching orders at this table"
       }
     },
     "itemHistory": {
@@ -214,8 +210,6 @@
       },
       "messages": {
         "noFestivalIsActive": "No festival is active at the moment.",
-        "noTables": "No tables set up",
-        "noTablesInArea": "No tables in this table plan",
         "unsentOrder": "The order for table {table} with {count} item for {total} has not been sent yet. | The order for table {table} with {count} items for {total} has not been sent yet."
       },
       "errors": {
@@ -266,9 +260,6 @@
       "title": "Prepared orders",
       "actions": {
         "putBack": "Put back"
-      },
-      "messages": {
-        "nothingDone": "No orders prepared yet"
       }
     }
   },
@@ -363,7 +354,6 @@
       },
       "messages": {
         "needsAStationFirst": "This festival has no station yet. Add one first.",
-        "noneYet": "No festivals",
         "removeItemBody": "This removes the item from this festival only.",
         "removeStationBody": "This removes the station from this festival only."
       },
@@ -426,7 +416,6 @@
         "history": "History"
       },
       "messages": {
-        "noneYet": "No ingredients",
         "noIngredientsToAdd": "Every ingredient has already been added. Click \"New ingredient\".",
         "removeFromRecipeBody": "The ingredient is removed from {item} only.",
         "usedByActiveItems": "The ingredient is still used in {items}. Under \"Items\", take the ingredient out of these items first."
@@ -454,7 +443,6 @@
         "deactivateConfirm": "Deactivate the unit"
       },
       "messages": {
-        "noneYet": "No units",
         "usedByIngredients": "The unit is still used by the ingredients {ingredients}. Under \"Ingredients\", change the unit of these ingredients first."
       }
     },

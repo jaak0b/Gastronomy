@@ -62,12 +62,12 @@ describe('the orders of the table the waiter chose to settle', () => {
     expect(settled.get('[data-test="tick-cell"]').find('[data-test="line-tick"]').exists()).toBe(false)
   })
 
-  it('says that nothing is left to take payment for when the laptop finds no order', async () => {
+  it('shows the shared text of an empty list when the laptop finds no order to settle', async () => {
     openItemsLaptop({ ...TABLE_REPORT, orders: [] })
 
     const screen = await mountScreen()
 
-    expect(screen.get('[data-test="no-orders"]').text()).toBe('An diesem Tisch ist nichts mehr zu kassieren.')
+    expect(screen.get('[data-test="no-orders"]').text()).toBe('Keine Einträge')
   })
 
   it('says the laptop could not be reached', async () => {
@@ -78,6 +78,14 @@ describe('the orders of the table the waiter chose to settle', () => {
     expect(screen.get('[data-test="load-failed"]').text()).toBe(
       'Der Rechner ist nicht erreichbar. Laden Sie die Seite neu.',
     )
+  })
+
+  it('shows no text of an empty list when the laptop could not be reached', async () => {
+    stubLaptop().answers('POST', TABLE_PATH, answer({}, 500))
+
+    const screen = await mountScreen()
+
+    expect(screen.find('[data-test="no-orders"]').exists()).toBe(false)
   })
 
   it('says in one sentence that the table could not be loaded when the laptop does not know it', async () => {

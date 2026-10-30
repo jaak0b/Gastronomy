@@ -13,9 +13,9 @@ function textsOf(selector: string): string[] {
   return [...document.querySelectorAll(selector)].map((element) => element.textContent?.trim() ?? '')
 }
 
-function board(lines: ItemLine[], failureText: string | null = null) {
+function board(lines: ItemLine[], failureText: string | null = null, showsEmptyListText = false) {
   return mount(StationOpenBoard, {
-    props: { togetherCount: 2, asItComesCount: 3, lines, failureText },
+    props: { togetherCount: 2, asItComesCount: 3, lines, showsEmptyListText, failureText },
     global: { plugins: testPlugins() },
     attachTo: document.body,
   })
@@ -52,6 +52,18 @@ describe('the overview board at a station', () => {
       '2 x Bratwurst',
       '1 x Wasser',
     ])
+  })
+
+  it('shows the shared text of an empty list when the page says no article is open', () => {
+    board([], null, true)
+
+    expect(textsOf('[data-test="station-open-board"] [data-test="empty-list-text"]')).toEqual(['Keine Einträge'])
+  })
+
+  it('shows no text of an empty list while the page does not say no article is open', () => {
+    board([line('Bier', null, 1)])
+
+    expect(textsOf('[data-test="station-open-board"] [data-test="empty-list-text"]')).toEqual([])
   })
 
   it('stays live while it is open', async () => {

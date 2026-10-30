@@ -17,7 +17,8 @@ Frontend, under `frontend/src/phone/`:
   title "Bestellungen" (`components/orderList/OrderListTitle.vue`, the one-line bold title of all
   three screens), the filter, the sentence when the table could not be loaded, one
   `OrderListCard` per order without a purpose (no tick boxes; a tap on a row does nothing), and
-  `phone.orderOverview.messages.noOrderMatches` when the laptop sends no order. It goes back to the
+  the shared empty list text (`BaseEmptyListText`, `data-test="no-orders"`) when the laptop sends no
+  order. It goes back to the
   plan when no table is open, as after a reload, and closes the table when the waiter leaves. The
   bar at the top (`components/header/AppHeader.vue`, see the `table-plan` page) shows the table's
   current name, "Tischplan" and the reload, an icon whose tooltip says "Neu laden".
@@ -55,7 +56,8 @@ Frontend, under `frontend/src/phone/`:
   (`errors.itemHistory.unknownItem`), or `phone.openItems.errors.loadFailed` with "Neu laden" when no
   answer came; "Schließen" or the back button closes it. The timeline shows per step the date and time in the format
   of the order's header (`formatFestivalMoment`, "27.10.2026, 23:05"), the event and who made it; the payment adds the amount with "bar" or "mit Karte" (the amount alone for `none` or
-  a method the laptop never stored) and "Grund: …" when a reason was typed.
+  a method the laptop never stored) and "Grund: …" when a reason was typed. A history without an event
+  shows the shared empty list text (`history-empty`).
 - `core/itemHistory.ts` (`historyEntriesOf`): turns the `OrderItemHistoryView` into the timeline.
   The first status change is the order ("Bestellt"), a later `open` is a put back ("Zurückgelegt"),
   and the payment is placed among the status changes by its time.

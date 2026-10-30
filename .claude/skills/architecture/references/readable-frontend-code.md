@@ -107,19 +107,12 @@ items regardless of the filter, and the card shows those.
 
 ### A sentence that stopped being true
 
-Before: the empty text was chosen by purpose only ("An diesem Tisch ist nichts mehr zu kassieren."),
-which became false once the waiter could pick a filter that hides everything.
+Before: the empty text was chosen by the screen's purpose and claimed that the table had nothing
+left, which became false once the waiter could pick a filter that hides everything.
 
-After (`views/OpenItems.vue`): the text depends on whether the waiter changed the filter.
-
-```ts
-const emptyText = computed(() => {
-  if (!filterIsTheDefault.value) {
-    return t('phone.orderOverview.messages.noOrderMatches')
-  }
-  ...
-})
-```
+After (`views/OpenItems.vue`, `views/OrderOverview.vue`): an empty list shows the one shared
+`shared/components/BaseEmptyListText.vue`, which says only that there are no entries, so no filter
+can make it false and no screen words its own.
 
 ## Smells to stop at
 

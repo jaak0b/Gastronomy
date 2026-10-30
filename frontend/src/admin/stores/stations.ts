@@ -21,6 +21,8 @@ export interface StationDraft {
 export const useAdminStationsStore = defineStore('adminStations', () => {
   const {
     entries: stations,
+    hasLoaded,
+    loadedFestivalId,
     loadFailed,
     load,
     loadAtTheFestival,
@@ -77,6 +79,8 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
 
   return {
     stations,
+    hasLoaded,
+    loadedFestivalId,
     loadFailed,
     load,
     loadAtTheFestival,

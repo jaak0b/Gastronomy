@@ -71,6 +71,26 @@ describe('the table a waiter opens to settle', () => {
     expect(openItems.loadFailureKey).toBe('phone.openItems.errors.loadFailed')
   })
 
+  it('says it has loaded once the laptop sent the table', async () => {
+    const { openItems } = await storeShowingTisch12([])
+
+    expect({ hasLoaded: openItems.hasLoaded, loadFailed: openItems.loadFailed }).toEqual({
+      hasLoaded: true,
+      loadFailed: false,
+    })
+  })
+
+  it('says the load failed when the laptop cannot be reached', async () => {
+    const { openItems } = await storeShowingTisch12([noConnection()])
+
+    await openItems.load()
+
+    expect({ hasLoaded: openItems.hasLoaded, loadFailed: openItems.loadFailed }).toEqual({
+      hasLoaded: false,
+      loadFailed: true,
+    })
+  })
+
   it('keeps what the waiter ticked while the laptop cannot be reached, and ticks it again once it answers', async () => {
     const { openItems } = await storeShowingTisch12([noConnection(), answer(TABLE_REPORT)])
     openItems.toggleItem('bier-open')

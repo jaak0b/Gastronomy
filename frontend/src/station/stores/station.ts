@@ -8,6 +8,7 @@ import {
   StationSummaryView,
   type StationItemSelectionRequest,
 } from '../../shared/api/generatedSchemas'
+import { showsTheEmptyListText } from '../../shared/core/emptyList'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { retainStillSelectableItemIds, stationFailureMessage, type StationMessage } from '../../shared/core/stationBoard'
 import { useConnectionStore } from '../../shared/stores/connection'
@@ -19,6 +20,7 @@ export const useStationStore = defineStore('station', () => {
   const asItComes = ref<StationOrderQueueView[]>([])
   const fulfilled = ref<StationOrderQueueView[]>([])
   const selectedItemIds = ref<string[]>([])
+  const hasLoaded = ref(false)
   const loadFailed = ref(false)
   const loadFailureKey = ref<string | null>(null)
   const failure = ref<StationMessage | null>(null)
@@ -31,9 +33,11 @@ export const useStationStore = defineStore('station', () => {
   const fulfilledGate = createLatestRequestGate()
   let newestActionToken = 0
 
-  const hasNothingDone = computed(
-    () =>
-      fulfilledHasLoaded.value && !fulfilledLoadFailed.value && fulfilled.value.length === 0,
+  const hasNothingDone = computed(() =>
+    showsTheEmptyListText(
+      { hasLoaded: fulfilledHasLoaded.value, loadFailed: fulfilledLoadFailed.value },
+      fulfilled.value.length,
+    ),
   )
 
   function deviceToken(): string | null {
@@ -45,6 +49,7 @@ export const useStationStore = defineStore('station', () => {
     selectedItemIds.value = retainStillSelectableItemIds(selectedItemIds.value, orders.value, data.orders)
     orders.value = data.orders
     asItComes.value = data.asItComes
+    hasLoaded.value = true
   }
 
   async function load(): Promise<void> {
@@ -190,6 +195,7 @@ export const useStationStore = defineStore('station', () => {
     asItComes,
     fulfilled,
     selectedItemIds,
+    hasLoaded,
     loadFailed,
     loadFailureKey,
     failure,

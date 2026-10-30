@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import FestivalsList from '../../../../src/admin/components/festivals/FestivalsList.vue'
 import { testPlugins } from '../../../support/plugins'
 import { iconActionLabelsOnScreen, pressInDialog, refusalReasonsOnScreen, waitForDialog, typeInto, onScreen } from '../../../support/dom'
-import { stubLaptop, answer, type StubbedLaptop, refusal } from '../../../support/laptop'
+import { stubLaptop, answer, neverAnswers, noConnection, type StubbedLaptop, refusal } from '../../../support/laptop'
 
 const RUNNING = {
   festivalId: 'fest-1',
@@ -89,15 +89,41 @@ describe('the list of festivals', () => {
     expect(list.findAll('[data-test="festival-row"]')).toHaveLength(2)
   })
 
-  it('says how to start when the laptop knows no festival at all', async () => {
+  it('shows the shared text of an empty list when the laptop knows no festival at all', async () => {
     festivalsLaptop([])
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('[data-test="none-yet"]').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="empty-list-text"]').exists()).toBe(true))
 
-    expect(list.get('[data-test="none-yet"]').text()).toBe(
-      'Keine Feste vorhanden',
-    )
+    expect(list.get('[data-test="empty-list-text"]').text()).toBe('Keine Einträge')
+  })
+
+  it('shows no text of an empty list after the load failed, because the laptop never said the list is empty', async () => {
+    stubLaptop().answersEverythingElse(noConnection())
+
+    const list = mountList()
+    await flushPromises()
+
+    expect(list.find('[data-test="empty-list-text"]').exists()).toBe(false)
+  })
+
+  it('shows no text of an empty list before the laptop has answered', async () => {
+    stubLaptop().answersEverythingElse(neverAnswers())
+
+    const list = mountList()
+    await flushPromises()
+
+    expect(list.find('[data-test="empty-list-text"]').exists()).toBe(false)
+  })
+
+  it('shows no text of an empty list while every festival is hidden, because the list is not empty', async () => {
+    const laptop = festivalsLaptop([HIDDEN])
+
+    const list = mountList()
+    await vi.waitFor(() => expect(laptop.urls()).toContain('/api/admin/festivals'))
+    await flushPromises()
+
+    expect(list.find('[data-test="empty-list-text"]').exists()).toBe(false)
   })
 
   it("keeps every row's buttons in one shared group so they line up", async () => {

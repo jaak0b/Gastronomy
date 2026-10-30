@@ -18,6 +18,7 @@ const EMPTY_CATALOG: CatalogView = {
 export const useCatalogStore = defineStore('catalog', () => {
   const catalog = ref<CatalogView>(EMPTY_CATALOG)
   const hasLoaded = ref(false)
+  const loadFailed = ref(false)
 
   const loadGate = createLatestRequestGate()
 
@@ -49,15 +50,17 @@ export const useCatalogStore = defineStore('catalog', () => {
       return
     }
     if (result.kind !== 'ok') {
+      loadFailed.value = true
       return
     }
     catalog.value = result.data
     hasLoaded.value = true
+    loadFailed.value = false
   }
 
   function listen(): () => void {
     return useConnectionStore().listenToTheLaptop(['ConfigurationChanged'], load)
   }
 
-  return { catalog, hasLoaded, groups, stationName, load, listen }
+  return { catalog, hasLoaded, loadFailed, groups, stationName, load, listen }
 })

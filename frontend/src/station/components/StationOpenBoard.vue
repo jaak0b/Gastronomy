@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import BaseEmptyListText from '../../shared/components/BaseEmptyListText.vue'
 import {
   deliveryModeColourToken,
   itemLineText,
@@ -12,6 +13,7 @@ const props = defineProps<{
   togetherCount: number
   asItComesCount: number
   lines: ItemLine[]
+  showsEmptyListText: boolean
   failureText: string | null
 }>()
 const emit = defineEmits<{ close: [] }>()
@@ -50,6 +52,7 @@ const orderedLines = computed(() => linesByCount(props.lines))
         {{ t('station.board.labels.statsAsItComesChip', { count: asItComesCount }) }}
       </v-chip>
     </div>
+    <BaseEmptyListText v-if="showsEmptyListText" class="mt-5" />
     <ul class="units">
       <li v-for="line in orderedLines" :key="line.key" class="unit app-item-name" data-test="unit">
         {{ itemLineText(line, t) }}

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { iconActionLabelsOnScreen } from '../../../support/dom'
+import { neverAnswers, noConnection, stubLaptop } from '../../../support/laptop'
 import { OLD_KILOGRAM, unitsListLaptop, mountList } from './unitsListFixture'
 
 describe('the units tab', () => {
@@ -67,27 +68,23 @@ describe('the units tab', () => {
     expect(actions.map((action) => action.attributes('data-test'))).toEqual(['edit', 'deactivate'])
   })
 
-  it('says there are no units yet and names the button that adds one', async () => {
+  it('shows the shared text of an empty list and names the button that adds a unit', async () => {
     unitsListLaptop({ units: [] })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('[data-test="none-yet"]').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="empty-list-text"]').exists()).toBe(true))
 
-    expect(list.get('[data-test="none-yet"]').text()).toBe(
-      'Keine Einheiten vorhanden',
-    )
+    expect(list.get('[data-test="empty-list-text"]').text()).toBe('Keine Einträge')
     expect(list.get('[data-test="new-unit"]').text()).toBe('Neue Einheit')
   })
 
-  it('says there are no units yet in English', async () => {
+  it('shows the shared text of an empty list in English', async () => {
     unitsListLaptop({ units: [] })
 
     const list = mountList('en')
-    await vi.waitFor(() => expect(list.find('[data-test="none-yet"]').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="empty-list-text"]').exists()).toBe(true))
 
-    expect(list.get('[data-test="none-yet"]').text()).toBe(
-      'No units',
-    )
+    expect(list.get('[data-test="empty-list-text"]').text()).toBe('No entries')
   })
 
   it('does not claim there are no units while deactivated ones are hidden', async () => {
@@ -97,6 +94,24 @@ describe('the units tab', () => {
     await vi.waitFor(() => expect(laptop.urls()).toContain('/api/admin/units'))
     await flushPromises()
 
-    expect(list.find('[data-test="none-yet"]').exists()).toBe(false)
+    expect(list.find('[data-test="empty-list-text"]').exists()).toBe(false)
+  })
+
+  it('shows no text of an empty list before the laptop has answered', async () => {
+    stubLaptop().answersEverythingElse(neverAnswers())
+
+    const list = mountList()
+    await flushPromises()
+
+    expect(list.find('[data-test="empty-list-text"]').exists()).toBe(false)
+  })
+
+  it('shows no text of an empty list after the load failed', async () => {
+    stubLaptop().answersEverythingElse(noConnection())
+
+    const list = mountList()
+    await flushPromises()
+
+    expect(list.find('[data-test="empty-list-text"]').exists()).toBe(false)
   })
 })

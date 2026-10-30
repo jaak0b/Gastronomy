@@ -4,7 +4,7 @@ import { fireHubEvent, forgetHubEvents } from '../../support/hubConnection'
 import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useConnectionStore } from '../../../src/shared/stores/connection'
 import { useSessionStore, TOKEN_STORAGE_KEY } from '../../../src/shared/stores/session'
-import { stubLaptop, answer } from '../../support/laptop'
+import { stubLaptop, answer, inTurn, noConnection } from '../../support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -71,6 +71,55 @@ describe('the catalog on the phone', () => {
     expect(catalog.groups).toEqual([])
     expect(catalog.catalog.items).toEqual([])
     expect(catalog.stationName('station-kueche')).toBe('')
+  })
+})
+
+describe('what the catalog on the phone knows about its own loading', () => {
+  beforeEach(() => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    localStorage.clear()
+  })
+
+  it('knows it has loaded once the laptop sent a catalog', async () => {
+    laptopAnswers(FULL_CATALOG)
+    const catalog = useCatalogStore()
+
+    await catalog.load()
+
+    expect({ hasLoaded: catalog.hasLoaded, loadFailed: catalog.loadFailed }).toEqual({
+      hasLoaded: true,
+      loadFailed: false,
+    })
+  })
+
+  it('knows the load failed when the laptop cannot be reached', async () => {
+    stubLaptop().answersEverythingElse(noConnection())
+    const catalog = useCatalogStore()
+
+    await catalog.load()
+
+    expect({ hasLoaded: catalog.hasLoaded, loadFailed: catalog.loadFailed }).toEqual({
+      hasLoaded: false,
+      loadFailed: true,
+    })
+  })
+
+  it('forgets the failure once the laptop answers again', async () => {
+    stubLaptop().answersEverythingElse(inTurn(noConnection(), answer(FULL_CATALOG)))
+    const catalog = useCatalogStore()
+    await catalog.load()
+
+    await catalog.load()
+
+    expect({ hasLoaded: catalog.hasLoaded, loadFailed: catalog.loadFailed }).toEqual({
+      hasLoaded: true,
+      loadFailed: false,
+    })
   })
 })
 

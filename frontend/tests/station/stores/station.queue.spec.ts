@@ -73,6 +73,47 @@ describe('the orders a station tablet is showing', () => {
   })
 })
 
+describe('what the station tablet knows about loading its orders', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('knows it has loaded once the laptop sent the queue', async () => {
+    stubLaptopAt({ '/api/station/orders': aQueue([stationOrder()]) })
+    enrolledStationTablet()
+    const station = useStationStore()
+
+    await station.load()
+
+    expect({ hasLoaded: station.hasLoaded, loadFailed: station.loadFailed }).toEqual({
+      hasLoaded: true,
+      loadFailed: false,
+    })
+  })
+
+  it('knows it has not loaded while the laptop cannot be reached', async () => {
+    stubLaptopAt({
+      '/api/station/orders': () => {
+        throw new TypeError('Failed to fetch')
+      },
+    })
+    enrolledStationTablet()
+    const station = useStationStore()
+
+    await station.load()
+
+    expect({ hasLoaded: station.hasLoaded, loadFailed: station.loadFailed }).toEqual({
+      hasLoaded: false,
+      loadFailed: true,
+    })
+  })
+})
+
 describe('selecting items for the done control', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

@@ -267,7 +267,10 @@ Frontend, under `frontend/src/`:
   opened, or the area list. Whether an area has to be chosen at all is `anAreaMustBeChosen` there,
   the one rule the landing, the header's "Tischpläne" and the landing after sending
   (`areaToOpenForTheTable`) share. Until the plan has loaded, and while an empty plan waits for the catalog,
-  it claims nothing. A plan of an area without tables says so above the drawing. It shows
+  it claims nothing. A festival without areas shows the shared empty list text alone
+  (`data-test="no-tables"`), and an area without tables shows it above the drawing
+  (`data-test="no-tables-in-area"`); the festival page's table plan card shows it above its area rows
+  through `HideableEntryList.vue`. It shows
   `phone/components/tablePlan/AreaList.vue` (one large button per area, in the laptop's order,
   inside the `v-container` the other waiter screens use),
   `AreaPlan.vue` (the read-only Konva drawing of one area with its scroll bars), `TableActionSheet.vue`

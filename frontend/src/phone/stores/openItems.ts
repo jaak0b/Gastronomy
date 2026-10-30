@@ -47,6 +47,9 @@ export const useOpenItemsStore = defineStore('openItems', () => {
 
   const loadGate = createLatestRequestGate()
 
+  const hasLoaded = computed(() => report.value !== null)
+  const loadFailed = computed(() => loadFailureKey.value !== null)
+
   const selectedTotalCents = computed(() =>
     report.value === null ? 0 : selectedAmountCents(report.value, selectedItemIds.value),
   )
@@ -267,6 +270,8 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     purpose,
     filter,
     report,
+    hasLoaded,
+    loadFailed,
     loadFailureKey,
     selectedItemIds,
     selectedTotalCents,

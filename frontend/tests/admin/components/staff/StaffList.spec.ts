@@ -5,7 +5,7 @@ import StaffList from '../../../../src/admin/components/staff/StaffList.vue'
 import { useConnectionStore } from '../../../../src/shared/stores/connection'
 import { testPlugins } from '../../../support/plugins'
 import { clickOn, iconActionLabelsOnScreen, pressInDialog, typeInto, waitForDialog } from '../../../support/dom'
-import { stubLaptop, answer, refusal, type StubbedLaptop } from '../../../support/laptop'
+import { stubLaptop, answer, noConnection, refusal, type StubbedLaptop } from '../../../support/laptop'
 
 const STAFF_MEMBER_ID = '33333333-3333-3333-3333-333333333333'
 
@@ -400,5 +400,44 @@ describe('the length of a waiter name the admin types', () => {
         'maxlength',
       ),
     ).toBe('40')
+  })
+})
+
+describe('the text of an empty staff list', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('is the shared text of an empty list once the laptop sent no staff member', async () => {
+    staffLaptopListing({ staffMembers: [] })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="empty-list-text"]').exists()).toBe(true))
+
+    expect(list.get('[data-test="empty-list-text"]').text()).toBe('Keine Einträge')
+  })
+
+  it('stays away after the load failed', async () => {
+    stubLaptop().answersEverythingElse(noConnection())
+
+    const list = mountList()
+    await flushPromises()
+
+    expect(list.find('[data-test="empty-list-text"]').exists()).toBe(false)
+  })
+
+  it('stays away while every staff member is deactivated, because the list is not empty', async () => {
+    const laptop = staffLaptopListing(OFF_THE_LIST)
+
+    const list = mountList()
+    await vi.waitFor(() => expect(laptop.urls()).toContain('/api/admin/staff-members'))
+    await flushPromises()
+
+    expect(list.find('[data-test="empty-list-text"]').exists()).toBe(false)
   })
 })

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { iconActionLabelsOnScreen } from '../../../support/dom'
+import { neverAnswers, noConnection, stubLaptop } from '../../../support/laptop'
 import { BUN, OLD_MILK, ingredientsListLaptop, mountList } from './ingredientsListFixture'
 
 describe('the ingredients tab', () => {
@@ -78,27 +79,23 @@ describe('the ingredients tab', () => {
     expect(actions.map((action) => action.attributes('data-test'))).toEqual(['edit', 'deactivate'])
   })
 
-  it('says there are no ingredients yet and names the button that adds one', async () => {
+  it('shows the shared text of an empty list and names the button that adds an ingredient', async () => {
     ingredientsListLaptop({ ingredients: [] })
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('[data-test="none-yet"]').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="empty-list-text"]').exists()).toBe(true))
 
-    expect(list.get('[data-test="none-yet"]').text()).toBe(
-      'Keine Zutaten vorhanden',
-    )
+    expect(list.get('[data-test="empty-list-text"]').text()).toBe('Keine Einträge')
     expect(list.get('[data-test="new-ingredient"]').text()).toBe('Neue Zutat')
   })
 
-  it('says there are no ingredients yet in English', async () => {
+  it('shows the shared text of an empty list in English', async () => {
     ingredientsListLaptop({ ingredients: [] })
 
     const list = mountList('en')
-    await vi.waitFor(() => expect(list.find('[data-test="none-yet"]').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('[data-test="empty-list-text"]').exists()).toBe(true))
 
-    expect(list.get('[data-test="none-yet"]').text()).toBe(
-      'No ingredients',
-    )
+    expect(list.get('[data-test="empty-list-text"]').text()).toBe('No entries')
   })
 
   it('does not claim there are no ingredients while deactivated ones are hidden', async () => {
@@ -108,6 +105,24 @@ describe('the ingredients tab', () => {
     await vi.waitFor(() => expect(laptop.urls()).toContain('/api/admin/ingredients'))
     await flushPromises()
 
-    expect(list.find('[data-test="none-yet"]').exists()).toBe(false)
+    expect(list.find('[data-test="empty-list-text"]').exists()).toBe(false)
+  })
+
+  it('shows no text of an empty list before the laptop has answered', async () => {
+    stubLaptop().answersEverythingElse(neverAnswers())
+
+    const list = mountList()
+    await flushPromises()
+
+    expect(list.find('[data-test="empty-list-text"]').exists()).toBe(false)
+  })
+
+  it('shows no text of an empty list after the load failed', async () => {
+    stubLaptop().answersEverythingElse(noConnection())
+
+    const list = mountList()
+    await flushPromises()
+
+    expect(list.find('[data-test="empty-list-text"]').exists()).toBe(false)
   })
 })

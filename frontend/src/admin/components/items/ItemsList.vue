@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminCategoryView, AdminItemView, MoveDirection } from '../../../shared/api/generatedSchemas'
 import { combineReleases } from '../../../shared/core/combineReleases'
+import { showsTheEmptyListText } from '../../../shared/core/emptyList'
 import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
 import { numberRowsAcrossGroups } from '../../core/alternatingRows'
 import { useAdminCategoriesStore, type AdminCategoryDraft } from '../../stores/categories'
@@ -14,6 +15,7 @@ import { useEditSession } from '../../composables/useEditSession'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
 import CategoryDialog from '../categories/CategoryDialog.vue'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
+import BaseEmptyListText from '../../../shared/components/BaseEmptyListText.vue'
 import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import ItemDialog from './ItemDialog.vue'
 import ItemsListCategorySection from './ItemsListCategorySection.vue'
@@ -66,6 +68,22 @@ const groups = computed(() =>
     ),
   ),
 )
+
+const showsNoCategories = computed(() =>
+  showsTheEmptyListText(categories, categories.categories.length),
+)
+
+const itemCountsByCategory = computed(() => {
+  const counts = new Map<string, number>()
+  for (const item of items.items) {
+    counts.set(item.categoryId, (counts.get(item.categoryId) ?? 0) + 1)
+  }
+  return counts
+})
+
+function categoryHasNoItems(categoryId: string): boolean {
+  return showsTheEmptyListText(items, itemCountsByCategory.value.get(categoryId) ?? 0)
+}
 
 const recipeItem = computed(
   () => items.items.find((item) => item.itemId === recipeItemId.value) ?? null,
@@ -195,11 +213,14 @@ onUnmounted(() => {
       :text="categoryRefusalText"
     />
 
+    <BaseEmptyListText v-if="showsNoCategories" class="admin-section-gap" />
+
     <ItemsListCategorySection
       v-for="group in groups"
       :key="group.category.categoryId"
       :category="group.category"
       :rows="group.rows"
+      :shows-empty-list-text="categoryHasNoItems(group.category.categoryId)"
       :is-a-festival-running="festivals.runningFestival !== null"
       @rename-category="startRenamingCategory(group.category)"
       @move-category="(direction) => moveCategory(group.category.categoryId, direction)"

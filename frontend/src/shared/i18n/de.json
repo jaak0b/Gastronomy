@@ -23,6 +23,7 @@
     "labels": {
       "countTimesItem": "{count} x {item}",
       "doneCounter": "{fulfilled} / {total} zubereitet",
+      "noEntries": "Keine Einträge",
       "note": "Hinweis: {note}",
       "soldOut": "Ausverkauft",
       "table": "Tisch {name}",
@@ -129,9 +130,7 @@
       },
       "messages": {
         "cashToReturn": "Geben Sie dem Gast {amount} in bar zurück.",
-        "someWereAlreadySettled": "Eine andere Person hat {count} Position aus Ihrer Auswahl bereits kassiert. Geben Sie dem Gast {amount} zurück. | Eine andere Person hat {count} Positionen aus Ihrer Auswahl bereits kassiert. Geben Sie dem Gast {amount} zurück.",
-        "nothingToCancel": "An diesem Tisch ist nichts mehr zu stornieren.",
-        "nothingToSettle": "An diesem Tisch ist nichts mehr zu kassieren."
+        "someWereAlreadySettled": "Eine andere Person hat {count} Position aus Ihrer Auswahl bereits kassiert. Geben Sie dem Gast {amount} zurück. | Eine andere Person hat {count} Positionen aus Ihrer Auswahl bereits kassiert. Geben Sie dem Gast {amount} zurück."
       },
       "errors": {
         "cancelAnswerNeverCame": "Die Stornierung wurde möglicherweise nicht gespeichert. Laden Sie die Seite neu und prüfen Sie die Positionen.",
@@ -154,9 +153,6 @@
         "open": "Offen",
         "ordersHeading": "Bestellungen",
         "partiallyHandedOut": "Teilweise ausgegeben"
-      },
-      "messages": {
-        "noOrderMatches": "Keine passenden Bestellungen an diesem Tisch"
       }
     },
     "itemHistory": {
@@ -214,8 +210,6 @@
       },
       "messages": {
         "noFestivalIsActive": "Zurzeit ist kein Fest aktiv.",
-        "noTables": "Keine Tische angelegt",
-        "noTablesInArea": "Keine Tische in diesem Tischplan",
         "unsentOrder": "Die Bestellung für Tisch {table} mit {count} Artikel über {total} wurde noch nicht gesendet. | Die Bestellung für Tisch {table} mit {count} Artikeln über {total} wurde noch nicht gesendet."
       },
       "errors": {
@@ -266,9 +260,6 @@
       "title": "Zubereitete Bestellungen",
       "actions": {
         "putBack": "Zurücklegen"
-      },
-      "messages": {
-        "nothingDone": "Noch keine Bestellung zubereitet"
       }
     }
   },
@@ -363,7 +354,6 @@
       },
       "messages": {
         "needsAStationFirst": "Dieses Fest hat noch keine Ausgabestelle. Fügen Sie zuerst eine hinzu.",
-        "noneYet": "Keine Feste vorhanden",
         "removeItemBody": "Der Artikel wird nur aus diesem Fest entfernt.",
         "removeStationBody": "Die Ausgabestelle wird nur aus diesem Fest entfernt."
       },
@@ -426,7 +416,6 @@
         "history": "Verlauf"
       },
       "messages": {
-        "noneYet": "Keine Zutaten vorhanden",
         "noIngredientsToAdd": "Alle Zutaten sind bereits hinzugefügt. Klicken Sie auf „Neue Zutat“.",
         "removeFromRecipeBody": "Die Zutat wird nur bei {item} entfernt.",
         "usedByActiveItems": "Die Zutat wird noch bei {items} verwendet. Nehmen Sie die Zutat zuerst unter „Artikel“ aus diesen Artikeln heraus."
@@ -454,7 +443,6 @@
         "deactivateConfirm": "Einheit deaktivieren"
       },
       "messages": {
-        "noneYet": "Keine Einheiten vorhanden",
         "usedByIngredients": "Die Einheit wird noch bei den Zutaten {ingredients} verwendet. Ändern Sie zuerst unter „Zutaten“ die Einheit dieser Zutaten."
       }
     },

@@ -5,7 +5,8 @@ like a phone, and its page shows two columns: every order that still has open it
 the waiter wanted handed out item by item as each is ready. The staff select the items they hand
 out, one or several at a time, and mark them done after a confirmation that repeats the table name.
 A fully done order leaves both columns and appears in the done view, where a mistaken tap can be put
-back. The waiter's phone shows a waiting time per item and per station order, worked out from the
+back; an open column, the overview board and the done view without an order each show the shared empty
+list text (`BaseEmptyListText`, `data-test="nothing-done"` in the done view). The waiter's phone shows a waiting time per item and per station order, worked out from the
 station's queue.
 
 ## Where the code lives

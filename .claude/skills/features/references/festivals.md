@@ -117,7 +117,9 @@ Frontend, under `frontend/src/`:
   search that matches nothing shows `admin.common.messages.noMatches`, the line's built-in
   no-data text. Every row of the page's lists is a `BaseListRow.vue`, the same row as on the
   Feste tab and the other global tabs. The station card keeps one row's height while no station
-  belongs to the festival, with no row drawn. The article card's category headings are
+  belongs to the festival, with no row drawn. The stations, articles and table plan cards show the
+  shared empty list text only once this festival's own list has arrived (`loadedFestivalId`; a global
+  answer does not count, see `how-to/references/empty-list-text.md`). The article card's category headings are
   `shared/components/CategoryLabel.vue`. Name, start and end save when a field is left or Enter is
   pressed, with no save button. Its sections are `FestivalStations.vue`, `FestivalTablePlan.vue`
   (see the `table-plan` page), `FestivalItems.vue` (with `FestivalPlacementDialog.vue`,
@@ -225,7 +227,7 @@ Every point below is intended behaviour. A change to any of them needs the owner
   names, the order of a row's actions, the eye disabled on the running festival with its reason) and
   `FestivalPage.*.spec.ts` (`heading`, `refusals`, `stations` with the disabled trash icon, its
   two reasons and the two sentences of the empty search, `itemChanges`, `itemPlacement`,
-  `tablePlan`, `tablePlanAreas`) on
+  `tablePlan`, `tablePlanAreas`, `emptyLists`) on
   `festivalPageFixture.ts`, the guard against an overtaken festival read in `.heading`, and the
   loaded state in `admin/stores/adminList.spec.ts`;
   `phone/stores/orderFestivalScope.spec.ts` (the silent drop and the frozen order). Fixtures come from

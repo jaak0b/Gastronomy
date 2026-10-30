@@ -16,6 +16,8 @@ export interface FestivalScopedListDefinition<TEntry, TListResponse, TDraft, TBo
 
 export interface FestivalScopedList<TEntry, TDraft> {
   entries: Ref<TEntry[]>
+  hasLoaded: Ref<boolean>
+  loadedFestivalId: Ref<string | null>
   loadFailed: Ref<boolean>
   load: () => Promise<void>
   loadAtTheFestival: (festivalId: string) => Promise<void>
@@ -29,6 +31,7 @@ export function defineFestivalScopedList<TEntry, TListResponse, TDraft, TBody>(
   definition: FestivalScopedListDefinition<TEntry, TListResponse, TDraft, TBody>,
 ): FestivalScopedList<TEntry, TDraft> {
   const festivalInView = ref<string | null>(null)
+  const loadedFestivalId = ref<string | null>(null)
   const listDefinition = adminListDefinition({
     path: definition.path,
     listSchema: definition.listSchema,
@@ -38,8 +41,11 @@ export function defineFestivalScopedList<TEntry, TListResponse, TDraft, TBody>(
     requestBodyOf: definition.requestBodyOf,
     reloadAfterWriting: reload,
     currentView: () => festivalInView.value,
+    afterShowingEntries: () => {
+      loadedFestivalId.value = festivalInView.value
+    },
   })
-  const { entries, loadFailed, loadFrom, forgetCreatedEntries, create, update, setActive } =
+  const { entries, hasLoaded, loadFailed, loadFrom, forgetCreatedEntries, create, update, setActive } =
     withActivation(withCreating(defineAdminList(listDefinition), listDefinition), listDefinition)
 
   async function load(): Promise<void> {
@@ -83,5 +89,16 @@ export function defineFestivalScopedList<TEntry, TListResponse, TDraft, TBody>(
     return await update(id, draft)
   }
 
-  return { entries, loadFailed, load, loadAtTheFestival, reload, create, save, setActive }
+  return {
+    entries,
+    hasLoaded,
+    loadedFestivalId,
+    loadFailed,
+    load,
+    loadAtTheFestival,
+    reload,
+    create,
+    save,
+    setActive,
+  }
 }

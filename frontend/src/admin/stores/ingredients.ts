@@ -27,6 +27,7 @@ export const useAdminIngredientsStore = defineStore('adminIngredients', () => {
   })
   const {
     entries: ingredients,
+    hasLoaded,
     loadFailed,
     load,
     create,
@@ -47,6 +48,7 @@ export const useAdminIngredientsStore = defineStore('adminIngredients', () => {
 
   return {
     ingredients,
+    hasLoaded,
     loadFailed,
     load,
     create,

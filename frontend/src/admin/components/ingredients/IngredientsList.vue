@@ -3,14 +3,15 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminIngredientView } from '../../../shared/api/generatedSchemas'
 import { combineReleases } from '../../../shared/core/combineReleases'
+import { showsTheEmptyListText } from '../../../shared/core/emptyList'
 import { useAdminIngredientsStore, type IngredientDraft } from '../../stores/ingredients'
 import { useAdminUnitsStore } from '../../stores/units'
 import { useEditSession } from '../../composables/useEditSession'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
+import BaseEmptyListText from '../../../shared/components/BaseEmptyListText.vue'
 import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseEditButton from '../BaseEditButton.vue'
-import BaseEmptyListText from '../BaseEmptyListText.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
 import BaseListRow from '../BaseListRow.vue'
 import BaseShowButton from '../BaseShowButton.vue'
@@ -52,8 +53,8 @@ const rows = computed<IngredientRow[]>(() =>
     })),
 )
 
-const showsNoneYet = computed(
-  () => ingredients.ingredients.length === 0 && !ingredients.loadFailed,
+const showsEmptyListText = computed(() =>
+  showsTheEmptyListText(ingredients, ingredients.ingredients.length),
 )
 
 async function deactivate(): Promise<void> {
@@ -98,7 +99,7 @@ onUnmounted(() => {
       :text="refusalText"
     />
 
-    <BaseEmptyListText v-if="showsNoneYet" class="admin-section-gap" :text="t('admin.ingredients.messages.noneYet')" />
+    <BaseEmptyListText v-if="showsEmptyListText" class="admin-section-gap" />
 
     <BaseListRow
       v-for="(row, position) in rows"

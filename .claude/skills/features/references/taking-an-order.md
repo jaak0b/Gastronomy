@@ -29,7 +29,9 @@ Frontend, under `frontend/src/phone/`:
   name as the shared `shared/components/CategoryLabel.vue` (the admin's category label at the
   phone's sizes), its articles in `components/catalog/ItemGrid.vue` (every row striped with the two
   shared tints of the `stripe-a-list` page of `how-to`) and the button back to the
-  categories. The open category is the router's step `category`, so back closes it before it
+  categories. A catalog without a category and an opened category without an article show the shared
+  empty list text (`no-categories`, `no-items`; the `empty-list-text` page of `how-to`). The open
+  category is the router's step `category`, so back closes it before it
   leaves the screen. It decides
   where a new portion goes: `addItem` places it straight away or opens the station question, and
   `chooseStation` answers it. It leaves for the summary while the order is locked and for the plan
@@ -61,7 +63,8 @@ Frontend, under `frontend/src/phone/`:
   gives the station question its waiting times.
 - `views/Review.vue` is the summary: the lines through `components/review/LineList.vue`, the delivery
   mode per station (`order.chooseDeliveryMode`, with `core/stationOrders.ts` and
-  `core/stationDeliveries.ts`), the order total and the two send buttons.
+  `core/stationDeliveries.ts`), the order total and the two send buttons. An order without a line shows
+  the shared empty list text (`no-lines`).
 - Once the laptop accepted the order, `composables/useSendAndLeave.ts` lands on the plan of the
   area that holds the order's table, with that area open (`tablePlan.openTheAreaOfTheTable`), for
   "Senden und später kassieren", or opens the table's settle view with the new items ticked for

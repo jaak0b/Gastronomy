@@ -14,7 +14,6 @@ const props = defineProps<{
   report: TableOrderReportView | null
   selectedItemIds: string[]
   purpose: SelectionPurpose
-  emptyText: string
   language: AppLanguage
 }>()
 const emit = defineEmits<{
@@ -26,8 +25,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const orders = computed(() => props.report?.orders ?? [])
-
-const foundNothing = computed(() => props.report !== null && orders.value.length === 0)
 
 const selectableItemIds = computed(() =>
   props.report === null ? [] : selectableItemIdsIn(props.report, props.purpose),
@@ -61,7 +58,4 @@ function setTheWholeTable(): void {
     @toggle-item="emit('toggle-item', $event)"
     @set-whole-order="(order, isWanted) => emit('set-whole-order', order, isWanted)"
   />
-  <v-alert v-if="foundNothing" data-test="no-orders" type="info" variant="tonal">
-    {{ emptyText }}
-  </v-alert>
 </template>

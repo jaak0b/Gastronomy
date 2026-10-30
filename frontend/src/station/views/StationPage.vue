@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { showsTheEmptyListText } from '../../shared/core/emptyList'
 import { stationStats } from '../../shared/core/stationBoard'
 import { useSessionStore } from '../../shared/stores/session'
+import BaseEmptyListText from '../../shared/components/BaseEmptyListText.vue'
 import LanguageSwitch from '../../shared/components/LanguageSwitch.vue'
 import { useStationDoneDialog } from '../composables/useStationDoneDialog'
 import { useStationStore } from '../stores/station'
@@ -21,6 +23,10 @@ let stopListening: (() => void) | null = null
 
 const stats = computed(() => stationStats(station.orders))
 const isShowingOverview = ref(false)
+
+const ordersAreEmpty = computed(() => showsTheEmptyListText(station, station.orders.length))
+const asItComesOrdersAreEmpty = computed(() => showsTheEmptyListText(station, station.asItComes.length))
+const openLinesAreEmpty = computed(() => showsTheEmptyListText(station, stats.value.openLines.length))
 
 const stationName = computed(() => station.identity?.name ?? session.station?.name ?? '')
 
@@ -91,6 +97,7 @@ function closeOverview(): void {
         :together-count="stats.togetherOrders"
         :as-it-comes-count="stats.asItComesOrders"
         :lines="stats.openLines"
+        :shows-empty-list-text="openLinesAreEmpty"
         :failure-text="failureText"
         @close="closeOverview"
       />
@@ -116,9 +123,7 @@ function closeOverview(): void {
         >
           {{ t('station.board.errors.loadFailed') }}
         </v-alert>
-        <v-alert v-if="station.hasNothingDone" class="nothing-done mb-4" data-test="nothing-done" type="info" variant="tonal">
-          {{ t('station.done.messages.nothingDone') }}
-        </v-alert>
+        <BaseEmptyListText v-if="station.hasNothingDone" class="nothing-done mb-4" data-test="nothing-done" />
         <StationFulfilledCard
           v-for="stationOrder in station.fulfilled"
           :key="stationOrder.stationOrderId"
@@ -132,6 +137,7 @@ function closeOverview(): void {
         <v-row>
           <v-col cols="12" md="6" class="orders-column" data-test="orders-column">
             <h2 class="orders-heading app-section-title mb-2" data-test="orders-heading">{{ t('station.board.labels.ordersHeading') }}</h2>
+            <BaseEmptyListText v-if="ordersAreEmpty" />
             <StationOrderCard
               v-for="stationOrder in station.orders"
               :key="stationOrder.stationOrderId"
@@ -149,6 +155,7 @@ function closeOverview(): void {
             <h2 class="as-it-comes-heading app-section-title mb-2">
               {{ t('station.board.labels.asItComesHeading') }}
             </h2>
+            <BaseEmptyListText v-if="asItComesOrdersAreEmpty" />
             <StationOrderCard
               v-for="stationOrder in station.asItComes"
               :key="stationOrder.stationOrderId"

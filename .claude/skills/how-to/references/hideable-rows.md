@@ -17,7 +17,8 @@ tooltip beside them (frontend rule 8).
   "Neu…" sits at the right below the rows. It owns the edit session (`useEditSession`), so "Neu…"
   and the pencil open the entity's dialog through the `dialog` slot, which receives `entry` (null
   for a new one), `errorText`, `save` and `cancel`. It takes the entries and how to read them (`idOf`, `nameOf`,
-  `isHidden`), `hidingRefusalOf` (the reason the laptop would refuse to hide, or `null`), the words
+  `isHidden`), their `loadState` (a `ListLoadState`: has the list loaded, did the load fail), with
+  which it shows the shared empty list text when the entries are empty (`empty-list-text.md`), `hidingRefusalOf` (the reason the laptop would refuse to hide, or `null`), the words
   (`newLabel`, `hideTitle`, `hideBody`), `saveThrough`, `hideThrough`, `showThrough` and the optional
   `moveThrough` (store actions returning an `AdminActionResult`; `moveThrough` also receives whether
   "Ausgeblendete anzeigen" is ticked, which the move request carries so a move passes over the
@@ -48,8 +49,9 @@ tooltip beside them (frontend rule 8).
   page's article card do. A list that may be empty keeps its height with
   `min-height: var(--admin-row-height)` on its rows container, as `FestivalStations.vue` does,
   never with an invisible row.
-- `BaseEmptyListText.vue` is the text of a tab whose list is empty (`data-test="none-yet"`):
-  the Feste, Zutaten and Einheiten tabs.
+- `shared/components/BaseEmptyListText.vue` is the text of a tab whose list is empty: the Feste,
+  Zutaten and Einheiten tabs. It is the one text of every empty list in the app, on all three
+  surfaces (`empty-list-text.md`).
 - `shared/components/CategoryLabel.vue` is the one category label of the app: a category's name
   painted by `paintOfCategoryColour` from `shared/core/letteringColour.ts` (the phone's category
   buttons use the same function), as a heading whose level its screen passes (`heading-level`): `2`

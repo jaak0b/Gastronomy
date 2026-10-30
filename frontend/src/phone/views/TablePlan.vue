@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { TablePlanAreaView, TablePlanTableView } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
+import { showsTheEmptyListText } from '../../shared/core/emptyList'
 import { closeStep, navigate, openStep, openStepValue } from '../../shared/router/router'
 import { openingTheOrderAt } from '../core/draftCart'
 import { useDraftTableName } from '../composables/useDraftTableName'
@@ -13,6 +14,7 @@ import { useOrderStore } from '../stores/order'
 import { useOrderOverviewStore } from '../stores/orderOverview'
 import { useTablePlanStore } from '../stores/tablePlan'
 import { useSessionStore } from '../../shared/stores/session'
+import BaseEmptyListText from '../../shared/components/BaseEmptyListText.vue'
 import AreaList from '../components/tablePlan/AreaList.vue'
 import AreaPlan from '../components/tablePlan/AreaPlan.vue'
 import TableActionSheet from '../components/tablePlan/TableActionSheet.vue'
@@ -51,6 +53,16 @@ const tappedTable = computed<TablePlanTableView | null>(() => {
   const tableId = openStepValue(TABLE_STEP)
   return shownArea.value?.tables.find((table) => table.tableId === tableId) ?? null
 })
+
+const showsNoTables = computed(
+  () =>
+    landing.value.kind === 'noTables' && showsTheEmptyListText(tablePlan, tablePlan.areas.length),
+)
+
+const showsNoTablesInArea = computed(
+  () =>
+    shownArea.value !== null && showsTheEmptyListText(tablePlan, shownArea.value.tables.length),
+)
 
 const whatIsRunningIsKnown = computed(
   () => tablePlan.hasLoaded && (tablePlan.areas.length > 0 || catalog.hasLoaded),
@@ -165,22 +177,22 @@ function discardTheDraft(): void {
     <p v-else-if="landing.kind === 'noFestival'" class="no-festival pa-4 app-text" data-test="no-festival">
       {{ t('phone.tablePlan.messages.noFestivalIsActive') }}
     </p>
-    <p v-else-if="landing.kind === 'noTables'" class="no-tables pa-4 app-text" data-test="no-tables">
-      {{ t('phone.tablePlan.messages.noTables') }}
-    </p>
+    <BaseEmptyListText
+      v-else-if="showsNoTables"
+      class="no-tables pa-4 app-text"
+      data-test="no-tables"
+    />
     <AreaList
       v-else-if="landing.kind === 'areaList'"
       :areas="tablePlan.areas"
       @open-area="tablePlan.openArea"
     />
     <template v-else-if="landing.kind === 'plan' && shownArea !== null">
-      <p
-        v-if="shownArea.tables.length === 0"
+      <BaseEmptyListText
+        v-if="showsNoTablesInArea"
         class="no-tables-in-area pa-4 mb-0 app-text"
         data-test="no-tables-in-area"
-      >
-        {{ t('phone.tablePlan.messages.noTablesInArea') }}
-      </p>
+      />
       <AreaPlan :area="shownArea" @open-table="openTheTable" />
     </template>
     <TableActionSheet

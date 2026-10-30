@@ -139,25 +139,23 @@ describe('the filter on the settle screen', () => {
   })
 })
 
-const NO_ORDER_MATCHES = 'Keine passenden Bestellungen an diesem Tisch'
-
 describe('the empty answer under a filter the waiter picked', () => {
-  it('says that no order matches on the settle screen, not that nothing is left to settle', async () => {
+  it('shows the shared text of an empty list on the settle screen', async () => {
     openItemsLaptop(TABLE_REPORT).answers('POST', SEARCH, inTurn(answer(TABLE_REPORT), answer({ ...TABLE_REPORT, orders: [] })))
     const screen = await mountScreen()
 
     await pick(screen, 'order-status', 'fulfilled')
 
-    expect(screen.get('[data-test="no-orders"]').text()).toBe(NO_ORDER_MATCHES)
+    expect(screen.get('[data-test="no-orders"]').text()).toBe('Keine Einträge')
   })
 
-  it('says that no order matches on the cancel screen, not that nothing is left to cancel', async () => {
+  it('shows the shared text of an empty list on the cancel screen', async () => {
     openItemsLaptop(TABLE_REPORT).answers('POST', SEARCH, inTurn(answer(TABLE_REPORT), answer({ ...TABLE_REPORT, orders: [] })))
     const screen = await mountScreenToCancelItems()
 
     await pick(screen, 'order-status', 'fulfilled')
 
-    expect(screen.get('[data-test="no-orders"]').text()).toBe(NO_ORDER_MATCHES)
+    expect(screen.get('[data-test="no-orders"]').text()).toBe('Keine Einträge')
   })
 })
 
@@ -201,12 +199,12 @@ describe('the filter on the cancel screen', () => {
     })
   })
 
-  it('says that nothing is left to cancel when the laptop finds no order', async () => {
+  it('shows the shared text of an empty list when the laptop finds no order to cancel', async () => {
     openItemsLaptop({ ...TABLE_REPORT, orders: [] })
 
     const screen = await mountScreenToCancelItems()
 
-    expect(screen.get('[data-test="no-orders"]').text()).toBe('An diesem Tisch ist nichts mehr zu stornieren.')
+    expect(screen.get('[data-test="no-orders"]').text()).toBe('Keine Einträge')
   })
 
   it('lets the waiter tick a paid item', async () => {

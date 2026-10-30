@@ -4,13 +4,16 @@ import { useI18n } from 'vue-i18n'
 import type { AdminCategoryView, AdminItemView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { compareNames } from '../../../shared/core/compareNames'
+import { showsTheEmptyListText } from '../../../shared/core/emptyList'
 import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
 import { numberRowsAcrossGroups } from '../../core/alternatingRows'
+import { loadStateAtTheFestival } from '../../core/festivalListLoad'
 import { useAdminCategoriesStore, type AdminCategoryDraft } from '../../stores/categories'
 import { useAdminItemsStore, type AdminItemDraft } from '../../stores/items'
 import { useAdminStationsStore } from '../../stores/stations'
 import { useEditSession } from '../../composables/useEditSession'
 import { useFestivalItemRows } from '../../composables/useFestivalItemRows'
+import BaseEmptyListText from '../../../shared/components/BaseEmptyListText.vue'
 import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseEditButton from '../BaseEditButton.vue'
@@ -95,6 +98,10 @@ const groups = computed(() =>
   ),
 )
 
+const showsEmptyListText = computed(() =>
+  showsTheEmptyListText(loadStateAtTheFestival(items, props.festivalId), itemsAtTheFestival.value.length),
+)
+
 const stillToAdd = computed(() =>
   items.items
     .filter((item) => item.isActive && item.atTheFestival === null)
@@ -159,6 +166,7 @@ async function remove(): Promise<void> {
         </div>
 
         <template v-else>
+          <BaseEmptyListText v-if="showsEmptyListText" class="mb-3" />
           <section
             v-for="group in groups"
             :key="group.category.categoryId"

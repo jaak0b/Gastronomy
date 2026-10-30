@@ -2,8 +2,10 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminAreaView, MoveDirection, SavedAreaView } from '../../../shared/api/generatedSchemas'
+import { showsTheEmptyListText } from '../../../shared/core/emptyList'
 import { navigate } from '../../../shared/router/router'
 import type { AdminActionResult } from '../../core/adminActionResult'
+import { loadStateAtTheFestival } from '../../core/festivalListLoad'
 import { useAdminTablePlanStore } from '../../stores/tablePlan'
 import BaseWarningText from '../BaseWarningText.vue'
 import HideableEntryList from '../HideableEntryList.vue'
@@ -14,8 +16,9 @@ const props = defineProps<{ festivalId: string }>()
 const { t } = useI18n()
 const tablePlan = useAdminTablePlanStore()
 
+const planLoadState = computed(() => loadStateAtTheFestival(tablePlan, props.festivalId))
 const hasLoadedThePlan = computed(
-  () => tablePlan.loadedFestivalId === props.festivalId && !tablePlan.loadFailed,
+  () => planLoadState.value.hasLoaded && !planLoadState.value.loadFailed,
 )
 const shownAreas = computed(() => tablePlan.areas.filter((area) => !area.isHidden))
 const tableCountTexts = computed(
@@ -27,7 +30,7 @@ const tableCountTexts = computed(
       }),
     ),
 )
-const hasNoArea = computed(() => hasLoadedThePlan.value && tablePlan.areas.length === 0)
+const hasNoArea = computed(() => showsTheEmptyListText(planLoadState.value, tablePlan.areas.length))
 const hasNoShownTable = computed(
   () =>
     hasLoadedThePlan.value
@@ -65,6 +68,7 @@ function hidingRefusalOf(area: AdminAreaView): string | null {
       <div class="admin-card-body">
         <HideableEntryList
           :entries="tablePlan.areas"
+          :load-state="planLoadState"
           :id-of="(area: AdminAreaView) => area.areaId"
           :name-of="(area: AdminAreaView) => area.name"
           :is-hidden="(area: AdminAreaView) => area.isHidden"

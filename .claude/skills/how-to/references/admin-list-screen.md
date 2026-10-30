@@ -26,8 +26,8 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
 3. **Store.** `frontend/src/admin/stores/<things>.ts` is a Pinia store over `defineAdminList` from
    `stores/adminList.ts`: pass `path`, the zod `listSchema` and `entrySchema` from
    `shared/api/generatedSchemas`, `entriesOf`, `idOf` and `requestBodyOf`, and return `entries`,
-   `loadFailed`, `load`, `create`, `update` (the Zutaten store wraps it as `save`), `setActive` plus a
-   `listen()`. The store writes its definition once through `adminListDefinition(...)` and hands it to
+   `hasLoaded`, `loadFailed`, `load`, `create`, `update` (the Zutaten store wraps it as `save`),
+   `setActive` plus a `listen()`. The store writes its definition once through `adminListDefinition(...)` and hands it to
    `defineAdminList`, which holds only what every list has (`entries`, `load`, `loadFrom`, `update`,
    `showCreated`), and to the layers the laptop offers routes for: `withCreating(list, definition)` adds
    `create` and `createThenReload` and belongs to a list that has a create route (the waiters come in
@@ -35,7 +35,9 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
    belongs to a list that has `/activate` and `/deactivate` routes (the festivals use `/hide` and `/show`,
    so the festivals store has none). A store applies only the layers its endpoints have, e.g.
    `withActivation(withCreating(defineAdminList(definition), definition), definition)`. A list that depends on
-   the running festival uses `defineFestivalScopedList` (`stores/festivalScopedList.ts`) instead.
+   the running festival uses `defineFestivalScopedList` (`stores/festivalScopedList.ts`) instead,
+   which also returns `loadedFestivalId`, the festival the entries were read for (none for the global
+   list), so the festival page counts the list as loaded only for its own festival.
    The store takes the route of each call it makes from the screen that uses it, so a route is
    whatever the laptop's service for that screen offers, and a screen without an activate call
    passes none. Loads go through the latest request gate.
@@ -59,8 +61,10 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
    `hideable-rows.md`: text buttons, then the pencil, then switching off or on. The screen shows no
    load failure of its own: the shared bar under the tabs reports it (see the `admin-screens` page
    of `features`). Each entry is one `BaseListRow` (`hideable-rows.md`) with the name, its chips
-   in `facts` and its buttons in `actions`. The text for an empty list is `BaseEmptyListText` and
-   shows only when the list is empty and the load did not fail.
+   in `facts` and its buttons in `actions`. The text for an empty list is
+   `shared/components/BaseEmptyListText.vue` (see `empty-list-text.md`), shown when
+   `showsTheEmptyListText(store, store.<entries>.length)` says so: the list has loaded, the load did
+   not fail and the store holds no entry.
 6. **Create and edit.** `useEditSession` (`admin/composables/useEditSession.ts`) takes a `saveThrough`
    that creates when nothing is being edited and saves otherwise. The id field has the entity's own
    name:

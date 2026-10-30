@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import BaseEmptyListText from '../../../shared/components/BaseEmptyListText.vue'
 import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import { useBackStepForAMenu } from '../../../shared/composables/useBackStep'
 import type { ParsedAmountInput } from '../../core/ingredientAmounts'
@@ -10,6 +11,7 @@ import type {
   AdminItemView,
 } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
+import { showsTheEmptyListText } from '../../../shared/core/emptyList'
 import { useAdminIngredientsStore, type IngredientDraft } from '../../stores/ingredients'
 import { useAdminItemsStore } from '../../stores/items'
 import { useEditSession } from '../../composables/useEditSession'
@@ -57,6 +59,10 @@ const recipeLines = computed<RecipeLine[]>(() =>
     ...line,
     refusalText: lineRefusals.refusalTextOf(line.ingredientId),
   })),
+)
+
+const showsEmptyListText = computed(() =>
+  showsTheEmptyListText(items, recipeLines.value.length),
 )
 
 const offeredIngredients = computed(() => {
@@ -146,6 +152,7 @@ async function add(): Promise<void> {
     @cancel="emit('close')"
   >
     <div class="recipe-lines admin-section-gap">
+      <BaseEmptyListText v-if="showsEmptyListText" />
       <div
         v-for="line in recipeLines"
         :key="line.ingredientId"

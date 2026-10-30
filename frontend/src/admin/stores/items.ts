@@ -23,6 +23,8 @@ export interface FestivalPlacement {
 export const useAdminItemsStore = defineStore('adminItems', () => {
   const {
     entries: items,
+    hasLoaded,
+    loadedFestivalId,
     loadFailed,
     load,
     loadAtTheFestival,
@@ -118,6 +120,8 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
 
   return {
     items,
+    hasLoaded,
+    loadedFestivalId,
     loadFailed,
     load,
     loadAtTheFestival,

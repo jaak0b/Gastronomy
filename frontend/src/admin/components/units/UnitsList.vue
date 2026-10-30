@@ -2,13 +2,14 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminUnitView } from '../../../shared/api/generatedSchemas'
+import { showsTheEmptyListText } from '../../../shared/core/emptyList'
 import { useAdminUnitsStore, type UnitDraft } from '../../stores/units'
 import { useEditSession } from '../../composables/useEditSession'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
+import BaseEmptyListText from '../../../shared/components/BaseEmptyListText.vue'
 import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseEditButton from '../BaseEditButton.vue'
-import BaseEmptyListText from '../BaseEmptyListText.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
 import BaseListRow from '../BaseListRow.vue'
 import BaseShowButton from '../BaseShowButton.vue'
@@ -51,9 +52,7 @@ const rows = computed<UnitRow[]>(() =>
     })),
 )
 
-const showsNoneYet = computed(
-  () => units.units.length === 0 && !units.loadFailed,
-)
+const showsEmptyListText = computed(() => showsTheEmptyListText(units, units.units.length))
 
 async function deactivate(): Promise<void> {
   const unitId = askingAboutId.value
@@ -97,7 +96,7 @@ onUnmounted(() => {
       :text="refusalText"
     />
 
-    <BaseEmptyListText v-if="showsNoneYet" class="admin-section-gap" :text="t('admin.units.messages.noneYet')" />
+    <BaseEmptyListText v-if="showsEmptyListText" class="admin-section-gap" />
 
     <BaseListRow
       v-for="(row, position) in rows"

@@ -5,12 +5,14 @@ import type { TableOrderRecordItemView } from '../../../shared/api/generatedSche
 import { useBackStep } from '../../../shared/composables/useBackStep'
 import { assertNever } from '../../../shared/core/assertNever'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
+import { showsTheEmptyListText } from '../../../shared/core/emptyList'
 import { createLatestRequestGate } from '../../../shared/core/latestRequestGate'
 import { formatFestivalMoment } from '../../../shared/core/moments'
 import { formatPrice } from '../../../shared/core/money'
 import { useSessionStore } from '../../../shared/stores/session'
 import { readTheItemHistory, type ItemHistoryAnswer } from '../../api/itemHistory'
 import { historyEntriesOf, type ItemHistoryEntry } from '../../core/itemHistory'
+import BaseEmptyListText from '../../../shared/components/BaseEmptyListText.vue'
 import BaseFullPageDialog from '../BaseFullPageDialog.vue'
 
 const props = defineProps<{ item: TableOrderRecordItemView; language: AppLanguage }>()
@@ -41,6 +43,13 @@ const failureKey = computed(() => {
       return assertNever(answer.value)
   }
 })
+
+const showsEmptyListText = computed(() =>
+  showsTheEmptyListText(
+    { hasLoaded: answer.value !== null, loadFailed: failureKey.value !== null },
+    entries.value.length,
+  ),
+)
 
 async function load(): Promise<void> {
   const token = session.deviceToken
@@ -117,6 +126,7 @@ onMounted(load)
     <v-alert v-if="failureKey !== null" data-test="history-failed" type="warning" variant="tonal">
       {{ t(failureKey) }}
     </v-alert>
+    <BaseEmptyListText v-if="showsEmptyListText" data-test="history-empty" />
     <ol v-if="entries.length > 0" class="timeline" data-test="history-timeline">
       <li
         v-for="(entry, position) in entries"

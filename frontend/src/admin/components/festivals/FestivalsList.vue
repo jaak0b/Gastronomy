@@ -4,14 +4,15 @@ import { useI18n } from 'vue-i18n'
 import { navigate } from '../../../shared/router/router'
 import { AdminFestivalView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
+import { showsTheEmptyListText } from '../../../shared/core/emptyList'
 import { formatFestivalMoment } from '../../../shared/core/moments'
 import { useAdminFestivalsStore, type FestivalDraft } from '../../stores/festivals'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseEditButton from '../BaseEditButton.vue'
-import BaseEmptyListText from '../BaseEmptyListText.vue'
 import BaseHideConfirmDialog from '../BaseHideConfirmDialog.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
 import BaseListRow from '../BaseListRow.vue'
+import BaseEmptyListText from '../../../shared/components/BaseEmptyListText.vue'
 import BaseIconAction from '../../../shared/components/BaseIconAction.vue'
 import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import BaseShowButton from '../BaseShowButton.vue'
@@ -29,6 +30,10 @@ let stopListening: (() => void) | null = null
 
 const shown = computed(() =>
   festivals.festivals.filter((festival) => showsHidden.value || !festival.isHidden),
+)
+
+const showsEmptyListText = computed(() =>
+  showsTheEmptyListText(festivals, festivals.festivals.length),
 )
 
 function moment(value: string): string {
@@ -150,11 +155,7 @@ onUnmounted(() => {
       :text="refusalText"
     />
 
-    <BaseEmptyListText
-      v-if="shown.length === 0"
-      class="admin-section-gap"
-      :text="t('admin.festivals.messages.noneYet')"
-    />
+    <BaseEmptyListText v-if="showsEmptyListText" class="admin-section-gap" />
 
     <BaseListRow
       v-for="(festival, position) in shown"

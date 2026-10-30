@@ -43,6 +43,36 @@ describe('the screen at a station', () => {
     expect(page.get('[data-test="as-it-comes-column"] [data-test="table-name"]').text()).toBe('Tisch 7')
   })
 
+  it('shows the shared text of an empty list in both columns when the station has no order', async () => {
+    stationLaptop({ orders: queue([]) })
+
+    const page = await mountPage()
+
+    expect({
+      orders: page.findAll('[data-test="orders-column"] [data-test="empty-list-text"]').map((text) => text.text()),
+      asItComes: page.findAll('[data-test="as-it-comes-column"] [data-test="empty-list-text"]').map((text) => text.text()),
+    }).toEqual({ orders: ['Keine Einträge'], asItComes: ['Keine Einträge'] })
+  })
+
+  it('shows no text of an empty list in the columns while the laptop could not be reached', async () => {
+    stationLaptop({ orders: refusal('errors.station.noFestivalIsRunning', { code: 'NoRunningFestival' }) })
+
+    const page = await mountPage()
+
+    expect(page.findAll('[data-test="empty-list-text"]')).toHaveLength(0)
+  })
+
+  it('shows the shared text of an empty list in the overview when no article is open', async () => {
+    stationLaptop({ orders: queue([]) })
+    const page = await mountPage()
+
+    await page.get('[data-test="show-overview"]').trigger('click')
+
+    expect(
+      page.findAll('[data-test="station-open-board"] [data-test="empty-list-text"]').map((text) => text.text()),
+    ).toEqual(['Keine Einträge'])
+  })
+
   it('shows the order number and the number of this station on a card', async () => {
     const page = await mountPage()
 

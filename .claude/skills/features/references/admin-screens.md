@@ -41,6 +41,11 @@ Frontend, under `frontend/src/`:
 - **Every row is the same row**: the global tabs and the festival page draw each entry with
   `BaseListRow.vue`, so names, chips, the line between rows and the stripes (a light tint on every
   row, a stronger one on every second row) look alike everywhere.
+- **An empty list says so the same way everywhere**: the tabs, the festival page's cards and the
+  recipe dialog show the shared "Keine Einträge" once the list has loaded, did not fail and has no
+  entry; on the festival page a card counts as loaded only once this festival's own list has arrived
+  (`how-to/references/empty-list-text.md`). A dropdown and a button are not lists and keep their
+  own texts.
 - **Every row offers its actions the same way**: text buttons first, then the pencil "Bearbeiten"
   for the edit dialog, then switching off, hiding or removing, with the up and down arrows before
   the pencil where a list is ordered by hand. Showing or switching on again is the open eye named

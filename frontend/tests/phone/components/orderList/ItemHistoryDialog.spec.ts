@@ -241,3 +241,41 @@ describe('closing the history', () => {
     })
   })
 })
+
+describe('the text of a history without an event', () => {
+  const NO_EVENT_AT_ALL = {
+    statusChanges: [],
+    settledAtUtc: null,
+    chargedPriceCents: null,
+    paymentMethod: null,
+    paymentNotice: null,
+    settledByStaffMemberName: null,
+  }
+
+  it('is the shared text of an empty list once the laptop sent no event', async () => {
+    stubLaptop().answers('GET', HISTORY, answer(NO_EVENT_AT_ALL))
+
+    mountTheHistory()
+    await flushPromises()
+
+    expect(textsOf('[data-test="history-empty"]')).toEqual(['Keine Einträge'])
+  })
+
+  it('stays away while the laptop has not answered', async () => {
+    stubLaptop().answers('GET', HISTORY, neverAnswers())
+
+    mountTheHistory()
+    await flushPromises()
+
+    expect(isOnScreen('[data-test="history-empty"]')).toBe(false)
+  })
+
+  it('stays away when the laptop could not be reached', async () => {
+    stubLaptop().answers('GET', HISTORY, noConnection())
+
+    mountTheHistory()
+    await flushPromises()
+
+    expect(isOnScreen('[data-test="history-empty"]')).toBe(false)
+  })
+})

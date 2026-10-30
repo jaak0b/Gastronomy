@@ -5,6 +5,7 @@ import type { PositionedRow } from '../../core/alternatingRows'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseEditButton from '../BaseEditButton.vue'
 import BaseListRow from '../BaseListRow.vue'
+import BaseEmptyListText from '../../../shared/components/BaseEmptyListText.vue'
 import BaseIconAction from '../../../shared/components/BaseIconAction.vue'
 import BaseMoveButtons from '../BaseMoveButtons.vue'
 import BaseShowButton from '../BaseShowButton.vue'
@@ -14,6 +15,7 @@ import CategoryLabel from '../../../shared/components/CategoryLabel.vue'
 const props = defineProps<{
   category: AdminCategoryView
   rows: PositionedRow<AdminItemView>[]
+  showsEmptyListText: boolean
   isAFestivalRunning: boolean
 }>()
 const emit = defineEmits<{
@@ -63,6 +65,7 @@ function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
         @click="emit('activate-category')"
       />
     </div>
+    <BaseEmptyListText v-if="showsEmptyListText" class="mb-2" />
     <BaseListRow
       v-for="{ item, position } in rows"
       :key="item.itemId"

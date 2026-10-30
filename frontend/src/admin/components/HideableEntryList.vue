@@ -2,11 +2,13 @@
 import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MoveDirection } from '../../shared/api/generatedSchemas'
+import { showsTheEmptyListText, type ListLoadState } from '../../shared/core/emptyList'
 import type { AdminActionResult } from '../core/adminActionResult'
 import { useEditSession, type EditSessionMode } from '../composables/useEditSession'
 import { useRowRefusals } from '../composables/useRowRefusals'
 import BaseActionWithRefusalReason from './BaseActionWithRefusalReason.vue'
 import BaseEditButton from './BaseEditButton.vue'
+import BaseEmptyListText from '../../shared/components/BaseEmptyListText.vue'
 import BaseHeadingWithCheckbox from './BaseHeadingWithCheckbox.vue'
 import BaseHideConfirmDialog from './BaseHideConfirmDialog.vue'
 import BaseListRow from './BaseListRow.vue'
@@ -16,6 +18,7 @@ import BaseTrashButton from './BaseTrashButton.vue'
 
 const props = defineProps<{
   entries: readonly TEntry[]
+  loadState: ListLoadState
   idOf: (entry: TEntry) => string
   nameOf: (entry: TEntry) => string
   isHidden: (entry: TEntry) => boolean
@@ -57,6 +60,10 @@ const session = useEditSession<TEntry, TDraft, TSaved>({
 
 const listedEntries = computed(() =>
   props.entries.filter((entry) => showsHidden.value || !props.isHidden(entry)),
+)
+
+const showsEmptyListText = computed(() =>
+  showsTheEmptyListText(props.loadState, props.entries.length),
 )
 
 async function actOnTheRow(entry: TEntry, action: () => Promise<AdminActionResult<unknown>>): Promise<void> {
@@ -107,6 +114,8 @@ async function move(entry: TEntry, direction: MoveDirection): Promise<void> {
     </BaseHeadingWithCheckbox>
 
     <slot name="notices" />
+
+    <BaseEmptyListText v-if="showsEmptyListText" class="mb-3" />
 
     <div v-if="listedEntries.length > 0" class="rows mb-3">
       <BaseListRow

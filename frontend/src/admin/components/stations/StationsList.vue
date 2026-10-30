@@ -3,9 +3,11 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AdminStationView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
+import { showsTheEmptyListText } from '../../../shared/core/emptyList'
 import { useAdminStationsStore } from '../../stores/stations'
 import { useAdminEnrolmentStore } from '../../stores/enrolment'
 import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
+import BaseEmptyListText from '../../../shared/components/BaseEmptyListText.vue'
 import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import InvitationPanel from '../enrolment/InvitationPanel.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
@@ -41,6 +43,10 @@ const rows = computed<StationRow[]>(() =>
       station,
       deactivationRefusal: switchOffRefusalOf(station),
     })),
+)
+
+const showsEmptyListText = computed(() =>
+  showsTheEmptyListText(stations, stations.stations.length),
 )
 
 const isStationDialogOpen = computed(
@@ -137,6 +143,8 @@ onUnmounted(() => {
       class="admin-section-gap"
       :text="refusalText"
     />
+
+    <BaseEmptyListText v-if="showsEmptyListText" class="admin-section-gap" />
 
     <BaseListRow
       v-for="({ station, deactivationRefusal }, position) in rows"

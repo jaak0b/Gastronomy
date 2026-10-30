@@ -135,13 +135,13 @@ describe('the done view', () => {
     expect(page.find('[data-test="station-fulfilled"]').exists()).toBe(false)
   })
 
-  it('says so when nothing is done yet', async () => {
+  it('shows the shared text of an empty list when nothing is done yet', async () => {
     stationLaptop({ fulfilled: answer({ stationOrders: [] }) })
     const page = await mountPage()
 
     await page.get('[data-test="show-done"]').trigger('click')
     await flushPromises()
 
-    expect(page.get('[data-test="nothing-done"]').text()).toBe('Noch keine Bestellung zubereitet')
+    expect(page.get('[data-test="nothing-done"]').text()).toBe('Keine Einträge')
   })
 })

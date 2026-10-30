@@ -23,8 +23,8 @@ Frontend, under `frontend/src/phone/`:
 
 - `views/OpenItems.vue` (route `/open-items`) is the settle view of one table, titled "Kassieren":
   the title (`components/orderList/OrderListTitle.vue`), the shared filter
-  (`components/orderList/OrderListFilter.vue`, see the `showing-a-tables-orders` page), the sentence when the table could not be loaded, the sentence when nothing is left
-  (`phone.openItems.messages.nothingToSettle` or `nothingToCancel`, replaced by `phone.orderOverview.messages.noOrderMatches` once the waiter changed the filter), the notice after settling, the table's orders and
+  (`components/orderList/OrderListFilter.vue`, see the `showing-a-tables-orders` page), the sentence when the table could not be loaded, the shared empty list text
+  (`BaseEmptyListText`, `data-test="no-orders"`) when the laptop finds no order, whatever the filter, the notice after settling, the table's orders and
   the bottom bar with the selected total and the one Kassieren button that opens the amount page. It
   goes back to the plan when no table is open, as after a reload, and closes the table when the
   waiter leaves. In cancel mode it is titled "Stornieren" (`phone.openItems.cancellingTitle`), the footer counts the selection
@@ -122,7 +122,7 @@ Backend, under `backend/`:
 ## Invariants
 
 - **Cancel mode reuses the settle view.** The purpose decides only the filter the screen opens with,
-  what can be ticked, the empty sentence, the footer, the title and which page the footer opens;
+  what can be ticked, the footer, the title and which page the footer opens;
   the orders, the rows, the ticks, the filter and the reload are the same. Opening a table with
   `openTable` always returns to settling with its own filter, and `openTableToCancelItems` to
   cancelling with its own, so a pick never outlives the screen.
@@ -197,7 +197,7 @@ Backend, under `backend/`:
 ## Tests
 
 - `frontend/tests/phone/views`, on `openItemsFixture.ts`: `OpenItems.table.spec.ts` (loading by id,
-  the title, a paid position, nothing left to take payment for, the laptop out of reach, the 404 in German and English, no table after a
+  the title, a paid position, the shared empty list text, the laptop out of reach, the 404 in German and English, no table after a
   reload, closing on leaving, the ticks of an order just sent, a cancelled item struck through with
   an empty tick box cell, the details button on both screens opening the price and the history
   without ticking, a row tap ticking on both screens and unticking again, a row tap on a paid item
@@ -205,7 +205,7 @@ Backend, under `backend/`:
   (each screen's filter when it opens and what it sends, the picks sent as made, the filter back
   on its own choices when the screen opens again, ticks dropped for items a pick hides, the paid
   check and no tick box on Kassieren, a paid item tickable on Stornieren, the struck-through
-  cancelled row on both, nothing left to cancel), `OpenItems.ticking.spec.ts` (ticking
+  cancelled row on both, the shared empty list text on both screens), `OpenItems.ticking.spec.ts` (ticking
   through the tick box, whole table, whole order, settling from the footer, the notice when somebody else settled
   first), `OpenItems.cancelling.spec.ts` (cancel mode: the title, a paid item tickable, the count in
   German and English; the cancel page: the list, the title and buttons, the cash in both languages, sending and returning
