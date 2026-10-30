@@ -23,7 +23,7 @@ const searchListIsOpen = useBackStepForAMenu()
 <template>
   <div class="base-search-add-line d-flex align-center flex-wrap ga-3">
     <BaseActionWithRefusalReason
-      class="search-add-wrapper flex-grow-1 ga-3"
+      class="search-add-wrapper flex-grow-1 ga-3 align-center"
       :data-test="`${searchTestName}-wrapper`"
       :refusal-reason="unavailableReason"
     >
