@@ -189,8 +189,9 @@ Every rule binds every agent, main or sub, with no exception it does not name.
   does not ship. Restating what the screen already shows, explaining how the program works, and
   facts nobody holding the device can act on are the filler that makes software read as
   machine-written, and a screen is not the place for them. Failure messages and confirmations of a
-  destructive action stay, because each one names a next step or a cost. An empty list shows
-  nothing: no sentence stands in for rows that are not there. A
+  destructive action stay, because each one names a next step or a cost. An empty list shows the
+  one shared text "Die Liste ist leer." / "The list is empty.", the same on every screen; no list
+  gets an empty text of its own. A
   reviewer lists any added line that cannot answer "what does the reader do differently because of
   this" as a finding.
 
