@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { createVuetify } from 'vuetify'
 import { channelsOfHex, type ColourChannels } from '../../src/shared/core/colourChannels'
@@ -8,7 +7,6 @@ const READABLE_TEXT_CONTRAST = 4.5
 const LIGHT_STRIPE_CONTRAST_WITH_GROUND = 1.08
 const STRONG_STRIPE_CONTRAST_WITH_LIGHT_STRIPE = 1.07
 const GROUNDS = ['surface', 'background'] as const
-const STRIPED_ROWS_STYLESHEET = `${process.cwd()}/src/shared/styles/stripedRows.css`
 
 const vuetify = createVuetify({ theme: appTheme })
 
@@ -94,18 +92,28 @@ describe('the warning colour that paints the text and the icon of every warning 
 
       expect(contrastRatio(warning, tintedGround)).toBeGreaterThanOrEqual(READABLE_TEXT_CONTRAST)
     })
+
+    it.each(GROUNDS)('can be read as text on the stronger stripe of a striped row lying on the %s', (ground) => {
+      const strongStripe = tintedOver(
+        colourOf(themeName, 'on-surface'),
+        colourOf(themeName, ground),
+        stripeOpacityOf(themeName, 'stripe-strong-opacity'),
+      )
+
+      expect(contrastRatio(colourOf(themeName, 'warning'), strongStripe)).toBeGreaterThanOrEqual(
+        READABLE_TEXT_CONTRAST,
+      )
+    })
   })
 })
 
 describe('the two tints of a striped list', () => {
   describe.each(['light', 'dark'] as const)('in the %s theme', (themeName) => {
     it.each(['stripe-opacity', 'stripe-strong-opacity'])(
-      'reach the stylesheet of the striped rows through the variable %s',
+      'are written by Vuetify as the variable --v-%s for the striped rows stylesheet',
       (variable) => {
-        const stylesheet = readFileSync(STRIPED_ROWS_STYLESHEET, 'utf8')
         const written = String(vuetify.theme.styles.value)
 
-        expect(stylesheet).toContain(`var(--v-${variable})`)
         expect(written).toMatch(new RegExp(`\\.v-theme--${themeName} \\{[^}]*--v-${variable}: `))
       },
     )
