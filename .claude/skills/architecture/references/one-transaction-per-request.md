@@ -15,6 +15,12 @@ when the service refused or when the request threw. The steps collected in `IAft
 that loses its rows to another writer is tried again, and when every attempt loses that race the
 request answers one refusal, `Refusal.Storage.ConflictingChange()`, as 409.
 
+When SQLite fails the transaction because the database is busy, locked, read-only or damaged, a
+disk read or write failed, or the file cannot be opened, `SqliteFailureTranslator` wraps the
+`SqliteException` in an `InfrastructureException`, and `InfrastructureExceptionMiddleware` logs it
+at Error, with the SQLite code and message, and answers `Refusal.Storage.DatabaseUnavailable()` as
+503.
+
 ## Reads cannot save
 
 On every other request, `RequestTransactionFilter` calls `MarkReadOnly()` on the request's DbContext,
@@ -25,4 +31,6 @@ throws and says to use `SaveChangesAsync`.
 
 ## Tests
 
-`GastronomyApp.Api.Tests/Filters/RequestTransactionFilterTest`, which includes a GET that tries to save.
+`GastronomyApp.Api.Tests/Filters/RequestTransactionFilterTest`, which includes a GET that tries to save, and
+`ErrorHandling/InfrastructureExceptionMiddlewareTest`, which holds the write lock on a second connection
+and expects the 503 and the logged busy database.
