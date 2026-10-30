@@ -119,7 +119,7 @@ describe('the waiter\'s home screen', () => {
       'Der Tischplan konnte nicht geladen werden. Laden Sie die Seite neu.',
     )
 
-    await view.get('[data-test="reload-the-plan"]').trigger('click')
+    await view.get('[data-test="load-failure-reload"]').trigger('click')
     await flushPromises()
 
     expect(view.find(DRAWING).exists()).toBe(true)

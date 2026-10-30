@@ -5,6 +5,7 @@
       "cancel": "Cancel",
       "close": "Close",
       "continue": "Continue",
+      "reload": "Reload",
       "save": "Save"
     },
     "appTitle": {
@@ -89,6 +90,9 @@
       },
       "messages": {
         "basketEmpty": "Nothing chosen yet"
+      },
+      "errors": {
+        "loadFailed": "The items could not be loaded. Reload the page."
       }
     },
     "header": {
@@ -203,7 +207,6 @@
         "takeOrder": "Take an order",
         "backToAreas": "Table plans",
         "backToThePlan": "Table plan",
-        "reload": "Reload",
         "toTheUnsentTable": "Go to table {table}",
         "discard": "Discard",
         "showOrders": "Show orders"

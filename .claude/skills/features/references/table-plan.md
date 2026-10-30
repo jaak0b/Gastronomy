@@ -282,7 +282,7 @@ Frontend, under `frontend/src/`:
   name, the reload (a refresh icon like the gear, with "Neu laden" as its tooltip, `phone.openItems.actions.reload`, only over
   the order overview and the settle view, where it calls that screen's store `load`) and the
   settings gear. The table plan has no reload in the bar; it keeps the one next to its failure
-  message. Below the bar, `phone/components/header/AppNotices.vue` shows the connection notice from
+  message, `phone/components/LoadFailureNotice.vue`, which the ordering screen uses too. Below the bar, `phone/components/header/AppNotices.vue` shows the connection notice from
   the connection store's `state` (`shared/stores/connection.ts`): `connecting` (the first
   connection is still starting), `reconnecting` and `offline` all show
   `phone.header.messages.reconnecting`, and `connected` shows `phone.header.messages.backOnline`

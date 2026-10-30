@@ -11,6 +11,7 @@ description: Read before doing one of the recurring tasks it lists, so the work 
 | Add a screen, a level inside a screen, a dialog or a menu so that the back button steps through it | [references/add-a-screen-or-a-dialog.md](references/add-a-screen-or-a-dialog.md) |
 | Show a warning under one row of a list, one warning for a whole screen, or a standing warning about a gap in the data | [references/row-warnings.md](references/row-warnings.md) |
 | Add rows to an admin list (hidden, removed or moved), with the shared row, the order of its actions, pencil, trash icon, eye icons, arrows, disabled reason, confirmations, name dialog, heading checkbox and search add line | [references/hideable-rows.md](references/hideable-rows.md) |
+| Show a failed load with a reload on a phone screen, with the one shared notice | [references/show-a-load-failure.md](references/show-a-load-failure.md) |
 | Show the text of an empty list on any surface with the one shared text and the one condition for showing it | [references/empty-list-text.md](references/empty-list-text.md) |
 | Add a refusal on the laptop and the sentence the person reads | [references/add-a-refusal.md](references/add-a-refusal.md) |
 | Add a read to an area's service: query `IGastronomyDatabase`, project into the contract record, expose it on an endpoint | [references/add-a-read-to-a-service.md](references/add-a-read-to-a-service.md) |

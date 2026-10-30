@@ -15,6 +15,7 @@ import { useOrderOverviewStore } from '../stores/orderOverview'
 import { useTablePlanStore } from '../stores/tablePlan'
 import { useSessionStore } from '../../shared/stores/session'
 import BaseEmptyListText from '../../shared/components/BaseEmptyListText.vue'
+import LoadFailureNotice from '../components/LoadFailureNotice.vue'
 import AreaList from '../components/tablePlan/AreaList.vue'
 import AreaPlan from '../components/tablePlan/AreaPlan.vue'
 import TableActionSheet from '../components/tablePlan/TableActionSheet.vue'
@@ -159,19 +160,13 @@ function discardTheDraft(): void {
 <template>
   <div class="table-plan" data-test="table-plan">
     <template v-if="!whatIsRunningIsKnown">
-      <div v-if="!tablePlan.hasLoaded && tablePlan.loadFailed" class="pa-4" data-test="table-plan-load-failed">
-        <v-alert class="mb-4" type="warning" variant="tonal">
-          {{ t('phone.tablePlan.errors.loadFailed') }}
-        </v-alert>
-        <v-btn-wide
-          class="reload-the-plan"
-          data-test="reload-the-plan"
-          variant="outlined"
-          @click="tablePlan.load()"
-        >
-          {{ t('phone.tablePlan.actions.reload') }}
-        </v-btn-wide>
-      </div>
+      <LoadFailureNotice
+        v-if="!tablePlan.hasLoaded && tablePlan.loadFailed"
+        class="pa-4"
+        data-test="table-plan-load-failed"
+        :text="t('phone.tablePlan.errors.loadFailed')"
+        @reload="tablePlan.load()"
+      />
       <v-progress-linear v-else indeterminate data-test="table-plan-loading" />
     </template>
     <p v-else-if="landing.kind === 'noFestival'" class="no-festival pa-4 app-text" data-test="no-festival">

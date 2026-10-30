@@ -4,7 +4,7 @@ import { fireHubEvent, forgetHubEvents } from '../../support/hubConnection'
 import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useConnectionStore } from '../../../src/shared/stores/connection'
 import { useSessionStore, TOKEN_STORAGE_KEY } from '../../../src/shared/stores/session'
-import { stubLaptop, answer, inTurn, noConnection } from '../../support/laptop'
+import { aHold, stubLaptop, answer, heldUntil, inTurn, noConnection } from '../../support/laptop'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
@@ -119,6 +119,55 @@ describe('what the catalog on the phone knows about its own loading', () => {
     expect({ hasLoaded: catalog.hasLoaded, loadFailed: catalog.loadFailed }).toEqual({
       hasLoaded: true,
       loadFailed: false,
+    })
+  })
+})
+
+describe('the answers of the catalog on the phone that arrive out of turn', () => {
+  beforeEach(() => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    localStorage.clear()
+  })
+
+  it('ignore a failure that arrives after a newer load succeeded', async () => {
+    const holdTheFailure = aHold()
+    stubLaptop().answersEverythingElse(
+      inTurn(heldUntil(holdTheFailure.released, noConnection()), answer(FULL_CATALOG)),
+    )
+    const catalog = useCatalogStore()
+    const olderLoad = catalog.load()
+    await catalog.load()
+
+    holdTheFailure.release()
+    await olderLoad
+
+    expect({ hasLoaded: catalog.hasLoaded, loadFailed: catalog.loadFailed }).toEqual({
+      hasLoaded: true,
+      loadFailed: false,
+    })
+  })
+
+  it('ignore a success that arrives after a newer load failed', async () => {
+    const holdTheSuccess = aHold()
+    stubLaptop().answersEverythingElse(
+      inTurn(heldUntil(holdTheSuccess.released, answer(FULL_CATALOG)), noConnection()),
+    )
+    const catalog = useCatalogStore()
+    const olderLoad = catalog.load()
+    await catalog.load()
+
+    holdTheSuccess.release()
+    await olderLoad
+
+    expect({ hasLoaded: catalog.hasLoaded, loadFailed: catalog.loadFailed, categories: catalog.catalog.categories }).toEqual({
+      hasLoaded: false,
+      loadFailed: true,
+      categories: [],
     })
   })
 })

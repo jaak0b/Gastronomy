@@ -17,6 +17,7 @@ import { useStationChoiceQuotes } from '../composables/useStationChoiceQuotes'
 import BaseEmptyListText from '../../shared/components/BaseEmptyListText.vue'
 import CategoryLabel from '../../shared/components/CategoryLabel.vue'
 import DockedStrip from '../components/DockedStrip.vue'
+import LoadFailureNotice from '../components/LoadFailureNotice.vue'
 import ItemGrid from '../components/catalog/ItemGrid.vue'
 import LineStationSheet from '../components/catalog/LineStationSheet.vue'
 import BasketBar from '../components/catalog/BasketBar.vue'
@@ -183,6 +184,13 @@ function chooseStation(stationId: string, note: string | null): void {
 
 <template>
   <v-container class="catalog" data-test="catalog">
+    <LoadFailureNotice
+      v-if="catalog.loadFailed"
+      class="my-2"
+      data-test="catalog-load-failed"
+      :text="t('phone.catalog.errors.loadFailed')"
+      @reload="catalog.load()"
+    />
     <template v-if="openCategory === null">
       <div class="category-grid my-2" data-test="category-grid">
         <v-btn-wide

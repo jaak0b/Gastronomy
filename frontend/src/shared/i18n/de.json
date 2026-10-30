@@ -5,6 +5,7 @@
       "cancel": "Abbrechen",
       "close": "Schließen",
       "continue": "Weiter",
+      "reload": "Neu laden",
       "save": "Speichern"
     },
     "appTitle": {
@@ -89,6 +90,9 @@
       },
       "messages": {
         "basketEmpty": "Noch nichts ausgewählt"
+      },
+      "errors": {
+        "loadFailed": "Die Artikel konnten nicht geladen werden. Laden Sie die Seite neu."
       }
     },
     "header": {
@@ -203,7 +207,6 @@
         "takeOrder": "Bestellung aufnehmen",
         "backToAreas": "Tischpläne",
         "backToThePlan": "Tischplan",
-        "reload": "Neu laden",
         "toTheUnsentTable": "Zu Tisch {table}",
         "discard": "Verwerfen",
         "showOrders": "Bestellungen anzeigen"

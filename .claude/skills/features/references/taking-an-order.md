@@ -30,8 +30,11 @@ Frontend, under `frontend/src/phone/`:
   phone's sizes), its articles in `components/catalog/ItemGrid.vue` (every row striped with the two
   shared tints of the `stripe-a-list` page of `how-to`) and the button back to the
   categories. A catalog without a category and an opened category without an article show the shared
-  empty list text (`no-categories`, `no-items`; the `empty-list-text` page of `how-to`). The open
-  category is the router's step `category`, so back closes it before it
+  empty list text (`no-categories`, `no-items`; the `empty-list-text` page of `how-to`). A catalog
+  that could not be loaded shows `phone.catalog.errors.loadFailed` and "Neu laden" above the
+  categories (`components/LoadFailureNotice.vue`, the piece the table plan screen uses too, see the
+  `show-a-load-failure` page of `how-to`); every later load that succeeds removes it. The failure and
+  the reload leave the unsent draft in `localStorage` untouched. The open category is the router's step `category`, so back closes it before it
   leaves the screen. It decides
   where a new portion goes: `addItem` places it straight away or opens the station question, and
   `chooseStation` answers it. It leaves for the summary while the order is locked and for the plan
@@ -178,7 +181,9 @@ Backend, under `backend/`:
   article rows).
 - `frontend/tests/phone/views`: `Catalog.building.spec.ts` (adding, the way to the summary, the
   frozen order, no table), `Catalog.categories.spec.ts`, `Catalog.stationChoice.spec.ts` (the station
-  question, also when the price is tapped) and `Catalog.waitingTime.spec.ts`, on `catalogFixture.ts`;
+  question, also when the price is tapped), `Catalog.waitingTime.spec.ts` and
+  `Catalog.loadFailure.spec.ts` (the failure sentence and reload, a later success removing it, the
+  draft untouched), on `catalogFixture.ts`;
   `Review.sending.spec.ts` (both landings after sending, no table); `TablePlan.sheet.spec.ts` (the
   action sheet, and the question about unsent items: its sentence with count and total in both
   languages, each of its three buttons and what follows) and `TablePlan.landing.spec.ts` (the locked
