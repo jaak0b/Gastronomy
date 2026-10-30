@@ -9,13 +9,13 @@ namespace GastronomyApp.Infrastructure.Tests.Queries;
 public sealed class UnitQueriesTest
 {
   [Test]
-  public async Task UsedByIngredientNames_InAProjection_NamesEveryIngredientOfThatUnitActiveOrNotSortedIgnoringCase()
+  public async Task UsedByIngredientNames_InAProjection_NamesEveryIngredientOfThatUnitSortedIgnoringCase()
   {
     using SqliteInMemoryFixture fixture = new();
     var portion = UnitNamed("Portion");
     var barrel = UnitNamed("Fass");
     fixture.DbContext.Units.AddRange(portion, barrel);
-    fixture.DbContext.Ingredients.AddRange(IngredientNamed("Zwiebel", portion, true), IngredientNamed("apfel", portion, false), IngredientNamed("Birne", portion, true), IngredientNamed("Senf", barrel, true));
+    fixture.DbContext.Ingredients.AddRange(IngredientNamed("Zwiebel", portion), IngredientNamed("apfel", portion), IngredientNamed("Birne", portion), IngredientNamed("Senf", barrel));
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     fixture.DbContext.ChangeTracker.Clear();
 
@@ -42,7 +42,7 @@ public sealed class UnitQueriesTest
     var portion = UnitNamed("Portion");
     var barrel = UnitNamed("Fass");
     fixture.DbContext.Units.AddRange(portion, barrel);
-    fixture.DbContext.Ingredients.Add(IngredientNamed("Senf", barrel, true));
+    fixture.DbContext.Ingredients.Add(IngredientNamed("Senf", barrel));
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     fixture.DbContext.ChangeTracker.Clear();
 
@@ -60,15 +60,14 @@ public sealed class UnitQueriesTest
            };
   }
 
-  private Ingredient IngredientNamed(string name, Unit unit, bool isActive)
+  private Ingredient IngredientNamed(string name, Unit unit)
   {
     return new()
            {
              Id = Guid.NewGuid(),
              Name = name,
              UnitId = unit.Id,
-             Unit = unit,
-             IsActive = isActive
+             Unit = unit
            };
   }
 }

@@ -1,11 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { VAutocomplete } from 'vuetify/components'
 import ItemsList from '../../../../src/admin/components/items/ItemsList.vue'
 import { testPlugins } from '../../../support/plugins'
 import { answer, type StubbedLaptop } from '../../../support/laptop'
-import { allOnScreen, inputOf, onScreen, textOnScreen, typeInto } from '../../../support/dom'
+import { allOnScreen, clickOn, isOnScreen, onScreen, textOnScreen, typeInto } from '../../../support/dom'
 import { anAdminIngredient, anAdminItemIngredient } from '../../../support/wireViews'
 import { mountList, itemsListLaptop, openTheRecipe, ITEM_ID, ONE_ITEM } from './itemsListFixture'
 
@@ -34,6 +33,8 @@ const BRATWURST_WITH_MUSTARD = {
 }
 
 const MUSTARD_LINE = '[data-test="recipe-line"][data-test-id="ingredient-senf"]'
+
+const MUSTARD_ROW = '[data-test="ingredient-row"][data-test-id="ingredient-senf"]'
 
 function laptopThatKeepsTheAddedLine(): StubbedLaptop {
   const laptop = itemsListLaptop({ ingredients: { ingredients: [MUSTARD] } })
@@ -98,16 +99,14 @@ describe('the ingredients button on an article', () => {
 })
 
 describe('adding an ingredient to the recipe of an article', () => {
-  it('sends the amount and shows the ingredient as a line of the recipe', async () => {
+  it('sends the amount, shows the ingredient as a line of the recipe and takes its plus away', async () => {
     const laptop = laptopThatKeepsTheAddedLine()
     const list = mountList()
     await openTheRecipe(list)
-    await list.getComponent<typeof VAutocomplete>('[data-test="ingredient-search"]').setValue('ingredient-senf')
-    await vi.waitFor(() =>
-      expect(inputOf('[data-test="add-recipe-line"] [data-test="amount-input"]').disabled).toBe(false),
-    )
+    await vi.waitFor(() => expect(isOnScreen(`${MUSTARD_ROW} [data-test="add-ingredient"]`)).toBe(true))
+    await clickOn(`${MUSTARD_ROW} [data-test="add-ingredient"]`)
 
-    typeInto('[data-test="add-recipe-line"] [data-test="amount-input"]', '20')
+    typeInto(`${MUSTARD_ROW} [data-test="amount-to-add"] [data-test="amount-input"]`, '20')
     await vi.waitFor(() => expect(onScreen('[data-test="add-to-recipe"]').hasAttribute('disabled')).toBe(false))
     onScreen('[data-test="add-to-recipe"]').click()
 
@@ -115,6 +114,8 @@ describe('adding an ingredient to the recipe of an article', () => {
     expect(laptop.writes()).toEqual([
       { url: `/api/admin/items/${ITEM_ID}/ingredients/ingredient-senf`, method: 'PUT', body: { amount: 20 } },
     ])
+    expect(isOnScreen(`${MUSTARD_ROW} [data-test="add-ingredient"]`)).toBe(false)
+    expect(isOnScreen('[data-test="amount-to-add"]')).toBe(false)
   })
 })
 
@@ -126,7 +127,7 @@ describe('the text of an empty recipe', () => {
     await openTheRecipe(list)
 
     expect(
-      allOnScreen('[data-test="form-dialog"] [data-test="empty-list-text"]').map((text) => text.textContent?.trim()),
+      allOnScreen('[data-test="recipe-column"] [data-test="empty-list-text"]').map((text) => text.textContent?.trim()),
     ).toEqual(['Keine Einträge'])
   })
 
@@ -136,6 +137,6 @@ describe('the text of an empty recipe', () => {
     const list = mountList()
     await openTheRecipe(list)
 
-    expect(allOnScreen('[data-test="form-dialog"] [data-test="empty-list-text"]')).toHaveLength(0)
+    expect(allOnScreen('[data-test="recipe-column"] [data-test="empty-list-text"]')).toHaveLength(0)
   })
 })

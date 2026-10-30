@@ -41,8 +41,7 @@ public sealed class IngredientService
                            Id = Guid.NewGuid(),
                            Name = request.Name!,
                            UnitId = unit.Id,
-                           Unit = unit,
-                           IsActive = true
+                           Unit = unit
                          };
 
     var nameCheck = await CheckNameIsFreeAsync(created.Name, created.Id, cancellationToken);
@@ -107,22 +106,23 @@ public sealed class IngredientService
     return ingredient.Adapt<SavedIngredientView>(_mapping);
   }
 
-  public async Task<ErrorOr<SavedIngredientView>> DeactivateAsync(Guid ingredientId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<Success>> DeleteAsync(Guid ingredientId, CancellationToken cancellationToken)
   {
-    var ingredient = await _database.Ingredients.FirstOrDefaultAsync(row => row.Id == ingredientId, cancellationToken);
+    var ingredient = await _database.Ingredients.Include(row => row.FestivalIngredients).FirstOrDefaultAsync(row => row.Id == ingredientId, cancellationToken);
 
     if (ingredient is null)
       return Refusal.Ingredients.IngredientNotFound(ingredientId);
 
-    var activeItemNames = await _database.CatalogItemIngredients.Where(recipeLine => recipeLine.IngredientId == ingredientId).Select(recipeLine => recipeLine.CatalogItem).Active().Select(item => item.Name).OrderBy(itemName => itemName).ToListAsync(cancellationToken);
+    var itemNames = await _database.Ingredients.Where(row => row.Id == ingredientId).Select(row => row.UsedByItemNames().ToList()).SingleAsync(cancellationToken);
 
-    if (activeItemNames.Count > 0)
-      return Refusal.Ingredients.UsedByActiveItems(ingredientId, activeItemNames);
+    if (itemNames.Count > 0)
+      return Refusal.Ingredients.UsedByItems(ingredientId, itemNames);
 
-    ingredient.IsActive = false;
+    _database.FestivalIngredients.RemoveRange(ingredient.FestivalIngredients);
+    _database.Ingredients.Remove(ingredient);
     await _database.SaveChangesAsync(cancellationToken);
 
-    return ingredient.Adapt<SavedIngredientView>(_mapping);
+    return Result.Success;
   }
 
   private async Task<Unit?> FindUnitAsync(Guid? unitId, CancellationToken cancellationToken)
@@ -132,12 +132,7 @@ public sealed class IngredientService
 
   private async Task<ErrorOr<Success>> CheckNameIsFreeAsync(string name, Guid ingredientId, CancellationToken cancellationToken)
   {
-    var namesake = await _database.Ingredients.AsNoTracking().Namesakes(name, ingredientId).FirstOrDefaultAsync(cancellationToken);
-
-    if (namesake is { IsActive: false })
-      return Refusal.Ingredients.NameBelongsToDeactivatedIngredient(namesake.Name);
-
-    if (namesake is not null)
+    if (await _database.Ingredients.AsNoTracking().Namesakes(name, ingredientId).AnyAsync(cancellationToken))
       return Refusal.Ingredients.NameTaken(name);
 
     return Result.Success;

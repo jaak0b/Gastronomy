@@ -188,7 +188,7 @@ These are the owner's own choices, not rules from the sources.
   the same way, with `HasPrincipalKey` naming the principal's alternate key.
 - **Do** name the flag that takes a row out of view `IsHidden` on whatever belongs to one festival
   (the festival itself, an area, a table), and `IsActive` on the global lists (stations, articles,
-  categories, ingredients, waiters). **Do not** give one entity both, or use the other word for the
+  categories, waiters). **Do not** give one entity both, or use the other word for the
   same idea.
 - **Do** give every name column the `NOCASE` collation, and sort and compare names in the SQL query
   so that collation decides: case is ignored for A to Z, umlauts sort after Z, and "Äpfel" and

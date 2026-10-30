@@ -10,7 +10,7 @@ import {
 } from './support/browserHistory'
 import { isVisibleOnScreen, onScreen, waitUntil } from './support/dom'
 import { answer, stubLaptop } from './support/laptop'
-import { anAdminIngredient, anAdminItem } from './support/wireViews'
+import { anAdminIngredient } from './support/wireViews'
 
 enableAutoUnmount(afterEach)
 
@@ -93,22 +93,6 @@ describe('back while a list inside an admin dialog is open', () => {
     expect({ open: isVisibleOnScreen(AN_OPEN_LIST), cancelled: timesEmitted(dialog, 'cancel'), leftTheApp: theAppWasLeftByBack() }).toEqual({
       open: false,
       cancelled: 0,
-      leftTheApp: false,
-    })
-  })
-
-  it('closes the ingredient search and keeps the recipe dialog open', async () => {
-    await (await import('../src/admin/stores/ingredients')).useAdminIngredientsStore().load()
-    const dialog = await shownOnAStartedRouterAt('/admin/items', () => import('../src/admin/components/items/ItemIngredientsDialog.vue'), {
-      item: anAdminItem({ itemId: 'item-pfannkuchen', name: 'Pfannkuchen', ingredients: [] }),
-    })
-    await openTheListOf('[data-test="ingredient-search"]')
-
-    await pressBack()
-
-    expect({ open: isVisibleOnScreen(AN_OPEN_LIST), closed: timesEmitted(dialog, 'close'), leftTheApp: theAppWasLeftByBack() }).toEqual({
-      open: false,
-      closed: 0,
       leftTheApp: false,
     })
   })

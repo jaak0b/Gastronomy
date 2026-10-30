@@ -209,16 +209,14 @@ public sealed class OrderItemQueriesTest
                            Id = Guid.NewGuid(),
                            Name = "Senf",
                            UnitId = unit.Id,
-                           Unit = unit,
-                           IsActive = true
+                           Unit = unit
                          };
     Ingredient bun = new()
                      {
                        Id = Guid.NewGuid(),
                        Name = "Broetchen",
                        UnitId = unit.Id,
-                       Unit = unit,
-                       IsActive = true
+                       Unit = unit
                      };
     fixture.DbContext.Ingredients.AddRange(mustard, bun);
     fixture.DbContext.CatalogItemIngredients.AddRange(new CatalogItemIngredient
@@ -272,8 +270,7 @@ public sealed class OrderItemQueriesTest
                            Id = Guid.NewGuid(),
                            Name = "Wurst",
                            UnitId = unit.Id,
-                           Unit = unit,
-                           IsActive = true
+                           Unit = unit
                          };
     fixture.DbContext.Ingredients.Add(sausage);
     fixture.DbContext.CatalogItemIngredients.Add(new()

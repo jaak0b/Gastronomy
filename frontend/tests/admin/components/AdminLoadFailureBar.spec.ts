@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { testPlugins } from '../../support/plugins'
+import { clickOn, isOnScreen, textOnScreen } from '../../support/dom'
+import { formDialogHolding } from '../../support/formDialogs'
 import { answer, emptyAnswer, inTurn, noConnection, stubLaptop, type StubbedLaptop } from '../../support/laptop'
-import { aFestival } from '../../support/wireViews'
+import { aFestival, anAdminItem } from '../../support/wireViews'
 import {
   forgetHubEvents,
   holdBackGroupsJoined,
@@ -36,6 +38,18 @@ function adminLaptop(): StubbedLaptop {
     .answers('GET', '/api/admin/festivals/fest-1/table-plan', answer({ areas: [] }))
 }
 
+function adminLaptopWithOneArticle(): StubbedLaptop {
+  return adminLaptop()
+    .answers(
+      'GET',
+      '/api/admin/categories',
+      answer({
+        categories: [{ categoryId: 'category-speisen', name: 'Speisen', colourHex: '#FFEB3B', sortOrder: 1, isActive: true }],
+      }),
+    )
+    .answers('GET', /^\/api\/admin\/items/, answer({ items: [anAdminItem()] }))
+}
+
 async function openTheAdminAt(path: string) {
   navigate(path)
   const shell = mount(AdminShell, { global: { plugins: testPlugins('de') } })
@@ -58,15 +72,15 @@ describe('the load failure bar of the admin', () => {
   it('is hidden while every list on the screen loaded', async () => {
     adminLaptop()
 
-    const shell = await openTheAdminAt('/admin/ingredients')
+    const shell = await openTheAdminAt('/admin/items')
 
     expect(shell.find('[data-test="load-failure-bar"]').exists()).toBe(false)
   })
 
-  it('says the data could not be loaded when the units of the Zutaten tab fail', async () => {
+  it('says the data could not be loaded when the units of the Artikel tab fail', async () => {
     adminLaptop().answers('GET', '/api/admin/units', noConnection())
 
-    const shell = await openTheAdminAt('/admin/ingredients')
+    const shell = await openTheAdminAt('/admin/items')
 
     expect(shell.get('[data-test="load-failure-bar"]').text()).toBe(LOAD_FAILED)
   })
@@ -90,7 +104,7 @@ describe('the load failure bar of the admin', () => {
   it('sits directly below the tabs', async () => {
     adminLaptop().answers('GET', '/api/admin/units', noConnection())
 
-    const shell = await openTheAdminAt('/admin/ingredients')
+    const shell = await openTheAdminAt('/admin/items')
 
     expect(shell.get('[data-test="admin-nav"]').element.nextElementSibling).toBe(
       shell.get('[data-test="load-failure-bar"]').element,
@@ -102,13 +116,13 @@ describe('the load failure bar of the admin', () => {
       .answers('GET', '/api/language', answer({ language: 'en' }))
       .answers('GET', '/api/admin/units', noConnection())
 
-    const shell = await openTheAdminAt('/admin/ingredients')
+    const shell = await openTheAdminAt('/admin/items')
 
     expect(shell.get('[data-test="load-failure-bar"]').text()).toBe(LOAD_FAILED_EN)
   })
 })
 
-describe('the load failure bar inside the form of an ingredient', () => {
+describe('the load failure bar inside the recipe of an article', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     forgetHubEvents()
@@ -120,16 +134,31 @@ describe('the load failure bar inside the form of an ingredient', () => {
     vi.unstubAllGlobals()
   })
 
-  it('says the data could not be loaded inside the form when the units fail', async () => {
-    adminLaptop().answers('GET', '/api/admin/units', noConnection())
-    const shell = await openTheAdminAt('/admin/ingredients')
+  it('says the data could not be loaded inside the recipe when the ingredients fail', async () => {
+    adminLaptopWithOneArticle().answers('GET', '/api/admin/ingredients', noConnection())
+    const shell = await openTheAdminAt('/admin/items')
 
-    await shell.get('[data-test="new-ingredient"]').trigger('click')
+    await shell.get('[data-test="edit-ingredients"]').trigger('click')
 
     await vi.waitFor(() =>
       expect(document.querySelector('[data-test="form-dialog"] [data-test="load-failure-bar"]')?.textContent?.trim()).toBe(
         LOAD_FAILED,
       ),
+    )
+  })
+
+  it('says it inside the form of a new ingredient when the units fail', async () => {
+    adminLaptopWithOneArticle().answers('GET', '/api/admin/units', noConnection())
+    const shell = await openTheAdminAt('/admin/items')
+    await shell.get('[data-test="edit-ingredients"]').trigger('click')
+    await vi.waitFor(() => expect(isOnScreen('[data-test="new-ingredient"]')).toBe(true))
+
+    await clickOn('[data-test="new-ingredient"]')
+
+    await vi.waitFor(() =>
+      expect(
+        textOnScreen('[data-test="load-failure-bar"]', formDialogHolding('[data-test="ingredient-name-field"]')).trim(),
+      ).toBe(LOAD_FAILED),
     )
   })
 })
@@ -180,7 +209,7 @@ describe('the load failure bar while the laptop restarts', () => {
 
   it('appears when the connection to the laptop is lost', async () => {
     adminLaptop()
-    const shell = await openTheAdminAt('/admin/ingredients')
+    const shell = await openTheAdminAt('/admin/items')
 
     theConnectionCloses()
     await flushPromises()
@@ -190,7 +219,7 @@ describe('the load failure bar while the laptop restarts', () => {
 
   it('goes away once the connection is back and the laptop has put the admin into its groups', async () => {
     adminLaptop()
-    const shell = await openTheAdminAt('/admin/ingredients')
+    const shell = await openTheAdminAt('/admin/items')
     theConnectionCloses()
     await flushPromises()
 
@@ -204,7 +233,7 @@ describe('the load failure bar while the laptop restarts', () => {
   it('goes away once the list that failed loads after the reconnect', async () => {
     holdBackGroupsJoined()
     adminLaptop().answers('GET', '/api/admin/units', inTurn(noConnection(), answer({ units: [] })))
-    const shell = await openTheAdminAt('/admin/ingredients')
+    const shell = await openTheAdminAt('/admin/items')
     await vi.waitFor(() => expect(shell.find('[data-test="load-failure-bar"]').exists()).toBe(true))
 
     theLaptopSendsGroupsJoined()

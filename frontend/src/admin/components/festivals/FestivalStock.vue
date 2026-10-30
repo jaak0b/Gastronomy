@@ -169,7 +169,7 @@ function toggleHistory(ingredientId: string): void {
 <style scoped>
 .festival-ingredient-row :deep(.row-line) {
   display: grid;
-  grid-template-columns: minmax(8rem, 1fr) 16rem 10rem 17rem 7rem;
+  grid-template-columns: minmax(8rem, 1fr) var(--admin-amount-field-width) 10rem 17rem 7rem;
   align-items: center;
 }
 </style>

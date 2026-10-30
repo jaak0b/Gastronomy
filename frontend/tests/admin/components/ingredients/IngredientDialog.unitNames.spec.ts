@@ -1,23 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { inputOf, onScreen, waitUntil } from '../../../support/dom'
+import { inputOf, onScreen, pressTheKeyOn, waitUntil } from '../../../support/dom'
 import { cancelTheFormDialog, saveTheUnitDialog } from '../../../support/formDialogs'
 import { answer, inTurn, noConnection, refusal } from '../../../support/laptop'
 import { GRAM_UNIT, KISTE_UNIT, MILLILITRE_UNIT, PIECE_UNIT, anAdminUnit } from '../../../support/wireViews'
 import {
   LISTED_UNITS,
+  MUSTARD,
   chipOf,
   chosenUnitIds,
   mountDialog,
   namesOnTheChips,
   openTheUnitFormToCreate,
   openTheUnitFormToRename,
-  pressTheKeyOn,
   theUnitForm,
   unitFormIsOpen,
   unitsLaptop,
 } from './ingredientDialogFixture'
-import { MUSTARD } from './ingredientsListFixture'
 
 const GRAMM = anAdminUnit({ ...GRAM_UNIT, name: 'Gramm' })
 

@@ -144,8 +144,8 @@ public sealed class CatalogItemServiceTest
   public async Task ListAsync_ARecipeOfTwoIngredients_CarriesTheNameAndUnitOfEveryLineByIngredientName()
   {
     var piece = AddUnit("Fass");
-    var mustard = AddIngredient("Senf", _gram, true);
-    var bun = AddIngredient("Brötchen", piece, true);
+    var mustard = AddIngredient("Senf", _gram);
+    var bun = AddIngredient("Brötchen", piece);
     AddRecipeLine(_seeded.SausageItemId, mustard, 20);
     AddRecipeLine(_seeded.SausageItemId, bun, 1);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
@@ -173,7 +173,7 @@ public sealed class CatalogItemServiceTest
                            "apfel",
                            "Birne"
                          })
-      AddRecipeLine(_seeded.SausageItemId, AddIngredient(name, _gram, true), 1);
+      AddRecipeLine(_seeded.SausageItemId, AddIngredient(name, _gram), 1);
 
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
@@ -362,64 +362,9 @@ public sealed class CatalogItemServiceTest
   }
 
   [Test]
-  public async Task ActivateAsync_TwoDeactivatedIngredientsInTheRecipe_FailsOncePerIngredientOrderedByNameAndStaysOff()
+  public async Task ActivateAsync_AnArticleWithARecipe_SwitchesItOn()
   {
-    var currywurst = await GivenASwitchedOffArticleWithTheRecipeAsync(_seeded.FoodCategoryId, ("Zwiebeln", false), ("Senf", true), ("Brötchen", false));
-
-    ErrorOr<SavedItemView> switchedOn = await _service.ActivateAsync(currywurst.Id, TestContext.CurrentContext.CancellationToken);
-    _fixture.DbContext.ChangeTracker.Clear();
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(switchedOn.RefusedLines().Select(line => line.Code),
-                                  Is.EqualTo(new[]
-                                             {
-                                               "errors.admin.items.ingredientIsDeactivated",
-                                               "errors.admin.items.ingredientIsDeactivated"
-                                             }));
-                      Assert.That(switchedOn.RefusedLines().Select(line => line.Metadata![Refusal.MetadataKeys.Name]),
-                                  Is.EqualTo(new[]
-                                             {
-                                               "Brötchen",
-                                               "Zwiebeln"
-                                             }));
-                      Assert.That(switchedOn.FirstError.NumericType, Is.EqualTo(RefusalType.UnprocessableEntity));
-                      Assert.That(switchedOn.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("UnprocessableEntity"));
-                      Assert.That(_fixture.DbContext.CatalogItems.Single(item => item.Id == currywurst.Id).IsActive, Is.False);
-                    });
-  }
-
-  [Test]
-  public async Task ActivateAsync_DeactivatedIngredientsInMixedCase_AreNamedWithCapitalsIgnoredAndUmlautsAfterZ()
-  {
-    var currywurst = await GivenASwitchedOffArticleWithTheRecipeAsync(_seeded.FoodCategoryId, ("Zwiebel", false), ("Äpfel", false), ("apfel", false), ("Birne", false));
-
-    ErrorOr<SavedItemView> switchedOn = await _service.ActivateAsync(currywurst.Id, TestContext.CurrentContext.CancellationToken);
-
-    Assert.That(switchedOn.RefusedLines().Select(line => line.Metadata![Refusal.MetadataKeys.Name]),
-                Is.EqualTo(new[]
-                           {
-                             "apfel",
-                             "Birne",
-                             "Zwiebel",
-                             "Äpfel"
-                           }));
-  }
-
-  [Test]
-  public async Task ActivateAsync_ASwitchedOffCategoryAndADeactivatedIngredient_FailsBecauseOfTheCategoryFirst()
-  {
-    var currywurst = await GivenASwitchedOffArticleWithTheRecipeAsync(_switchedOffCategory.Id, ("Zwiebeln", false));
-
-    ErrorOr<SavedItemView> switchedOn = await _service.ActivateAsync(currywurst.Id, TestContext.CurrentContext.CancellationToken);
-
-    Assert.That(switchedOn.RefusalMessageKey(), Is.EqualTo("errors.admin.items.categoryIsOff"));
-  }
-
-  [Test]
-  public async Task ActivateAsync_ARecipeOfActiveIngredients_SwitchesTheArticleOn()
-  {
-    var currywurst = await GivenASwitchedOffArticleWithTheRecipeAsync(_seeded.FoodCategoryId, ("Senf", true));
+    var currywurst = await GivenASwitchedOffArticleWithTheRecipeAsync(_seeded.FoodCategoryId, "Senf");
 
     ErrorOr<SavedItemView> switchedOn = await _service.ActivateAsync(currywurst.Id, TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
@@ -489,7 +434,7 @@ public sealed class CatalogItemServiceTest
   [Test]
   public async Task SetRecipeLineAsync_NoLineYet_AddsTheLineWithTheAmount()
   {
-    var mustard = await AddStoredIngredientAsync("Senf", true);
+    var mustard = await AddStoredIngredientAsync("Senf");
 
     ErrorOr<SavedItemView> saved = await _service.SetRecipeLineAsync(_seeded.SausageItemId, mustard.Id, AmountRequest(12.5), TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
@@ -508,7 +453,7 @@ public sealed class CatalogItemServiceTest
   [Test]
   public async Task SetRecipeLineAsync_ALineExists_ChangesItsAmountWithoutAddingAnother()
   {
-    var mustard = await AddStoredIngredientAsync("Senf", true);
+    var mustard = await AddStoredIngredientAsync("Senf");
     AddRecipeLine(_seeded.SausageItemId, mustard, 10);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
@@ -518,46 +463,13 @@ public sealed class CatalogItemServiceTest
     Assert.That(_fixture.DbContext.CatalogItemIngredients.Single().Amount, Is.EqualTo(15));
   }
 
-  [Test]
-  public async Task SetRecipeLineAsync_ADeactivatedIngredientWithoutALineYet_IsRefusedWithoutAddingIt()
-  {
-    var onions = await AddStoredIngredientAsync("Zwiebeln", false);
-
-    ErrorOr<SavedItemView> saved = await _service.SetRecipeLineAsync(_seeded.SausageItemId, onions.Id, AmountRequest(12.5), TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(saved.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
-                      Assert.That(saved.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
-                      Assert.That(saved.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("DeactivatedIngredientCannotJoinRecipe"));
-                      Assert.That(_fixture.DbContext.CatalogItemIngredients.Count(), Is.Zero);
-                    });
-  }
-
-  [Test]
-  public async Task SetRecipeLineAsync_ADeactivatedIngredientWhoseLineExists_ChangesTheAmount()
-  {
-    var onions = await AddStoredIngredientAsync("Zwiebeln", false);
-    AddRecipeLine(_seeded.SausageItemId, onions, 10);
-    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
-
-    ErrorOr<SavedItemView> saved = await _service.SetRecipeLineAsync(_seeded.SausageItemId, onions.Id, AmountRequest(15), TestContext.CurrentContext.CancellationToken);
-    _fixture.DbContext.ChangeTracker.Clear();
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(saved.IsError, Is.False);
-                      Assert.That(_fixture.DbContext.CatalogItemIngredients.Single().Amount, Is.EqualTo(15));
-                    });
-  }
-
   [TestCase(0d)]
   [TestCase(-1d)]
   [TestCase(double.NaN)]
   [TestCase(double.PositiveInfinity)]
   public async Task SetRecipeLineAsync_AnAmountThatIsNotANumberAboveZero_IsRefusedAsAmountInvalid(double amount)
   {
-    var mustard = await AddStoredIngredientAsync("Senf", true);
+    var mustard = await AddStoredIngredientAsync("Senf");
 
     ErrorOr<SavedItemView> saved = await _service.SetRecipeLineAsync(_seeded.SausageItemId, mustard.Id, AmountRequest(amount), TestContext.CurrentContext.CancellationToken);
 
@@ -573,7 +485,7 @@ public sealed class CatalogItemServiceTest
   [Test]
   public async Task SetRecipeLineAsync_NoAmount_IsRefusedAsAmountInvalid()
   {
-    var mustard = await AddStoredIngredientAsync("Senf", true);
+    var mustard = await AddStoredIngredientAsync("Senf");
 
     ErrorOr<SavedItemView> saved = await _service.SetRecipeLineAsync(_seeded.SausageItemId, mustard.Id, AmountRequest(null), TestContext.CurrentContext.CancellationToken);
 
@@ -583,7 +495,7 @@ public sealed class CatalogItemServiceTest
   [Test]
   public async Task SetRecipeLineAsync_AnUnknownArticle_IsRefusedAsNotFound()
   {
-    var mustard = await AddStoredIngredientAsync("Senf", true);
+    var mustard = await AddStoredIngredientAsync("Senf");
 
     ErrorOr<SavedItemView> saved = await _service.SetRecipeLineAsync(Guid.NewGuid(), mustard.Id, AmountRequest(1), TestContext.CurrentContext.CancellationToken);
 
@@ -601,8 +513,8 @@ public sealed class CatalogItemServiceTest
   [Test]
   public async Task RemoveRecipeLineAsync_ALineExists_RemovesOnlyThatLine()
   {
-    var mustard = await AddStoredIngredientAsync("Senf", true);
-    var ketchup = await AddStoredIngredientAsync("Gurkenscheibe", true);
+    var mustard = await AddStoredIngredientAsync("Senf");
+    var ketchup = await AddStoredIngredientAsync("Gurkenscheibe");
     AddRecipeLine(_seeded.SausageItemId, mustard, 10);
     AddRecipeLine(_seeded.SausageItemId, ketchup, 5);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
@@ -654,24 +566,23 @@ public sealed class CatalogItemServiceTest
     return unit;
   }
 
-  private Ingredient AddIngredient(string name, Unit unit, bool isActive)
+  private Ingredient AddIngredient(string name, Unit unit)
   {
     Ingredient ingredient = new()
                             {
                               Id = Guid.NewGuid(),
                               Name = name,
                               UnitId = unit.Id,
-                              Unit = unit,
-                              IsActive = isActive
+                              Unit = unit
                             };
     _fixture.DbContext.Ingredients.Add(ingredient);
 
     return ingredient;
   }
 
-  private async Task<Ingredient> AddStoredIngredientAsync(string name, bool isActive)
+  private async Task<Ingredient> AddStoredIngredientAsync(string name)
   {
-    var ingredient = AddIngredient(name, _gram, isActive);
+    var ingredient = AddIngredient(name, _gram);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     return ingredient;
@@ -703,12 +614,12 @@ public sealed class CatalogItemServiceTest
     return article;
   }
 
-  private async Task<CatalogItem> GivenASwitchedOffArticleWithTheRecipeAsync(Guid categoryId, params (string Name, bool IsActive)[] ingredients)
+  private async Task<CatalogItem> GivenASwitchedOffArticleWithTheRecipeAsync(Guid categoryId, params string[] ingredientNames)
   {
     var currywurst = AddSwitchedOffArticle(categoryId);
 
-    foreach (var ingredient in ingredients)
-      AddRecipeLine(currywurst.Id, AddIngredient(ingredient.Name, _gram, ingredient.IsActive), 1);
+    foreach (var ingredientName in ingredientNames)
+      AddRecipeLine(currywurst.Id, AddIngredient(ingredientName, _gram), 1);
 
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();

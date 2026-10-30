@@ -396,7 +396,6 @@
       "title": "Zutaten",
       "labels": {
         "recipeTitle": "Zutaten für {item}",
-        "ingredient": "Zutat",
         "name": "Name der Zutat",
         "unit": "Einheit",
         "amount": "Menge",
@@ -404,24 +403,28 @@
         "used": "Verbraucht: {amount}",
         "runsOutAt": "Reicht voraussichtlich bis {moment}",
         "usedUp": "Die Zutat ist aufgebraucht.",
-        "deactivateTitle": "Zutat deaktivieren?",
         "editTitle": "Zutat bearbeiten",
-        "removeFromRecipeTitle": "Zutat entfernen"
+        "removeFromRecipeTitle": "Zutat entfernen",
+        "inTheRecipe": "Im Rezept",
+        "allIngredients": "Alle Zutaten",
+        "search": "Suchen",
+        "unitAfterName": "· {unit}",
+        "deleteTitle": "Zutat löschen?"
       },
       "actions": {
         "edit": "Zutaten bearbeiten",
         "close": "Schließen",
-        "activate": "Zutat aktivieren",
-        "deactivateConfirm": "Zutat deaktivieren",
         "new": "Neue Zutat",
         "addToRecipe": "Zutat hinzufügen",
         "removeFromRecipe": "Entfernen",
-        "history": "Verlauf"
+        "history": "Verlauf",
+        "add": "Hinzufügen",
+        "deleteConfirm": "Zutat löschen"
       },
       "messages": {
-        "noIngredientsToAdd": "Alle Zutaten sind bereits hinzugefügt. Klicken Sie auf „Neue Zutat“.",
         "removeFromRecipeBody": "Die Zutat wird nur bei {item} entfernt.",
-        "usedByActiveItems": "Die Zutat wird noch bei {items} verwendet. Nehmen Sie die Zutat zuerst unter „Artikel“ aus diesen Artikeln heraus."
+        "deleteBody": "Die Zutat {name} wird endgültig gelöscht.",
+        "usedByItems": "Die Zutat wird noch bei den Artikeln {items} verwendet."
       },
       "history": {
         "used": "Verbraucht",
@@ -541,14 +544,12 @@
       "ingredients": {
         "nameMissing": "Geben Sie einen Namen für die Zutat an.",
         "nameTaken": "Eine Zutat mit diesem Namen ist bereits vorhanden. Wählen Sie einen anderen Namen.",
-        "nameBelongsToDeactivatedIngredient": "Die Zutat {name} ist bereits vorhanden, aber deaktiviert. Aktivieren Sie sie unter „Zutaten“.",
         "amountInvalid": "Geben Sie eine Menge größer als null an.",
         "stockInvalid": "Geben Sie null oder mehr ein oder lassen Sie das Feld leer."
       },
       "items": {
         "categoryIsOff": "Die Kategorie ist deaktiviert. Aktivieren Sie zuerst die Kategorie.",
         "categoryUnknown": "Wählen Sie eine Kategorie aus, bevor Sie speichern.",
-        "ingredientIsDeactivated": "Die Zutat {name} ist deaktiviert. Aktivieren Sie sie zuerst unter „Zutaten“.",
         "isOnTheRunningFestivalsMenu": "Ein Artikel auf der Karte eines aktiven Festes kann nicht deaktiviert werden.",
         "nameMissing": "Geben Sie dem Artikel einen Namen, bevor Sie ihn speichern.",
         "nameTaken": "Dieser Name ist bereits vergeben. Wählen Sie einen anderen Namen.",

@@ -105,32 +105,6 @@ describe('an item that is deactivated', () => {
     expect(list.find('[data-test="item-row"]').exists()).toBe(false)
   })
 
-  it('says which deactivated ingredient keeps it from being activated', async () => {
-    itemsListLaptop({
-      items: DEACTIVATED_ITEM,
-      itemRefusal: {
-        status: 422,
-        body: {
-          code: 'UnprocessableEntity',
-          messageKey: 'errors.admin.items.ingredientIsDeactivated',
-          parameters: { name: 'Zwiebeln' },
-          details: null,
-        },
-      },
-    })
-    const list = mountList()
-    await list.get('[data-test="show-deactivated"] input').setValue(true)
-    await vi.waitFor(() => expect(list.find('[data-test="item-row"]').exists()).toBe(true))
-
-    await list.get('[data-test="reactivate-item"]').trigger('click')
-
-    await vi.waitFor(() =>
-      expect(list.get('[data-test="item-refusal"]').text()).toBe(
-        'Die Zutat Zwiebeln ist deaktiviert. Aktivieren Sie sie zuerst unter „Zutaten“.',
-      ),
-    )
-  })
-
   it('offers to activate it again through the open eye, named "Artikel aktivieren"', async () => {
     itemsListLaptop({ items: DEACTIVATED_ITEM })
     const list = mountList()

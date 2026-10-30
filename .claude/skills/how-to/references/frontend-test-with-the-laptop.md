@@ -76,11 +76,11 @@ changes on the wire is fixed in the factory once.
 ## Shape of a spec set
 
 Put the laptop scenario and the mount helper in a fixture module beside the specs
-(`tests/admin/components/ingredients/ingredientsListFixture.ts` gives `ingredientsListLaptop()` and
-`mountList()`), and split specs by scenario once a file nears 400 lines. A store spec needs no
+(`tests/admin/components/items/itemIngredientsDialogFixture.ts` gives `recipeLaptop()` and
+`mountDialog()`), and split specs by scenario once a file nears 400 lines. A store spec needs no
 component: call the store's actions against `stubLaptop()`.
 
 ## Running
 
-From `frontend/`, one file at a time: `npx vitest run tests/admin/components/ingredients/IngredientsList.editing.spec.ts`.
+From `frontend/`, one file at a time: `npx vitest run tests/admin/components/items/ItemIngredientsDialog.adding.spec.ts`.
 Never the whole suite and never a folder; name the files you ran and why they cover the change.

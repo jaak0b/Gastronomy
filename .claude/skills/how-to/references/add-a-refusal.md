@@ -57,14 +57,14 @@ Root rule 2 gives two kinds.
 
 - **The person can act on it.** A menu that changed under a waiter, a name that is taken. It gets a key
   of its own, parameters, and a sentence in both languages that names the item or the tap that clears
-  it. Example: `Refusal.Ingredients.NameBelongsToDeactivatedIngredient`.
+  it. Example: `Refusal.Units.NameTaken`.
 - **A guard against a broken program.** The screen already stops the person from doing it, so the call
   did not come from that screen. The server keeps the check and writes the exact reason in
   `Description`; the person gets the shared sentence and no new text exists. The `Code` is
   `common.errors.actionFailed` (`RefusalMessageKeys.ActionFailed`) on an admin screen,
   `RefusalMessageKeys.OrderCannotBeProcessed` for an order and `SettlementCannotBeProcessed` for a
   settlement. Examples:
-  `Refusal.Ingredients.UsedByActiveItems`, `Refusal.Order.StationRequired`.
+  `Refusal.Ingredients.UsedByItems`, `Refusal.Order.StationRequired`.
 
 A refusal that only means "not there" is a bare status: `NotFound` or `Unauthorized` without a
 `ProblemCode`, as `Refusal.Ingredients.IngredientNotFound` is. Nothing else may be answered bare.
@@ -85,7 +85,7 @@ Never add a key of its own for such a failure.
    `backend/GastronomyApp.Contracts/Validation/RefusalMessageKeys.cs`. A key one factory alone sends
    stays a literal in the factory, as `Refusal.CatalogItem.NameTaken` does.
 3. **The metadata.** Put `Refusal.MetadataKeys.ProblemCode` in (one of `Refusal.ProblemCodes`, or a
-   plain name such as `"IngredientUsedByActiveItems"` for a conflict). Every other entry reaches the
+   plain name such as `"IngredientUsedByItems"` for a conflict). Every other entry reaches the
    frontend as a sentence parameter, under a name from `MetadataKeys`; add a constant there when none
    fits. `MetadataKeys.Count` selects the plural form of the sentence.
 4. **The sentence.** For the first kind, add `errors.<area>.<name>` to

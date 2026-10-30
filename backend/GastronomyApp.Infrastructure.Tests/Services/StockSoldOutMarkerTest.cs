@@ -34,7 +34,7 @@ public sealed class StockSoldOutMarkerTest
   [Test]
   public async Task MarkItemsWithoutEnoughStockSoldOutAsync_LessLeftThanOnePortion_SwitchesTheArticleOffAndStoresIt()
   {
-    var mustard = await AddIngredientAsync("Senf", true, 100);
+    var mustard = await AddIngredientAsync("Senf", 100);
     await AddRecipeLineAsync(_seeded.SausageItemId, mustard.Id, 20);
     await OrderAsync(_seeded.SausageItemId, 5);
     await OrderAsync(_seeded.LemonadeItemId, 1);
@@ -55,7 +55,7 @@ public sealed class StockSoldOutMarkerTest
   [Test]
   public async Task MarkItemsWithoutEnoughStockSoldOutAsync_CancelledPortions_UseNoIngredientAndKeepTheArticleOn()
   {
-    var mustard = await AddIngredientAsync("Senf", true, 100);
+    var mustard = await AddIngredientAsync("Senf", 100);
     await AddRecipeLineAsync(_seeded.SausageItemId, mustard.Id, 20);
     await OrderAsync(_seeded.SausageItemId, 5);
     await CancelEveryItemAsync(_seeded.SausageItemId);
@@ -69,7 +69,7 @@ public sealed class StockSoldOutMarkerTest
   [Test]
   public async Task MarkItemsWithoutEnoughStockSoldOutAsync_PortionsCancelledAfterTheArticleWasSwitchedOff_LeaveItOff()
   {
-    var mustard = await AddIngredientAsync("Senf", true, 100);
+    var mustard = await AddIngredientAsync("Senf", 100);
     await AddRecipeLineAsync(_seeded.SausageItemId, mustard.Id, 20);
     await OrderAsync(_seeded.SausageItemId, 5);
     await _marker.MarkItemsWithoutEnoughStockSoldOutAsync(_seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
@@ -86,7 +86,7 @@ public sealed class StockSoldOutMarkerTest
   [Test]
   public async Task MarkItemsWithoutEnoughStockSoldOutAsync_ExactlyOnePortionLeft_KeepsTheArticleOn()
   {
-    var mustard = await AddIngredientAsync("Senf", true, 100);
+    var mustard = await AddIngredientAsync("Senf", 100);
     await AddRecipeLineAsync(_seeded.SausageItemId, mustard.Id, 20);
     await OrderAsync(_seeded.SausageItemId, 4);
 
@@ -99,7 +99,7 @@ public sealed class StockSoldOutMarkerTest
   [TestCase(5d, 0.1, 49)]
   public async Task MarkItemsWithoutEnoughStockSoldOutAsync_OnePortionLeftAfterFractionalPortions_KeepsTheArticleOn(double availableAmount, double portionAmount, int portionsOrdered)
   {
-    var mustard = await AddIngredientAsync("Senf", true, availableAmount);
+    var mustard = await AddIngredientAsync("Senf", availableAmount);
     await AddRecipeLineAsync(_seeded.SausageItemId, mustard.Id, portionAmount);
     await OrderAsync(_seeded.SausageItemId, portionsOrdered);
 
@@ -111,7 +111,7 @@ public sealed class StockSoldOutMarkerTest
   [Test]
   public async Task MarkItemsWithoutEnoughStockSoldOutAsync_MoreConsumedThanWasAvailable_SwitchesTheArticleOffWithoutFailing()
   {
-    var mustard = await AddIngredientAsync("Senf", true, 10);
+    var mustard = await AddIngredientAsync("Senf", 10);
     await AddRecipeLineAsync(_seeded.SausageItemId, mustard.Id, 5);
     await OrderAsync(_seeded.SausageItemId, 6);
 
@@ -123,8 +123,8 @@ public sealed class StockSoldOutMarkerTest
   [Test]
   public async Task MarkItemsWithoutEnoughStockSoldOutAsync_OnlyOneOfTwoIngredientsRunsShort_SwitchesOffOnlyTheArticlesUsingIt()
   {
-    var mustard = await AddIngredientAsync("Senf", true, 100);
-    var bun = await AddIngredientAsync("Brötchen", true, 50);
+    var mustard = await AddIngredientAsync("Senf", 100);
+    var bun = await AddIngredientAsync("Brötchen", 50);
     await AddRecipeLineAsync(_seeded.SausageItemId, mustard.Id, 20);
     await AddRecipeLineAsync(_seeded.SausageItemId, bun.Id, 1);
     await AddRecipeLineAsync(_seeded.LemonadeItemId, bun.Id, 1);
@@ -136,12 +136,10 @@ public sealed class StockSoldOutMarkerTest
   }
 
   [Test]
-  public async Task MarkItemsWithoutEnoughStockSoldOutAsync_AnIngredientWithoutALimitOrSwitchedOff_NeverSwitchesAnythingOff()
+  public async Task MarkItemsWithoutEnoughStockSoldOutAsync_AnIngredientWithoutALimit_NeverSwitchesAnythingOff()
   {
-    var unlimited = await AddIngredientAsync("Ketchup", true, null);
-    var switchedOff = await AddIngredientAsync("Senf", false, 1);
+    var unlimited = await AddIngredientAsync("Ketchup", null);
     await AddRecipeLineAsync(_seeded.SausageItemId, unlimited.Id, 20);
-    await AddRecipeLineAsync(_seeded.SausageItemId, switchedOff.Id, 20);
     await OrderAsync(_seeded.SausageItemId, 10);
 
     IReadOnlyList<FestivalCatalogItem> soldOut = await _marker.MarkItemsWithoutEnoughStockSoldOutAsync(_seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
@@ -152,7 +150,7 @@ public sealed class StockSoldOutMarkerTest
   [Test]
   public async Task MarkItemsWithoutEnoughStockSoldOutAsync_PlentyLeftForAnArticleSwitchedOffByHand_LeavesItOff()
   {
-    var mustard = await AddIngredientAsync("Senf", true, 1000);
+    var mustard = await AddIngredientAsync("Senf", 1000);
     await AddRecipeLineAsync(_seeded.SausageItemId, mustard.Id, 20);
     var menuRow = await _fixture.DbContext.FestivalCatalogItems.SingleAsync(row => row.CatalogItemId == _seeded.SausageItemId, TestContext.CurrentContext.CancellationToken);
     menuRow.IsAvailable = false;
@@ -172,7 +170,7 @@ public sealed class StockSoldOutMarkerTest
   [Test]
   public async Task MarkItemsWithoutEnoughStockSoldOutAsync_OrdersOfAnotherFestival_DoNotCount()
   {
-    var mustard = await AddIngredientAsync("Senf", true, 100);
+    var mustard = await AddIngredientAsync("Senf", 100);
     await AddRecipeLineAsync(_seeded.SausageItemId, mustard.Id, 20);
     var otherFestivalId = Guid.NewGuid();
     _fixture.DbContext.Festivals.Add(new()
@@ -249,7 +247,7 @@ public sealed class StockSoldOutMarkerTest
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
 
-  private async Task<Ingredient> AddIngredientAsync(string name, bool isActive, double? availableAmount)
+  private async Task<Ingredient> AddIngredientAsync(string name, double? availableAmount)
   {
     var unit = await _fixture.DbContext.Units.FirstOrDefaultAsync(candidate => candidate.Name == "Portion", TestContext.CurrentContext.CancellationToken);
 
@@ -268,8 +266,7 @@ public sealed class StockSoldOutMarkerTest
                               Id = Guid.NewGuid(),
                               Name = name,
                               UnitId = unit.Id,
-                              Unit = unit,
-                              IsActive = isActive
+                              Unit = unit
                             };
     ingredient.FestivalIngredients.Add(new()
                                        {

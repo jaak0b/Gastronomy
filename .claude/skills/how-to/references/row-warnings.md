@@ -11,7 +11,7 @@ owns the rows; it keeps one refusal per row id.
 
 - `refusalTextOf(rowId)` is the sentence to render, or `null`. Pass it to the row as
   `BaseListRow`'s `refusal-text`, which draws it under the line, flush with the row; a line that
-  is not a list row (a recipe line) renders `BaseRefusalAlert` itself with `class="mb-2"`.
+  is not a list row renders `BaseRefusalAlert` itself with `class="mb-2"`.
 - `showRefusalOf(rowId, result)` takes the `AdminActionResult` a store action returned and stores the
   refusal when the action failed. It does nothing for a success, so an old warning survives an
   accepted action unless it was forgotten first.
@@ -22,7 +22,9 @@ owns the rows; it keeps one refusal per row id.
 - `isRefused(rowId)` says whether the row carries a warning.
 
 Current consumers: `admin/composables/useFestivalItemRows.ts` (rows keyed by item id),
-`admin/components/items/ItemIngredientsDialog.vue` (recipe lines keyed by ingredient id),
+`admin/components/items/ItemIngredientsDialog.vue` (one for the recipe lines and one for the rows
+of all ingredients, both keyed by ingredient id; a row's warning also goes when its amount row
+closes),
 `admin/components/festivals/FestivalStock.vue` (stock rows keyed by ingredient id),
 `admin/components/HideableEntryList.vue` (the table plan's areas, keyed by their id; see
 `hideable-rows.md`) and `admin/components/stations/RemovableStationRows.vue` (the station rows of the
@@ -36,9 +38,8 @@ another row before the laptop answers.
 
 `admin/composables/useRefusalDisplay.ts` is a single slot: `refusal`, `refusalText` and
 `showRefusalOf(result)`, which returns `true` when the result was a refusal and clears the slot when
-it was not. Clear it by setting `refusal.value = null`. `useEditSession` owns one for its dialog, and
-`ItemIngredientsDialog.vue` uses one more for the add row beside its per row warnings. Use the row
-version only where several rows can carry a warning at once.
+it was not. Clear it by setting `refusal.value = null`. `useEditSession` owns one for its dialog.
+Use the row version only where several rows can carry a warning at once.
 
 ## A standing warning: `BaseWarningText`
 

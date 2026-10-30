@@ -4,7 +4,7 @@ using GastronomyApp.Core.Announcements;
 namespace GastronomyApp.Core.Entities;
 
 [Raises(HubEvent.ConfigurationChanged)]
-public sealed class Ingredient : INamed, IActivatable
+public sealed class Ingredient : INamed
 {
   public required Guid Id { get; set; }
 
@@ -13,8 +13,6 @@ public sealed class Ingredient : INamed, IActivatable
   public required Guid UnitId { get; set; }
 
   public required Unit Unit { get; set; }
-
-  public required bool IsActive { get; set; }
 
   public Collection<FestivalIngredient> FestivalIngredients { get; } = [];
 

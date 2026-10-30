@@ -71,10 +71,10 @@ describe('the admin shell', () => {
     expect(shell.find('[data-test="festival-name-field"]').exists()).toBe(false)
   })
 
-  it('places the ingredients tab between the items and the waiters', async () => {
+  it('places the items tab between the stations and the waiters', async () => {
     shellLaptop(200)
 
-    const shell = mountShellAt('/admin/ingredients')
+    const shell = mountShellAt('/admin/items')
     await flushPromises()
 
     expect(shell.findAll('[data-test="admin-tabs"] [data-test="admin-tab"]').map((tab) => tab.text())).toEqual([
@@ -82,9 +82,8 @@ describe('the admin shell', () => {
       'Feste',
       'Ausgabestellen',
       'Artikel',
-      'Zutaten',
       'Kellner',
     ])
-    expect(shell.find('[data-test="admin-tabs"] [data-test="admin-tab"][data-selected="true"]').text()).toBe('Zutaten')
+    expect(shell.find('[data-test="admin-tabs"] [data-test="admin-tab"][data-selected="true"]').text()).toBe('Artikel')
   })
 })

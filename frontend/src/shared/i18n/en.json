@@ -396,7 +396,6 @@
       "title": "Ingredients",
       "labels": {
         "recipeTitle": "Ingredients for {item}",
-        "ingredient": "Ingredient",
         "name": "Name of the ingredient",
         "unit": "Unit",
         "amount": "Amount",
@@ -404,24 +403,28 @@
         "used": "Used: {amount}",
         "runsOutAt": "Expected to last until {moment}",
         "usedUp": "This ingredient is used up.",
-        "deactivateTitle": "Deactivate this ingredient?",
         "editTitle": "Edit the ingredient",
-        "removeFromRecipeTitle": "Remove the ingredient"
+        "removeFromRecipeTitle": "Remove the ingredient",
+        "inTheRecipe": "In the recipe",
+        "allIngredients": "All ingredients",
+        "search": "Search",
+        "unitAfterName": "· {unit}",
+        "deleteTitle": "Delete this ingredient?"
       },
       "actions": {
         "edit": "Edit ingredients",
         "close": "Close",
-        "activate": "Activate the ingredient",
-        "deactivateConfirm": "Deactivate the ingredient",
         "new": "New ingredient",
         "addToRecipe": "Add the ingredient",
         "removeFromRecipe": "Remove",
-        "history": "History"
+        "history": "History",
+        "add": "Add",
+        "deleteConfirm": "Delete ingredient"
       },
       "messages": {
-        "noIngredientsToAdd": "Every ingredient has already been added. Click \"New ingredient\".",
         "removeFromRecipeBody": "The ingredient is removed from {item} only.",
-        "usedByActiveItems": "The ingredient is still used in {items}. Under \"Items\", take the ingredient out of these items first."
+        "deleteBody": "The ingredient {name} is deleted permanently.",
+        "usedByItems": "The ingredient is still used by the items {items}."
       },
       "history": {
         "used": "Used",
@@ -541,14 +544,12 @@
       "ingredients": {
         "nameMissing": "Enter a name for the ingredient.",
         "nameTaken": "An ingredient with this name already exists. Choose a different name.",
-        "nameBelongsToDeactivatedIngredient": "The ingredient {name} already exists but is deactivated. Activate it under \"Ingredients\".",
         "amountInvalid": "Enter an amount above zero.",
         "stockInvalid": "Enter zero or more, or leave the field empty."
       },
       "items": {
         "categoryIsOff": "The category is deactivated. Activate the category first.",
         "categoryUnknown": "Choose a category before you save.",
-        "ingredientIsDeactivated": "The ingredient {name} is deactivated. Activate it under \"Ingredients\" first.",
         "isOnTheRunningFestivalsMenu": "An item on an active festival's menu cannot be deactivated.",
         "nameMissing": "Give the item a name before you save it.",
         "nameTaken": "There is already an item with this name. Choose a different name.",

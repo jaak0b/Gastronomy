@@ -63,6 +63,17 @@ export function leave(field: HTMLElement | string): void {
   inputOf(field).dispatchEvent(new FocusEvent('blur'))
 }
 
+export async function pressTheKeyOn(selector: string, key: 'Enter' | ' '): Promise<void> {
+  const button = onScreen(selector)
+  button.focus()
+  const keydownWentThrough = button.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+  // jsdom runs no activation for a key; a browser clicks the focused button unless its keydown was cancelled.
+  if (keydownWentThrough) {
+    button.click()
+  }
+  await flushPromises()
+}
+
 export async function clickOn(selector: string, root: ParentNode = document): Promise<void> {
   onScreen(selector, root).click()
   await flushPromises()

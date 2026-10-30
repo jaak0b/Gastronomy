@@ -46,7 +46,6 @@ public sealed class AdminIngredientEndpointsTest
                       Assert.That(body.GetProperty("name").GetString(), Is.EqualTo("Senf"));
                       Assert.That(body.GetProperty("unitId").GetGuid(), Is.EqualTo(unitId));
                       Assert.That(body.GetProperty("unitName").GetString(), Is.EqualTo("g"));
-                      Assert.That(body.GetProperty("isActive").GetBoolean(), Is.True);
                       Assert.That(stockRow.FestivalId, Is.EqualTo(_context.World.FestivalId));
                       Assert.That(stockRow.AvailableAmount, Is.Null);
                     });
@@ -80,23 +79,6 @@ public sealed class AdminIngredientEndpointsTest
                                                                });
 
     await AssertValidationRefusalAsync(response, "errors.admin.ingredients.nameTaken");
-  }
-
-  [Test]
-  public async Task PostIngredient_TheNameOfADeactivatedIngredientInOtherCase_IsRefusedNamingThatIngredient()
-  {
-    var mustardId = await CreateIngredientAsync("Senf", "g");
-    await DeactivateIngredientAsync(mustardId);
-
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/ingredients",
-                                                               new
-                                                               {
-                                                                 name = "senf",
-                                                                 unitId = await _context.FindUnitIdAsync("g")
-                                                               });
-
-    await AssertValidationRefusalAsync(response, "errors.admin.ingredients.nameBelongsToDeactivatedIngredient");
-    Assert.That(JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Senf"));
   }
 
   [Test]
@@ -157,16 +139,15 @@ public sealed class AdminIngredientEndpointsTest
   }
 
   [Test]
-  public async Task GetIngredients_AnIngredientInTheRecipesOfTwoActiveArticles_NamesBothArticlesSortedByName()
+  public async Task GetIngredients_AnIngredientInTheRecipesOfTwoArticles_NamesBothArticlesSortedByName()
   {
     var mustardId = await CreateIngredientAsync("Senf", "g");
     await PutRecipeLineAsync(_context.World.BratwurstItemId, mustardId);
     await PutRecipeLineAsync(_context.World.BeerItemId, mustardId);
 
-    var listed = JsonDocument.Parse(await _context.Client.GetStringAsync("/api/admin/ingredients")).RootElement.GetProperty("ingredients").EnumerateArray().Single(ingredient => ingredient.GetProperty("ingredientId").GetGuid() == mustardId);
-    List<string?> activeItemNames = listed.GetProperty("activeItemNames").EnumerateArray().Select(itemName => itemName.GetString()).ToList();
+    var usedByItemNames = await ListedItemNamesOfAsync(mustardId);
 
-    Assert.That(activeItemNames,
+    Assert.That(usedByItemNames,
                 Is.EqualTo(new[]
                            {
                              "Bier",
@@ -175,17 +156,21 @@ public sealed class AdminIngredientEndpointsTest
   }
 
   [Test]
-  public async Task GetIngredients_AnIngredientAlsoInTheRecipeOfASwitchedOffArticle_LeavesThatArticleOut()
+  public async Task GetIngredients_AnIngredientAlsoInTheRecipeOfASwitchedOffArticle_NamesThatArticleToo()
   {
     var mustardId = await CreateIngredientAsync("Senf", "g");
     await PutRecipeLineAsync(_context.World.BratwurstItemId, mustardId);
     await PutRecipeLineAsync(_context.World.BeerItemId, mustardId);
     await SwitchTheBeerOffAsync();
 
-    var listed = JsonDocument.Parse(await _context.Client.GetStringAsync("/api/admin/ingredients")).RootElement.GetProperty("ingredients").EnumerateArray().Single(ingredient => ingredient.GetProperty("ingredientId").GetGuid() == mustardId);
-    List<string?> activeItemNames = listed.GetProperty("activeItemNames").EnumerateArray().Select(itemName => itemName.GetString()).ToList();
+    var usedByItemNames = await ListedItemNamesOfAsync(mustardId);
 
-    Assert.That(activeItemNames, Is.EqualTo(new[] { "Bratwurst mit Brot" }));
+    Assert.That(usedByItemNames,
+                Is.EqualTo(new[]
+                           {
+                             "Bier",
+                             "Bratwurst mit Brot"
+                           }));
   }
 
   [Test]
@@ -259,24 +244,6 @@ public sealed class AdminIngredientEndpointsTest
   }
 
   [Test]
-  public async Task PutIngredient_TheNameOfADeactivatedIngredient_IsRefusedNamingThatIngredient()
-  {
-    var mustardId = await CreateIngredientAsync("Senf", "g");
-    await DeactivateIngredientAsync(mustardId);
-    var ketchupId = await CreateIngredientAsync("Ketchup", "g");
-
-    using var response = await _context.Client.PutAsJsonAsync($"/api/admin/ingredients/{ketchupId}",
-                                                              new
-                                                              {
-                                                                name = "SENF",
-                                                                unitId = await _context.FindUnitIdAsync("g")
-                                                              });
-
-    await AssertValidationRefusalAsync(response, "errors.admin.ingredients.nameBelongsToDeactivatedIngredient");
-    Assert.That(JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Senf"));
-  }
-
-  [Test]
   public async Task PutIngredient_AnUnknownIngredient_AnswersNotFound()
   {
     using var response = await _context.Client.PutAsJsonAsync($"/api/admin/ingredients/{Guid.NewGuid()}",
@@ -290,43 +257,71 @@ public sealed class AdminIngredientEndpointsTest
   }
 
   [Test]
-  public async Task PostDeactivateThenActivate_AnIngredient_SwitchesItOffAndOnAgain()
+  public async Task DeleteIngredient_AnIngredientNoRecipeUses_DeletesItWithItsStockRowAndNoLongerListsIt()
   {
-    var ingredientId = await CreateIngredientAsync("Senf", "g");
+    var mustardId = await CreateIngredientAsync("Senf", "g");
+    await SetAvailableAmountAsync(mustardId, 500);
 
-    using var deactivated = await _context.Client.PostAsync($"/api/admin/ingredients/{ingredientId}/deactivate", null);
-    var afterDeactivate = JsonDocument.Parse(await _context.Client.GetStringAsync("/api/admin/ingredients")).RootElement.GetProperty("ingredients")[0].GetProperty("isActive").GetBoolean();
-    using var activated = await _context.Client.PostAsync($"/api/admin/ingredients/{ingredientId}/activate", null);
-    var afterActivate = JsonDocument.Parse(await _context.Client.GetStringAsync("/api/admin/ingredients")).RootElement.GetProperty("ingredients")[0].GetProperty("isActive").GetBoolean();
+    using var response = await _context.Client.DeleteAsync($"/api/admin/ingredients/{mustardId}");
 
-    Assert.Multiple(() =>
+    List<Guid> listedIds = (await GetIngredientsAsync()).Select(ingredient => ingredient.GetProperty("ingredientId").GetGuid()).ToList();
+    await using var database = _context.Factory.CreateContext();
+
+    Assert.Multiple(async () =>
                     {
-                      Assert.That(deactivated.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(activated.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(afterDeactivate, Is.False);
-                      Assert.That(afterActivate, Is.True);
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+                      Assert.That(listedIds, Does.Not.Contain(mustardId));
+                      Assert.That(await database.FestivalIngredients.CountAsync(stock => stock.IngredientId == mustardId), Is.Zero);
                     });
   }
 
   [Test]
-  public async Task PostDeactivate_AnIngredientInTheRecipeOfAnActiveArticle_IsRefusedAndStaysActive()
+  public async Task DeleteIngredient_AnIngredientInTheRecipeOfASwitchedOnArticle_IsRefusedAndStillListsIt()
   {
     var mustardId = await CreateIngredientAsync("Senf", "g");
     await PutRecipeLineAsync(_context.World.BratwurstItemId, mustardId);
 
-    using var response = await _context.Client.PostAsync($"/api/admin/ingredients/{mustardId}/deactivate", null);
+    using var response = await _context.Client.DeleteAsync($"/api/admin/ingredients/{mustardId}");
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
-    await using var database = _context.Factory.CreateContext();
-    var stored = await database.Ingredients.SingleAsync(ingredient => ingredient.Id == mustardId);
+    var usedByItemNames = await ListedItemNamesOfAsync(mustardId);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.GetProperty("code").GetString(), Is.EqualTo("IngredientUsedByActiveItems"));
+                      Assert.That(body.GetProperty("code").GetString(), Is.EqualTo("IngredientUsedByItems"));
                       Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
-                      Assert.That(stored.IsActive, Is.True);
+                      Assert.That(usedByItemNames, Is.EqualTo(new[] { "Bratwurst mit Brot" }));
                     });
+  }
+
+  [Test]
+  public async Task DeleteIngredient_AnIngredientOnlyInTheRecipeOfASwitchedOffArticle_IsRefusedAndStillListsThatArticle()
+  {
+    var mustardId = await CreateIngredientAsync("Senf", "g");
+    await PutRecipeLineAsync(_context.World.BeerItemId, mustardId);
+    await SwitchTheBeerOffAsync();
+
+    using var response = await _context.Client.DeleteAsync($"/api/admin/ingredients/{mustardId}");
+
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+    var usedByItemNames = await ListedItemNamesOfAsync(mustardId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+                      Assert.That(body.GetProperty("code").GetString(), Is.EqualTo("IngredientUsedByItems"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
+                      Assert.That(usedByItemNames, Is.EqualTo(new[] { "Bier" }));
+                    });
+  }
+
+  [Test]
+  public async Task DeleteIngredient_AnUnknownIngredient_AnswersNotFound()
+  {
+    using var response = await _context.Client.DeleteAsync($"/api/admin/ingredients/{Guid.NewGuid()}");
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
   }
 
   private async Task<Guid> CreateIngredientAsync(string name, string unitName)
@@ -345,11 +340,16 @@ public sealed class AdminIngredientEndpointsTest
     return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("ingredientId").GetGuid();
   }
 
-  private async Task DeactivateIngredientAsync(Guid ingredientId)
+  private async Task<List<JsonElement>> GetIngredientsAsync()
   {
-    using var response = await _context.Client.PostAsync($"/api/admin/ingredients/{ingredientId}/deactivate", null);
+    return JsonDocument.Parse(await _context.Client.GetStringAsync("/api/admin/ingredients")).RootElement.GetProperty("ingredients").EnumerateArray().ToList();
+  }
 
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), await response.Content.ReadAsStringAsync());
+  private async Task<List<string?>> ListedItemNamesOfAsync(Guid ingredientId)
+  {
+    var listed = (await GetIngredientsAsync()).Single(ingredient => ingredient.GetProperty("ingredientId").GetGuid() == ingredientId);
+
+    return listed.GetProperty("usedByItemNames").EnumerateArray().Select(itemName => itemName.GetString()).ToList();
   }
 
   private async Task PutRecipeLineAsync(Guid itemId, Guid ingredientId, double amount = 20)

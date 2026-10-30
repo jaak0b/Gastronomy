@@ -1,4 +1,4 @@
-import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { mount, type VueWrapper } from '@vue/test-utils'
 import { expect, vi } from 'vitest'
 import { nextTick } from 'vue'
 import IngredientDialog from '../../../../src/admin/components/ingredients/IngredientDialog.vue'
@@ -8,7 +8,14 @@ import { testPlugins } from '../../../support/plugins'
 import { allOnScreen, clickOn, onScreen } from '../../../support/dom'
 import { formDialogHolding } from '../../../support/formDialogs'
 import { answer, emptyAnswer, stubLaptop, type LaptopReply, type StubbedLaptop } from '../../../support/laptop'
-import { GRAM_UNIT, KISTE_UNIT, MILLILITRE_UNIT, PIECE_UNIT } from '../../../support/wireViews'
+import { anAdminIngredient, GRAM_UNIT, KISTE_UNIT, MILLILITRE_UNIT, PIECE_UNIT } from '../../../support/wireViews'
+
+export const MUSTARD = anAdminIngredient({
+  ingredientId: 'ingredient-senf',
+  name: 'Senf',
+  unitId: 'unit-gram',
+  unitName: 'g',
+})
 
 export const LISTED_UNITS = [PIECE_UNIT, GRAM_UNIT, MILLILITRE_UNIT, KISTE_UNIT]
 
@@ -27,17 +34,18 @@ export interface DialogMount {
   locale?: 'de' | 'en'
   errorText?: string | null
   loadsTheUnitsFirst?: boolean
+  nameToStartWith?: string
 }
 
 export async function mountDialog(
   ingredient: AdminIngredientView | null = null,
-  { locale = 'de', errorText = null, loadsTheUnitsFirst = true }: DialogMount = {},
+  { locale = 'de', errorText = null, loadsTheUnitsFirst = true, nameToStartWith }: DialogMount = {},
 ): Promise<VueWrapper> {
   if (loadsTheUnitsFirst) {
     await useAdminUnitsStore().load()
   }
   const dialog = mount(IngredientDialog, {
-    props: { ingredient, errorText },
+    props: { ingredient, errorText, nameToStartWith },
     global: { plugins: testPlugins(locale) },
     attachTo: document.body,
   })
@@ -78,17 +86,6 @@ export async function hoverTheTrashButtonOf(unitId: string): Promise<void> {
 
 export function unitIdsOfferedForRenaming(): string[] {
   return unitIdsOfChipsHolding('[data-test="rename-unit"]')
-}
-
-export async function pressTheKeyOn(selector: string, key: 'Enter' | ' '): Promise<void> {
-  const button = onScreen(selector)
-  button.focus()
-  const keydownWentThrough = button.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
-  // jsdom runs no activation for a key; a browser clicks the focused button unless its keydown was cancelled.
-  if (keydownWentThrough) {
-    button.click()
-  }
-  await flushPromises()
 }
 
 export async function chooseUnit(unitId: string): Promise<void> {

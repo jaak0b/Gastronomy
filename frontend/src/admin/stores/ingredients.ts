@@ -6,7 +6,7 @@ import {
 } from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
 import { useAdminLoadStateStore } from './adminLoadState'
-import { adminListDefinition, defineAdminList, withActivation, withCreating } from './adminList'
+import { adminListDefinition, defineAdminList, withCreating, withDeleting } from './adminList'
 
 export interface IngredientDraft {
   name: string
@@ -32,8 +32,8 @@ export const useAdminIngredientsStore = defineStore('adminIngredients', () => {
     load,
     create,
     update,
-    setActive,
-  } = withActivation(withCreating(defineAdminList(definition), definition), definition)
+    deleteEntry: deleteIngredient,
+  } = withDeleting(withCreating(defineAdminList(definition), definition), definition)
 
   async function save(
     ingredientId: string,
@@ -53,7 +53,7 @@ export const useAdminIngredientsStore = defineStore('adminIngredients', () => {
     load,
     create,
     save,
-    setActive,
+    deleteIngredient,
     listen,
   }
 })

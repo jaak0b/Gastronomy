@@ -170,8 +170,8 @@ Every point below is intended behaviour. A change to any of them needs the owner
   the overlap check, starts both order counters at 1, puts every article back on sale and gets
   unlimited stock rows instead of the source's amounts.
 - **Running means not hidden and `StartsAtUtc <= now < EndsAtUtc`, and only `FestivalSchedule`
-  decides it.** The hide flag is `IsHidden`; stations, articles, categories and ingredients use
-  `IsActive`, festivals never do.
+  decides it.** The hide flag is `IsHidden`; stations, articles and categories use `IsActive`,
+  festivals never do, and ingredients and units have neither: they are deleted.
 - **What belongs to a festival is there once.** A station takes part once (`FestivalStation`, unique
   on `(FestivalId, StationId)`, carrying the number that station shows at that festival), an article
   is on the menu once (`FestivalCatalogItem`, unique on `(FestivalId, CatalogItemId)`, with its price

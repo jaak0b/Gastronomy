@@ -14,7 +14,6 @@ public sealed class IngredientConfiguration : IEntityTypeConfiguration<Ingredien
     builder.Property(ingredient => ingredient.Id).ValueGeneratedNever();
     builder.Property(ingredient => ingredient.Name).IsRequired().UseCollation("NOCASE");
     builder.Property(ingredient => ingredient.UnitId).IsRequired();
-    builder.Property(ingredient => ingredient.IsActive).IsRequired();
     builder.HasIndex(ingredient => ingredient.Name).IsUnique();
     builder.HasIndex(ingredient => ingredient.UnitId);
     builder.HasOne(ingredient => ingredient.Unit).WithMany(unit => unit.Ingredients).HasForeignKey(ingredient => ingredient.UnitId).OnDelete(DeleteBehavior.Restrict);

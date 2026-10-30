@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 import { inputOf, onScreen, typeInto } from '../../../support/dom'
 import { saveTheIngredientDialog } from '../../../support/formDialogs'
 import {
+  MUSTARD,
   chooseUnit,
   chosenUnitIds,
   mountDialog,
@@ -11,7 +12,6 @@ import {
   saveIsDisabled,
   unitsLaptop,
 } from './ingredientDialogFixture'
-import { MUSTARD } from './ingredientsListFixture'
 
 describe('the form for an ingredient', () => {
   beforeEach(() => {
@@ -54,6 +54,22 @@ describe('the form for an ingredient', () => {
 
     expect(inputOf('[data-test="ingredient-name-field"]').value).toBe('Senf')
     expect(chosenUnitIds()).toEqual(['unit-gram'])
+  })
+
+  it('starts a new ingredient with the name the screen hands it, exactly as given', async () => {
+    unitsLaptop()
+
+    await mountDialog(null, { nameToStartWith: 'bio-Eier ' })
+
+    expect(inputOf('[data-test="ingredient-name-field"]').value).toBe('bio-Eier ')
+  })
+
+  it('starts an edit with the name the ingredient already has, whatever name the screen hands it', async () => {
+    unitsLaptop()
+
+    await mountDialog(MUSTARD, { nameToStartWith: 'Ketchup' })
+
+    expect(inputOf('[data-test="ingredient-name-field"]').value).toBe('Senf')
   })
 
   it('names the name and the unit and offers every unit of the laptop in its order', async () => {

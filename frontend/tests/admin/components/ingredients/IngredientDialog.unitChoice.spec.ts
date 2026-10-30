@@ -4,6 +4,7 @@ import { iconActionLabelsOnScreen, isVisibleOnScreen, onScreen } from '../../../
 import { answer, neverAnswers, noConnection } from '../../../support/laptop'
 import { GRAM_UNIT, MILLILITRE_UNIT, PIECE_UNIT, anAdminIngredient } from '../../../support/wireViews'
 import {
+  MUSTARD,
   chipOf,
   chooseUnit,
   chosenUnitIds,
@@ -13,7 +14,6 @@ import {
   unitIdsWithATrashButton,
   unitsLaptop,
 } from './ingredientDialogFixture'
-import { MUSTARD } from './ingredientsListFixture'
 
 const MUSTARD_IN_A_JAR = anAdminIngredient({
   ...MUSTARD,

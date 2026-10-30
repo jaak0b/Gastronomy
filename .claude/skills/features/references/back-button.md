@@ -47,8 +47,8 @@ Frontend, under `frontend/src/shared/`:
   `TablePlanToolbarHiddenTables.vue` (so its open state ends when the last hidden table goes) and the
   context menu of `TablePlanDrawing.vue`. The dropdown lists: both lists of
   `phone/components/orderList/OrderListFilter.vue` (the orders of a table and the settle view),
-  `shared/components/LanguageSwitch.vue`, the category in `admin/components/items/ItemDialog.vue`, the ingredient search in
-  `ItemIngredientsDialog.vue` and the search of `admin/components/BaseSearchAddLine.vue`.
+  `shared/components/LanguageSwitch.vue`, the category in `admin/components/items/ItemDialog.vue` and the search of
+  `admin/components/BaseSearchAddLine.vue`.
 - The steps of the phone: `phone/stores/tablePlan.ts` keeps the opened area as the step `area`,
   `phone/views/TablePlan.vue` the sheet of a tapped table as the step `table` (kind `dialog`), and
   `phone/views/Catalog.vue` the open category as the step `category`.

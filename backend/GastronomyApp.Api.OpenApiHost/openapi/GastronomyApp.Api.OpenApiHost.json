@@ -2354,10 +2354,8 @@
             }
           }
         }
-      }
-    },
-    "/api/admin/ingredients/{ingredientId}/activate": {
-      "post": {
+      },
+      "delete": {
         "tags": [
           "GetDocument.Insider"
         ],
@@ -2373,45 +2371,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SavedIngredientView"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/ingredients/{ingredientId}/deactivate": {
-      "post": {
-        "tags": [
-          "GetDocument.Insider"
-        ],
-        "parameters": [
-          {
-            "name": "ingredientId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SavedIngredientView"
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -2777,8 +2738,7 @@
           "name",
           "unitId",
           "unitName",
-          "isActive",
-          "activeItemNames"
+          "usedByItemNames"
         ],
         "type": "object",
         "properties": {
@@ -2796,10 +2756,7 @@
           "unitName": {
             "type": "string"
           },
-          "isActive": {
-            "type": "boolean"
-          },
-          "activeItemNames": {
+          "usedByItemNames": {
             "type": "array",
             "items": {
               "type": "string"

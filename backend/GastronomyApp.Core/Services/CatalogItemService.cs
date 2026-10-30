@@ -101,15 +101,6 @@ public sealed class CatalogItemService
     if (await CategoryRefusalAsync(item.CategoryId, true, cancellationToken) is { } categoryRefusal)
       return categoryRefusal;
 
-    var deactivatedIngredientNames = await _database.CatalogItemIngredients.AsNoTracking()
-                                                    .Where(recipeLine => recipeLine.CatalogItemId == itemId && !recipeLine.Ingredient.IsActive)
-                                                    .Select(recipeLine => recipeLine.Ingredient.Name)
-                                                    .OrderBy(ingredientName => ingredientName)
-                                                    .ToListAsync(cancellationToken);
-
-    if (deactivatedIngredientNames.Count > 0)
-      return deactivatedIngredientNames.Select(ingredientName => Refusal.CatalogItem.RecipeHoldsDeactivatedIngredient(itemId, ingredientName)).ToList();
-
     item.IsActive = true;
     await _database.SaveChangesAsync(cancellationToken);
 
@@ -141,9 +132,7 @@ public sealed class CatalogItemService
     if (!await _database.CatalogItems.AsNoTracking().AnyAsync(item => item.Id == itemId, cancellationToken))
       return Refusal.Ingredients.ItemNotFound(itemId);
 
-    var ingredient = await _database.Ingredients.AsNoTracking().FirstOrDefaultAsync(row => row.Id == ingredientId, cancellationToken);
-
-    if (ingredient is null)
+    if (!await _database.Ingredients.AsNoTracking().AnyAsync(ingredient => ingredient.Id == ingredientId, cancellationToken))
       return Refusal.Ingredients.IngredientNotFound(ingredientId);
 
     if (request.Amount is not { } usedPerUnit || !double.IsFinite(usedPerUnit) || usedPerUnit <= 0)
@@ -153,9 +142,6 @@ public sealed class CatalogItemService
 
     if (recipeLine is null)
     {
-      if (!ingredient.IsActive)
-        return Refusal.Ingredients.DeactivatedIngredientCannotJoinRecipe(itemId, ingredientId);
-
       recipeLine = new()
                    {
                      Id = Guid.NewGuid(),

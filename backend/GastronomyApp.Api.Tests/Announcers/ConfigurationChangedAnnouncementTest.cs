@@ -207,6 +207,18 @@ public sealed class ConfigurationChangedAnnouncementTest
   }
 
   [Test]
+  public async Task DeleteIngredient_AnIngredientNoRecipeUses_TellsEveryScreenOnce()
+  {
+    var mustardId = await CreateIngredientAsync();
+    await ListenAsync();
+
+    using var response = await _context.Client.DeleteAsync($"/api/admin/ingredients/{mustardId}");
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+    await AssertEveryScreenHeardOnceAsync();
+  }
+
+  [Test]
   public async Task PutItemIngredient_ANewRecipeLine_TellsEveryScreenOnce()
   {
     var mustardId = await CreateIngredientAsync();

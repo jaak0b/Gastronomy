@@ -37,9 +37,9 @@ public sealed class UnitServiceTest
   [Test]
   public async Task ListAsync_UnitsWithIngredients_ReadsThemByNameWithTheNamesOfTheirIngredientsSortedByName()
   {
-    AddIngredient("Senf", _portion, true);
-    AddIngredient("Zwiebeln", _portion, true);
-    AddIngredient("Apfelsaft", _portion, false);
+    AddIngredient("Senf", _portion);
+    AddIngredient("Zwiebeln", _portion);
+    AddIngredient("Apfelsaft", _portion);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
 
@@ -71,9 +71,9 @@ public sealed class UnitServiceTest
   [Test]
   public async Task ListAsync_IngredientNamesInMixedCase_SortsThemIgnoringCaseInTheListAndInTheRefusal()
   {
-    AddIngredient("Zwiebel", _portion, true);
-    AddIngredient("apfel", _portion, true);
-    AddIngredient("Birne", _portion, true);
+    AddIngredient("Zwiebel", _portion);
+    AddIngredient("apfel", _portion);
+    AddIngredient("Birne", _portion);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
 
@@ -178,8 +178,8 @@ public sealed class UnitServiceTest
   [Test]
   public async Task DeleteAsync_AnIngredientUsesTheUnit_IsRefusedNamingTheIngredientsAndKeepsTheUnit()
   {
-    AddIngredient("Zwiebeln", _portion, true);
-    AddIngredient("Senf", _portion, true);
+    AddIngredient("Zwiebeln", _portion);
+    AddIngredient("Senf", _portion);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     ErrorOr<Success> deleted = await _service.DeleteAsync(_portion.Id, TestContext.CurrentContext.CancellationToken);
@@ -191,25 +191,6 @@ public sealed class UnitServiceTest
                       Assert.That(deleted.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
                       Assert.That(deleted.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("UnitUsedByIngredients"));
                       Assert.That(deleted.RefusalDescription(), Does.Contain("Senf, Zwiebeln"));
-                      Assert.That(_fixture.DbContext.Units.Any(unit => unit.Id == _portion.Id), Is.True);
-                    });
-  }
-
-  [Test]
-  public async Task DeleteAsync_ADeactivatedIngredientUsesTheUnit_IsRefusedNamingThatIngredientAndKeepsTheUnit()
-  {
-    AddIngredient("Dill", _portion, false);
-    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
-
-    ErrorOr<Success> deleted = await _service.DeleteAsync(_portion.Id, TestContext.CurrentContext.CancellationToken);
-    _fixture.DbContext.ChangeTracker.Clear();
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(deleted.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
-                      Assert.That(deleted.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
-                      Assert.That(deleted.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("UnitUsedByIngredients"));
-                      Assert.That(deleted.RefusalDescription(), Does.Contain("Dill"));
                       Assert.That(_fixture.DbContext.Units.Any(unit => unit.Id == _portion.Id), Is.True);
                     });
   }
@@ -252,15 +233,14 @@ public sealed class UnitServiceTest
     return unit;
   }
 
-  private void AddIngredient(string name, Unit unit, bool isActive)
+  private void AddIngredient(string name, Unit unit)
   {
     _fixture.DbContext.Ingredients.Add(new()
                                        {
                                          Id = Guid.NewGuid(),
                                          Name = name,
                                          UnitId = unit.Id,
-                                         Unit = unit,
-                                         IsActive = isActive
+                                         Unit = unit
                                        });
   }
 }

@@ -67,7 +67,7 @@ function leaveTheField(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <div class="ingredient-amount-field d-flex align-start ga-2">
+  <div class="ingredient-amount-field d-flex align-start">
     <v-text-field
       v-model="typed"
       class="amount-input"
@@ -78,18 +78,21 @@ function leaveTheField(event: KeyboardEvent): void {
       :error-messages="errorText ? [errorText] : []"
       @blur="commitIfChanged"
       @keydown.enter.prevent="leaveTheField"
-    />
-    <span
-      class="amount-unit pt-2"
-      data-test="amount-unit"
     >
-      {{ unitName }}
-    </span>
+      <template #append-inner>
+        <span
+          class="amount-unit text-medium-emphasis"
+          data-test="amount-unit"
+        >
+          {{ unitName }}
+        </span>
+      </template>
+    </v-text-field>
   </div>
 </template>
 
 <style scoped>
 .amount-input {
-  flex: 0 0 9rem;
+  flex: 0 0 var(--admin-amount-field-width);
 }
 </style>

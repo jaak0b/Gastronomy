@@ -23,12 +23,24 @@ beforeEach(() => {
   document.body.innerHTML = ''
 })
 
-describe('the unit beside an amount', () => {
+describe('the unit of an amount', () => {
   it('shows the unit name the ingredient carries', () => {
     const field = mountField('g', 2)
 
     expect(field.get('[data-test="amount-unit"]').text()).toBe('g')
     expect(amountInput(field).value).toBe('2')
+  })
+
+  it('sits inside the field, after the typed number', () => {
+    const field = mountField('ml', 6)
+
+    expect(field.find('[data-test="amount-input"] [data-test="amount-unit"]').exists()).toBe(true)
+  })
+
+  it('stays inside an empty field, so the admin sees the unit before typing', () => {
+    const field = mountField('Stück', null)
+
+    expect(field.get('[data-test="amount-input"] [data-test="amount-unit"]').text()).toBe('Stück')
   })
 
   it('shows the saved amount with the decimal comma of the language', () => {

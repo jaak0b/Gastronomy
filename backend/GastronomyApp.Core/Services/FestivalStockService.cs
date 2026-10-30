@@ -36,7 +36,6 @@ public sealed class FestivalStockService
 
     var rows = await _database.FestivalIngredients.AsNoTracking()
                               .Where(stock => stock.FestivalId == festivalId
-                                              && stock.Ingredient.IsActive
                                               && _database.CatalogItemIngredients.Any(recipeLine => recipeLine.IngredientId == stock.IngredientId && _database.FestivalCatalogItems.Any(menuRow => menuRow.FestivalId == festivalId && menuRow.CatalogItemId == recipeLine.CatalogItemId)))
                               .OrderBy(stock => stock.Ingredient.Name)
                               .ProjectToType<AdminFestivalIngredientView>(_mapping)

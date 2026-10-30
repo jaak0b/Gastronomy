@@ -38,17 +38,6 @@ public static partial class Refusal
       return UnprocessableEntity("errors.admin.items.categoryIsOff", $"The category {categoryId} is switched off, so an article inside it cannot be switched on.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.UnprocessableEntity });
     }
 
-    public static Error RecipeHoldsDeactivatedIngredient(Guid itemId, string ingredientName)
-    {
-      return UnprocessableEntity("errors.admin.items.ingredientIsDeactivated",
-                                 $"The recipe of the article {itemId} holds the deactivated ingredient {ingredientName}, so the article cannot be switched on.",
-                                 new Dictionary<string, object>
-                                 {
-                                   [MetadataKeys.ProblemCode] = ProblemCodes.UnprocessableEntity,
-                                   [MetadataKeys.Name] = ingredientName
-                                 });
-    }
-
     public static Error ItemIsOnTheRunningFestivalsMenu(Guid itemId)
     {
       return Conflict("errors.admin.items.isOnTheRunningFestivalsMenu", $"The article {itemId} is on the menu of the festival running right now.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "ItemIsOnTheRunningFestivalsMenu" });

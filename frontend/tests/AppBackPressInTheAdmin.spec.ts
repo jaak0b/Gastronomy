@@ -67,7 +67,7 @@ describe('back in the admin', () => {
   it('lands on the festival list after switching between tabs', async () => {
     await theAdminOnTheFestivalList()
     await openTheTab('Artikel')
-    await openTheTab('Zutaten')
+    await openTheTab('Ausgabestellen')
     await openTheTab('Kellner')
 
     await pressBack()

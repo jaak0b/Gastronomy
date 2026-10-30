@@ -51,9 +51,9 @@ Frontend, under `frontend/src/`:
   `admin/components/units/UnitDialog.vue` through `useEditSession` to rename the unit for every
   ingredient at once, without waiting for the ingredient's Speichern. The chip "Neue Einheit" after
   the group opens the same form empty, and the unit it creates becomes the chosen one
-  (`afterSaving`). Every chip of the list carries `BaseTrashButton`, always visible, inside
-  `BaseActionWithRefusalReason`: on a unit whose `usedByIngredientNames` is empty it asks through
-  `BaseConfirmDialog` and deletes on confirm; on a unit in use it is disabled and its tooltip names
+  (`afterSaving`). Every chip of the list carries the trash of `BaseDeleteAction`, always visible: on a
+  unit whose `usedByIngredientNames` is empty it asks first and deletes on confirm; on a unit in use
+  it is disabled and its tooltip names
   those ingredients (`admin.units.messages.usedByIngredients`). The chip known only from the
   ingredient's carried `unitName` has no list data and shows no trash button. A refused create or
   rename shows in the unit form, a refused delete under the chips (`BaseRefusalAlert`,
@@ -63,9 +63,9 @@ Frontend, under `frontend/src/`:
   the units is not hidden behind the dimmed page.
 - `admin/stores/units.ts` sits on `defineAdminList` with `withCreating` and `withDeleting` at
   `/api/admin/units`, hands the layer's `deleteEntry` out as `deleteUnit`, and reloads on
-  `ConfigurationChanged`. `IngredientsList.vue` and `ItemsList.vue` load and listen to it, so a
-  failed load of the units shows in the admin's load failure bar like every other list.
-- `IngredientsList.vue`, the recipe dialog and the stock rows show `unitName` from the wire view.
+  `ConfigurationChanged`. `ItemsList.vue` loads and listens to it, so a failed load of the units
+  shows in the admin's load failure bar like every other list.
+- The recipe popup (both columns) and the stock rows show `unitName` from the wire view.
 - `admin/core/ingredientAmounts.ts` parses and formats a plain amount with no conversion, and
   `admin/composables/useIngredientAmountText.ts` writes the stored number with the unit name.
 - Texts: `admin.units.*` (the unit form, "Neue Einheit", the question before a delete and the
@@ -77,7 +77,7 @@ Frontend, under `frontend/src/`:
 - Units are global and have no active flag. The list returns every unit.
 - A unit name is unique without regard to case. Creating or renaming to the name of another unit is
   refused with `errors.admin.units.nameTaken` and the parameter `name`.
-- A unit is in use when any ingredient points at it, active or deactivated, and a unit in use is
+- A unit is in use when any ingredient points at it, and a unit in use is
   never deleted. The list view names every such ingredient, and the screen enables delete
   exactly when that list is empty. The delete route asks the same question and refuses with
   `common.errors.actionFailed` and problem code `UnitUsedByIngredients`, because the screen already
@@ -96,8 +96,8 @@ Frontend, under `frontend/src/`:
 
 - `GastronomyApp.Core.Tests/Services`: the ingredient tests that construct an ingredient with a unit.
 - `GastronomyApp.Infrastructure.Tests/Queries`: `NamedQueriesTest` (the namesake check of units and
-  ingredients, in SQL) and `UnitQueriesTest` (the names of every ingredient that uses a unit, active
-  or deactivated, sorted in SQL).
+  ingredients, in SQL) and `UnitQueriesTest` (the names of every ingredient that uses a unit, sorted
+  in SQL).
 - `GastronomyApp.Infrastructure.Tests/Services`: `UnitServiceTest` (every unit action on the real
   DbContext with in-memory SQLite), `Configurations/UnitNameIndexTest` (the unique name index),
   `IngredientServiceTest` (including a unit change that
@@ -121,6 +121,6 @@ Frontend, under `frontend/src/`:
   `IngredientDialog.unitDeleting.spec.ts` for the trash button, enabled or disabled with the
   ingredients named, and the delete, all on `ingredientDialogFixture.ts`),
   `admin/components/units/UnitDialog.spec.ts`, `admin/stores/screenListening.spec.ts` and
-  `admin/components/AdminLoadFailureBar.spec.ts` (a failed unit load on the Zutaten tab, and the bar
+  `admin/components/AdminLoadFailureBar.spec.ts` (a failed unit load on the Artikel tab, and the bar
   inside the ingredient form). Fixtures come from `anAdminUnit`, `PIECE_UNIT`, `GRAM_UNIT`,
   `MILLILITRE_UNIT` and `KISTE_UNIT` in `tests/support/wireViews.ts`.

@@ -1,7 +1,5 @@
 using GastronomyApp.Api.Answers;
 using GastronomyApp.Contracts.Admin.Ingredients;
-using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -20,10 +18,7 @@ public static class AdminIngredientEndpoints
 
     group.MapPut("/{ingredientId:guid}", async Task<ApiAnswer<SavedIngredientView>> (Guid ingredientId, SaveIngredientRequest request, IngredientService service, CancellationToken cancellationToken) => await service.UpdateAsync(ingredientId, request, cancellationToken));
 
-    group.MapPost("/{ingredientId:guid}/activate",
-                  async Task<ApiAnswer<SavedIngredientView>> (Guid ingredientId, ActivationService service, CancellationToken cancellationToken) => await service.ActivateAsync<Ingredient, SavedIngredientView>(ingredientId, Refusal.Ingredients.IngredientNotFound, cancellationToken));
-
-    group.MapPost("/{ingredientId:guid}/deactivate", async Task<ApiAnswer<SavedIngredientView>> (Guid ingredientId, IngredientService service, CancellationToken cancellationToken) => await service.DeactivateAsync(ingredientId, cancellationToken));
+    group.MapDelete("/{ingredientId:guid}", async Task<NoContentAnswer> (Guid ingredientId, IngredientService service, CancellationToken cancellationToken) => await service.DeleteAsync(ingredientId, cancellationToken));
 
     return routes;
   }

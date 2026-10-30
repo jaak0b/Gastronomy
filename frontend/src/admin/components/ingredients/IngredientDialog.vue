@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminIngredientView, AdminUnitView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
@@ -7,13 +7,11 @@ import type { IngredientDraft } from '../../stores/ingredients'
 import { useAdminUnitsStore, type UnitDraft } from '../../stores/units'
 import { useEditSession } from '../../composables/useEditSession'
 import { ADMIN_CHIP_BUTTON_DEFAULTS } from '../../styles/adminSizes'
-import BaseConfirmDialog from '../../../shared/components/BaseConfirmDialog.vue'
 import BaseFormDialog from '../../../shared/components/BaseFormDialog.vue'
 import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import AdminLoadFailureBar from '../AdminLoadFailureBar.vue'
-import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
+import BaseDeleteAction from '../BaseDeleteAction.vue'
 import BaseEditButton from '../BaseEditButton.vue'
-import BaseTrashButton from '../BaseTrashButton.vue'
 import UnitDialog from '../units/UnitDialog.vue'
 
 interface UnitChoice {
@@ -23,14 +21,17 @@ interface UnitChoice {
   deletionRefusal: string | null
 }
 
-const props = defineProps<{ ingredient: AdminIngredientView | null; errorText: string | null }>()
+const props = defineProps<{
+  ingredient: AdminIngredientView | null
+  errorText: string | null
+  nameToStartWith?: string
+}>()
 const emit = defineEmits<{ save: [draft: IngredientDraft]; cancel: [] }>()
 
 const { t } = useI18n()
 const units = useAdminUnitsStore()
-const name = ref(props.ingredient?.name ?? '')
+const name = ref(props.ingredient?.name ?? props.nameToStartWith ?? '')
 const unitId = ref<string | null>(props.ingredient?.unitId ?? null)
-const unitAwaitingDeleteConfirmation = shallowRef<UnitChoice | null>(null)
 const unitSession = useEditSession<UnitChoice, UnitDraft, AdminUnitView | null>({
   saveThrough: (draft, unit) =>
     unit === null
@@ -85,15 +86,8 @@ const title = computed(() =>
 
 const isIncomplete = computed(() => name.value.trim().length === 0 || unitId.value === null)
 
-function askToDelete(unit: UnitChoice): void {
-  unitSession.forgetRefusal()
-  unitAwaitingDeleteConfirmation.value = unit
-}
-
-async function deleteTheUnitAwaitingConfirmation(): Promise<void> {
-  const unit = unitAwaitingDeleteConfirmation.value
-  unitAwaitingDeleteConfirmation.value = null
-  if (unit === null || unitSession.showRefusalOf(await units.deleteUnit(unit.unitId))) {
+async function deleteUnit(unit: UnitChoice): Promise<void> {
+  if (unitSession.showRefusalOf(await units.deleteUnit(unit.unitId))) {
     return
   }
   if (unitId.value === unit.unitId) {
@@ -158,24 +152,16 @@ function save(): void {
                   @keydown.enter.stop
                   @keydown.space.stop
                 />
-                <BaseActionWithRefusalReason
+                <BaseDeleteAction
                   v-if="choice.isListed"
-                  class="delete-unit-wrapper"
-                  data-test="delete-unit-wrapper"
+                  trash-test-name="delete-unit"
                   :refusal-reason="choice.deletionRefusal"
-                  @click.stop
-                  @keydown.enter.stop
-                  @keydown.space.stop
-                >
-                  <template #default="{ refused }">
-                    <BaseTrashButton
-                      class="delete-unit"
-                      data-test="delete-unit"
-                      :disabled="refused"
-                      @click="askToDelete(choice)"
-                    />
-                  </template>
-                </BaseActionWithRefusalReason>
+                  :confirm-title="t('admin.units.labels.deleteTitle')"
+                  :confirm-body="t('admin.units.messages.deleteBody', { name: choice.name })"
+                  :confirm-label="t('admin.units.actions.deleteConfirm')"
+                  @asked="unitSession.forgetRefusal()"
+                  @confirmed="deleteUnit(choice)"
+                />
               </template>
             </v-chip>
           </v-chip-group>
@@ -204,13 +190,5 @@ function save(): void {
     :error-text="unitRefusalText"
     @save="unitSession.save"
     @cancel="unitSession.close"
-  />
-  <BaseConfirmDialog
-    v-if="unitAwaitingDeleteConfirmation !== null"
-    :title="t('admin.units.labels.deleteTitle')"
-    :body="t('admin.units.messages.deleteBody', { name: unitAwaitingDeleteConfirmation.name })"
-    :confirm-label="t('admin.units.actions.deleteConfirm')"
-    @confirm="deleteTheUnitAwaitingConfirmation"
-    @cancel="unitAwaitingDeleteConfirmation = null"
   />
 </template>

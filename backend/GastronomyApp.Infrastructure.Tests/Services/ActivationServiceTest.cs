@@ -1,6 +1,6 @@
 using ErrorOr;
 using GastronomyApp.Contracts.Admin.Festivals;
-using GastronomyApp.Contracts.Admin.Ingredients;
+using GastronomyApp.Contracts.Admin.Stations;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
@@ -17,16 +17,16 @@ public sealed class ActivationServiceTest
   public async Task ActivateAsync_ASwitchedOffRow_SwitchesItOnAndStoresIt()
   {
     using SqliteInMemoryFixture fixture = new();
-    var ingredient = await StoreIngredientAsync(fixture, false);
+    var station = await StoreStationAsync(fixture, false);
     ActivationService service = new(fixture.DbContext, new CoreMappingFactory().Create());
 
-    ErrorOr<SavedIngredientView> activated = await service.ActivateAsync<Ingredient, SavedIngredientView>(ingredient.Id, Refusal.Ingredients.IngredientNotFound, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<SavedStationView> activated = await service.ActivateAsync<Station, SavedStationView>(station.Id, Refusal.Station.StationNotFound, TestContext.CurrentContext.CancellationToken);
     fixture.DbContext.ChangeTracker.Clear();
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(activated.Value, Is.EqualTo(new SavedIngredientView(ingredient.Id)));
-                      Assert.That(fixture.DbContext.Ingredients.Single().IsActive, Is.True);
+                      Assert.That(activated.Value, Is.EqualTo(new SavedStationView(station.Id)));
+                      Assert.That(fixture.DbContext.Stations.Single().IsActive, Is.True);
                     });
   }
 
@@ -36,7 +36,7 @@ public sealed class ActivationServiceTest
     using SqliteInMemoryFixture fixture = new();
     ActivationService service = new(fixture.DbContext, new CoreMappingFactory().Create());
 
-    ErrorOr<SavedIngredientView> activated = await service.ActivateAsync<Ingredient, SavedIngredientView>(Guid.NewGuid(), Refusal.Ingredients.IngredientNotFound, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<SavedStationView> activated = await service.ActivateAsync<Station, SavedStationView>(Guid.NewGuid(), Refusal.Station.StationNotFound, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(activated.FirstError.NumericType, Is.EqualTo(RefusalType.NotFound));
   }
@@ -175,25 +175,19 @@ public sealed class ActivationServiceTest
     return festival;
   }
 
-  private async Task<Ingredient> StoreIngredientAsync(SqliteInMemoryFixture fixture, bool isActive)
+  private async Task<Station> StoreStationAsync(SqliteInMemoryFixture fixture, bool isActive)
   {
-    Unit unit = new()
-                {
-                  Id = Guid.NewGuid(),
-                  Name = "Portion"
-                };
-    Ingredient ingredient = new()
-                            {
-                              Id = Guid.NewGuid(),
-                              Name = "Senf",
-                              UnitId = unit.Id,
-                              Unit = unit,
-                              IsActive = isActive
-                            };
-    fixture.DbContext.Ingredients.Add(ingredient);
+    Station station = new()
+                      {
+                        Id = Guid.NewGuid(),
+                        Name = "Grill",
+                        SortOrder = 1,
+                        IsActive = isActive
+                      };
+    fixture.DbContext.Stations.Add(station);
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     fixture.DbContext.ChangeTracker.Clear();
 
-    return ingredient;
+    return station;
   }
 }

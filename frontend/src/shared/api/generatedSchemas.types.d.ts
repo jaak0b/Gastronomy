@@ -13,7 +13,7 @@ export type AdminFestivalIngredientView = { ingredientId: string, name: string, 
 export type AdminFestivalIngredientListView = { ingredients: Array<AdminFestivalIngredientView> }
 export type AdminFestivalView = { festivalId: string, name: string, startsAtUtc: string, endsAtUtc: string, isHidden: boolean, isRunning: boolean, stationCount: number, menuItemCount: number, orderCount: number }
 export type AdminFestivalListView = { festivals: Array<AdminFestivalView> }
-export type AdminIngredientView = { ingredientId: string, name: string, unitId: string, unitName: string, isActive: boolean, activeItemNames: Array<string> }
+export type AdminIngredientView = { ingredientId: string, name: string, unitId: string, unitName: string, usedByItemNames: Array<string> }
 export type AdminIngredientListView = { ingredients: Array<AdminIngredientView> }
 export type AdminItemAtFestivalView = { priceCents: number, isAvailable: boolean, stationIds: Array<string> }
 export type AdminItemIngredientView = { ingredientId: string, name: string, unitId: string, unitName: string, amount: number }
@@ -1217,9 +1217,9 @@ export type put__api_admin_ingredients_IngredientId = {
 },
       
     }
-export type post__api_admin_ingredients_IngredientId_activate = {
-      method: "POST",
-      path: "/api/admin/ingredients/{ingredientId}/activate",
+export type delete__api_admin_ingredients_IngredientId = {
+      method: "DELETE",
+      path: "/api/admin/ingredients/{ingredientId}",
       requestFormat: "json",
       responseFormat: "json",
       parameters: {
@@ -1229,23 +1229,7 @@ export type post__api_admin_ingredients_IngredientId_activate = {
         
         
           }
-      responses: {200: Schemas.SavedIngredientView,
-},
-      
-    }
-export type post__api_admin_ingredients_IngredientId_deactivate = {
-      method: "POST",
-      path: "/api/admin/ingredients/{ingredientId}/deactivate",
-      requestFormat: "json",
-      responseFormat: "json",
-      parameters: {
-            
-        path:  { ingredientId: string },
-        
-        
-        
-          }
-      responses: {200: Schemas.SavedIngredientView,
+      responses: {204: unknown,
 },
       
     }
@@ -1353,8 +1337,6 @@ export type delete__api_admin_units_UnitId = {
 "/api/admin/festivals/{festivalId}/tables/{tableId}/hide": Endpoints.post__api_admin_festivals_FestivalId_tables_TableId_hide,
 "/api/admin/festivals/{festivalId}/tables/{tableId}/show": Endpoints.post__api_admin_festivals_FestivalId_tables_TableId_show,
 "/api/admin/ingredients": Endpoints.post__api_admin_ingredients,
-"/api/admin/ingredients/{ingredientId}/activate": Endpoints.post__api_admin_ingredients_IngredientId_activate,
-"/api/admin/ingredients/{ingredientId}/deactivate": Endpoints.post__api_admin_ingredients_IngredientId_deactivate,
 "/api/admin/units": Endpoints.post__api_admin_units
          },
 get: {
@@ -1399,6 +1381,7 @@ delete: {
 "/api/admin/festivals/{festivalId}/items/{itemId}": Endpoints.delete__api_admin_festivals_FestivalId_items_ItemId,
 "/api/admin/festivals/{festivalId}/stations/{stationId}": Endpoints.delete__api_admin_festivals_FestivalId_stations_StationId,
 "/api/admin/festivals/{festivalId}/stations/{stationId}/shape": Endpoints.delete__api_admin_festivals_FestivalId_stations_StationId_shape,
+"/api/admin/ingredients/{ingredientId}": Endpoints.delete__api_admin_ingredients_IngredientId,
 "/api/admin/units/{unitId}": Endpoints.delete__api_admin_units_UnitId
          }
      }

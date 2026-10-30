@@ -28,8 +28,7 @@ public sealed class IngredientNameIndexTest
              Id = Guid.NewGuid(),
              Name = name,
              UnitId = unit.Id,
-             Unit = unit,
-             IsActive = true
+             Unit = unit
            };
   }
 

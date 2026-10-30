@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminIngredientsStore } from '../../../src/admin/stores/ingredients'
-import { aHold, answer, heldUntil, inTurn, stubLaptop, type StubbedLaptop } from '../../support/laptop'
+import { aHold, answer, emptyAnswer, heldUntil, inTurn, stubLaptop, type StubbedLaptop } from '../../support/laptop'
 import { anAdminIngredient } from '../../support/wireViews'
 
 const FLOUR = anAdminIngredient({
@@ -104,17 +104,35 @@ describe('writing an ingredient', () => {
     ])
   })
 
-  it('deactivates and activates it through their own routes', async () => {
-    const laptop = ingredientsLaptop({ writeAnswer: { ingredientId: FLOUR.ingredientId } })
+  it('deletes it through its own address and reads the list again', async () => {
+    const laptop = stubLaptop()
+      .answersEverythingElse(emptyAnswer(204))
+      .answers('GET', '/api/admin/ingredients', answer({ ingredients: [BUN] }))
     const ingredients = useAdminIngredientsStore()
 
-    await ingredients.setActive(FLOUR.ingredientId, false)
-    await ingredients.setActive(FLOUR.ingredientId, true)
+    const result = await ingredients.deleteIngredient(FLOUR.ingredientId)
 
-    expect(laptop.calls.filter((call) => call.method === 'POST').map((call) => call.url)).toEqual([
-      '/api/admin/ingredients/ingredient-mehl/deactivate',
-      '/api/admin/ingredients/ingredient-mehl/activate',
+    expect(result).toEqual({ kind: 'ok', value: null })
+    expect(laptop.calls).toEqual([
+      { url: '/api/admin/ingredients/ingredient-mehl', method: 'DELETE', body: undefined },
+      { url: '/api/admin/ingredients', method: 'GET', body: undefined },
     ])
+    expect(ingredients.ingredients).toEqual([BUN])
+  })
+
+  it('hands back the shared failure when the laptop refuses to delete an ingredient in use', async () => {
+    ingredientsLaptop({
+      writeStatus: 409,
+      writeAnswer: { code: 'IngredientUsedByItems', messageKey: 'common.errors.actionFailed', parameters: {}, details: null },
+    })
+    const ingredients = useAdminIngredientsStore()
+
+    const result = await ingredients.deleteIngredient(FLOUR.ingredientId)
+
+    expect(result).toEqual({
+      kind: 'failed',
+      message: { key: 'common.errors.actionFailed', parameters: {}, count: null },
+    })
   })
 
   it('hands back the reason the laptop named when it refuses', async () => {

@@ -51,8 +51,7 @@ export function anAdminIngredient(overrides: Partial<AdminIngredientView> = {}):
     name: 'Brötchen',
     unitId: 'unit-stueck',
     unitName: 'Stück',
-    isActive: true,
-    activeItemNames: [],
+    usedByItemNames: [],
     ...overrides,
   }
 }

@@ -182,28 +182,6 @@ public sealed class AdminUnitEndpointsTest
   }
 
   [Test]
-  public async Task DeleteUnit_AUnitOnlyADeactivatedIngredientUses_IsRefusedAndStillListsThatIngredient()
-  {
-    var unitId = await CreateUnitAsync("Portion");
-    var ingredientId = await CreateIngredientAsync("Dill", unitId);
-
-    using var deactivatedIngredient = await _context.Client.PostAsync($"/api/admin/ingredients/{ingredientId}/deactivate", null);
-    using var response = await _context.Client.DeleteAsync($"/api/admin/units/{unitId}");
-
-    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
-    var usedByIngredientNames = (await FindListedUnitAsync(unitId)).GetProperty("usedByIngredientNames").EnumerateArray().Select(name => name.GetString()).ToList();
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(deactivatedIngredient.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.GetProperty("code").GetString(), Is.EqualTo("UnitUsedByIngredients"));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
-                      Assert.That(usedByIngredientNames, Is.EqualTo(new[] { "Dill" }));
-                    });
-  }
-
-  [Test]
   public async Task DeleteUnit_AnUnknownUnit_AnswersNotFound()
   {
     using var response = await _context.Client.DeleteAsync($"/api/admin/units/{Guid.NewGuid()}");

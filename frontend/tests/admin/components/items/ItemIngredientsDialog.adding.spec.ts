@@ -1,51 +1,43 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { flushPromises, type VueWrapper } from '@vue/test-utils'
+import { flushPromises } from '@vue/test-utils'
 import { refusal } from '../../../support/laptop'
-import { allOnScreen, inputOf, isOnScreen, onScreen, typeIn, typeInto, waitUntil } from '../../../support/dom'
-import { formDialogHolding, saveTheIngredientDialog } from '../../../support/formDialogs'
+import { allOnScreen, isOnScreen, onScreen, textOnScreen, typeIn, typeInto, waitUntil } from '../../../support/dom'
 import {
+  AMOUNT_TO_ADD,
   addButtonIsDisabled,
-  addedAmountInput,
-  chooseIngredient,
-  ingredientSearch,
+  amountToAddInput,
+  ingredientIdsOfRowsHolding,
+  ingredientRow,
   loadIngredientsAndMountDialog,
+  openTheAmountRowOf,
   recipeLaptop,
-  recipeLaptopWithNothingLeftToAdd,
 } from './itemIngredientsDialogFixture'
 
-const OFFERED_CHOICE = '.v-autocomplete__content .v-list-item-title'
+const MILK_ROW = ingredientRow('ingredient-milch')
 
-const ADD_ROW_REFUSAL = '[data-test="add-recipe-line"] [data-test="refusal"]'
+const MILK_REFUSAL = `${MILK_ROW} [data-test="refusal"]`
 
-async function createIngredientThroughTheForm(name: string, unitId: string): Promise<void> {
-  onScreen('[data-test="new-ingredient"]').click()
-  await vi.waitFor(() => expect(isOnScreen('[data-test="ingredient-name-field"]')).toBe(true))
-  await saveTheIngredientDialog(name, unitId)
-}
-
-async function addTheChosenIngredientWith(amount: string): Promise<void> {
-  typeInto(addedAmountInput(), amount)
+async function typeTheAmountToAdd(amount: string): Promise<void> {
+  typeInto(amountToAddInput(), amount)
   await vi.waitFor(() => expect(addButtonIsDisabled()).toBe(false))
-  onScreen('[data-test="add-to-recipe"]').click()
 }
 
-async function openTheIngredientSearch(): Promise<void> {
-  onScreen('[data-test="ingredient-search"] .v-field').dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
-  await waitUntil(() => expect(isOnScreen(OFFERED_CHOICE)).toBe(true))
+function pressEnterInTheAmountToAdd(): void {
+  amountToAddInput().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
 }
 
-async function dialogAfterTheLaptopRefusedAddingMilk(): Promise<VueWrapper> {
+async function dialogAfterTheLaptopRefusedAddingMilk(): Promise<void> {
   recipeLaptop().answers(
     'PUT',
     /./,
     refusal('errors.admin.ingredients.amountInvalid', { status: 422, code: 'UnprocessableEntity' }),
   )
-  const dialog = await loadIngredientsAndMountDialog()
-  await chooseIngredient(dialog, 'ingredient-milch')
-  await addTheChosenIngredientWith('250')
-  await waitUntil(() => expect(isOnScreen(ADD_ROW_REFUSAL)).toBe(true))
-  return dialog
+  await loadIngredientsAndMountDialog()
+  await openTheAmountRowOf('ingredient-milch')
+  await typeTheAmountToAdd('250')
+  onScreen('[data-test="add-to-recipe"]').click()
+  await waitUntil(() => expect(isOnScreen(MILK_REFUSAL)).toBe(true))
 }
 
 beforeEach(() => {
@@ -57,228 +49,142 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('choosing an ingredient to add', () => {
-  it('offers only the active ingredients that are not yet in the recipe', async () => {
+describe('the plus on an ingredient', () => {
+  it('opens an empty amount field under that row with the unit of the ingredient inside it', async () => {
     recipeLaptop()
     await loadIngredientsAndMountDialog()
 
-    await openTheIngredientSearch()
+    await openTheAmountRowOf('ingredient-milch')
 
-    expect(allOnScreen(OFFERED_CHOICE).map((choice) => choice.textContent)).toEqual(['Milch', 'Sahne'])
+    expect(amountToAddInput().value).toBe('')
+    expect(textOnScreen(`${MILK_ROW} ${AMOUNT_TO_ADD} [data-test="amount-input"] [data-test="amount-unit"]`).trim()).toBe('ml')
   })
 
   it.each([
-    ['de', 'Alle Zutaten sind bereits hinzugefügt. Klicken Sie auf „Neue Zutat“.'],
-    ['en', 'Every ingredient has already been added. Click "New ingredient".'],
-  ] as const)('points in %s to the new ingredient button when nothing is left to choose', async (locale, expected) => {
-    recipeLaptopWithNothingLeftToAdd()
+    ['de', 'Hinzufügen'],
+    ['en', 'Add'],
+  ] as const)('offers the add button in %s beside the amount', async (locale, expected) => {
+    recipeLaptop()
     await loadIngredientsAndMountDialog(locale)
 
-    await openTheIngredientSearch()
+    await openTheAmountRowOf('ingredient-milch')
 
-    expect(allOnScreen(OFFERED_CHOICE).map((choice) => choice.textContent)).toEqual([expected])
+    expect(onScreen(`${MILK_ROW} [data-test="add-to-recipe"]`).textContent?.trim()).toBe(expected)
   })
 
-  it('keeps the amount field switched off and shows no unit until an ingredient is chosen', async () => {
+  it('keeps one row open at a time', async () => {
     recipeLaptop()
-
     await loadIngredientsAndMountDialog()
+    await openTheAmountRowOf('ingredient-milch')
 
-    expect(addedAmountInput().disabled).toBe(true)
-    expect(allOnScreen('[data-test="add-recipe-line"] [data-test="amount-unit"]')).toEqual([])
+    await openTheAmountRowOf('ingredient-sahne')
+
+    expect(ingredientIdsOfRowsHolding(AMOUNT_TO_ADD)).toEqual(['ingredient-sahne'])
   })
 
-  it('keeps the add button disabled until an ingredient is chosen', async () => {
+  it('keeps the amount already typed when it is pressed again on the open row', async () => {
     recipeLaptop()
-
     await loadIngredientsAndMountDialog()
+    await openTheAmountRowOf('ingredient-milch')
+    await typeTheAmountToAdd('250')
 
-    expect(addButtonIsDisabled()).toBe(true)
-  })
+    await openTheAmountRowOf('ingredient-milch')
 
-  it('shows the unit of the chosen ingredient beside the amount', async () => {
-    recipeLaptop()
-    const dialog = await loadIngredientsAndMountDialog()
-
-    await chooseIngredient(dialog, 'ingredient-milch')
-
-    expect(onScreen('[data-test="add-recipe-line"] [data-test="amount-unit"]').textContent).toBe('ml')
+    expect(amountToAddInput().value).toBe('250')
+    expect(addButtonIsDisabled()).toBe(false)
   })
 })
 
-describe('adding the chosen ingredient', () => {
-  it.each([
-    ['de', 'Zutat hinzufügen'],
-    ['en', 'Add the ingredient'],
-  ] as const)('names the add button in %s', async (locale, expected) => {
-    recipeLaptop()
-
-    await loadIngredientsAndMountDialog(locale)
-
-    expect(onScreen('[data-test="add-to-recipe"]').textContent?.trim()).toBe(expected)
-  })
-
-  it('sends one request for the amount', async () => {
-    const laptop = recipeLaptop()
-    const dialog = await loadIngredientsAndMountDialog()
-    await chooseIngredient(dialog, 'ingredient-milch')
-
-    await addTheChosenIngredientWith('250')
-
-    await vi.waitFor(() =>
-      expect(laptop.writes()).toEqual([
-        {
-          url: '/api/admin/items/item-pfannkuchen/ingredients/ingredient-milch',
-          method: 'PUT',
-          body: { amount: 250 },
-        },
-      ]),
-    )
-  })
-
-  it('empties the add row after a successful add', async () => {
-    recipeLaptop()
-    const dialog = await loadIngredientsAndMountDialog()
-    await chooseIngredient(dialog, 'ingredient-milch')
-
-    await addTheChosenIngredientWith('250')
-
-    await vi.waitFor(() => expect(ingredientSearch(dialog).props('modelValue')).toBeNull())
-    expect(addedAmountInput().value).toBe('')
-    expect(addedAmountInput().disabled).toBe(true)
-  })
-
+describe('adding an ingredient with its amount', () => {
   it.each([
     ['no amount', ''],
     ['zero', '0'],
     ['unreadable text', 'viel'],
-  ])('keeps the add button disabled with %s', async (_description, amount) => {
+  ])('is not possible with %s', async (_description, amount) => {
     recipeLaptop()
-    const dialog = await loadIngredientsAndMountDialog()
-    await chooseIngredient(dialog, 'ingredient-milch')
+    await loadIngredientsAndMountDialog()
+    await openTheAmountRowOf('ingredient-milch')
 
-    typeInto(addedAmountInput(), amount)
+    typeInto(amountToAddInput(), amount)
     await flushPromises()
 
     expect(addButtonIsDisabled()).toBe(true)
   })
 
-  it('shows under the add row why the laptop refused the amount', async () => {
-    recipeLaptop().answers(
-      'PUT',
-      /./,
-      refusal('errors.admin.ingredients.amountInvalid', { status: 422, code: 'UnprocessableEntity' }),
-    )
-    const dialog = await loadIngredientsAndMountDialog()
-    await chooseIngredient(dialog, 'ingredient-milch')
-
-    await addTheChosenIngredientWith('250')
-
-    await vi.waitFor(() =>
-      expect(onScreen('[data-test="add-recipe-line"] [data-test="refusal"]').textContent?.trim()).toBe(
-        'Geben Sie eine Menge größer als null an.',
-      ),
-    )
-    expect(allOnScreen('[data-test="recipe-line"] [data-test="refusal"]')).toEqual([])
-  })
-
-  it('keeps the chosen ingredient and the typed amount when the laptop refuses the amount', async () => {
-    recipeLaptop().answers(
-      'PUT',
-      /./,
-      refusal('errors.admin.ingredients.amountInvalid', { status: 422, code: 'UnprocessableEntity' }),
-    )
-    const dialog = await loadIngredientsAndMountDialog()
-    await chooseIngredient(dialog, 'ingredient-milch')
-
-    await addTheChosenIngredientWith('250')
-
-    await vi.waitFor(() => expect(isOnScreen('[data-test="add-recipe-line"] [data-test="refusal"]')).toBe(true))
-    expect(ingredientSearch(dialog).props('modelValue')).toBe('ingredient-milch')
-    expect(addedAmountInput().value).toBe('250')
-  })
-})
-
-describe('creating an ingredient from the recipe', () => {
-  it('opens the empty form of the ingredients tab', async () => {
-    recipeLaptop()
-    await loadIngredientsAndMountDialog()
-
-    onScreen('[data-test="new-ingredient"]').click()
-
-    await vi.waitFor(() => expect(isOnScreen('[data-test="ingredient-name-field"]')).toBe(true))
-    const form = formDialogHolding('[data-test="ingredient-name-field"]')
-    expect(onScreen('[data-test="form-dialog-title"]', form).textContent).toBe('Neue Zutat')
-    expect(inputOf('[data-test="ingredient-name-field"]').value).toBe('')
-  })
-
-  it('sends the new ingredient, closes the form and chooses the ingredient for adding', async () => {
-    const laptop = recipeLaptop()
-    const dialog = await loadIngredientsAndMountDialog()
-
-    await createIngredientThroughTheForm('Ei', 'unit-stueck')
-
-    await vi.waitFor(() => expect(isOnScreen('[data-test="ingredient-name-field"]')).toBe(false))
-    expect(laptop.writes()).toEqual([
-      { url: '/api/admin/ingredients', method: 'POST', body: { name: 'Ei', unitId: 'unit-stueck' } },
-    ])
-    expect(ingredientSearch(dialog).props('modelValue')).toBe('ingredient-ei')
-  })
-
-  it('adds the created ingredient with the amount the admin types afterwards', async () => {
+  it('sends one request with the typed amount for this article', async () => {
     const laptop = recipeLaptop()
     await loadIngredientsAndMountDialog()
-    await createIngredientThroughTheForm('Ei', 'unit-stueck')
-    await vi.waitFor(() => expect(addedAmountInput().disabled).toBe(false))
+    await openTheAmountRowOf('ingredient-milch')
+    await typeTheAmountToAdd('250,5')
 
-    await addTheChosenIngredientWith('3')
+    onScreen('[data-test="add-to-recipe"]').click()
 
     await vi.waitFor(() =>
-      expect(laptop.writes().map((call) => `${call.method} ${call.url}`)).toEqual([
-        'POST /api/admin/ingredients',
-        'PUT /api/admin/items/item-pfannkuchen/ingredients/ingredient-ei',
+      expect(laptop.writes()).toEqual([
+        { url: '/api/admin/items/item-pfannkuchen/ingredients/ingredient-milch', method: 'PUT', body: { amount: 250.5 } },
       ]),
     )
   })
 
-  it.each([
-    ['errors.admin.ingredients.nameMissing', {}, 'Geben Sie einen Namen für die Zutat an.'],
-    ['errors.admin.ingredients.nameTaken', {}, 'Eine Zutat mit diesem Namen ist bereits vorhanden. Wählen Sie einen anderen Namen.'],
-    [
-      'errors.admin.ingredients.nameBelongsToDeactivatedIngredient',
-      { name: 'Honig' },
-      'Die Zutat Honig ist bereits vorhanden, aber deaktiviert. Aktivieren Sie sie unter „Zutaten“.',
-    ],
-  ])('shows the refusal %s inside the form and chooses nothing', async (messageKey, parameters, expected) => {
-    recipeLaptop().answers(
-      'POST',
-      '/api/admin/ingredients',
-      refusal(messageKey, { status: 400, code: 'ValidationFailed', parameters }),
-    )
-    const dialog = await loadIngredientsAndMountDialog()
+  it('sends exactly one request when Enter is pressed in the amount field', async () => {
+    const laptop = recipeLaptop()
+    await loadIngredientsAndMountDialog()
+    await openTheAmountRowOf('ingredient-milch')
+    await typeTheAmountToAdd('250')
 
-    await createIngredientThroughTheForm('honig', 'unit-gram')
+    pressEnterInTheAmountToAdd()
+    await flushPromises()
 
-    const form = formDialogHolding('[data-test="ingredient-name-field"]')
-    await vi.waitFor(() => expect(onScreen('[data-test="refusal"]', form).textContent?.trim()).toBe(expected))
-    expect(ingredientSearch(dialog).props('modelValue')).toBeNull()
+    expect(laptop.writes()).toEqual([
+      { url: '/api/admin/items/item-pfannkuchen/ingredients/ingredient-milch', method: 'PUT', body: { amount: 250 } },
+    ])
+  })
+
+  it('sends nothing when Enter is pressed without an amount', async () => {
+    const laptop = recipeLaptop()
+    await loadIngredientsAndMountDialog()
+    await openTheAmountRowOf('ingredient-milch')
+
+    pressEnterInTheAmountToAdd()
+    await flushPromises()
+
+    expect(laptop.writes()).toEqual([])
+  })
+
+  it('closes the row once the laptop has accepted the amount', async () => {
+    recipeLaptop()
+    await loadIngredientsAndMountDialog()
+    await openTheAmountRowOf('ingredient-milch')
+    await typeTheAmountToAdd('250')
+
+    onScreen('[data-test="add-to-recipe"]').click()
+
+    await waitUntil(() => expect(isOnScreen(AMOUNT_TO_ADD)).toBe(false))
   })
 })
 
-describe('a refusal under the add row', () => {
-  it('goes away as soon as the admin chooses another ingredient', async () => {
-    const dialog = await dialogAfterTheLaptopRefusedAddingMilk()
-
-    await chooseIngredient(dialog, 'ingredient-sahne')
-
-    await waitUntil(() => expect(isOnScreen(ADD_ROW_REFUSAL)).toBe(false))
-  })
-
-  it('goes away as soon as the admin types another amount', async () => {
+describe('an amount the laptop refuses to add', () => {
+  it('is named under that row only, and the typed amount stays', async () => {
     await dialogAfterTheLaptopRefusedAddingMilk()
 
-    await typeIn(addedAmountInput(), '300')
+    expect(onScreen(MILK_REFUSAL).textContent?.trim()).toBe('Geben Sie eine Menge größer als null an.')
+    expect(allOnScreen('[data-test="refusal"]')).toHaveLength(1)
+    expect(amountToAddInput().value).toBe('250')
+  })
 
-    await waitUntil(() => expect(isOnScreen(ADD_ROW_REFUSAL)).toBe(false))
+  it('stops being named as soon as the admin types another amount', async () => {
+    await dialogAfterTheLaptopRefusedAddingMilk()
+
+    await typeIn(amountToAddInput(), '300')
+
+    await waitUntil(() => expect(isOnScreen(MILK_REFUSAL)).toBe(false))
+  })
+
+  it('stops being named once the admin opens another row', async () => {
+    await dialogAfterTheLaptopRefusedAddingMilk()
+
+    await openTheAmountRowOf('ingredient-sahne')
+
+    expect(isOnScreen(MILK_REFUSAL)).toBe(false)
   })
 })

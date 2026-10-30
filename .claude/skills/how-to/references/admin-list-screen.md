@@ -1,10 +1,13 @@
 # Add a global admin tab
 
 A global tab lists one kind of thing with a form to create and edit it and a switch off that can be
-undone. The Zutaten tab, `frontend/src/admin/components/ingredients/IngredientsList.vue`, is the one
-to copy, and it opens its form through `useEditSession`. `StaffList.vue` and `StationsList.vue` use
-`useRefusalDisplay` directly, and the stations store is built on `defineFestivalScopedList` instead
-of `defineAdminList`.
+undone. No tab shows every step below on its own, so take each piece from where it lives: the
+Ausgabestellen tab, `frontend/src/admin/components/stations/StationsList.vue`, for the list, the
+switch off and its disabled reason; the categories of the Artikel tab (`stores/categories.ts`,
+edited through `useEditSession` in `items/ItemsList.vue`) for a store on `defineAdminList`; and the
+list of all ingredients in the recipe popup (`items/ItemIngredientsDialog.vue`) for a list whose
+entries are deleted. `StaffList.vue` and `StationsList.vue` use `useRefusalDisplay` directly, and
+the stations store is built on `defineFestivalScopedList` instead of `defineAdminList`.
 
 ## Steps
 
@@ -18,7 +21,7 @@ of `defineAdminList`.
 3. **Store.** `frontend/src/admin/stores/<things>.ts` is a Pinia store over `defineAdminList` from
    `stores/adminList.ts`: pass `path`, the zod `listSchema` and `entrySchema` from
    `shared/api/generatedSchemas`, `entriesOf`, `idOf` and `requestBodyOf`, and return `entries`,
-   `hasLoaded`, `loadFailed`, `load`, `create`, `update` (the Zutaten store wraps it as `save`),
+   `hasLoaded`, `loadFailed`, `load`, `create`, `update` (the ingredients store wraps it as `save`),
    `setActive` plus a `listen()`. The store writes its definition once through `adminListDefinition(...)` and hands it to
    `defineAdminList`, which holds only what every list has (`entries`, `load`, `loadFrom`, `update`,
    `showCreated`, `forgetCreatedEntries`), and to the layers the laptop offers routes for: `withCreating(list, definition)` adds
@@ -26,8 +29,8 @@ of `defineAdminList`.
    through enrolment, so the staff list has none); `withActivation(list, definition)` adds `setActive` and
    belongs to a list that has `/activate` and `/deactivate` routes (the festivals use `/hide` and `/show`,
    so the festivals store has none); `withDeleting(list, definition)` adds `deleteEntry` and belongs to
-   a list whose entries are deleted for good on `DELETE <path>/{id}` (the units store hands it out as
-   `deleteUnit`). After a delete the layer forgets the entries `create` showed ahead of the laptop's
+   a list whose entries are deleted for good on `DELETE <path>/{id}` (the units and ingredients stores
+   hand it out as `deleteUnit` and `deleteIngredient`). After a delete the layer forgets the entries `create` showed ahead of the laptop's
    list, then reads the list again through the latest request gate, so neither a just-created entry
    nor a read that started earlier brings the deleted entry back. A store applies only the layers its
    endpoints have, e.g.
@@ -65,7 +68,7 @@ of `defineAdminList`.
    `admin.common.actions.showDeactivated`, in German "Deaktivierte anzeigen"), which decides whether
    deactivated entries are listed, so a row is listed when `isActive || showsDeactivated`. A `v-chip` with `admin.common.labels.deactivated` marks a deactivated
    entry, which offers activating in place of switching off: the open eye `BaseShowButton.vue` with
-   the action's own word as its `label` ("Zutat aktivieren"). A row's actions follow the order in
+   the action's own word as its `label` ("Ausgabestelle aktivieren"). A row's actions follow the order in
    `hideable-rows.md`: text buttons, then the pencil, then switching off or on. The screen shows no
    load failure of its own: the shared bar under the tabs reports it (see the `admin-screens` page
    of `features`). Each entry is one `BaseListRow` (`hideable-rows.md`) with the name, its chips
@@ -75,7 +78,7 @@ of `defineAdminList`.
    not fail and the store holds no entry.
 6. **Create and edit.** `useEditSession` (`admin/composables/useEditSession.ts`) takes a `saveThrough`
    that creates when nothing is being edited and saves otherwise. The id field has the entity's own
-   name:
+   name, as in the recipe popup:
 
    ```ts
    useEditSession<AdminIngredientView, IngredientDraft, AdminIngredientView | null>({
@@ -99,8 +102,8 @@ of `defineAdminList`.
    `store.setActive(id, false)` and hands the result to `session.showRefusalOf`. Reactivating asks
    nothing. When the entry's own data already says the laptop will refuse, the switch off is disabled
    and its tooltip names the reason, through `admin/components/BaseActionWithRefusalReason.vue` around
-   `BaseTrashButton.vue` (`IngredientsList.vue` does this from `activeItemNames`, and
-   `StationsList.vue` from
+   `BaseTrashButton.vue` (the recipe popup does this for deleting an ingredient from
+   `usedByItemNames`, and `StationsList.vue` from
    `hasItemsToHandOutAtTheRunningFestival` and `strandedItemCountWhenSwitchedOff` through
    `admin/composables/useStationRefusalReasons.ts`, naming the reason the laptop checks first when
    both apply; see `hideable-rows.md`). The tooltip is the
@@ -110,19 +113,32 @@ of `defineAdminList`.
    (`shared/components/BaseRefusalAlert.vue`, `class="admin-section-gap"`), shown only while the
    form dialog is closed, because an open dialog shows its
    own refusal through `:error-text`.
-8. **Texts.** `admin.<section>.{title,labels,actions,messages}` and, for refusals the laptop sends,
+8. **Delete.** An entry the laptop deletes for good is offered by `admin/components/BaseDeleteAction.vue`:
+   the trash inside `BaseActionWithRefusalReason`, disabled with `refusal-reason` when the entry's
+   own data says it is in use, and `BaseConfirmDialog` with the `confirm-title`, `confirm-body` and
+   `confirm-label` the screen passes. `trash-test-name` names the trash and, with `-wrapper`, the
+   tooltip's wrapper. It emits `asked` when the trash is pressed, so the screen forgets an earlier
+   refusal, and `confirmed` once the admin confirms; the screen then calls the store's delete and
+   shows a refusal where it shows its others (under the row through `useRowRefusals`, or under the
+   unit chips). The screen calls the delete, not the component, because a successful delete reloads
+   the list and removes the row, and the component with it, before the answer is back. A tap, Enter
+   and Space on the trash stay inside it, so it works inside a clickable chip; every other key passes.
+   Its question keeps the admin's button sizes inside a chip with small buttons, because
+   `surfaceDefaults` nests the control defaults under `VDialog`. Consumers: the ingredient rows of
+   the recipe popup and the unit chips of `ingredients/IngredientDialog.vue`.
+9. **Texts.** `admin.<section>.{title,labels,actions,messages}` and, for refusals the laptop sends,
    `errors.admin.<section>.*`, in `shared/i18n/de.json` and `en.json` in the same change. Read
    `no-ai-slop` and `writing-ui-guidance` first.
-9. **The laptop side.** The entity carries `[Raises(HubEvent.ConfigurationChanged)]`; the routes sit in
+10. **The laptop side.** The entity carries `[Raises(HubEvent.ConfigurationChanged)]`; the routes sit in
    `backend/GastronomyApp.Api/Endpoints/Admin<Things>Endpoints.cs` and call one method of the area's service each. See the `change-a-wire-contract` and
    `add-a-refusal` pages for the contract and the refusals.
 
 ## Specs
 
-Copy the Zutaten set in `frontend/tests/admin`: `stores/<things>.spec.ts` for the store, a fixture module
-beside the list specs (`ingredientsListFixture.ts` gives the stubbed laptop and `mountList`), list
-specs split by scenario (`.listing`, `.editing`, `.switchingOff`), and a
-dialog spec. A failed load of the new tab is shown by the shared bar, so add a case for the tab to
+Copy the Ausgabestellen set in `frontend/tests/admin`: `stores/<things>.spec.ts` for the store, a
+fixture module beside the list specs (`stationsListFixture.ts` gives `mountList` and the scenario
+helpers), list specs split by scenario (`.creating`, `.emptyList`, `.refusals`, `.switchingOff`),
+and a dialog spec (`StationDialog.spec.ts`). A failed load of the new tab is shown by the shared bar, so add a case for the tab to
 `components/AdminLoadFailureBar.spec.ts` instead of testing a failure in the list. Add the store to `stores/screenListening.spec.ts` and the section to
 `views/AdminShell.spec.ts` and `shared/router/adminRoute.spec.ts`. How to write them is in
 `frontend-test-with-the-laptop`.

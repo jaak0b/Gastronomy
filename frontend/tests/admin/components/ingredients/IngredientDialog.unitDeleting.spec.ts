@@ -8,6 +8,7 @@ import {
   onScreen,
   openDialog,
   pressInDialog,
+  pressTheKeyOn,
   refusalReasonsOnScreen,
   textOnScreen,
   typeInto,
@@ -19,19 +20,18 @@ import { answer, inTurn, refusal, type StubbedLaptop } from '../../../support/la
 import { GRAM_UNIT, MILLILITRE_UNIT, PIECE_UNIT, anAdminUnit } from '../../../support/wireViews'
 import {
   LISTED_UNITS,
+  MUSTARD,
   chipOf,
   chooseUnit,
   chosenUnitIds,
   hoverTheTrashButtonOf,
   mountDialog,
   namesOnTheChips,
-  pressTheKeyOn,
   saveIsDisabled,
   unitIdsOfferedForDeleting,
   unitIdsWithATrashButton,
   unitsLaptop,
 } from './ingredientDialogFixture'
-import { MUSTARD } from './ingredientsListFixture'
 
 function laptopThatDeletesKiste(): StubbedLaptop {
   return unitsLaptop({

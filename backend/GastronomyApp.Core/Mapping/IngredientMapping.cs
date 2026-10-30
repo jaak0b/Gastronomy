@@ -1,6 +1,7 @@
 using GastronomyApp.Contracts.Admin.Ingredients;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Queries;
 using Mapster;
 
 namespace GastronomyApp.Core.Mapping;
@@ -11,9 +12,7 @@ public sealed class IngredientMapping : IRegister
   {
     ArgumentNullException.ThrowIfNull(config);
 
-    config.NewConfig<Ingredient, AdminIngredientView>()
-          .Map(view => view.IngredientId, ingredient => ingredient.Id)
-          .Map(view => view.ActiveItemNames, ingredient => ingredient.CatalogItems.Where(recipeLine => recipeLine.CatalogItem.IsActive).Select(recipeLine => recipeLine.CatalogItem.Name).OrderBy(itemName => itemName).ToList());
+    config.NewConfig<Ingredient, AdminIngredientView>().Map(view => view.IngredientId, ingredient => ingredient.Id).Map(view => view.UsedByItemNames, ingredient => ingredient.UsedByItemNames().ToList());
 
     config.NewConfig<Ingredient, SavedIngredientView>().Map(view => view.IngredientId, ingredient => ingredient.Id);
 

@@ -467,16 +467,14 @@ public sealed class FestivalServiceTest
         Id = Guid.NewGuid(),
         Name = "Senf",
         UnitId = portion.Id,
-        Unit = portion,
-        IsActive = true
+        Unit = portion
       },
       new()
       {
         Id = Guid.NewGuid(),
         Name = "Brötchen",
         UnitId = portion.Id,
-        Unit = portion,
-        IsActive = false
+        Unit = portion
       }
     ];
     _fixture.DbContext.Units.Add(portion);

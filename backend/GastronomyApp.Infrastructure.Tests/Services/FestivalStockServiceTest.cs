@@ -22,7 +22,7 @@ public sealed class FestivalStockServiceTest
     _clock = new(new(_now));
     await MoveTheFestivalAsync(_now.AddHours(-2), _now.AddHours(6));
     _tableId = await new DomainSeeder().SeedTableAsync(_fixture.DbContext, _seeded.FestivalId, "Tisch 3", TestContext.CurrentContext.CancellationToken);
-    _mustard = await AddIngredientAsync("Senf", true, _seeded.FestivalId, null);
+    _mustard = await AddIngredientAsync("Senf", _seeded.FestivalId, null);
     await AddRecipeLineAsync(_seeded.SausageItemId, _mustard.Id, 100);
     _service = new(_fixture.DbContext, new CoreMappingFactory().Create(), new(new(), new()), new(_fixture.DbContext, new(), NullLogger<StockSoldOutMarker>.Instance), _clock);
   }
@@ -167,8 +167,8 @@ public sealed class FestivalStockServiceTest
   [Test]
   public async Task ListAsync_AnIngredientUsedOnTheMenuAndOneNot_ListsOnlyTheUsedOnesByNameWithTheirUnit()
   {
-    var bun = await AddIngredientAsync("Brötchen", true, _seeded.FestivalId, 40);
-    await AddIngredientAsync("Zwiebeln", true, _seeded.FestivalId, null);
+    var bun = await AddIngredientAsync("Brötchen", _seeded.FestivalId, 40);
+    await AddIngredientAsync("Zwiebeln", _seeded.FestivalId, null);
     await AddRecipeLineAsync(_seeded.SausageItemId, bun.Id, 1);
 
     ErrorOr<AdminFestivalIngredientListView> listed = await _service.ListAsync(_seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
@@ -185,17 +185,6 @@ public sealed class FestivalStockServiceTest
                       Assert.That(listed.Value.Ingredients.Select(row => row.UnitId), Is.All.EqualTo(bun.UnitId));
                       Assert.That(listed.Value.Ingredients[0].AvailableAmount, Is.EqualTo(40));
                     });
-  }
-
-  [Test]
-  public async Task ListAsync_ADeactivatedIngredientInARecipeOnTheMenu_LeavesItOut()
-  {
-    var onions = await AddIngredientAsync("Zwiebeln", false, _seeded.FestivalId, 500);
-    await AddRecipeLineAsync(_seeded.SausageItemId, onions.Id, 15);
-
-    ErrorOr<AdminFestivalIngredientListView> listed = await _service.ListAsync(_seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
-
-    Assert.That(listed.Value.Ingredients.Select(row => row.Name), Is.EqualTo(new[] { "Senf" }));
   }
 
   [Test]
@@ -355,7 +344,7 @@ public sealed class FestivalStockServiceTest
     _fixture.DbContext.ChangeTracker.Clear();
   }
 
-  private async Task<Ingredient> AddIngredientAsync(string name, bool isActive, Guid festivalId, double? availableAmount)
+  private async Task<Ingredient> AddIngredientAsync(string name, Guid festivalId, double? availableAmount)
   {
     var unit = await _fixture.DbContext.Units.FirstOrDefaultAsync(candidate => candidate.Name == "Portion", TestContext.CurrentContext.CancellationToken);
 
@@ -374,8 +363,7 @@ public sealed class FestivalStockServiceTest
                               Id = Guid.NewGuid(),
                               Name = name,
                               UnitId = unit.Id,
-                              Unit = unit,
-                              IsActive = isActive
+                              Unit = unit
                             };
     ingredient.FestivalIngredients.Add(new()
                                        {

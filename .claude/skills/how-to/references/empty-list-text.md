@@ -35,12 +35,13 @@ do next is a different text with its own place (`row-warnings.md`).
 
 ## Where it shows
 
-- Admin: the Feste, Zutaten, Kellner and Ausgabestellen tabs; the Artikel tab, once when
+- Admin: the Feste, Kellner and Ausgabestellen tabs; the Artikel tab, once when
   the laptop sent no category and under every category that has no article
   (`ItemsListCategorySection.vue`, its prop `showsEmptyListText`); the festival page's station card,
   article card and table plan card, each only once this festival's own list has arrived
   (`HideableEntryList.vue` takes the plan's `loadState`; the `noArea` warning of the table plan card
-  reads the same state); the recipe lines of `ItemIngredientsDialog.vue`.
+  reads the same state); both columns of `ItemIngredientsDialog.vue`, the recipe lines and the
+  list of all ingredients, whose count is the whole list and never what the search lets through.
 - Phone: `OrderOverview.vue` and `OpenItems.vue` (the settle and cancel views) when the laptop finds
   no order, `data-test="no-orders"`; `TablePlan.vue` for a festival without areas (`no-tables`) and
   for an area without tables (`no-tables-in-area`); `Catalog.vue` for a catalog without categories

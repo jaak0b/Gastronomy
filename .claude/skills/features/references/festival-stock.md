@@ -1,6 +1,6 @@
 # Festival stock
 
-The festival page lists every active ingredient its menu uses. The admin enters how much of it is
+The festival page lists every ingredient its menu uses. The admin enters how much of it is
 available, sees how much the orders used, and is warned when it is used up or will run out within two
 hours. "Verlauf" opens a chart of the use with two forecasts of when it runs out.
 
@@ -9,10 +9,11 @@ hours. "Verlauf" opens a chart of the use with two forecasts of when it runs out
 Backend, under `backend/`:
 
 - `GastronomyApp.Core/Entities/FestivalIngredient.cs`: the available amount of one ingredient at one
-  festival, `null` for unlimited. One row exists for every festival and ingredient.
+  festival, `null` for unlimited. One row exists for every festival and ingredient, and deleting an
+  ingredient (`IngredientService.DeleteAsync`, on the `ingredients` page) deletes its rows with it.
 - `Services/FestivalStockService.cs` is the area service of the stock rows (`ListAsync`,
   `SetAvailableAmountAsync`), reading and writing through `IGastronomyDatabase`. `ListAsync` projects
-  the stock rows of the active ingredients the menu uses with `ProjectToType<AdminFestivalIngredientView>()`
+  the stock rows of the ingredients the menu uses with `ProjectToType<AdminFestivalIngredientView>()`
   (`Core/Mapping/IngredientMapping.cs` fills the computed members with empty values), reads the
   consumption per ingredient and order time in one grouped query, and sets the computed members with
   `with` from `StockForecast`. `SetAvailableAmountAsync` stores an amount and then runs
@@ -50,7 +51,8 @@ Frontend, under `frontend/src/`:
   `admin/core/timeAxisTicks.ts`. How the chart is drawn is on the `add-a-chart` page of `how-to`.
 - Store: `admin/stores/festivalStock.ts`. Moments: `formatTimeOfDay`, `formatTimeTick` and
   `spansMoreThanOneDay` in `shared/core/moments.ts`. Amounts: `IngredientAmountField.vue` is a text
-  field with the row's static `unitName`, `admin/core/ingredientAmounts.ts` parses the typed text
+  field with the row's static `unitName` inside it at its right end, the same field as in the recipe
+  popup, `admin/core/ingredientAmounts.ts` parses the typed text
   without conversion, and `useIngredientAmountText` writes the stored number together with the row's
   unit name. The chart axis and the readout use that same text, so no size turns grams into kilograms
   or millilitres into litres. Texts:
@@ -122,7 +124,7 @@ Frontend, under `frontend/src/`:
   DbContext: usage, both forecasts and the warning from stored orders, the ingredients the menu uses
   by name with their unit, orders of another festival, the amount refusals and the sold-out switch),
   `Services/StockSoldOutMarkerTest` (the marker on stored orders: one portion left, fractional portions,
-  overspent stock, one of two ingredients short, unlimited and switched off ingredients, an article
+  overspent stock, one of two ingredients short, an unlimited ingredient, an article
   switched off by hand, another festival) and `Queries/OrderItemQueriesTest` (`ConsumedIngredients`).
 - `GastronomyApp.Api.Tests/Endpoints`: `AdminFestivalIngredientEndpointsTest` (the wire shape, the
   `unitId` and `unitName` of every row, the `stockWarning` values, an absurd amount that still

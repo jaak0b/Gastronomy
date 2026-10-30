@@ -22,8 +22,7 @@ public sealed class CatalogItemIngredientIndexTest
                               Id = Guid.NewGuid(),
                               Name = "Senf",
                               UnitId = unit.Id,
-                              Unit = unit,
-                              IsActive = true
+                              Unit = unit
                             };
     fixture.DbContext.Units.Add(unit);
     fixture.DbContext.Ingredients.Add(ingredient);

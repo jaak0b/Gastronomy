@@ -19,7 +19,7 @@ const FESTIVAL_LIST: AppRoute = { name: 'admin', section: 'festivals', festivalI
 const SOMMERFEST: AppRoute = { name: 'admin', section: 'festivals', festivalId: 'fest-sommer' }
 const SOMMERFEST_HALLE: AppRoute = { name: 'admin', section: 'festivals', festivalId: 'fest-sommer', areaId: 'area-halle' }
 const ARTIKEL: AppRoute = { name: 'admin', section: 'items', festivalId: null }
-const ZUTATEN: AppRoute = { name: 'admin', section: 'ingredients', festivalId: null }
+const KELLNER: AppRoute = { name: 'admin', section: 'staff', festivalId: null }
 
 function at(route: AppRoute, ...steps: BackStep[]): Place {
   return { path: '/', route, steps }
@@ -73,7 +73,7 @@ describe('a tap that leads one level deeper', () => {
 describe('a move between siblings', () => {
   it('replaces the entry of the admin tab it leaves', () => {
     const move = historyMoveFor(
-      { entries: [at(FESTIVAL_LIST), at(ARTIKEL)], index: 1, currentEntryMinusClosedSteps: at(ARTIKEL), wanted: at(ZUTATEN) },
+      { entries: [at(FESTIVAL_LIST), at(ARTIKEL)], index: 1, currentEntryMinusClosedSteps: at(ARTIKEL), wanted: at(KELLNER) },
       true,
     )
 

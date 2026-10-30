@@ -703,8 +703,7 @@ public sealed class OrderPlacementServiceTest
                            Id = Guid.NewGuid(),
                            Name = "Senf",
                            UnitId = unit.Id,
-                           Unit = unit,
-                           IsActive = true
+                           Unit = unit
                          };
     mustard.FestivalIngredients.Add(new()
                                     {

@@ -24,14 +24,6 @@ describe('resolveRoute', () => {
     })
   })
 
-  it('reads the ingredients path as the ingredients tab', () => {
-    expect(resolveRoute('/admin/ingredients')).toEqual({
-      name: 'admin',
-      section: 'ingredients',
-      festivalId: null,
-    })
-  })
-
   it('reads an admin address that names no tab as the festivals, where the admin starts', () => {
     expect(resolveRoute('/admin/elsewhere')).toEqual({
       name: 'admin',

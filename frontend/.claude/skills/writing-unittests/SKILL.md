@@ -151,7 +151,8 @@ copy of anything listed here.
   `aHold()` gives a reply gate for `heldUntil`: pass its `released` promise and call `release()` when
   the test wants the laptop to answer.
 - `dom.ts` finds and drives elements: `onScreen`, `allOnScreen`, `isOnScreen`, `isVisibleOnScreen`, `textOnScreen`,
-  `inputOf`, `typeInto`, `typeIn`, `leave`, `clickOn`, `waitUntil`, and the confirmation dialog helpers
+  `inputOf`, `typeInto`, `typeIn`, `leave`, `clickOn`, `pressTheKeyOn` (Enter or Space on a button, with
+  the click a browser adds unless the keydown was cancelled), `waitUntil`, and the confirmation dialog helpers
   `openDialog`, `waitForDialog`, `dialogText` and `pressInDialog`.
 - `formDialogs.ts` fills and saves or cancels the admin form dialogs.
 - `wireViews.ts` holds the factories for the wire views used most: `anAdminItem`, `anAdminItemIngredient`, `anAdminIngredient`, `anAdminFestivalIngredient`, `aFestival`,

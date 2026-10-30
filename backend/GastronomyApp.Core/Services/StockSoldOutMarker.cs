@@ -21,7 +21,7 @@ public sealed class StockSoldOutMarker
 
   public async Task<IReadOnlyList<FestivalCatalogItem>> MarkItemsWithoutEnoughStockSoldOutAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    List<FestivalIngredient> limitedStock = await _database.FestivalIngredients.AsNoTracking().Where(stock => stock.FestivalId == festivalId && stock.AvailableAmount != null && stock.Ingredient.IsActive).ToListAsync(cancellationToken);
+    List<FestivalIngredient> limitedStock = await _database.FestivalIngredients.AsNoTracking().Where(stock => stock.FestivalId == festivalId && stock.AvailableAmount != null).ToListAsync(cancellationToken);
 
     if (limitedStock.Count == 0)
       return [];

@@ -1,20 +1,23 @@
 import { expect, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { mount, type VueWrapper } from '@vue/test-utils'
-import { VAutocomplete } from 'vuetify/components'
 import ItemIngredientsDialog from '../../../../src/admin/components/items/ItemIngredientsDialog.vue'
 import { useAdminIngredientsStore } from '../../../../src/admin/stores/ingredients'
 import { useAdminUnitsStore } from '../../../../src/admin/stores/units'
+import type { AdminIngredientView } from '../../../../src/shared/api/generatedSchemas'
 import { testPlugins } from '../../../support/plugins'
 import { answer, emptyAnswer, noConnection, stubLaptop, type StubbedLaptop } from '../../../support/laptop'
-import { inputOf, onScreen } from '../../../support/dom'
+import { allOnScreen, clickOn, inputOf, isOnScreen, onScreen } from '../../../support/dom'
 import { anAdminIngredient, anAdminItem, anAdminItemIngredient, SEEDED_UNITS } from '../../../support/wireViews'
-import { BUN } from '../ingredients/ingredientsListFixture'
+
+const BUN = anAdminIngredient({ usedByItemNames: ['Bratwurst', 'Pfannkuchen'] })
 
 const FLOUR = anAdminIngredient({
   ingredientId: 'ingredient-mehl',
   name: 'Mehl',
   unitId: 'unit-gram',
   unitName: 'g',
+  usedByItemNames: ['Pfannkuchen'],
 })
 
 const MILK = anAdminIngredient({
@@ -29,17 +32,12 @@ const CREAM = anAdminIngredient({
   name: 'Sahne',
   unitId: 'unit-millilitre',
   unitName: 'ml',
+  usedByItemNames: ['Kaiserschmarrn'],
 })
 
-const OLD_HONEY = anAdminIngredient({
-  ingredientId: 'ingredient-honig',
-  name: 'Honig',
-  unitId: 'unit-gram',
-  unitName: 'g',
-  isActive: false,
-})
+export const EVERY_INGREDIENT: AdminIngredientView[] = [BUN, FLOUR, MILK, CREAM]
 
-const CREATED_EGG = anAdminIngredient({ ingredientId: 'ingredient-ei', name: 'Ei' })
+export const CREATED_EGG = anAdminIngredient({ ingredientId: 'ingredient-ei', name: 'Ei' })
 
 const PANCAKE = anAdminItem({
   itemId: 'item-pfannkuchen',
@@ -60,18 +58,20 @@ export const FLOUR_LINE = '[data-test="recipe-line"][data-test-id="ingredient-me
 
 export const BUN_LINE = '[data-test="recipe-line"][data-test-id="ingredient-broetchen"]'
 
+export const AMOUNT_TO_ADD = '[data-test="amount-to-add"]'
+
+export function ingredientRow(ingredientId: string): string {
+  return `[data-test="ingredient-row"][data-test-id="${ingredientId}"]`
+}
+
 export function recipeLaptop(): StubbedLaptop {
   return stubLaptop()
     .answersEverythingElse(answer({}))
     .answers('GET', /./, answer({ items: [PANCAKE] }))
     .answers('DELETE', /./, emptyAnswer(204))
-    .answers('GET', '/api/admin/ingredients', answer({ ingredients: [BUN, OLD_HONEY, FLOUR, MILK, CREAM] }))
+    .answers('GET', '/api/admin/ingredients', answer({ ingredients: EVERY_INGREDIENT }))
     .answers('GET', '/api/admin/units', answer({ units: SEEDED_UNITS }))
     .answers('POST', '/api/admin/ingredients', answer(CREATED_EGG, 201))
-}
-
-export function recipeLaptopWithNothingLeftToAdd(): StubbedLaptop {
-  return recipeLaptop().answers('GET', '/api/admin/ingredients', answer({ ingredients: [BUN, OLD_HONEY, FLOUR] }))
 }
 
 export function recipeLaptopWithoutTheIngredientList(): StubbedLaptop {
@@ -94,19 +94,34 @@ export async function loadIngredientsAndMountDialog(locale: 'de' | 'en' = 'de'):
   return dialog
 }
 
-export function ingredientSearch(dialog: VueWrapper) {
-  return dialog.getComponent<typeof VAutocomplete>('[data-test="ingredient-search"]')
+export function namesInTheIngredientList(): string[] {
+  return allOnScreen('[data-test="ingredient-row"] [data-test="ingredient-name"]').map((name) => name.textContent ?? '')
 }
 
-export function addedAmountInput(): HTMLInputElement {
-  return inputOf('[data-test="add-recipe-line"] [data-test="amount-input"]')
+export function ingredientIdsOfRowsHolding(selector: string): string[] {
+  return allOnScreen('[data-test="ingredient-row"]')
+    .filter((row) => row.querySelector(selector) !== null)
+    .map((row) => row.dataset.testId ?? '')
+}
+
+export function searchInput(): HTMLInputElement {
+  return inputOf('[data-test="ingredient-search"]')
+}
+
+export async function openTheAmountRowOf(ingredientId: string): Promise<void> {
+  await clickOn(`${ingredientRow(ingredientId)} [data-test="add-ingredient"]`)
+  await vi.waitFor(() => expect(isOnScreen(`${ingredientRow(ingredientId)} ${AMOUNT_TO_ADD}`)).toBe(true))
+}
+
+export function amountToAddInput(): HTMLInputElement {
+  return inputOf(`${AMOUNT_TO_ADD} [data-test="amount-input"]`)
 }
 
 export function addButtonIsDisabled(): boolean {
   return onScreen('[data-test="add-to-recipe"]').hasAttribute('disabled')
 }
 
-export async function chooseIngredient(dialog: VueWrapper, ingredientId: string): Promise<void> {
-  await ingredientSearch(dialog).setValue(ingredientId)
-  await vi.waitFor(() => expect(addedAmountInput().disabled).toBe(false))
+export async function hover(selector: string): Promise<void> {
+  onScreen(selector).dispatchEvent(new MouseEvent('mouseenter'))
+  await nextTick()
 }
