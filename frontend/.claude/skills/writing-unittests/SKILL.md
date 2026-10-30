@@ -131,7 +131,7 @@ Never select by position (`[0]`, `.at(-1)`, `:nth-child`) or by a styling class.
 for the look and changes with it. A few cases are fine and should be recognisable as such:
 counting how many elements match, asserting the display order of all matches, indexing the
 test's own data arrays, Vuetify internals that have nothing of ours to tag, and a state class read
-as the assertion itself, such as `expect(row.classes()).toContain('tinted-row')`.
+as the assertion itself, such as `expect(row.classes()).toContain('striped-row-strong')`.
 
 Never select by an accessibility attribute; the frontend has none.
 

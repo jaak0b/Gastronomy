@@ -27,7 +27,8 @@ Frontend, under `frontend/src/phone/`:
   columns (`labelFor` adds the portion count from `core/categoryPortions.ts`), the basket bar
   (`components/catalog/BasketBar.vue`, which goes on to `/review`) and, once a category is open, its
   name as the shared `shared/components/CategoryLabel.vue` (the admin's category label at the
-  phone's sizes), its articles in `components/catalog/ItemGrid.vue` and the button back to the
+  phone's sizes), its articles in `components/catalog/ItemGrid.vue` (every row striped with the two
+  shared tints of the `stripe-a-list` page of `how-to`) and the button back to the
   categories. The open category is the router's step `category`, so back closes it before it
   leaves the screen. It decides
   where a new portion goes: `addItem` places it straight away or opens the station question, and
@@ -170,7 +171,8 @@ Backend, under `backend/`:
   keyboard order, the parts beside the price, sold out, the default station),
   `ItemRow.figures.spec.ts` (price, waiting time, counts and totals), `ItemRow.notes.spec.ts` (the
   note dialog, the note and station groups, the station question for a note) and
-  `ItemRow.keyboardInset.spec.ts`, on `itemRowFixture.ts`.
+  `ItemRow.keyboardInset.spec.ts`, on `itemRowFixture.ts`; `ItemGrid.spec.ts` (the stripes of the
+  article rows).
 - `frontend/tests/phone/views`: `Catalog.building.spec.ts` (adding, the way to the summary, the
   frozen order, no table), `Catalog.categories.spec.ts`, `Catalog.stationChoice.spec.ts` (the station
   question, also when the price is tapped) and `Catalog.waitingTime.spec.ts`, on `catalogFixture.ts`;

@@ -21,7 +21,9 @@ Frontend, under `frontend/src/`:
   `stations/StationsList.vue`, `items/ItemsList.vue`, `ingredients/IngredientsList.vue` (see the
   `ingredients` page), `units/UnitsList.vue` (see the `units` page) and `staff/StaffList.vue`. How a
   global tab is built is on the `admin-list-screen` page of `how-to`.
-- `shared/theme.ts` holds both palettes, with `defaultTheme: 'system'`.
+- `shared/theme.ts` holds both palettes, with `defaultTheme: 'system'`, and the two tints of striped
+  lists as the theme variables `stripe-opacity` and `stripe-strong-opacity` (see the `stripe-a-list`
+  page of `how-to`).
 - `admin/styles/adminSizes.ts` and `adminSizes.css` hold every admin size: the Vuetify defaults
   `AdminShell.vue` provides to the admin and the CSS values its components read. The phone and the
   station tablet have their own, larger sizes. See the `surface-sizes` page of `how-to`.
@@ -37,8 +39,8 @@ Frontend, under `frontend/src/`:
   trimmed and compared in SQL without regard to case (`NamedQueries.Namesakes`); deactivating is refused while
   an active article is in the category.
 - **Every row is the same row**: the global tabs and the festival page draw each entry with
-  `BaseListRow.vue`, so names, chips, the line between rows and the tint on every second row look
-  alike everywhere.
+  `BaseListRow.vue`, so names, chips, the line between rows and the stripes (a light tint on every
+  row, a stronger one on every second row) look alike everywhere.
 - **Every row offers its actions the same way**: text buttons first, then the pencil "Bearbeiten"
   for the edit dialog, then switching off, hiding or removing, with the up and down arrows before
   the pencil where a list is ordered by hand. Showing or switching on again is the open eye named

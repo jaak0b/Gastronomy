@@ -186,7 +186,7 @@ describe('the items of this festival', () => {
     })
   })
 
-  it('tints every second item row so the eye can follow it', async () => {
+  it('stripes every item row and tints every second one more strongly so the eye can follow it', async () => {
     festivalLaptop({
       items: [
         SAUSAGE,
@@ -197,8 +197,9 @@ describe('the items of this festival', () => {
     const page = mountPage()
     await vi.waitFor(() => expect(page.findAll('[data-test="festival-item-row"]').length).toBe(2))
 
-    expect(itemRow(page, BEER_ID).classes()).not.toContain('tinted-row')
-    expect(itemRow(page, SAUSAGE_ID).classes()).toContain('tinted-row')
+    expect(itemRow(page, BEER_ID).classes()).toContain('striped-row')
+    expect(itemRow(page, BEER_ID).classes()).not.toContain('striped-row-strong')
+    expect(itemRow(page, SAUSAGE_ID).classes()).toContain('striped-row-strong')
   })
 
   it('says once that the price cannot be read, at the field the admin typed in', async () => {
@@ -252,7 +253,7 @@ describe('the items of this festival', () => {
     const page = mountPage()
     await vi.waitFor(() => expect(page.findAll('[data-test="festival-item-row"]').length).toBe(2))
 
-    expect(itemRow(page, SAUSAGE_ID).classes()).not.toContain('tinted-row')
-    expect(itemRow(page, BEER_ID).classes()).toContain('tinted-row')
+    expect(itemRow(page, SAUSAGE_ID).classes()).not.toContain('striped-row-strong')
+    expect(itemRow(page, BEER_ID).classes()).toContain('striped-row-strong')
   })
 })

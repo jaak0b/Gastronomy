@@ -19,5 +19,6 @@ description: Read before doing one of the recurring tasks it lists, so the work 
 | Test a Konva drawing: find a shape by its id or name, tap it, drag it, resize it | [references/test-a-konva-drawing.md](references/test-a-konva-drawing.md) |
 | Add a chart to an admin screen on the shared ECharts layer | [references/add-a-chart.md](references/add-a-chart.md) |
 | Size a control, a heading, a text, a row or a gap on the phone, the station tablet or an admin screen with that surface's shared sizes | [references/surface-sizes.md](references/surface-sizes.md) |
+| Stripe a list with the two shared tints: the theme variables, the shared classes and the position of each row | [references/stripe-a-list.md](references/stripe-a-list.md) |
 | Format the C# files you created or edited | [references/format-csharp.md](references/format-csharp.md) |
 | Pin how many SQL statements a read of a service runs, with `QueryCounter` | [references/count-sql-statements.md](references/count-sql-statements.md) |

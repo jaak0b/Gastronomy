@@ -32,7 +32,8 @@ tooltip beside them (frontend rule 8).
   (`removalRefusalOf`; the festival page's comes from `admin/composables/useStationRefusalReasons.ts`), the question before the removal, `removeThrough`, and the refusal under its
   row. Consumer: `festivals/FestivalStations.vue`.
 - `BaseListRow.vue` is the one row of every admin list, on the six global tabs and on the
-  festival page alike: the line between rows, the tint on every second row (`position`), and one
+  festival page alike: the line between rows, the stripes (`position`: every row carries the light
+  tint and every second row the stronger one, see `stripe-a-list.md`), and one
   line (`data-test="row-line"`) holding the name, the `facts` slot right after it (chips, a unit, a
   field), and the `actions` slot at the right. `name` is the text, `name-test-name` the name's
   `data-test` that the list's specs read. `refusal-text` shows the row's refusal under the line

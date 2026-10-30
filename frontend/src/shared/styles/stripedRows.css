@@ -1,0 +1,7 @@
+.striped-row {
+  background-color: rgba(var(--v-theme-on-surface), var(--v-stripe-opacity));
+}
+
+.striped-row.striped-row-strong {
+  background-color: rgba(var(--v-theme-on-surface), var(--v-stripe-strong-opacity));
+}

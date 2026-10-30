@@ -26,6 +26,8 @@ const dark: ThemeDefinition = {
     'border-color': '#343a44',
     'border-opacity': 1,
     'medium-emphasis-opacity': 0.66,
+    'stripe-opacity': 0.04,
+    'stripe-strong-opacity': 0.08,
   },
 }
 
@@ -55,6 +57,8 @@ const light: ThemeDefinition = {
     'border-color': '#e1e4e8',
     'border-opacity': 1,
     'medium-emphasis-opacity': 0.71,
+    'stripe-opacity': 0.05,
+    'stripe-strong-opacity': 0.09,
   },
 }
 

@@ -1,10 +1,14 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { createVuetify } from 'vuetify'
 import { channelsOfHex, type ColourChannels } from '../../src/shared/core/colourChannels'
 import { appTheme } from '../../src/shared/theme'
 
 const READABLE_TEXT_CONTRAST = 4.5
+const LIGHT_STRIPE_CONTRAST_WITH_GROUND = 1.08
+const STRONG_STRIPE_CONTRAST_WITH_LIGHT_STRIPE = 1.07
 const GROUNDS = ['surface', 'background'] as const
+const STRIPED_ROWS_STYLESHEET = `${process.cwd()}/src/shared/styles/stripedRows.css`
 
 const vuetify = createVuetify({ theme: appTheme })
 
@@ -20,6 +24,14 @@ function tonalOpacityOf(themeName: 'light' | 'dark'): number {
   const opacity = vuetify.theme.themes.value[themeName]?.variables['activated-opacity']
   if (typeof opacity !== 'number') {
     throw new Error(`Vuetify has no activated opacity for the ${themeName} theme.`)
+  }
+  return opacity
+}
+
+function stripeOpacityOf(themeName: 'light' | 'dark', variable: string): number {
+  const opacity = appTheme.themes[themeName].variables?.[variable]
+  if (typeof opacity !== 'number') {
+    throw new Error(`The ${themeName} theme has no stripe opacity named ${variable}.`)
   }
   return opacity
 }
@@ -81,6 +93,50 @@ describe('the warning colour that paints the text and the icon of every warning 
       const tintedGround = tintedOver(warning, colourOf(themeName, ground), tonalOpacityOf(themeName))
 
       expect(contrastRatio(warning, tintedGround)).toBeGreaterThanOrEqual(READABLE_TEXT_CONTRAST)
+    })
+  })
+})
+
+describe('the two tints of a striped list', () => {
+  describe.each(['light', 'dark'] as const)('in the %s theme', (themeName) => {
+    it.each(['stripe-opacity', 'stripe-strong-opacity'])(
+      'reach the stylesheet of the striped rows through the variable %s',
+      (variable) => {
+        const stylesheet = readFileSync(STRIPED_ROWS_STYLESHEET, 'utf8')
+        const written = String(vuetify.theme.styles.value)
+
+        expect(stylesheet).toContain(`var(--v-${variable})`)
+        expect(written).toMatch(new RegExp(`\\.v-theme--${themeName} \\{[^}]*--v-${variable}: `))
+      },
+    )
+
+    it.each(GROUNDS)('set the light stripe clearly apart from the %s', (ground) => {
+      const groundColour = colourOf(themeName, ground)
+      const lightStripe = tintedOver(
+        colourOf(themeName, 'on-surface'),
+        groundColour,
+        stripeOpacityOf(themeName, 'stripe-opacity'),
+      )
+
+      expect(contrastRatio(lightStripe, groundColour)).toBeGreaterThanOrEqual(LIGHT_STRIPE_CONTRAST_WITH_GROUND)
+    })
+
+    it.each(GROUNDS)('set the stronger stripe clearly apart from the light one on the %s', (ground) => {
+      const groundColour = colourOf(themeName, ground)
+      const lightStripe = tintedOver(
+        colourOf(themeName, 'on-surface'),
+        groundColour,
+        stripeOpacityOf(themeName, 'stripe-opacity'),
+      )
+      const strongStripe = tintedOver(
+        colourOf(themeName, 'on-surface'),
+        groundColour,
+        stripeOpacityOf(themeName, 'stripe-strong-opacity'),
+      )
+
+      expect(contrastRatio(strongStripe, lightStripe)).toBeGreaterThanOrEqual(
+        STRONG_STRIPE_CONTRAST_WITH_LIGHT_STRIPE,
+      )
     })
   })
 })

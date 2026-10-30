@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BaseRefusalAlert from '../../shared/components/BaseRefusalAlert.vue'
+import { stripeClassesOf } from '../../shared/core/stripedRows'
 
 const { refusalText = null } = defineProps<{
   position: number
@@ -15,7 +16,7 @@ const slots = defineSlots<{
 </script>
 
 <template>
-  <div class="base-list-row" :class="{ 'tinted-row': position % 2 === 1 }">
+  <div class="base-list-row" :class="stripeClassesOf(position)">
     <div class="row-line admin-row" data-test="row-line">
       <span class="row-name app-item-name" :data-test="nameTestName">{{ name }}</span>
       <slot name="facts" />
@@ -32,8 +33,7 @@ const slots = defineSlots<{
   border-top: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
 }
 
-.base-list-row.tinted-row {
-  background-color: rgba(var(--v-theme-on-surface), 0.08);
+.base-list-row.striped-row {
   border-radius: 6px;
 }
 

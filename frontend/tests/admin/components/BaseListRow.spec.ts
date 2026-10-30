@@ -5,9 +5,9 @@ import { testPlugins } from '../../support/plugins'
 
 enableAutoUnmount(afterEach)
 
-function mountRow(refusalText: string | null = null) {
+function mountRow(refusalText: string | null = null, position = 0) {
   return mount(BaseListRow, {
-    props: { position: 0, name: 'Küche', nameTestName: 'station-name', refusalText },
+    props: { position, name: 'Küche', nameTestName: 'station-name', refusalText },
     slots: {
       facts: '<span data-test="fact">Deaktiviert</span>',
       actions: '<button data-test="action">Bearbeiten</button>',
@@ -51,5 +51,23 @@ describe('one row of an admin list', () => {
     const row = mountRow(null)
 
     expect(row.find('[data-test="refusal"]').exists()).toBe(false)
+  })
+
+  it.each([0, 1, 2, 3])('carries the light tint at position %i', (position) => {
+    const row = mountRow(null, position)
+
+    expect(row.classes()).toContain('striped-row')
+  })
+
+  it.each([0, 2])('carries no stronger tint at position %i', (position) => {
+    const row = mountRow(null, position)
+
+    expect(row.classes()).not.toContain('striped-row-strong')
+  })
+
+  it.each([1, 3])('carries the stronger tint at position %i', (position) => {
+    const row = mountRow(null, position)
+
+    expect(row.classes()).toContain('striped-row-strong')
   })
 })

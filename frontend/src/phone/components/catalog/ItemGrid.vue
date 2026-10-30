@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { CatalogItemView } from '../../../shared/api/generatedSchemas'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
+import { stripeClassesOf } from '../../../shared/core/stripedRows'
 import type { EstimateRange } from '../../core/estimates'
 import type { ItemPosition } from '../../core/itemPositions'
 import ItemRow from './ItemRow.vue'
@@ -26,8 +27,9 @@ defineEmits<{
 <template>
   <div class="item-grid rounded border">
     <ItemRow
-      v-for="item in items"
+      v-for="(item, position) in items"
       :key="item.id"
+      :class="stripeClassesOf(position)"
       :item="item"
       :language="language"
       :positions="positionsFor(item.id)"
@@ -47,9 +49,5 @@ defineEmits<{
 <style scoped>
 .item-grid {
   overflow: hidden;
-}
-
-.item-grid :deep(.item-row:nth-child(even)) {
-  background-color: rgba(var(--v-theme-on-surface), 0.05);
 }
 </style>

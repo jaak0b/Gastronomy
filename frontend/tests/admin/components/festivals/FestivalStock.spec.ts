@@ -125,13 +125,16 @@ describe('the stock of a festival', () => {
     expect(allTexts('[data-test="used-amount"]')).toEqual(['Verbraucht: 250 g', 'Verbraucht: 3 Stück'])
   })
 
-  it('tints every second row, as the other lists of the festival page do', async () => {
+  it('stripes every row and tints every second one more strongly, as the other lists of the festival page do', async () => {
     stockLaptop([FLOUR, BUN])
 
     await mountStock()
 
     expect(
-      [...document.querySelectorAll('[data-test="festival-ingredient-row"]')].map((row) => row.classList.contains('tinted-row')),
+      [...document.querySelectorAll('[data-test="festival-ingredient-row"]')].map((row) => row.classList.contains('striped-row')),
+    ).toEqual([true, true])
+    expect(
+      [...document.querySelectorAll('[data-test="festival-ingredient-row"]')].map((row) => row.classList.contains('striped-row-strong')),
     ).toEqual([false, true])
   })
 

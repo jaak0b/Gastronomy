@@ -244,14 +244,15 @@ describe('the stations of this festival', () => {
     )
   })
 
-  it('tints every second station row so the eye can follow it', async () => {
+  it('stripes every station row and tints every second one more strongly so the eye can follow it', async () => {
     festivalLaptop({ stations: [KITCHEN, { ...BAR, isAtFestival: true }] })
 
     const page = mountPage()
     await vi.waitFor(() => expect(page.findAll('[data-test="festival-station-row"]').length).toBe(2))
 
-    expect(stationRow(page, KITCHEN_ID).classes()).not.toContain('tinted-row')
-    expect(stationRow(page, BAR_ID).classes()).toContain('tinted-row')
+    expect(stationRow(page, KITCHEN_ID).classes()).toContain('striped-row')
+    expect(stationRow(page, KITCHEN_ID).classes()).not.toContain('striped-row-strong')
+    expect(stationRow(page, BAR_ID).classes()).toContain('striped-row-strong')
   })
 
   it('names how many orders the station already took when the laptop keeps it', async () => {
