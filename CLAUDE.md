@@ -154,9 +154,9 @@ Every rule binds every agent, main or sub, with no exception it does not name.
    `no-ai-slop` governs the prose itself.
 
   **The form follows the text's job.**
-  - A label, an empty list, or a short status or tooltip of a few words is a noun phrase without a
-    period: "Keine Ausgabestellen verfügbar", "Keine Treffer", "No stations available", "No
-    matches".
+  - A label, or a short status or tooltip of a few words, is a noun phrase without a period:
+    "Kein Telefon eingerichtet", "Ausgeblendete anzeigen", "No phone set up", "Show hidden
+    entries".
   - Every other message is one or two complete, grammatical sentences: articles and verbs stay, and
     the reader is addressed with "Sie". State the fact first, then the instruction, and only where
     the reader has a control on that screen that helps: "Die Zahlung wurde möglicherweise nicht
@@ -167,7 +167,6 @@ Every rule binds every agent, main or sub, with no exception it does not name.
     and names the cost in one sentence.
 
   Texts the owner approved as the model to follow:
-  - "Keine Artikel verfügbar"
   - "Der Rechner ist nicht erreichbar, die Liste ist möglicherweise veraltet. Laden Sie die Seite
     neu."
   - "Die Zahlung wurde möglicherweise nicht gespeichert. Laden Sie die Seite neu und prüfen Sie die
@@ -189,8 +188,9 @@ Every rule binds every agent, main or sub, with no exception it does not name.
   a caption or an explanatory paragraph, name the decision or action it changes. If you cannot, it
   does not ship. Restating what the screen already shows, explaining how the program works, and
   facts nobody holding the device can act on are the filler that makes software read as
-  machine-written, and a screen is not the place for them. Empty states, failure messages and
-  confirmations of a destructive action stay, because each one names a next step or a cost. A
+  machine-written, and a screen is not the place for them. Failure messages and confirmations of a
+  destructive action stay, because each one names a next step or a cost. An empty list shows
+  nothing: no sentence stands in for rows that are not there. A
   reviewer lists any added line that cannot answer "what does the reader do differently because of
   this" as a finding.
 
