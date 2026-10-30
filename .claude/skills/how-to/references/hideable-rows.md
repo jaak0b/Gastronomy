@@ -114,8 +114,8 @@ Up and down first, then the pencil, then hiding or removing (the trash icon, the
 or the open eye in their place). Text buttons, such as "Tischplan öffnen", "Zutaten bearbeiten",
 "Kopieren", "Tablet einrichten" or "Telefon neu einrichten", come before the icons. A category row
 reads up, down, pencil, crossed-out eye; an area row reads "Tischplan öffnen", up, down, pencil,
-trash. An ingredient row of the recipe popup reads pencil, trash, then the plus that opens its
-amount row, on an ingredient the recipe does not hold yet.
+trash. An ingredient row of the recipe popup reads pencil, trash, then the plus that adds it with
+amount 1, on every ingredient the recipe does not hold yet.
 
 ## Steps
 
@@ -142,4 +142,4 @@ from `tests/support/dom.ts`), the pencil and the open eye (hover it, then read
 eye of the global tabs are in `FestivalsList.spec.ts`, `ItemsList.categories.spec.ts`,
 `ItemsList.items.spec.ts`, `StationsList.switchingOff.spec.ts` and `StaffList.spec.ts`; the
 pencil, trash and plus of the recipe popup's ingredient rows are in
-`ItemIngredientsDialog.allIngredients.spec.ts` and `.ingredientDeleting.spec.ts`.
+`ItemIngredientsDialog.availableIngredients.spec.ts`, `.adding.spec.ts` and `.ingredientDeleting.spec.ts`.

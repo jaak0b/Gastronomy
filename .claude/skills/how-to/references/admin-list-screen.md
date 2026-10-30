@@ -5,8 +5,8 @@ undone. No tab shows every step below on its own, so take each piece from where 
 Ausgabestellen tab, `frontend/src/admin/components/stations/StationsList.vue`, for the list, the
 switch off and its disabled reason; the categories of the Artikel tab (`stores/categories.ts`,
 edited through `useEditSession` in `items/ItemsList.vue`) for a store on `defineAdminList`; and the
-list of all ingredients in the recipe popup (`items/ItemIngredientsDialog.vue`) for a list whose
-entries are deleted. `StaffList.vue` and `StationsList.vue` use `useRefusalDisplay` directly, and
+list of available ingredients in the recipe popup (`items/ItemIngredientsDialog.vue`) for a list
+whose entries are deleted. `StaffList.vue` and `StationsList.vue` use `useRefusalDisplay` directly, and
 the stations store is built on `defineFestivalScopedList` instead of `defineAdminList`.
 
 ## Steps

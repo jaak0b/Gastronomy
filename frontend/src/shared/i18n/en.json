@@ -406,7 +406,7 @@
         "editTitle": "Edit the ingredient",
         "removeFromRecipeTitle": "Remove the ingredient",
         "inTheRecipe": "In the recipe",
-        "allIngredients": "All ingredients",
+        "availableIngredients": "Available ingredients",
         "search": "Search",
         "unitAfterName": "· {unit}",
         "deleteTitle": "Delete this ingredient?"
@@ -418,7 +418,6 @@
         "addToRecipe": "Add the ingredient",
         "removeFromRecipe": "Remove",
         "history": "History",
-        "add": "Add",
         "deleteConfirm": "Delete ingredient"
       },
       "messages": {

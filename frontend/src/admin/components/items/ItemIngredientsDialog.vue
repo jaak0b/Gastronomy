@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminIngredientView, AdminItemView } from '../../../shared/api/generatedSchemas'
+import type {
+  AdminIngredientView,
+  AdminItemIngredientView,
+  AdminItemView,
+} from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { showsTheEmptyListText } from '../../../shared/core/emptyList'
 import type { ParsedAmountInput } from '../../core/ingredientAmounts'
@@ -25,7 +29,6 @@ import IngredientDialog from '../ingredients/IngredientDialog.vue'
 interface IngredientRow {
   ingredient: AdminIngredientView
   deletionRefusal: string | null
-  canBeAdded: boolean
 }
 
 const AMOUNT_INVALID_KEY = 'errors.admin.ingredients.amountInvalid'
@@ -40,9 +43,8 @@ const lineRefusals = useRowRefusals()
 const ingredientRefusals = useRowRefusals()
 const ingredientIdOfLineToRemove = ref<string | null>(null)
 const search = ref('')
-const ingredientIdBeingAdded = ref<string | null>(null)
-const amountToAdd = ref<ParsedAmountInput>({ kind: 'empty' })
-const isAdding = ref(false)
+const ingredientIdsBeingAssigned = ref<Set<string>>(new Set())
+const ingredientIdToFocus = ref<string | null>(null)
 const ingredientSession = useEditSession<AdminIngredientView, IngredientDraft, AdminIngredientView | null>({
   saveThrough: (draft, ingredient) =>
     ingredient === null
@@ -54,7 +56,7 @@ const ingredientSession = useEditSession<AdminIngredientView, IngredientDraft, A
         if (saved === null) {
           throw new Error('The laptop accepted a new ingredient without returning it.')
         }
-        openTheAmountRowOfTheCreated(saved)
+        revealTheCreatedIngredient(saved)
         return
       case 'edit':
         return
@@ -75,16 +77,23 @@ const ingredientIdsInTheRecipe = computed(
   () => new Set(props.item.ingredients.map((line) => line.ingredientId)),
 )
 
+const ingredientsById = computed(
+  () => new Map(ingredients.ingredients.map((ingredient) => [ingredient.ingredientId, ingredient])),
+)
+
 const ingredientRows = computed<IngredientRow[]>(() =>
   ingredients.ingredients
-    .filter((ingredient) => nameMatchesTheSearch(ingredient.name, search.value))
+    .filter(
+      (ingredient) =>
+        !ingredientIdsInTheRecipe.value.has(ingredient.ingredientId) &&
+        nameMatchesTheSearch(ingredient.name, search.value),
+    )
     .map((ingredient) => ({
       ingredient,
       deletionRefusal:
         ingredient.usedByItemNames.length > 0
           ? t('admin.ingredients.messages.usedByItems', { items: ingredient.usedByItemNames.join(', ') })
           : null,
-      canBeAdded: !ingredientIdsInTheRecipe.value.has(ingredient.ingredientId),
     })),
 )
 
@@ -92,29 +101,18 @@ const ingredientListShowsTheEmptyListText = computed(() =>
   showsTheEmptyListText(ingredients, ingredients.ingredients.length),
 )
 
+const isAssigningAnIngredient = computed(() => ingredientIdsBeingAssigned.value.size > 0)
+
 const nameForANewIngredient = computed(() => (ingredientRows.value.length === 0 ? search.value : ''))
-
-const amountThatCanBeAdded = computed<number | null>(() => {
-  const typed = amountToAdd.value
-  switch (typed.kind) {
-    case 'amount':
-      return typed.amount > 0 ? typed.amount : null
-    case 'empty':
-    case 'unreadable':
-      return null
-    default:
-      return assertNever(typed)
-  }
-})
-
-function showsTheAmountRowOf(row: IngredientRow): boolean {
-  return row.canBeAdded && row.ingredient.ingredientId === ingredientIdBeingAdded.value
-}
 
 async function changeAmount(ingredientId: string, parsed: ParsedAmountInput): Promise<void> {
   lineRefusals.forgetRefusalOf(ingredientId)
   switch (parsed.kind) {
     case 'amount':
+      if (parsed.amount <= 0) {
+        lineRefusals.refuse(ingredientId, AMOUNT_INVALID_KEY)
+        return
+      }
       lineRefusals.showRefusalOf(
         ingredientId,
         await items.setIngredientAmount(props.item.itemId, ingredientId, parsed.amount),
@@ -139,54 +137,46 @@ async function removeLineFromRecipe(): Promise<void> {
   lineRefusals.showRefusalOf(ingredientId, await items.removeIngredient(props.item.itemId, ingredientId))
 }
 
-function closeTheAmountRow(): void {
-  const ingredientId = ingredientIdBeingAdded.value
-  if (ingredientId !== null) {
-    ingredientRefusals.forgetRefusalOf(ingredientId)
+function openTheFormOfTheLine(line: AdminItemIngredientView): void {
+  const ingredient = ingredientsById.value.get(line.ingredientId)
+  if (ingredient !== undefined) {
+    ingredientSession.openForEdit(ingredient)
   }
-  ingredientIdBeingAdded.value = null
-  amountToAdd.value = { kind: 'empty' }
 }
 
-function openTheAmountRowOf(ingredientId: string): void {
-  if (ingredientIdBeingAdded.value === ingredientId) {
-    return
-  }
-  closeTheAmountRow()
-  ingredientRefusals.forgetRefusalOf(ingredientId)
-  ingredientIdBeingAdded.value = ingredientId
-}
-
-function openTheAmountRowOfTheCreated(ingredient: AdminIngredientView): void {
+function revealTheCreatedIngredient(ingredient: AdminIngredientView): void {
   if (!nameMatchesTheSearch(ingredient.name, search.value)) {
     search.value = ''
   }
-  openTheAmountRowOf(ingredient.ingredientId)
 }
 
-function typeAmountToAdd(ingredientId: string, parsed: ParsedAmountInput): void {
-  amountToAdd.value = parsed
-  ingredientRefusals.forgetRefusalOf(ingredientId)
+function isBeingAssigned(ingredientId: string): boolean {
+  return ingredientIdsBeingAssigned.value.has(ingredientId)
 }
 
 async function addToTheRecipe(ingredientId: string): Promise<void> {
-  const amount = amountThatCanBeAdded.value
-  if (amount === null || isAdding.value) {
+  if (isBeingAssigned(ingredientId)) {
     return
   }
   ingredientRefusals.forgetRefusalOf(ingredientId)
-  isAdding.value = true
-  const saved = await items.setIngredientAmount(props.item.itemId, ingredientId, amount)
-  isAdding.value = false
+  ingredientIdsBeingAssigned.value.add(ingredientId)
+  const saved = await items.setIngredientAmount(props.item.itemId, ingredientId, 1)
+  ingredientIdsBeingAssigned.value.delete(ingredientId)
   switch (saved.kind) {
     case 'ok':
-      closeTheAmountRow()
+      ingredientIdToFocus.value = ingredientId
       return
     case 'failed':
       ingredientRefusals.showRefusalOf(ingredientId, saved)
       return
     default:
       assertNever(saved)
+  }
+}
+
+function amountFieldWasFocused(ingredientId: string): void {
+  if (ingredientIdToFocus.value === ingredientId) {
+    ingredientIdToFocus.value = null
   }
 }
 
@@ -200,7 +190,7 @@ async function deleteIngredient(ingredientId: string): Promise<void> {
     :title="t('admin.ingredients.labels.recipeTitle', { item: item.name })"
     :error-text="null"
     :cancel-label="t('admin.ingredients.actions.close')"
-    :busy="isAdding"
+    :busy="isAssigningAnIngredient"
     close-only
     wide
     @cancel="emit('close')"
@@ -228,18 +218,29 @@ async function deleteIngredient(ingredientId: string): Promise<void> {
           :refusal-text="lineRefusals.refusalTextOf(line.ingredientId)"
         >
           <template #actions>
-            <IngredientAmountField
-              :unit-name="line.unitName"
-              :saved-amount="line.amount"
-              :label="t('admin.ingredients.labels.amount')"
-              @amount-typed="lineRefusals.forgetRefusalOf(line.ingredientId)"
-              @amount-changed="changeAmount(line.ingredientId, $event)"
-            />
-            <BaseTrashButton
-              class="remove-recipe-line"
-              data-test="remove-recipe-line"
-              @click="ingredientIdOfLineToRemove = line.ingredientId"
-            />
+            <div class="recipe-line-actions">
+              <IngredientAmountField
+                :unit-name="line.unitName"
+                :saved-amount="line.amount"
+                :label="t('admin.ingredients.labels.amount')"
+                :amount-when-cleared="1"
+                :focus-on-mount="line.ingredientId === ingredientIdToFocus"
+                @amount-typed="lineRefusals.forgetRefusalOf(line.ingredientId)"
+                @amount-changed="changeAmount(line.ingredientId, $event)"
+                @focused="amountFieldWasFocused(line.ingredientId)"
+              />
+              <BaseEditButton
+                v-if="ingredientsById.has(line.ingredientId)"
+                class="edit-recipe-ingredient"
+                data-test="edit-recipe-ingredient"
+                @click="openTheFormOfTheLine(line)"
+              />
+              <BaseTrashButton
+                class="remove-recipe-line"
+                data-test="remove-recipe-line"
+                @click="ingredientIdOfLineToRemove = line.ingredientId"
+              />
+            </div>
           </template>
         </BaseListRow>
       </v-col>
@@ -250,7 +251,7 @@ async function deleteIngredient(ingredientId: string): Promise<void> {
         data-test="ingredients-column"
       >
         <h2 class="column-heading app-section-title admin-section-gap" data-test="column-heading">
-          {{ t('admin.ingredients.labels.allIngredients') }}
+          {{ t('admin.ingredients.labels.availableIngredients') }}
         </h2>
         <v-text-field
           v-model="search"
@@ -292,37 +293,14 @@ async function deleteIngredient(ingredientId: string): Promise<void> {
               @confirmed="deleteIngredient(row.ingredient.ingredientId)"
             />
             <BaseIconAction
-              v-if="row.canBeAdded"
               class="add-ingredient"
               data-test="add-ingredient"
               icon="mdi-plus"
               :label="t('admin.ingredients.actions.addToRecipe')"
-              @click="openTheAmountRowOf(row.ingredient.ingredientId)"
+              :disabled="isBeingAssigned(row.ingredient.ingredientId)"
+              @click="addToTheRecipe(row.ingredient.ingredientId)"
             />
           </template>
-          <div
-            v-if="showsTheAmountRowOf(row)"
-            class="amount-to-add admin-row-details d-flex align-start ga-2"
-            data-test="amount-to-add"
-          >
-            <IngredientAmountField
-              :unit-name="row.ingredient.unitName"
-              :saved-amount="null"
-              :label="t('admin.ingredients.labels.amount')"
-              @amount-typed="typeAmountToAdd(row.ingredient.ingredientId, $event)"
-              @keydown.enter="addToTheRecipe(row.ingredient.ingredientId)"
-            />
-            <v-btn
-              class="add-to-recipe"
-              data-test="add-to-recipe"
-              color="primary"
-              variant="tonal"
-              :disabled="amountThatCanBeAdded === null || isAdding"
-              @click="addToTheRecipe(row.ingredient.ingredientId)"
-            >
-              {{ t('admin.ingredients.actions.add') }}
-            </v-btn>
-          </div>
         </BaseListRow>
         <v-btn
           class="new-ingredient admin-block-gap"
@@ -355,3 +333,41 @@ async function deleteIngredient(ingredientId: string): Promise<void> {
     @cancel="ingredientIdOfLineToRemove = null"
   />
 </template>
+
+<style scoped>
+.recipe-line :deep(.row-name),
+.ingredient-row :deep(.row-name) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recipe-line :deep(.row-line) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 0 auto;
+}
+
+.recipe-line-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: var(--admin-row-gap);
+  min-width: 0;
+}
+
+.recipe-line-actions :deep(.ingredient-amount-field) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.recipe-line-actions :deep(.amount-input) {
+  flex: 0 0 6rem;
+  min-width: 6rem;
+}
+
+.recipe-line-actions :deep(.edit-recipe-ingredient),
+.recipe-line-actions :deep(.remove-recipe-line) {
+  flex: 0 0 auto;
+}
+</style>

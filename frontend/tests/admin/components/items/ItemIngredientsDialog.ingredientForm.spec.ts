@@ -2,13 +2,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { answer, refusal } from '../../../support/laptop'
 import { anAdminIngredient } from '../../../support/wireViews'
-import { clickOn, inputOf, isOnScreen, onScreen, textOnScreen, typeIn, waitUntil } from '../../../support/dom'
-import { formDialogHolding, saveTheIngredientDialog } from '../../../support/formDialogs'
 import {
-  AMOUNT_TO_ADD,
-  ingredientIdsOfRowsHolding,
+  allOnScreen,
+  clickOn,
+  inputOf,
+  isOnScreen,
+  onScreen,
+  textOnScreen,
+  typeIn,
+  waitUntil,
+} from '../../../support/dom'
+import { formDialogHolding, saveTheIngredientDialog } from '../../../support/formDialogs'
+import { chosenUnitIds } from '../ingredients/ingredientDialogFixture'
+import {
+  FLOUR_LINE,
+  PANCAKE,
   ingredientRow,
   loadIngredientsAndMountDialog,
+  namesInTheIngredientList,
   recipeLaptop,
   searchInput,
 } from './itemIngredientsDialogFixture'
@@ -65,7 +76,7 @@ describe('the pencil on an ingredient', () => {
     )
   })
 
-  it('shows the new name in the list of all ingredients once the list is read again', async () => {
+  it('shows the new name in the list of available ingredients once the list is read again', async () => {
     const laptop = recipeLaptop()
     await loadIngredientsAndMountDialog()
     await openTheFormThrough(`${ingredientRow('ingredient-milch')} [data-test="edit-ingredient"]`)
@@ -77,11 +88,66 @@ describe('the pencil on an ingredient', () => {
   })
 })
 
+describe('the pencil on a recipe line', () => {
+  it('shows the amount, the pencil and the remove action in this order', async () => {
+    recipeLaptop()
+    await loadIngredientsAndMountDialog()
+
+    const actions = allOnScreen(
+      `${FLOUR_LINE} [data-test="amount-input"], ${FLOUR_LINE} [data-test="edit-recipe-ingredient"], ${FLOUR_LINE} [data-test="remove-recipe-line"]`,
+    )
+
+    expect(actions.map((action) => action.dataset.test)).toEqual([
+      'amount-input',
+      'edit-recipe-ingredient',
+      'remove-recipe-line',
+    ])
+  })
+
+  it('opens the form of that ingredient with its name and unit', async () => {
+    recipeLaptop()
+    await loadIngredientsAndMountDialog()
+
+    await openTheFormThrough(`${FLOUR_LINE} [data-test="edit-recipe-ingredient"]`)
+
+    expect(titleOfTheForm()).toBe('Zutat bearbeiten')
+    expect(inputOf(NAME_FIELD).value).toBe('Mehl')
+    expect(chosenUnitIds()).toEqual(['unit-gram'])
+  })
+
+  it('shows the changed name on the recipe line once the item is reloaded', async () => {
+    const laptop = recipeLaptop()
+    const dialog = await loadIngredientsAndMountDialog()
+    await openTheFormThrough(`${FLOUR_LINE} [data-test="edit-recipe-ingredient"]`)
+
+    await saveTheIngredientDialog('Weizenmehl', 'unit-gram')
+
+    await waitUntil(() =>
+      expect(laptop.writes()).toEqual([
+        {
+          url: '/api/admin/ingredients/ingredient-mehl',
+          method: 'PUT',
+          body: { name: 'Weizenmehl', unitId: 'unit-gram' },
+        },
+      ]),
+    )
+    const reloadedItem = {
+      ...PANCAKE,
+      ingredients: PANCAKE.ingredients.map((line) =>
+        line.ingredientId === 'ingredient-mehl' ? { ...line, name: 'Weizenmehl' } : line,
+      ),
+    }
+    await dialog.setProps({ item: reloadedItem })
+
+    expect(textOnScreen(`${FLOUR_LINE} [data-test="recipe-ingredient-name"]`)).toBe('Weizenmehl')
+  })
+})
+
 describe('the button for a new ingredient', () => {
   it.each([
     ['de', 'Neue Zutat'],
     ['en', 'New ingredient'],
-  ] as const)('is named in %s under the list of all ingredients', async (locale, expected) => {
+  ] as const)('is named in %s under the list of available ingredients', async (locale, expected) => {
     recipeLaptop()
 
     await loadIngredientsAndMountDialog(locale)
@@ -135,14 +201,14 @@ describe('a new ingredient once the laptop has saved it', () => {
     )
   })
 
-  it('has its row opened for the amount and the form closed', async () => {
+  it('shows its row in the available list and closes the form', async () => {
     recipeLaptop()
     await loadIngredientsAndMountDialog()
     await openTheFormThrough('[data-test="new-ingredient"]')
 
     await saveTheIngredientDialog('Ei', 'unit-stueck')
 
-    await waitUntil(() => expect(ingredientIdsOfRowsHolding(AMOUNT_TO_ADD)).toEqual(['ingredient-ei']))
+    await waitUntil(() => expect(namesInTheIngredientList()).toContain('Ei'))
     expect(isOnScreen(NAME_FIELD)).toBe(false)
   })
 
@@ -154,7 +220,7 @@ describe('a new ingredient once the laptop has saved it', () => {
 
     await saveTheIngredientDialog('Ei', 'unit-stueck')
 
-    await waitUntil(() => expect(ingredientIdsOfRowsHolding(AMOUNT_TO_ADD)).toEqual(['ingredient-ei']))
+    await waitUntil(() => expect(namesInTheIngredientList()).toContain('Ei'))
     expect(searchInput().value).toBe('')
   })
 
@@ -166,11 +232,11 @@ describe('a new ingredient once the laptop has saved it', () => {
 
     await saveTheIngredientDialog('Ei', 'unit-stueck')
 
-    await waitUntil(() => expect(ingredientIdsOfRowsHolding(AMOUNT_TO_ADD)).toEqual(['ingredient-ei']))
+    await waitUntil(() => expect(namesInTheIngredientList()).toContain('Ei'))
     expect(searchInput().value).toBe('Ei')
   })
 
-  it('is not opened for an amount when the laptop refuses the name, which the form names', async () => {
+  it('stays closed when the laptop refuses the name, which the form names', async () => {
     recipeLaptop().answers(
       'POST',
       '/api/admin/ingredients',
@@ -186,6 +252,6 @@ describe('a new ingredient once the laptop has saved it', () => {
         'Eine Zutat mit diesem Namen ist bereits vorhanden. Wählen Sie einen anderen Namen.',
       ),
     )
-    expect(isOnScreen(AMOUNT_TO_ADD)).toBe(false)
+    expect(isOnScreen(NAME_FIELD)).toBe(true)
   })
 })

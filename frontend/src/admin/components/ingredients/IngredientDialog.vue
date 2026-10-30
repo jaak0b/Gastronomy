@@ -144,24 +144,27 @@ function save(): void {
             >
               <span data-test="unit-name">{{ choice.name }}</span>
               <template v-if="choice.unitId === unitId || choice.isListed" #append>
-                <BaseEditButton
-                  v-if="choice.unitId === unitId"
-                  class="rename-unit"
-                  data-test="rename-unit"
-                  @click.stop="unitSession.openForEdit(choice)"
-                  @keydown.enter.stop
-                  @keydown.space.stop
-                />
-                <BaseDeleteAction
-                  v-if="choice.isListed"
-                  trash-test-name="delete-unit"
-                  :refusal-reason="choice.deletionRefusal"
-                  :confirm-title="t('admin.units.labels.deleteTitle')"
-                  :confirm-body="t('admin.units.messages.deleteBody', { name: choice.name })"
-                  :confirm-label="t('admin.units.actions.deleteConfirm')"
-                  @asked="unitSession.forgetRefusal()"
-                  @confirmed="deleteUnit(choice)"
-                />
+                <span class="unit-chip-actions">
+                  <BaseEditButton
+                    v-if="choice.unitId === unitId"
+                    class="rename-unit"
+                    data-test="rename-unit"
+                    @click.stop="unitSession.openForEdit(choice)"
+                    @keydown.enter.stop
+                    @keydown.space.stop
+                  />
+                  <BaseDeleteAction
+                    v-if="choice.isListed"
+                    class="unit-trash"
+                    trash-test-name="delete-unit"
+                    :refusal-reason="choice.deletionRefusal"
+                    :confirm-title="t('admin.units.labels.deleteTitle')"
+                    :confirm-body="t('admin.units.messages.deleteBody', { name: choice.name })"
+                    :confirm-label="t('admin.units.actions.deleteConfirm')"
+                    @asked="unitSession.forgetRefusal()"
+                    @confirmed="deleteUnit(choice)"
+                  />
+                </span>
               </template>
             </v-chip>
           </v-chip-group>
@@ -192,3 +195,21 @@ function save(): void {
     @cancel="unitSession.close"
   />
 </template>
+
+<style scoped>
+.unit-chip-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-inline-start: 0.25rem;
+}
+
+.unit-chip :deep(.unit-trash) {
+  opacity: 0;
+}
+
+.unit-chip:hover :deep(.unit-trash),
+.unit-chip :deep(.unit-trash:focus-within) {
+  opacity: 1;
+}
+</style>

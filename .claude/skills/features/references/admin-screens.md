@@ -23,7 +23,7 @@ Frontend, under `frontend/src/`:
   `admin/stores/adminLoadState.ts`.
 - The global tabs: `festivals/FestivalsList.vue` (see the `festivals` page),
   `stations/StationsList.vue`, `items/ItemsList.vue` (its "Zutaten bearbeiten" opens the recipe
-  popup, where the admin also keeps every ingredient, see the `ingredients` page; the ingredient
+  popup, where the admin also manages the ingredients, see the `ingredients` page; the ingredient
   form manages the units, see the `units` page) and `staff/StaffList.vue`. How a global tab is
   built is on the `admin-list-screen` page of `how-to`.
 - `shared/theme.ts` holds both palettes, with `defaultTheme: 'system'`, and the two tints of striped

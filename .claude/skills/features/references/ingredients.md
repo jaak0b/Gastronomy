@@ -2,11 +2,12 @@
 
 The admin gives each article a recipe: how much of each ingredient one portion uses. Ingredients
 live only in the recipe popup that "Zutaten bearbeiten" opens on an article row of the Artikel tab:
-its left column is the recipe, its right column lists every ingredient (a name and a unit, chosen
-from the unit chips of the ingredient's form, where the admin also adds, renames and deletes units)
-with a search, the form to create or edit one, and the plus that adds it to the recipe. An
-ingredient that no recipe uses can be deleted for good; one that any recipe uses cannot. An amount is
-a plain number in the ingredient's unit; nothing converts it.
+its left column is the recipe, its right column lists only the ingredients the recipe does not hold
+yet, under "Verfügbare Zutaten" ("Available ingredients"), with a search, the form to create or edit
+one, and the plus that adds one with amount 1 and focuses the new line's amount. An ingredient that
+no recipe uses can be deleted for good; one that any recipe uses cannot. An amount is a plain number
+in the ingredient's unit; nothing converts it. A recipe line always carries an amount above zero: a
+new line starts at 1, and a cleared Menge becomes 1 again.
 
 ## Where the code lives
 
@@ -57,17 +58,22 @@ Frontend, under `frontend/src/`:
 - `admin/components/items/ItemIngredientsDialog.vue` is the recipe popup, opened from an article
   row in `ItemsListCategorySection.vue` through `ItemsList.vue`, on `BaseFormDialog` (wide,
   close-only) with the shared `AdminLoadFailureBar` at its top. Two `v-col` columns: "Im Rezept",
-  the recipe lines as `BaseListRow`s with their amount field and trash, and "Alle Zutaten", a search
-  field over `BaseListRow`s of every ingredient (the name, then `admin.ingredients.labels.unitAfterName`
-  in medium emphasis) with the pencil, the trash of `BaseDeleteAction`, and the plus
-  (`BaseIconAction`, "Zutat hinzufügen") on an ingredient not in this recipe. The plus opens that
-  row's amount field and "Hinzufügen" in the row's default slot, one row at a time; Enter in the
-  field adds as the button does. "Neue Zutat" under the list opens the form through the same
-  `useEditSession` as the pencil.
+  the recipe lines as `BaseListRow`s with their amount field, edit pencil and remove trash, and
+  "Verfügbare Zutaten", a search field over `BaseListRow`s of the ingredients this recipe does not
+  hold (the name, then
+  `admin.ingredients.labels.unitAfterName` in medium emphasis) with the pencil, the trash of
+  `BaseDeleteAction`, and the plus (`BaseIconAction`, "Zutat hinzufügen") on every listed row. The
+  plus sends `items.setIngredientAmount` with amount 1 once, is disabled while that request is in
+  flight, and shows a refusal under the row on failure; on success the reloaded item carries the new
+  line, whose amount field is focused with the 1 selected, and the ingredient leaves the available
+  list. "Neue Zutat" under the list opens the form through the same `useEditSession` as the pencil.
 - `admin/components/ingredients/IngredientDialog.vue` is the form (`nameToStartWith` gives a new
   ingredient its first name), and `IngredientAmountField.vue` a text field with the static unit name
   inside it at its right end (Vuetify's `append-inner` slot), on the recipe and the festival stock
-  rows alike. `admin/core/nameSearch.ts` (`nameMatchesTheSearch`) is the search: a part of the name,
+  rows alike. `amountWhenCleared` (null by default) makes an empty field restore that number on blur
+  or Enter and send it unless it already equals the saved amount; every recipe line passes 1, the
+  stock rows pass nothing. `focusOnMount` focuses the input and selects its text once and emits
+  `focused`. `admin/core/nameSearch.ts` (`nameMatchesTheSearch`) is the search: a part of the name,
   without regard to case. `admin/core/ingredientAmounts.ts` parses and formats the number without a
   unit or a conversion, and `admin/composables/useIngredientAmountText.ts` writes the stored number
   with the unit name.
@@ -104,31 +110,45 @@ Frontend, under `frontend/src/`:
 - An amount is a finite number above zero. The request attribute requires the number and
   `SetRecipeLineAsync` refuses any other with `errors.admin.ingredients.amountInvalid`.
 - The recipe popup shows every recipe line from the item view itself, with the name and unit the
-  line carries, even when the ingredient list has not loaded or failed to load. It never looks a
-  line up in the ingredients store and never drops one; the store feeds only the right column. A
-  renamed ingredient raises `ConfigurationChanged`, the items store reloads, and the open popup
-  follows because `ItemsList.vue` hands it the item from that store.
-- The right column lists every ingredient the search lets through, those in this recipe included,
-  matching a part of the name without regard to case and to spaces before or after the search
-  text. The plus shows only on an ingredient this recipe does not hold. The trash
-  (`BaseDeleteAction`) asks first, and it is enabled exactly when `usedByItemNames` is empty, with
-  a disabled tooltip naming those articles. That list follows a change of a recipe only when the
-  ingredients are read again on `ConfigurationChanged`: right after a line is added, or while the
-  hub connection is down, the trash of an ingredient the open recipe now holds can still be
-  enabled, and a delete then gets the laptop's guard, `common.errors.actionFailed`, under that row.
-- Adding sends `items.setIngredientAmount` and is possible only with a number above zero. On success
-  the amount row closes and the line appears on the left from the reloaded item. One amount row is
-  open at a time.
+  line carries, even when the ingredient list has not loaded or failed to load. It never drops a
+  line and never takes the line's name or unit from the ingredients store; that store feeds the
+  right column and the line's edit pencil. A renamed ingredient raises `ConfigurationChanged`, the
+  items store reloads, and the open popup follows because `ItemsList.vue` hands it the item from
+  that store.
+- Each recipe line carries the same edit pencil as the available row, between its Menge field and
+  its remove trash. The Menge field, the pencil and the trash stay on one line inside the row. A
+  long ingredient name truncates with an ellipsis in both columns, and the edit form shows the full
+  name. It opens the same ingredient form with the store's full ingredient, found by
+  `line.ingredientId`; it appears only when the ingredients store holds that ingredient, so a list
+  that is loading or failed leaves the line with its name, amount and remove action but no pencil.
+  The form's save path is the existing one: the ingredient is updated, `ConfigurationChanged`
+  reloads the item, and the line shows the new name and unit.
+- The right column lists only the ingredients this recipe does not hold, matching a part of the name
+  without regard to case and to spaces before or after the search text. Every listed row carries the
+  plus, because every listed ingredient can be added. The trash (`BaseDeleteAction`) asks first, and
+  it is enabled exactly when `usedByItemNames` is empty, with a disabled tooltip naming those
+  articles. The ingredients store's used-by list follows a recipe change only when the ingredients
+  are read again on `ConfigurationChanged`; a stale tooltip is possible until then, and the delete
+  route remains the guard with `common.errors.actionFailed` under that row.
+- Adding sends `items.setIngredientAmount` with amount 1 from the plus of every listed ingredient.
+  The plus is disabled while that row's request is in flight, so a double press sends once. On
+  success the line appears on the left from the reloaded item with amount 1, its amount field
+  focused and the 1 selected; on failure the refusal shows under the ingredient row and the plus is
+  usable again.
+- Clearing a recipe line's Menge and leaving the field sets it back to 1 and sends 1. When the saved
+  amount already is 1, the clearing only restores the displayed 1 and sends nothing. Invalid text
+  shows `errors.admin.ingredients.amountInvalid` under that line and sends nothing.
 - "Keine Einträge" shows in the right column only when the laptop lists no ingredient at all
-  (`showsTheEmptyListText` over the whole list), never because of the search.
+  (`showsTheEmptyListText` over the whole list), never because of the search or because the recipe
+  already holds every ingredient.
 - "Neue Zutat" starts the form's name with the search text, exactly as typed, when the search shows
-  no ingredient, and empty otherwise. A saved new ingredient has its amount row opened, and the
-  search is cleared first when it would hide that row (`afterSaving` of `useEditSession`).
+  no ingredient, and empty otherwise. A saved new ingredient appears in the available list and is
+  not added to the recipe; the search is cleared first when it would hide that row (`afterSaving` of
+  `useEditSession`).
 - A recipe is read and changed only in that popup. The article row on the Artikel tab shows no
   recipe line.
 - Removing a recipe line asks first (`BaseConfirmDialog`). A warning under a recipe line or under an
-  ingredient row clears as soon as that row is edited again, and the warning of an amount row also
-  when that row closes (see the row warnings page of `how-to`).
+  ingredient row clears as soon as that row is edited again (see the row warnings page of `how-to`).
 - The popup reloads on `ConfigurationChanged` through the stores `ItemsList.vue` listens to.
 
 ## Tests
@@ -151,14 +171,18 @@ Frontend, under `frontend/src/`:
   announcements, the delete included, are in `Announcers/ConfigurationChangedAnnouncementTest`.
 - `frontend/tests/admin`: `stores/ingredients.spec.ts` and `stores/items.spec.ts`;
   `components/ingredients/` (`IngredientDialog.spec.ts` and its unit specs on
-  `ingredientDialogFixture.ts` (see the `units` page), `IngredientAmountField.spec.ts`);
+  `ingredientDialogFixture.ts` (see the `units` page), `IngredientAmountField.spec.ts` for the
+  cleared amount and the focus on mount);
   `components/items/` (`ItemIngredientsDialog.*.spec.ts` on `itemIngredientsDialogFixture.ts`:
   `.recipeLines` also opens the popup before the ingredient list has loaded and after it failed,
-  `.allIngredients` the right column, its search and its empty text, `.adding` the plus and the
-  amount row, `.ingredientForm` the pencil and "Neue Zutat", `.ingredientDeleting` the trash;
-  `ItemsList.ingredients.spec.ts` for a line added through the Artikel tab,
+  `.availableIngredients` the available column, its search and its empty text, `.adding` the single
+  amount-1 request, the focused new line, its refusal and a cleared amount, `.ingredientForm` the
+  pencil on the available list and on a recipe line, "Neue Zutat" and its search clearing,
+  `.ingredientDeleting` the trash;
+  `ItemsList.ingredients.spec.ts` for a line added through the Artikel tab with amount 1, the unit
+  trash reached through the open ingredient form and a recipe line renamed through its pencil,
   `ItemsList.renamedIngredient.spec.ts` for a rename behind the open recipe and
-  `ItemsList.recipeReload.spec.ts` for the trash that follows an added or removed line once
+  `ItemsList.recipeReload.spec.ts` for the available list that follows an added or removed line once
   `ConfigurationChanged` reloads the ingredients); `components/BaseDeleteAction.spec.ts`;
   `components/AdminLoadFailureBar.spec.ts` (the bar inside the popup); `core/nameSearch.spec.ts`,
   `core/ingredientAmounts.spec.ts` and `composables/useIngredientAmountText.spec.ts`. Fixtures come

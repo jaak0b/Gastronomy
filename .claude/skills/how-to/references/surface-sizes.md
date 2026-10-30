@@ -79,9 +79,10 @@ Plain text inside a surface needs no class: the surface class sets `font-size` t
    `admin-block-gap`. A page that is one centred block is at most `var(--admin-page-width)` wide
    (the festival page, the table plan editor). A scoped admin style reads the `--admin-*` property
    (`padding: var(--admin-row-padding-y) var(--admin-row-padding-x)`). An amount field with its
-   unit inside (`IngredientAmountField.vue`) is `var(--admin-amount-field-width)` wide, room for a
-   number of about eight characters and a unit name of about nine, and the amount column of the
-   festival stock grid reads the same value.
+   unit inside (`IngredientAmountField.vue`) is `var(--admin-amount-field-width)` wide by default,
+   room for a number of about eight characters and a unit name of about nine; the amount column of
+   the festival stock grid reads the same value, and the recipe popup narrows its recipe-line field
+   to 6rem.
 6. **A small Vuetify spacing class** such as `mb-2`, `mt-3` or `ga-2` between two neighbours stays
    as it is, and so does a layout size that belongs to one component's own geometry. The phone has
    no shared row height or touch target, so these stay in their components: the catalog row of

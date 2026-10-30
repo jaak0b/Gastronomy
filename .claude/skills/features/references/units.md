@@ -51,14 +51,15 @@ Frontend, under `frontend/src/`:
   `admin/components/units/UnitDialog.vue` through `useEditSession` to rename the unit for every
   ingredient at once, without waiting for the ingredient's Speichern. The chip "Neue Einheit" after
   the group opens the same form empty, and the unit it creates becomes the chosen one
-  (`afterSaving`). Every chip of the list carries the trash of `BaseDeleteAction`, always visible: on a
-  unit whose `usedByIngredientNames` is empty it asks first and deletes on confirm; on a unit in use
-  it is disabled and its tooltip names
-  those ingredients (`admin.units.messages.usedByIngredients`). The chip known only from the
-  ingredient's carried `unitName` has no list data and shows no trash button. A refused create or
-  rename shows in the unit form, a refused delete under the chips (`BaseRefusalAlert`,
-  `data-test="unit-refusal"`); choosing a chip or opening the form clears it. The pencil and the
-  trash button inside a chip take their size from `ADMIN_CHIP_BUTTON_DEFAULTS` in
+  (`afterSaving`). Every chip of the list carries the trash of `BaseDeleteAction`, hidden with
+  `opacity` until the chip is hovered or the trash has keyboard focus; it keeps its space, so the
+  chip does not change width. On a unit whose `usedByIngredientNames` is empty it asks first and
+  deletes on confirm; on a unit in use it is disabled and its tooltip names
+  those ingredients (`admin.units.messages.usedByIngredients`). The pencil on the chosen chip stays
+  visible. The chip known only from the ingredient's carried `unitName` has no list data and shows no
+  trash button. A refused create or rename shows in the unit form, a refused delete under the chips
+  (`BaseRefusalAlert`, `data-test="unit-refusal"`); choosing a chip or opening the form clears it.
+  The pencil and the trash button inside a chip take their size from `ADMIN_CHIP_BUTTON_DEFAULTS` in
   `admin/styles/adminSizes.ts`. The form shows `AdminLoadFailureBar` at its top, so a failed load of
   the units is not hidden behind the dimmed page.
 - `admin/stores/units.ts` sits on `defineAdminList` with `withCreating` and `withDeleting` at
@@ -118,9 +119,13 @@ Frontend, under `frontend/src/`:
   `admin/stores/adminList.spec.ts` (the `withDeleting` layer), `admin/components/ingredients/`
   (`IngredientDialog.spec.ts`, `IngredientDialog.unitChoice.spec.ts` for choosing and the carried
   current unit, `IngredientDialog.unitNames.spec.ts` for renaming and creating, and
-  `IngredientDialog.unitDeleting.spec.ts` for the trash button, enabled or disabled with the
-  ingredients named, and the delete, all on `ingredientDialogFixture.ts`),
+  `IngredientDialog.unitDeleting.spec.ts` for the trash button, its hover-reveal marker, its enabled
+  or disabled state with the ingredients named, and the delete, all on `ingredientDialogFixture.ts`),
+  `admin/components/items/ItemsList.ingredients.spec.ts` for the trash reached through the recipe
+  popup and the ingredient form on the Artikel tab,
   `admin/components/units/UnitDialog.spec.ts`, `admin/stores/screenListening.spec.ts` and
   `admin/components/AdminLoadFailureBar.spec.ts` (a failed unit load on the Artikel tab, and the bar
   inside the ingredient form). Fixtures come from `anAdminUnit`, `PIECE_UNIT`, `GRAM_UNIT`,
-  `MILLILITRE_UNIT` and `KISTE_UNIT` in `tests/support/wireViews.ts`.
+  `MILLILITRE_UNIT` and `KISTE_UNIT` in `tests/support/wireViews.ts`. jsdom cannot compute `:hover`,
+  so the spec asserts the trash stays in the DOM with its `unit-trash` marker; the opacity reveal
+  itself is visual CSS and is not asserted.

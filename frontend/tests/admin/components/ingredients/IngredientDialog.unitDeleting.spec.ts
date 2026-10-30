@@ -78,6 +78,20 @@ describe('deleting a unit from the form for an ingredient', () => {
     expect(unitIdsWithATrashButton()).toEqual(['unit-stueck', 'unit-gram', 'unit-millilitre', 'unit-kiste'])
   })
 
+  it('keeps the trash in the chip, marked for the hover reveal', async () => {
+    unitsLaptop()
+
+    await mountDialog()
+
+    expect(isOnScreen(`${chipOf('unit-kiste')} [data-test="delete-unit"]`)).toBe(true)
+    expect(
+      onScreen(`${chipOf('unit-kiste')} [data-test="delete-unit-wrapper"]`).classList.contains('unit-trash'),
+    ).toBe(true)
+    expect(
+      onScreen(`${chipOf('unit-gram')} [data-test="delete-unit-wrapper"]`).classList.contains('unit-trash'),
+    ).toBe(true)
+  })
+
   it('offers the trash button only on the units no ingredient uses', async () => {
     unitsLaptop()
 

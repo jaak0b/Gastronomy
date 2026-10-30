@@ -3,7 +3,8 @@ import { flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminIngredientsStore } from '../../../../src/admin/stores/ingredients'
 import { answer, neverAnswers } from '../../../support/laptop'
-import { allOnScreen, iconActionLabelsOnScreen, isOnScreen, onScreen, typeIn } from '../../../support/dom'
+import { allOnScreen, iconActionLabelsOnScreen, isOnScreen, onScreen, typeIn, waitUntil } from '../../../support/dom'
+import { anAdminItemIngredient } from '../../../support/wireViews'
 import {
   hover,
   ingredientIdsOfRowsHolding,
@@ -11,6 +12,7 @@ import {
   loadIngredientsAndMountDialog,
   mountDialog,
   namesInTheIngredientList,
+  PANCAKE,
   recipeLaptop,
   recipeLaptopWithoutTheIngredientList,
   searchInput,
@@ -29,8 +31,8 @@ afterEach(() => {
 
 describe('the two columns of the recipe', () => {
   it.each([
-    ['de', ['Im Rezept', 'Alle Zutaten']],
-    ['en', ['In the recipe', 'All ingredients']],
+    ['de', ['Im Rezept', 'Verfügbare Zutaten']],
+    ['en', ['In the recipe', 'Available ingredients']],
   ] as const)('are headed in %s', async (locale, expected) => {
     recipeLaptop()
 
@@ -39,26 +41,24 @@ describe('the two columns of the recipe', () => {
     expect(allOnScreen('[data-test="column-heading"]').map((heading) => heading.textContent?.trim())).toEqual(expected)
   })
 
-  it('keep the recipe on the left and every ingredient on the right', async () => {
+  it('keep the recipe on the left and the ingredients it does not hold on the right', async () => {
     recipeLaptop()
 
     await loadIngredientsAndMountDialog()
 
     expect(allOnScreen('[data-test="recipe-column"] [data-test="recipe-line"]')).toHaveLength(2)
-    expect(allOnScreen('[data-test="ingredients-column"] [data-test="ingredient-row"]')).toHaveLength(4)
+    expect(allOnScreen('[data-test="ingredients-column"] [data-test="ingredient-row"]')).toHaveLength(2)
   })
 })
 
-describe('the list of all ingredients', () => {
-  it('lists every ingredient, those in the recipe included, with its unit after a middle dot', async () => {
+describe('the list of available ingredients', () => {
+  it('lists only the ingredients that are not in the recipe, with their unit after a middle dot', async () => {
     recipeLaptop()
 
     await loadIngredientsAndMountDialog()
 
-    expect(namesInTheIngredientList()).toEqual(['Brötchen', 'Mehl', 'Milch', 'Sahne'])
+    expect(namesInTheIngredientList()).toEqual(['Milch', 'Sahne'])
     expect(allOnScreen('[data-test="ingredient-unit"]').map((unit) => unit.textContent?.trim())).toEqual([
-      '· Stück',
-      '· g',
       '· ml',
       '· ml',
     ])
@@ -69,11 +69,11 @@ describe('the list of all ingredients', () => {
 
     await loadIngredientsAndMountDialog()
 
-    expect(onScreen(ingredientRow('ingredient-broetchen')).classList.contains('striped-row-strong')).toBe(false)
-    expect(onScreen(ingredientRow('ingredient-mehl')).classList.contains('striped-row-strong')).toBe(true)
+    expect(onScreen(ingredientRow('ingredient-milch')).classList.contains('striped-row-strong')).toBe(false)
+    expect(onScreen(ingredientRow('ingredient-sahne')).classList.contains('striped-row-strong')).toBe(true)
   })
 
-  it('offers the plus only on an ingredient that is not yet in the recipe', async () => {
+  it('offers the plus on every listed ingredient', async () => {
     recipeLaptop()
 
     await loadIngredientsAndMountDialog()
@@ -105,7 +105,7 @@ describe('the list of all ingredients', () => {
   })
 })
 
-describe('searching the list of all ingredients', () => {
+describe('searching the list of available ingredients', () => {
   it.each([
     ['de', 'Suchen'],
     ['en', 'Search'],
@@ -130,9 +130,9 @@ describe('searching the list of all ingredients', () => {
     recipeLaptop()
     await loadIngredientsAndMountDialog()
 
-    await typeIn(searchInput(), 'ö')
+    await typeIn(searchInput(), 'ah')
 
-    expect(namesInTheIngredientList()).toEqual(['Brötchen'])
+    expect(namesInTheIngredientList()).toEqual(['Sahne'])
   })
 
   it('leaves the recipe on the left as it is', async () => {
@@ -155,7 +155,39 @@ describe('searching the list of all ingredients', () => {
   })
 })
 
-describe('the text of an empty list of all ingredients', () => {
+describe('the text of an empty list of available ingredients', () => {
+  it('stays away when the recipe already holds every ingredient', async () => {
+    recipeLaptop()
+    const dialog = await loadIngredientsAndMountDialog()
+    await dialog.setProps({
+      item: {
+        ...PANCAKE,
+        ingredients: [
+          ...PANCAKE.ingredients,
+          anAdminItemIngredient({
+            ingredientId: 'ingredient-milch',
+            name: 'Milch',
+            unitId: 'unit-millilitre',
+            unitName: 'ml',
+            amount: 1,
+          }),
+          anAdminItemIngredient({
+            ingredientId: 'ingredient-sahne',
+            name: 'Sahne',
+            unitId: 'unit-millilitre',
+            unitName: 'ml',
+            amount: 1,
+          }),
+        ],
+      },
+    })
+
+    await waitUntil(() =>
+      expect(allOnScreen('[data-test="ingredients-column"] [data-test="ingredient-row"]')).toHaveLength(0),
+    )
+    expect(isOnScreen(EMPTY_TEXT_OF_THE_INGREDIENTS)).toBe(false)
+  })
+
   it('shows when the laptop has no ingredient at all', async () => {
     recipeLaptop().answers('GET', '/api/admin/ingredients', answer({ ingredients: [] }))
 

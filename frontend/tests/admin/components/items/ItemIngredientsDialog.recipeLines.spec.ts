@@ -105,6 +105,7 @@ describe('the recipe lines of an article while the ingredient list is missing', 
         'Brötchen',
       ]),
     )
+    expect(allOnScreen('[data-test="edit-recipe-ingredient"]')).toHaveLength(0)
   })
 
   it('show every line with its name when the ingredient list failed to load', async () => {
@@ -119,6 +120,7 @@ describe('the recipe lines of an article while the ingredient list is missing', 
         'Brötchen',
       ]),
     )
+    expect(allOnScreen('[data-test="edit-recipe-ingredient"]')).toHaveLength(0)
   })
 
   it('show the unit of every line when the ingredient list failed to load', async () => {
@@ -154,22 +156,19 @@ describe('a recipe line whose amount is refused', () => {
     expect(flourAmount.value).toBe('viel')
   })
 
-  it('shows the reason the laptop gives in English under that line only', async () => {
-    recipeLaptop().answers(
-      'PUT',
-      /./,
-      refusal('errors.admin.ingredients.amountInvalid', { status: 422, code: 'UnprocessableEntity' }),
-    )
+  it('refuses an amount of zero locally in English and sends nothing', async () => {
+    const laptop = recipeLaptop()
     await loadIngredientsAndMountDialog('en')
     const flourAmount = inputOf(`${FLOUR_LINE} [data-test="amount-input"]`)
 
-    typeInto(flourAmount, '0')
+    await typeIn(flourAmount, '0')
     leave(flourAmount)
 
     await vi.waitFor(() =>
       expect(onScreen(`${FLOUR_LINE} [data-test="refusal"]`).textContent?.trim()).toBe('Enter an amount above zero.'),
     )
     expect(allOnScreen('[data-test="refusal"]')).toHaveLength(1)
+    expect(laptop.writes()).toEqual([])
   })
 
   it('takes the warning away as soon as the admin types the saved amount again', async () => {

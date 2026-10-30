@@ -4,10 +4,10 @@ import { mount, type VueWrapper } from '@vue/test-utils'
 import ItemIngredientsDialog from '../../../../src/admin/components/items/ItemIngredientsDialog.vue'
 import { useAdminIngredientsStore } from '../../../../src/admin/stores/ingredients'
 import { useAdminUnitsStore } from '../../../../src/admin/stores/units'
-import type { AdminIngredientView } from '../../../../src/shared/api/generatedSchemas'
+import type { AdminIngredientView, AdminItemView } from '../../../../src/shared/api/generatedSchemas'
 import { testPlugins } from '../../../support/plugins'
 import { answer, emptyAnswer, noConnection, stubLaptop, type StubbedLaptop } from '../../../support/laptop'
-import { allOnScreen, clickOn, inputOf, isOnScreen, onScreen } from '../../../support/dom'
+import { allOnScreen, inputOf, onScreen } from '../../../support/dom'
 import { anAdminIngredient, anAdminItem, anAdminItemIngredient, SEEDED_UNITS } from '../../../support/wireViews'
 
 const BUN = anAdminIngredient({ usedByItemNames: ['Bratwurst', 'Pfannkuchen'] })
@@ -39,7 +39,7 @@ export const EVERY_INGREDIENT: AdminIngredientView[] = [BUN, FLOUR, MILK, CREAM]
 
 export const CREATED_EGG = anAdminIngredient({ ingredientId: 'ingredient-ei', name: 'Ei' })
 
-const PANCAKE = anAdminItem({
+export const PANCAKE = anAdminItem({
   itemId: 'item-pfannkuchen',
   name: 'Pfannkuchen',
   ingredients: [
@@ -57,8 +57,6 @@ const PANCAKE = anAdminItem({
 export const FLOUR_LINE = '[data-test="recipe-line"][data-test-id="ingredient-mehl"]'
 
 export const BUN_LINE = '[data-test="recipe-line"][data-test-id="ingredient-broetchen"]'
-
-export const AMOUNT_TO_ADD = '[data-test="amount-to-add"]'
 
 export function ingredientRow(ingredientId: string): string {
   return `[data-test="ingredient-row"][data-test-id="${ingredientId}"]`
@@ -78,9 +76,9 @@ export function recipeLaptopWithoutTheIngredientList(): StubbedLaptop {
   return recipeLaptop().answers('GET', '/api/admin/ingredients', noConnection())
 }
 
-export function mountDialog(locale: 'de' | 'en' = 'de'): VueWrapper {
+export function mountDialog(locale: 'de' | 'en' = 'de', item: AdminItemView = PANCAKE): VueWrapper {
   return mount(ItemIngredientsDialog, {
-    props: { item: PANCAKE },
+    props: { item },
     global: { plugins: testPlugins(locale) },
     attachTo: document.body,
   })
@@ -106,19 +104,6 @@ export function ingredientIdsOfRowsHolding(selector: string): string[] {
 
 export function searchInput(): HTMLInputElement {
   return inputOf('[data-test="ingredient-search"]')
-}
-
-export async function openTheAmountRowOf(ingredientId: string): Promise<void> {
-  await clickOn(`${ingredientRow(ingredientId)} [data-test="add-ingredient"]`)
-  await vi.waitFor(() => expect(isOnScreen(`${ingredientRow(ingredientId)} ${AMOUNT_TO_ADD}`)).toBe(true))
-}
-
-export function amountToAddInput(): HTMLInputElement {
-  return inputOf(`${AMOUNT_TO_ADD} [data-test="amount-input"]`)
-}
-
-export function addButtonIsDisabled(): boolean {
-  return onScreen('[data-test="add-to-recipe"]').hasAttribute('disabled')
 }
 
 export async function hover(selector: string): Promise<void> {

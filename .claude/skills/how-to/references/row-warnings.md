@@ -23,8 +23,7 @@ owns the rows; it keeps one refusal per row id.
 
 Current consumers: `admin/composables/useFestivalItemRows.ts` (rows keyed by item id),
 `admin/components/items/ItemIngredientsDialog.vue` (one for the recipe lines and one for the rows
-of all ingredients, both keyed by ingredient id; a row's warning also goes when its amount row
-closes),
+of available ingredients, both keyed by ingredient id),
 `admin/components/festivals/FestivalStock.vue` (stock rows keyed by ingredient id),
 `admin/components/HideableEntryList.vue` (the table plan's areas, keyed by their id; see
 `hideable-rows.md`) and `admin/components/stations/RemovableStationRows.vue` (the station rows of the

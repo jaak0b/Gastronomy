@@ -332,9 +332,12 @@ Every rule binds every agent, main or sub, with no exception it does not name.
     because the person acted on a screen that showed something else. Spaces before or after a typed
     text are not part of what the person entered: the server removes them from every text field of a request in
     one shared place before anything checks or stores the value, because they are almost always a
-    slip and would otherwise make two names look the same while being different. The one deliberate exception:
-    a phone drops an unsent order without a word once its festival is over or another one has
-    started, as the `festivals` feature page describes.
+    slip and would otherwise make two names look the same while being different. The rule has two
+    deliberate exceptions. A recipe line's Menge is the one value the app fills in: a new line
+    starts at 1, and a cleared Menge becomes 1 again, because a recipe line must always carry an
+    amount above zero. The admin sees the 1 and can type over it. A phone drops an unsent order
+    without a word once its festival is over or another one has started, as the `festivals` feature
+    page describes.
 
 23. **A write that nobody is told about is a bug, so no service tells anyone: the commit does.**
     Screens learn about changes from two broad hub events, `ConfigurationChanged` for everything an

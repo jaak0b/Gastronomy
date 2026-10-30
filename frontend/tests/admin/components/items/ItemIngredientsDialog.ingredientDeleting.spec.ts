@@ -111,26 +111,22 @@ describe('deleting an ingredient no article uses', () => {
 })
 
 describe('an ingredient an article uses', () => {
-  it('offers the trash disabled, whether this recipe or another one uses it', async () => {
+  it('offers the trash disabled on the ingredients another recipe uses', async () => {
     recipeLaptop()
 
     await loadIngredientsAndMountDialog()
 
-    expect(ingredientIdsOfRowsHolding('[data-test="delete-ingredient"]:disabled')).toEqual([
-      'ingredient-broetchen',
-      'ingredient-mehl',
-      'ingredient-sahne',
-    ])
+    expect(ingredientIdsOfRowsHolding('[data-test="delete-ingredient"]:disabled')).toEqual(['ingredient-sahne'])
   })
 
   it('names the articles in German', async () => {
     recipeLaptop()
     await loadIngredientsAndMountDialog()
 
-    await hover(`${ingredientRow('ingredient-broetchen')} [data-test="delete-ingredient-wrapper"]`)
+    await hover(`${CREAM_ROW} [data-test="delete-ingredient-wrapper"]`)
 
     await vi.waitFor(() =>
-      expect(refusalReasonsOnScreen()).toContain('Die Zutat wird noch bei den Artikeln Bratwurst, Pfannkuchen verwendet.'),
+      expect(refusalReasonsOnScreen()).toContain('Die Zutat wird noch bei den Artikeln Kaiserschmarrn verwendet.'),
     )
   })
 

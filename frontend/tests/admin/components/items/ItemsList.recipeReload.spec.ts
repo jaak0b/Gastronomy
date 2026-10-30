@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { fireHubEvent, forgetHubEvents } from '../../../support/hubConnection'
 import { answer } from '../../../support/laptop'
-import { clickOn, onScreen, pressInDialog, typeInto, waitUntil } from '../../../support/dom'
+import { clickOn, isOnScreen, onScreen, pressInDialog, waitUntil } from '../../../support/dom'
 import { anAdminIngredient, anAdminItemIngredient } from '../../../support/wireViews'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../../support/hubConnection')).signalrModuleFake())
@@ -47,32 +47,31 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('the trash of an ingredient once the laptop says the configuration changed', () => {
-  it('is disabled after the ingredient was added to the open recipe', async () => {
+describe('the available ingredients once the laptop says the configuration changed', () => {
+  it('takes an ingredient the item now holds out of the available list', async () => {
     const laptop = itemsListLaptop({ ingredients: { ingredients: [UNUSED_MUSTARD] } })
     await useConnectionStore().connect({})
     const list = mountList()
     await openTheRecipe(list)
-    await waitUntil(() => expect(trashOfMustardIsDisabled()).toBe(false))
+    await waitUntil(() => expect(isOnScreen(MUSTARD_ROW)).toBe(true))
     laptop
       .answers('GET', (call) => call.url === '/api/admin/items', answer(BRATWURST_WITH_MUSTARD))
       .answers('GET', '/api/admin/ingredients', answer({ ingredients: [MUSTARD_IN_BRATWURST] }))
-    await clickOn(`${MUSTARD_ROW} [data-test="add-ingredient"]`)
-    typeInto(`${MUSTARD_ROW} [data-test="amount-input"]`, '20')
-    await waitUntil(() => expect(onScreen('[data-test="add-to-recipe"]').hasAttribute('disabled')).toBe(false))
-    await clickOn('[data-test="add-to-recipe"]')
 
     fireHubEvent('ConfigurationChanged')
 
-    await waitUntil(() => expect(trashOfMustardIsDisabled()).toBe(true))
+    await waitUntil(() => expect(isOnScreen(MUSTARD_ROW)).toBe(false))
   })
 
-  it('is enabled again after the ingredient was removed from the open recipe', async () => {
-    const laptop = itemsListLaptop({ items: BRATWURST_WITH_MUSTARD, ingredients: { ingredients: [MUSTARD_IN_BRATWURST] } })
+  it('shows an ingredient the item no longer holds with its trash enabled once the laptop lists it as unused', async () => {
+    const laptop = itemsListLaptop({
+      items: BRATWURST_WITH_MUSTARD,
+      ingredients: { ingredients: [MUSTARD_IN_BRATWURST] },
+    })
     await useConnectionStore().connect({})
     const list = mountList()
     await openTheRecipe(list)
-    await waitUntil(() => expect(trashOfMustardIsDisabled()).toBe(true))
+    expect(isOnScreen(MUSTARD_ROW)).toBe(false)
     laptop
       .answers('GET', (call) => call.url === '/api/admin/items', answer(ONE_ITEM))
       .answers('GET', '/api/admin/ingredients', answer({ ingredients: [UNUSED_MUSTARD] }))
@@ -82,5 +81,6 @@ describe('the trash of an ingredient once the laptop says the configuration chan
     fireHubEvent('ConfigurationChanged')
 
     await waitUntil(() => expect(trashOfMustardIsDisabled()).toBe(false))
+    expect(isOnScreen(MUSTARD_ROW)).toBe(true)
   })
 })

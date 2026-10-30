@@ -406,7 +406,7 @@
         "editTitle": "Zutat bearbeiten",
         "removeFromRecipeTitle": "Zutat entfernen",
         "inTheRecipe": "Im Rezept",
-        "allIngredients": "Alle Zutaten",
+        "availableIngredients": "Verfügbare Zutaten",
         "search": "Suchen",
         "unitAfterName": "· {unit}",
         "deleteTitle": "Zutat löschen?"
@@ -418,7 +418,6 @@
         "addToRecipe": "Zutat hinzufügen",
         "removeFromRecipe": "Entfernen",
         "history": "Verlauf",
-        "add": "Hinzufügen",
         "deleteConfirm": "Zutat löschen"
       },
       "messages": {
