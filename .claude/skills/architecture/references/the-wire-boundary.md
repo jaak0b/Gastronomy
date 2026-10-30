@@ -29,7 +29,9 @@ are on the `change-a-wire-contract` page of `how-to`.
 
 Route paths, hub event names and message keys are plain strings on both sides. Tests read the
 backend's source and assert the frontend declares the same set, so the check holds without anyone
-remembering it.
+remembering it. For routes that covers the literal `/api/...` addresses and the routes the admin
+list layers build from their list's `path` through `ROUTES_OF_EACH_ADMIN_LIST_LAYER` in
+`frontend/src/admin/stores/adminList.ts` (see the `admin-list-screen` page of `how-to`).
 
 ## Tests
 

@@ -1,10 +1,14 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { ROUTES_OF_EACH_ADMIN_LIST_LAYER, type AdminListLayer } from '../../src/admin/stores/adminList'
 import { sourceFilesUnder } from '../support/sourceFiles'
 
 const BACKEND_ROOT = `${process.cwd()}/../backend/GastronomyApp.Api`
 const SOURCE_ROOT = `${process.cwd()}/src`
+const FESTIVAL_SCOPED_LIST = 'admin/stores/festivalScopedList.ts'
+const ADMIN_LIST_DEFINITION_CALL = /\b(defineAdminList|adminListDefinition|defineFestivalScopedList)\(/
 const ANY_SEGMENT = '*'
+const ADMIN_LIST_LAYERS = Object.keys(ROUTES_OF_EACH_ADMIN_LIST_LAYER) as AdminListLayer[]
 
 interface Route {
   method: string
@@ -124,6 +128,42 @@ function routesThePhoneCalls(): CalledRoute[] {
   return called
 }
 
+function layersComposedIn(source: string): AdminListLayer[] {
+  return ADMIN_LIST_LAYERS.filter((layer) => new RegExp(`\\b${layer}\\(`).test(source))
+}
+
+function relativeToTheSource(file: string): string {
+  return file.substring(SOURCE_ROOT.length + 1)
+}
+
+function routesTheAdminListsCall(): CalledRoute[] {
+  const festivalScopedLayers = layersComposedIn(readFileSync(`${SOURCE_ROOT}/${FESTIVAL_SCOPED_LIST}`, 'utf8'))
+  const called: CalledRoute[] = []
+  for (const file of sourceFilesUnder(SOURCE_ROOT)) {
+    const source = readFileSync(file, 'utf8')
+    for (const match of source.matchAll(/\b(defineAdminList|adminListDefinition|defineFestivalScopedList)\(\{\s*path: '(\/api\/[^']*)'/g)) {
+      const layers = match[1] === 'defineFestivalScopedList' ? festivalScopedLayers : layersComposedIn(source)
+      for (const route of layers.flatMap((layer) => ROUTES_OF_EACH_ADMIN_LIST_LAYER[layer])) {
+        const path = `${match[2]}${route.afterTheListPath}`
+        called.push({
+          path,
+          segments: segmentsOf(path),
+          method: route.method,
+          file: relativeToTheSource(file),
+        })
+      }
+    }
+  }
+  return called
+}
+
+function filesDefiningAnAdminList(): string[] {
+  return sourceFilesUnder(SOURCE_ROOT)
+    .filter((file) => ADMIN_LIST_DEFINITION_CALL.test(readFileSync(file, 'utf8')))
+    .map((file) => relativeToTheSource(file))
+    .filter((file) => file !== FESTIVAL_SCOPED_LIST)
+}
+
 function matches(called: string[], served: string[]): boolean {
   return (
     called.length === served.length
@@ -160,13 +200,39 @@ describe('every address the phone asks the laptop for', () => {
     expect(refused).toEqual([])
   })
 
+  it('is asked for by the layers of an admin list with a method the laptop accepts there', () => {
+    const served = routesTheLaptopServes()
+
+    const refused = routesTheAdminListsCall()
+      .filter(
+        (call) =>
+          !served.some(
+            (route) => route.method === call.method && matches(call.segments, route.segments),
+          ),
+      )
+      .map((call) => `${call.method} ${call.path} (${call.file})`)
+
+    expect(refused).toEqual([])
+  })
+
+  it('expands the routes of every admin list the source defines, so no store is skipped without a word', () => {
+    const filesWithExpandedRoutes = new Set(routesTheAdminListsCall().map((call) => call.file))
+
+    const skipped = filesDefiningAnAdminList().filter((file) => !filesWithExpandedRoutes.has(file))
+
+    expect(skipped).toEqual([])
+  })
+
   it('is found by this check, so it cannot pass by finding nothing', () => {
     const served = routesTheLaptopServes()
     const calls = routesThePhoneCalls()
+    const layerCalls = routesTheAdminListsCall().map((call) => `${call.method} ${call.path}`)
 
     expect(served.length).toBeGreaterThan(25)
     expect(pathsThePhoneCalls().length).toBeGreaterThan(15)
     expect(calls.length).toBeGreaterThan(10)
+    expect(layerCalls).toContain('DELETE /api/admin/units/{id}')
+    expect(layerCalls).toContain('POST /api/admin/items/{id}/deactivate')
     expect(
       calls.some((call) => call.method === 'POST' && call.path === '/api/orders'),
     ).toBe(true)

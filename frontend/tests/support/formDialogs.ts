@@ -37,14 +37,10 @@ export async function saveTheItemDialog(
   await saveTheFormDialog(dialog)
 }
 
-export async function saveTheIngredientDialog(
-  ingredientDialog: VueWrapper,
-  name: string,
-  unitId: string,
-): Promise<void> {
+export async function saveTheIngredientDialog(name: string, unitId: string): Promise<void> {
   const dialog = formDialogHolding('[data-test="ingredient-name-field"]')
   typeInto(onScreen('[data-test="ingredient-name-field"]', dialog), name)
-  await ingredientDialog.getComponent(VSelect).setValue(unitId)
+  await clickOn(`[data-test="unit-chip"][data-test-id="${unitId}"]`, dialog)
   await saveTheFormDialog(dialog)
 }
 

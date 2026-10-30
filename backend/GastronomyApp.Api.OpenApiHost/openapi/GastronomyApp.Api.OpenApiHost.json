@@ -2500,10 +2500,8 @@
             }
           }
         }
-      }
-    },
-    "/api/admin/units/{unitId}/activate": {
-      "post": {
+      },
+      "delete": {
         "tags": [
           "GetDocument.Insider"
         ],
@@ -2519,45 +2517,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SavedUnitView"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/units/{unitId}/deactivate": {
-      "post": {
-        "tags": [
-          "GetDocument.Insider"
-        ],
-        "parameters": [
-          {
-            "name": "unitId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SavedUnitView"
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -3159,7 +3120,6 @@
         "required": [
           "unitId",
           "name",
-          "isActive",
           "usedByIngredientNames"
         ],
         "type": "object",
@@ -3170,9 +3130,6 @@
           },
           "name": {
             "type": "string"
-          },
-          "isActive": {
-            "type": "boolean"
           },
           "usedByIngredientNames": {
             "type": "array",

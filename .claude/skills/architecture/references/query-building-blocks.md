@@ -16,7 +16,7 @@ a deactivated station is not offered any more, and a screen shows a row another 
 - **Behaviour shared by several entities goes through a small interface** on the entities and one class
   `<Interface>Queries`. Only `Active<T>()` exists so far; `HideableQueries.Shown<T>()` waits for its first use. Two exist:
   - `IActivatable { bool IsActive { get; set; } }` with `ActivatableQueries.Active<T>() where T : class, IActivatable`,
-    for stations, items, categories, ingredients, units and staff members.
+    for stations, items, categories, ingredients and staff members.
   - `IHideable` with `HideableQueries.Shown<T>()`, for festival, area and table.
   - `IFestivalScoped : IEntity { Guid FestivalId }`, for area and table. It has no query extension: `ActivationService.ShowAsync` and `FestivalRowHiding.HideAsync` use it to look a row up inside the festival of the route, so a row of another festival is not found.
   - `INamed : IEntity { string Name }` (`IEntity` is `{ Guid Id }`, implemented by every entity with a single Guid key, and `ISortable` and `IDeviceOwner` derive from it too) with `NamedQueries.Namesakes<T>(name, excludedId)`, for units,

@@ -15,7 +15,6 @@ import TablePlanEditor from '../components/tablePlan/TablePlanEditor.vue'
 import StationsList from '../components/stations/StationsList.vue'
 import ItemsList from '../components/items/ItemsList.vue'
 import IngredientsList from '../components/ingredients/IngredientsList.vue'
-import UnitsList from '../components/units/UnitsList.vue'
 import StaffList from '../components/staff/StaffList.vue'
 import NotOnLaptop from '../components/NotOnLaptop.vue'
 import AdminLoadFailureBar from '../components/AdminLoadFailureBar.vue'
@@ -62,8 +61,6 @@ function titleFor(value: AdminSection): string {
       return t('admin.items.title')
     case 'ingredients':
       return t('admin.ingredients.title')
-    case 'units':
-      return t('admin.units.title')
     case 'staff':
       return t('admin.staff.title')
     default:
@@ -116,7 +113,6 @@ void isThisTheLaptop().then((isLaptop) => {
       <StationsList v-else-if="section === 'stations'" />
       <ItemsList v-else-if="section === 'items'" />
       <IngredientsList v-else-if="section === 'ingredients'" />
-      <UnitsList v-else-if="section === 'units'" />
       <StaffList v-else-if="section === 'staff'" />
     </div>
 

@@ -55,7 +55,8 @@ Tischplan card in `festivals/FestivalTablePlan.vue`. A refusal stays a `BaseRefu
 `category-refusal`, `plan-refusal`). The place adds its `v-if` and its spacing class
 (`admin-section-gap` on a page, `mt-3` under a card's add line, `mt-4` in `BaseFormDialog`). Never
 write the `v-alert` by hand. Consumers: `BaseListRow`, `BaseFormDialog`, every global tab, the
-festival page and its cards, `ItemIngredientsDialog` and the table plan editor.
+festival page and its cards, `ItemIngredientsDialog`, `IngredientDialog` (a refused unit delete,
+`unit-refusal`, under the unit chips) and the table plan editor.
 
 ## One mapping to text: `adminErrorMessageText`
 

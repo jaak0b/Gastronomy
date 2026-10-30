@@ -56,7 +56,7 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(orderItem.SettledAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 18, 0, 0)));
                       Assert.That(orderItem.SettledByStaffMemberId, Is.EqualTo(staffMemberId));
                       Assert.That(orderItem.PaymentMethod, Is.Null);
-                      Assert.That(appliedMigrations, Has.Count.EqualTo(14));
+                      Assert.That(appliedMigrations, Has.Count.EqualTo(15));
                       Assert.That(appliedMigrations[0], Is.EqualTo(_releasedSchema.MigrationId));
                       Assert.That(appliedMigrations[1], Does.EndWith("_CollateCategoryNamesAndCapitalizeQRColumns"));
                       Assert.That(appliedMigrations[2], Does.EndWith("_DropOrderNote"));
@@ -71,6 +71,7 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(appliedMigrations[11], Does.EndWith("_AddOrderItemStatusHistory"));
                       Assert.That(appliedMigrations[12], Does.EndWith("_MakeHashIterationsOptional"));
                       Assert.That(appliedMigrations[13], Does.EndWith("_KeepOnlySha256Secrets"));
+                      Assert.That(appliedMigrations[14], Does.EndWith("_RemoveUnitActiveFlag"));
                       Assert.That(ingredientCount, Is.Zero);
                       Assert.That(stockRowCount, Is.Zero);
                       Assert.That(recipeLineCount, Is.Zero);
@@ -527,6 +528,87 @@ public sealed class ReleasedDatabaseUpgradeTest
   }
 
   [Test]
+  public async Task MigrateAsync_OnADatabaseWithSwitchedOffUnits_KeepsEveryUnitIngredientAmountAndUnitLink()
+  {
+    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
+    var categoryId = Guid.NewGuid();
+    var festivalId = Guid.NewGuid();
+    var stationId = Guid.NewGuid();
+    var catalogItemId = Guid.NewGuid();
+    var unusedSwitchedOffUnitId = Guid.NewGuid();
+    var usedSwitchedOffUnitId = Guid.NewGuid();
+    var mustardId = Guid.NewGuid();
+    var ketchupId = Guid.NewGuid();
+    var dillId = Guid.NewGuid();
+    var mustardRecipeLineId = Guid.NewGuid();
+    var dillRecipeLineId = Guid.NewGuid();
+    var ketchupStockRowId = Guid.NewGuid();
+    var dillStockRowId = Guid.NewGuid();
+
+    var connection = fixture.OpenConnection();
+    await ExecuteAsync(connection, _releasedSchema.Sql);
+    await InsertCatalogCategoryAsync(connection, categoryId);
+    await InsertFestivalAsync(connection, festivalId);
+    await InsertStationAndCatalogItemAsync(connection, stationId, catalogItemId, categoryId);
+
+    var context = fixture.CreateContext();
+    await context.Database.MigrateAsync("20261029222341_KeepOnlySha256Secrets", TestContext.CurrentContext.CancellationToken);
+
+    await InsertSwitchedOffUnitAsync(connection, unusedSwitchedOffUnitId, "Kiste");
+    await InsertSwitchedOffUnitAsync(connection, usedSwitchedOffUnitId, "Bund");
+    await InsertIngredientWithUnitIdAsync(connection, mustardId, "Senf", Guid.Parse("2B7C1A10-0000-4000-8000-000000000002"));
+    await InsertIngredientWithUnitIdAsync(connection, ketchupId, "Ketchup", Guid.Parse("2B7C1A10-0000-4000-8000-000000000004"));
+    await InsertIngredientWithUnitIdAsync(connection, dillId, "Dill", usedSwitchedOffUnitId);
+    await InsertRecipeLineAsync(connection, mustardRecipeLineId, catalogItemId, mustardId, 12.5);
+    await InsertRecipeLineAsync(connection, dillRecipeLineId, catalogItemId, dillId, 2);
+    await InsertStockRowAsync(connection, ketchupStockRowId, festivalId, ketchupId, 750.5);
+    await InsertStockRowAsync(connection, dillStockRowId, festivalId, dillId, 40);
+
+    await context.Database.MigrateAsync(TestContext.CurrentContext.CancellationToken);
+
+    Dictionary<Guid, Ingredient> ingredients = await context.Set<Ingredient>().Include(ingredient => ingredient.Unit).ToDictionaryAsync(ingredient => ingredient.Id);
+    Dictionary<Guid, CatalogItemIngredient> recipeLines = await context.Set<CatalogItemIngredient>().ToDictionaryAsync(recipeLine => recipeLine.Id);
+    Dictionary<Guid, FestivalIngredient> stockRows = await context.Set<FestivalIngredient>().ToDictionaryAsync(stockRow => stockRow.Id);
+    Dictionary<Guid, string> unitNamesById = await context.Set<Unit>().ToDictionaryAsync(unit => unit.Id, unit => unit.Name);
+    var brokenLinks = await context.Database.SqlQueryRaw<string>("SELECT \"table\" AS \"Value\" FROM pragma_foreign_key_check").ToListAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(unitNamesById[unusedSwitchedOffUnitId], Is.EqualTo("Kiste"));
+                      Assert.That(unitNamesById[usedSwitchedOffUnitId], Is.EqualTo("Bund"));
+                      Assert.That(ingredients.Values.Select(ingredient => ingredient.Name),
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    "Senf",
+                                                    "Ketchup",
+                                                    "Dill"
+                                                  }));
+                      Assert.That(ingredients[mustardId].Unit.Name, Is.EqualTo("g"));
+                      Assert.That(ingredients[ketchupId].Unit.Name, Is.EqualTo("ml"));
+                      Assert.That(ingredients[dillId].UnitId, Is.EqualTo(usedSwitchedOffUnitId));
+                      Assert.That(ingredients[dillId].Unit.Name, Is.EqualTo("Bund"));
+                      Assert.That(recipeLines[mustardRecipeLineId].IngredientId, Is.EqualTo(mustardId));
+                      Assert.That(recipeLines[mustardRecipeLineId].Amount, Is.EqualTo(12.5));
+                      Assert.That(recipeLines[dillRecipeLineId].IngredientId, Is.EqualTo(dillId));
+                      Assert.That(recipeLines[dillRecipeLineId].Amount, Is.EqualTo(2));
+                      Assert.That(stockRows[ketchupStockRowId].AvailableAmount, Is.EqualTo(750.5));
+                      Assert.That(stockRows[dillStockRowId].AvailableAmount, Is.EqualTo(40));
+                      Assert.That(unitNamesById.Values,
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    "Stück",
+                                                    "g",
+                                                    "kg",
+                                                    "ml",
+                                                    "l",
+                                                    "Kiste",
+                                                    "Bund"
+                                                  }));
+                      Assert.That(brokenLinks, Is.Empty);
+                    });
+  }
+
+  [Test]
   public async Task MigrateAsync_OnReleasedDatabaseWithAnOpenAndAHandedOutItem_GivesEachItsHistoryAndPointsAtTheLastStatus()
   {
     using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
@@ -677,6 +759,18 @@ public sealed class ReleasedDatabaseUpgradeTest
     command.Parameters.AddWithValue("$colourHex", "#3366CC");
     command.Parameters.AddWithValue("$sortOrder", 1);
     command.Parameters.AddWithValue("$isActive", 1);
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertSwitchedOffUnitAsync(SqliteConnection connection, Guid unitId, string name)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "Units" ("Id", "Name", "IsActive")
+                          VALUES ($id, $name, 0);
+                          """;
+    command.Parameters.AddWithValue("$id", ToStoredText(unitId));
+    command.Parameters.AddWithValue("$name", name);
     await command.ExecuteNonQueryAsync();
   }
 

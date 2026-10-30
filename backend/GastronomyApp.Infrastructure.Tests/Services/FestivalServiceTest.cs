@@ -458,8 +458,7 @@ public sealed class FestivalServiceTest
     Unit portion = new()
                    {
                      Id = Guid.NewGuid(),
-                     Name = "Portion",
-                     IsActive = true
+                     Name = "Portion"
                    };
     List<Ingredient> ingredients =
     [

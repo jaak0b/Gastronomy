@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
-import IngredientDialog from '../../../../src/admin/components/ingredients/IngredientDialog.vue'
 import { refusal } from '../../../support/laptop'
 import { allOnScreen, inputOf, isOnScreen, onScreen, typeIn, typeInto, waitUntil } from '../../../support/dom'
 import { formDialogHolding, saveTheIngredientDialog } from '../../../support/formDialogs'
@@ -19,10 +18,10 @@ const OFFERED_CHOICE = '.v-autocomplete__content .v-list-item-title'
 
 const ADD_ROW_REFUSAL = '[data-test="add-recipe-line"] [data-test="refusal"]'
 
-async function createIngredientThroughTheForm(dialog: VueWrapper, name: string, unitId: string): Promise<void> {
+async function createIngredientThroughTheForm(name: string, unitId: string): Promise<void> {
   onScreen('[data-test="new-ingredient"]').click()
   await vi.waitFor(() => expect(isOnScreen('[data-test="ingredient-name-field"]')).toBe(true))
-  await saveTheIngredientDialog(dialog.findComponent(IngredientDialog), name, unitId)
+  await saveTheIngredientDialog(name, unitId)
 }
 
 async function addTheChosenIngredientWith(amount: string): Promise<void> {
@@ -217,7 +216,7 @@ describe('creating an ingredient from the recipe', () => {
     const laptop = recipeLaptop()
     const dialog = await loadIngredientsAndMountDialog()
 
-    await createIngredientThroughTheForm(dialog, 'Ei', 'unit-stueck')
+    await createIngredientThroughTheForm('Ei', 'unit-stueck')
 
     await vi.waitFor(() => expect(isOnScreen('[data-test="ingredient-name-field"]')).toBe(false))
     expect(laptop.writes()).toEqual([
@@ -228,8 +227,8 @@ describe('creating an ingredient from the recipe', () => {
 
   it('adds the created ingredient with the amount the admin types afterwards', async () => {
     const laptop = recipeLaptop()
-    const dialog = await loadIngredientsAndMountDialog()
-    await createIngredientThroughTheForm(dialog, 'Ei', 'unit-stueck')
+    await loadIngredientsAndMountDialog()
+    await createIngredientThroughTheForm('Ei', 'unit-stueck')
     await vi.waitFor(() => expect(addedAmountInput().disabled).toBe(false))
 
     await addTheChosenIngredientWith('3')
@@ -258,7 +257,7 @@ describe('creating an ingredient from the recipe', () => {
     )
     const dialog = await loadIngredientsAndMountDialog()
 
-    await createIngredientThroughTheForm(dialog, 'honig', 'unit-gram')
+    await createIngredientThroughTheForm('honig', 'unit-gram')
 
     const form = formDialogHolding('[data-test="ingredient-name-field"]')
     await vi.waitFor(() => expect(onScreen('[data-test="refusal"]', form).textContent?.trim()).toBe(expected))

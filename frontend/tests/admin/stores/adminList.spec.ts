@@ -4,6 +4,7 @@ import {
   defineAdminList,
   withActivation,
   withCreating,
+  withDeleting,
 } from '../../../src/admin/stores/adminList'
 import {
   AdminCategoryListView,
@@ -42,7 +43,10 @@ function categoryList(options: ListOptions = {}) {
     reloadAfterWriting: options.reloadAfterWriting,
     currentView: options.currentView,
   })
-  return withActivation(withCreating(defineAdminList(definition), definition), definition)
+  return withDeleting(
+    withActivation(withCreating(defineAdminList(definition), definition), definition),
+    definition,
+  )
 }
 
 function laptopListing(...lists: unknown[][]): StubbedLaptop {
@@ -263,5 +267,74 @@ describe('changing an entry in an admin list', () => {
 
     expect(reloadAfterWriting).toHaveBeenCalledTimes(1)
     expect(laptop.callsTo('GET', /./)).toEqual([])
+  })
+})
+
+describe('deleting an entry of an admin list', () => {
+  it('deletes the entry on its own route without a body and shows the list read afterwards', async () => {
+    const laptop = laptopListing([FOOD, SWEETS], [FOOD])
+    const list = categoryList()
+    await list.load()
+
+    const result = await list.deleteEntry('category-suesses')
+
+    expect(result).toEqual({ kind: 'ok', value: null })
+    expect(laptop.writes().map((call) => [call.method, call.url, call.body])).toEqual([
+      ['DELETE', '/api/admin/categories/category-suesses', undefined],
+    ])
+    expect(list.entries.value).toEqual([FOOD])
+  })
+
+  it('returns the refusal and does not read the list again when the laptop refuses the delete', async () => {
+    const laptop = laptopListing([FOOD]).answers(
+      'DELETE',
+      '/api/admin/categories',
+      refusal('common.errors.actionFailed'),
+    )
+    const list = categoryList()
+    await list.load()
+    laptop.forgetCalls()
+
+    const result = await list.deleteEntry('category-essen')
+
+    expect(result).toEqual({
+      kind: 'failed',
+      message: { key: 'common.errors.actionFailed', parameters: {}, count: null },
+    })
+    expect(laptop.callsTo('GET', /./)).toEqual([])
+  })
+
+  it('does not bring back an entry created a moment ago once it is deleted', async () => {
+    laptopListing([FOOD], [FOOD]).answers('POST', '/api/admin/categories', answer(SWEETS))
+    const list = categoryList()
+    await list.load()
+    await list.create(SWEETS_DRAFT)
+
+    await list.deleteEntry('category-suesses')
+
+    expect(list.entries.value).toEqual([FOOD])
+  })
+
+  it('keeps the list read after the delete when a load started before it answers last', async () => {
+    const olderAnswer = aHold()
+    stubLaptop()
+      .answersEverythingElse(answer({}))
+      .answers(
+        'GET',
+        /./,
+        inTurn(
+          heldUntil(olderAnswer.released, answer({ categories: [FOOD, SWEETS] })),
+          answer({ categories: [FOOD] }),
+        ),
+      )
+    const list = categoryList()
+
+    const older = list.load()
+    await nextTurn()
+    await list.deleteEntry('category-suesses')
+    olderAnswer.release()
+    await older
+
+    expect(list.entries.value).toEqual([FOOD])
   })
 })

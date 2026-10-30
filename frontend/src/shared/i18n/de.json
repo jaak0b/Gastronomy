@@ -434,19 +434,18 @@
       }
     },
     "units": {
-      "title": "Einheiten",
       "labels": {
         "name": "Name der Einheit",
         "editTitle": "Einheit bearbeiten",
-        "deactivateTitle": "Einheit deaktivieren?"
+        "deleteTitle": "Einheit löschen?"
       },
       "actions": {
         "new": "Neue Einheit",
-        "activate": "Einheit aktivieren",
-        "deactivateConfirm": "Einheit deaktivieren"
+        "deleteConfirm": "Einheit löschen"
       },
       "messages": {
-        "usedByIngredients": "Die Einheit wird noch bei den Zutaten {ingredients} verwendet. Ändern Sie zuerst unter „Zutaten“ die Einheit dieser Zutaten."
+        "deleteBody": "Die Einheit {name} wird endgültig gelöscht.",
+        "usedByIngredients": "Die Einheit wird noch bei den Zutaten {ingredients} verwendet."
       }
     },
     "items": {
@@ -565,8 +564,7 @@
       },
       "units": {
         "nameMissing": "Geben Sie einen Namen für die Einheit ein.",
-        "nameTaken": "Die Einheit {name} ist bereits vorhanden. Wählen Sie einen anderen Namen.",
-        "nameBelongsToDeactivatedUnit": "Die Einheit {name} ist deaktiviert. Aktivieren Sie sie oder wählen Sie einen anderen Namen."
+        "nameTaken": "Die Einheit {name} ist bereits vorhanden. Wählen Sie einen anderen Namen."
       }
     },
     "auth": {

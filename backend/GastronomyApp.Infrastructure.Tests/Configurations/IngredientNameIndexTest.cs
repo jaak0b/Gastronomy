@@ -38,8 +38,7 @@ public sealed class IngredientNameIndexTest
     return new()
            {
              Id = Guid.NewGuid(),
-             Name = "Portion",
-             IsActive = true
+             Name = "Portion"
            };
   }
 }

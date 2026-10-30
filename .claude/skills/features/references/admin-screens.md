@@ -1,7 +1,8 @@
 # The admin on the laptop
 
 The admin works on the laptop: the festivals with their stations, table plan, articles and stock,
-and the global lists of stations, articles and their categories, ingredients, units and waiters,
+and the global lists of stations, articles and their categories, ingredients with their units, and
+waiters,
 together with setting up the waiters' phones and the stations' tablets. Its theme follows the device,
 light or dark, both palettes soft.
 
@@ -11,16 +12,16 @@ Frontend, under `frontend/src/`:
 
 - `admin/views/AdminShell.vue` chooses between a global tab, the festival page and the editor of one
   area. `shared/router/route.ts` reads `/admin/<section>` and holds the tabs in `ADMIN_SECTIONS`, in
-  the order Übersicht, Feste, Ausgabestellen, Artikel, Zutaten, Einheiten, Kellner. The festival
+  the order Übersicht, Feste, Ausgabestellen, Artikel, Zutaten, Kellner. The festival
   list is the admin's first screen: switching tabs replaces the history entry, and back from any
   tab or from a festival's page lands on the festival list (see the `back-button` page).
 - `admin/components/overview/AdminOverview.vue` is Übersicht, the report on the running festival.
 - `admin/components/AdminLoadFailureBar.vue` is the one load failure bar, mounted by `AdminShell.vue`
-  directly below the tabs. It reads `showsLoadFailure` from `admin/stores/adminLoadState.ts`.
+  directly below the tabs and by `ingredients/IngredientDialog.vue` at the top of the form. It reads `showsLoadFailure` from `admin/stores/adminLoadState.ts`.
 - The global tabs: `festivals/FestivalsList.vue` (see the `festivals` page),
   `stations/StationsList.vue`, `items/ItemsList.vue`, `ingredients/IngredientsList.vue` (see the
-  `ingredients` page), `units/UnitsList.vue` (see the `units` page) and `staff/StaffList.vue`. How a
-  global tab is built is on the `admin-list-screen` page of `how-to`.
+  `ingredients` page; its form manages the units, see the `units` page) and `staff/StaffList.vue`.
+  How a global tab is built is on the `admin-list-screen` page of `how-to`.
 - `shared/theme.ts` holds both palettes, with `defaultTheme: 'system'`, and the two tints of striped
   lists as the theme variables `stripe-opacity` and `stripe-strong-opacity` (see the `stripe-a-list`
   page of `how-to`).
@@ -53,9 +54,9 @@ Frontend, under `frontend/src/`:
 - **A switch off the laptop would refuse is disabled before the click**, with the refusal's text as
   its tooltip: an article on an active festival's menu on the Artikel tab, a station with items to
   hand out at the active festival or whose articles would be left without a station on the
-  Ausgabestellen tab, an ingredient still in a switched-on article on the Zutaten tab, and a unit an
-  ingredient still uses on the Einheiten tab. The units list names those ingredients in the refusal
-  text.
+  Ausgabestellen tab, an ingredient still in a switched-on article on the Zutaten tab, and the trash
+  button of a unit an ingredient still uses in the ingredient form, whose tooltip names those
+  ingredients.
 - **One bar reports every load failure, the same on every screen.** Directly below the tabs, full
   width and in the flow of the page, it shows `admin.common.errors.loadFailed` while the last load
   of any admin list the current screen shows failed, or while the hub connection to the laptop is
@@ -65,7 +66,10 @@ Frontend, under `frontend/src/`:
   registers the store's `loadFailed` until the screen closes, so a list a former screen failed to
   load never keeps the bar up. After the laptop restarts, the reconnect's `GroupsJoined` reloads
   every listening list, each successful load clears its `loadFailed`, and the bar goes away
-  without a click. Übersicht listens to its four lists like every other screen.
+  without a click. Übersicht listens to its four lists like every other screen. The ingredient form
+  (`ingredients/IngredientDialog.vue`) mounts the same `AdminLoadFailureBar` at its top, because an
+  open dialog dims the page and its bar; it is the same component with the same condition, never a
+  text of its own.
 - **Everything about one festival is on its page** (see the `festivals` page), and an unknown
   festival id returns to Übersicht without a word.
 
@@ -73,12 +77,9 @@ Frontend, under `frontend/src/`:
 
 `frontend/tests/admin/views/AdminShell.spec.ts`, `shared/router/adminRoute.spec.ts`,
 `admin/components/AdminLoadFailureBar.spec.ts` (the bar on several tabs, once on the festival page,
-on a lost connection and gone after the reconnect), `admin/stores/adminLoadState.spec.ts` (the
+inside the ingredient form, on a lost connection and gone after the reconnect), `admin/stores/adminLoadState.spec.ts` (the
 derivation, and that every admin store listens through it),
 `admin/components/overview/AdminOverview.spec.ts`, `shared/theme.spec.ts` and
 `admin/views/AdminShell.compactSizes.spec.ts` (compact controls inside the admin, the phone's left as they are). The disabled switch off
 of the Ausgabestellen tab, with both reasons and the one named when both apply, is in
-`admin/components/stations/StationsList.switchingOff.spec.ts`. The Einheiten tab is covered by
-`admin/components/units/UnitsList.*.spec.ts`, `UnitDialog.spec.ts` and `admin/stores/units.spec.ts`;
-the backend rules they display are in `AdminUnitEndpointsTest` and
-`UnitServiceTest`.
+`admin/components/stations/StationsList.switchingOff.spec.ts`.

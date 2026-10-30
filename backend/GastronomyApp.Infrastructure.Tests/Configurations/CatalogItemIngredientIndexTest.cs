@@ -15,8 +15,7 @@ public sealed class CatalogItemIngredientIndexTest
     Unit unit = new()
                 {
                   Id = Guid.NewGuid(),
-                  Name = "Portion",
-                  IsActive = true
+                  Name = "Portion"
                 };
     Ingredient ingredient = new()
                             {

@@ -82,7 +82,7 @@ overwrites a newer one.
 The mechanism is per entity type, so the hub tests prove it per type through one real route each:
 `ConfigurationChangedAnnouncementTest` for a category, an article, a festival, a station, a waiter,
 a station removed from a festival with its assignments, an area, a table, a station shape on the
-plan, a new, renamed, activated and deactivated unit, and a phone replaced over several saves;
+plan, a new, renamed and deleted unit, and a phone replaced over several saves;
 `OrdersChangedAnnouncementTest` for placing (two saves, one event), handing out (with the status rows it writes), putting back, hiding and settling. Each
 asserts the phone, the admin connection and the station tablet hear the event exactly once. A new
 entity type gets a hub test through one of its routes in the same change. The tests listen through

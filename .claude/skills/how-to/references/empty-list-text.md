@@ -17,7 +17,7 @@ do next is a different text with its own place (`row-warnings.md`).
 - `frontend/src/shared/core/emptyList.ts` holds the one condition, `showsTheEmptyListText(load,
   entryCount)`: the list has loaded, the load did not fail, and it has no entry. Never write that
   condition again beside it. `load` is a `ListLoadState` (`hasLoaded`, `loadFailed`), so a store
-  passes itself: `showsTheEmptyListText(units, units.units.length)`. `entryCount` is the count of
+  passes itself: `showsTheEmptyListText(ingredients, ingredients.ingredients.length)`. `entryCount` is the count of
   the list itself, not of the rows a box such as "Deaktivierte anzeigen" lets through: a list whose
   entries are all deactivated is not empty, and the text never states what the person chose.
   `NOTHING_TO_LOAD` is the load state of a list that nothing loads (the draft order on the review
@@ -35,7 +35,7 @@ do next is a different text with its own place (`row-warnings.md`).
 
 ## Where it shows
 
-- Admin: the Feste, Zutaten, Einheiten, Kellner and Ausgabestellen tabs; the Artikel tab, once when
+- Admin: the Feste, Zutaten, Kellner and Ausgabestellen tabs; the Artikel tab, once when
   the laptop sent no category and under every category that has no article
   (`ItemsListCategorySection.vue`, its prop `showsEmptyListText`); the festival page's station card,
   article card and table plan card, each only once this festival's own list has arrived

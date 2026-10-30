@@ -364,8 +364,7 @@ public sealed class FestivalStockServiceTest
       unit = new()
              {
                Id = Guid.NewGuid(),
-               Name = "Portion",
-               IsActive = true
+               Name = "Portion"
              };
       _fixture.DbContext.Units.Add(unit);
     }

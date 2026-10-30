@@ -1,14 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminUnitsStore } from '../../../src/admin/stores/units'
-import { aHold, answer, heldUntil, inTurn, stubLaptop, type StubbedLaptop } from '../../support/laptop'
-import { anAdminUnit } from '../../support/wireViews'
-
-const GRAM = anAdminUnit({ unitId: 'unit-gram', name: 'g' })
-
-const PIECE = anAdminUnit()
-
-const KISTE = anAdminUnit({ unitId: 'unit-kiste', name: 'Kiste' })
+import { aHold, answer, emptyAnswer, heldUntil, inTurn, stubLaptop, type StubbedLaptop } from '../../support/laptop'
+import { GRAM_UNIT, KISTE_UNIT, PIECE_UNIT } from '../../support/wireViews'
 
 interface UnitsScenario {
   listed?: unknown[]
@@ -19,7 +13,13 @@ interface UnitsScenario {
 function unitsLaptop(scenario: UnitsScenario = {}): StubbedLaptop {
   return stubLaptop()
     .answersEverythingElse(answer(scenario.writeAnswer ?? {}, scenario.writeStatus ?? 200))
-    .answers('GET', /./, answer({ units: scenario.listed ?? [GRAM] }))
+    .answers('GET', /./, answer({ units: scenario.listed ?? [GRAM_UNIT] }))
+}
+
+function deletingLaptop(listedAfterwards: unknown[]): StubbedLaptop {
+  return stubLaptop()
+    .answersEverythingElse(emptyAnswer(204))
+    .answers('GET', '/api/admin/units', answer({ units: listedAfterwards }))
 }
 
 beforeEach(() => {
@@ -32,12 +32,12 @@ afterEach(() => {
 
 describe('the unit list of the admin', () => {
   it('holds what the laptop lists', async () => {
-    unitsLaptop({ listed: [PIECE, GRAM] })
+    unitsLaptop({ listed: [PIECE_UNIT, GRAM_UNIT] })
     const units = useAdminUnitsStore()
 
     await units.load()
 
-    expect(units.units).toEqual([PIECE, GRAM])
+    expect(units.units).toEqual([PIECE_UNIT, GRAM_UNIT])
     expect(units.loadFailed).toBe(false)
   })
 
@@ -55,7 +55,7 @@ describe('the unit list of the admin', () => {
     stubLaptop().answersEverythingElse(
       inTurn(
         heldUntil(theFirstRead.released, answer({ units: [] })),
-        answer({ units: [PIECE, GRAM] }),
+        answer({ units: [PIECE_UNIT, GRAM_UNIT] }),
       ),
     )
     const units = useAdminUnitsStore()
@@ -65,29 +65,29 @@ describe('the unit list of the admin', () => {
     theFirstRead.release()
     await firstRead
 
-    expect(units.units).toEqual([PIECE, GRAM])
+    expect(units.units).toEqual([PIECE_UNIT, GRAM_UNIT])
   })
 })
 
 describe('writing a unit', () => {
   it('creates it with the name as given and shows it at once', async () => {
-    const laptop = unitsLaptop({ writeStatus: 201, writeAnswer: KISTE })
+    const laptop = unitsLaptop({ writeStatus: 201, writeAnswer: KISTE_UNIT })
     const units = useAdminUnitsStore()
 
     const result = await units.create({ name: 'Kiste' })
 
-    expect(result).toEqual({ kind: 'ok', value: KISTE })
+    expect(result).toEqual({ kind: 'ok', value: KISTE_UNIT })
     expect(laptop.calls).toEqual([
       { url: '/api/admin/units', method: 'POST', body: { name: 'Kiste' } },
     ])
-    expect(units.units).toEqual([KISTE])
+    expect(units.units).toEqual([KISTE_UNIT])
   })
 
   it('renames it and reads the list again', async () => {
-    const laptop = unitsLaptop({ writeAnswer: { unitId: GRAM.unitId } })
+    const laptop = unitsLaptop({ writeAnswer: { unitId: GRAM_UNIT.unitId } })
     const units = useAdminUnitsStore()
 
-    const result = await units.save(GRAM.unitId, { name: 'Gramm' })
+    const result = await units.save(GRAM_UNIT.unitId, { name: 'Gramm' })
 
     expect(result).toEqual({ kind: 'ok', value: null })
     expect(laptop.calls).toEqual([
@@ -97,19 +97,6 @@ describe('writing a unit', () => {
         body: { name: 'Gramm' },
       },
       { url: '/api/admin/units', method: 'GET', body: undefined },
-    ])
-  })
-
-  it('deactivates and activates it through their own routes', async () => {
-    const laptop = unitsLaptop({ writeAnswer: { unitId: GRAM.unitId } })
-    const units = useAdminUnitsStore()
-
-    await units.setActive(GRAM.unitId, false)
-    await units.setActive(GRAM.unitId, true)
-
-    expect(laptop.calls.filter((call) => call.method === 'POST').map((call) => call.url)).toEqual([
-      '/api/admin/units/unit-gram/deactivate',
-      '/api/admin/units/unit-gram/activate',
     ])
   })
 
@@ -138,7 +125,42 @@ describe('writing a unit', () => {
     unitsLaptop({ writeStatus: 500 })
     const units = useAdminUnitsStore()
 
-    const result = await units.save(GRAM.unitId, { name: 'g' })
+    const result = await units.save(GRAM_UNIT.unitId, { name: 'g' })
+
+    expect(result).toEqual({
+      kind: 'failed',
+      message: { key: 'common.errors.actionFailed', parameters: {}, count: null },
+    })
+  })
+})
+
+describe('deleting a unit', () => {
+  it('deletes it through its own route and reads the list again', async () => {
+    const laptop = deletingLaptop([GRAM_UNIT])
+    const units = useAdminUnitsStore()
+
+    const result = await units.deleteUnit(KISTE_UNIT.unitId)
+
+    expect(result).toEqual({ kind: 'ok', value: null })
+    expect(laptop.calls).toEqual([
+      { url: '/api/admin/units/unit-kiste', method: 'DELETE', body: undefined },
+      { url: '/api/admin/units', method: 'GET', body: undefined },
+    ])
+  })
+
+  it('hands back the shared failure when the laptop refuses to delete a unit in use', async () => {
+    unitsLaptop({
+      writeStatus: 409,
+      writeAnswer: {
+        code: 'UnitUsedByIngredients',
+        messageKey: 'common.errors.actionFailed',
+        parameters: {},
+        details: null,
+      },
+    })
+    const units = useAdminUnitsStore()
+
+    const result = await units.deleteUnit(GRAM_UNIT.unitId)
 
     expect(result).toEqual({
       kind: 'failed',

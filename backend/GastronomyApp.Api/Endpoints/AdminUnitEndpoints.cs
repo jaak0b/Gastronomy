@@ -1,7 +1,5 @@
 using GastronomyApp.Api.Answers;
 using GastronomyApp.Contracts.Admin.Units;
-using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -20,9 +18,7 @@ public static class AdminUnitEndpoints
 
     group.MapPut("/{unitId:guid}", async Task<ApiAnswer<SavedUnitView>> (Guid unitId, SaveUnitRequest request, UnitService service, CancellationToken cancellationToken) => await service.UpdateAsync(unitId, request, cancellationToken));
 
-    group.MapPost("/{unitId:guid}/activate", async Task<ApiAnswer<SavedUnitView>> (Guid unitId, ActivationService service, CancellationToken cancellationToken) => await service.ActivateAsync<Unit, SavedUnitView>(unitId, Refusal.Units.UnitNotFound, cancellationToken));
-
-    group.MapPost("/{unitId:guid}/deactivate", async Task<ApiAnswer<SavedUnitView>> (Guid unitId, UnitService service, CancellationToken cancellationToken) => await service.DeactivateAsync(unitId, cancellationToken));
+    group.MapDelete("/{unitId:guid}", async Task<NoContentAnswer> (Guid unitId, UnitService service, CancellationToken cancellationToken) => await service.DeleteAsync(unitId, cancellationToken));
 
     return routes;
   }

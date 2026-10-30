@@ -5,7 +5,7 @@ import type { AdminUnitView } from '../../../shared/api/generatedSchemas'
 import type { UnitDraft } from '../../stores/units'
 import BaseFormDialog from '../../../shared/components/BaseFormDialog.vue'
 
-const props = defineProps<{ unit: AdminUnitView | null; errorText: string | null }>()
+const props = defineProps<{ unit: Pick<AdminUnitView, 'name'> | null; errorText: string | null }>()
 const emit = defineEmits<{ save: [draft: UnitDraft]; cancel: [] }>()
 
 const { t } = useI18n()

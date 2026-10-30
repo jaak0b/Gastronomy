@@ -45,8 +45,8 @@ that reads it, as `AREA_STEP` in `phone/stores/tablePlan.ts`.
   `const stationChoiceIsOpen = useBackStepForAMenu()` and `<v-menu v-model="stationChoiceIsOpen">`,
   as `admin/components/festivals/StationSelect.vue` does.
 - A `v-select` or `v-autocomplete` binds the same open state to its dropdown list with
-  `v-model:menu`, one call per field: `<v-select v-model:menu="unitListIsOpen">`, as
-  `admin/components/ingredients/IngredientDialog.vue` does. Back then closes only the list, and the
+  `v-model:menu`, one call per field: `<v-select v-model:menu="categoryListIsOpen">`, as
+  `admin/components/items/ItemDialog.vue` does. Back then closes only the list, and the
   dialog or screen under it stays.
 - A menu shown under its own `v-if` goes into a component of its own, rendered under that `v-if`,
   as `TablePlanToolbarHiddenTables.vue` is, so its open state ends with the menu.

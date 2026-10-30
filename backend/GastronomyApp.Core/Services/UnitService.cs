@@ -39,8 +39,7 @@ public sealed class UnitService
     Unit created = new()
                    {
                      Id = Guid.NewGuid(),
-                     Name = request.Name!,
-                     IsActive = true
+                     Name = request.Name!
                    };
 
     _database.Units.Add(created);
@@ -69,32 +68,27 @@ public sealed class UnitService
     return unit.Adapt<SavedUnitView>(_mapping);
   }
 
-  public async Task<ErrorOr<SavedUnitView>> DeactivateAsync(Guid unitId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<Success>> DeleteAsync(Guid unitId, CancellationToken cancellationToken)
   {
     var unit = await _database.Units.FirstOrDefaultAsync(row => row.Id == unitId, cancellationToken);
 
     if (unit is null)
       return Refusal.Units.UnitNotFound(unitId);
 
-    var ingredientNames = await _database.Ingredients.Where(ingredient => ingredient.UnitId == unitId).Select(ingredient => ingredient.Name).OrderBy(ingredientName => ingredientName).ToListAsync(cancellationToken);
+    var ingredientNames = await _database.Units.Where(row => row.Id == unitId).Select(row => row.UsedByIngredientNames().ToList()).SingleAsync(cancellationToken);
 
     if (ingredientNames.Count > 0)
       return Refusal.Units.UsedByIngredients(unitId, ingredientNames);
 
-    unit.IsActive = false;
+    _database.Units.Remove(unit);
     await _database.SaveChangesAsync(cancellationToken);
 
-    return unit.Adapt<SavedUnitView>(_mapping);
+    return Result.Success;
   }
 
   private async Task<ErrorOr<Success>> CheckNameIsFreeAsync(string name, Guid? ownUnitId, CancellationToken cancellationToken)
   {
-    var namesake = await _database.Units.AsNoTracking().Namesakes(name, ownUnitId).FirstOrDefaultAsync(cancellationToken);
-
-    if (namesake is { IsActive: false })
-      return Refusal.Units.NameBelongsToDeactivatedUnit(namesake.Name);
-
-    if (namesake is not null)
+    if (await _database.Units.AsNoTracking().Namesakes(name, ownUnitId).AnyAsync(cancellationToken))
       return Refusal.Units.NameTaken(name);
 
     return Result.Success;

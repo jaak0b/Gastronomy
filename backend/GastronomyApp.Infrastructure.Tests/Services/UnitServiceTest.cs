@@ -15,9 +15,9 @@ public sealed class UnitServiceTest
   public async Task SetUp()
   {
     _fixture = new();
-    _portion = AddUnit("Portion", true);
-    _barrel = AddUnit("Fass", true);
-    _switchedOffCrate = AddUnit("Kiste", false);
+    _portion = AddUnit("Portion");
+    _barrel = AddUnit("Fass");
+    _crate = AddUnit("Kiste");
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     _service = new(_fixture.DbContext, new CoreMappingFactory().Create());
   }
@@ -31,7 +31,7 @@ public sealed class UnitServiceTest
   private SqliteInMemoryFixture _fixture = null!;
   private Unit _portion = null!;
   private Unit _barrel = null!;
-  private Unit _switchedOffCrate = null!;
+  private Unit _crate = null!;
   private UnitService _service = null!;
 
   [Test]
@@ -56,10 +56,8 @@ public sealed class UnitServiceTest
                                                "Portion"
                                              }));
                       Assert.That(ours[0].UnitId, Is.EqualTo(_barrel.Id));
-                      Assert.That(ours[0].IsActive, Is.True);
                       Assert.That(ours[0].UsedByIngredientNames, Is.Empty);
-                      Assert.That(ours[1].UnitId, Is.EqualTo(_switchedOffCrate.Id));
-                      Assert.That(ours[1].IsActive, Is.False);
+                      Assert.That(ours[1].UnitId, Is.EqualTo(_crate.Id));
                       Assert.That(ours[2].UsedByIngredientNames,
                                   Is.EqualTo(new[]
                                              {
@@ -80,7 +78,7 @@ public sealed class UnitServiceTest
     _fixture.DbContext.ChangeTracker.Clear();
 
     var list = await _service.ListAsync(TestContext.CurrentContext.CancellationToken);
-    ErrorOr<SavedUnitView> deactivated = await _service.DeactivateAsync(_portion.Id, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Success> deleted = await _service.DeleteAsync(_portion.Id, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -91,12 +89,12 @@ public sealed class UnitServiceTest
                                                "Birne",
                                                "Zwiebel"
                                              }));
-                      Assert.That(deactivated.RefusalDescription(), Does.Contain("apfel, Birne, Zwiebel"));
+                      Assert.That(deleted.RefusalDescription(), Does.Contain("apfel, Birne, Zwiebel"));
                     });
   }
 
   [Test]
-  public async Task CreateAsync_ANewName_StoresTheNameAsTypedAndSwitchedOn()
+  public async Task CreateAsync_ANewName_StoresTheNameAsTyped()
   {
     ErrorOr<AdminUnitView> created = await _service.CreateAsync(RequestFor("Packung"), TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
@@ -107,14 +105,12 @@ public sealed class UnitServiceTest
                     {
                       Assert.That(created.Value.UnitId, Is.EqualTo(stored.Id));
                       Assert.That(created.Value.Name, Is.EqualTo("Packung"));
-                      Assert.That(created.Value.IsActive, Is.True);
                       Assert.That(created.Value.UsedByIngredientNames, Is.Empty);
-                      Assert.That(stored.IsActive, Is.True);
                     });
   }
 
   [Test]
-  public async Task CreateAsync_ANameAnotherActiveUnitHoldsInOtherCase_IsRefusedAsNameTakenAndStoresNothing()
+  public async Task CreateAsync_ANameAnotherUnitHoldsInOtherCase_IsRefusedAsNameTakenAndStoresNothing()
   {
     var before = StoredUnitCount();
 
@@ -125,23 +121,6 @@ public sealed class UnitServiceTest
                       Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.units.nameTaken"));
                       Assert.That(created.FirstError.NumericType, Is.EqualTo(RefusalType.BadRequest));
                       Assert.That(created.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("ValidationFailed"));
-                      Assert.That(StoredUnitCount(), Is.EqualTo(before));
-                    });
-  }
-
-  [Test]
-  public async Task CreateAsync_TheNameOfADeactivatedUnitInOtherCase_IsRefusedNamingThatUnit()
-  {
-    var before = StoredUnitCount();
-
-    ErrorOr<AdminUnitView> created = await _service.CreateAsync(RequestFor("KISTE"), TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.units.nameBelongsToDeactivatedUnit"));
-                      Assert.That(created.FirstError.NumericType, Is.EqualTo(RefusalType.BadRequest));
-                      Assert.That(created.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("ValidationFailed"));
-                      Assert.That(created.RefusalMetadata(Refusal.MetadataKeys.Name), Is.EqualTo("Kiste"));
                       Assert.That(StoredUnitCount(), Is.EqualTo(before));
                     });
   }
@@ -160,7 +139,7 @@ public sealed class UnitServiceTest
   }
 
   [Test]
-  public async Task UpdateAsync_ANameAnotherActiveUnitHolds_IsRefusedAsNameTakenAndKeepsTheName()
+  public async Task UpdateAsync_ANameAnotherUnitHolds_IsRefusedAsNameTakenAndKeepsTheName()
   {
     ErrorOr<SavedUnitView> updated = await _service.UpdateAsync(_portion.Id, RequestFor("Fass"), TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
@@ -168,20 +147,6 @@ public sealed class UnitServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(updated.RefusalMessageKey(), Is.EqualTo("errors.admin.units.nameTaken"));
-                      Assert.That(_fixture.DbContext.Units.Single(unit => unit.Id == _portion.Id).Name, Is.EqualTo("Portion"));
-                    });
-  }
-
-  [Test]
-  public async Task UpdateAsync_TheNameOfADeactivatedUnit_IsRefusedNamingThatUnitAndKeepsTheName()
-  {
-    ErrorOr<SavedUnitView> updated = await _service.UpdateAsync(_portion.Id, RequestFor("kiste"), TestContext.CurrentContext.CancellationToken);
-    _fixture.DbContext.ChangeTracker.Clear();
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(updated.RefusalMessageKey(), Is.EqualTo("errors.admin.units.nameBelongsToDeactivatedUnit"));
-                      Assert.That(updated.RefusalMetadata(Refusal.MetadataKeys.Name), Is.EqualTo("Kiste"));
                       Assert.That(_fixture.DbContext.Units.Single(unit => unit.Id == _portion.Id).Name, Is.EqualTo("Portion"));
                     });
   }
@@ -195,63 +160,72 @@ public sealed class UnitServiceTest
   }
 
   [Test]
-  public async Task DeactivateAsync_AnUnusedUnit_SwitchesItOff()
+  public async Task DeleteAsync_AnUnusedUnit_DeletesIt()
   {
-    ErrorOr<SavedUnitView> deactivated = await _service.DeactivateAsync(_portion.Id, TestContext.CurrentContext.CancellationToken);
+    var before = StoredUnitCount();
+
+    ErrorOr<Success> deleted = await _service.DeleteAsync(_portion.Id, TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(deactivated.Value, Is.EqualTo(new SavedUnitView(_portion.Id)));
-                      Assert.That(_fixture.DbContext.Units.Single(unit => unit.Id == _portion.Id).IsActive, Is.False);
+                      Assert.That(deleted.IsError, Is.False);
+                      Assert.That(_fixture.DbContext.Units.Any(unit => unit.Id == _portion.Id), Is.False);
+                      Assert.That(StoredUnitCount(), Is.EqualTo(before - 1));
                     });
   }
 
   [Test]
-  public async Task DeactivateAsync_AnIngredientUsesTheUnit_IsRefusedNamingTheIngredientsAndStaysSwitchedOn()
+  public async Task DeleteAsync_AnIngredientUsesTheUnit_IsRefusedNamingTheIngredientsAndKeepsTheUnit()
   {
-    AddIngredient("Senf", _portion, true);
     AddIngredient("Zwiebeln", _portion, true);
+    AddIngredient("Senf", _portion, true);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
-    ErrorOr<SavedUnitView> deactivated = await _service.DeactivateAsync(_portion.Id, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Success> deleted = await _service.DeleteAsync(_portion.Id, TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(deactivated.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
-                      Assert.That(deactivated.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
-                      Assert.That(deactivated.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("UnitUsedByIngredients"));
-                      Assert.That(deactivated.RefusalDescription(), Does.Contain("Senf, Zwiebeln"));
-                      Assert.That(_fixture.DbContext.Units.Single(unit => unit.Id == _portion.Id).IsActive, Is.True);
+                      Assert.That(deleted.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
+                      Assert.That(deleted.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
+                      Assert.That(deleted.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("UnitUsedByIngredients"));
+                      Assert.That(deleted.RefusalDescription(), Does.Contain("Senf, Zwiebeln"));
+                      Assert.That(_fixture.DbContext.Units.Any(unit => unit.Id == _portion.Id), Is.True);
                     });
   }
 
   [Test]
-  public async Task DeactivateAsync_ADeactivatedIngredientUsesTheUnit_IsRefusedNamingThatIngredientAndStaysSwitchedOn()
+  public async Task DeleteAsync_ADeactivatedIngredientUsesTheUnit_IsRefusedNamingThatIngredientAndKeepsTheUnit()
   {
     AddIngredient("Dill", _portion, false);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
-    ErrorOr<SavedUnitView> deactivated = await _service.DeactivateAsync(_portion.Id, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Success> deleted = await _service.DeleteAsync(_portion.Id, TestContext.CurrentContext.CancellationToken);
     _fixture.DbContext.ChangeTracker.Clear();
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(deactivated.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
-                      Assert.That(deactivated.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
-                      Assert.That(deactivated.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("UnitUsedByIngredients"));
-                      Assert.That(deactivated.RefusalDescription(), Does.Contain("Dill"));
-                      Assert.That(_fixture.DbContext.Units.Single(unit => unit.Id == _portion.Id).IsActive, Is.True);
+                      Assert.That(deleted.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
+                      Assert.That(deleted.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
+                      Assert.That(deleted.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("UnitUsedByIngredients"));
+                      Assert.That(deleted.RefusalDescription(), Does.Contain("Dill"));
+                      Assert.That(_fixture.DbContext.Units.Any(unit => unit.Id == _portion.Id), Is.True);
                     });
   }
 
   [Test]
-  public async Task DeactivateAsync_AnUnknownUnit_IsRefusedAsNotFound()
+  public async Task DeleteAsync_AnUnknownUnit_IsRefusedAsNotFoundAndDeletesNothing()
   {
-    ErrorOr<SavedUnitView> deactivated = await _service.DeactivateAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken);
+    var before = StoredUnitCount();
 
-    Assert.That(deactivated.FirstError.NumericType, Is.EqualTo(RefusalType.NotFound));
+    ErrorOr<Success> deleted = await _service.DeleteAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(deleted.FirstError.NumericType, Is.EqualTo(RefusalType.NotFound));
+                      Assert.That(StoredUnitCount(), Is.EqualTo(before));
+                    });
   }
 
   private SaveUnitRequest RequestFor(string name)
@@ -266,13 +240,12 @@ public sealed class UnitServiceTest
     return readContext.Units.Count();
   }
 
-  private Unit AddUnit(string name, bool isActive)
+  private Unit AddUnit(string name)
   {
     Unit unit = new()
                 {
                   Id = Guid.NewGuid(),
-                  Name = name,
-                  IsActive = isActive
+                  Name = name
                 };
     _fixture.DbContext.Units.Add(unit);
 

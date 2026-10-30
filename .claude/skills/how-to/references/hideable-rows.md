@@ -32,7 +32,7 @@ tooltip beside them (frontend rule 8).
   `badges` and an `actions` slot, the trash icon inside `BaseActionWithRefusalReason`
   (`removalRefusalOf`; the festival page's comes from `admin/composables/useStationRefusalReasons.ts`), the question before the removal, `removeThrough`, and the refusal under its
   row. Consumer: `festivals/FestivalStations.vue`.
-- `BaseListRow.vue` is the one row of every admin list, on the six global tabs and on the
+- `BaseListRow.vue` is the one row of every admin list, on the five global tabs and on the
   festival page alike: the line between rows, the stripes (`position`: every row carries the light
   tint and every second row the stronger one, see `stripe-a-list.md`), and one
   line (`data-test="row-line"`) holding the name, the `facts` slot right after it (chips, a unit, a
@@ -41,16 +41,15 @@ tooltip beside them (frontend rule 8).
   through `shared/components/BaseRefusalAlert.vue`, and the default slot holds what sits below the
   line: the festival's facts, the invitation panel of a station or a waiter, the stock history. A
   row is never a `v-card` of its own and never a hand-written flex line. Consumers: `FestivalsList`,
-  `StationsList`, `ItemsListCategorySection` (the Artikel tab), `IngredientsList`, `UnitsList`,
-  `StaffList`, `HideableEntryList`, `RemovableStationRows`, `FestivalItems` and `FestivalStock`
+  `StationsList`, `ItemsListCategorySection` (the Artikel tab), `IngredientsList`, `StaffList`, `HideableEntryList`, `RemovableStationRows`, `FestivalItems` and `FestivalStock`
   (which lays the line out in its own grid columns and has no `actions`, so the line draws no
   spacer). A list grouped under headings numbers its rows on through the groups with
   `numberRowsAcrossGroups` (`admin/core/alternatingRows.ts`), as the Artikel tab and the festival
   page's article card do. A list that may be empty keeps its height with
   `min-height: var(--admin-row-height)` on its rows container, as `FestivalStations.vue` does,
   never with an invisible row.
-- `shared/components/BaseEmptyListText.vue` is the text of a tab whose list is empty: the Feste,
-  Zutaten and Einheiten tabs. It is the one text of every empty list in the app, on all three
+- `shared/components/BaseEmptyListText.vue` is the text of a tab whose list is empty: the Feste
+  and Zutaten tabs. It is the one text of every empty list in the app, on all three
   surfaces (`empty-list-text.md`).
 - `shared/components/CategoryLabel.vue` is the one category label of the app: a category's name
   painted by `paintOfCategoryColour` from `shared/core/letteringColour.ts` (the phone's category
@@ -59,19 +58,19 @@ tooltip beside them (frontend rule 8).
   size, weight and padding are surface values (`surface-sizes.md`), so it is bold and compact in
   the admin and larger on the phone.
 - `BaseHeadingWithCheckbox.vue` is a heading with its checkbox at the right of the same line, the
-  way the Ausgabestellen, Artikel, Zutaten, Einheiten and Kellner tabs place "Deaktivierte anzeigen";
-  the Feste tab places "Ausgeblendete Feste anzeigen" the same way. Consumers: the six global tabs
+  way the Ausgabestellen, Artikel, Zutaten and Kellner tabs place "Deaktivierte anzeigen";
+  the Feste tab places "Ausgeblendete Feste anzeigen" the same way. Consumers: the five global tabs
   and `HideableEntryList.vue`.
 - `BaseActionWithRefusalReason.vue` disables an action the laptop would refuse and names the reason
   in a tooltip, as `admin-list-screen.md` step 7 describes. The slot gets `refused` for the button's
   `:disabled`; the wrapper carries the tooltip (`data-test="refusal-reason"`), because a disabled
   button sends no hover. Consumers: the article rows of `FestivalItems.vue` and of the Artikel tab,
-  the ingredient rows of the Zutaten tab, the unit rows of the Einheiten tab, the station rows of
-  the Ausgabestellen tab, the festival list's crossed-out eye, `HideableEntryList.vue`,
+  the ingredient rows of the Zutaten tab, the trash button of the unit chips in the ingredient
+  form, the station rows of the Ausgabestellen tab, the festival list's crossed-out eye, `HideableEntryList.vue`,
   `RemovableStationRows.vue`, and the menu's "Ausblenden" in the table plan editor.
-- `BaseTrashButton.vue` is the red trash icon of the festival page, the Artikel, Zutaten, Einheiten
-  and Kellner tabs, the recipe dialog's lines, the hiding icon of `HideableEntryList.vue` and the
-  removal icon of `RemovableStationRows.vue`.
+- `BaseTrashButton.vue` is the red trash icon of the festival page, the Artikel, Zutaten and
+  Kellner tabs, the recipe dialog's lines, the unit chips of the ingredient form, the hiding icon
+  of `HideableEntryList.vue` and the removal icon of `RemovableStationRows.vue`.
 - `shared/components/BaseIconAction.vue` is an icon button whose name shows as a tooltip
   (`data-test="icon-action-label"`): the crossed-out eye "Ausblenden" of the festival list, the
   categories' crossed-out eye "Kategorie deaktivieren" on the Artikel tab, and on the phone the
@@ -81,12 +80,13 @@ tooltip beside them (frontend rule 8).
   `BaseEditButton.vue` is the pencil on it, named "Bearbeiten" (`admin.common.actions.edit`), the
   only way a row offers its edit dialog: every row of `HideableEntryList.vue`, the category
   headings and article rows of the Artikel tab and of the festival page, the station rows of the
-  festival page and of the Ausgabestellen tab, the Zutaten and Einheiten tabs, the festival list (it
-  opens the festival page) and the Kellner tab (it changes the name).
+  festival page and of the Ausgabestellen tab, the Zutaten tab, the chosen unit chip of the
+  ingredient form (it renames the unit), the festival list (it opens the festival page) and the
+  Kellner tab (it changes the name).
   `BaseShowButton.vue` is the open eye on it, with the word of its action as `label`: "Einblenden"
   on every hidden row (the festival list and `HideableEntryList.vue`) and in the hidden tables
   dropdown of the table plan editor, and "Artikel aktivieren",
-  "Kategorie aktivieren", "Zutat aktivieren", "Einheit aktivieren", "Ausgabestelle aktivieren" and
+  "Kategorie aktivieren", "Zutat aktivieren", "Ausgabestelle aktivieren" and
   "Kellner aktivieren" for a deactivated entry of the global tabs.
 - `BaseMoveButtons.vue` is the pair of arrows that emits `move` with `up` or `down`
   (`data-test="move-up"`, `"move-down"`). Consumers: the category headings of the Artikel tab and the
@@ -135,6 +135,5 @@ trash icon with its tooltip (hover the `hide-entry-wrapper`, then read `refusalR
 from `tests/support/dom.ts`), the pencil and the open eye (hover it, then read
 `iconActionLabelsOnScreen()`), the arrows, the confirmation and the checkbox. The pencil and the
 eye of the global tabs are in `FestivalsList.spec.ts`, `ItemsList.categories.spec.ts`,
-`ItemsList.items.spec.ts`, `IngredientsList.listing.spec.ts`, `UnitsList.listing.spec.ts`,
-`StationsList.switchingOff.spec.ts` and `StaffList.spec.ts`; `UnitsList.switchingOff.spec.ts` covers
-the Einheiten tab's disabled deactivation with its tooltip and its confirmation.
+`ItemsList.items.spec.ts`, `IngredientsList.listing.spec.ts`, `StationsList.switchingOff.spec.ts`
+and `StaffList.spec.ts`.

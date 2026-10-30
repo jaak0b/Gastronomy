@@ -7,9 +7,7 @@ import type { AdminUnitView } from '../../../../src/shared/api/generatedSchemas'
 import { testPlugins } from '../../../support/plugins'
 import { inputOf, onScreen, typeInto } from '../../../support/dom'
 import { saveTheUnitDialog } from '../../../support/formDialogs'
-import { anAdminUnit } from '../../../support/wireViews'
-
-const GRAM = anAdminUnit({ unitId: 'unit-gram', name: 'g' })
+import { GRAM_UNIT } from '../../../support/wireViews'
 
 async function mountDialog(
   unit: AdminUnitView | null = null,
@@ -42,19 +40,19 @@ describe('the form for a unit', () => {
   })
 
   it('is headed as an edit when a unit is being changed', async () => {
-    await mountDialog(GRAM)
+    await mountDialog(GRAM_UNIT)
 
     expect(onScreen('[data-test="form-dialog-title"]').textContent).toBe('Einheit bearbeiten')
   })
 
   it('is headed in English', async () => {
-    await mountDialog(GRAM, null, 'en')
+    await mountDialog(GRAM_UNIT, null, 'en')
 
     expect(onScreen('[data-test="form-dialog-title"]').textContent).toBe('Edit the unit')
   })
 
   it('starts with the name the unit already has', async () => {
-    await mountDialog(GRAM)
+    await mountDialog(GRAM_UNIT)
 
     expect(inputOf('[data-test="unit-name-field"]').value).toBe('g')
   })

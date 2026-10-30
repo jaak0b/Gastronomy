@@ -61,7 +61,6 @@ export function anAdminUnit(overrides: Partial<AdminUnitView> = {}): AdminUnitVi
   return {
     unitId: 'unit-stueck',
     name: 'Stück',
-    isActive: true,
     usedByIngredientNames: [],
     ...overrides,
   }
@@ -74,6 +73,14 @@ export const SEEDED_UNITS = [
   anAdminUnit({ unitId: 'unit-millilitre', name: 'ml' }),
   anAdminUnit({ unitId: 'unit-litre', name: 'l' }),
 ]
+
+export const PIECE_UNIT = anAdminUnit({ usedByIngredientNames: ['Brötchen'] })
+
+export const GRAM_UNIT = anAdminUnit({ unitId: 'unit-gram', name: 'g', usedByIngredientNames: ['Senf'] })
+
+export const MILLILITRE_UNIT = anAdminUnit({ unitId: 'unit-millilitre', name: 'ml' })
+
+export const KISTE_UNIT = anAdminUnit({ unitId: 'unit-kiste', name: 'Kiste' })
 
 export function anAdminFestivalIngredient(
   overrides: Partial<AdminFestivalIngredientView> = {},

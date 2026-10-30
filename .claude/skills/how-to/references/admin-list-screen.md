@@ -2,17 +2,9 @@
 
 A global tab lists one kind of thing with a form to create and edit it and a switch off that can be
 undone. The Zutaten tab, `frontend/src/admin/components/ingredients/IngredientsList.vue`, is the one
-to copy. The Einheiten tab, `frontend/src/admin/components/units/UnitsList.vue` with
-`UnitDialog.vue`, is the second complete copy, and both open their form through `useEditSession`.
-`StaffList.vue` and `StationsList.vue` use `useRefusalDisplay` directly, and the stations store is
-built on `defineFestivalScopedList` instead of `defineAdminList`.
-
-The Einheiten tab reuses the same shared pieces rather than adding a new one: `defineAdminList`,
-`useEditSession`, `BaseHeadingWithCheckbox`, `BaseFormDialog`, `BaseConfirmDialog` and
-`BaseActionWithRefusalReason`. Its switch off is disabled and names the ingredients while a unit is
-still used, the same way the Zutaten tab does from `activeItemNames`; the unit row reads
-`usedByIngredientNames` and its laptop answer is `UnitUsedByIngredients` on
-`POST /api/admin/units/{unitId}/deactivate`.
+to copy, and it opens its form through `useEditSession`. `StaffList.vue` and `StationsList.vue` use
+`useRefusalDisplay` directly, and the stations store is built on `defineFestivalScopedList` instead
+of `defineAdminList`.
 
 ## Steps
 
@@ -29,11 +21,16 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
    `hasLoaded`, `loadFailed`, `load`, `create`, `update` (the Zutaten store wraps it as `save`),
    `setActive` plus a `listen()`. The store writes its definition once through `adminListDefinition(...)` and hands it to
    `defineAdminList`, which holds only what every list has (`entries`, `load`, `loadFrom`, `update`,
-   `showCreated`), and to the layers the laptop offers routes for: `withCreating(list, definition)` adds
+   `showCreated`, `forgetCreatedEntries`), and to the layers the laptop offers routes for: `withCreating(list, definition)` adds
    `create` and `createThenReload` and belongs to a list that has a create route (the waiters come in
    through enrolment, so the staff list has none); `withActivation(list, definition)` adds `setActive` and
    belongs to a list that has `/activate` and `/deactivate` routes (the festivals use `/hide` and `/show`,
-   so the festivals store has none). A store applies only the layers its endpoints have, e.g.
+   so the festivals store has none); `withDeleting(list, definition)` adds `deleteEntry` and belongs to
+   a list whose entries are deleted for good on `DELETE <path>/{id}` (the units store hands it out as
+   `deleteUnit`). After a delete the layer forgets the entries `create` showed ahead of the laptop's
+   list, then reads the list again through the latest request gate, so neither a just-created entry
+   nor a read that started earlier brings the deleted entry back. A store applies only the layers its
+   endpoints have, e.g.
    `withActivation(withCreating(defineAdminList(definition), definition), definition)`. A list that depends on
    the running festival uses `defineFestivalScopedList` (`stores/festivalScopedList.ts`) instead,
    which also returns `loadedFestivalId`, the festival the entries were read for (none for the global
@@ -41,6 +38,17 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
    The store takes the route of each call it makes from the screen that uses it, so a route is
    whatever the laptop's service for that screen offers, and a screen without an activate call
    passes none. Loads go through the latest request gate.
+   The route each layer calls (method and the part after the list's `path`) is written once, in
+   `ROUTES_OF_EACH_ADMIN_LIST_LAYER` in `stores/adminList.ts`, and the layers build their addresses
+   from it. `tests/shared/apiRouteVocabulary.spec.ts` expands the `path` of every `adminListDefinition`,
+   `defineAdminList` or `defineFestivalScopedList` call with the layers its store composes (for
+   `defineFestivalScopedList`, the layers `festivalScopedList.ts` composes) and fails for any route
+   the laptop does not serve with that method. It reads `path` only as the first key of the
+   definition, written as a literal `'/api/...'` string, and it fails, naming the file, for any source
+   file that calls one of those three functions without producing a route that way, so a store can
+   never drop out of the check unnoticed (`festivalScopedList.ts` itself is the one exception, because
+   its routes are expanded through each store that calls it). A new store therefore writes its `path`
+   first and as a literal, and a new layer adds its routes to the table.
 4. **Reload.** `listen()` returns
    `useAdminLoadStateStore().listenToTheLaptop(['ConfigurationChanged'], load, loadFailed)` from
    `stores/adminLoadState.ts`, never the connection store's own `listenToTheLaptop`: passing
@@ -91,8 +99,8 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
    `store.setActive(id, false)` and hands the result to `session.showRefusalOf`. Reactivating asks
    nothing. When the entry's own data already says the laptop will refuse, the switch off is disabled
    and its tooltip names the reason, through `admin/components/BaseActionWithRefusalReason.vue` around
-   `BaseTrashButton.vue` (`IngredientsList.vue` does this from `activeItemNames`, `UnitsList.vue`
-   from `usedByIngredientNames`, and `StationsList.vue` from
+   `BaseTrashButton.vue` (`IngredientsList.vue` does this from `activeItemNames`, and
+   `StationsList.vue` from
    `hasItemsToHandOutAtTheRunningFestival` and `strandedItemCountWhenSwitchedOff` through
    `admin/composables/useStationRefusalReasons.ts`, naming the reason the laptop checks first when
    both apply; see `hideable-rows.md`). The tooltip is the
@@ -112,8 +120,8 @@ still used, the same way the Zutaten tab does from `activeItemNames`; the unit r
 ## Specs
 
 Copy the Zutaten set in `frontend/tests/admin`: `stores/<things>.spec.ts` for the store, a fixture module
-beside the list specs (`ingredientsListFixture.ts` and `unitsListFixture.ts` give the stubbed laptop
-and `mountList`), list specs split by scenario (`.listing`, `.editing`, `.switchingOff`), and a
+beside the list specs (`ingredientsListFixture.ts` gives the stubbed laptop and `mountList`), list
+specs split by scenario (`.listing`, `.editing`, `.switchingOff`), and a
 dialog spec. A failed load of the new tab is shown by the shared bar, so add a case for the tab to
 `components/AdminLoadFailureBar.spec.ts` instead of testing a failure in the list. Add the store to `stores/screenListening.spec.ts` and the section to
 `views/AdminShell.spec.ts` and `shared/router/adminRoute.spec.ts`. How to write them is in

@@ -19,7 +19,9 @@ are followed in order.
    The steps are on the `add-a-read-to-a-service` and `add-a-write-to-a-service` pages.
 3. **The route.** Map it in `backend/GastronomyApp.Api/Endpoints` with `group.MapGet`, `MapPost`, `MapPut` or `MapDelete`, calling the area's service directly;
    `frontend/tests/shared/apiRouteVocabulary.spec.ts` reads those calls to prove that every `/api/...`
-   address the frontend uses exists. The endpoint's return type (`ApiAnswer<T>`, `CreatedAnswer<T>`,
+   address the frontend uses exists, both the literal addresses and the routes the admin list layers
+   build from their list's `path` through `ROUTES_OF_EACH_ADMIN_LIST_LAYER` (see
+   `admin-list-screen.md`), each with the method it is called with. The endpoint's return type (`ApiAnswer<T>`, `CreatedAnswer<T>`,
    `NoContentAnswer`) is the status and the response type in the document. The device a request came
    from is an endpoint parameter, never something an endpoint looks up: `StaffDeviceCaller` and
    `StationDeviceCaller` bind themselves through `BindAsync`. Hub event payloads are records in

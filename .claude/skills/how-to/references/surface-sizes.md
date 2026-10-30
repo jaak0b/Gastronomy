@@ -68,8 +68,10 @@ Plain text inside a surface needs no class: the surface class sets `font-size` t
 3. **A component that must differ from its surface** gets a named defaults object in the surface's
    sizes file and wraps the controls in `<v-defaults-provider>` with it, never a prop at the place
    of use. Today: `PHONE_NOTICE_BAR_DEFAULTS` (the notice bars under the phone's app bar, compact
-   and square) and `PHONE_ORDER_GRID_DEFAULTS` (the tick boxes compact and the details button
-   comfortable inside the dense grid of `OrderListCard`).
+   and square), `PHONE_ORDER_GRID_DEFAULTS` (the tick boxes compact and the details button
+   comfortable inside the dense grid of `OrderListCard`) and `ADMIN_CHIP_BUTTON_DEFAULTS` in
+   `adminSizes.ts` (the pencil and the trash button inside a unit chip of `IngredientDialog.vue`,
+   extra small and compact, because a chip clips anything taller than itself).
 4. **A heading or a text** uses one of the classes above on every surface, the admin included.
 5. **An admin list row, card or section**: a row is `BaseListRow` (see `hideable-rows.md`), whose
    line carries `admin-row`; the facts under a row are `admin-row-details`, a card body is

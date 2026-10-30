@@ -26,8 +26,6 @@ public static class RefusalMessageKeys
 
   public const string AdminStationNameMissing = "errors.admin.stations.nameMissing";
 
-  public const string AdminUnitNameBelongsToDeactivatedUnit = "errors.admin.units.nameBelongsToDeactivatedUnit";
-
   public const string AdminUnitNameMissing = "errors.admin.units.nameMissing";
 
   public const string AdminUnitNameTaken = "errors.admin.units.nameTaken";

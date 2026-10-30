@@ -10,7 +10,7 @@ import {
 } from './support/browserHistory'
 import { isVisibleOnScreen, onScreen, waitUntil } from './support/dom'
 import { answer, stubLaptop } from './support/laptop'
-import { SEEDED_UNITS, anAdminIngredient, anAdminItem } from './support/wireViews'
+import { anAdminIngredient, anAdminItem } from './support/wireViews'
 
 enableAutoUnmount(afterEach)
 
@@ -33,7 +33,7 @@ beforeEach(() => {
   setActivePinia(createPinia())
   localStorage.clear()
   document.body.innerHTML = ''
-  stubLaptop().answersEverythingElse(answer({ units: SEEDED_UNITS, ingredients: [SENF], categories: [] }))
+  stubLaptop().answersEverythingElse(answer({ ingredients: [SENF], categories: [] }))
   aBrowserThatCountsTheTap()
 })
 
@@ -81,23 +81,6 @@ describe('back while the language list is open', () => {
 })
 
 describe('back while a list inside an admin dialog is open', () => {
-  it('closes the unit list and keeps the ingredient dialog open', async () => {
-    await (await import('../src/admin/stores/units')).useAdminUnitsStore().load()
-    const dialog = await shownOnAStartedRouterAt('/admin/ingredients', () => import('../src/admin/components/ingredients/IngredientDialog.vue'), {
-      ingredient: null,
-      errorText: null,
-    })
-    await openTheListOf('[data-test="ingredient-unit-field"]')
-
-    await pressBack()
-
-    expect({ open: isVisibleOnScreen(AN_OPEN_LIST), cancelled: timesEmitted(dialog, 'cancel'), leftTheApp: theAppWasLeftByBack() }).toEqual({
-      open: false,
-      cancelled: 0,
-      leftTheApp: false,
-    })
-  })
-
   it('closes the category list and keeps the article dialog open', async () => {
     const dialog = await shownOnAStartedRouterAt('/admin/items', () => import('../src/admin/components/items/ItemDialog.vue'), {
       item: null,

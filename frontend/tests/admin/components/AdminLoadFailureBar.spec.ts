@@ -58,15 +58,15 @@ describe('the load failure bar of the admin', () => {
   it('is hidden while every list on the screen loaded', async () => {
     adminLaptop()
 
-    const shell = await openTheAdminAt('/admin/units')
+    const shell = await openTheAdminAt('/admin/ingredients')
 
     expect(shell.find('[data-test="load-failure-bar"]').exists()).toBe(false)
   })
 
-  it('says the data could not be loaded when the units of the Einheiten tab fail', async () => {
+  it('says the data could not be loaded when the units of the Zutaten tab fail', async () => {
     adminLaptop().answers('GET', '/api/admin/units', noConnection())
 
-    const shell = await openTheAdminAt('/admin/units')
+    const shell = await openTheAdminAt('/admin/ingredients')
 
     expect(shell.get('[data-test="load-failure-bar"]').text()).toBe(LOAD_FAILED)
   })
@@ -90,7 +90,7 @@ describe('the load failure bar of the admin', () => {
   it('sits directly below the tabs', async () => {
     adminLaptop().answers('GET', '/api/admin/units', noConnection())
 
-    const shell = await openTheAdminAt('/admin/units')
+    const shell = await openTheAdminAt('/admin/ingredients')
 
     expect(shell.get('[data-test="admin-nav"]').element.nextElementSibling).toBe(
       shell.get('[data-test="load-failure-bar"]').element,
@@ -102,9 +102,35 @@ describe('the load failure bar of the admin', () => {
       .answers('GET', '/api/language', answer({ language: 'en' }))
       .answers('GET', '/api/admin/units', noConnection())
 
-    const shell = await openTheAdminAt('/admin/units')
+    const shell = await openTheAdminAt('/admin/ingredients')
 
     expect(shell.get('[data-test="load-failure-bar"]').text()).toBe(LOAD_FAILED_EN)
+  })
+})
+
+describe('the load failure bar inside the form of an ingredient', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    forgetHubEvents()
+    localStorage.clear()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('says the data could not be loaded inside the form when the units fail', async () => {
+    adminLaptop().answers('GET', '/api/admin/units', noConnection())
+    const shell = await openTheAdminAt('/admin/ingredients')
+
+    await shell.get('[data-test="new-ingredient"]').trigger('click')
+
+    await vi.waitFor(() =>
+      expect(document.querySelector('[data-test="form-dialog"] [data-test="load-failure-bar"]')?.textContent?.trim()).toBe(
+        LOAD_FAILED,
+      ),
+    )
   })
 })
 
@@ -154,7 +180,7 @@ describe('the load failure bar while the laptop restarts', () => {
 
   it('appears when the connection to the laptop is lost', async () => {
     adminLaptop()
-    const shell = await openTheAdminAt('/admin/units')
+    const shell = await openTheAdminAt('/admin/ingredients')
 
     theConnectionCloses()
     await flushPromises()
@@ -164,7 +190,7 @@ describe('the load failure bar while the laptop restarts', () => {
 
   it('goes away once the connection is back and the laptop has put the admin into its groups', async () => {
     adminLaptop()
-    const shell = await openTheAdminAt('/admin/units')
+    const shell = await openTheAdminAt('/admin/ingredients')
     theConnectionCloses()
     await flushPromises()
 
@@ -178,7 +204,7 @@ describe('the load failure bar while the laptop restarts', () => {
   it('goes away once the list that failed loads after the reconnect', async () => {
     holdBackGroupsJoined()
     adminLaptop().answers('GET', '/api/admin/units', inTurn(noConnection(), answer({ units: [] })))
-    const shell = await openTheAdminAt('/admin/units')
+    const shell = await openTheAdminAt('/admin/ingredients')
     await vi.waitFor(() => expect(shell.find('[data-test="load-failure-bar"]').exists()).toBe(true))
 
     theLaptopSendsGroupsJoined()

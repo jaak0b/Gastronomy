@@ -24,8 +24,7 @@ public sealed class UnitNameIndexTest
     return new()
            {
              Id = Guid.NewGuid(),
-             Name = name,
-             IsActive = true
+             Name = name
            };
   }
 }

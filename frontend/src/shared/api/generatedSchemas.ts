@@ -74,7 +74,7 @@ export type AdminTablePlanView = __TypedOpenapi.Schemas.AdminTablePlanView;
 export const AdminTablePlanView = z.strictObject({ areas: z.array(AdminAreaView) });
 
 export type AdminUnitView = __TypedOpenapi.Schemas.AdminUnitView;
-export const AdminUnitView = z.strictObject({ unitId: z.string(), name: z.string(), isActive: z.boolean(), usedByIngredientNames: z.array(z.string()) });
+export const AdminUnitView = z.strictObject({ unitId: z.string(), name: z.string(), usedByIngredientNames: z.array(z.string()) });
 
 export type AdminUnitListView = __TypedOpenapi.Schemas.AdminUnitListView;
 export const AdminUnitListView = z.strictObject({ units: z.array(AdminUnitView) });

@@ -80,8 +80,7 @@ public sealed class OrderTestContext : IAsyncDisposable
     unit = new()
            {
              Id = Guid.NewGuid(),
-             Name = name,
-             IsActive = true
+             Name = name
            };
     context.Units.Add(unit);
     await context.SaveChangesAsync();

@@ -31,10 +31,10 @@ public sealed class IngredientService
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    var unit = await FindActiveUnitAsync(request.UnitId, cancellationToken);
+    var unit = await FindUnitAsync(request.UnitId, cancellationToken);
 
     if (unit is null)
-      return Refusal.Ingredients.UnitUnavailable(request.UnitId);
+      return Refusal.Ingredients.UnitMissingOrUnknown(request.UnitId);
 
     Ingredient created = new()
                          {
@@ -77,16 +77,16 @@ public sealed class IngredientService
       return Refusal.Ingredients.IngredientNotFound(ingredientId);
 
     if (request.UnitId is not { } requestedUnitId)
-      return Refusal.Ingredients.UnitUnavailable(request.UnitId);
+      return Refusal.Ingredients.UnitMissingOrUnknown(request.UnitId);
 
     Unit? unit = null;
 
     if (requestedUnitId != ingredient.UnitId)
     {
-      unit = await FindActiveUnitAsync(requestedUnitId, cancellationToken);
+      unit = await FindUnitAsync(requestedUnitId, cancellationToken);
 
       if (unit is null)
-        return Refusal.Ingredients.UnitUnavailable(requestedUnitId);
+        return Refusal.Ingredients.UnitMissingOrUnknown(requestedUnitId);
     }
 
     var nameCheck = await CheckNameIsFreeAsync(request.Name!, ingredientId, cancellationToken);
@@ -125,9 +125,9 @@ public sealed class IngredientService
     return ingredient.Adapt<SavedIngredientView>(_mapping);
   }
 
-  private async Task<Unit?> FindActiveUnitAsync(Guid? unitId, CancellationToken cancellationToken)
+  private async Task<Unit?> FindUnitAsync(Guid? unitId, CancellationToken cancellationToken)
   {
-    return await _database.Units.Active().FirstOrDefaultAsync(unit => unit.Id == unitId, cancellationToken);
+    return await _database.Units.FirstOrDefaultAsync(unit => unit.Id == unitId, cancellationToken);
   }
 
   private async Task<ErrorOr<Success>> CheckNameIsFreeAsync(string name, Guid ingredientId, CancellationToken cancellationToken)

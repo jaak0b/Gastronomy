@@ -24,3 +24,7 @@ const ADMIN_CONTROL_DEFAULTS: VuetifyDefaults = {
 }
 
 export const ADMIN_DEFAULTS: VuetifyDefaults = surfaceDefaults(ADMIN_SIZES_CLASS, ADMIN_CONTROL_DEFAULTS)
+
+export const ADMIN_CHIP_BUTTON_DEFAULTS: VuetifyDefaults = {
+  VBtn: { size: 'x-small', density: 'compact' },
+}

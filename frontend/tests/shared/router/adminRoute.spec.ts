@@ -32,10 +32,10 @@ describe('resolveRoute', () => {
     })
   })
 
-  it('reads the units path as the units tab', () => {
-    expect(resolveRoute('/admin/units')).toEqual({
+  it('reads an admin address that names no tab as the festivals, where the admin starts', () => {
+    expect(resolveRoute('/admin/elsewhere')).toEqual({
       name: 'admin',
-      section: 'units',
+      section: 'festivals',
       festivalId: null,
     })
   })

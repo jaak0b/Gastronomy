@@ -35,8 +35,7 @@ public sealed class NamedQueriesTest
     return new()
            {
              Id = Guid.NewGuid(),
-             Name = name,
-             IsActive = true
+             Name = name
            };
   }
 }

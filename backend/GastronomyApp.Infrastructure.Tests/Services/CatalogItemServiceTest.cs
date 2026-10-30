@@ -26,8 +26,7 @@ public sealed class CatalogItemServiceTest
     _gram = new()
             {
               Id = Guid.NewGuid(),
-              Name = "Portion",
-              IsActive = true
+              Name = "Portion"
             };
     _fixture.DbContext.CatalogCategories.Add(_switchedOffCategory);
     _fixture.DbContext.Units.Add(_gram);
@@ -648,8 +647,7 @@ public sealed class CatalogItemServiceTest
     Unit unit = new()
                 {
                   Id = Guid.NewGuid(),
-                  Name = name,
-                  IsActive = true
+                  Name = name
                 };
     _fixture.DbContext.Units.Add(unit);
 

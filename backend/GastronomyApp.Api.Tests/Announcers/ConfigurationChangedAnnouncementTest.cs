@@ -179,27 +179,14 @@ public sealed class ConfigurationChangedAnnouncementTest
   }
 
   [Test]
-  public async Task PostUnitActivate_ASwitchedOffUnit_TellsEveryScreenOnce()
-  {
-    var unitId = await CreateUnitAsync("Portion");
-    await DeactivateUnitAsync(unitId);
-    await ListenAsync();
-
-    using var response = await _context.Client.PostAsync($"/api/admin/units/{unitId}/activate", null);
-
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-    await AssertEveryScreenHeardOnceAsync();
-  }
-
-  [Test]
-  public async Task PostUnitDeactivate_AnUnusedUnit_TellsEveryScreenOnce()
+  public async Task DeleteUnit_AnUnusedUnit_TellsEveryScreenOnce()
   {
     var unitId = await CreateUnitAsync("Portion");
     await ListenAsync();
 
-    using var response = await _context.Client.PostAsync($"/api/admin/units/{unitId}/deactivate", null);
+    using var response = await _context.Client.DeleteAsync($"/api/admin/units/{unitId}");
 
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
     await AssertEveryScreenHeardOnceAsync();
   }
 
@@ -508,13 +495,6 @@ public sealed class ConfigurationChangedAnnouncementTest
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
     return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("unitId").GetGuid();
-  }
-
-  private async Task DeactivateUnitAsync(Guid unitId)
-  {
-    using var response = await _context.Client.PostAsync($"/api/admin/units/{unitId}/deactivate", null);
-
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), await response.Content.ReadAsStringAsync());
   }
 
   private async Task ListenAsync()

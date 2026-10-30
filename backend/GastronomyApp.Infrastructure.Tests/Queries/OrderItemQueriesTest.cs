@@ -202,8 +202,7 @@ public sealed class OrderItemQueriesTest
     var unit = new Unit
                {
                  Id = Guid.NewGuid(),
-                 Name = "Portion",
-                 IsActive = true
+                 Name = "Portion"
                };
     Ingredient mustard = new()
                          {
@@ -266,8 +265,7 @@ public sealed class OrderItemQueriesTest
     var unit = new Unit
                {
                  Id = Guid.NewGuid(),
-                 Name = "Portion",
-                 IsActive = true
+                 Name = "Portion"
                };
     Ingredient sausage = new()
                          {

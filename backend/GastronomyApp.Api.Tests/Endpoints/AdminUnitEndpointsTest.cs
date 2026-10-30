@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
-using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
@@ -36,7 +35,6 @@ public sealed class AdminUnitEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
                       Assert.That(body.GetProperty("name").GetString(), Is.EqualTo("Portion"));
-                      Assert.That(body.GetProperty("isActive").GetBoolean(), Is.True);
                       Assert.That(body.GetProperty("usedByIngredientNames").GetArrayLength(), Is.Zero);
                       Assert.That(listed.GetProperty("name").GetString(), Is.EqualTo("Portion"));
                     });
@@ -77,7 +75,7 @@ public sealed class AdminUnitEndpointsTest
   }
 
   [Test]
-  public async Task PostUnit_ANameAnActiveUnitHoldsInOtherCase_IsRefusedWithNameTaken()
+  public async Task PostUnit_ANameAnotherUnitHoldsInOtherCase_IsRefusedWithNameTaken()
   {
     await CreateUnitAsync("Portion");
 
@@ -88,37 +86,19 @@ public sealed class AdminUnitEndpointsTest
   }
 
   [Test]
-  public async Task PostUnit_TheNameOfADeactivatedUnit_IsRefusedNamingThatUnit()
-  {
-    var unitId = await CreateUnitAsync("Portion");
-    await DeactivateUnitAsync(unitId);
-
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/units", new { name = "portion" });
-
-    await AssertValidationRefusalAsync(response, "errors.admin.units.nameBelongsToDeactivatedUnit");
-    Assert.That(JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Portion"));
-  }
-
-  [Test]
-  public async Task GetUnits_TwoUnitsOneSwitchedOff_ListsBothByName()
+  public async Task GetUnits_TwoUnits_ListsThemByName()
   {
     await CreateUnitAsync("Portion");
-    var packungId = await CreateUnitAsync("Packung");
-    await DeactivateUnitAsync(packungId);
+    await CreateUnitAsync("Packung");
 
     var units = (await GetUnitsAsync()).GetProperty("units").EnumerateArray().Where(unit => unit.GetProperty("name").GetString() is "Packung" or "Portion").ToList();
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(units.Select(unit => unit.GetProperty("name").GetString()),
-                                  Is.EqualTo(new[]
-                                             {
-                                               "Packung",
-                                               "Portion"
-                                             }));
-                      Assert.That(units[0].GetProperty("isActive").GetBoolean(), Is.False);
-                      Assert.That(units[1].GetProperty("isActive").GetBoolean(), Is.True);
-                    });
+    Assert.That(units.Select(unit => unit.GetProperty("name").GetString()),
+                Is.EqualTo(new[]
+                           {
+                             "Packung",
+                             "Portion"
+                           }));
   }
 
   [Test]
@@ -166,71 +146,52 @@ public sealed class AdminUnitEndpointsTest
   }
 
   [Test]
-  public async Task PutUnit_TheNameOfADeactivatedUnit_IsRefusedNamingThatUnit()
-  {
-    var deactivatedId = await CreateUnitAsync("Packung");
-    await DeactivateUnitAsync(deactivatedId);
-    var unitId = await CreateUnitAsync("Portion");
-
-    using var response = await _context.Client.PutAsJsonAsync($"/api/admin/units/{unitId}", new { name = "packung" });
-
-    await AssertValidationRefusalAsync(response, "errors.admin.units.nameBelongsToDeactivatedUnit");
-    Assert.That(JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Packung"));
-  }
-
-  [Test]
-  public async Task PostDeactivateThenActivate_AnUnusedUnit_SwitchesItOffAndOnAgain()
+  public async Task DeleteUnit_AnUnusedUnit_DeletesItAndNoLongerListsIt()
   {
     var unitId = await CreateUnitAsync("Portion");
 
-    using var deactivated = await _context.Client.PostAsync($"/api/admin/units/{unitId}/deactivate", null);
-    var afterDeactivate = (await FindListedUnitAsync(unitId)).GetProperty("isActive").GetBoolean();
-    using var activated = await _context.Client.PostAsync($"/api/admin/units/{unitId}/activate", null);
-    var afterActivate = (await FindListedUnitAsync(unitId)).GetProperty("isActive").GetBoolean();
+    using var response = await _context.Client.DeleteAsync($"/api/admin/units/{unitId}");
+
+    List<Guid> listedIds = (await GetUnitsAsync()).GetProperty("units").EnumerateArray().Select(unit => unit.GetProperty("unitId").GetGuid()).ToList();
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(deactivated.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(activated.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(afterDeactivate, Is.False);
-                      Assert.That(afterActivate, Is.True);
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+                      Assert.That(listedIds, Does.Not.Contain(unitId));
                     });
   }
 
   [Test]
-  public async Task PostDeactivate_AUnitAnIngredientUses_IsRefusedAndStaysActive()
+  public async Task DeleteUnit_AUnitAnIngredientUses_IsRefusedAndKeepsTheUnit()
   {
     var unitId = await CreateUnitAsync("Portion");
     await CreateIngredientAsync("Senf", unitId);
 
-    using var response = await _context.Client.PostAsync($"/api/admin/units/{unitId}/deactivate", null);
+    using var response = await _context.Client.DeleteAsync($"/api/admin/units/{unitId}");
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
-    await using var database = _context.Factory.CreateContext();
-    var stored = await database.Units.SingleAsync(unit => unit.Id == unitId);
+    var listed = await FindListedUnitAsync(unitId);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.GetProperty("code").GetString(), Is.EqualTo("UnitUsedByIngredients"));
                       Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
-                      Assert.That(stored.IsActive, Is.True);
+                      Assert.That(listed.GetProperty("name").GetString(), Is.EqualTo("Portion"));
                     });
   }
 
   [Test]
-  public async Task PostDeactivate_AUnitOnlyADeactivatedIngredientUses_IsRefusedAndStillListsThatIngredient()
+  public async Task DeleteUnit_AUnitOnlyADeactivatedIngredientUses_IsRefusedAndStillListsThatIngredient()
   {
     var unitId = await CreateUnitAsync("Portion");
     var ingredientId = await CreateIngredientAsync("Dill", unitId);
 
     using var deactivatedIngredient = await _context.Client.PostAsync($"/api/admin/ingredients/{ingredientId}/deactivate", null);
-    using var response = await _context.Client.PostAsync($"/api/admin/units/{unitId}/deactivate", null);
+    using var response = await _context.Client.DeleteAsync($"/api/admin/units/{unitId}");
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
     var usedByIngredientNames = (await FindListedUnitAsync(unitId)).GetProperty("usedByIngredientNames").EnumerateArray().Select(name => name.GetString()).ToList();
-    await using var database = _context.Factory.CreateContext();
-    var stored = await database.Units.SingleAsync(unit => unit.Id == unitId);
 
     Assert.Multiple(() =>
                     {
@@ -239,14 +200,13 @@ public sealed class AdminUnitEndpointsTest
                       Assert.That(body.GetProperty("code").GetString(), Is.EqualTo("UnitUsedByIngredients"));
                       Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
                       Assert.That(usedByIngredientNames, Is.EqualTo(new[] { "Dill" }));
-                      Assert.That(stored.IsActive, Is.True);
                     });
   }
 
   [Test]
-  public async Task PostActivate_AnUnknownUnit_AnswersNotFound()
+  public async Task DeleteUnit_AnUnknownUnit_AnswersNotFound()
   {
-    using var response = await _context.Client.PostAsync($"/api/admin/units/{Guid.NewGuid()}/activate", null);
+    using var response = await _context.Client.DeleteAsync($"/api/admin/units/{Guid.NewGuid()}");
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
   }
@@ -270,13 +230,6 @@ public sealed class AdminUnitEndpointsTest
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created), await response.Content.ReadAsStringAsync());
 
     return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("unitId").GetGuid();
-  }
-
-  private async Task DeactivateUnitAsync(Guid unitId)
-  {
-    using var response = await _context.Client.PostAsync($"/api/admin/units/{unitId}/deactivate", null);
-
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), await response.Content.ReadAsStringAsync());
   }
 
   private async Task<Guid> CreateIngredientAsync(string name, Guid unitId)

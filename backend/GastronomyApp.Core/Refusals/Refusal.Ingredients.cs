@@ -72,9 +72,11 @@ public static partial class Refusal
                       new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "DeactivatedIngredientCannotJoinRecipe" });
     }
 
-    public static Error UnitUnavailable(Guid? unitId)
+    public static Error UnitMissingOrUnknown(Guid? unitId)
     {
-      return BadRequest(RefusalMessageKeys.ActionFailed, $"The unit {unitId} does not exist or is switched off, so this call did not come from that screen.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
+      return BadRequest(RefusalMessageKeys.ActionFailed,
+                        $"The request names no unit, or the unit {unitId} does not exist. The admin screens let an ingredient choose only an existing unit, so this call did not come from them.",
+                        new Dictionary<string, object> { [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed });
     }
   }
 }

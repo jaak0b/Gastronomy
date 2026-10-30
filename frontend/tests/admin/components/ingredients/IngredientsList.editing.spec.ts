@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import IngredientDialog from '../../../../src/admin/components/ingredients/IngredientDialog.vue'
 import { inputOf, onScreen } from '../../../support/dom'
 import { saveTheIngredientDialog } from '../../../support/formDialogs'
 import { answer, refusal } from '../../../support/laptop'
@@ -46,7 +45,7 @@ describe('adding an ingredient', () => {
     await list.get('[data-test="new-ingredient"]').trigger('click')
     await vi.waitFor(() => expect(document.querySelector('[data-test="ingredient-name-field"]')).not.toBeNull())
 
-    await saveTheIngredientDialog(list.findComponent(IngredientDialog), 'Ketchup', 'unit-millilitre')
+    await saveTheIngredientDialog('Ketchup', 'unit-millilitre')
 
     await vi.waitFor(() => expect(document.querySelector('[data-test="form-dialog"]')).toBeNull())
     expect(laptop.writes()).toEqual([
@@ -61,7 +60,7 @@ describe('adding an ingredient', () => {
     await list.get('[data-test="new-ingredient"]').trigger('click')
     await vi.waitFor(() => expect(document.querySelector('[data-test="ingredient-name-field"]')).not.toBeNull())
 
-    await saveTheIngredientDialog(list.findComponent(IngredientDialog), 'senf', 'unit-gram')
+    await saveTheIngredientDialog('senf', 'unit-gram')
 
     await vi.waitFor(() =>
       expect(onScreen('[data-test="form-dialog"] [data-test="refusal"]').textContent?.trim()).toBe(
@@ -83,7 +82,7 @@ describe('adding an ingredient', () => {
     await list.get('[data-test="new-ingredient"]').trigger('click')
     await vi.waitFor(() => expect(document.querySelector('[data-test="ingredient-name-field"]')).not.toBeNull())
 
-    await saveTheIngredientDialog(list.findComponent(IngredientDialog), 'milch', 'unit-millilitre')
+    await saveTheIngredientDialog('milch', 'unit-millilitre')
 
     await vi.waitFor(() =>
       expect(onScreen('[data-test="form-dialog"] [data-test="refusal"]').textContent?.trim()).toBe(
@@ -113,7 +112,7 @@ describe('editing an ingredient', () => {
     await list.get(`${MUSTARD_ROW} [data-test="edit"]`).trigger('click')
     await vi.waitFor(() => expect(document.querySelector('[data-test="ingredient-name-field"]')).not.toBeNull())
 
-    await saveTheIngredientDialog(list.findComponent(IngredientDialog), 'Senf mittelscharf', 'unit-millilitre')
+    await saveTheIngredientDialog('Senf mittelscharf', 'unit-millilitre')
 
     await vi.waitFor(() =>
       expect(laptop.writes()).toEqual([

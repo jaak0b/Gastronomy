@@ -24,7 +24,7 @@ export type AdminStaffMemberListView = { staffMembers: Array<AdminStaffMemberVie
 export type AdminStationView = { stationId: string, name: string, sortOrder: number, isActive: boolean, hasDevice: boolean, isAtFestival: boolean, hasItemsToHandOutAtTheRunningFestival: boolean, strandedItemCountWhenSwitchedOff: (null | number), strandedItemCountWhenRemovedFromTheFestival: (null | number) }
 export type AdminStationListView = { stations: Array<AdminStationView> }
 export type AdminTablePlanView = { areas: Array<AdminAreaView> }
-export type AdminUnitView = { unitId: string, name: string, isActive: boolean, usedByIngredientNames: Array<string> }
+export type AdminUnitView = { unitId: string, name: string, usedByIngredientNames: Array<string> }
 export type AdminUnitListView = { units: Array<AdminUnitView> }
 export type CancelItemsRequest = { orderItemIds: (null | Array<string>) }
 export type CancellationView = { cashToReturnCents: number }
@@ -1291,9 +1291,9 @@ export type put__api_admin_units_UnitId = {
 },
       
     }
-export type post__api_admin_units_UnitId_activate = {
-      method: "POST",
-      path: "/api/admin/units/{unitId}/activate",
+export type delete__api_admin_units_UnitId = {
+      method: "DELETE",
+      path: "/api/admin/units/{unitId}",
       requestFormat: "json",
       responseFormat: "json",
       parameters: {
@@ -1303,23 +1303,7 @@ export type post__api_admin_units_UnitId_activate = {
         
         
           }
-      responses: {200: Schemas.SavedUnitView,
-},
-      
-    }
-export type post__api_admin_units_UnitId_deactivate = {
-      method: "POST",
-      path: "/api/admin/units/{unitId}/deactivate",
-      requestFormat: "json",
-      responseFormat: "json",
-      parameters: {
-            
-        path:  { unitId: string },
-        
-        
-        
-          }
-      responses: {200: Schemas.SavedUnitView,
+      responses: {204: unknown,
 },
       
     }
@@ -1371,9 +1355,7 @@ export type post__api_admin_units_UnitId_deactivate = {
 "/api/admin/ingredients": Endpoints.post__api_admin_ingredients,
 "/api/admin/ingredients/{ingredientId}/activate": Endpoints.post__api_admin_ingredients_IngredientId_activate,
 "/api/admin/ingredients/{ingredientId}/deactivate": Endpoints.post__api_admin_ingredients_IngredientId_deactivate,
-"/api/admin/units": Endpoints.post__api_admin_units,
-"/api/admin/units/{unitId}/activate": Endpoints.post__api_admin_units_UnitId_activate,
-"/api/admin/units/{unitId}/deactivate": Endpoints.post__api_admin_units_UnitId_deactivate
+"/api/admin/units": Endpoints.post__api_admin_units
          },
 get: {
            "/api/catalog": Endpoints.get__api_catalog,
@@ -1416,7 +1398,8 @@ delete: {
            "/api/admin/items/{itemId}/ingredients/{ingredientId}": Endpoints.delete__api_admin_items_ItemId_ingredients_IngredientId,
 "/api/admin/festivals/{festivalId}/items/{itemId}": Endpoints.delete__api_admin_festivals_FestivalId_items_ItemId,
 "/api/admin/festivals/{festivalId}/stations/{stationId}": Endpoints.delete__api_admin_festivals_FestivalId_stations_StationId,
-"/api/admin/festivals/{festivalId}/stations/{stationId}/shape": Endpoints.delete__api_admin_festivals_FestivalId_stations_StationId_shape
+"/api/admin/festivals/{festivalId}/stations/{stationId}/shape": Endpoints.delete__api_admin_festivals_FestivalId_stations_StationId_shape,
+"/api/admin/units/{unitId}": Endpoints.delete__api_admin_units_UnitId
          }
      }
      

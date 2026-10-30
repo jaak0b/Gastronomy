@@ -140,30 +140,6 @@ public sealed class AdminIngredientEndpointsTest
   }
 
   [Test]
-  public async Task PostIngredient_ASwitchedOffUnit_IsRefusedWithoutStoringAnything()
-  {
-    var unitId = await CreateUnitAsync("Portion");
-    await DeactivateUnitAsync(unitId);
-
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/ingredients",
-                                                               new
-                                                               {
-                                                                 name = "Senf",
-                                                                 unitId
-                                                               });
-
-    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
-    await using var database = _context.Factory.CreateContext();
-
-    Assert.Multiple(async () =>
-                    {
-                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("common.errors.actionFailed"));
-                      Assert.That(await database.Ingredients.CountAsync(), Is.Zero);
-                    });
-  }
-
-  [Test]
   public async Task GetIngredients_TwoIngredients_ListsThemByName()
   {
     await CreateIngredientAsync("Senf", "g");
@@ -367,22 +343,6 @@ public sealed class AdminIngredientEndpointsTest
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created), await response.Content.ReadAsStringAsync());
 
     return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("ingredientId").GetGuid();
-  }
-
-  private async Task<Guid> CreateUnitAsync(string name)
-  {
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/units", new { name });
-
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created), await response.Content.ReadAsStringAsync());
-
-    return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("unitId").GetGuid();
-  }
-
-  private async Task DeactivateUnitAsync(Guid unitId)
-  {
-    using var response = await _context.Client.PostAsync($"/api/admin/units/{unitId}/deactivate", null);
-
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), await response.Content.ReadAsStringAsync());
   }
 
   private async Task DeactivateIngredientAsync(Guid ingredientId)

@@ -1,6 +1,6 @@
 import { assertNever } from '../core/assertNever'
 
-export type AdminSection = 'festivals' | 'overview' | 'stations' | 'items' | 'ingredients' | 'units' | 'staff'
+export type AdminSection = 'festivals' | 'overview' | 'stations' | 'items' | 'ingredients' | 'staff'
 
 export type AppRoute =
   | { name: 'enrolQr'; code: string }
@@ -12,7 +12,7 @@ export type AppRoute =
   | { name: 'stations' }
   | { name: 'admin'; section: AdminSection; festivalId: string | null; areaId?: string }
 
-const ADMIN_SECTIONS: AdminSection[] = ['overview', 'festivals', 'stations', 'items', 'ingredients', 'units', 'staff']
+const ADMIN_SECTIONS: AdminSection[] = ['overview', 'festivals', 'stations', 'items', 'ingredients', 'staff']
 
 function adminSectionFrom(segment: string | undefined): AdminSection {
   const wanted = (segment ?? '').toLowerCase()

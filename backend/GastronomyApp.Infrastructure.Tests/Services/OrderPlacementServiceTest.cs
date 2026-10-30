@@ -696,8 +696,7 @@ public sealed class OrderPlacementServiceTest
     Unit unit = new()
                 {
                   Id = Guid.NewGuid(),
-                  Name = "Portion",
-                  IsActive = true
+                  Name = "Portion"
                 };
     Ingredient mustard = new()
                          {

@@ -23,21 +23,10 @@ public static partial class Refusal
                         });
     }
 
-    public static Error NameBelongsToDeactivatedUnit(string deactivatedUnitName)
-    {
-      return BadRequest(RefusalMessageKeys.AdminUnitNameBelongsToDeactivatedUnit,
-                        $"The deactivated unit {deactivatedUnitName} already carries the name, compared without regard to case.",
-                        new Dictionary<string, object>
-                        {
-                          [MetadataKeys.ProblemCode] = ProblemCodes.ValidationFailed,
-                          [MetadataKeys.Name] = deactivatedUnitName
-                        });
-    }
-
     public static Error UsedByIngredients(Guid unitId, IReadOnlyList<string> ingredientNames)
     {
       return Conflict(RefusalMessageKeys.ActionFailed,
-                      $"The unit {unitId} stays switched on because the ingredients {string.Join(", ", ingredientNames)} still use it. The units page disables the delete control while an ingredient uses the unit, so this call did not come from that screen.",
+                      $"The unit {unitId} was not deleted because the ingredients {string.Join(", ", ingredientNames)} still use it. The admin screens offer delete only for a unit no ingredient uses, so this call did not come from them.",
                       new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "UnitUsedByIngredients" });
     }
   }

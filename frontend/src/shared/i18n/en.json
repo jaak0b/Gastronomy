@@ -434,19 +434,18 @@
       }
     },
     "units": {
-      "title": "Units",
       "labels": {
         "name": "Name of the unit",
         "editTitle": "Edit the unit",
-        "deactivateTitle": "Deactivate this unit?"
+        "deleteTitle": "Delete this unit?"
       },
       "actions": {
         "new": "New unit",
-        "activate": "Activate the unit",
-        "deactivateConfirm": "Deactivate the unit"
+        "deleteConfirm": "Delete unit"
       },
       "messages": {
-        "usedByIngredients": "The unit is still used by the ingredients {ingredients}. Under \"Ingredients\", change the unit of these ingredients first."
+        "deleteBody": "The unit {name} is deleted permanently.",
+        "usedByIngredients": "The unit is still used by the ingredients {ingredients}."
       }
     },
     "items": {
@@ -565,8 +564,7 @@
       },
       "units": {
         "nameMissing": "Enter a name for the unit.",
-        "nameTaken": "The unit {name} already exists. Choose a different name.",
-        "nameBelongsToDeactivatedUnit": "The unit {name} is deactivated. Activate it or choose a different name."
+        "nameTaken": "The unit {name} already exists. Choose a different name."
       }
     },
     "auth": {

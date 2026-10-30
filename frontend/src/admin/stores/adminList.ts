@@ -43,6 +43,35 @@ export interface Activation {
   setActive: (id: string, isActive: boolean) => Promise<AdminActionResult<null>>
 }
 
+export interface Deleting {
+  deleteEntry: (id: string) => Promise<AdminActionResult<null>>
+}
+
+export type AdminListLayer = 'defineAdminList' | 'withCreating' | 'withActivation' | 'withDeleting'
+
+export interface AdminListRoute {
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  afterTheListPath: string
+}
+
+const READ_THE_LIST: AdminListRoute = { method: 'GET', afterTheListPath: '' }
+const UPDATE_AN_ENTRY: AdminListRoute = { method: 'PUT', afterTheListPath: '/{id}' }
+const CREATE_AN_ENTRY: AdminListRoute = { method: 'POST', afterTheListPath: '' }
+const ACTIVATE_AN_ENTRY: AdminListRoute = { method: 'POST', afterTheListPath: '/{id}/activate' }
+const DEACTIVATE_AN_ENTRY: AdminListRoute = { method: 'POST', afterTheListPath: '/{id}/deactivate' }
+const DELETE_AN_ENTRY: AdminListRoute = { method: 'DELETE', afterTheListPath: '/{id}' }
+
+export const ROUTES_OF_EACH_ADMIN_LIST_LAYER: Readonly<Record<AdminListLayer, readonly AdminListRoute[]>> = {
+  defineAdminList: [READ_THE_LIST, UPDATE_AN_ENTRY],
+  withCreating: [CREATE_AN_ENTRY],
+  withActivation: [ACTIVATE_AN_ENTRY, DEACTIVATE_AN_ENTRY],
+  withDeleting: [DELETE_AN_ENTRY],
+}
+
+function addressOf(route: AdminListRoute, listPath: string, id = ''): string {
+  return `${listPath}${route.afterTheListPath.replace('{id}', id)}`
+}
+
 export function adminListDefinition<TEntry, TListResponse, TDraft, TBody>(
   definition: AdminListDefinition<TEntry, TListResponse, TDraft, TBody>,
 ): AdminListDefinition<TEntry, TListResponse, TDraft, TBody> {
@@ -78,7 +107,7 @@ export function defineAdminList<TEntry, TListResponse, TDraft, TBody>(
   }
 
   async function load(): Promise<void> {
-    await loadFrom(definition.path)
+    await loadFrom(addressOf(READ_THE_LIST, definition.path))
   }
 
   function forgetCreatedEntries(): void {
@@ -92,8 +121,8 @@ export function defineAdminList<TEntry, TListResponse, TDraft, TBody>(
 
   async function update(id: string, draft: TDraft): Promise<AdminActionResult<null>> {
     return await reloadOrFailureOf(
-      await requestAction(`${definition.path}/${id}`, {
-        method: 'PUT',
+      await requestAction(addressOf(UPDATE_AN_ENTRY, definition.path, id), {
+        method: UPDATE_AN_ENTRY.method,
         body: definition.requestBodyOf(draft),
       }),
       reloadAfterWriting,
@@ -128,8 +157,8 @@ export function withCreating<
 
   async function create(draft: TDraft): Promise<AdminActionResult<TEntry>> {
     const viewAtStart = currentView()
-    const result = await request(definition.path, {
-      method: 'POST',
+    const result = await request(addressOf(CREATE_AN_ENTRY, definition.path), {
+      method: CREATE_AN_ENTRY.method,
       body: definition.requestBodyOf(draft),
       schema: definition.entrySchema,
     })
@@ -144,8 +173,8 @@ export function withCreating<
 
   async function createThenReload(draft: TDraft): Promise<AdminActionResult<null>> {
     return await reloadOrFailureOf(
-      await requestAction(definition.path, {
-        method: 'POST',
+      await requestAction(addressOf(CREATE_AN_ENTRY, definition.path), {
+        method: CREATE_AN_ENTRY.method,
         body: definition.requestBodyOf(draft),
       }),
       reloadAfterWriting,
@@ -168,12 +197,39 @@ export function withActivation<
   const reloadAfterWriting = definition.reloadAfterWriting ?? list.load
 
   async function setActive(id: string, isActive: boolean): Promise<AdminActionResult<null>> {
-    const action = isActive ? 'activate' : 'deactivate'
+    const route = isActive ? ACTIVATE_AN_ENTRY : DEACTIVATE_AN_ENTRY
     return await reloadOrFailureOf(
-      await requestAction(`${definition.path}/${id}/${action}`, { method: 'POST' }),
+      await requestAction(addressOf(route, definition.path, id), { method: route.method }),
       reloadAfterWriting,
     )
   }
 
   return { ...list, setActive }
+}
+
+export function withDeleting<
+  TEntry,
+  TListResponse,
+  TDraft,
+  TBody,
+  TList extends AdminList<TEntry, TDraft>,
+>(
+  list: TList,
+  definition: AdminListDefinition<TEntry, TListResponse, TDraft, TBody>,
+): TList & Deleting {
+  const reloadAfterWriting = definition.reloadAfterWriting ?? list.load
+
+  async function readTheListWithoutTheCreatedEntries(): Promise<void> {
+    list.forgetCreatedEntries()
+    await reloadAfterWriting()
+  }
+
+  async function deleteEntry(id: string): Promise<AdminActionResult<null>> {
+    return await reloadOrFailureOf(
+      await requestAction(addressOf(DELETE_AN_ENTRY, definition.path, id), { method: DELETE_AN_ENTRY.method }),
+      readTheListWithoutTheCreatedEntries,
+    )
+  }
+
+  return { ...list, deleteEntry }
 }

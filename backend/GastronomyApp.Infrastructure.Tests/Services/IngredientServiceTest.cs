@@ -16,9 +16,8 @@ public sealed class IngredientServiceTest
   {
     _fixture = new();
     _seeded = await new DomainSeeder().SeedAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    _gram = AddUnit("Portion", true);
-    _millilitre = AddUnit("Fass", true);
-    _switchedOffUnit = AddUnit("Kiste", false);
+    _gram = AddUnit("Portion");
+    _millilitre = AddUnit("Fass");
     _mustard = AddIngredient("Senf", _gram, true);
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
     _service = new(_fixture.DbContext, new CoreMappingFactory().Create());
@@ -34,7 +33,6 @@ public sealed class IngredientServiceTest
   private SeededDomain _seeded = null!;
   private Unit _gram = null!;
   private Unit _millilitre = null!;
-  private Unit _switchedOffUnit = null!;
   private Ingredient _mustard = null!;
   private IngredientService _service = null!;
 
@@ -167,18 +165,6 @@ public sealed class IngredientServiceTest
   public async Task CreateAsync_AnUnknownUnit_IsRefusedWithoutStoring()
   {
     ErrorOr<AdminIngredientView> created = await _service.CreateAsync(RequestFor("Ketchup", Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("common.errors.actionFailed"));
-                      Assert.That(StoredIngredientCount(), Is.EqualTo(1));
-                    });
-  }
-
-  [Test]
-  public async Task CreateAsync_ASwitchedOffUnit_IsRefusedWithoutStoring()
-  {
-    ErrorOr<AdminIngredientView> created = await _service.CreateAsync(RequestFor("Ketchup", _switchedOffUnit.Id), TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -338,13 +324,12 @@ public sealed class IngredientServiceTest
     return readContext.Ingredients.Count();
   }
 
-  private Unit AddUnit(string name, bool isActive)
+  private Unit AddUnit(string name)
   {
     Unit unit = new()
                 {
                   Id = Guid.NewGuid(),
-                  Name = name,
-                  IsActive = isActive
+                  Name = name
                 };
     _fixture.DbContext.Units.Add(unit);
 

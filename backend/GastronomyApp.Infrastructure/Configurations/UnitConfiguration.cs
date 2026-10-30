@@ -13,7 +13,6 @@ public sealed class UnitConfiguration : IEntityTypeConfiguration<Unit>
     builder.HasKey(unit => unit.Id);
     builder.Property(unit => unit.Id).ValueGeneratedNever();
     builder.Property(unit => unit.Name).IsRequired().UseCollation("NOCASE");
-    builder.Property(unit => unit.IsActive).IsRequired();
     builder.HasIndex(unit => unit.Name).IsUnique();
   }
 }
