@@ -5,6 +5,7 @@ import { useBackStep } from '../../../shared/composables/useBackStep'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { isAPaymentMethodNeeded, type SettleNotice, type SettlementPaymentMethod } from '../../core/openItems'
 import { formatPrice } from '../../../shared/core/money'
+import BaseDialogButton from '../../../shared/components/BaseDialogButton.vue'
 import AmountPaidFields from '../AmountPaidFields.vue'
 import BaseFullPageDialog from '../BaseFullPageDialog.vue'
 import SettleNoticeAlert from './SettleNotice.vue'
@@ -61,57 +62,54 @@ function confirm(paymentMethod: SettlementPaymentMethod): void {
     <SettleNoticeAlert v-if="notice !== null" class="mt-2" :notice="notice" :closable="false" />
     <template #actions>
       <template v-if="offersCashAndCard">
-        <v-btn
+        <BaseDialogButton
           class="confirm-in-cash"
           data-test="confirm-in-cash"
-          variant="tonal"
-          color="primary"
+          intent="secondary"
           :disabled="isSettling || !canConfirm"
           @click="confirm('cash')"
         >
           {{ t('phone.openItems.actions.settleInCash') }}
-        </v-btn>
-        <v-btn
+        </BaseDialogButton>
+        <BaseDialogButton
           class="confirm-by-card"
           data-test="confirm-by-card"
-          variant="tonal"
-          color="primary"
+          intent="secondary"
           :disabled="isSettling || !canConfirm"
           @click="confirm('card')"
         >
           {{ t('phone.openItems.actions.settleByCard') }}
-        </v-btn>
+        </BaseDialogButton>
       </template>
-      <v-btn
+      <BaseDialogButton
         v-else
         class="confirm-nothing-paid"
         data-test="confirm-nothing-paid"
-        variant="flat"
-        color="primary"
+        intent="primary"
         :disabled="isSettling || !canConfirm"
         @click="confirm('none')"
       >
         {{ t('phone.openItems.actions.settle') }}
-      </v-btn>
-      <v-btn
+      </BaseDialogButton>
+      <BaseDialogButton
         v-if="notice !== null"
         class="reload-after-refusal"
         data-test="reload-after-refusal"
-        variant="outlined"
+        intent="quiet"
         :disabled="isSettling"
         @click="emit('reload')"
       >
         {{ t('phone.openItems.actions.reload') }}
-      </v-btn>
-      <v-btn
+      </BaseDialogButton>
+      <BaseDialogButton
         class="cancel"
         data-test="cancel"
-        variant="outlined"
+        intent="quiet"
         :disabled="isSettling"
         @click="emit('cancel')"
       >
         {{ t('common.actions.cancel') }}
-      </v-btn>
+      </BaseDialogButton>
     </template>
   </BaseFullPageDialog>
 </template>

@@ -6,6 +6,7 @@ import { useBackStep } from '../../../shared/composables/useBackStep'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { formatPrice } from '../../../shared/core/money'
 import type { SettleNotice } from '../../core/openItems'
+import BaseDialogButton from '../../../shared/components/BaseDialogButton.vue'
 import BaseFullPageDialog from '../BaseFullPageDialog.vue'
 import StatusMark from '../StatusMark.vue'
 import SettleNoticeAlert from './SettleNotice.vue'
@@ -79,34 +80,34 @@ function priceTextFor(cents: number): string {
     </v-alert>
     <SettleNoticeAlert v-if="notice !== null" class="mt-2" :notice="notice" :closable="false" />
     <template #actions>
-      <v-btn
+      <BaseDialogButton
         class="confirm-cancel"
         data-test="confirm-cancel"
-        color="primary"
+        intent="primary"
         :disabled="isCancelling || items.length === 0"
         @click="emit('confirm')"
       >
         {{ t('phone.openItems.actions.cancelSelected') }}
-      </v-btn>
-      <v-btn
+      </BaseDialogButton>
+      <BaseDialogButton
         v-if="notice !== null"
         class="reload-after-refusal"
         data-test="reload-after-refusal"
-        variant="outlined"
+        intent="quiet"
         :disabled="isCancelling"
         @click="emit('reload')"
       >
         {{ t('phone.openItems.actions.reload') }}
-      </v-btn>
-      <v-btn
+      </BaseDialogButton>
+      <BaseDialogButton
         class="back"
         data-test="back"
-        variant="outlined"
+        intent="quiet"
         :disabled="isCancelling"
         @click="emit('back')"
       >
         {{ t('common.actions.back') }}
-      </v-btn>
+      </BaseDialogButton>
     </template>
   </BaseFullPageDialog>
 </template>

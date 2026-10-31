@@ -12,6 +12,7 @@ import { formatPrice } from '../../../shared/core/money'
 import { useSessionStore } from '../../../shared/stores/session'
 import { readTheItemHistory, type ItemHistoryAnswer } from '../../api/itemHistory'
 import { historyEntriesOf, type ItemHistoryEntry } from '../../core/itemHistory'
+import BaseDialogButton from '../../../shared/components/BaseDialogButton.vue'
 import BaseEmptyListText from '../../../shared/components/BaseEmptyListText.vue'
 import BaseFullPageDialog from '../BaseFullPageDialog.vue'
 
@@ -150,17 +151,17 @@ onMounted(load)
       </li>
     </ol>
     <template #actions>
-      <v-btn
+      <BaseDialogButton
         v-if="answer?.kind === 'unanswered'"
         data-test="history-reload"
-        variant="outlined"
+        intent="quiet"
         @click="load"
       >
         {{ t('phone.openItems.actions.reload') }}
-      </v-btn>
-      <v-btn data-test="history-close" color="primary" @click="emit('close')">
+      </BaseDialogButton>
+      <BaseDialogButton data-test="history-close" intent="quiet" @click="emit('close')">
         {{ t('common.actions.close') }}
-      </v-btn>
+      </BaseDialogButton>
     </template>
   </BaseFullPageDialog>
 </template>

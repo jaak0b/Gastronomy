@@ -2,6 +2,7 @@
 import { useTemplateRef, type ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBackStep } from '../composables/useBackStep'
+import BaseDialogButton from './BaseDialogButton.vue'
 import BaseRefusalAlert from './BaseRefusalAlert.vue'
 
 const props = defineProps<{
@@ -46,19 +47,19 @@ function focusTheFirstField(): void {
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn class="form-cancel" data-test="form-cancel" variant="text" :disabled="busy" @click="emit('cancel')">
+          <BaseDialogButton class="form-cancel" data-test="form-cancel" intent="quiet" :disabled="busy" @click="emit('cancel')">
             {{ cancelLabel ?? t('common.actions.cancel') }}
-          </v-btn>
-          <v-btn
+          </BaseDialogButton>
+          <BaseDialogButton
             v-if="!closeOnly"
             class="form-save"
             data-test="form-save"
+            intent="primary"
             type="submit"
-            color="primary"
             :disabled="saveDisabled || busy"
           >
             {{ saveLabel ?? t('common.actions.save') }}
-          </v-btn>
+          </BaseDialogButton>
         </v-card-actions>
       </v-form>
     </v-card>

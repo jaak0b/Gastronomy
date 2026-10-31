@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import BaseFormDialog from '../../../src/shared/components/BaseFormDialog.vue'
 import { testPlugins } from '../../support/plugins'
@@ -51,5 +51,35 @@ describe('a form dialog that opens', () => {
     })
 
     await waitUntil(() => expect(document.activeElement).toBe(onScreen('[data-test="first-field"]')))
+  })
+})
+
+describe('the actions of a form dialog', () => {
+  it('offers a cancel and a save that submits the form', async () => {
+    await openFormDialog()
+
+    expect({
+      saveType: onScreen('[data-test="form-save"]').getAttribute('type'),
+      saveDisabled: onScreen('[data-test="form-save"]').hasAttribute('disabled'),
+      cancelDisabled: onScreen('[data-test="form-cancel"]').hasAttribute('disabled'),
+    }).toEqual({ saveType: 'submit', saveDisabled: false, cancelDisabled: false })
+  })
+
+  it('shows only the closing action when the form only closes', async () => {
+    const dialog = mount(BaseFormDialog, {
+      props: { title: 'Rezept', errorText: null, closeOnly: true, cancelLabel: 'Schließen' },
+      global: { plugins: testPlugins() },
+      attachTo: document.body,
+    })
+    await waitUntil(() => expect(isOnScreen('[data-test="form-cancel"]')).toBe(true))
+
+    onScreen('[data-test="form-cancel"]').click()
+    await flushPromises()
+
+    expect({
+      save: isOnScreen('[data-test="form-save"]'),
+      label: onScreen('[data-test="form-cancel"]').textContent?.trim(),
+      cancelled: dialog.emitted('cancel'),
+    }).toEqual({ save: false, label: 'Schließen', cancelled: [[]] })
   })
 })

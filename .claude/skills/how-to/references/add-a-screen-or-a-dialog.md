@@ -39,6 +39,12 @@ that reads it, as `AREA_STEP` in `phone/stores/tablePlan.ts`.
 - A dialog mounted with `v-if` closes its step when it unmounts, so closing it by its own button
   needs nothing more, and a button that leads to another screen just navigates.
 
+## A dialog action
+
+A dialog action is `shared/components/BaseDialogButton.vue`. Its `intent` is `primary` for the one
+filled action, `secondary` for equal choices such as cash and card, and `quiet` for Cancel, Back,
+Close and reload. The label is the default slot, and every other attribute goes to the button.
+
 ## A menu or a dropdown list
 
 - A `v-menu` takes its open state from `useBackStepForAMenu()` and binds it with `v-model`:
