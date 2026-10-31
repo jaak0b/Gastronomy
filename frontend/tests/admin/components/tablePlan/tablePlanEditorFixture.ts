@@ -4,7 +4,7 @@ import type Konva from 'konva'
 import type { Plugin } from 'vue'
 import TablePlanEditor from '../../../../src/admin/components/tablePlan/TablePlanEditor.vue'
 import type { AdminAreaView, AdminFestivalView, AdminStationView } from '../../../../src/shared/api/generatedSchemas'
-import { isOnScreen, onScreen, waitUntil } from '../../../support/dom'
+import { HEAVY_WAIT_TIMEOUT, isOnScreen, onScreen, waitUntil } from '../../../support/dom'
 import { drawingIn, layOutTheScreen, rightClickAt, shapeWithId, centreOf, tapAt } from '../../../support/konvaDrawing'
 import { answer, stubLaptop, type LaptopReply, type StubbedLaptop } from '../../../support/laptop'
 import { testPlugins } from '../../../support/plugins'
@@ -16,6 +16,8 @@ import {
   anAdminStationShape,
   anAdminTable,
 } from '../../../support/wireViews'
+
+export const EDITOR_TEST_TIMEOUT = 30_000
 
 export const FESTIVAL_ID = 'fest-1'
 
@@ -106,7 +108,7 @@ export async function mountEditor(
     global: { plugins: [...testPlugins(locale), ...extraPlugins] },
     attachTo: document.body,
   })
-  await waitUntil(() => expect(editor.find(DRAWING).exists()).toBe(true))
+  await waitUntil(() => expect(editor.find(DRAWING).exists()).toBe(true), HEAVY_WAIT_TIMEOUT)
   await flushPromises()
   return editor
 }

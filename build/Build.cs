@@ -122,7 +122,7 @@ internal class Build : NukeBuild
 
   private Target Release => _ => _
       .Description("Publishes a GitHub release with the Windows installer, the update feed and commit-message notes.")
-      .DependsOn(Test, Pack)
+      .DependsOn(Pack)
       .Requires(() => GitHubToken)
       .Executes(() =>
       {

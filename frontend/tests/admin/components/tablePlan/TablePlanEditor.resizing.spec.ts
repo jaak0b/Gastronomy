@@ -6,6 +6,7 @@ import { textOnScreen } from '../../../support/dom'
 import { anchorOf, dragAnchorBy, shapeWithId } from '../../../support/konvaDrawing'
 import { refusal } from '../../../support/laptop'
 import {
+  EDITOR_TEST_TIMEOUT,
   MOVE_PATH,
   SCHANK_SHAPE_ID,
   TABLE_A1_SHAPE_ID,
@@ -16,6 +17,8 @@ import {
 } from './tablePlanEditorFixture'
 
 enableAutoUnmount(afterEach)
+
+vi.setConfig({ testTimeout: EDITOR_TEST_TIMEOUT })
 
 interface ShapeGeometry {
   x: number

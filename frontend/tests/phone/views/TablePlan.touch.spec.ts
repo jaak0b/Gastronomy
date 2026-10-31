@@ -16,6 +16,7 @@ import {
 import {
   HALL,
   ON_TISCH_12,
+  PLAN_TEST_TIMEOUT,
   TABLE_ACTIONS,
   aPinchThatSpreadsTwoFingersOnTisch12,
   mountThePlan,
@@ -25,6 +26,8 @@ import {
 } from './tablePlanFixture'
 
 enableAutoUnmount(afterEach)
+
+vi.setConfig({ testTimeout: PLAN_TEST_TIMEOUT })
 
 beforeEach(() => {
   setActivePinia(createPinia())

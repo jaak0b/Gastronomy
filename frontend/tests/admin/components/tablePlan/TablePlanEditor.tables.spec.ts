@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { enableAutoUnmount } from '@vue/test-utils'
 import {
+  HEAVY_WAIT_TIMEOUT,
   allOnScreen,
   clickOn,
   dialogText,
@@ -19,6 +20,7 @@ import { saveTheTablePlanNameDialog } from '../../../support/formDialogs'
 import { dragBy, hasShapeWithId, shapeWithId } from '../../../support/konvaDrawing'
 import { answer, inTurn, refusal } from '../../../support/laptop'
 import {
+  EDITOR_TEST_TIMEOUT,
   HALL,
   TABLE_A1,
   TABLE_A1_SHAPE_ID,
@@ -37,6 +39,8 @@ import { aGeometry, anAdminTable } from '../../../support/wireViews'
 
 enableAutoUnmount(afterEach)
 
+vi.setConfig({ testTimeout: EDITOR_TEST_TIMEOUT })
+
 const TABLES_PATH = '/api/admin/festivals/fest-1/tables'
 
 const NAME_TAKEN =
@@ -52,6 +56,7 @@ const HIDDEN_A3 = anAdminTable({ tableId: 'table-a3', name: 'A3', isHidden: true
 
 beforeEach(() => {
   setActivePinia(createPinia())
+  localStorage.clear()
   document.body.innerHTML = ''
 })
 
@@ -149,7 +154,7 @@ describe('a new table', () => {
 
     await saveTheTablePlanNameDialog('A2')
 
-    await waitUntil(() => expect(shapesWithTheHandles()).toEqual(['table-table-a2']))
+    await waitUntil(() => expect(shapesWithTheHandles()).toEqual(['table-table-a2']), HEAVY_WAIT_TIMEOUT)
   })
 
   it('keeps the dialog open with the reason when another table has the name', async () => {
@@ -159,8 +164,9 @@ describe('a new table', () => {
 
     await saveTheTablePlanNameDialog('a1')
 
-    await waitUntil(() =>
-      expect(textOnScreen('[data-test="form-dialog"] [data-test="refusal"]').trim()).toBe(NAME_TAKEN),
+    await waitUntil(
+      () => expect(textOnScreen('[data-test="form-dialog"] [data-test="refusal"]').trim()).toBe(NAME_TAKEN),
+      HEAVY_WAIT_TIMEOUT,
     )
   })
 })
@@ -232,8 +238,8 @@ describe('hiding a table from its menu', () => {
 
     await pressInDialog('[data-test="confirm"]')
 
-    await waitUntil(() => expect(hasShapeWithId(theDrawing(), TABLE_A1_SHAPE_ID)).toBe(false))
-    expect(shapesWithTheHandles()).toEqual([])
+    await waitUntil(() => expect(hasShapeWithId(theDrawing(), TABLE_A1_SHAPE_ID)).toBe(false), HEAVY_WAIT_TIMEOUT)
+    await waitUntil(() => expect(shapesWithTheHandles()).toEqual([]), HEAVY_WAIT_TIMEOUT)
   })
 
   it('shows the reason above the drawing when the laptop still refuses to hide it', async () => {
@@ -339,6 +345,6 @@ describe('the hidden tables of the area', () => {
 
     await clickOn('[data-test="hidden-table"][data-test-id="table-a3"] [data-test="show-table"]')
 
-    await waitUntil(() => expect(hasShapeWithId(theDrawing(), 'table-table-a3')).toBe(true))
+    await waitUntil(() => expect(hasShapeWithId(theDrawing(), 'table-table-a3')).toBe(true), HEAVY_WAIT_TIMEOUT)
   })
 })

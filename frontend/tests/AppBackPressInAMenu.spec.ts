@@ -12,8 +12,11 @@ import {
 } from './support/browserHistory'
 import { clickOn, isVisibleOnScreen, waitUntil } from './support/dom'
 import { anAdminArea, anAdminStation, anAdminTable } from './support/wireViews'
+import { EDITOR_TEST_TIMEOUT } from './admin/components/tablePlan/tablePlanEditorFixture'
 
 enableAutoUnmount(afterEach)
+
+vi.setConfig({ testTimeout: EDITOR_TEST_TIMEOUT })
 
 const KUECHE = anAdminStation({ stationId: 'station-kueche', name: 'Küche' })
 const BAR = anAdminStation({ stationId: 'station-bar', name: 'Bar', sortOrder: 2 })

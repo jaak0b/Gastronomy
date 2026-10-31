@@ -6,12 +6,14 @@ import AppHeader from '../../../src/phone/components/header/AppHeader.vue'
 import { navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
 import { stubLaptop, answer } from '../../support/laptop'
-import { onScreen, waitUntil } from '../../support/dom'
+import { HEAVY_WAIT_TIMEOUT, onScreen, waitUntil } from '../../support/dom'
 import { aFestival } from '../../support/wireViews'
 import { layOutTheScreen } from '../../support/konvaDrawing'
-import { editorLaptop, HALL, openTheToolbarMenu, WINDOW_AT_ONE_AND_A_HALF } from '../components/tablePlan/tablePlanEditorFixture'
+import { EDITOR_TEST_TIMEOUT, editorLaptop, HALL, openTheToolbarMenu, WINDOW_AT_ONE_AND_A_HALF } from '../components/tablePlan/tablePlanEditorFixture'
 
 enableAutoUnmount(afterEach)
+
+vi.setConfig({ testTimeout: EDITOR_TEST_TIMEOUT })
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -47,7 +49,7 @@ async function mountTheTablePlanEditor() {
   layOutTheScreen(WINDOW_AT_ONE_AND_A_HALF)
   navigate(`/admin/festivals/fest-1/areas/${HALL.areaId}`)
   const shell = mount(AdminShell, { global: { plugins: testPlugins('de') }, attachTo: document.body })
-  await waitUntil(() => expect(shell.find('[data-test="table-plan-toolbar"]').exists()).toBe(true))
+  await waitUntil(() => expect(shell.find('[data-test="table-plan-toolbar"]').exists()).toBe(true), HEAVY_WAIT_TIMEOUT)
   await flushPromises()
   return shell
 }

@@ -6,6 +6,7 @@ import { isOnScreen, onScreen } from '../../support/dom'
 import { dragBy, layOutTheScreen } from '../../support/konvaDrawing'
 import {
   HALL,
+  PLAN_TEST_TIMEOUT,
   aPinchThatSpreadsTwoFingersOnTisch12,
   mountThePlan,
   planLaptop,
@@ -14,6 +15,8 @@ import {
 } from './tablePlanFixture'
 
 enableAutoUnmount(afterEach)
+
+vi.setConfig({ testTimeout: PLAN_TEST_TIMEOUT })
 
 const VERTICAL_BAR = '[data-test="plan-scroll-bar"][data-test-id="vertical"]'
 

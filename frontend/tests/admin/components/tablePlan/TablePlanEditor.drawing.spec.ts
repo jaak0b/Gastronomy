@@ -4,7 +4,7 @@ import { enableAutoUnmount } from '@vue/test-utils'
 import Konva from 'konva'
 import { createVuetify } from 'vuetify'
 import { appTheme } from '../../../../src/shared/theme'
-import { textOnScreen, waitUntil } from '../../../support/dom'
+import { HEAVY_WAIT_TIMEOUT, textOnScreen, waitUntil } from '../../../support/dom'
 import {
   centreOf,
   dragBy,
@@ -18,6 +18,7 @@ import {
 } from '../../../support/konvaDrawing'
 import { refusal } from '../../../support/laptop'
 import {
+  EDITOR_TEST_TIMEOUT,
   HALL,
   MOVE_PATH,
   SCHANK_SHAPE_ID,
@@ -35,12 +36,15 @@ import { aGeometry, anAdminArea, anAdminTable } from '../../../support/wireViews
 
 enableAutoUnmount(afterEach)
 
+vi.setConfig({ testTimeout: EDITOR_TEST_TIMEOUT })
+
 function geometryOfTheNode(node: Konva.Node) {
   return { x: node.x(), y: node.y(), width: node.width(), height: node.height(), rotation: node.rotation() }
 }
 
 beforeEach(() => {
   setActivePinia(createPinia())
+  localStorage.clear()
   document.body.innerHTML = ''
 })
 
@@ -220,7 +224,7 @@ describe('dragging a shape', () => {
       [0, 30, 400, 30],
     ])
     await releaseAt({ x: from.x + 145.5, y: from.y })
-    expect(shapesNamed(theDrawing(), 'snap-guide')).toEqual([])
+    await waitUntil(() => expect(shapesNamed(theDrawing(), 'snap-guide')).toEqual([]), HEAVY_WAIT_TIMEOUT)
   })
 
   it('saves a station shape where it was dropped', async () => {
@@ -271,7 +275,7 @@ describe('selecting in the drawing', () => {
     await tapAt(theDrawing(), { x: 525, y: 375 })
 
     await waitUntil(() => expect(isHighlighted('table-table-a1')).toBe(false))
-    expect(shapesWithTheHandles()).toEqual([])
+    await waitUntil(() => expect(shapesWithTheHandles()).toEqual([]), HEAVY_WAIT_TIMEOUT)
   })
 })
 

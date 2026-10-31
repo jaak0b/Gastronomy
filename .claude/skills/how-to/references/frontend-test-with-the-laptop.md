@@ -50,8 +50,15 @@ changes on the wire is fixed in the factory once.
   A spec that mounts a screen calls `enableAutoUnmount(afterEach)` at the top of the file, because a
   screen left mounted keeps its timers running into the next test, and a store action such a timer
   starts makes the earlier test's Pinia active again, so `useXStore()` returns the old store.
+- Every spec that mounts the table plan, including the editor, toolbar, `AdminShell` and back-button
+  specs, raises its timeout to 30 seconds with `EDITOR_TEST_TIMEOUT` or `PLAN_TEST_TIMEOUT`. A test
+  that hits the global timeout is reported, but its asynchronous body keeps running and can drive
+  the next test's window and drawing; the longer timeout lets the heavy Konva mount finish instead
+  of abandoning the body.
 - `tests/support/dom.ts` finds and drives the page: `onScreen`, `allOnScreen`, `isOnScreen`,
   `textOnScreen`, `inputOf`, `typeIn`, `clickOn`, `waitUntil`, and `testIdSelector(testId, id)`.
+  `waitUntil(observation, timeout = 1000)` takes an optional timeout; pass `HEAVY_WAIT_TIMEOUT`
+  (10 seconds) for a wait that follows a heavy table-plan mount or a reload.
   `formDialogs.ts` fills and saves the admin form dialogs, and `hubConnection.ts` fakes SignalR
   (`fireHubEvent`) for a spec that proves a store reloads on an event.
 - The connection store reloads every store only when the laptop sends `GroupsJoined`, never when

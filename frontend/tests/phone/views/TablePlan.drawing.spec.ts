@@ -5,11 +5,12 @@ import type Konva from 'konva'
 import { createVuetify } from 'vuetify'
 import { navigate } from '../../../src/shared/router/router'
 import { appTheme } from '../../../src/shared/theme'
-import { isOnScreen, waitUntil } from '../../support/dom'
+import { HEAVY_WAIT_TIMEOUT, isOnScreen, waitUntil } from '../../support/dom'
 import {
   centreOf,
   colourAt,
   dragBy,
+  hasShapeWithId,
   layOutTheScreen,
   movePointerTo,
   pressAt,
@@ -20,6 +21,7 @@ import {
 import { aGeometry, aPlanArea, aPlanStationShape, aPlanTable } from '../../support/wireViews'
 import {
   HALL,
+  PLAN_TEST_TIMEOUT,
   TABLE_ACTIONS,
   TISCH_12,
   mountThePlan,
@@ -30,6 +32,8 @@ import {
 } from './tablePlanFixture'
 
 enableAutoUnmount(afterEach)
+
+vi.setConfig({ testTimeout: PLAN_TEST_TIMEOUT })
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -54,6 +58,7 @@ describe('the plan of one area on a waiter\'s phone', () => {
 
     await mountThePlan()
 
+    await waitUntil(() => expect(hasShapeWithId(theDrawing(), 'table-table-7')).toBe(true), HEAVY_WAIT_TIMEOUT)
     const node = tableNode('table-7')
     expect({ x: node.x(), y: node.y(), width: node.width(), height: node.height(), rotation: node.rotation() }).toEqual({
       x: 150,

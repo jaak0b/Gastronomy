@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
-import { isOnScreen, onScreen, textOnScreen, waitUntil } from '../../../support/dom'
+import { HEAVY_WAIT_TIMEOUT, isOnScreen, onScreen, textOnScreen, waitUntil } from '../../../support/dom'
 import {
   centreOf,
   rightClickAt,
@@ -11,6 +11,7 @@ import {
 import { answer, inTurn, refusal } from '../../../support/laptop'
 import {
   COPY_PATH,
+  EDITOR_TEST_TIMEOUT,
   HALL_WITH_TWO_TABLES,
   SCHANK_SHAPE_ID,
   TABLE_A1,
@@ -28,6 +29,8 @@ import { aGeometry, anAdminTable } from '../../../support/wireViews'
 
 enableAutoUnmount(afterEach)
 
+vi.setConfig({ testTimeout: EDITOR_TEST_TIMEOUT })
+
 const COPY_ONE = anAdminTable({
   tableId: 'table-copy-1',
   name: 'A3',
@@ -42,6 +45,7 @@ const COPY_TWO = anAdminTable({
 
 beforeEach(() => {
   setActivePinia(createPinia())
+  localStorage.clear()
   document.body.innerHTML = ''
 })
 
@@ -86,7 +90,7 @@ describe('copying with the keyboard', () => {
     await pressCtrl('c')
     await pressCtrl('v')
 
-    await waitUntil(() => expect(laptop.writes()).toHaveLength(1))
+    await waitUntil(() => expect(laptop.writes()).toHaveLength(1), HEAVY_WAIT_TIMEOUT)
     expect(laptop.writtenBodies()).toEqual([
       {
         areaId: 'area-halle',
@@ -103,6 +107,7 @@ describe('copying with the keyboard', () => {
   it('does nothing on a station, because a station is never copied', async () => {
     const laptop = editorLaptop({ areas: twoTables() })
     await mountEditor()
+    laptop.forgetCalls()
     await clickTheShape(SCHANK_SHAPE_ID)
 
     await pressCtrl('c')
@@ -159,7 +164,7 @@ describe('the context menu on a table', () => {
     await waitForTheMenu('copy-table')
     await pressCtrl('v')
 
-    await waitUntil(() => expect(laptop.writes()).toHaveLength(1))
+    await waitUntil(() => expect(laptop.writes()).toHaveLength(1), HEAVY_WAIT_TIMEOUT)
     expect(laptop.writtenBodies()[0]).toEqual({
       areaId: 'area-halle',
       tables: [
@@ -209,7 +214,7 @@ describe('the context menu on a table', () => {
     await waitForTheMenu('copy-table')
     await pressCtrl('v')
 
-    await waitUntil(() => expect(laptop.writes()).toHaveLength(1))
+    await waitUntil(() => expect(laptop.writes()).toHaveLength(1), HEAVY_WAIT_TIMEOUT)
     expect(laptop.writtenBodies()[0]).toEqual({
       areaId: 'area-halle',
       tables: [
@@ -224,7 +229,7 @@ describe('the context menu on a table', () => {
       ],
     })
     expect(selectionAfterTheRightClick).toEqual([true, true])
-    await waitUntil(() => expect(isHighlighted('table-table-copy-1')).toBe(true))
+    await waitUntil(() => expect(isHighlighted('table-table-copy-1')).toBe(true), HEAVY_WAIT_TIMEOUT)
     expect(isHighlighted('table-table-copy-2')).toBe(true)
   })
 })
@@ -239,7 +244,7 @@ describe('the context menu on an empty spot', () => {
     await rightClickAt(theDrawing(), { x: 456, y: 381 })
     await waitForTheMenu('paste-table')
 
-    await waitUntil(() => expect(laptop.writes()).toHaveLength(1))
+    await waitUntil(() => expect(laptop.writes()).toHaveLength(1), HEAVY_WAIT_TIMEOUT)
     expect(laptop.writtenBodies()[0]).toEqual({
       areaId: 'area-halle',
       tables: [
@@ -303,7 +308,7 @@ describe('the plan after a paste', () => {
 
     await pressCtrl('v')
 
-    await waitUntil(() => expect(isHighlighted('table-table-copy-1')).toBe(true))
+    await waitUntil(() => expect(isHighlighted('table-table-copy-1')).toBe(true), HEAVY_WAIT_TIMEOUT)
     expect([
       isHighlighted('table-table-copy-2'),
       shapesWithTheHandles(),
@@ -323,10 +328,12 @@ describe('the plan after a paste', () => {
 
     await pressCtrl('v')
 
-    await waitUntil(() =>
-      expect(textOnScreen('[data-test="plan-refusal"]').trim()).toBe(
-        'Der Name einer Kopie wäre länger als 40 Zeichen. Kürzen Sie den Namen des Tisches.',
-      ),
+    await waitUntil(
+      () =>
+        expect(textOnScreen('[data-test="plan-refusal"]').trim()).toBe(
+          'Der Name einer Kopie wäre länger als 40 Zeichen. Kürzen Sie den Namen des Tisches.',
+        ),
+      HEAVY_WAIT_TIMEOUT,
     )
     expect(laptop.callsTo('POST', COPY_PATH)).toHaveLength(1)
     expect(laptop.callsTo('GET', '/api/admin/festivals/fest-1/table-plan')).toHaveLength(0)

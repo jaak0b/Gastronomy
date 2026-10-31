@@ -3,13 +3,15 @@ import { createPinia, setActivePinia } from 'pinia'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import TablePlanEditor from '../../../../src/admin/components/tablePlan/TablePlanEditor.vue'
 import { currentRoute, navigate } from '../../../../src/shared/router/router'
-import { clickOn, textOnScreen, waitUntil } from '../../../support/dom'
+import { HEAVY_WAIT_TIMEOUT, clickOn, textOnScreen, waitUntil } from '../../../support/dom'
 import { useConnectionStore } from '../../../../src/shared/stores/connection'
 import { aHold, answer, heldUntil, inTurn, stubLaptop } from '../../../support/laptop'
 import { testPlugins } from '../../../support/plugins'
-import { FESTIVAL_ID, HALL, PLAN_PATH, TENT, editorLaptop, mountEditor } from './tablePlanEditorFixture'
+import { EDITOR_TEST_TIMEOUT, FESTIVAL_ID, HALL, PLAN_PATH, TENT, editorLaptop, mountEditor } from './tablePlanEditorFixture'
 
 enableAutoUnmount(afterEach)
+
+vi.setConfig({ testTimeout: EDITOR_TEST_TIMEOUT })
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -56,8 +58,9 @@ describe('the editor of one area', () => {
       attachTo: document.body,
     })
 
-    await waitUntil(() =>
-      expect(currentRoute.value).toEqual({ name: 'admin', section: 'festivals', festivalId: FESTIVAL_ID }),
+    await waitUntil(
+      () => expect(currentRoute.value).toEqual({ name: 'admin', section: 'festivals', festivalId: FESTIVAL_ID }),
+      HEAVY_WAIT_TIMEOUT,
     )
   })
 
@@ -71,7 +74,7 @@ describe('the editor of one area', () => {
       global: { plugins: testPlugins() },
       attachTo: document.body,
     })
-    await waitUntil(() => expect(laptop.urls()).toContain(PLAN_PATH))
+    await waitUntil(() => expect(laptop.urls()).toContain(PLAN_PATH), HEAVY_WAIT_TIMEOUT)
     const refetch = useConnectionStore().refetchAll()
 
     firstRead.release()
@@ -79,7 +82,7 @@ describe('the editor of one area', () => {
     newerRead.release()
     await refetch
 
-    await waitUntil(() => expect(textOnScreen('[data-test="area-name"]').trim()).toBe('Halle'))
+    await waitUntil(() => expect(textOnScreen('[data-test="area-name"]').trim()).toBe('Halle'), HEAVY_WAIT_TIMEOUT)
     expect(currentRoute.value).toEqual({
       name: 'admin',
       section: 'festivals',
@@ -97,7 +100,7 @@ describe('the editor of one area', () => {
       attachTo: document.body,
     })
 
-    await waitUntil(() => expect(laptop.urls()).toContain(PLAN_PATH))
+    await waitUntil(() => expect(laptop.urls()).toContain(PLAN_PATH), HEAVY_WAIT_TIMEOUT)
     await flushPromises()
     expect(currentRoute.value).toEqual({
       name: 'admin',
@@ -117,8 +120,9 @@ describe('the editor of one area', () => {
     })
     await flushPromises()
 
-    await waitUntil(() =>
-      expect(currentRoute.value).toEqual({ name: 'admin', section: 'overview', festivalId: null }),
+    await waitUntil(
+      () => expect(currentRoute.value).toEqual({ name: 'admin', section: 'overview', festivalId: null }),
+      HEAVY_WAIT_TIMEOUT,
     )
   })
 })

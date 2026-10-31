@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { enableAutoUnmount } from '@vue/test-utils'
 import {
+  HEAVY_WAIT_TIMEOUT,
   allOnScreen,
   clickOn,
   dialogText,
@@ -16,6 +17,7 @@ import type Konva from 'konva'
 import { hasShapeWithId, shapeWithId } from '../../../support/konvaDrawing'
 import { answer, inTurn, noConnection } from '../../../support/laptop'
 import {
+  EDITOR_TEST_TIMEOUT,
   HALL,
   KITCHEN,
   SCHANK,
@@ -37,6 +39,8 @@ import {
 import { aGeometry, anAdminStation, anAdminStationShape, anAdminTable } from '../../../support/wireViews'
 
 enableAutoUnmount(afterEach)
+
+vi.setConfig({ testTimeout: EDITOR_TEST_TIMEOUT })
 
 const SHAPE_PATH = '/api/admin/festivals/fest-1/stations'
 
@@ -144,7 +148,7 @@ describe('adding a station to this area', () => {
 
     await putTheKitchenHere()
 
-    await waitUntil(() => expect(shapesWithTheHandles()).toEqual(['station-station-kueche']))
+    await waitUntil(() => expect(shapesWithTheHandles()).toEqual(['station-station-kueche']), HEAVY_WAIT_TIMEOUT)
   })
 
   it('shows the reason above the drawing when the laptop cannot be reached', async () => {
@@ -153,10 +157,12 @@ describe('adding a station to this area', () => {
 
     await putTheKitchenHere()
 
-    await waitUntil(() =>
-      expect(planRefusalText()).toBe(
-        'Die Aktion ist fehlgeschlagen.',
-      ),
+    await waitUntil(
+      () =>
+        expect(planRefusalText()).toBe(
+          'Die Aktion ist fehlgeschlagen.',
+        ),
+      HEAVY_WAIT_TIMEOUT,
     )
   })
 })
@@ -240,7 +246,7 @@ describe('taking a station off this plan from its menu', () => {
     await mountEditor()
     await chooseInTheMenuOf(SCHANK_SHAPE_ID, 'remove-station-from-menu')
     await pressInDialog('[data-test="confirm"]')
-    await waitUntil(() => expect(hasShapeWithId(theDrawing(), SCHANK_SHAPE_ID)).toBe(false))
+    await waitUntil(() => expect(hasShapeWithId(theDrawing(), SCHANK_SHAPE_ID)).toBe(false), HEAVY_WAIT_TIMEOUT)
 
     await openTheToolbarMenu('add-station', 'station-to-place')
 

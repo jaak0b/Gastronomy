@@ -13,6 +13,7 @@ import {
 } from '../../../support/dom'
 import { centreOf, rightClickAt, shapeWithId, tapAt } from '../../../support/konvaDrawing'
 import {
+  EDITOR_TEST_TIMEOUT,
   HALL,
   HALL_WITH_TWO_TABLES,
   TABLE_A1,
@@ -25,6 +26,8 @@ import {
 } from './tablePlanEditorFixture'
 
 enableAutoUnmount(afterEach)
+
+vi.setConfig({ testTimeout: EDITOR_TEST_TIMEOUT })
 
 const STILL_OPEN =
   'Solange ein Fest aktiv ist, kann ein Tisch erst ausgeblendet werden, wenn alle seine Positionen zubereitet und kassiert sind.'

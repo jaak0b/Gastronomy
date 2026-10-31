@@ -35,7 +35,7 @@ dotnet test backend/<TestProject>/<TestProject>.csproj --filter "FullyQualifiedN
 cd frontend; npx vitest run <spec path>
 ```
 
-Build the installer with `pwsh ./build.ps1 --target Pack`; the output lands in `artifacts/velopack`. Publishing a release is `pwsh ./build.ps1 --target Release` with a `GH_TOKEN` set.
+Build the installer with `pwsh ./build.ps1 --target Pack`; the output lands in `artifacts/velopack`. Publishing a release is `pwsh ./build.ps1 --target Release` with a `GH_TOKEN` set. The GitHub Release workflow runs it only after the `Build & test` workflow has succeeded for the same commit.
 
 ## Layout
 

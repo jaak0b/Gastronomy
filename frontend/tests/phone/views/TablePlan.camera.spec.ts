@@ -4,9 +4,11 @@ import { createPinia, setActivePinia } from 'pinia'
 import { navigate } from '../../../src/shared/router/router'
 import { isOnScreen } from '../../support/dom'
 import { dragBy, layOutTheScreen } from '../../support/konvaDrawing'
-import { HALL, mountThePlan, planLaptop, tableNode, theDrawing } from './tablePlanFixture'
+import { HALL, PLAN_TEST_TIMEOUT, mountThePlan, planLaptop, tableNode, theDrawing } from './tablePlanFixture'
 
 enableAutoUnmount(afterEach)
+
+vi.setConfig({ testTimeout: PLAN_TEST_TIMEOUT })
 
 beforeEach(() => {
   setActivePinia(createPinia())

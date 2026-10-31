@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { enableAutoUnmount } from '@vue/test-utils'
 import Konva from 'konva'
-import { textOnScreen, waitUntil } from '../../../support/dom'
+import { HEAVY_WAIT_TIMEOUT, textOnScreen, waitUntil } from '../../../support/dom'
 import {
   centreOf,
   dragBy,
@@ -15,6 +15,7 @@ import {
 } from '../../../support/konvaDrawing'
 import { answer, emptyAnswer, inTurn, refusal } from '../../../support/laptop'
 import {
+  EDITOR_TEST_TIMEOUT,
   HALL_WITH_TWO_TABLES,
   MOVE_PATH,
   PLAN_PATH,
@@ -30,6 +31,8 @@ import {
 import { aGeometry, anAdminTable } from '../../../support/wireViews'
 
 enableAutoUnmount(afterEach)
+
+vi.setConfig({ testTimeout: EDITOR_TEST_TIMEOUT })
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -200,7 +203,7 @@ describe('dragging a group of tables', () => {
 
     await dragBy(theDrawing(), shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID), { x: 127.5, y: 0 })
 
-    await waitUntil(() => expect(laptop.callsTo('GET', PLAN_PATH)).toHaveLength(1))
+    await waitUntil(() => expect(laptop.callsTo('GET', PLAN_PATH)).toHaveLength(1), HEAVY_WAIT_TIMEOUT)
     expect(laptop.callsTo('POST', MOVE_PATH)).toHaveLength(1)
     expect(laptop.writtenBodies()).toEqual([
       {
@@ -243,7 +246,7 @@ describe('dragging a group of tables', () => {
 
     await dragBy(theDrawing(), shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID), { x: 75, y: 150 })
 
-    await waitUntil(() => expect(shapeWithId(theDrawing(), TABLE_A2_SHAPE_ID).x()).toBe(210))
+    await waitUntil(() => expect(shapeWithId(theDrawing(), TABLE_A2_SHAPE_ID).x()).toBe(210), HEAVY_WAIT_TIMEOUT)
     const first = shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID)
     const second = shapeWithId(theDrawing(), TABLE_A2_SHAPE_ID)
     expect([first.x(), first.y(), second.x(), second.y()]).toEqual([210, 220, 210, 290])

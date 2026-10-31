@@ -79,8 +79,10 @@ export async function clickOn(selector: string, root: ParentNode = document): Pr
   await flushPromises()
 }
 
-export async function waitUntil(observation: () => void): Promise<void> {
-  await vi.waitFor(observation)
+export const HEAVY_WAIT_TIMEOUT = 10_000
+
+export async function waitUntil(observation: () => void, timeout = 1000): Promise<void> {
+  await vi.waitFor(observation, { timeout })
 }
 
 export function openDialog(): Element | null {

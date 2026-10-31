@@ -8,11 +8,13 @@ import { inTurn, answer, noConnection, neverAnswers, stubLaptop } from '../../su
 import { TISCH_3, theWaiterTakesTheOrderAt } from '../../support/waiterPhone'
 import { wasserOnTheMenu } from './reviewFixture'
 import { aPlanArea, aPlanStationShape } from '../../support/wireViews'
-import { DRAWING, GARDEN, HALL, mountThePlan, planLaptop, theCatalogNamesTheFestivalThatRuns } from './tablePlanFixture'
+import { DRAWING, GARDEN, HALL, PLAN_TEST_TIMEOUT, mountThePlan, planLaptop, theCatalogNamesTheFestivalThatRuns } from './tablePlanFixture'
 
 const SOMMERFEST = { festivalId: 'fest-1', name: 'Sommerfest' }
 
 enableAutoUnmount(afterEach)
+
+vi.setConfig({ testTimeout: PLAN_TEST_TIMEOUT })
 
 beforeEach(() => {
   setActivePinia(createPinia())

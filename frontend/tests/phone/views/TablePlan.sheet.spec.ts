@@ -8,9 +8,11 @@ import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { clickOn, isOnScreen, textOnScreen } from '../../support/dom'
 import { theWaiterTakesTheOrderAt } from '../../support/waiterPhone'
 import { wasserOnTheMenu } from './reviewFixture'
-import { HALL, TABLE_ACTIONS, mountThePlan, planLaptop, tapTheTable } from './tablePlanFixture'
+import { HALL, PLAN_TEST_TIMEOUT, TABLE_ACTIONS, mountThePlan, planLaptop, tapTheTable } from './tablePlanFixture'
 
 enableAutoUnmount(afterEach)
+
+vi.setConfig({ testTimeout: PLAN_TEST_TIMEOUT })
 
 const UNSENT_ORDER = '[data-test="unsent-order"]'
 

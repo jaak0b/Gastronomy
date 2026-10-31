@@ -13,6 +13,8 @@ import { answer, stubLaptop, type LaptopReply, type StubbedLaptop } from '../../
 import { testPlugins } from '../../support/plugins'
 import { aGeometry, aPlanArea, aPlanStationShape, aPlanTable } from '../../support/wireViews'
 
+export const PLAN_TEST_TIMEOUT = 30_000
+
 export const TISCH_12 = aPlanTable({
   tableId: 'table-12',
   name: '12',

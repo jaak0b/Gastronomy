@@ -1,11 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import TablePlanToolbar from '../../../../src/admin/components/tablePlan/TablePlanToolbar.vue'
 import { clickOn, refusalReasonsOnScreen, textOnScreen, waitUntil } from '../../../support/dom'
 import { testPlugins } from '../../../support/plugins'
 import { anAdminArea, anAdminStation, anAdminTable } from '../../../support/wireViews'
+import { EDITOR_TEST_TIMEOUT } from './tablePlanEditorFixture'
 
 enableAutoUnmount(afterEach)
+
+vi.setConfig({ testTimeout: EDITOR_TEST_TIMEOUT })
 
 const A1 = anAdminTable({ tableId: 'table-a1', name: 'A1' })
 
