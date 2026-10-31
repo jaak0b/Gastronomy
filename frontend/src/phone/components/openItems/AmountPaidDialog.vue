@@ -64,6 +64,7 @@ function confirm(paymentMethod: SettlementPaymentMethod): void {
         <v-btn
           class="confirm-in-cash"
           data-test="confirm-in-cash"
+          variant="tonal"
           color="primary"
           :disabled="isSettling || !canConfirm"
           @click="confirm('cash')"
@@ -73,6 +74,7 @@ function confirm(paymentMethod: SettlementPaymentMethod): void {
         <v-btn
           class="confirm-by-card"
           data-test="confirm-by-card"
+          variant="tonal"
           color="primary"
           :disabled="isSettling || !canConfirm"
           @click="confirm('card')"
@@ -84,6 +86,7 @@ function confirm(paymentMethod: SettlementPaymentMethod): void {
         v-else
         class="confirm-nothing-paid"
         data-test="confirm-nothing-paid"
+        variant="flat"
         color="primary"
         :disabled="isSettling || !canConfirm"
         @click="confirm('none')"
