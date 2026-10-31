@@ -12,6 +12,7 @@ import {
   type SelectionPurpose,
 } from '../../core/openItems'
 import BaseIconAction from '../../../shared/components/BaseIconAction.vue'
+import StatusMark from '../StatusMark.vue'
 import ItemHistoryDialog from './ItemHistoryDialog.vue'
 import { PHONE_ORDER_GRID_DEFAULTS } from '../../styles/phoneSizes'
 
@@ -72,14 +73,6 @@ function toggleWhenSelectable(item: TableOrderRecordItemView): void {
 function isMarkedHandedOut(item: TableOrderRecordItemView): boolean {
   return isCancelled(item.state) ? item.wasHandedOutWhenCancelled : isHandedOut(item.state)
 }
-
-function markIconFor(isDone: boolean): string {
-  return isDone ? 'mdi-check' : 'mdi-close'
-}
-
-function markColourFor(isDone: boolean): string {
-  return isDone ? 'success' : 'error'
-}
 </script>
 
 <template>
@@ -127,19 +120,17 @@ function markColourFor(isDone: boolean): string {
               {{ t('common.labels.note', { note: item.note }) }}
             </div>
           </div>
-          <v-icon
+          <StatusMark
             class="line-mark"
-            data-test="paid-mark"
-            :data-test-id="item.orderItemId"
-            :color="markColourFor(item.settledAtUtc !== null)"
-            :icon="markIconFor(item.settledAtUtc !== null)"
+            test-name="paid-mark"
+            :test-id="item.orderItemId"
+            :is-done="item.settledAtUtc !== null"
           />
-          <v-icon
+          <StatusMark
             class="line-mark"
-            data-test="handed-out-mark"
-            :data-test-id="item.orderItemId"
-            :color="markColourFor(isMarkedHandedOut(item))"
-            :icon="markIconFor(isMarkedHandedOut(item))"
+            test-name="handed-out-mark"
+            :test-id="item.orderItemId"
+            :is-done="isMarkedHandedOut(item)"
           />
           <BaseIconAction
             data-test="item-details"

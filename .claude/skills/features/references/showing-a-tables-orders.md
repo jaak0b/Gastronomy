@@ -48,7 +48,8 @@ Frontend, under `frontend/src/phone/`:
   done counter is small grey secondary text. The two mark columns are as wide as their headings and
   the gaps are small, so the name and its note get the rest of a phone's width. The "Bezahlt" mark
   is `settledAtUtc !== null`; the "Ausgegeben" mark is `isHandedOut(state)`, or
-  `wasHandedOutWhenCancelled` for a cancelled item. A cancelled item's name carries the shared
+  `wasHandedOutWhenCancelled` for a cancelled item. Both marks are the shared
+  `components/StatusMark.vue`, a green check when done and a red cross when not. A cancelled item's name carries the shared
   `cancelled-item` class. The details button opens `ItemHistoryDialog`, never ticks and stops the
   tap from reaching the row. A tap on a mark is a tap on the row.
 - `components/orderList/ItemHistoryDialog.vue`: the item's details on `BaseFullPageDialog`, titled

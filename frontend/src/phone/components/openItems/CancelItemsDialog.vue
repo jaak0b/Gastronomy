@@ -7,6 +7,7 @@ import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { formatPrice } from '../../../shared/core/money'
 import type { SettleNotice } from '../../core/openItems'
 import BaseFullPageDialog from '../BaseFullPageDialog.vue'
+import StatusMark from '../StatusMark.vue'
 import SettleNoticeAlert from './SettleNotice.vue'
 
 const props = defineProps<{
@@ -35,32 +36,38 @@ function priceTextFor(cents: number): string {
     data-test="cancel-items-dialog"
     :title="t('phone.openItems.labels.cancelTitle')"
   >
-    <v-list class="items-to-cancel">
-      <v-list-item
+    <div class="items-to-cancel">
+      <div class="items-heading" data-test="items-heading">
+        <span />
+        <span class="column-heading app-small-text" data-test="cancellation-paid-heading">
+          {{ t('phone.openItems.labels.paid') }}
+        </span>
+        <span />
+      </div>
+      <div
         v-for="item in items"
         :key="item.orderItemId"
         class="item-to-cancel"
         data-test="item-to-cancel"
         :data-test-id="item.orderItemId"
       >
-        <v-list-item-title class="item-name" data-test="item-name">{{ item.itemName }}</v-list-item-title>
-        <v-list-item-subtitle v-if="item.note !== null" class="item-note" data-test="item-note">
-          {{ t('common.labels.note', { note: item.note }) }}
-        </v-list-item-subtitle>
-        <template #append>
-          <span
-            v-if="item.settledAtUtc !== null"
-            class="item-paid app-text"
-            data-test="item-paid"
-          >
-            {{ t('phone.openItems.labels.paid') }}
-          </span>
-          <span class="item-price app-text" data-test="item-price">
-            {{ priceTextFor(item.unitPriceCents) }}
-          </span>
-        </template>
-      </v-list-item>
-    </v-list>
+        <div class="item-text">
+          <div class="item-name app-item-name" data-test="item-name">{{ item.itemName }}</div>
+          <div v-if="item.note !== null" class="item-note app-small-text text-medium-emphasis" data-test="item-note">
+            {{ t('common.labels.note', { note: item.note }) }}
+          </div>
+        </div>
+        <StatusMark
+          class="item-paid-mark"
+          test-name="cancellation-paid-mark"
+          :test-id="item.orderItemId"
+          :is-done="item.settledAtUtc !== null"
+        />
+        <span class="item-price app-text" data-test="item-price">
+          {{ priceTextFor(item.unitPriceCents) }}
+        </span>
+      </div>
+    </div>
     <v-alert
       v-if="cashToReturnCents > 0"
       class="cash-to-return mt-2"
@@ -106,8 +113,33 @@ function priceTextFor(cents: number): string {
 
 <style scoped>
 .items-to-cancel {
-  background: transparent;
-  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  column-gap: 0.75rem;
+  row-gap: 0.5rem;
+  align-items: center;
+}
+
+.items-heading,
+.item-to-cancel {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+
+.items-heading {
+  padding-block-end: 0.25rem;
+  border-bottom: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.item-to-cancel {
+  padding-block: 0.25rem;
+}
+
+.item-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .item-name,
@@ -118,10 +150,13 @@ function priceTextFor(cents: number): string {
   overflow-wrap: anywhere;
 }
 
-.item-price,
-.item-paid {
-  flex: 0 0 auto;
+.column-heading,
+.item-paid-mark {
+  justify-self: center;
+}
+
+.item-price {
+  justify-self: end;
   white-space: nowrap;
-  padding-inline-start: 0.75rem;
 }
 </style>

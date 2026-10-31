@@ -41,6 +41,20 @@ function namesOnTheConfirmation(): string[] {
   )
 }
 
+function markOnTheConfirmation(orderItemId: string): HTMLElement {
+  const mark = document.querySelector<HTMLElement>(
+    `${CONFIRMATION} [data-test="cancellation-paid-mark"][data-test-id="${orderItemId}"]`,
+  )
+  if (mark === null) {
+    throw new Error(`No paid mark for ${orderItemId}.`)
+  }
+  return mark
+}
+
+function headingOnTheConfirmation(): string {
+  return textOnScreen(`${CONFIRMATION} [data-test="cancellation-paid-heading"]`).trim()
+}
+
 describe('the table opened to cancel items', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -116,6 +130,59 @@ describe('the page that confirms the cancellation', () => {
     await openTheConfirmation(screen)
 
     expect(namesOnTheConfirmation()).toEqual(['Bratwurst', 'Cola'])
+  })
+
+  it('heads the mark column with Bezahlt in German and English', async () => {
+    openItemsLaptop(TABLE_REPORT, answer(CANCELLED))
+    const german = await mountScreenToCancelItems()
+    await tick(german, 137, 'Bratwurst')
+    await openTheConfirmation(german)
+    const germanHeading = headingOnTheConfirmation()
+    german.unmount()
+
+    const english = await mountScreenToCancelItems('en')
+    await tick(english, 137, 'Bratwurst')
+    await openTheConfirmation(english)
+
+    expect([germanHeading, headingOnTheConfirmation()]).toEqual(['Bezahlt', 'Paid'])
+  })
+
+  it('shows a green check on a paid item', async () => {
+    openItemsLaptop(TABLE_REPORT, answer(CANCELLED))
+    const screen = await mountScreenToCancelItems()
+    await tick(screen, 138, 'Wasser')
+    await openTheConfirmation(screen)
+
+    expect({
+      check: markOnTheConfirmation('item-settled').classList.contains('mdi-check'),
+      success: markOnTheConfirmation('item-settled').classList.contains('text-success'),
+    }).toEqual({ check: true, success: true })
+  })
+
+  it('shows a red x on an unpaid item', async () => {
+    openItemsLaptop(TABLE_REPORT, answer(CANCELLED))
+    const screen = await mountScreenToCancelItems()
+    await tick(screen, 137, 'Bratwurst')
+    await openTheConfirmation(screen)
+
+    expect({
+      close: markOnTheConfirmation('item-plain').classList.contains('mdi-close'),
+      error: markOnTheConfirmation('item-plain').classList.contains('text-error'),
+    }).toEqual({ close: true, error: true })
+  })
+
+  it('keeps the price beside every mark', async () => {
+    openItemsLaptop(TABLE_REPORT, answer(CANCELLED))
+    const screen = await mountScreenToCancelItems()
+    await tick(screen, 137, 'Bratwurst')
+    await tick(screen, 138, 'Wasser')
+    await openTheConfirmation(screen)
+
+    expect(
+      [...document.querySelectorAll(`${CONFIRMATION} [data-test="item-price"]`)].map(
+        (price) => price.textContent?.trim() ?? '',
+      ),
+    ).toEqual(['3,50 €', '2,00 €'])
   })
 
   it('asks whether to cancel the items in its title, with the buttons to cancel and go back', async () => {

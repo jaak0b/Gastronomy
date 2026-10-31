@@ -42,7 +42,9 @@ Frontend, under `frontend/src/phone/`:
   `AmountPaidDialog.vue`, the amount page: the selected total, the fields, the reason of a refusal,
   then Bar kassieren and Mit Karte kassieren, or Kassieren alone when nothing is to be paid, "Neu
   laden" while a reason shows (reloads and goes back to the table), and Abbrechen.
-  `CancelItemsDialog.vue` is the cancel page: the selected items with price and "Bezahlt", the cash
+  `CancelItemsDialog.vue` is the cancel page: the selected items under a "Bezahlt" heading, each
+  with the shared paid mark (`components/StatusMark.vue`, a green check when paid and a red cross
+  when not) and its price, the cash
   to give back when it is above zero (`phone.openItems.messages.cashToReturn`), the reason of a
   refusal, then Stornieren, "Neu laden" while a reason shows (reloads and goes back to the table),
   and Zurück. Both pages are built on `components/BaseFullPageDialog.vue`, the phone's full-screen
@@ -212,7 +214,8 @@ Backend, under `backend/`:
   by a row tap, whole table, whole order, the whole-order box empty, half taken and taken, settling
   from the footer, the notice when somebody else settled
   first), `OpenItems.cancelling.spec.ts` (cancel mode: the title, a paid item selectable by its row, the count in
-  German and English; the cancel page: the list, the title and buttons, the cash in both languages, sending and returning
+  German and English; the cancel page: the list with its Bezahlt heading and its paid and unpaid
+  marks, the title and buttons, the cash in both languages, sending and returning
   to the table, a refusal with its reload, the reload, the reason gone after the reload and after
   back, no answer, back), `OpenItems.settleButton.spec.ts` (the button in German and English, the amount filled in,
   a free selection, Bar, Karte and Abbrechen shut on the amount page while settling),
