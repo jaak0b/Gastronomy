@@ -22,6 +22,9 @@ public static class OrderQueries
   public static bool IsPartlySettled(this Order order) => order.HasItemsToSettle() && order.Items().Any(item => item.IsStillOrdered() && item.IsSettled());
 
   [Projectable]
+  public static bool MatchesOrderStatus(this Order order, OrderStatus? orderStatus) => orderStatus == null || (order.Items().Any(item => item.IsStillOrdered()) && order.Status() == orderStatus);
+
+  [Projectable]
   public static OrderStatus Status(this Order order) => order.HasItemsToHandOut() switch
                                                         {
                                                           false => OrderStatus.Fulfilled,

@@ -923,6 +923,30 @@ public sealed class OpenItemEndpointsTest
                     });
   }
 
+  [Test]
+  public async Task SearchTable_AnOrderWithEveryItemCancelled_IsNotAnsweredForASpecificOrderStatus()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync(_context.World.TableId);
+
+    using (var cancelled = await CancelAsync(_context.DeviceToken, itemIds))
+    {
+      Assert.That(cancelled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    using var includingCancelled = await _context.SendAsync(HttpMethod.Post, $"/api/open-items/tables/{_context.World.TableId}/search", new TableSearchBody("fulfilled", null, true));
+    using var hidingCancelled = await _context.SendAsync(HttpMethod.Post, $"/api/open-items/tables/{_context.World.TableId}/search", new TableSearchBody("fulfilled", null, false));
+    var everyItem = JsonDocument.Parse(await includingCancelled.Content.ReadAsStringAsync());
+    var hiddenItems = JsonDocument.Parse(await hidingCancelled.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(includingCancelled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(hidingCancelled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(everyItem.RootElement.GetProperty("orders").GetArrayLength(), Is.Zero);
+                      Assert.That(hiddenItems.RootElement.GetProperty("orders").GetArrayLength(), Is.Zero);
+                    });
+  }
+
   [TestCase("""{"orderStatus":"eaten"}""")]
   [TestCase("""{"orderStatus":7}""")]
   [TestCase("""{"paymentStatus":7}""")]

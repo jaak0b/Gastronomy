@@ -93,8 +93,8 @@ Backend, under `backend/`:
   `IGastronomyDatabase`: `SearchTableAsync` reads one table with the orders its options keep and
   every item of those orders, and answers the `TableOrderReportView` (running festival lookup, then
   one table statement, so two statements; the order status filter and the test that an order keeps
-  at least one item run in SQL inside the filtered include, through `OrderQueries.Status` and
-  `OrderItemQueries.MatchesTableSearch`; the same `MatchesTableSearch` then picks the items to send
+  at least one item run in SQL inside the filtered include, through `OrderQueries.MatchesOrderStatus`
+  and `OrderItemQueries.MatchesTableSearch`; the same `MatchesTableSearch` then picks the items to send
   in memory, into a `Core/Results/SearchedOrder` per order, because each order's two counts are
   taken over all of its items that are not cancelled, whatever the options; the item load includes
   `CurrentStatus.PreviousStatus`, which `OrderItemQueries.WasHandedOutWhenCancelled`
@@ -175,8 +175,9 @@ Backend, under `backend/`:
 - **The table search keeps or drops whole orders by status and single items by payment and
   cancellation.** Each option of `TableOrderSearchRequest` is optional and filters nothing when
   left out: `orderStatus` (`open`, `partiallyFulfilled`, `fulfilled`, the order's status as
-  `OrderQueries.Status` computes it, cancelled items left out, so an order whose items are all
-  cancelled counts as `fulfilled`) keeps or drops whole orders with all their items;
+  `OrderQueries.Status` computes it, and at least one item not cancelled, so an all-cancelled
+  order is answered only when `orderStatus` is left out and the item filters let its items
+  through) keeps or drops whole orders with all their items;
   `paymentStatus` (`paid`, `notPaid`) and `includeCancelled` (`false` leaves cancelled and
   acknowledged items out) keep or drop items. An order left with no item is not sent. Every screen
   sends all three options as the waiter picked them; Kassieren opens on `paymentStatus: notPaid`

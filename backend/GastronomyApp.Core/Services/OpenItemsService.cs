@@ -41,7 +41,7 @@ public sealed class OpenItemsService
 
     var table = await _database.Tables.AsNoTracking()
                                .Where(candidate => candidate.Id == tableId && candidate.FestivalId == festival.Id)
-                               .Include(candidate => candidate.Orders.Where(order => (orderStatus == null || order.Status() == orderStatus) && order.Items().Any(item => item.MatchesTableSearch(paymentStatus, includeCancelled)))
+                               .Include(candidate => candidate.Orders.Where(order => order.MatchesOrderStatus(orderStatus) && order.Items().Any(item => item.MatchesTableSearch(paymentStatus, includeCancelled)))
                                                               .OrderByDescending(order => order.CreatedAtUtc)
                                                               .ThenByDescending(order => order.GlobalOrderNumber))
                                .ThenInclude(order => order.StaffMember)

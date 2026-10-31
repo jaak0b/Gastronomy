@@ -258,6 +258,25 @@ public sealed class OpenItemsServiceTest
     Assert.That(search.Value.Orders.Select(order => order.GlobalOrderNumber), Is.EqualTo(new[] { 1 }));
   }
 
+  [Test]
+  public async Task SearchTableAsync_AnOrderWithEveryItemCancelledUnderASpecificStatus_IsNotSent()
+  {
+    var items = await PlaceOrderAsync("Tisch 12", 1, _orderedAtUtc, Line("Bratwurst", 350), Line("Bier", 400));
+    await CancelStoredAsync(items[0], _orderedAtUtc.AddMinutes(3));
+    await CancelStoredAsync(items[1], _orderedAtUtc.AddMinutes(4));
+    var tableId = await TableAsync("Tisch 12");
+
+    ErrorOr<TableOrderReportView> fulfilled = await _service.SearchTableAsync(tableId, OrderStatus.Fulfilled, null, true, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<TableOrderReportView> everyStatus = await _service.SearchTableAsync(tableId, null, null, true, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(fulfilled.Value.Orders, Is.Empty);
+                      Assert.That(everyStatus.Value.Orders, Has.Count.EqualTo(1));
+                      Assert.That(everyStatus.Value.Orders.Single().Items.Select(item => item.State), Is.All.EqualTo(OrderItemState.Cancelled));
+                    });
+  }
+
   [TestCase(PaymentStatus.Paid, "Bier")]
   [TestCase(PaymentStatus.NotPaid, "Bratwurst")]
   public async Task SearchTableAsync_APaymentStatus_KeepsOnlyTheItemsInThatStatus(PaymentStatus paymentStatus, string expectedItemName)
