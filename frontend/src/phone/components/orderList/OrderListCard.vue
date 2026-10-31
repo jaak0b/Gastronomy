@@ -59,6 +59,10 @@ function isSelectable(item: TableOrderRecordItemView): boolean {
   return props.purpose !== undefined && canBeSelected(item, props.purpose)
 }
 
+function isItemSelected(item: TableOrderRecordItemView): boolean {
+  return isSelectable(item) && props.selectedItemIds.includes(item.orderItemId)
+}
+
 function toggleWhenSelectable(item: TableOrderRecordItemView): void {
   if (isSelectable(item)) {
     emit('toggle-item', item.orderItemId)
@@ -82,7 +86,7 @@ function markColourFor(isDone: boolean): string {
   <v-card class="order-list-card mb-3" data-test="order-card" :data-test-id="order.globalOrderNumber">
     <v-defaults-provider :defaults="PHONE_ORDER_GRID_DEFAULTS">
       <v-card-text class="order-grid" :class="{ selecting: hasTickColumn }">
-        <div class="grid-row" data-test="order-header">
+        <div class="order-header" data-test="order-header">
           <div v-if="hasTickColumn" class="tick-cell">
             <v-checkbox-btn
               v-if="selectableItemIds.length > 0"
@@ -99,7 +103,7 @@ function markColourFor(isDone: boolean): string {
             <span class="app-small-text text-medium-emphasis" data-test="taken-by">{{ takenByText }}</span>
           </div>
         </div>
-        <div class="grid-row" data-test="column-headings">
+        <div class="column-headings" data-test="column-headings">
           <span class="done-counter app-small-text text-medium-emphasis" data-test="done-counter">{{ doneCounterText }}</span>
           <span class="column-heading app-small-text" data-test="paid-heading">{{ t('phone.openItems.labels.paid') }}</span>
           <span class="column-heading app-small-text" data-test="handed-out-heading">
@@ -110,21 +114,13 @@ function markColourFor(isDone: boolean): string {
         <div
           v-for="item in order.items"
           :key="item.orderItemId"
-          class="grid-row order-line"
-          :class="{ selectable: isSelectable(item) }"
+          class="order-line"
+          :class="{ selectable: isSelectable(item), selected: isItemSelected(item) }"
           data-test="order-line"
           :data-test-id="item.orderItemId"
+          :data-selected="purpose === undefined ? undefined : String(isItemSelected(item))"
           @click="toggleWhenSelectable(item)"
         >
-          <div v-if="hasTickColumn" class="tick-cell" data-test="tick-cell" :data-test-id="item.orderItemId">
-            <div v-if="isSelectable(item)" @click.stop>
-              <v-checkbox-btn
-                data-test="line-tick"
-                :model-value="selectedItemIds.includes(item.orderItemId)"
-                @update:model-value="emit('toggle-item', item.orderItemId)"
-              />
-            </div>
-          </div>
           <div class="line-name-cell" :class="{ 'cancelled-item': isCancelled(item.state) }" data-test="line-name-cell">
             <div class="app-item-name" data-test="line-name">{{ item.itemName }}</div>
             <div v-if="item.note !== null" class="app-small-text text-medium-emphasis" data-test="line-note">
@@ -146,7 +142,6 @@ function markColourFor(isDone: boolean): string {
             :icon="markIconFor(isMarkedHandedOut(item))"
           />
           <BaseIconAction
-            class="details-button"
             data-test="item-details"
             :data-test-id="item.orderItemId"
             icon="mdi-information-outline"
@@ -178,6 +173,20 @@ function markColourFor(isDone: boolean): string {
   grid-template-columns: 2rem minmax(0, 1fr) auto auto auto;
 }
 
+.order-header,
+.column-headings,
+.order-line {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+
+.order-line {
+  padding-inline: 0.5rem;
+  padding-block: 0.25rem;
+}
+
 .order-head {
   grid-column: 1 / -1;
 }
@@ -188,9 +197,20 @@ function markColourFor(isDone: boolean): string {
 
 .done-counter {
   grid-column: 1;
+  padding-inline-start: 0.5rem;
 }
 
 .order-grid.selecting .done-counter {
+  grid-column: 1 / span 2;
+}
+
+.line-name-cell {
+  grid-column: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.order-grid.selecting .line-name-cell {
   grid-column: 1 / span 2;
 }
 
@@ -199,25 +219,18 @@ function markColourFor(isDone: boolean): string {
   justify-self: center;
 }
 
-.grid-row {
-  display: contents;
-}
-
 .order-line.selectable {
   cursor: pointer;
+}
+
+.order-line.selected {
+  background-color: rgba(var(--v-theme-primary), 0.1);
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: -2px;
 }
 
 .tick-cell {
   display: flex;
   justify-content: center;
-}
-
-.line-name-cell {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.details-button {
-  margin-inline: -0.25rem;
 }
 </style>

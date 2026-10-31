@@ -233,12 +233,14 @@ describe('the orders of a table, shown to read', () => {
     expect(markOf(screen, 'paid-mark', 'cola')).toContain('mdi-check')
   })
 
-  it('offers no tick box anywhere, because the overview is only read', async () => {
+  it('offers no tick box and no selected state, because the overview is only read', async () => {
     stubLaptop().answers('POST', SEARCH, answer(TISCH_12))
 
     const screen = await mountTheOrders()
 
-    expect(screen.findAll('[data-test="tick-cell"], [data-test="whole-order"], [data-test="line-tick"]')).toHaveLength(0)
+    expect(
+      screen.findAll('[data-test="tick-cell"], [data-test="whole-order"], [data-test="line-tick"], [data-test="order-line"][data-selected]'),
+    ).toHaveLength(0)
   })
 
   it('shows the shared text of an empty list when the laptop finds no order', async () => {
@@ -403,6 +405,10 @@ describe('tapping an item on the overview', () => {
 
     await tap(screen, '[data-test="order-line"][data-test-id="wasser"] [data-test="line-name"]')
 
-    expect({ open: isOnScreen('[data-test="item-history"]'), asked: laptop.urls() }).toEqual({ open: false, asked: [] })
+    expect({
+      open: isOnScreen('[data-test="item-history"]'),
+      asked: laptop.urls(),
+      selected: screen.findAll('[data-test="order-line"][data-selected]').length,
+    }).toEqual({ open: false, asked: [], selected: 0 })
   })
 })

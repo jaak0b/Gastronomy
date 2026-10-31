@@ -52,14 +52,16 @@ describe('the orders of the table the waiter chose to settle', () => {
     expect([germanTitle, english.get('[data-test="settle-title"]').text()]).toEqual(['Kassieren', 'Take payment'])
   })
 
-  it('puts a check under Bezahlt on a settled position and leaves its tick box cell empty', async () => {
+  it('puts a check under Bezahlt on a settled position and leaves its row unselected', async () => {
     openItemsLaptop(TABLE_REPORT)
 
     const screen = await mountScreen()
 
     const settled = lineNamed(orderCard(screen, 138), 'Wasser')
     expect(settled.get('[data-test="paid-mark"]').classes()).toEqual(expect.arrayContaining(['mdi-check', 'text-success']))
-    expect(settled.get('[data-test="tick-cell"]').find('[data-test="line-tick"]').exists()).toBe(false)
+    expect(settled.attributes('data-selected')).toBe('false')
+    await settled.trigger('click')
+    expect(useOpenItemsStore().selectedItemIds).toEqual([])
   })
 
   it('shows the shared text of an empty list when the laptop finds no order to settle', async () => {
@@ -145,10 +147,10 @@ describe('a table opened with the order just sent ticked', () => {
     vi.unstubAllGlobals()
   })
 
-  function tickOf(screen: Awaited<ReturnType<typeof mountScreen>>, orderNumber: number) {
+  function selectedLinesOf(screen: Awaited<ReturnType<typeof mountScreen>>, orderNumber: number) {
     return orderCard(screen, orderNumber)
-      .findAll('[data-test="line-tick"] input')
-      .map((tick) => (tick.element as HTMLInputElement).checked)
+      .findAll('[data-test="order-line"]')
+      .map((line) => line.attributes('data-selected') === 'true')
   }
 
   it('ticks the open items of the order just sent and leaves the older order of the table unticked', async () => {
@@ -160,9 +162,9 @@ describe('a table opened with the order just sent ticked', () => {
     const screen = mount(OpenItems, { global: { plugins: testPlugins() }, attachTo: document.body })
     await flushPromises()
 
-    expect({ older: tickOf(screen, 137), justSent: tickOf(screen, 138) }).toEqual({
+    expect({ older: selectedLinesOf(screen, 137), justSent: selectedLinesOf(screen, 138) }).toEqual({
       older: [false],
-      justSent: [true, true],
+      justSent: [true, true, false],
     })
   })
 })
@@ -198,14 +200,15 @@ describe('a table with an item a waiter cancelled', () => {
     expect(lineNamed(screen, 'Bratwurst').get('[data-test="line-name-cell"]').classes()).not.toContain('cancelled-item')
   })
 
-  it('keeps the tick box column on the cancelled item and leaves it empty, so the names stay in line', async () => {
+  it('leaves the cancelled item unselectable', async () => {
     openItemsLaptop(WITH_CANCELLED_BIER)
 
     const screen = await mountScreen()
 
     const bier = lineNamed(screen, 'Bier')
-    expect(bier.find('[data-test="tick-cell"]').exists()).toBe(true)
-    expect(bier.find('[data-test="line-tick"]').exists()).toBe(false)
+    expect(bier.attributes('data-selected')).toBe('false')
+    await bier.trigger('click')
+    expect(useOpenItemsStore().selectedItemIds).toEqual([])
   })
 })
 
@@ -253,6 +256,7 @@ describe('tapping an item on the settle and the cancel screen', () => {
   ])('ticks the item and opens no history when the waiter taps its row on the %s screen', async (_, mountTheScreen) => {
     const laptop = openItemsLaptop(TISCH_12)
     const screen = await mountTheScreen()
+    const before = lineNamed(screen, 'Bratwurst').attributes('data-selected')
 
     await lineNamed(screen, 'Bratwurst').get('[data-test="line-name"]').trigger('click')
     await flushPromises()
@@ -260,7 +264,9 @@ describe('tapping an item on the settle and the cancel screen', () => {
     expect({
       historyAsked: laptop.callsTo('GET', '/api/open-items/items/item-1/history').length,
       ticked: useOpenItemsStore().selectedItemIds,
-    }).toEqual({ historyAsked: 0, ticked: ['item-1'] })
+      before,
+      after: lineNamed(screen, 'Bratwurst').attributes('data-selected'),
+    }).toEqual({ historyAsked: 0, ticked: ['item-1'], before: 'false', after: 'true' })
   })
 
   it('unticks the item when the waiter taps its row again', async () => {
@@ -282,11 +288,11 @@ describe('tapping an item on the settle and the cancel screen', () => {
     expect(useOpenItemsStore().selectedItemIds).toEqual([])
   })
 
-  it('ticks the item and opens no history when the waiter taps its tick box', async () => {
+  it('ticks the item and opens no history when the waiter taps its paid mark', async () => {
     const laptop = openItemsLaptop(TISCH_12)
     const screen = await mountScreen()
 
-    await lineNamed(screen, 'Bratwurst').get('[data-test="line-tick"] input').trigger('click')
+    await lineNamed(screen, 'Bratwurst').get('[data-test="paid-mark"]').trigger('click')
     await flushPromises()
 
     expect({

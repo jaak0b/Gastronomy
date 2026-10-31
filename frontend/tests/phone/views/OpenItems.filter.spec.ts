@@ -118,24 +118,24 @@ describe('the filter on the settle screen', () => {
     expect(useOpenItemsStore().selectedItemIds).toEqual(['item-plain'])
   })
 
-  it('puts a check under Bezahlt for a paid item and offers no tick box for it', async () => {
+  it('puts a check under Bezahlt for a paid item and leaves it unselected', async () => {
     openItemsLaptop(WITH_CANCELLED_COLA)
 
     const screen = await mountScreen()
 
     const wasser = lineNamed(orderCard(screen, 138), 'Wasser')
     expect(wasser.get('[data-test="paid-mark"]').classes()).toContain('mdi-check')
-    expect(wasser.find('[data-test="line-tick"]').exists()).toBe(false)
+    expect(wasser.attributes('data-selected')).toBe('false')
   })
 
-  it('strikes a cancelled item through and offers no tick box for it', async () => {
+  it('strikes a cancelled item through and leaves it unselected', async () => {
     openItemsLaptop(WITH_CANCELLED_COLA)
 
     const screen = await mountScreen()
 
     const cola = lineNamed(orderCard(screen, 138), 'Cola')
     expect(cola.get('[data-test="line-name-cell"]').classes()).toContain('cancelled-item')
-    expect(cola.find('[data-test="line-tick"]').exists()).toBe(false)
+    expect(cola.attributes('data-selected')).toBe('false')
   })
 })
 
@@ -207,21 +207,24 @@ describe('the filter on the cancel screen', () => {
     expect(screen.get('[data-test="no-orders"]').text()).toBe('Keine Einträge')
   })
 
-  it('lets the waiter tick a paid item', async () => {
+  it('lets the waiter select a paid item by tapping its row', async () => {
     openItemsLaptop(WITH_CANCELLED_COLA)
 
     const screen = await mountScreenToCancelItems()
 
-    expect(lineNamed(orderCard(screen, 138), 'Wasser').find('[data-test="line-tick"]').exists()).toBe(true)
+    await lineNamed(orderCard(screen, 138), 'Wasser').trigger('click')
+    await flushPromises()
+
+    expect(useOpenItemsStore().selectedItemIds).toContain('item-settled')
   })
 
-  it('strikes a cancelled item through and offers no tick box for it', async () => {
+  it('strikes a cancelled item through and leaves it unselected', async () => {
     openItemsLaptop(WITH_CANCELLED_COLA)
 
     const screen = await mountScreenToCancelItems()
 
     const cola = lineNamed(orderCard(screen, 138), 'Cola')
     expect(cola.get('[data-test="line-name-cell"]').classes()).toContain('cancelled-item')
-    expect(cola.find('[data-test="line-tick"]').exists()).toBe(false)
+    expect(cola.attributes('data-selected')).toBe('false')
   })
 })

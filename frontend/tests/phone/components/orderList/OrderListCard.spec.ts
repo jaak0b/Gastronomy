@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
+import type { VCheckboxBtn } from 'vuetify/components'
 import { createPinia, setActivePinia } from 'pinia'
 import OrderListCard from '../../../../src/phone/components/orderList/OrderListCard.vue'
 import type { TableOrderRecordItemView, TableOrderRecordView } from '../../../../src/shared/api/generatedSchemas'
@@ -57,6 +58,10 @@ function lineOf(card: Card, orderItemId: string) {
   return card.get(`[data-test="order-line"][data-test-id="${orderItemId}"]`)
 }
 
+function wholeOrderBoxOf(card: Card) {
+  return card.getComponent<typeof VCheckboxBtn>('[data-test="whole-order"]')
+}
+
 beforeEach(() => {
   setActivePinia(createPinia())
   document.body.innerHTML = ''
@@ -67,48 +72,58 @@ afterEach(() => {
 })
 
 describe('an order shown to read', () => {
-  it('heads the marks with Bezahlt and Ausgegeben and puts the counter on the same line', async () => {
+  it('heads the marks with Bezahlt und Ausgegeben and puts the counter on the same line', async () => {
     const card = mountTheCard()
 
     expect(card.findAll('[data-test="column-headings"] > [data-test]').map((heading) => heading.text())).toEqual(['1 / 2 zubereitet', 'Bezahlt', 'Ausgegeben'])
   })
 
-  it('has no tick box column', async () => {
+  it('has no tick box and no selected row, because the overview is only read', async () => {
     const card = mountTheCard()
 
-    expect(card.findAll('[data-test="tick-cell"], [data-test="whole-order"]')).toHaveLength(0)
+    expect(card.findAll('[data-test="whole-order"], [data-test="line-tick"], [data-test="order-line"][data-selected]')).toHaveLength(0)
   })
 })
 
-describe('an order with nothing to tick on an acting screen', () => {
-  const NOTHING_TO_TICK: TableOrderRecordView = {
-    ...ORDER_141,
-    items: [ORDER_141.items[1], ORDER_141.items[2]],
-  }
+describe('an order with nothing to select on an acting screen', () => {
+  const NOTHING_TO_SELECT_CASES: Array<{
+    purpose: SelectionPurpose
+    order: TableOrderRecordView
+    orderItemId: string
+    rowCount: number
+  }> = [
+    {
+      purpose: 'settling',
+      order: { ...ORDER_141, items: [ORDER_141.items[1], ORDER_141.items[2]] },
+      orderItemId: 'wasser',
+      rowCount: 2,
+    },
+    {
+      purpose: 'cancelling',
+      order: { ...ORDER_141, items: [ORDER_141.items[2]] },
+      orderItemId: 'cola',
+      rowCount: 1,
+    },
+  ]
 
-  it.each(['settling', 'cancelling'] as const)('has no tick box column on the screen for %s', async (purpose) => {
-    const card = mountTheCard(purpose === 'settling' ? 'settling' : 'cancelling', [], purpose === 'cancelling' ? { ...ORDER_141, items: [ORDER_141.items[2]] } : NOTHING_TO_TICK)
+  it.each(NOTHING_TO_SELECT_CASES)(
+    'shows no whole-order box and no selected row on the screen for $purpose',
+    async ({ purpose, order, orderItemId, rowCount }) => {
+      const card = mountTheCard(purpose, [], order)
 
-    expect(card.findAll('[data-test="tick-cell"], [data-test="whole-order"]')).toHaveLength(0)
-  })
+      expect({
+        wholeOrder: card.find('[data-test="whole-order"]').exists(),
+        selectedRows: card.findAll('[data-test="order-line"][data-selected="false"]').length,
+      }).toEqual({ wholeOrder: false, selectedRows: rowCount })
+
+      await lineOf(card, orderItemId).trigger('click')
+
+      expect(card.emitted('toggle-item')).toBeUndefined()
+    },
+  )
 })
 
 describe('an order on the settle screen', () => {
-  it('keeps a tick box cell on every item, empty for the paid and the cancelled one, so the names line up', async () => {
-    const card = mountTheCard('settling')
-
-    expect(
-      ['bier', 'wasser', 'cola'].map((id) => ({
-        cell: lineOf(card, id).find('[data-test="tick-cell"]').exists(),
-        tick: lineOf(card, id).find('[data-test="line-tick"]').exists(),
-      })),
-    ).toEqual([
-      { cell: true, tick: true },
-      { cell: true, tick: false },
-      { cell: true, tick: false },
-    ])
-  })
-
   it('puts the tick box for the whole order in the line with the order number', async () => {
     const card = mountTheCard('settling')
 
@@ -120,24 +135,63 @@ describe('an order on the settle screen', () => {
 
     expect(card.findAll('[data-test="column-headings"] > [data-test]').map((heading) => heading.text())).toEqual(['1 / 2 zubereitet', 'Bezahlt', 'Ausgegeben'])
   })
-
-  it('asks to tick an item when the waiter taps its tick box', async () => {
-    const card = mountTheCard('settling')
-
-    await lineOf(card, 'bier').get('[data-test="line-tick"] input').trigger('click')
-
-    expect(card.emitted('toggle-item')).toEqual([['bier']])
-  })
 })
 
 describe('an order on the cancel screen', () => {
-  it('offers a tick box for the paid item and none for the cancelled one', async () => {
-    const card = mountTheCard('cancelling')
+  it('leaves the paid item and the cancelled item to the existing selectability rules', async () => {
+    const card = mountTheCard('cancelling', ['wasser'])
 
     expect({
-      paid: lineOf(card, 'wasser').find('[data-test="line-tick"]').exists(),
-      cancelled: lineOf(card, 'cola').find('[data-test="line-tick"]').exists(),
-    }).toEqual({ paid: true, cancelled: false })
+      paid: lineOf(card, 'wasser').attributes('data-selected'),
+      cancelled: lineOf(card, 'cola').attributes('data-selected'),
+    }).toEqual({ paid: 'true', cancelled: 'false' })
+  })
+})
+
+describe('the whole-order box', () => {
+  it.each([
+    { selectedItemIds: [] as string[], checked: false, indeterminate: false },
+    { selectedItemIds: ['bier'], checked: false, indeterminate: true },
+    { selectedItemIds: ['bier', 'wasser'], checked: true, indeterminate: false },
+  ])('shows checked=$checked and indeterminate=$indeterminate for $selectedItemIds', ({ selectedItemIds, checked, indeterminate }) => {
+    const card = mountTheCard('cancelling', selectedItemIds)
+    const box = wholeOrderBoxOf(card)
+
+    expect({ checked: box.props('modelValue'), indeterminate: box.props('indeterminate') }).toEqual({ checked, indeterminate })
+  })
+
+  it('asks to set the whole order when the waiter taps it', async () => {
+    const card = mountTheCard('settling')
+
+    await card.get('[data-test="whole-order"] input').trigger('click')
+
+    const emitted = card.emitted('set-whole-order')
+    expect({ orderId: (emitted?.[0]?.[0] as TableOrderRecordView).orderId, isWanted: emitted?.[0]?.[1] }).toEqual({
+      orderId: 'order-141',
+      isWanted: true,
+    })
+  })
+})
+
+describe('the selected state of a row', () => {
+  it('marks the selected line and leaves the selectable and the unselectable ones unselected', async () => {
+    const card = mountTheCard('cancelling', ['wasser'])
+
+    expect({
+      bier: lineOf(card, 'bier').attributes('data-selected'),
+      wasser: lineOf(card, 'wasser').attributes('data-selected'),
+      cola: lineOf(card, 'cola').attributes('data-selected'),
+    }).toEqual({ bier: 'false', wasser: 'true', cola: 'false' })
+  })
+
+  it('leaves a paid and a cancelled line unselected on the settle screen', async () => {
+    const card = mountTheCard('settling', ['bier'])
+
+    expect({
+      bier: lineOf(card, 'bier').attributes('data-selected'),
+      wasser: lineOf(card, 'wasser').attributes('data-selected'),
+      cola: lineOf(card, 'cola').attributes('data-selected'),
+    }).toEqual({ bier: 'true', wasser: 'false', cola: 'false' })
   })
 })
 
@@ -183,6 +237,32 @@ describe('the details button of an item', () => {
 })
 
 describe('tapping the row of an item', () => {
+  const ORDER_WITH_NOTE: TableOrderRecordView = {
+    ...ORDER_141,
+    items: [itemOfOrder141('bier', 'Bier', { note: 'ohne Zwiebeln' }), ORDER_141.items[1], ORDER_141.items[2]],
+  }
+
+  it.each([
+    ['line name', '[data-test="line-name"]'],
+    ['note', '[data-test="line-note"]'],
+    ['paid mark', '[data-test="paid-mark"]'],
+    ['handed-out mark', '[data-test="handed-out-mark"]'],
+  ])('asks to tick the item when the waiter taps its %s', async (_, selector) => {
+    const card = mountTheCard('settling', [], ORDER_WITH_NOTE)
+
+    await lineOf(card, 'bier').get(selector).trigger('click')
+
+    expect(card.emitted('toggle-item')).toEqual([['bier']])
+  })
+
+  it('asks to tick the item when the waiter taps the empty part of its row', async () => {
+    const card = mountTheCard('settling')
+
+    await lineOf(card, 'bier').trigger('click')
+
+    expect(card.emitted('toggle-item')).toEqual([['bier']])
+  })
+
   it.each(['settling', 'cancelling'] as const)('asks to tick the item on the screen for %s', async (purpose) => {
     const card = mountTheCard(purpose)
 
@@ -199,14 +279,6 @@ describe('tapping the row of an item', () => {
     expect(card.emitted('toggle-item')).toBeUndefined()
   })
 
-  it('asks to tick only once when the waiter taps the tick box itself', async () => {
-    const card = mountTheCard('settling')
-
-    await lineOf(card, 'bier').get('[data-test="line-tick"] input').trigger('click')
-
-    expect(card.emitted('toggle-item')).toEqual([['bier']])
-  })
-
   it('opens nothing on the overview, where the row is only read', async () => {
     const laptop = stubLaptop()
     const card = mountTheCard()
@@ -214,10 +286,16 @@ describe('tapping the row of an item', () => {
     await lineOf(card, 'bier').get('[data-test="line-name"]').trigger('click')
     await flushPromises()
 
-    expect({ open: isOnScreen('[data-test="item-history"]'), asked: laptop.urls(), ticked: card.emitted('toggle-item') }).toEqual({
+    expect({
+      open: isOnScreen('[data-test="item-history"]'),
+      asked: laptop.urls(),
+      ticked: card.emitted('toggle-item'),
+      selected: card.findAll('[data-test="order-line"][data-selected]').length,
+    }).toEqual({
       open: false,
       asked: [],
       ticked: undefined,
+      selected: 0,
     })
   })
 })

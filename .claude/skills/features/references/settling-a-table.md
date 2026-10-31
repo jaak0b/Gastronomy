@@ -3,12 +3,13 @@
 A waiter taps a table on the plan and "Position kassieren", and the phone shows that table's items
 that are neither paid nor cancelled, order by order, in the shared order list of the
 `showing-a-tables-orders` page: the "Bezahlt" and "Ausgegeben" marks, the done counter and the
-details button that opens an item's price and history, plus a tick box column. Above the orders
-sits the overview's filter, set to "Positionen: Nicht bezahlt" with "Stornierte Positionen
-anzeigen" off every time the screen opens; the waiter can change it to see paid or cancelled items,
-and a paid one and a cancelled one (struck through) have an empty tick box cell. The waiter ticks
-what the guest pays for, by its tick box or by tapping its row, taps Kassieren under the selected
-total and, on the amount page, confirms what the table actually handed over, in cash or by card.
+details button that opens an item's price and history. Above the orders sits the overview's filter,
+set to "Positionen: Nicht bezahlt" with "Stornierte Positionen anzeigen" off every time the screen
+opens; the waiter can change it to see paid or cancelled items, and a paid one and a cancelled one
+(struck through) cannot be tapped. The waiter ticks what the guest pays for by tapping its row,
+taps Kassieren under the selected total and, on the amount page, confirms what the table actually
+handed over, in cash or by card. A selected row is tinted with the primary colour and carries a
+2px inset primary outline.
 
 The same view cancels items: "Position stornieren" on the table's action sheet opens it in cancel
 mode, which opens its filter on "Positionen: Alle" with "Stornierte Positionen anzeigen" off, so it
@@ -32,10 +33,11 @@ Frontend, under `frontend/src/phone/`:
   `table-plan` page) shows the table's current name, "Tischplan" and the reload, an icon whose tooltip says "Neu laden", the
   word the refusal notices name.
 - `components/openItems/`: `TableOrders.vue` (the box for the whole table, then one shared
-  `components/orderList/OrderListCard.vue` per order with the view's purpose and ticks, see the
-  `showing-a-tables-orders` page; the whole-order box sits in the order's header line, an item is
-  ticked through its own tick box or a tap anywhere on its row, and its details button opens its
-  price and history without ticking),
+  `components/orderList/OrderListCard.vue` per order with the view's purpose and selected ids, see
+  the `showing-a-tables-orders` page; the whole-order box sits in the order's header line, an item
+  is ticked by a tap anywhere on its row that is not the details button, and its details button
+  opens its price and history without ticking; a selected row is tinted with the primary colour and
+  carries a 2px inset primary outline),
   `SettleNotice.vue`, and
   `AmountPaidDialog.vue`, the amount page: the selected total, the fields, the reason of a refusal,
   then Bar kassieren and Mit Karte kassieren, or Kassieren alone when nothing is to be paid, "Neu
@@ -61,10 +63,11 @@ Frontend, under `frontend/src/phone/`:
   `selectedAmountCents`, `cashToReturnCents`, `isPaymentNoticeNeeded`,
   `isAPaymentMethodNeeded`, `canTheAmountBeSettled` and `noticeAfterSettling`; the hand-out and
   selection states are the generated `ShareState`. `canBeSelected(item, purpose)` is the one test
-  of what can be ticked (settling: not settled and not cancelled; cancelling: not cancelled); a row
-  shows its tick box, and a tap on it ticks, exactly when it says yes; otherwise the cell stays
-  empty and a tap does nothing. A cancelled row's name carries the shared class `cancelled-item` (`shared/styles/cancelledItems.css`,
-  the same struck-through look as on the station tablet). No row is tinted.
+  of what can be ticked (settling: not settled and not cancelled; cancelling: not cancelled); a tap
+  on a row ticks exactly when `canBeSelected` says yes, and otherwise a tap does nothing. A selected row carries
+  `data-selected="true"`, the primary tint and a 2px inset primary outline; there is no per-row tick
+  box. A cancelled row's name carries the shared class `cancelled-item` (`shared/styles/cancelledItems.css`,
+  the same struck-through look as on the station tablet). The read-only overview tints no row.
   `core/settlementSplit.ts` spreads the amount paid over the ticked lines.
 - `stores/openItems.ts` (`useOpenItemsStore`: `openTable`, `openTableAndSelectItemsOnceLoaded`,
   `openTableToCancelItems`, `closeTable`, `load`, `changeFilter`, `filter`, `listen`, `toggleItem`, `setWholeTable`,
@@ -198,16 +201,17 @@ Backend, under `backend/`:
 
 - `frontend/tests/phone/views`, on `openItemsFixture.ts`: `OpenItems.table.spec.ts` (loading by id,
   the title, a paid position, the shared empty list text, the laptop out of reach, the 404 in German and English, no table after a
-  reload, closing on leaving, the ticks of an order just sent, a cancelled item struck through with
-  an empty tick box cell, the details button on both screens opening the price and the history
+  reload, closing on leaving, the selected rows of an order just sent, a cancelled item struck
+  through and unselectable, the details button on both screens opening the price and the history
   without ticking, a row tap ticking on both screens and unticking again, a row tap on a paid item
-  ticking nothing, a tap on the tick box ticking without the history), `OpenItems.filter.spec.ts`
+  ticking nothing, a tap on a status mark ticking without the history), `OpenItems.filter.spec.ts`
   (each screen's filter when it opens and what it sends, the picks sent as made, the filter back
   on its own choices when the screen opens again, ticks dropped for items a pick hides, the paid
-  check and no tick box on Kassieren, a paid item tickable on Stornieren, the struck-through
+  check on Kassieren, a paid item selectable by tapping its row on Stornieren, the struck-through
   cancelled row on both, the shared empty list text on both screens), `OpenItems.ticking.spec.ts` (ticking
-  through the tick box, whole table, whole order, settling from the footer, the notice when somebody else settled
-  first), `OpenItems.cancelling.spec.ts` (cancel mode: the title, a paid item tickable, the count in
+  by a row tap, whole table, whole order, the whole-order box empty, half taken and taken, settling
+  from the footer, the notice when somebody else settled
+  first), `OpenItems.cancelling.spec.ts` (cancel mode: the title, a paid item selectable by its row, the count in
   German and English; the cancel page: the list, the title and buttons, the cash in both languages, sending and returning
   to the table, a refusal with its reload, the reload, the reason gone after the reload and after
   back, no answer, back), `OpenItems.settleButton.spec.ts` (the button in German and English, the amount filled in,

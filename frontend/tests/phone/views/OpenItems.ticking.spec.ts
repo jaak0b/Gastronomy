@@ -1,18 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
+import type { VCheckboxBtn } from 'vuetify/components'
 import { createPinia, setActivePinia } from 'pinia'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
-import { TABLE_REPORT, TISCH_12, isHalfTaken, orderCard, tickLine, mountScreen, openItemsLaptop } from './openItemsFixture'
+import { TABLE_REPORT, TISCH_12, isHalfTaken, lineNamed, orderCard, tickLine, mountScreen, openItemsLaptop } from './openItemsFixture'
 import { answer } from '../../support/laptop'
 import { clickOn } from '../../support/dom'
 import { nextTick } from 'vue'
 
 enableAutoUnmount(afterEach)
 
-function tickOf(screen: Awaited<ReturnType<typeof mountScreen>>, orderNumber: number) {
+function selectedLinesOf(screen: Awaited<ReturnType<typeof mountScreen>>, orderNumber: number) {
   return orderCard(screen, orderNumber)
-    .findAll('[data-test="line-tick"] input')
-    .map((tick) => (tick.element as HTMLInputElement).checked)
+    .findAll('[data-test="order-line"]')
+    .map((line) => line.attributes('data-selected') === 'true')
+}
+
+function wholeOrderBoxOf(screen: Awaited<ReturnType<typeof mountScreen>>, orderNumber: number) {
+  return orderCard(screen, orderNumber).getComponent<typeof VCheckboxBtn>('[data-test="whole-order"]')
 }
 
 describe('ticking what the guests at one table pay for', () => {
@@ -33,12 +38,15 @@ describe('ticking what the guests at one table pay for', () => {
     expect(screen.find('[data-test="settle-footer"]').exists()).toBe(false)
   })
 
-  it('ticks an item when the waiter taps its tick box', async () => {
+  it('ticks an item when the waiter taps its row', async () => {
     const screen = await mountScreen()
 
     await tickLine(orderCard(screen, 137), 'Bratwurst')
 
-    expect(useOpenItemsStore().selectedItemIds).toEqual(['item-plain'])
+    expect({
+      selected: useOpenItemsStore().selectedItemIds,
+      marked: lineNamed(orderCard(screen, 137), 'Bratwurst').attributes('data-selected'),
+    }).toEqual({ selected: ['item-plain'], marked: 'true' })
   })
 
   it('settles a ticked position through the footer under the orders', async () => {
@@ -82,9 +90,9 @@ describe('ticking what the guests at one table pay for', () => {
     await orderCard(screen, 138).get('[data-test="whole-order"] input').trigger('click')
     await nextTick()
 
-    expect({ first: tickOf(screen, 137), second: tickOf(screen, 138), third: tickOf(screen, 139) }).toEqual({
+    expect({ first: selectedLinesOf(screen, 137), second: selectedLinesOf(screen, 138), third: selectedLinesOf(screen, 139) }).toEqual({
       first: [false],
-      second: [true, true],
+      second: [true, true, false],
       third: [false],
     })
   })
@@ -109,7 +117,27 @@ describe('ticking what the guests at one table pay for', () => {
     await orderCard(screen, 138).get('[data-test="whole-order"] input').trigger('click')
     await nextTick()
 
-    expect(tickOf(screen, 138)).toEqual([true, true])
+    expect(selectedLinesOf(screen, 138)).toEqual([true, true, false])
+  })
+
+  it('shows the whole-order box as empty, half taken and taken with its items', async () => {
+    const screen = await mountScreen()
+    const boxOf = () => wholeOrderBoxOf(screen, 138)
+    const states = () => ({ checked: boxOf().props('modelValue'), indeterminate: boxOf().props('indeterminate') })
+
+    const none = states()
+    await tickLine(orderCard(screen, 138), 'Bier')
+    await nextTick()
+    const some = states()
+    await orderCard(screen, 138).get('[data-test="whole-order"] input').trigger('click')
+    await nextTick()
+    const all = states()
+
+    expect({ none, some, all }).toEqual({
+      none: { checked: false, indeterminate: false },
+      some: { checked: false, indeterminate: true },
+      all: { checked: true, indeterminate: false },
+    })
   })
 
   it('offers no header tick on an order whose items are all settled', async () => {

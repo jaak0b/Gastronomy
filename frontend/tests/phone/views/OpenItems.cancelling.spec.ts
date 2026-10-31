@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { TABLE_REPORT, lineNamed, mountScreenToCancelItems, openItemsLaptop, orderCard, tickLine } from './openItemsFixture'
 import { answer, inTurn, noConnection, refusal, stubLaptop } from '../../support/laptop'
 import { clickOn, isOnScreen, textOnScreen } from '../../support/dom'
@@ -58,10 +59,16 @@ describe('the table opened to cancel items', () => {
     expect(screen.get('[data-test="settle-title"]').text()).toBe('Stornieren')
   })
 
-  it('lets the waiter tick an item that is already paid', async () => {
+  it('lets the waiter select an item that is already paid by tapping its row', async () => {
     const screen = await mountScreenToCancelItems()
 
-    expect(lineNamed(orderCard(screen, 138), 'Wasser').find('[data-test="line-tick"]').exists()).toBe(true)
+    await lineNamed(orderCard(screen, 138), 'Wasser').trigger('click')
+    await flushPromises()
+
+    expect({
+      selected: useOpenItemsStore().selectedItemIds,
+      marked: lineNamed(orderCard(screen, 138), 'Wasser').attributes('data-selected'),
+    }).toEqual({ selected: ['item-settled'], marked: 'true' })
   })
 
   it('counts the ticked items and offers to cancel them', async () => {

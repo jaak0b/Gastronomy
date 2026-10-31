@@ -180,7 +180,7 @@ export function lineNamed(container: MountedScreen | ScreenPart, itemName: strin
 }
 
 export async function tickLine(container: MountedScreen | ScreenPart, itemName: string): Promise<void> {
-  await lineNamed(container, itemName).get('[data-test="line-tick"] input').trigger('click')
+  await lineNamed(container, itemName).trigger('click')
   await flushPromises()
 }
 
