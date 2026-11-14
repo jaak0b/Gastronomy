@@ -160,7 +160,7 @@ public sealed class OrderItemQueriesTest
   }
 
   [Test]
-  public async Task WhereFestivalIs_ItemsOfTwoFestivals_KeepsThoseOfTheFestivalAskedFor()
+  public async Task WhereStationOrderFestivalIs_ItemsOfTwoFestivals_KeepsThoseOfTheFestivalAskedFor()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
@@ -169,7 +169,7 @@ public sealed class OrderItemQueriesTest
     await AddItemAsync(fixture, seeded, await PlaceOrderAsync(fixture, seeded, autumnFestivalId), "Kürbissuppe", null, null);
     await using var readContext = fixture.CreateContext();
 
-    IReadOnlyList<string> names = await readContext.OrderItems.WhereFestivalIs(seeded.FestivalId).Select(item => item.ItemName).ToListAsync(TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<string> names = await readContext.OrderItems.WhereStationOrderFestivalIs(seeded.FestivalId).Select(item => item.ItemName).ToListAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.That(names, Is.EqualTo(new[] { "Bratwurst" }));
   }

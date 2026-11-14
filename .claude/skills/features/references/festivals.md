@@ -33,7 +33,7 @@ Backend, under `backend/`:
   `BreakTheCycleBetweenEachItemAndItsCurrentStatusAsync`), then
   `RemoveThePlanTheMenuTheStationLinksAndTheStockAsync` (station shapes, tables, areas, assignments,
   menu rows, station links, stock rows), then the festival. It finds every row through
-  `WhereFestivalIs`: the one in `OrderItemQueries` for the items, the one in
+  `WhereStationOrderFestivalIs` in `OrderItemQueries` for the items, `WhereFestivalIs` in
   `FestivalScopedQueries` for the rest (see the `query-building-blocks` page). The list projects with
   `ProjectToType<AdminFestivalView>()` (the station and menu counts are query expressions in
   `Core/Mapping/FestivalMapping.cs`), counts the orders per festival in one grouped query and sets

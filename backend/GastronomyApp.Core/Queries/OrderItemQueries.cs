@@ -22,7 +22,7 @@ public static class OrderItemQueries
     return items.Where(item => item.IsToHandOutOrToSettle());
   }
 
-  public static IQueryable<OrderItem> WhereFestivalIs(this IQueryable<OrderItem> items, Guid festivalId)
+  public static IQueryable<OrderItem> WhereStationOrderFestivalIs(this IQueryable<OrderItem> items, Guid festivalId)
   {
     return items.Where(item => item.StationOrder.FestivalId == festivalId);
   }

@@ -27,13 +27,14 @@ public sealed class StockSoldOutMarker
       return [];
 
     Dictionary<Guid, double> consumedByIngredientId = await _database.OrderItems.AsNoTracking()
-                                                                     .WhereFestivalIs(festivalId)
+                                                                     .WhereStationOrderFestivalIs(festivalId)
                                                                      .ConsumedIngredients(_database.CatalogItemIngredients)
                                                                      .GroupBy(consumed => consumed.IngredientId)
                                                                      .Select(group => new
                                                                                       {
                                                                                         IngredientId = group.Key,
-                                                                                        ConsumedAmount = group.Sum(consumed => consumed.Amount)
+                                                                                        ConsumedAmount
+                                                                                          = group.Sum(consumed => consumed.Amount)
                                                                                       })
                                                                      .ToDictionaryAsync(consumption => consumption.IngredientId, consumption => consumption.ConsumedAmount, cancellationToken);
     Dictionary<Guid, double> availableByIngredientId = limitedStock.ToDictionary(stock => stock.IngredientId, stock => stock.AvailableAmount!.Value);

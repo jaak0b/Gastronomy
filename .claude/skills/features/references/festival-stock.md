@@ -29,7 +29,7 @@ Backend, under `backend/`:
 - `Queries/OrderItemQueries.ConsumedIngredients` is the one join of order items and recipe lines (one
   `Results/ConsumedIngredient` per recipe line of an ordered item that is not cancelled, with the
   order time), so no caller can count a cancelled item. Both callers narrow the items with
-  `OrderItemQueries.WhereFestivalIs` first. The list groups it per ingredient and order
+  `OrderItemQueries.WhereStationOrderFestivalIs` first. The list groups it per ingredient and order
   time; the sold-out marker groups it per ingredient.
 - Routes: `GET /api/admin/festivals/{festivalId}/ingredients` and `PUT .../ingredients/{ingredientId}`
   in `Endpoints/AdminFestivalEndpoints.cs`, calling `FestivalStockService` directly.

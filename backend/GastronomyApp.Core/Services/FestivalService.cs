@@ -139,7 +139,7 @@ public sealed class FestivalService
 
   private async Task RemoveTheOrdersWithTheirStationOrdersItemsAndStatusesAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    var items = await _database.OrderItems.Include(item => item.Statuses).WhereFestivalIs(festivalId).ToListAsync(cancellationToken);
+    var items = await _database.OrderItems.Include(item => item.Statuses).WhereStationOrderFestivalIs(festivalId).ToListAsync(cancellationToken);
 
     await BreakTheCycleBetweenEachItemAndItsCurrentStatusAsync(items, cancellationToken);
     _database.OrderItemStatuses.RemoveRange(items.SelectMany(item => item.Statuses));

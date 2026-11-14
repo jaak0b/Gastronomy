@@ -61,7 +61,7 @@ public sealed class TablePlanService
 
   private async Task<IReadOnlyList<TableHoldingItems>> FindTablesHoldingItemsAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    return await _database.OrderItems.AsNoTracking().WhereToHandOutOrToSettle().WhereFestivalIs(festivalId).Select(item => new TableHoldingItems(item.StationOrder.Order.TableId, item.StationOrder.Order.Table.AreaId)).Distinct().ToListAsync(cancellationToken);
+    return await _database.OrderItems.AsNoTracking().WhereToHandOutOrToSettle().WhereStationOrderFestivalIs(festivalId).Select(item => new TableHoldingItems(item.StationOrder.Order.TableId, item.StationOrder.Order.Table.AreaId)).Distinct().ToListAsync(cancellationToken);
   }
 
   private sealed record TableHoldingItems(Guid TableId, Guid AreaId);

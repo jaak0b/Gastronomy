@@ -88,7 +88,7 @@ public sealed class FestivalStockService
   private async Task<IReadOnlyDictionary<Guid, IReadOnlyDictionary<DateTime, double>>> ConsumedByOrderTimeAsync(Guid festivalId, CancellationToken cancellationToken)
   {
     var consumption = await _database.OrderItems.AsNoTracking()
-                                     .WhereFestivalIs(festivalId)
+                                     .WhereStationOrderFestivalIs(festivalId)
                                      .ConsumedIngredients(_database.CatalogItemIngredients)
                                      .GroupBy(consumed => new
                                                           {
