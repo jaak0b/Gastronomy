@@ -34,6 +34,13 @@ const { t } = useI18n()
 function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
   return props.isAFestivalRunning && item.atTheFestival !== null
 }
+
+function ingredientCountText(item: AdminItemView): string {
+  const count = item.ingredients.length
+  return count === 0
+    ? t('admin.ingredients.labels.noIngredients')
+    : t('admin.ingredients.labels.ingredientCount', { count }, count)
+}
 </script>
 
 <template>
@@ -81,6 +88,9 @@ function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
         </v-chip>
       </template>
       <template #actions>
+        <span class="app-small-text text-medium-emphasis" data-test="ingredient-count">
+          {{ ingredientCountText(item) }}
+        </span>
         <v-btn data-test="edit-ingredients" variant="text" @click="emit('edit-ingredients', item)">
           {{ t('admin.ingredients.actions.edit') }}
         </v-btn>

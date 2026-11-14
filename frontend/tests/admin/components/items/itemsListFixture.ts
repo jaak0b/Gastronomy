@@ -143,8 +143,8 @@ export function itemsListLaptop(scenario: ItemsListScenario = {}): StubbedLaptop
     )
 }
 
-export function mountList() {
-  return mount(ItemsList, { global: { plugins: testPlugins() }, attachTo: document.body })
+export function mountList(locale: 'de' | 'en' = 'de') {
+  return mount(ItemsList, { global: { plugins: testPlugins(locale) }, attachTo: document.body })
 }
 
 export async function openTheRecipe(list: VueWrapper): Promise<void> {

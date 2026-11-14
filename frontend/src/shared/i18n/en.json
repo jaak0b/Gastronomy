@@ -409,7 +409,9 @@
         "availableIngredients": "Available ingredients",
         "search": "Search",
         "unitAfterName": "· {unit}",
-        "deleteTitle": "Delete this ingredient?"
+        "deleteTitle": "Delete this ingredient?",
+        "noIngredients": "No ingredients",
+        "ingredientCount": "{count} ingredient | {count} ingredients"
       },
       "actions": {
         "edit": "Edit ingredients",

@@ -100,7 +100,7 @@ function hidingRefusalOf(area: AdminAreaView): string | null {
             />
           </template>
           <template #details="{ entry: area }">
-            <span class="table-count app-small-text text-medium-emphasis" data-test="table-count">
+            <span class="app-small-text text-medium-emphasis" data-test="table-count">
               {{ tableCountTexts.get(area.areaId) }}
             </span>
             <v-btn

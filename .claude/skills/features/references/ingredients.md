@@ -151,7 +151,12 @@ Frontend, under `frontend/src/`:
   not added to the recipe; the search is cleared first when it would hide that row (`afterSaving` of
   `useEditSession`).
 - A recipe is read and changed only in that popup. The article row on the Artikel tab shows no
-  recipe line.
+  recipe line, only how many lines the recipe has, directly before "Zutaten bearbeiten"
+  (`ingredientCountText` in `ItemsListCategorySection.vue`:
+  `admin.ingredients.labels.noIngredients` for none, the plural key
+  `admin.ingredients.labels.ingredientCount` otherwise). It counts the `ingredients` the article
+  view carries, on every row the tab shows, deactivated ones included, and follows a recipe change
+  when `ConfigurationChanged` reloads the items store.
 - Removing a recipe line asks first (`BaseConfirmDialog`). A warning under a recipe line or under an
   ingredient row clears as soon as that row is edited again (see the row warnings page of `how-to`).
 - The popup reloads on `ConfigurationChanged` through the stores `ItemsList.vue` listens to.
@@ -188,8 +193,10 @@ Frontend, under `frontend/src/`:
   trash reached through the open ingredient form and a recipe line renamed through its pencil,
   `ItemsList.renamedIngredient.spec.ts` for a rename behind the open recipe and
   `ItemsList.recipeReload.spec.ts` for the available list that follows an added or removed line once
-  `ConfigurationChanged` reloads the ingredients); `components/BaseDeleteAction.spec.ts`;
-  `components/AdminLoadFailureBar.spec.ts` (the bar inside the popup); `core/nameSearch.spec.ts`,
+  `ConfigurationChanged` reloads the ingredients, `ItemsList.ingredientCount.spec.ts` for the count
+  on the article row in both languages, on a deactivated row and after `ConfigurationChanged`);
+  `components/BaseDeleteAction.spec.ts`; `components/AdminLoadFailureBar.spec.ts` (the bar inside
+  the popup); `core/nameSearch.spec.ts`,
   `core/ingredientAmounts.spec.ts` and `composables/useIngredientAmountText.spec.ts`. Fixtures come
   from `anAdminIngredient`, `anAdminItem`, `anAdminItemIngredient` and `anAdminUnit` in
   `tests/support/wireViews.ts`.
