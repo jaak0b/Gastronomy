@@ -53,6 +53,10 @@ export function drawnTablesOf(area: AdminAreaView): AdminTableView[] {
   return area.tables.filter((table) => !table.isHidden)
 }
 
+export function waitersSeeATable(areas: readonly AdminAreaView[]): boolean {
+  return areas.some((area) => !area.isHidden && drawnTablesOf(area).length > 0)
+}
+
 export function hiddenTablesOf(area: AdminAreaView): AdminTableView[] {
   return area.tables
     .filter((table) => table.isHidden)

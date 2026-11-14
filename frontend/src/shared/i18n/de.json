@@ -393,8 +393,6 @@
         "zoomOut": "Verkleinern"
       },
       "messages": {
-        "noArea": "Die Kellner sehen noch keinen Tischplan. Klicken Sie auf „Neuer Tischplan“.",
-        "noTable": "Die Kellner sehen noch keinen Tisch. Klicken Sie bei einem Tischplan auf „Tischplan öffnen“.",
         "hideAreaBody": "Die Kellner sehen diesen Tischplan dann nicht mehr.",
         "hideTableBody": "Die Kellner sehen diesen Tisch dann nicht mehr.",
         "removeStationBody": "Die Ausgabestelle wird nur aus diesem Tischplan entfernt."
@@ -487,6 +485,7 @@
         "missingFestival": "Legen Sie zuerst ein Fest an.",
         "missingItems": "Fügen Sie diesem Fest Artikel hinzu und tragen Sie die Preise ein.",
         "missingStation": "Fügen Sie diesem Fest eine Ausgabestelle hinzu, zum Beispiel Küche und Theke.",
+        "missingTable": "Legen Sie für dieses Fest einen Tischplan an und zeichnen Sie die Tische ein.",
         "noFestivalIsRunning": "Kein Fest aktiv",
         "ready": "Alles ist eingerichtet. Sie können jetzt die Telefone und die Tablets einrichten."
       }
@@ -535,8 +534,8 @@
         "nameMissing": "Geben Sie der Kategorie einen Namen, bevor Sie speichern.",
         "nameTaken": "Eine Kategorie mit diesem Namen ist bereits vorhanden. Wählen Sie einen anderen Namen."
       },
-        "activeFestivalCannotBeDeleted": "Ein aktives Fest kann nicht gelöscht werden.",
       "festivals": {
+        "activeFestivalCannotBeDeleted": "Ein aktives Fest kann nicht gelöscht werden.",
         "areaNameTaken": "Der Name ist in diesem Fest bereits an einen Tischplan vergeben, auch an einen ausgeblendeten. Wählen Sie einen anderen Namen.",
         "areaWithItemsToHandOutOrSettleStaysShown": "Solange ein Fest aktiv ist, kann ein Tischplan erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und kassiert ist.",
         "itemNeedsAStation": "Wählen Sie mindestens eine Ausgabestelle für den Artikel.",

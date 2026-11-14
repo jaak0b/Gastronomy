@@ -39,7 +39,6 @@ const props = defineProps<{
 const emit = defineEmits<{ saved: [saved: TSaved, mode: EditSessionMode] }>()
 defineSlots<{
   heading: () => unknown
-  notices?: () => unknown
   details?: (scope: { entry: TEntry }) => unknown
   dialog: (scope: {
     entry: TEntry | null
@@ -113,8 +112,6 @@ async function move(entry: TEntry, direction: MoveDirection): Promise<void> {
       <slot name="heading" />
     </BaseHeadingWithCheckbox>
 
-    <slot name="notices" />
-
     <BaseEmptyListText v-if="showsEmptyListText" class="mb-3" />
 
     <div v-if="listedEntries.length > 0" class="rows mb-3">
@@ -152,10 +149,10 @@ async function move(entry: TEntry, direction: MoveDirection): Promise<void> {
           >
             <template #default="{ refused }">
               <BaseTrashButton
-                :label="hideTitle"
                 class="hide-entry"
                 data-test="hide-entry"
                 :disabled="refused"
+                :label="hideTitle"
                 @click="askToHide(entry)"
               />
             </template>

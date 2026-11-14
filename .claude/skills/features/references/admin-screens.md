@@ -17,6 +17,14 @@ Frontend, under `frontend/src/`:
   list is the admin's first screen: switching tabs replaces the history entry, and back from any
   tab or from a festival's page lands on the festival list (see the `back-button` page).
 - `admin/components/overview/AdminOverview.vue` is Übersicht, the report on the running festival.
+  Every setup step still missing is one warning, in this order: a station at the festival, a
+  category, articles on the menu, articles without a station, and a table the waiters see
+  (`missingTable`, decided by `waitersSeeATable` in `admin/core/tablePlanPlacement.ts`: a shown
+  table in a shown area). The table step is judged only on the plan of the running festival
+  (`loadStateAtTheFestival`) and stays until that plan has arrived, never on another festival's plan
+  the store still holds; the four lists of the running festival load side by side.
+  "Alles ist eingerichtet" shows only once no step is missing. Texts:
+  `admin.overview.messages.*`.
 - `admin/components/AdminLoadFailureBar.vue` is the one load failure bar, mounted by `AdminShell.vue`
   directly below the tabs, by `items/ItemIngredientsDialog.vue` at the top of the recipe and by
   `ingredients/IngredientDialog.vue` at the top of the form. It reads `showsLoadFailure` from
@@ -42,7 +50,10 @@ Frontend, under `frontend/src/`:
   `UpdateAsync`, `MoveAsync`, `DeactivateAsync`; switching on again is `ActivationService`), mapped in
   `Core/Mapping/CatalogCategoryMapping.cs`, with the routes in `Api/Endpoints/AdminCategoryEndpoints.cs`. A name is
   trimmed and compared in SQL without regard to case (`NamedQueries.Namesakes`); deactivating is refused while
-  an active article is in the category.
+  an active article is in the category. The category's trash is disabled for that same reason, with
+  `errors.admin.categories.hasActiveItems` as its tooltip, from the articles the tab already holds
+  (`categoryIdsWithActiveItems` in `ItemsList.vue`); the laptop keeps its check. Tests:
+  `ItemsList.categories.spec.ts`.
 - **Every row is the same row**: the global tabs and the festival page draw each entry with
   `BaseListRow.vue`, so names, chips, the line between rows and the stripes (a light tint on every
   row, a stronger one on every second row) look alike everywhere.
@@ -70,7 +81,7 @@ Frontend, under `frontend/src/`:
   registers the store's `loadFailed` until the screen closes, so a list a former screen failed to
   load never keeps the bar up. After the laptop restarts, the reconnect's `GroupsJoined` reloads
   every listening list, each successful load clears its `loadFailed`, and the bar goes away
-  without a click. Übersicht listens to its four lists like every other screen. The recipe popup
+  without a click. Übersicht listens to its five lists like every other screen. The recipe popup
   (`items/ItemIngredientsDialog.vue`) and the ingredient form (`ingredients/IngredientDialog.vue`)
   mount the same `AdminLoadFailureBar` at their top, because an open dialog dims the page and its
   bar; it is the same component with the same condition, never a text of its own.

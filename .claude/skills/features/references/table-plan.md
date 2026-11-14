@@ -6,8 +6,9 @@ tables and the shapes of the festival's stations placed in it, each drawn as a r
 can move and resize. Every order belongs to one table of the plan. A waiter's phone reads the
 running festival's plan, where each table shows by its fill how far its orders are handed out and by
 its border how far they are settled. The admin keeps the areas on the "Tischplan" card of the
-festival page and draws each area on a page of its own. Areas and tables are never deleted, only
-hidden and shown again; a station's shape is the one thing that is deleted. The phone opens on the plan: the list of areas, or the
+festival page and draws each area on a page of its own. Areas and tables are deleted only with
+their festival and are otherwise hidden and shown again; a station's shape is the one thing that is
+deleted on its own. The phone opens on the plan: the list of areas, or the
 plan itself when there is only one area, and tapping a table offers to take an order there or to
 settle it. In code the whole thing is the table plan, never a layout.
 
@@ -50,7 +51,7 @@ Backend, under `backend/`:
   or to settle, cancelled items left out, stays shown while the festival runs (`WhereToHandOutOrToSettle()` from
   `Core/Queries/OrderItemQueries.cs`, the filter every "item still owed" question shares, asked only
   when `RunningFestivalLookup.IsRunning` says the festival runs, the one home of "only while it
-  runs" that the stations use too, see the `festivals` page). Showing is the festival-scoped `ActivationService.ShowAsync<TEntity, TView>(festivalId, id, ...)`, constrained on `IHideable` and `IFestivalScoped`, which looks the row up inside the
+  runs" that the stations use too, see the `festivals` page). Showing is the festival-scoped `ActivationService.ShowAsync<TEntity, TView>(festivalId, id, ...)`, constrained on `IEntity`, `IHideable` and `IFestivalScoped`, which looks the row up inside the
   festival of the route, so a row of another festival is not found. Copy and move load the
   requested tables of the festival in one query and save once, so a selection is stored in one
   transaction. `FestivalStationService.PlaceShapeAsync` and `RemoveShapeAsync` (place or move, remove) keep the shapes.
@@ -134,7 +135,7 @@ Frontend, under `frontend/src/`:
   `admin/components/HideableEntryList.vue` (see the `hideable-rows` how-to page). The heading line
   carries "Tischplan" and, at its right, "Ausgeblendete anzeigen", placed like "Deaktivierte
   anzeigen" on the Artikel tab. A row has the name as text, the number of shown tables (one
-  computed text per area), then "Tischplan öffnen", the up and down arrows of the category rows
+  computed text per area, counting `drawnTablesOf`), then "Tischplan öffnen", the up and down arrows of the category rows
   (`BaseMoveButtons.vue`), which move the area the moment they are pressed, past the next area on
   screen: while "Ausgeblendete anzeigen" is unticked a hidden area is passed over and keeps its
   place, and while it is ticked every area counts. Then the pencil (`BaseEditButton.vue`) opening
@@ -144,11 +145,8 @@ Frontend, under `frontend/src/`:
   the rows and opens the same dialog, empty; the dialog sends the name only, and the laptop puts
   the new area after the last one, hidden ones included. The trash icon is disabled with the reason as a tooltip while the
   festival runs and a table of the area has items to hand out or settle. A taken name shows in the
-  dialog. The warnings appear under the heading only once the plan of this festival has arrived,
-  each a `BaseWarningText.vue` like the stock card's, and count only what waiters see: no area at
-  all (`noArea`, naming "Neuer Tischplan") or shown areas without a shown table (`noTable`, naming
-  "Tischplan öffnen"). When every area is hidden, no warning shows: the admin hid them and sees
-  them under "Ausgeblendete anzeigen".
+  dialog. Whether the waiters see any table is a setup step on Übersicht (`waitersSeeATable`, see
+  the `admin-screens` page).
 - "Tischplan öffnen" opens one area's editor on its own page at `/admin/festivals/{festivalId}/areas/{areaId}`:
   `shared/router/route.ts` reads it as the admin route with `areaId`, and `admin/views/AdminShell.vue`
   chooses `admin/components/tablePlan/TablePlanEditor.vue` (`festivalId`, `areaId`) and lets it fill
@@ -314,8 +312,7 @@ Frontend, under `frontend/src/`:
 - Texts: `phone.tablePlan.*`.
 - Texts: `admin.tablePlan.*` (the dialog's `areaName`, `tableName`, `newArea`, `editArea`,
   `newTable`, `editTable`, `openPlan`, the toolbar's `addStation` and `hiddenTables`, the menu's `copy`, `paste`, the hide questions `hideAreaTitle`, `hideTableTitle` with
-  `hideAreaBody`, `hideTableBody`, the removal body `removeStationBody`, the warnings `noArea`
-  and `noTable`), and the shared "Einblenden", "Ausgeblendet", "Ausgeblendete anzeigen"
+  `hideAreaBody`, `hideTableBody`, the removal body `removeStationBody`), and the shared "Einblenden", "Ausgeblendet", "Ausgeblendete anzeigen"
   (`admin.common.actions.showHidden`), "Bearbeiten", "Ausgabestelle entfernen" and "Ausgabestelle
   hinzufügen" from `admin.festivals.*`, `admin.common.*`. The two hide refusals double as the
   tooltips of the disabled trash icons. On screen an area is always "Tischplan" (der Tischplan, des
@@ -338,8 +335,9 @@ Frontend, under `frontend/src/`:
   (parameter `areaName`): `tableNameTaken` when that table is shown, `tableNameTakenByHiddenTable`
   when it is hidden by its own flag. Creating and renaming a table share this check
   (`TableEditService.NameRefusalAsync`); a paste never meets it, because the laptop names every copy.
-- **Areas and tables are never deleted, only hidden and shown again**, like festivals. A hidden one
-  keeps its name, so the name stays taken. A station's shape is the one thing that is deleted: taking
+- **Areas and tables are deleted only with their festival, otherwise hidden and shown again** (see
+  the `festivals` page). A hidden one keeps its name, so the name stays taken. A station's shape is
+  the one thing that is deleted on its own: taking
   the station off the plan (`DELETE /stations/{stationId}/shape`) or off the festival.
 - **Hiding waits for the table to be finished while the festival runs.** A table with an item not
   yet handed out or not yet settled is not hidden, nor is an area one of whose tables has such an
@@ -564,7 +562,7 @@ Frontend, under `frontend/src/`:
 - `frontend/tests`: `admin/core/tablePlanSnapping.spec.ts`, `tablePlanPlacement.spec.ts` (including
   the paste placements: one grid step in the same area, unchanged coordinates in another, the menu
   anchor, the fit-left rule and never a left edge below zero), `tablePlanSelection.spec.ts` (the
-  multi-table selection, the station, the toggle, the marquee intersection and `soleSelectedShapeOf`; the placement spec also covers `hiddenTablesOf`, `editorScale`, the zoom limits and `scrollKeepingTheCentre`), `oneAtATime.spec.ts`;
+  multi-table selection, the station, the toggle, the marquee intersection and `soleSelectedShapeOf`; the placement spec also covers `waitersSeeATable`, `hiddenTablesOf`, `editorScale`, the zoom limits and `scrollKeepingTheCentre`), `oneAtATime.spec.ts`;
   `shared/core/tablePlanDrawing.spec.ts` (including `scaleFittingTheWholeDrawing`),
   `tablePlanColours.spec.ts` and `themeColours.spec.ts`; the store in
   `admin/stores/tablePlan.loading.spec.ts` (the gate, `ConfigurationChanged`, `OrdersChanged`,
@@ -573,8 +571,7 @@ Frontend, under `frontend/src/`:
   paste request, the menu placement, the refusal); the card in `admin/components/festivals/FestivalPage.tablePlan.spec.ts` (the
   rows, the count of shown tables, the box for hidden areas in the heading line, the order of a
   row's actions, the pencil and the open eye with their names, "Tischplan öffnen", the trash icon
-  disabled with its reason, the warnings with the stock card's look, the tick sentence only while
-  the box is unticked, and that they wait for the plan) and `FestivalPage.tablePlanAreas.spec.ts`
+  disabled with its reason, and the tick sentence only while the box is unticked) and `FestivalPage.tablePlanAreas.spec.ts`
   (the name-only dialog for a new area and for editing one, its limit of 40 characters, the name
   alone sent for a new or edited area, the arrows with the state of the box
   for hidden areas, a taken name in the dialog, hiding that asks first, showing) on `festivalTablePlanFixture.ts`; the editor in

@@ -5,6 +5,9 @@ import { useAdminStationsStore } from '../../stores/stations'
 import { useAdminItemsStore } from '../../stores/items'
 import { useAdminCategoriesStore } from '../../stores/categories'
 import { useAdminFestivalsStore } from '../../stores/festivals'
+import { useAdminTablePlanStore } from '../../stores/tablePlan'
+import { loadStateAtTheFestival } from '../../core/festivalListLoad'
+import { waitersSeeATable } from '../../core/tablePlanPlacement'
 import { combineReleases } from '../../../shared/core/combineReleases'
 
 const { t } = useI18n()
@@ -12,6 +15,7 @@ const stations = useAdminStationsStore()
 const items = useAdminItemsStore()
 const categories = useAdminCategoriesStore()
 const festivals = useAdminFestivalsStore()
+const tablePlan = useAdminTablePlanStore()
 
 interface ReadinessRow {
   key: string
@@ -49,6 +53,10 @@ const rows = computed<ReadinessRow[]>(() => {
       count: withoutStation,
     })
   }
+  const planOfTheFestival = loadStateAtTheFestival(tablePlan, runningFestival.value.festivalId)
+  if (!planOfTheFestival.hasLoaded || !waitersSeeATable(tablePlan.areas)) {
+    readiness.push({ key: 'admin.overview.messages.missingTable', parameters: {}, count: null })
+  }
   return readiness
 })
 
@@ -58,15 +66,19 @@ onMounted(async () => {
     stations.listen(),
     categories.listen(),
     items.listen(),
+    tablePlan.listen(),
   )
   await festivals.load()
   const festival = festivals.runningFestival
   if (festival === null) {
     return
   }
-  await stations.loadAtTheFestival(festival.festivalId)
-  await categories.load()
-  await items.loadAtTheFestival(festival.festivalId)
+  await Promise.all([
+    stations.loadAtTheFestival(festival.festivalId),
+    categories.load(),
+    items.loadAtTheFestival(festival.festivalId),
+    tablePlan.loadForFestival(festival.festivalId),
+  ])
 })
 
 onUnmounted(() => {

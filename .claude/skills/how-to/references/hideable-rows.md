@@ -1,7 +1,7 @@
-# Add rows that are hidden, never deleted
+# Add rows that are hidden and shown again
 
-Some admin lists hide their entries and show them again instead of deleting them: the festivals, a
-festival's areas and an area's tables. They look and behave the same everywhere, through shared
+Some admin lists hide their entries and show them again: the festivals, a festival's areas and an
+area's tables. They look and behave the same everywhere, through shared
 pieces in `frontend/src/admin/components/`. Use these; never rebuild a row, a confirmation or a
 tooltip beside them (frontend rule 8).
 
@@ -9,8 +9,7 @@ tooltip beside them (frontend rule 8).
 
 - `HideableEntryList.vue` draws a whole list of named entries the way the festival page's station
   card draws its rows. Its heading line takes the list's heading through the `heading` slot and puts
-  "Ausgeblendete anzeigen" at its right; the `notices` slot sits between that line and the rows, for
-  warnings about the whole list, and receives no values. A row has the name as text, the "Ausgeblendet" chip, a
+  "Ausgeblendete anzeigen" at its right. A row has the name as text, the "Ausgeblendet" chip, a
   `details` slot for what is particular to the entry (the area's table count and "Tischplan
   öffnen"), the up and down arrows when `moveThrough` is given, the pencil, the trash icon that
   hides or the open eye "Einblenden" on a hidden row, and a refusal under the row, flush with it.
@@ -65,17 +64,27 @@ tooltip beside them (frontend rule 8).
   in a tooltip, as `admin-list-screen.md` step 7 describes. The slot gets `refused` for the button's
   `:disabled`; the wrapper carries the tooltip (`data-test="refusal-reason"`), because a disabled
   button sends no hover. Consumers: the article rows of `FestivalItems.vue` and of the Artikel tab,
-  `BaseDeleteAction.vue`, the station rows of the Ausgabestellen tab, the festival list's crossed-out eye, `HideableEntryList.vue`,
+  the category headings of the Artikel tab (disabled while the category holds an active article,
+  with `errors.admin.categories.hasActiveItems`), `BaseDeleteAction.vue`, the station rows of the Ausgabestellen tab, the festival list's crossed-out eye, `HideableEntryList.vue`,
   `RemovableStationRows.vue`, and the menu's "Ausblenden" in the table plan editor.
 - `BaseDeleteAction.vue` is the trash that deletes for good after asking, disabled with its reason
   when the entry is in use, as `admin-list-screen.md` step 8 describes. Consumers: the ingredient
-  rows of the recipe popup and the unit chips of the ingredient form.
-- `BaseTrashButton.vue` is the red trash icon of the festival page, the Artikel and Kellner tabs,
-  the recipe lines of the recipe popup, `BaseDeleteAction.vue`, the hiding icon
-  of `HideableEntryList.vue` and the removal icon of `RemovableStationRows.vue`.
+  rows of the recipe popup, the unit chips of the ingredient form and the festival rows of the Feste
+  tab, whose question answers "Weiter" and leads on to the name dialog
+  `festivals/FestivalDeleteDialog.vue`.
+- `BaseTrashButton.vue` is the red trash icon of the festival page, the Artikel, Kellner and
+  Ausgabestellen tabs, the recipe lines of the recipe popup, `BaseDeleteAction.vue`, the hiding icon
+  of `HideableEntryList.vue` and the removal icon of `RemovableStationRows.vue`. It is
+  `BaseIconAction` with the trash icon, and its required `label` names the action as its tooltip
+  while it is enabled, mostly with the key the action's confirmation already uses (the festival's
+  trash has its own key, `admin.festivals.actions.deleteFestival`, "Fest löschen"): "Kategorie
+  deaktivieren", "Artikel deaktivieren", "Kellner deaktivieren", "Ausgabestelle deaktivieren",
+  "Zutat entfernen" on a recipe line, "Artikel entfernen" on an article row of the festival page,
+  the list's `hideTitle` in `HideableEntryList.vue` and its
+  `removeTitle` in `RemovableStationRows.vue`, and `BaseDeleteAction.vue`'s `trash-label`.
 - `shared/components/BaseIconAction.vue` is an icon button whose name shows as a tooltip
   (`data-test="icon-action-label"`): the crossed-out eye "Ausblenden" of the festival list, the
-  categories' crossed-out eye "Kategorie deaktivieren" on the Artikel tab, the plus "Zutat
+  trash of `BaseTrashButton`, the plus "Zutat
   hinzufügen" on an ingredient row of the recipe popup, the magnifiers "Verkleinern" and
   "Vergrößern" in the table plan editor's toolbar, and on the phone the
   details button at the end of every row of the shared order list. Its `location` prop (`top` by
@@ -114,9 +123,10 @@ tooltip beside them (frontend rule 8).
 Up and down first, then the pencil, then hiding or removing (the trash icon, the crossed-out eye,
 or the open eye in their place). Text buttons, such as "Tischplan öffnen", "Zutaten bearbeiten",
 "Kopieren", "Tablet einrichten" or "Telefon neu einrichten", come before the icons. A category row
-reads up, down, pencil, crossed-out eye; an area row reads "Tischplan öffnen", up, down, pencil,
+reads up, down, pencil, trash; an area row reads "Tischplan öffnen", up, down, pencil,
 trash. An ingredient row of the recipe popup reads pencil, trash, then the plus that adds it with
-amount 1, on every ingredient the recipe does not hold yet.
+amount 1, on every ingredient the recipe does not hold yet. A festival row reads "Kopieren", pencil,
+the crossed-out or the open eye, then the trash that deletes it.
 
 ## Steps
 

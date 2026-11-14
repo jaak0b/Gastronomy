@@ -163,9 +163,10 @@ describe('the table plan card of the festival page', () => {
     festivalLaptop({ areas: [] })
 
     const page = mountPage()
-    await vi.waitFor(() => expect(page.find('[data-test="no-area"]').exists()).toBe(true))
 
-    expect(page.get('[data-test="festival-table-plan"]').get(EMPTY_TEXT).text()).toBe('Keine Einträge')
+    await vi.waitFor(() =>
+      expect(page.get('[data-test="festival-table-plan"]').find(EMPTY_TEXT).text()).toBe('Keine Einträge'),
+    )
   })
 
   it('shows no text of an empty list while the only area is hidden, because the list is not empty', async () => {

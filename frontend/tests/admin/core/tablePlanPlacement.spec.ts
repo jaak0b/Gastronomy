@@ -13,6 +13,7 @@ import {
   pastedCopiesAt,
   pastedCopiesBeside,
   scrollKeepingTheCentre,
+  waitersSeeATable,
 } from '../../../src/admin/core/tablePlanPlacement'
 import { aGeometry, anAdminArea, anAdminStationShape, anAdminTable } from '../../support/wireViews'
 
@@ -27,6 +28,22 @@ const HALL = anAdminArea({ tables: [SHOWN_TABLE, HIDDEN_TABLE], stationShapes: [
 describe('what the editor draws of an area', () => {
   it('is every shown table, never a hidden one', () => {
     expect(drawnTablesOf(HALL)).toEqual([SHOWN_TABLE])
+  })
+})
+
+describe('whether the waiters see a table of the festival', () => {
+  it('is so once a shown area holds a shown table, whatever is hidden beside it', () => {
+    const hiddenArea = anAdminArea({ areaId: 'area-zelt', isHidden: true, tables: [SHOWN_TABLE] })
+
+    expect(waitersSeeATable([hiddenArea, HALL])).toBe(true)
+  })
+
+  it.each([
+    ['there is no area', []],
+    ['the shown area holds only hidden tables', [anAdminArea({ tables: [HIDDEN_TABLE] })]],
+    ['the shown table lies in a hidden area', [anAdminArea({ isHidden: true, tables: [SHOWN_TABLE] })]],
+  ])('is not so while %s', (_, areas) => {
+    expect(waitersSeeATable(areas)).toBe(false)
   })
 })
 

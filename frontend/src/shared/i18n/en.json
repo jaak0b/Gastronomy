@@ -393,8 +393,6 @@
         "zoomOut": "Zoom out"
       },
       "messages": {
-        "noArea": "Waiters cannot see any table plan yet. Click \"New table plan\".",
-        "noTable": "Waiters cannot see any table yet. Click \"Open table plan\" on one of the table plans.",
         "hideAreaBody": "Waiters will no longer see this table plan.",
         "hideTableBody": "Waiters will no longer see this table.",
         "removeStationBody": "This removes the station from this table plan only."
@@ -487,6 +485,7 @@
         "missingFestival": "Create a festival first.",
         "missingItems": "Add items to this festival and fill in their prices.",
         "missingStation": "Add a station to this festival, for example Kitchen and Bar.",
+        "missingTable": "Create a table plan for this festival and draw its tables.",
         "noFestivalIsRunning": "No festival active",
         "ready": "Everything is set up. You can now set up the phones and the tablets."
       }
@@ -535,8 +534,8 @@
         "nameMissing": "Give the category a name before you save.",
         "nameTaken": "A category with this name already exists. Choose a different name."
       },
-        "activeFestivalCannotBeDeleted": "An active festival cannot be deleted.",
       "festivals": {
+        "activeFestivalCannotBeDeleted": "An active festival cannot be deleted.",
         "areaNameTaken": "A table plan at this festival already has this name, even if it is hidden. Choose a different name.",
         "areaWithItemsToHandOutOrSettleStaysShown": "While a festival is active, a table plan can only be hidden once everything at its tables is prepared and paid.",
         "itemNeedsAStation": "Choose at least one station for the item.",

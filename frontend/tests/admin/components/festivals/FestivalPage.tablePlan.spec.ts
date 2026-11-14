@@ -13,11 +13,10 @@ import {
   textOnScreen,
   waitUntil,
 } from '../../../support/dom'
-import { aHold, answer, heldUntil } from '../../../support/laptop'
 import { testPlugins } from '../../../support/plugins'
 import { FESTIVAL_ID, festivalLaptop, mountPage } from './festivalPageFixture'
 import { HALL, OLD_TABLES, TENT, areaRow, hideButtonOf } from './festivalTablePlanFixture'
-import { anAdminArea, anAdminTable } from '../../../support/wireViews'
+import { anAdminTable } from '../../../support/wireViews'
 
 enableAutoUnmount(afterEach)
 
@@ -198,75 +197,5 @@ describe('hiding an area from the table plan card', () => {
         STILL_OPEN,
       ),
     )
-  })
-})
-
-describe('the warnings of the table plan card', () => {
-  it('name the button for a new area when the festival has none', async () => {
-    festivalLaptop({ areas: [] })
-
-    mountPage()
-    await vi.waitFor(() => expect(isOnScreen('[data-test="no-area"]')).toBe(true))
-
-    expect(textOnScreen('[data-test="no-area"]').trim()).toBe(
-      'Die Kellner sehen noch keinen Tischplan. Klicken Sie auf „Neuer Tischplan“.',
-    )
-  })
-
-  it('look like the warning of the stock card, an alert icon beside text in the warning colour', async () => {
-    festivalLaptop({ areas: [] })
-
-    mountPage()
-    await vi.waitFor(() => expect(isOnScreen('[data-test="no-area"]')).toBe(true))
-
-    const warning = onScreen('[data-test="no-area"]')
-    expect([isOnScreen('.mdi-alert', warning), warning.classList.contains('text-warning')]).toEqual([true, true])
-  })
-
-  it('stay away while the plan of the festival has not arrived', async () => {
-    const thePlan = aHold()
-    const laptop = festivalLaptop({ areas: [] }).answers(
-      'GET',
-      /\/table-plan$/,
-      heldUntil(thePlan.released, answer({ areas: [] })),
-    )
-
-    mountPage()
-    await vi.waitFor(() => expect(isOnScreen('[data-test="festival-name"]')).toBe(true))
-    await vi.waitFor(() => expect(laptop.urls()).toContain(`/api/admin/festivals/${FESTIVAL_ID}/table-plan`))
-
-    expect(isOnScreen('[data-test="no-area"]')).toBe(false)
-  })
-
-  it('name the button that opens a plan when no area has a table', async () => {
-    festivalLaptop({ areas: [anAdminArea({ areaId: 'area-halle', name: 'Halle' })] })
-
-    mountPage()
-    await vi.waitFor(() => expect(isOnScreen('[data-test="no-table"]')).toBe(true))
-
-    expect(textOnScreen('[data-test="no-table"]').trim()).toBe(
-      'Die Kellner sehen noch keinen Tisch. Klicken Sie bei einem Tischplan auf „Tischplan öffnen“.',
-    )
-  })
-
-  it('say so when the shown areas hold only hidden tables', async () => {
-    const hiddenTable = anAdminTable({ tableId: 'table-a1', name: 'A1', isHidden: true })
-    festivalLaptop({ areas: [anAdminArea({ areaId: 'area-halle', name: 'Halle', tables: [hiddenTable] })] })
-
-    mountPage()
-
-    await vi.waitFor(() => expect(isOnScreen('[data-test="no-table"]')).toBe(true))
-  })
-
-  it('stay away once a shown area holds a shown table, whatever is hidden beside it', async () => {
-    festivalLaptop({ areas: [OLD_TABLES, TENT] })
-
-    mountPage()
-    await theAreasAreListed()
-
-    expect([
-      isOnScreen('[data-test="no-area"]'),
-      isOnScreen('[data-test="no-table"]'),
-    ]).toEqual([false, false])
   })
 })
