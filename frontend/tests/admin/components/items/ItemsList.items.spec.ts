@@ -28,6 +28,16 @@ describe('deactivating an item', () => {
     expect(laptop.urls().some((url) => url.endsWith('/deactivate'))).toBe(false)
   })
 
+  it('names the trash "Artikel deaktivieren" when the admin points at it', async () => {
+    itemsListLaptop()
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="deactivate-item"]').exists()).toBe(true))
+
+    await list.get('[data-test="deactivate-item"]').trigger('mouseenter')
+
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Artikel deaktivieren'))
+  })
+
   it('deactivates it once the question is answered with yes', async () => {
     const laptop = itemsListLaptop()
 
@@ -155,6 +165,7 @@ describe('adding an item', () => {
 
   it('drops the refusal to switch a category off once the admin writes a new item', async () => {
     itemsListLaptop({
+      items: DEACTIVATED_ITEM,
       refusal: {
         status: 409,
         body: {

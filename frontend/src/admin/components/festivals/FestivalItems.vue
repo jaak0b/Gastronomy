@@ -242,6 +242,7 @@ async function remove(): Promise<void> {
                       class="remove-item"
                       data-test="remove-item"
                       :disabled="refused"
+                      :label="t('admin.festivals.labels.removeItemTitle')"
                       @click="removedItem = item"
                     />
                   </template>

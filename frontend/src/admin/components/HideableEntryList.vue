@@ -152,6 +152,7 @@ async function move(entry: TEntry, direction: MoveDirection): Promise<void> {
           >
             <template #default="{ refused }">
               <BaseTrashButton
+                :label="hideTitle"
                 class="hide-entry"
                 data-test="hide-entry"
                 :disabled="refused"

@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import CategoryDialog from '../../../../src/admin/components/categories/CategoryDialog.vue'
-import { iconActionLabelsOnScreen, pressInDialog, waitForDialog } from '../../../support/dom'
-import { FOOD_ID, TWO_CATEGORIES, mountList, itemsListLaptop } from './itemsListFixture'
+import { iconActionLabelsOnScreen, pressInDialog, refusalReasonsOnScreen, waitForDialog } from '../../../support/dom'
+import { DEACTIVATED_ITEM, FOOD_ID, TWO_CATEGORIES, mountList, itemsListLaptop } from './itemsListFixture'
 import { saveTheCategoryDialog } from '../../../support/formDialogs'
 
 describe('the controls beside a category name', () => {
@@ -45,15 +45,58 @@ describe('the controls beside a category name', () => {
     await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Bearbeiten'))
   })
 
-  it('name the crossed-out eye "Kategorie deaktivieren" when the admin points at it', async () => {
-    itemsListLaptop()
+  it('name the trash "Kategorie deaktivieren" when the admin points at it', async () => {
+    itemsListLaptop({ items: DEACTIVATED_ITEM })
     const list = mountList()
     await vi.waitFor(() => expect(list.find('[data-test="deactivate-category"]').exists()).toBe(true))
 
     await list.get('[data-test="deactivate-category"]').trigger('mouseenter')
 
-    expect(list.get('[data-test="deactivate-category"] .v-icon').classes()).toContain('mdi-eye-off')
     await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Kategorie deaktivieren'))
+  })
+
+  it('keep the trash disabled while the category holds an active item', async () => {
+    itemsListLaptop()
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="deactivate-category"]').exists()).toBe(true))
+
+    expect((list.get('[data-test="deactivate-category"]').element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('name the active items as the reason the trash is disabled', async () => {
+    itemsListLaptop()
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="deactivate-category"]').exists()).toBe(true))
+
+    await list.get('[data-test="deactivate-category-wrapper"]').trigger('mouseenter')
+
+    await vi.waitFor(() =>
+      expect(refusalReasonsOnScreen()).toContain(
+        'Die Kategorie hat noch aktive Artikel. Deaktivieren Sie zuerst die Artikel und danach die Kategorie.',
+      ),
+    )
+  })
+
+  it.each([
+    { scenario: 'only deactivated items', items: DEACTIVATED_ITEM },
+    { scenario: 'no items', items: { items: [] } },
+  ])('offer the trash once the category holds $scenario', async ({ items }) => {
+    itemsListLaptop({ items })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="deactivate-category"]').exists()).toBe(true))
+
+    expect((list.get('[data-test="deactivate-category"]').element as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('switch the category off through the same trash icon as an item', async () => {
+    itemsListLaptop()
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="deactivate-category"]').exists()).toBe(true))
+
+    expect(list.get('[data-test="deactivate-category"] .v-icon').classes()).toContain('mdi-delete')
   })
 
   it('move the category up at its own address', async () => {
@@ -107,7 +150,7 @@ describe('the controls beside a category name', () => {
   })
 
   it('ask before the category is switched off', async () => {
-    const laptop = itemsListLaptop()
+    const laptop = itemsListLaptop({ items: DEACTIVATED_ITEM })
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
@@ -119,7 +162,7 @@ describe('the controls beside a category name', () => {
   })
 
   it('switch the category off once the question is answered with yes', async () => {
-    const laptop = itemsListLaptop()
+    const laptop = itemsListLaptop({ items: DEACTIVATED_ITEM })
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('[data-test="category-section"]').exists()).toBe(true))
@@ -133,6 +176,7 @@ describe('the controls beside a category name', () => {
 
   it('say why the laptop kept the category active', async () => {
     itemsListLaptop({
+      items: DEACTIVATED_ITEM,
       refusal: {
         status: 409,
         body: {

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { VAutocomplete } from 'vuetify/components'
-import { pressInDialog, onScreen, refusalReasonsOnScreen, typeInto } from '../../../support/dom'
+import { iconActionLabelsOnScreen, pressInDialog, onScreen, refusalReasonsOnScreen, typeInto } from '../../../support/dom'
 import { FESTIVAL_ID, KITCHEN_ID, SAUSAGE_ID, FOOD_ID, SUMMER, SAUSAGE, BEER, mountPage, openPlacementDialog, stationBox, openDialogStations, festivalLaptop, itemRow } from './festivalPageFixture'
 import { nextTick } from 'vue'
 import { saveTheItemDialog } from '../../../support/formDialogs'
@@ -31,6 +31,16 @@ describe('the items of this festival', () => {
         `/api/admin/festivals/${FESTIVAL_ID}/items/${SAUSAGE_ID}/availability`,
       ),
     )
+  })
+
+  it('names the trash "Artikel entfernen" when the admin points at it', async () => {
+    festivalLaptop({ festivals: [{ ...SUMMER, isRunning: false }] })
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="remove-item"]').exists()).toBe(true))
+
+    await itemRow(page, SAUSAGE_ID).get('[data-test="remove-item"]').trigger('mouseenter')
+
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Artikel entfernen'))
   })
 
   it('asks before an item leaves a festival that is not running', async () => {

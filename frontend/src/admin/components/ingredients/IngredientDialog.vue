@@ -157,6 +157,7 @@ function save(): void {
                     v-if="choice.isListed"
                     class="unit-trash"
                     trash-test-name="delete-unit"
+                    :trash-label="t('admin.units.actions.deleteConfirm')"
                     :refusal-reason="choice.deletionRefusal"
                     :confirm-title="t('admin.units.labels.deleteTitle')"
                     :confirm-body="t('admin.units.messages.deleteBody', { name: choice.name })"

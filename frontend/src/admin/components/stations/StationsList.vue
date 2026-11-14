@@ -179,6 +179,7 @@ onUnmounted(() => {
               class="deactivate"
               data-test="deactivate"
               :disabled="refused"
+              :label="t('admin.stations.actions.deactivateConfirm')"
               @click="askingAboutId = station.stationId"
             />
           </template>

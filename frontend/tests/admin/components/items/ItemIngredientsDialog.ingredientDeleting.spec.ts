@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { refusal } from '../../../support/laptop'
 import {
   dialogText,
+  iconActionLabelsOnScreen,
   isOnScreen,
   onScreen,
   openDialog,
@@ -49,6 +50,15 @@ describe('deleting an ingredient no article uses', () => {
     expect(laptop.writes()).toEqual([])
   })
 
+  it('names the trash "Zutat löschen" when the admin points at it', async () => {
+    recipeLaptop()
+    await loadIngredientsAndMountDialog()
+
+    await hover(`${MILK_ROW} [data-test="delete-ingredient"]`)
+
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Zutat löschen'))
+  })
+
   it('asks in English', async () => {
     recipeLaptop()
     await loadIngredientsAndMountDialog('en')
@@ -57,7 +67,7 @@ describe('deleting an ingredient no article uses', () => {
 
     expect(dialogText('[data-test="confirm-title"]')).toBe('Delete this ingredient?')
     expect(dialogText('[data-test="confirm-body"]').trim()).toBe('The ingredient Milch is deleted permanently.')
-    expect(dialogText('[data-test="confirm"]').trim()).toBe('Delete ingredient')
+    expect(dialogText('[data-test="confirm"]').trim()).toBe('Delete the ingredient')
   })
 
   it('deletes it once the admin confirms', async () => {

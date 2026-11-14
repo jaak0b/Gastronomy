@@ -5,6 +5,7 @@ import { refusal } from '../../../support/laptop'
 import {
   allOnScreen,
   dialogText,
+  iconActionLabelsOnScreen,
   inputOf,
   isOnScreen,
   leave,
@@ -197,6 +198,15 @@ describe('removing an ingredient from the recipe', () => {
     expect(dialogText('[data-test="confirm-body"]').trim()).toBe('Die Zutat wird nur bei Pfannkuchen entfernt.')
     expect(dialogText('[data-test="confirm"]').trim()).toBe('Entfernen')
     expect(laptop.writes()).toEqual([])
+  })
+
+  it('names the trash "Zutat entfernen" when the admin points at it', async () => {
+    recipeLaptop()
+    await loadIngredientsAndMountDialog()
+
+    onScreen(`${BUN_LINE} [data-test="remove-recipe-line"]`).dispatchEvent(new MouseEvent('mouseenter'))
+
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Zutat entfernen'))
   })
 
   it('asks in English', async () => {

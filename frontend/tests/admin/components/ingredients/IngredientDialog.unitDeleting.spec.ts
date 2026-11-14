@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 import {
   clickOn,
   dialogText,
+  iconActionLabelsOnScreen,
   isOnScreen,
   onScreen,
   openDialog,
@@ -90,6 +91,15 @@ describe('deleting a unit from the form for an ingredient', () => {
     expect(
       onScreen(`${chipOf('unit-gram')} [data-test="delete-unit-wrapper"]`).classList.contains('unit-trash'),
     ).toBe(true)
+  })
+
+  it('names the trash button "Einheit löschen" when the admin points at it', async () => {
+    unitsLaptop()
+    await mountDialog()
+
+    onScreen(`${chipOf('unit-kiste')} [data-test="delete-unit"]`).dispatchEvent(new MouseEvent('mouseenter'))
+
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Einheit löschen'))
   })
 
   it('offers the trash button only on the units no ingredient uses', async () => {
@@ -202,7 +212,7 @@ describe('deleting a unit from the form for an ingredient', () => {
 
     expect(dialogText('[data-test="confirm-title"]')).toBe('Delete this unit?')
     expect(dialogText('[data-test="confirm-body"]').trim()).toBe('The unit Kiste is deleted permanently.')
-    expect(dialogText('[data-test="confirm"]').trim()).toBe('Delete unit')
+    expect(dialogText('[data-test="confirm"]').trim()).toBe('Delete the unit')
   })
 
   it('sends nothing while the question is open', async () => {

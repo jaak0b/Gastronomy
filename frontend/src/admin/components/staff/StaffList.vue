@@ -156,6 +156,7 @@ onUnmounted(() => {
           v-if="staffMember.isActive"
           class="deactivate"
           data-test="deactivate"
+          :label="t('admin.staff.actions.deactivateConfirm')"
           @click="askingAboutId = staffMember.staffMemberId"
         />
         <BaseShowButton

@@ -72,6 +72,7 @@ async function confirmRemoval(): Promise<void> {
               class="remove-station"
               data-test="remove-station"
               :disabled="refused"
+              :label="removeTitle"
               @click="askToRemove(station)"
             />
           </template>

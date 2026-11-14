@@ -422,7 +422,7 @@
         "addToRecipe": "Add the ingredient",
         "removeFromRecipe": "Remove",
         "history": "History",
-        "deleteConfirm": "Delete ingredient"
+        "deleteConfirm": "Delete the ingredient"
       },
       "messages": {
         "removeFromRecipeBody": "The ingredient is removed from {item} only.",
@@ -447,7 +447,7 @@
       },
       "actions": {
         "new": "New unit",
-        "deleteConfirm": "Delete unit"
+        "deleteConfirm": "Delete the unit"
       },
       "messages": {
         "deleteBody": "The unit {name} is deleted permanently.",

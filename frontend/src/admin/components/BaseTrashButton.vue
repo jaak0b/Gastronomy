@@ -1,3 +1,9 @@
+<script setup lang="ts">
+import BaseIconAction from '../../shared/components/BaseIconAction.vue'
+
+defineProps<{ label: string }>()
+</script>
+
 <template>
-  <v-btn icon="mdi-delete" variant="text" color="error" />
+  <BaseIconAction icon="mdi-delete" color="error" :label="label" />
 </template>

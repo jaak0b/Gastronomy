@@ -238,6 +238,7 @@ async function deleteIngredient(ingredientId: string): Promise<void> {
               <BaseTrashButton
                 class="remove-recipe-line"
                 data-test="remove-recipe-line"
+                :label="t('admin.ingredients.labels.removeFromRecipeTitle')"
                 @click="ingredientIdOfLineToRemove = line.ingredientId"
               />
             </div>
@@ -285,6 +286,7 @@ async function deleteIngredient(ingredientId: string): Promise<void> {
             />
             <BaseDeleteAction
               trash-test-name="delete-ingredient"
+              :trash-label="t('admin.ingredients.actions.deleteConfirm')"
               :refusal-reason="row.deletionRefusal"
               :confirm-title="t('admin.ingredients.labels.deleteTitle')"
               :confirm-body="t('admin.ingredients.messages.deleteBody', { name: row.ingredient.name })"

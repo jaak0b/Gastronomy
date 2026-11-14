@@ -56,6 +56,16 @@ describe('taking a staff member off the list', () => {
     vi.unstubAllGlobals()
   })
 
+  it('names the trash "Kellner deaktivieren" when the admin points at it', async () => {
+    staffLaptopListing(ONE_STAFF_MEMBER)
+    const list = mountList()
+    await firstStaffMember(list)
+
+    await list.get('[data-test="deactivate"]').trigger('mouseenter')
+
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Kellner deaktivieren'))
+  })
+
   it('asks before it happens', async () => {
     const laptop = staffLaptopListing(ONE_STAFF_MEMBER)
 

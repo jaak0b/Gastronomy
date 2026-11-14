@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { VAutocomplete } from 'vuetify/components'
-import { pressInDialog, refusalReasonsOnScreen, waitForDialog, onScreen, typeInto } from '../../../support/dom'
+import { iconActionLabelsOnScreen, pressInDialog, refusalReasonsOnScreen, waitForDialog, onScreen, typeInto } from '../../../support/dom'
 import { FESTIVAL_ID, KITCHEN_ID, BAR_ID, KITCHEN, BAR, mountPage, stationRow, festivalLaptop } from './festivalPageFixture'
 import { nextTick } from 'vue'
 
@@ -216,6 +216,16 @@ describe('the stations of this festival', () => {
       ),
     )
     expect(refusalReasonsOnScreen()).not.toContain(ONE_ARTICLE_WITHOUT_A_STATION)
+  })
+
+  it('names the trash "Ausgabestelle entfernen" when the admin points at it', async () => {
+    festivalLaptop()
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('[data-test="remove-station"]').exists()).toBe(true))
+
+    await stationRow(page, KITCHEN_ID).get('[data-test="remove-station"]').trigger('mouseenter')
+
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Ausgabestelle entfernen'))
   })
 
   it('asks before a station leaves the festival', async () => {

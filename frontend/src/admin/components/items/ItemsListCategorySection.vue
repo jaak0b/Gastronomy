@@ -6,7 +6,6 @@ import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import BaseEditButton from '../BaseEditButton.vue'
 import BaseListRow from '../BaseListRow.vue'
 import BaseEmptyListText from '../../../shared/components/BaseEmptyListText.vue'
-import BaseIconAction from '../../../shared/components/BaseIconAction.vue'
 import BaseMoveButtons from '../BaseMoveButtons.vue'
 import BaseShowButton from '../BaseShowButton.vue'
 import BaseTrashButton from '../BaseTrashButton.vue'
@@ -17,6 +16,7 @@ const props = defineProps<{
   rows: PositionedRow<AdminItemView>[]
   showsEmptyListText: boolean
   isAFestivalRunning: boolean
+  holdsActiveItems: boolean
 }>()
 const emit = defineEmits<{
   'rename-category': []
@@ -57,14 +57,20 @@ function ingredientCountText(item: AdminItemView): string {
       <v-spacer />
       <BaseMoveButtons @move="(direction) => emit('move-category', direction)" />
       <BaseEditButton data-test="rename-category" @click="emit('rename-category')" />
-      <BaseIconAction
+      <BaseActionWithRefusalReason
         v-if="category.isActive"
-        data-test="deactivate-category"
-        icon="mdi-eye-off"
-        color="error"
-        :label="t('admin.categories.actions.deactivateConfirm')"
-        @click="emit('deactivate-category')"
-      />
+        data-test="deactivate-category-wrapper"
+        :refusal-reason="holdsActiveItems ? t('errors.admin.categories.hasActiveItems') : null"
+      >
+        <template #default="{ refused }">
+          <BaseTrashButton
+            data-test="deactivate-category"
+            :disabled="refused"
+            :label="t('admin.categories.actions.deactivateConfirm')"
+            @click="emit('deactivate-category')"
+          />
+        </template>
+      </BaseActionWithRefusalReason>
       <BaseShowButton
         v-else
         data-test="activate-category"
@@ -102,7 +108,12 @@ function ingredientCountText(item: AdminItemView): string {
           :refusal-reason="isOnTheRunningFestivalsMenu(item) ? t('errors.admin.items.isOnTheRunningFestivalsMenu') : null"
         >
           <template #default="{ refused }">
-            <BaseTrashButton data-test="deactivate-item" :disabled="refused" @click="emit('deactivate-item', item)" />
+            <BaseTrashButton
+              data-test="deactivate-item"
+              :disabled="refused"
+              :label="t('admin.items.actions.deactivateConfirm')"
+              @click="emit('deactivate-item', item)"
+            />
           </template>
         </BaseActionWithRefusalReason>
         <BaseShowButton

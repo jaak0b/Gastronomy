@@ -4,6 +4,7 @@ import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
 import {
   clickOn,
   dialogText,
+  iconActionLabelsOnScreen,
   inputOf,
   isOnScreen,
   onScreen,
@@ -213,6 +214,14 @@ describe('hiding and showing an area', () => {
       'Die Kellner sehen diesen Tischplan dann nicht mehr.',
     ])
     expect(writesTo(laptop, AREAS_PATH)).toEqual([])
+  })
+
+  it('names the trash "Tischplan ausblenden" when the admin points at it', async () => {
+    await openThePageWith(festivalLaptop({ areas: [HALL, TENT] }))
+
+    onScreen('[data-test="hide-entry"]', areaRow('area-zelt')).dispatchEvent(new MouseEvent('mouseenter'))
+
+    await waitUntil(() => expect(iconActionLabelsOnScreen()).toContain('Tischplan ausblenden'))
   })
 
   it('hides the area once the admin confirms', async () => {

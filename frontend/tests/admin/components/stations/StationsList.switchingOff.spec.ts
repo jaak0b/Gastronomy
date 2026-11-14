@@ -12,6 +12,16 @@ describe('switching a station off', () => {
     document.body.innerHTML = ''
   })
 
+  it('names the trash "Ausgabestelle deaktivieren" when the admin points at it', async () => {
+    stubLaptop().answersEverythingElse(answer(ONE_STATION))
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('[data-test="station-row"]').exists()).toBe(true))
+
+    await list.get('[data-test="deactivate"]').trigger('mouseenter')
+
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Ausgabestelle deaktivieren'))
+  })
+
   it('asks before it happens, rather than acting on the first tap', async () => {
     const laptop = stubLaptop().answersEverythingElse(answer(ONE_STATION))
 

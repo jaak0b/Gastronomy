@@ -7,6 +7,7 @@ import BaseTrashButton from './BaseTrashButton.vue'
 defineProps<{
   refusalReason: string | null
   trashTestName: string
+  trashLabel: string
   confirmTitle: string
   confirmBody: string
   confirmLabel: string
@@ -39,6 +40,7 @@ function confirm(): void {
       <BaseTrashButton
         :data-test="trashTestName"
         :disabled="refused"
+        :label="trashLabel"
         @click="ask"
       />
       <BaseConfirmDialog

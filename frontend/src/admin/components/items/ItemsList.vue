@@ -81,6 +81,10 @@ const itemCountsByCategory = computed(() => {
   return counts
 })
 
+const categoryIdsWithActiveItems = computed(
+  () => new Set(items.items.filter((item) => item.isActive).map((item) => item.categoryId)),
+)
+
 function categoryHasNoItems(categoryId: string): boolean {
   return showsTheEmptyListText(items, itemCountsByCategory.value.get(categoryId) ?? 0)
 }
@@ -222,6 +226,7 @@ onUnmounted(() => {
       :rows="group.rows"
       :shows-empty-list-text="categoryHasNoItems(group.category.categoryId)"
       :is-a-festival-running="festivals.runningFestival !== null"
+      :holds-active-items="categoryIdsWithActiveItems.has(group.category.categoryId)"
       @rename-category="startRenamingCategory(group.category)"
       @move-category="(direction) => moveCategory(group.category.categoryId, direction)"
       @deactivate-category="askingAboutCategoryId = group.category.categoryId"

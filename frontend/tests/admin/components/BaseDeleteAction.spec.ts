@@ -7,6 +7,7 @@ import { ADMIN_CHIP_BUTTON_DEFAULTS, ADMIN_DEFAULTS } from '../../../src/admin/s
 import { testPlugins } from '../../support/plugins'
 import {
   dialogText,
+  iconActionLabelsOnScreen,
   onScreen,
   openDialog,
   pressInDialog,
@@ -37,6 +38,7 @@ function mountInsideAClickableChip(heard: Listeners, refusalReason: string | nul
             h(BaseDeleteAction, {
               refusalReason,
               trashTestName: 'delete-kiste',
+              trashLabel: 'Einheit löschen',
               confirmTitle: 'Einheit löschen?',
               confirmBody: 'Die Einheit Kiste wird endgültig gelöscht.',
               confirmLabel: 'Einheit löschen',
@@ -93,6 +95,14 @@ describe('the trash that deletes after asking', () => {
 
     await vi.waitFor(() => expect(openDialog()).toBeNull())
     expect(heard.onConfirmed).not.toHaveBeenCalled()
+  })
+
+  it('names its action with the label it is given when the admin points at it', async () => {
+    mountInsideAClickableChip(listeners())
+
+    onScreen(TRASH).dispatchEvent(new MouseEvent('mouseenter'))
+
+    await vi.waitFor(() => expect(iconActionLabelsOnScreen()).toContain('Einheit löschen'))
   })
 
   it('is disabled and names the reason the laptop would refuse', async () => {
