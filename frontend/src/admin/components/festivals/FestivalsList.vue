@@ -8,6 +8,7 @@ import { showsTheEmptyListText } from '../../../shared/core/emptyList'
 import { formatFestivalMoment } from '../../../shared/core/moments'
 import { useAdminFestivalsStore, type FestivalDraft } from '../../stores/festivals'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
+import BaseDeleteAction from '../BaseDeleteAction.vue'
 import BaseEditButton from '../BaseEditButton.vue'
 import BaseHideConfirmDialog from '../BaseHideConfirmDialog.vue'
 import BaseHeadingWithCheckbox from '../BaseHeadingWithCheckbox.vue'
@@ -17,6 +18,7 @@ import BaseIconAction from '../../../shared/components/BaseIconAction.vue'
 import BaseRefusalAlert from '../../../shared/components/BaseRefusalAlert.vue'
 import BaseShowButton from '../BaseShowButton.vue'
 import { useRefusalDisplay } from '../../composables/useRefusalDisplay'
+import FestivalDeleteDialog from './FestivalDeleteDialog.vue'
 import FestivalDialog from './FestivalDialog.vue'
 
 const { t, locale } = useI18n()
@@ -25,6 +27,7 @@ const showsHidden = ref(false)
 const isCreating = ref(false)
 const copiedFestival = ref<AdminFestivalView | null>(null)
 const hiddenFestival = ref<AdminFestivalView | null>(null)
+const festivalToDelete = ref<AdminFestivalView | null>(null)
 const { refusal, refusalText } = useRefusalDisplay()
 let stopListening: (() => void) | null = null
 
@@ -206,6 +209,16 @@ onUnmounted(() => {
               />
             </template>
           </BaseActionWithRefusalReason>
+          <BaseDeleteAction
+            trash-test-name="delete"
+            :trash-label="t('admin.festivals.actions.deleteFestival')"
+            :refusal-reason="festival.isRunning ? t('errors.admin.festivals.activeFestivalCannotBeDeleted') : null"
+            :confirm-title="t('admin.festivals.labels.deleteTitle')"
+            :confirm-body="t('admin.festivals.messages.deleteBody', { name: festival.name })"
+            :confirm-label="t('common.actions.continue')"
+            @asked="refusal = null"
+            @confirmed="festivalToDelete = festival"
+          />
         </div>
       </template>
       <div class="festival-facts d-flex flex-wrap admin-row-details text-medium-emphasis">
@@ -255,6 +268,13 @@ onUnmounted(() => {
       :title="t('admin.festivals.labels.hideTitle')"
       @confirm="hide"
       @cancel="hiddenFestival = null"
+    />
+    <FestivalDeleteDialog
+      v-if="festivalToDelete !== null"
+      :key="festivalToDelete.festivalId"
+      :festival="festivalToDelete"
+      @deleted="festivalToDelete = null"
+      @cancel="festivalToDelete = null"
     />
   </v-container>
 </template>

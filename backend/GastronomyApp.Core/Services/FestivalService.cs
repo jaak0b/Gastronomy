@@ -2,6 +2,7 @@ using ErrorOr;
 using GastronomyApp.Contracts.Admin.Festivals;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Queries;
 using GastronomyApp.Core.Refusals;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
@@ -118,6 +119,64 @@ public sealed class FestivalService
     return festival.Adapt<SavedFestivalView>(_mapping);
   }
 
+  public async Task<ErrorOr<Success>> DeleteAsync(Guid festivalId, CancellationToken cancellationToken)
+  {
+    var festival = await _database.Festivals.FirstOrDefaultAsync(row => row.Id == festivalId, cancellationToken);
+
+    if (festival is null)
+      return Refusal.Festival.FestivalNotFound(festivalId);
+
+    if (_runningFestival.IsRunning(festival))
+      return Refusal.Festival.RunningFestivalCannotBeDeleted(festivalId);
+
+    await RemoveTheOrdersWithTheirStationOrdersItemsAndStatusesAsync(festivalId, cancellationToken);
+    await RemoveThePlanTheMenuTheStationLinksAndTheStockAsync(festivalId, cancellationToken);
+    _database.Festivals.Remove(festival);
+    await _database.SaveChangesAsync(cancellationToken);
+
+    return Result.Success;
+  }
+
+  private async Task RemoveTheOrdersWithTheirStationOrdersItemsAndStatusesAsync(Guid festivalId, CancellationToken cancellationToken)
+  {
+    var items = await _database.OrderItems.Include(item => item.Statuses).WhereFestivalIs(festivalId).ToListAsync(cancellationToken);
+
+    await BreakTheCycleBetweenEachItemAndItsCurrentStatusAsync(items, cancellationToken);
+    _database.OrderItemStatuses.RemoveRange(items.SelectMany(item => item.Statuses));
+    _database.OrderItems.RemoveRange(items);
+    await RemoveEveryRowOfTheFestivalAsync<StationOrder>(festivalId, cancellationToken);
+    await RemoveEveryRowOfTheFestivalAsync<Order>(festivalId, cancellationToken);
+  }
+
+  private async Task BreakTheCycleBetweenEachItemAndItsCurrentStatusAsync(IEnumerable<OrderItem> items, CancellationToken cancellationToken)
+  {
+    foreach (var item in items)
+    {
+      item.CurrentStatus = null;
+      item.CurrentStatusId = null;
+    }
+
+    await _database.SaveChangesAsync(cancellationToken);
+  }
+
+  private async Task RemoveThePlanTheMenuTheStationLinksAndTheStockAsync(Guid festivalId, CancellationToken cancellationToken)
+  {
+    await RemoveEveryRowOfTheFestivalAsync<FestivalStationShape>(festivalId, cancellationToken);
+    await RemoveEveryRowOfTheFestivalAsync<Table>(festivalId, cancellationToken);
+    await RemoveEveryRowOfTheFestivalAsync<Area>(festivalId, cancellationToken);
+    await RemoveEveryRowOfTheFestivalAsync<ItemStationAssignment>(festivalId, cancellationToken);
+    await RemoveEveryRowOfTheFestivalAsync<FestivalCatalogItem>(festivalId, cancellationToken);
+    await RemoveEveryRowOfTheFestivalAsync<FestivalStation>(festivalId, cancellationToken);
+    await RemoveEveryRowOfTheFestivalAsync<FestivalIngredient>(festivalId, cancellationToken);
+  }
+
+  private async Task RemoveEveryRowOfTheFestivalAsync<TEntity>(Guid festivalId, CancellationToken cancellationToken) where TEntity : class, IFestivalScoped
+  {
+    var rows = _database.Set<TEntity>();
+
+    rows.RemoveRange(await rows.WhereFestivalIs(festivalId).ToListAsync(cancellationToken));
+  }
+
   private async Task<Error?> PeriodRefusalAsync(DateTime startsAtUtc, DateTime endsAtUtc, Guid festivalKeepingItsOwnPeriod, CancellationToken cancellationToken)
   {
     if (endsAtUtc <= startsAtUtc)
@@ -160,7 +219,7 @@ public sealed class FestivalService
 
   private async Task CopyContentsAsync(Guid copiedFromFestivalId, Guid newFestivalId, CancellationToken cancellationToken)
   {
-    var stationLinks = await _database.FestivalStations.AsNoTracking().Where(link => link.FestivalId == copiedFromFestivalId).ToListAsync(cancellationToken);
+    var stationLinks = await _database.FestivalStations.AsNoTracking().WhereFestivalIs(copiedFromFestivalId).ToListAsync(cancellationToken);
     var linkIdsAtTheCopy = stationLinks.ToDictionary(link => link.Id, link => Guid.NewGuid());
 
     foreach (var link in stationLinks)
@@ -172,7 +231,7 @@ public sealed class FestivalService
                                        NextStationOrderNumber = FirstNumber
                                      });
 
-    var shownAreas = await _database.Areas.AsNoTracking().Where(area => area.FestivalId == copiedFromFestivalId && !area.IsHidden).Include(area => area.Tables.Where(table => !table.IsHidden)).Include(area => area.StationShapes).ToListAsync(cancellationToken);
+    var shownAreas = await _database.Areas.AsNoTracking().WhereFestivalIs(copiedFromFestivalId).Where(area => !area.IsHidden).Include(area => area.Tables.Where(table => !table.IsHidden)).Include(area => area.StationShapes).ToListAsync(cancellationToken);
 
     foreach (var area in shownAreas)
     {
@@ -216,7 +275,7 @@ public sealed class FestivalService
       }
     }
 
-    var menuRows = await _database.FestivalCatalogItems.AsNoTracking().Where(menuRow => menuRow.FestivalId == copiedFromFestivalId).ToListAsync(cancellationToken);
+    var menuRows = await _database.FestivalCatalogItems.AsNoTracking().WhereFestivalIs(copiedFromFestivalId).ToListAsync(cancellationToken);
 
     foreach (var menuRow in menuRows)
       _database.FestivalCatalogItems.Add(new()
@@ -228,7 +287,7 @@ public sealed class FestivalService
                                            IsAvailable = true
                                          });
 
-    var assignments = await _database.ItemStationAssignments.AsNoTracking().Where(assignment => assignment.FestivalId == copiedFromFestivalId).ToListAsync(cancellationToken);
+    var assignments = await _database.ItemStationAssignments.AsNoTracking().WhereFestivalIs(copiedFromFestivalId).ToListAsync(cancellationToken);
 
     foreach (var assignment in assignments)
       _database.ItemStationAssignments.Add(new()

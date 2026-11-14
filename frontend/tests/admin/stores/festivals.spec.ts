@@ -135,6 +135,36 @@ describe('setting a festival up', () => {
     expect(posts).toEqual(['/api/admin/festivals/fest-1/hide', '/api/admin/festivals/fest-1/show'])
   })
 
+  it('deletes one festival on its own address and reads the list again', async () => {
+    const laptop = laptopLists([LAST_YEAR])
+    const festivals = useAdminFestivalsStore()
+
+    const result = await festivals.deleteFestival('fest-0')
+
+    expect(result).toEqual({ kind: 'ok', value: null })
+    expect(laptop.calls.map((call) => `${call.method} ${call.url}`)).toEqual([
+      'DELETE /api/admin/festivals/fest-0',
+      'GET /api/admin/festivals',
+    ])
+  })
+
+  it('hands back the reason when the laptop refuses to delete the active festival', async () => {
+    laptopRefuses(409, {
+      code: 'ActiveFestivalCannotBeDeleted',
+      messageKey: 'errors.admin.festivals.activeFestivalCannotBeDeleted',
+      parameters: {},
+      details: null,
+    })
+    const festivals = useAdminFestivalsStore()
+
+    const result = await festivals.deleteFestival('fest-1')
+
+    expect(result).toEqual({
+      kind: 'failed',
+      message: { key: 'errors.admin.festivals.activeFestivalCannotBeDeleted', parameters: {}, count: null },
+    })
+  })
+
   it('keeps the name of the festival that is in the way', async () => {
     laptopRefuses(409, {
       code: 'FestivalOverlaps',

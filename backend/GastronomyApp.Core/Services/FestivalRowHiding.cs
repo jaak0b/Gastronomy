@@ -22,13 +22,13 @@ public sealed class FestivalRowHiding
     _runningFestival = runningFestival;
   }
 
-  public async Task<ErrorOr<TView>> HideAsync<TEntity, TView>(Guid festivalId, Guid id, Expression<Func<OrderItem, bool>> itemOfRow, Func<Guid, Error> notFound, Func<Guid, Error> staysShown, CancellationToken cancellationToken) where TEntity : class, IHideable, IFestivalScoped
+  public async Task<ErrorOr<TView>> HideAsync<TEntity, TView>(Guid festivalId, Guid id, Expression<Func<OrderItem, bool>> itemOfRow, Func<Guid, Error> notFound, Func<Guid, Error> staysShown, CancellationToken cancellationToken) where TEntity : class, IEntity, IHideable, IFestivalScoped
   {
     ArgumentNullException.ThrowIfNull(itemOfRow);
     ArgumentNullException.ThrowIfNull(notFound);
     ArgumentNullException.ThrowIfNull(staysShown);
 
-    var row = await _database.Set<TEntity>().FirstOrDefaultAsync(candidate => candidate.Id == id && candidate.FestivalId == festivalId, cancellationToken);
+    var row = await _database.Set<TEntity>().WhereFestivalIs(festivalId).FirstOrDefaultAsync(candidate => candidate.Id == id, cancellationToken);
 
     if (row is null)
       return notFound(id);

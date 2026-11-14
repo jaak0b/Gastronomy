@@ -791,6 +791,22 @@ export type put__api_admin_festivals_FestivalId = {
 },
       
     }
+export type delete__api_admin_festivals_FestivalId = {
+      method: "DELETE",
+      path: "/api/admin/festivals/{festivalId}",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        path:  { festivalId: string },
+        
+        
+        
+          }
+      responses: {204: unknown,
+},
+      
+    }
 export type post__api_admin_festivals_FestivalId_copy = {
       method: "POST",
       path: "/api/admin/festivals/{festivalId}/copy",
@@ -1378,6 +1394,7 @@ put: {
          },
 delete: {
            "/api/admin/items/{itemId}/ingredients/{ingredientId}": Endpoints.delete__api_admin_items_ItemId_ingredients_IngredientId,
+"/api/admin/festivals/{festivalId}": Endpoints.delete__api_admin_festivals_FestivalId,
 "/api/admin/festivals/{festivalId}/items/{itemId}": Endpoints.delete__api_admin_festivals_FestivalId_items_ItemId,
 "/api/admin/festivals/{festivalId}/stations/{stationId}": Endpoints.delete__api_admin_festivals_FestivalId_stations_StationId,
 "/api/admin/festivals/{festivalId}/stations/{stationId}/shape": Endpoints.delete__api_admin_festivals_FestivalId_stations_StationId_shape,

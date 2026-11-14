@@ -1,49 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
+import { flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import FestivalsList from '../../../../src/admin/components/festivals/FestivalsList.vue'
-import { testPlugins } from '../../../support/plugins'
 import { iconActionLabelsOnScreen, pressInDialog, refusalReasonsOnScreen, waitForDialog, typeInto, onScreen } from '../../../support/dom'
-import { stubLaptop, answer, neverAnswers, noConnection, type StubbedLaptop, refusal } from '../../../support/laptop'
-
-const RUNNING = {
-  festivalId: 'fest-1',
-  name: 'Sommerfest',
-  startsAtUtc: '2026-07-18T10:00:00Z',
-  endsAtUtc: '2026-07-19T02:00:00Z',
-  isHidden: false,
-  isRunning: true,
-  stationCount: 2,
-  menuItemCount: 8,
-  orderCount: 1,
-}
-
-const OVER = {
-  ...RUNNING,
-  festivalId: 'fest-2',
-  name: 'Herbstfest',
-  isRunning: false,
-  orderCount: 0,
-}
-
-const HIDDEN = {
-  ...OVER,
-  festivalId: 'fest-3',
-  name: 'Sommerfest 2025',
-  isHidden: true,
-}
-
-const RUNNING_ROW = '[data-test="festival-row"][data-test-id="fest-1"]'
-
-const OVER_ROW = '[data-test="festival-row"][data-test-id="fest-2"]'
-
-function festivalsLaptop(festivals: unknown[]): StubbedLaptop {
-  return stubLaptop().answersEverythingElse(answer({ festivals }))
-}
-
-function mountList() {
-  return mount(FestivalsList, { global: { plugins: testPlugins() }, attachTo: document.body })
-}
+import { stubLaptop, neverAnswers, noConnection, refusal } from '../../../support/laptop'
+import { festivalsLaptop, HIDDEN, mountList, OVER, OVER_ROW, RUNNING, RUNNING_ROW } from './festivalsListFixture'
 
 describe('the list of festivals', () => {
   beforeEach(() => {
@@ -138,14 +98,16 @@ describe('the list of festivals', () => {
     expect(rows[1].find('[data-test="actions"] [data-test="hide"]').exists()).toBe(true)
   })
 
-  it('offers copying, the pencil and the eye in that order', async () => {
+  it('offers copying, the pencil, the eye and the trash in that order', async () => {
     festivalsLaptop([OVER])
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('[data-test="festival-row"]').exists()).toBe(true))
 
-    const actions = list.get('[data-test="actions"]').findAll('[data-test="copy"], [data-test="open"], [data-test="hide"]')
-    expect(actions.map((action) => action.attributes('data-test'))).toEqual(['copy', 'open', 'hide'])
+    const actions = list
+      .get('[data-test="actions"]')
+      .findAll('[data-test="copy"], [data-test="open"], [data-test="hide"], [data-test="delete"]')
+    expect(actions.map((action) => action.attributes('data-test'))).toEqual(['copy', 'open', 'hide', 'delete'])
   })
 
   it('offers opening a festival through the pencil, named "Bearbeiten"', async () => {

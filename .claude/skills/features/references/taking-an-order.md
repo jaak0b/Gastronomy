@@ -167,9 +167,10 @@ Backend, under `backend/`:
   order exists. The insert, the numbers, both saves of the items' first status and the stock step
   share the request's transaction; a failure in any of them rolls all of it back and the phone
   keeps the order on screen with its retry.
-- **An order and its items are never deleted.** Nothing in the app removes one. Deleting an item
-  with its statuses loaded fails on the pointer between the item and its current status, so a
-  feature that ever deletes orders clears that pointer in an earlier save first.
+- **An order and its items are deleted only with their festival.** Nothing else in the app removes
+  one; `FestivalService.DeleteAsync` does (see the `festivals` page). Deleting an item with its
+  statuses loaded fails on the pointer between the item and its current status, so that deletion
+  clears the pointer in an earlier save of the same transaction first.
 
 ## Tests
 

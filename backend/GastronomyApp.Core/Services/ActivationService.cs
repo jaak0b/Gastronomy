@@ -1,6 +1,7 @@
 using ErrorOr;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Queries;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 
@@ -37,9 +38,9 @@ public sealed class ActivationService
     return await ShowAsync<TEntity, TView>(async () => await _database.Set<TEntity>().FindAsync([id], cancellationToken), id, notFound, cancellationToken);
   }
 
-  public async Task<ErrorOr<TView>> ShowAsync<TEntity, TView>(Guid festivalId, Guid id, Func<Guid, Error> notFound, CancellationToken cancellationToken) where TEntity : class, IHideable, IFestivalScoped
+  public async Task<ErrorOr<TView>> ShowAsync<TEntity, TView>(Guid festivalId, Guid id, Func<Guid, Error> notFound, CancellationToken cancellationToken) where TEntity : class, IEntity, IHideable, IFestivalScoped
   {
-    return await ShowAsync<TEntity, TView>(async () => await _database.Set<TEntity>().FirstOrDefaultAsync(candidate => candidate.Id == id && candidate.FestivalId == festivalId, cancellationToken), id, notFound, cancellationToken);
+    return await ShowAsync<TEntity, TView>(async () => await _database.Set<TEntity>().WhereFestivalIs(festivalId).FirstOrDefaultAsync(candidate => candidate.Id == id, cancellationToken), id, notFound, cancellationToken);
   }
 
   private async Task<ErrorOr<TView>> ShowAsync<TEntity, TView>(Func<Task<TEntity?>> find, Guid id, Func<Guid, Error> notFound, CancellationToken cancellationToken) where TEntity : class, IHideable

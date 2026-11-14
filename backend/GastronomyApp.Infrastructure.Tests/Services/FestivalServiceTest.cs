@@ -1,4 +1,5 @@
 using GastronomyApp.Contracts.Admin.Festivals;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Services;
@@ -422,6 +423,122 @@ public sealed class FestivalServiceTest
     Assert.That(hiddenAgain.Value, Is.EqualTo(created.Value));
   }
 
+  [Test]
+  public async Task DeleteAsync_AFestivalThatIsNotThere_IsRefusedBecauseTheFestivalIsNotFound()
+  {
+    var deleted = await _service.DeleteAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(deleted.RefusalMessageKey(), Is.EqualTo("FestivalNotFound"));
+                      Assert.That(deleted.FirstError.NumericType, Is.EqualTo(RefusalType.NotFound));
+                    });
+  }
+
+  [Test]
+  public async Task DeleteAsync_AFestivalRunningRightNow_IsRefusedAndDeletesNothing()
+  {
+    await AddAPlanWithAnOrderAsync();
+    _fixture.DbContext.ChangeTracker.Clear();
+
+    var deleted = await _service.DeleteAsync(_seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    await using var readContext = _fixture.CreateContext();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(deleted.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
+                      Assert.That(deleted.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.activeFestivalCannotBeDeleted"));
+                      Assert.That(deleted.RefusalDescription(), Does.Contain(_seeded.FestivalId.ToString()));
+                      Assert.That(readContext.Festivals.Count(), Is.EqualTo(1));
+                      Assert.That(readContext.Orders.Count(), Is.EqualTo(1));
+                      Assert.That(readContext.OrderItemStatuses.Count(), Is.EqualTo(2));
+                      Assert.That(readContext.Tables.Count(), Is.EqualTo(1));
+                      Assert.That(readContext.FestivalStationShapes.Count(), Is.EqualTo(1));
+                    });
+  }
+
+  [Test]
+  public async Task DeleteAsync_AFestivalThatIsOver_DeletesItWithItsOrdersItsPlanItsMenuAndItsStock()
+  {
+    await AddIngredientsAsync();
+    await AddStockRowsAsync();
+    await AddAPlanWithAnOrderAsync();
+    await EndTheSeededFestivalAsync();
+
+    var deleted = await _service.DeleteAsync(_seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    await using var readContext = _fixture.CreateContext();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(deleted.IsError, Is.False);
+                      Assert.That(readContext.Festivals, Is.Empty);
+                      Assert.That(readContext.Orders, Is.Empty);
+                      Assert.That(readContext.StationOrders, Is.Empty);
+                      Assert.That(readContext.OrderItems, Is.Empty);
+                      Assert.That(readContext.OrderItemStatuses, Is.Empty);
+                      Assert.That(readContext.Areas, Is.Empty);
+                      Assert.That(readContext.Tables, Is.Empty);
+                      Assert.That(readContext.FestivalStationShapes, Is.Empty);
+                      Assert.That(readContext.FestivalStations, Is.Empty);
+                      Assert.That(readContext.FestivalCatalogItems, Is.Empty);
+                      Assert.That(readContext.ItemStationAssignments, Is.Empty);
+                      Assert.That(readContext.FestivalIngredients, Is.Empty);
+                    });
+  }
+
+  [Test]
+  public async Task DeleteAsync_AnotherFestivalAndTheSharedCatalog_KeepsBoth()
+  {
+    await AddIngredientsAsync();
+    await AddAPlanWithAnOrderAsync();
+    var other = await _service.CopyAsync(_seeded.FestivalId, Request("Herbstfest", _start, _start.AddHours(6)), TestContext.CurrentContext.CancellationToken);
+    await EndTheSeededFestivalAsync();
+
+    await _service.DeleteAsync(_seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    await using var readContext = _fixture.CreateContext();
+    var otherId = other.Value.FestivalId;
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(readContext.Festivals.Select(festival => festival.Id), Is.EqualTo(new[] { otherId }));
+                      Assert.That(readContext.FestivalStations.Count(link => link.FestivalId == otherId), Is.EqualTo(2));
+                      Assert.That(readContext.FestivalCatalogItems.Count(menuRow => menuRow.FestivalId == otherId), Is.EqualTo(2));
+                      Assert.That(readContext.ItemStationAssignments.Count(assignment => assignment.FestivalId == otherId), Is.EqualTo(2));
+                      Assert.That(readContext.FestivalIngredients.Count(stock => stock.FestivalId == otherId), Is.EqualTo(2));
+                      Assert.That(readContext.Areas.Count(area => area.FestivalId == otherId), Is.EqualTo(1));
+                      Assert.That(readContext.Tables.Count(table => table.FestivalId == otherId), Is.EqualTo(1));
+                      Assert.That(readContext.FestivalStationShapes.Count(shape => shape.FestivalId == otherId), Is.EqualTo(1));
+                      Assert.That(readContext.Stations.Count(), Is.EqualTo(2));
+                      Assert.That(readContext.CatalogCategories.Count(), Is.EqualTo(2));
+                      Assert.That(readContext.CatalogItems.Count(), Is.EqualTo(2));
+                      Assert.That(readContext.StaffMembers.Count(), Is.EqualTo(1));
+                      Assert.That(readContext.Ingredients.Count(), Is.EqualTo(2));
+                      Assert.That(readContext.Units.Count(), Is.EqualTo(6));
+                    });
+  }
+
+  [Test]
+  public async Task DeleteAsync_AHiddenFestivalInsideItsPeriod_DeletesIt()
+  {
+    var festival = await _fixture.DbContext.Festivals.SingleAsync(TestContext.CurrentContext.CancellationToken);
+    festival.IsHidden = true;
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    _fixture.DbContext.ChangeTracker.Clear();
+
+    var deleted = await _service.DeleteAsync(_seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    await using var readContext = _fixture.CreateContext();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(deleted.IsError, Is.False);
+                      Assert.That(readContext.Festivals, Is.Empty);
+                    });
+  }
+
   private FestivalService CreateService(GastronomyAppDbContext dbContext)
   {
     RunningFestivalLookup runningFestival = new(dbContext, new(), TimeProvider.System);
@@ -517,6 +634,60 @@ public sealed class FestivalServiceTest
                                     IsHidden = isHidden
                                   });
     await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+  }
+
+  private async Task AddStockRowsAsync()
+  {
+    foreach (var ingredientId in await _fixture.DbContext.Ingredients.Select(ingredient => ingredient.Id).ToListAsync(TestContext.CurrentContext.CancellationToken))
+      _fixture.DbContext.FestivalIngredients.Add(new()
+                                                 {
+                                                   Id = Guid.NewGuid(),
+                                                   FestivalId = _seeded.FestivalId,
+                                                   IngredientId = ingredientId,
+                                                   AvailableAmount = 40
+                                                 });
+
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+  }
+
+  private async Task AddAPlanWithAnOrderAsync()
+  {
+    var tableId = await new DomainSeeder().SeedTableAsync(_fixture.DbContext, _seeded.FestivalId, "Tisch 1", TestContext.CurrentContext.CancellationToken);
+    var areaId = await _fixture.DbContext.Tables.Where(table => table.Id == tableId).Select(table => table.AreaId).SingleAsync(TestContext.CurrentContext.CancellationToken);
+    await PlaceAsync(_seeded.KitchenStationId, areaId);
+
+    var order = BuildOrder(1, tableId);
+    StationOrder stationOrder = new()
+                                {
+                                  Id = Guid.NewGuid(),
+                                  OrderId = order.Id,
+                                  FestivalId = _seeded.FestivalId,
+                                  StationId = _seeded.KitchenStationId,
+                                  StationOrderNumber = 1,
+                                  DeliveryMode = DeliveryMode.Together
+                                };
+    OrderItem item = new()
+                     {
+                       Id = Guid.NewGuid(),
+                       StationOrderId = stationOrder.Id,
+                       CatalogItemId = _seeded.SausageItemId,
+                       ItemName = "Bratwurst",
+                       UnitPriceCents = 350
+                     };
+    order.StationOrders.Add(stationOrder);
+    _fixture.DbContext.Orders.Add(order);
+
+    OrderItemStatusSeeder statusSeeder = new();
+    _fixture.DbContext.OrderItems.Add(statusSeeder.OpenAndHandOutOnSaveWhenAHandOutTimeIsGiven(item, _seeded.StaffMemberId, DateTime.UtcNow, _seeded.KitchenStationId, DateTime.UtcNow));
+    await statusSeeder.SaveAsync(_fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+  }
+
+  private async Task EndTheSeededFestivalAsync()
+  {
+    var festival = await _fixture.DbContext.Festivals.SingleAsync(row => row.Id == _seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    festival.EndsAtUtc = DateTime.UtcNow.AddHours(-1);
+    await _fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+    _fixture.DbContext.ChangeTracker.Clear();
   }
 
   private async Task PlaceAsync(Guid stationId, Guid areaId)

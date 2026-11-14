@@ -1,6 +1,6 @@
 namespace GastronomyApp.Core.Entities;
 
-public abstract class AreaShape
+public abstract class AreaShape : IFestivalScoped
 {
   protected AreaShape()
   {

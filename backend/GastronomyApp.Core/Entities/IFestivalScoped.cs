@@ -1,6 +1,6 @@
 namespace GastronomyApp.Core.Entities;
 
-public interface IFestivalScoped : IEntity
+public interface IFestivalScoped
 {
   public Guid FestivalId { get; }
 }

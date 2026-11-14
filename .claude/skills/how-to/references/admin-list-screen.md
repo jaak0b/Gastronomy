@@ -30,7 +30,7 @@ the stations store is built on `defineFestivalScopedList` instead of `defineAdmi
    belongs to a list that has `/activate` and `/deactivate` routes (the festivals use `/hide` and `/show`,
    so the festivals store has none); `withDeleting(list, definition)` adds `deleteEntry` and belongs to
    a list whose entries are deleted for good on `DELETE <path>/{id}` (the units and ingredients stores
-   hand it out as `deleteUnit` and `deleteIngredient`). After a delete the layer forgets the entries `create` showed ahead of the laptop's
+   hand it out as `deleteUnit` and `deleteIngredient`, the festivals store as `deleteFestival`). After a delete the layer forgets the entries `create` showed ahead of the laptop's
    list, then reads the list again through the latest request gate, so neither a just-created entry
    nor a read that started earlier brings the deleted entry back. A store applies only the layers its
    endpoints have, e.g.
@@ -116,7 +116,8 @@ the stations store is built on `defineFestivalScopedList` instead of `defineAdmi
 8. **Delete.** An entry the laptop deletes for good is offered by `admin/components/BaseDeleteAction.vue`:
    the trash inside `BaseActionWithRefusalReason`, disabled with `refusal-reason` when the entry's
    own data says it is in use, and `BaseConfirmDialog` with the `confirm-title`, `confirm-body` and
-   `confirm-label` the screen passes. `trash-test-name` names the trash and, with `-wrapper`, the
+   `confirm-label` the screen passes. `trash-label` names the action on the trash's tooltip, such
+   as "Zutat löschen". `trash-test-name` names the trash and, with `-wrapper`, the
    tooltip's wrapper. It emits `asked` when the trash is pressed, so the screen forgets an earlier
    refusal, and `confirmed` once the admin confirms; the screen then calls the store's delete and
    shows a refusal where it shows its others (under the row through `useRowRefusals`, or under the
@@ -125,7 +126,11 @@ the stations store is built on `defineFestivalScopedList` instead of `defineAdmi
    and Space on the trash stay inside it, so it works inside a clickable chip; every other key passes.
    Its question keeps the admin's button sizes inside a chip with small buttons, because
    `surfaceDefaults` nests the control defaults under `VDialog`. Consumers: the ingredient rows of
-   the recipe popup and the unit chips of `ingredients/IngredientDialog.vue`.
+   the recipe popup, the unit chips of `ingredients/IngredientDialog.vue` and the festival rows of
+   `festivals/FestivalsList.vue`. A deletion that takes much data with it asks a second time after
+   `confirmed`: the festival list opens `festivals/FestivalDeleteDialog.vue`, a `BaseFormDialog`
+   that keeps its delete button off until the typed name matches, sends the deletion itself (it
+   sits outside the row, so the reload does not remove it) and shows a refusal inside it.
 9. **Texts.** `admin.<section>.{title,labels,actions,messages}` and, for refusals the laptop sends,
    `errors.admin.<section>.*`, in `shared/i18n/de.json` and `en.json` in the same change. Read
    `no-ai-slop` and `writing-ui-guidance` first.

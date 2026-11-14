@@ -4,7 +4,8 @@ The admin keeps the festivals on the Feste tab: a name, a start and an end, and 
 page its stations, its articles with their prices and its ingredient stock. At most one festival is
 running at a time, and the phones, the station tablets and the settling screen all work on that one.
 Hiding a running festival is refused, and so is taking an article off its menu or a station with open
-items off it.
+items off it. Any festival that is not running can be deleted for good, with its orders, its plan,
+its menu and its stock, after the admin has typed its name.
 
 ## Where the code lives
 
@@ -25,8 +26,15 @@ Backend, under `backend/`:
   `FestivalMenuService`, `FestivalStationService` and the administration services of articles and
   stations all hold one.
 - `Core/Services/FestivalService.cs` is the service of the Feste tab and reads and writes through
-  `IGastronomyDatabase`: `ListAsync`, `CreateAsync`, `UpdateAsync`, `CopyAsync` and `HideAsync`, each
-  taking the `SaveFestivalRequest` where it has one. The list projects with
+  `IGastronomyDatabase`: `ListAsync`, `CreateAsync`, `UpdateAsync`, `CopyAsync`, `HideAsync` and
+  `DeleteAsync`, each taking the `SaveFestivalRequest` where it has one. `DeleteAsync` loads and
+  removes every row of the festival through the tracker:
+  `RemoveTheOrdersWithTheirStationOrdersItemsAndStatusesAsync` (after
+  `BreakTheCycleBetweenEachItemAndItsCurrentStatusAsync`), then
+  `RemoveThePlanTheMenuTheStationLinksAndTheStockAsync` (station shapes, tables, areas, assignments,
+  menu rows, station links, stock rows), then the festival. It finds every row through
+  `WhereFestivalIs`: the one in `OrderItemQueries` for the items, the one in
+  `FestivalScopedQueries` for the rest (see the `query-building-blocks` page). The list projects with
   `ProjectToType<AdminFestivalView>()` (the station and menu counts are query expressions in
   `Core/Mapping/FestivalMapping.cs`), counts the orders per festival in one grouped query and sets
   `IsRunning` through `RunningFestivalLookup.IsRunning`, ordered by start, latest first.
@@ -47,9 +55,11 @@ Backend, under `backend/`:
 - Refusals: `GastronomyApp.Core/Refusals/Refusal.Festival.cs` (`PeriodInvalid`,
   `PeriodOverlapsAnotherFestival`, `FestivalIsRunning` with
   `errors.admin.festivals.runningFestivalStaysShown`, which is also the tooltip of the festival
-  list's disabled eye), `Refusal.FestivalMenu.cs` and `Refusal.FestivalStation.cs`.
+  list's disabled eye, `RunningFestivalCannotBeDeleted` with
+  `errors.admin.festivals.activeFestivalCannotBeDeleted`, which is also the tooltip of its disabled
+  trash), `Refusal.FestivalMenu.cs` and `Refusal.FestivalStation.cs`.
 - Routes: `GastronomyApp.Api/Endpoints/AdminFestivalEndpoints.cs` under `/api/admin/festivals`: list,
-  create, `PUT /{festivalId}`, `POST /{festivalId}/copy`, `/hide` (all calling `FestivalService`) and
+  create, `PUT` and `DELETE /{festivalId}`, `POST /{festivalId}/copy`, `/hide` (all calling `FestivalService`) and
   `/show` (calling `ActivationService`); `PUT` and `DELETE /{festivalId}/items/{itemId}` and
   `POST .../availability` calling `FestivalMenuService`; `PUT` and `DELETE
   /{festivalId}/stations/{stationId}` calling `FestivalStationService`, whose removal also deletes the
@@ -86,7 +96,12 @@ Frontend, under `frontend/src/`:
   the tooltip "Ausblenden", `BaseIconAction.vue`, asking through `BaseHideConfirmDialog.vue`, and on
   the running festival disabled with `runningFestivalStaysShown` as its tooltip through
   `BaseActionWithRefusalReason.vue`) and
-  show (the open eye with the tooltip "Einblenden", `BaseShowButton.vue`), in that order, the
+  show (the open eye with the tooltip "Einblenden", `BaseShowButton.vue`) and the trash that
+  deletes (`BaseDeleteAction.vue`, disabled on the running festival with
+  `activeFestivalCannotBeDeleted` as its tooltip), in that order. The trash asks "Fest löschen?"
+  with "Weiter", then `FestivalDeleteDialog.vue` (on `BaseFormDialog`) asks for the festival's name
+  and keeps "Löschen" off until the typed text, spaces before and after left aside, equals the name
+  exactly, case included; it sends the deletion itself and shows a refusal inside it. The
   checkbox that reveals
   the hidden ones in the heading line (`BaseHeadingWithCheckbox.vue`, as on every global tab), and
   the new festival button; the table plan's areas and tables hide and show through the same pieces
@@ -126,8 +141,9 @@ Frontend, under `frontend/src/`:
   `StationSelect.vue` and `admin/composables/useFestivalItemRows.ts`) and `FestivalStock.vue` (see
   the `festival-stock` page).
 - Stores: `admin/stores/festivals.ts` (`useAdminFestivalsStore`: `save`, `copy`, `hide`, `show`,
-  `runningFestival`, reloading on `ConfigurationChanged` and `OrdersChanged`). It never computes
-  "running": it takes `isRunning` from the laptop. The stations and items stores read one festival
+  `deleteFestival` from the `withDeleting` layer, `runningFestival`, reloading on
+  `ConfigurationChanged` and `OrdersChanged`). It never computes "running": it takes `isRunning`
+  from the laptop. The stations and items stores read one festival
   through `admin/stores/festivalScopedList.ts` (`loadAtTheFestival`); the stations store reloads on
   `ConfigurationChanged` and `OrdersChanged`, because `hasItemsToHandOutAtTheRunningFestival`
   changes with every order and every hand-out. `festivalStock.ts` holds the stock and `tablePlan.ts` the plan.
@@ -172,6 +188,15 @@ Every point below is intended behaviour. A change to any of them needs the owner
 - **Running means not hidden and `StartsAtUtc <= now < EndsAtUtc`, and only `FestivalSchedule`
   decides it.** The hide flag is `IsHidden`; stations, articles and categories use `IsActive`,
   festivals never do, and ingredients and units have neither: they are deleted.
+- **Deleting a festival is all or nothing and takes only what belongs to it.** The running festival
+  is refused and nothing is removed. Otherwise everything of the festival goes in the request's one
+  transaction; the items' pointer to their current status is cleared in an earlier save of the
+  same transaction, so a failure at any step rolls all of it back. Articles, categories,
+  ingredients, units, stations, waiters and devices stay. A page of that festival still open in
+  another tab draws nothing once its reloaded list no longer holds it (`FestivalPage.vue` draws only
+  while `festival` is known), and opening it again returns to the overview through
+  `useOpenedFestival.ts`. A phone is unaffected, because a festival that is not running is never
+  its catalog.
 - **What belongs to a festival is there once.** A station takes part once (`FestivalStation`, unique
   on `(FestivalId, StationId)`, carrying the number that station shows at that festival), an article
   is on the menu once (`FestivalCatalogItem`, unique on `(FestivalId, CatalogItemId)`, with its price
@@ -206,9 +231,14 @@ Every point below is intended behaviour. A change to any of them needs the owner
   `Configurations/OrderNumberIndexTest` (the station number index) and
   `Services/FestivalServiceTest` (every festival action on the real DbContext: the list with its
   counts and `IsRunning`, the period checks, the stock rows of a new festival and of a copy, and
-  what a copy takes across, plan included) and `Services/ActivationServiceTest` (showing).
+  what a copy takes across, plan included, and deleting: every row of the festival removed, another
+  festival and the shared catalog kept, the running festival refused with nothing removed, a hidden
+  one inside its period deleted) and `Services/ActivationServiceTest` (showing).
 - `GastronomyApp.Api.Tests/Endpoints`: `AdminFestivalEndpointsTest` (the wire shape, overlap with a
-  hidden festival, show without an overlap check, hide while running refused with its reason, copy) and
+  hidden festival, show without an overlap check, hide while running refused with its reason, copy,
+  delete with an order, delete while running refused, delete of an unknown festival, and a delete
+  whose second save a test trigger refuses, which leaves the festival, its order and every item's
+  current status as they were) and
   `FestivalScopeEndpointsTest`.
 - What would refuse taking a station out: `ItemsToHandOutLookupTest` in
   `GastronomyApp.Infrastructure.Tests/Services` (running, over, not yet started, nothing running,
@@ -224,7 +254,10 @@ Every point below is intended behaviour. A change to any of them needs the owner
 - `frontend/tests`: `admin/stores/festivals.spec.ts` and `festivalScope.spec.ts`; the station
   list's reload on `OrdersChanged` in `admin/stores/screenListening.spec.ts`;
   `admin/components/festivals/FestivalsList.spec.ts` (the eye icons and the pencil with their
-  names, the order of a row's actions, the eye disabled on the running festival with its reason) and
+  names, the order of a row's actions, the eye disabled on the running festival with its reason),
+  `FestivalsList.deleting.spec.ts` (both questions, the name gate, cancelling each, the refusal
+  and the shared failure in the dialog, the trash disabled on the running festival with its reason),
+  both on `festivalsListFixture.ts`, and
   `FestivalPage.*.spec.ts` (`heading`, `refusals`, `stations` with the disabled trash icon, its
   two reasons and the two sentences of the empty search, `itemChanges`, `itemPlacement`,
   `tablePlan`, `tablePlanAreas`, `emptyLists`) on

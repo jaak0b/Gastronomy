@@ -23,6 +23,8 @@ public static class AdminFestivalEndpoints
 
     group.MapPut("/{festivalId:guid}", async Task<ApiAnswer<SavedFestivalView>> (Guid festivalId, SaveFestivalRequest request, FestivalService service, CancellationToken cancellationToken) => await service.UpdateAsync(festivalId, request, cancellationToken));
 
+    group.MapDelete("/{festivalId:guid}", async Task<NoContentAnswer> (Guid festivalId, FestivalService service, CancellationToken cancellationToken) => await service.DeleteAsync(festivalId, cancellationToken));
+
     group.MapPost("/{festivalId:guid}/copy", async Task<CreatedAnswer<SavedFestivalView>> (Guid festivalId, SaveFestivalRequest request, FestivalService service, CancellationToken cancellationToken) => await service.CopyAsync(festivalId, request, cancellationToken));
 
     group.MapPost("/{festivalId:guid}/hide", async Task<ApiAnswer<SavedFestivalView>> (Guid festivalId, FestivalService service, CancellationToken cancellationToken) => await service.HideAsync(festivalId, cancellationToken));

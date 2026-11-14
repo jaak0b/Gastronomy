@@ -214,6 +214,94 @@ public sealed class AdminFestivalEndpointsTest
   }
 
   [Test]
+  public async Task DeleteFestival_AFestivalThatIsRunning_IsRefusedWithTheReasonAndKept()
+  {
+    using var response = await _context.Client.DeleteAsync($"/api/admin/festivals/{_context.World.FestivalId}");
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    await using var database = _context.Factory.CreateContext();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+                      Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("ActiveFestivalCannotBeDeleted"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.activeFestivalCannotBeDeleted"));
+                      Assert.That(database.Festivals.Any(festival => festival.Id == _context.World.FestivalId), Is.True);
+                    });
+  }
+
+  [Test]
+  public async Task DeleteFestival_AFestivalThatEndedWithAnOrder_IsDeletedWithItsOrder()
+  {
+    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
+    {
+      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    await LetTheFestivalEndAsync();
+
+    using var response = await _context.Client.DeleteAsync($"/api/admin/festivals/{_context.World.FestivalId}");
+
+    await using var database = _context.Factory.CreateContext();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+                      Assert.That(database.Festivals.Any(festival => festival.Id == _context.World.FestivalId), Is.False);
+                      Assert.That(database.Orders.Any(order => order.FestivalId == _context.World.FestivalId), Is.False);
+                      Assert.That(database.OrderItemStatuses, Is.Empty);
+                    });
+  }
+
+  [Test]
+  public async Task DeleteFestival_AFestivalThatIsNotThere_IsNotFound()
+  {
+    using var response = await _context.Client.DeleteAsync($"/api/admin/festivals/{Guid.NewGuid()}");
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+  }
+
+  [Test]
+  public async Task DeleteFestival_TheSaveAfterTheStatusPointersWereClearedFails_LeavesTheFestivalItsOrderAndEveryPointerAsTheyWere()
+  {
+    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
+    {
+      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    await LetTheFestivalEndAsync();
+    var pointersBefore = await CurrentStatusOfEachItemAsync();
+    await MakeTheDatabaseRefuseToDeleteAFestivalAsync();
+
+    using var response = await _context.Client.DeleteAsync($"/api/admin/festivals/{_context.World.FestivalId}");
+
+    var pointersAfter = await CurrentStatusOfEachItemAsync();
+    await using var database = _context.Factory.CreateContext();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.IsSuccessStatusCode, Is.False);
+                      Assert.That(pointersBefore.Values, Is.All.Not.Null);
+                      Assert.That(database.Festivals.Any(festival => festival.Id == _context.World.FestivalId), Is.True);
+                      Assert.That(database.Orders.Count(order => order.FestivalId == _context.World.FestivalId), Is.EqualTo(1));
+                      Assert.That(pointersAfter, Is.EqualTo(pointersBefore));
+                    });
+  }
+
+  private async Task<Dictionary<Guid, Guid?>> CurrentStatusOfEachItemAsync()
+  {
+    await using var database = _context.Factory.CreateContext();
+
+    return await database.OrderItems.AsNoTracking().ToDictionaryAsync(item => item.Id, item => item.CurrentStatusId);
+  }
+
+  private async Task MakeTheDatabaseRefuseToDeleteAFestivalAsync()
+  {
+    await using var database = _context.Factory.CreateContext();
+    await database.Database.ExecuteSqlRawAsync("CREATE TRIGGER RefuseToDeleteAFestival BEFORE DELETE ON Festivals BEGIN SELECT RAISE(ABORT, 'deleting a festival is refused by the test'); END;");
+  }
+
+  [Test]
   public async Task PostFestival_APeriodAHiddenFestivalCovers_IsRefusedAndNamesThatFestival()
   {
     var hiddenFestivalId = await CreateFestivalAsync("Herbstfest", 2);

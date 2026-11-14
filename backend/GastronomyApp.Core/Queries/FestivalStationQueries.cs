@@ -8,6 +8,6 @@ public static class FestivalStationQueries
   {
     ArgumentNullException.ThrowIfNull(links);
 
-    return links.Where(link => link.FestivalId == festivalId && link.Station.IsActive);
+    return links.WhereFestivalIs(festivalId).Where(link => link.Station.IsActive);
   }
 }

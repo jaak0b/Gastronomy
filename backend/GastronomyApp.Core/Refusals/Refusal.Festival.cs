@@ -33,5 +33,12 @@ public static partial class Refusal
                       $"The festival {festivalId} was not hidden because it is running right now, and hiding it would empty every phone and every station tablet in the middle of service.",
                       new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "RunningFestivalStaysShown" });
     }
+
+    public static Error RunningFestivalCannotBeDeleted(Guid festivalId)
+    {
+      return Conflict("errors.admin.festivals.activeFestivalCannotBeDeleted",
+                      $"The festival {festivalId} was not deleted because it is running right now, and deleting it would take every order and the menu away from the phones and the station tablets in the middle of service.",
+                      new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "ActiveFestivalCannotBeDeleted" });
+    }
   }
 }

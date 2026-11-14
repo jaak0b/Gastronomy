@@ -9,7 +9,7 @@ import {
 import type { AdminActionResult } from '../core/adminActionResult'
 import { reloadOrFailureOf } from '../core/adminMutation'
 import { useAdminLoadStateStore } from './adminLoadState'
-import { adminListDefinition, defineAdminList, withCreating } from './adminList'
+import { adminListDefinition, defineAdminList, withCreating, withDeleting } from './adminList'
 
 export interface FestivalDraft {
   name: string
@@ -37,7 +37,8 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     load,
     createThenReload: create,
     update,
-  } = withCreating(defineAdminList(definition), definition)
+    deleteEntry: deleteFestival,
+  } = withDeleting(withCreating(defineAdminList(definition), definition), definition)
 
   const shownFestivals = computed(() => festivals.value.filter((festival) => !festival.isHidden))
   const runningFestival = computed<AdminFestivalView | null>(
@@ -95,6 +96,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     copy,
     hide,
     show,
+    deleteFestival,
     listen,
   }
 })

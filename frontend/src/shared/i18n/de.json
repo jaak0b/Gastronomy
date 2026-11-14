@@ -328,7 +328,9 @@
       "title": "Feste",
       "labels": {
         "chooseStation": "Ausgabestelle wählen",
+        "confirmDeleteTitle": "Löschen bestätigen",
         "copyTitle": "Fest kopieren",
+        "deleteTitle": "Fest löschen?",
         "end": "Ende",
         "hidden": "Ausgeblendet",
         "hideTitle": "Fest ausblenden",
@@ -348,6 +350,8 @@
         "addStation": "Ausgabestelle hinzufügen",
         "copy": "Kopieren",
         "copyConfirm": "Fest anlegen",
+        "delete": "Löschen",
+        "deleteFestival": "Fest löschen",
         "hide": "Ausblenden",
         "hideConfirm": "Ausblenden",
         "new": "Neues Fest",
@@ -356,6 +360,8 @@
         "showHidden": "Ausgeblendete Feste anzeigen"
       },
       "messages": {
+        "confirmDeleteBody": "Geben Sie zur Bestätigung den Namen des Festes ein.",
+        "deleteBody": "Das Fest „{name}“ wird mit allen zugehörigen Daten endgültig gelöscht.",
         "needsAStationFirst": "Dieses Fest hat noch keine Ausgabestelle. Fügen Sie zuerst eine hinzu.",
         "removeItemBody": "Der Artikel wird nur aus diesem Fest entfernt.",
         "removeStationBody": "Die Ausgabestelle wird nur aus diesem Fest entfernt."
@@ -529,6 +535,7 @@
         "nameMissing": "Geben Sie der Kategorie einen Namen, bevor Sie speichern.",
         "nameTaken": "Eine Kategorie mit diesem Namen ist bereits vorhanden. Wählen Sie einen anderen Namen."
       },
+        "activeFestivalCannotBeDeleted": "Ein aktives Fest kann nicht gelöscht werden.",
       "festivals": {
         "areaNameTaken": "Der Name ist in diesem Fest bereits an einen Tischplan vergeben, auch an einen ausgeblendeten. Wählen Sie einen anderen Namen.",
         "areaWithItemsToHandOutOrSettleStaysShown": "Solange ein Fest aktiv ist, kann ein Tischplan erst ausgeblendet werden, wenn an seinen Tischen alles zubereitet und kassiert ist.",

@@ -22,8 +22,7 @@ Backend, under `backend/`:
   compared with `<` or `>`): every status an item has had,
   each row pointing at the one before it (`PreviousStatusId`, unique) and naming who set it, a waiter
   or a station (exactly one, a check constraint). `OrderItem.CurrentStatusId` points at the newest
-  row. Rows are never changed or deleted; they go only with their item when the database cascade
-  removes it.
+  row. Rows are never changed or deleted; they go only with their item, when its festival is deleted.
 - `Core/Queries/OrderItemQueries.cs`: the one home of "what state is this item in". The
   `[Projectable]` checks `IsOpen`, `IsHandedOut`, `IsCancelled` (both cancelled states), `IsStillOrdered`
   (not cancelled), `IsSettled`,

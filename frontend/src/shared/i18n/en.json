@@ -328,7 +328,9 @@
       "title": "Festivals",
       "labels": {
         "chooseStation": "Choose a station",
+        "confirmDeleteTitle": "Confirm deletion",
         "copyTitle": "Copy the festival",
+        "deleteTitle": "Delete festival?",
         "end": "End",
         "hidden": "Hidden",
         "hideTitle": "Hide the festival",
@@ -348,6 +350,8 @@
         "addStation": "Add the station",
         "copy": "Copy",
         "copyConfirm": "Create the festival",
+        "delete": "Delete",
+        "deleteFestival": "Delete the festival",
         "hide": "Hide",
         "hideConfirm": "Hide",
         "new": "New festival",
@@ -356,6 +360,8 @@
         "showHidden": "Show hidden festivals"
       },
       "messages": {
+        "confirmDeleteBody": "Type the festival's name to confirm.",
+        "deleteBody": "The festival \"{name}\" and all of its data will be deleted permanently.",
         "needsAStationFirst": "This festival has no station yet. Add one first.",
         "removeItemBody": "This removes the item from this festival only.",
         "removeStationBody": "This removes the station from this festival only."
@@ -529,6 +535,7 @@
         "nameMissing": "Give the category a name before you save.",
         "nameTaken": "A category with this name already exists. Choose a different name."
       },
+        "activeFestivalCannotBeDeleted": "An active festival cannot be deleted.",
       "festivals": {
         "areaNameTaken": "A table plan at this festival already has this name, even if it is hidden. Choose a different name.",
         "areaWithItemsToHandOutOrSettleStaysShown": "While a festival is active, a table plan can only be hidden once everything at its tables is prepared and paid.",
