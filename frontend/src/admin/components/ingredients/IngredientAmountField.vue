@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { assertNever } from '../../../shared/core/assertNever'
 import { appLanguageOf } from '../../../shared/core/deviceLanguage'
 import {
+  amountFieldRoomFor,
   amountInputFor,
   parseAmountInput,
   type ParsedAmountInput,
@@ -31,6 +32,7 @@ const language = computed(() => appLanguageOf(locale.value))
 const typed = ref(amountInputFor(props.savedAmount, language.value))
 const parsed = computed(() => parseAmountInput(typed.value))
 const amountField = useTemplateRef<ComponentPublicInstance>('amountField')
+const room = computed(() => amountFieldRoomFor(typed.value, props.unitName))
 
 watch(
   () => props.savedAmount,
@@ -111,6 +113,10 @@ watch(
       v-model="typed"
       class="amount-input"
       data-test="amount-input"
+      :style="{
+        '--amount-characters': room.amountCharacters,
+        '--unit-characters': room.unitCharacters,
+      }"
       inputmode="decimal"
       hide-details="auto"
       :label="label"
@@ -122,8 +128,15 @@ watch(
         <span
           class="amount-unit text-medium-emphasis"
           data-test="amount-unit"
-        >
-          {{ unitName }}
+          >{{ unitName
+          }}<v-tooltip
+            v-if="room.unitIsShortened"
+            data-test="amount-unit-full-name"
+            activator="parent"
+            location="top"
+          >
+            {{ unitName }}
+          </v-tooltip>
         </span>
       </template>
     </v-text-field>
@@ -132,6 +145,20 @@ watch(
 
 <style scoped>
 .amount-input {
-  flex: 0 0 var(--admin-amount-field-width);
+  --padding-at-the-start-and-end-of-the-field-and-before-the-unit: 3rem;
+  flex: 0 1 auto;
+  min-width: 0;
+  width: calc(
+    (var(--amount-characters) + var(--unit-characters)) * 1ch +
+      var(--padding-at-the-start-and-end-of-the-field-and-before-the-unit)
+  );
+}
+
+.amount-unit {
+  display: inline-block;
+  max-width: calc(var(--unit-characters) * 1ch);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

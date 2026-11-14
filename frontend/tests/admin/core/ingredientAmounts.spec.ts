@@ -1,5 +1,40 @@
 import { describe, expect, it } from 'vitest'
-import { amountInputFor, parseAmountInput } from '../../../src/admin/core/ingredientAmounts'
+import {
+  amountFieldRoomFor,
+  amountInputFor,
+  parseAmountInput,
+} from '../../../src/admin/core/ingredientAmounts'
+
+describe('the room of an amount field', () => {
+  it('holds the characters of the typed amount and of the unit name', () => {
+    expect(amountFieldRoomFor('1250', 'Flasche')).toEqual({
+      amountCharacters: 4,
+      unitCharacters: 7,
+      unitIsShortened: false,
+    })
+  })
+
+  it('holds at least three characters of the amount', () => {
+    expect(amountFieldRoomFor('1', 'g').amountCharacters).toBe(3)
+    expect(amountFieldRoomFor('', 'g').amountCharacters).toBe(3)
+  })
+
+  it('holds at most ten characters of the unit name and marks it shortened', () => {
+    expect(amountFieldRoomFor('1', 'Stück!!!!!!!!!!!')).toEqual({
+      amountCharacters: 3,
+      unitCharacters: 10,
+      unitIsShortened: true,
+    })
+  })
+
+  it('does not shorten a unit name of exactly ten characters', () => {
+    expect(amountFieldRoomFor('1', 'Milliliter').unitIsShortened).toBe(false)
+  })
+
+  it('counts the typed text as it is, without trimming', () => {
+    expect(amountFieldRoomFor('12345 ', 'g').amountCharacters).toBe(6)
+  })
+})
 
 describe('an amount the admin typed', () => {
   it('is the number that was typed', () => {

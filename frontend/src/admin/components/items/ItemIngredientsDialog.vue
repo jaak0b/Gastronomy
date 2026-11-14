@@ -345,7 +345,7 @@ async function deleteIngredient(ingredientId: string): Promise<void> {
 
 .recipe-line :deep(.row-line) {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 0 auto;
+  grid-template-columns: minmax(10ch, 1fr) 0 auto;
 }
 
 .recipe-line-actions {
@@ -357,13 +357,8 @@ async function deleteIngredient(ingredientId: string): Promise<void> {
 }
 
 .recipe-line-actions :deep(.ingredient-amount-field) {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
-}
-
-.recipe-line-actions :deep(.amount-input) {
-  flex: 0 0 6rem;
-  min-width: 6rem;
 }
 
 .recipe-line-actions :deep(.edit-recipe-ingredient),

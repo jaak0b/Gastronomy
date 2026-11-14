@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { mount, type VueWrapper } from '@vue/test-utils'
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import IngredientAmountField from '../../../../src/admin/components/ingredients/IngredientAmountField.vue'
+import { isOnScreen, textOnScreen, waitUntil } from '../../../support/dom'
 import { testPlugins } from '../../../support/plugins'
 
 function mountField(
@@ -54,6 +55,79 @@ describe('the unit of an amount', () => {
     const field = mountField('ml', null)
 
     expect(amountInput(field).value).toBe('')
+  })
+})
+
+function roomOf(field: VueWrapper, property: '--amount-characters' | '--unit-characters'): string {
+  const root = field.get('[data-test="amount-input"]').element as HTMLElement
+  return root.style.getPropertyValue(property)
+}
+
+describe('the room an amount has next to its unit', () => {
+  it('keeps at least three characters for a short amount beside a long unit name', () => {
+    const field = mountField('Flasche', 1)
+
+    expect(roomOf(field, '--amount-characters')).toBe('3')
+    expect(roomOf(field, '--unit-characters')).toBe('7')
+  })
+
+  it('grows with the characters of an amount that has more than three', () => {
+    const field = mountField('g', 1250)
+
+    expect(roomOf(field, '--amount-characters')).toBe('4')
+  })
+
+  it('counts the decimal comma of a decimal amount', () => {
+    const field = mountField('Stück', 0.25)
+
+    expect(roomOf(field, '--amount-characters')).toBe('4')
+  })
+
+  it('follows the amount while the admin types', async () => {
+    const field = mountField('g', 1)
+
+    await field.get('[data-test="amount-input"] input').setValue('1234567')
+
+    expect(roomOf(field, '--amount-characters')).toBe('7')
+  })
+
+  it('keeps three characters for an empty field', () => {
+    const field = mountField('ml', null)
+
+    expect(roomOf(field, '--amount-characters')).toBe('3')
+  })
+
+  it('gives the unit name at most ten characters', () => {
+    const field = mountField('Stück!!!!!!!!!!!', 1)
+
+    expect(roomOf(field, '--unit-characters')).toBe('10')
+  })
+
+  it('follows a unit that is renamed while the field is open', async () => {
+    const field = mountField('g', 12)
+
+    await field.setProps({ unitName: 'Flasche' })
+
+    expect(roomOf(field, '--unit-characters')).toBe('7')
+  })
+})
+
+describe('a unit name too long for its room', () => {
+  it('names the full unit when the admin points at it', async () => {
+    const field = mountField('Stück!!!!!!!!!!!', 1)
+
+    await field.get('[data-test="amount-unit"]').trigger('mouseenter')
+
+    await waitUntil(() => expect(textOnScreen('[data-test="amount-unit-full-name"]').trim()).toBe('Stück!!!!!!!!!!!'))
+  })
+
+  it('offers no extra name for a unit that fits', async () => {
+    const field = mountField('Flasche', 1)
+
+    await field.get('[data-test="amount-unit"]').trigger('mouseenter')
+    await flushPromises()
+
+    expect(isOnScreen('[data-test="amount-unit-full-name"]')).toBe(false)
   })
 })
 

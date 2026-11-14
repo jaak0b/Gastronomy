@@ -70,7 +70,12 @@ Frontend, under `frontend/src/`:
 - `admin/components/ingredients/IngredientDialog.vue` is the form (`nameToStartWith` gives a new
   ingredient its first name), and `IngredientAmountField.vue` a text field with the static unit name
   inside it at its right end (Vuetify's `append-inner` slot), on the recipe and the festival stock
-  rows alike. `amountWhenCleared` (null by default) makes an empty field restore that number on blur
+  rows alike. Its width follows the amount shown in it and the unit (`amountFieldRoomFor` in
+  `admin/core/ingredientAmounts.ts`): the amount's own characters, at least three, plus the unit
+  name's characters, at most ten. A longer unit name is cut with an ellipsis inside the field and
+  named in full by a tooltip on hover, so the digits are never the part that is hidden. In the
+  recipe popup the ingredient name keeps at least ten characters of width before the field gives
+  way. `amountWhenCleared` (null by default) makes an empty field restore that number on blur
   or Enter and send it unless it already equals the saved amount; every recipe line passes 1, the
   stock rows pass nothing. `focusOnMount` focuses the input and selects its text once and emits
   `focused`. `admin/core/nameSearch.ts` (`nameMatchesTheSearch`) is the search: a part of the name,
@@ -172,7 +177,7 @@ Frontend, under `frontend/src/`:
 - `frontend/tests/admin`: `stores/ingredients.spec.ts` and `stores/items.spec.ts`;
   `components/ingredients/` (`IngredientDialog.spec.ts` and its unit specs on
   `ingredientDialogFixture.ts` (see the `units` page), `IngredientAmountField.spec.ts` for the
-  cleared amount and the focus on mount);
+  cleared amount, the focus on mount and the room given for an amount and a unit name, and the tooltip of a shortened unit);
   `components/items/` (`ItemIngredientsDialog.*.spec.ts` on `itemIngredientsDialogFixture.ts`:
   `.recipeLines` also opens the popup before the ingredient list has loaded and after it failed,
   `.availableIngredients` the available column, its search and its empty text, `.adding` the single
