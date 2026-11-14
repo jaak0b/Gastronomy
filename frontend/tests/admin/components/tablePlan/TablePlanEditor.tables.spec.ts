@@ -69,14 +69,14 @@ afterEach(() => {
 })
 
 describe('the toolbar above the drawing', () => {
-  it('offers a new table, a station and the hidden tables from left to right', async () => {
+  it('offers a new table, a station, zooming out and in, and the hidden tables from left to right', async () => {
     editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, HIDDEN_A3] }, TENT] })
 
     await mountEditor()
 
     expect(
       allOnScreen('[data-test="table-plan-toolbar"] .v-btn').map((button) => button.getAttribute('data-test')),
-    ).toEqual(['new-table', 'add-station', 'hidden-tables'])
+    ).toEqual(['new-table', 'add-station', 'zoom-out', 'zoom-in', 'hidden-tables'])
   })
 
   it('sits inside the frame of the drawing, as its top strip', async () => {

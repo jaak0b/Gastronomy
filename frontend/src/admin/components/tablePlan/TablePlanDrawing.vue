@@ -22,13 +22,21 @@ import { useThemedValue } from '../../../shared/composables/useThemedValue'
 import { assertNever } from '../../../shared/core/assertNever'
 import { DARK_TABLE_PLAN_COLOURS, LIGHT_TABLE_PLAN_COLOURS } from '../../../shared/core/tablePlanColours'
 import { LARGEST_NAME_FONT_SIZE, nameFontSizeFittingEveryWordAcross } from '../../../shared/core/shapeNameFit'
-import { TABLE_PLAN_DRAWING_WIDTH, type PlanPoint, type PlanRectangle } from '../../../shared/core/tablePlanDrawing'
+import {
+  TABLE_PLAN_DRAWING_WIDTH,
+  type PlanPoint,
+  type PlanRectangle,
+  type PlanSize,
+} from '../../../shared/core/tablePlanDrawing'
 import type { AdminActionResult } from '../../core/adminActionResult'
 import {
   drawnTablesOf,
   editorDrawingLength,
+  editorScale,
   fitsTheDrawing,
-  scaleFittingTheView,
+  scrollKeepingTheCentre,
+  type ScrolledDrawing,
+  type ShownDrawing,
 } from '../../core/tablePlanPlacement'
 import {
   isTableSelected,
@@ -108,6 +116,7 @@ const props = defineProps<{
   area: AdminAreaView
   soleSelectedShape: SoleSelectedShape | null
   removalRefusal: string | null
+  zoomStep: number
 }>()
 const selection = defineModel<TablePlanSelection | null>('selection', { required: true })
 const emit = defineEmits<{
@@ -124,8 +133,7 @@ const stage = useTemplateRef<VueKonvaRef<Konva.Stage>>('stage')
 const scrollArea = useTemplateRef<HTMLElement>('scrollArea')
 const layer = useTemplateRef<VueKonvaRef<Konva.Layer>>('layer')
 const transformer = useTemplateRef<VueKonvaRef<Konva.Transformer>>('transformer')
-const visibleHeight = ref(0)
-const visibleWidth = ref(0)
+const measuredView = ref<PlanSize>({ width: 0, height: 0 })
 const guides = ref<SnapGuide[]>([])
 const marqueeBox = ref<PlanRectangle | null>(null)
 const contextMenu = ref<ContextMenuState | null>(null)
@@ -239,23 +247,19 @@ const drawnShapes = computed<DrawnShape[]>(() => {
 
 const drawnGeometry = computed(() => drawnShapes.value.map((shape) => shape.geometry))
 
-const drawingScale = computed(() =>
-  scaleFittingTheView(
-    { width: visibleWidth.value, height: visibleHeight.value },
-    {
-      width: TABLE_PLAN_DRAWING_WIDTH + 2 * MARGIN_AROUND_THE_DRAWING,
-      height: editorDrawingLength(drawnGeometry.value, 0) + 2 * MARGIN_AROUND_THE_DRAWING,
-    },
-  ),
-)
+const drawingScale = computed(() => editorScale(measuredView.value.width, props.zoomStep))
 
-const drawingLength = computed(() =>
-  editorDrawingLength(drawnGeometry.value, visibleHeight.value / drawingScale.value - 2 * MARGIN_AROUND_THE_DRAWING),
-)
+const drawingLength = computed(() => editorDrawingLength(drawnGeometry.value))
+
+function stageSizeAt(scale: number): PlanSize {
+  return {
+    width: (TABLE_PLAN_DRAWING_WIDTH + 2 * MARGIN_AROUND_THE_DRAWING) * scale,
+    height: (drawingLength.value + 2 * MARGIN_AROUND_THE_DRAWING) * scale,
+  }
+}
 
 const stageConfig = computed(() => ({
-  width: (TABLE_PLAN_DRAWING_WIDTH + 2 * MARGIN_AROUND_THE_DRAWING) * drawingScale.value,
-  height: (drawingLength.value + 2 * MARGIN_AROUND_THE_DRAWING) * drawingScale.value,
+  ...stageSizeAt(drawingScale.value),
   scaleX: drawingScale.value,
   scaleY: drawingScale.value,
 }))
@@ -823,25 +827,70 @@ function scrollToTheSelectedShape(): void {
     return
   }
   const box = node.getClientRect({ skipStroke: true })
-  const isAboveTheView = box.y < scroller.scrollTop
-  const isBelowTheView = box.y + box.height > scroller.scrollTop + scroller.clientHeight
-  if (isAboveTheView || isBelowTheView) {
-    scroller.scrollTop = Math.max(0, box.y - SCROLL_MARGIN_PIXELS)
+  scroller.scrollLeft = scrollShowing(box.x, box.width, scroller.scrollLeft, scroller.clientWidth)
+  scroller.scrollTop = scrollShowing(box.y, box.height, scroller.scrollTop, scroller.clientHeight)
+}
+
+function scrollShowing(shapeStart: number, shapeLength: number, scrolled: number, viewLength: number): number {
+  const isBeforeTheView = shapeStart < scrolled
+  const isAfterTheView = shapeStart + shapeLength > scrolled + viewLength
+  return isBeforeTheView || isAfterTheView ? Math.max(0, shapeStart - SCROLL_MARGIN_PIXELS) : scrolled
+}
+
+function shownDrawingAt(view: PlanSize, zoomStep: number): ShownDrawing {
+  return { view, drawing: stageSizeAt(editorScale(view.width, zoomStep)) }
+}
+
+function scrolledDrawingAt(zoomStep: number): ScrolledDrawing | null {
+  const scroller = scrollArea.value
+  if (scroller === null || measuredView.value.width === 0) {
+    return null
+  }
+  return {
+    scroll: { x: scroller.scrollLeft, y: scroller.scrollTop },
+    ...shownDrawingAt(measuredView.value, zoomStep),
   }
 }
 
-function measureTheView(): void {
-  visibleHeight.value = scrollArea.value?.clientHeight ?? 0
-  visibleWidth.value = scrollArea.value?.clientWidth ?? 0
+async function moveTheViewKeepingItsCentre(before: ScrolledDrawing | null, after: ShownDrawing): Promise<void> {
+  if (before === null) {
+    return
+  }
+  await nextTick()
+  const scroller = scrollArea.value
+  if (scroller === null) {
+    return
+  }
+  const scroll = scrollKeepingTheCentre(before, after)
+  scroller.scrollLeft = scroll.x
+  scroller.scrollTop = scroll.y
 }
 
-watch([selection, drawnShapes], attachTheTransformer, { flush: 'post' })
+function measureTheView(): void {
+  const scroller = scrollArea.value
+  if (scroller === null) {
+    return
+  }
+  const before = scrolledDrawingAt(props.zoomStep)
+  measuredView.value = { width: scroller.clientWidth, height: scroller.clientHeight }
+  void moveTheViewKeepingItsCentre(before, shownDrawingAt(measuredView.value, props.zoomStep))
+}
+
+watch([selection, drawnShapes, transformer], attachTheTransformer, { flush: 'post' })
 
 watch(selection, scrollToTheSelectedShape, { flush: 'post' })
 
+watch(
+  () => props.zoomStep,
+  (zoomStepAfter, zoomStepBefore) =>
+    void moveTheViewKeepingItsCentre(
+      scrolledDrawingAt(zoomStepBefore),
+      shownDrawingAt(measuredView.value, zoomStepAfter),
+    ),
+)
+
 onMounted(() => {
   measureTheView()
-  attachTheTransformer()
   window.addEventListener('keydown', handleShortcut)
   if (scrollArea.value !== null) {
     resizeObserver = new ResizeObserver(measureTheView)
@@ -862,6 +911,7 @@ onUnmounted(() => {
     <div ref="scrollArea" class="drawing-scroll" data-test="drawing-scroll">
       <div class="drawing-frame" data-test="table-plan-drawing">
         <KonvaStage
+          v-if="measuredView.width > 0"
           ref="stage"
           :config="stageConfig"
           @click="deselectOnAnEmptySpot"

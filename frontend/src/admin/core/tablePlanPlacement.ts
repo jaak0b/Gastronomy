@@ -3,7 +3,6 @@ import {
   TABLE_PLAN_DRAWING_WIDTH,
   cornersOf,
   lowestEdgeOf,
-  scaleFittingTheWholeDrawing,
   type PlanPoint,
   type PlanSize,
 } from '../../shared/core/tablePlanDrawing'
@@ -16,7 +15,24 @@ const SHORTEST_SHAPE_SIDE = 20
 
 const MEASURING_TOLERANCE = 1e-6
 
-export const SMALLEST_EDITOR_SCALE = 0.5
+const DRAWINGS_ACROSS_THE_FRAME_AT_THE_FIRST_STEP = 3
+
+const ZOOM_FACTOR_PER_STEP = 1.25
+
+const SMALLEST_ZOOM_STEP = -3
+
+const LARGEST_ZOOM_STEP = 8
+
+export const FIRST_ZOOM_STEP = 0
+
+export interface ShownDrawing {
+  view: PlanSize
+  drawing: PlanSize
+}
+
+export interface ScrolledDrawing extends ShownDrawing {
+  scroll: PlanPoint
+}
 
 export interface TableCopy {
   sourceTableId: string
@@ -43,8 +59,44 @@ export function hiddenTablesOf(area: AdminAreaView): AdminTableView[] {
     .sort((left, right) => compareNames(left.name, right.name))
 }
 
-export function scaleFittingTheView(view: PlanSize, drawing: PlanSize): number {
-  return Math.max(SMALLEST_EDITOR_SCALE, scaleFittingTheWholeDrawing(view, drawing))
+export function editorScale(frameWidth: number, zoomStep: number): number {
+  const scaleAtTheFirstStep = frameWidth / DRAWINGS_ACROSS_THE_FRAME_AT_THE_FIRST_STEP / TABLE_PLAN_DRAWING_WIDTH
+  return scaleAtTheFirstStep * ZOOM_FACTOR_PER_STEP ** zoomStep
+}
+
+export function canZoomIn(zoomStep: number): boolean {
+  return zoomStep < LARGEST_ZOOM_STEP
+}
+
+export function canZoomOut(zoomStep: number): boolean {
+  return zoomStep > SMALLEST_ZOOM_STEP
+}
+
+export function scrollKeepingTheCentre(before: ScrolledDrawing, after: ShownDrawing): PlanPoint {
+  const centreBefore = {
+    x: before.scroll.x + before.view.width / 2 - centringGap(before.view.width, before.drawing.width),
+    y: before.scroll.y + before.view.height / 2,
+  }
+  const centreAfter = {
+    x: (centreBefore.x * after.drawing.width) / before.drawing.width,
+    y: (centreBefore.y * after.drawing.height) / before.drawing.height,
+  }
+  return {
+    x: scrollInside(
+      centreAfter.x - after.view.width / 2 + centringGap(after.view.width, after.drawing.width),
+      after.view.width,
+      after.drawing.width,
+    ),
+    y: scrollInside(centreAfter.y - after.view.height / 2, after.view.height, after.drawing.height),
+  }
+}
+
+function centringGap(viewLength: number, drawingLength: number): number {
+  return Math.max(0, (viewLength - drawingLength) / 2)
+}
+
+function scrollInside(wanted: number, viewLength: number, drawingLength: number): number {
+  return Math.max(0, Math.min(wanted, drawingLength - viewLength))
 }
 
 export function geometryForANewShapeIn(area: AdminAreaView, size: PlanSize): AreaShapeGeometry {
@@ -74,8 +126,8 @@ export function fitsTheDrawing(geometry: AreaShapeGeometry): boolean {
   )
 }
 
-export function editorDrawingLength(shapes: readonly AreaShapeGeometry[], visibleLength: number): number {
-  return Math.max(lowestEdgeOf(shapes) + ROOM_BELOW_THE_LOWEST_SHAPE, visibleLength)
+export function editorDrawingLength(shapes: readonly AreaShapeGeometry[]): number {
+  return lowestEdgeOf(shapes) + ROOM_BELOW_THE_LOWEST_SHAPE
 }
 
 export function pastedCopiesBeside(

@@ -2,19 +2,23 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminAreaView, AdminStationView, AdminTableView } from '../../../shared/api/generatedSchemas'
+import BaseIconAction from '../../../shared/components/BaseIconAction.vue'
 import { useBackStepForAMenu } from '../../../shared/composables/useBackStep'
-import { hiddenTablesOf } from '../../core/tablePlanPlacement'
+import { canZoomIn, canZoomOut, hiddenTablesOf } from '../../core/tablePlanPlacement'
 import BaseActionWithRefusalReason from '../BaseActionWithRefusalReason.vue'
 import TablePlanToolbarHiddenTables from './TablePlanToolbarHiddenTables.vue'
 
 const props = defineProps<{
   area: AdminAreaView
   stationsOnNoPlan: AdminStationView[]
+  zoomStep: number
 }>()
 const emit = defineEmits<{
   newTable: []
   placeStation: [stationId: string]
   showTable: [table: AdminTableView]
+  zoomIn: []
+  zoomOut: []
 }>()
 
 const { t } = useI18n()
@@ -72,6 +76,25 @@ const stationsUnavailableReason = computed(() =>
     </BaseActionWithRefusalReason>
 
     <v-spacer />
+
+    <BaseIconAction
+      class="zoom-out"
+      data-test="zoom-out"
+      icon="mdi-magnify-minus-outline"
+      location="bottom"
+      :label="t('admin.tablePlan.actions.zoomOut')"
+      :disabled="!canZoomOut(zoomStep)"
+      @click="emit('zoomOut')"
+    />
+    <BaseIconAction
+      class="zoom-in"
+      data-test="zoom-in"
+      icon="mdi-magnify-plus-outline"
+      location="bottom"
+      :label="t('admin.tablePlan.actions.zoomIn')"
+      :disabled="!canZoomIn(zoomStep)"
+      @click="emit('zoomIn')"
+    />
 
     <TablePlanToolbarHiddenTables
       v-if="hiddenTables.length > 0"

@@ -76,7 +76,8 @@ tooltip beside them (frontend rule 8).
 - `shared/components/BaseIconAction.vue` is an icon button whose name shows as a tooltip
   (`data-test="icon-action-label"`): the crossed-out eye "Ausblenden" of the festival list, the
   categories' crossed-out eye "Kategorie deaktivieren" on the Artikel tab, the plus "Zutat
-  hinzufügen" on an ingredient row of the recipe popup, and on the phone the
+  hinzufügen" on an ingredient row of the recipe popup, the magnifiers "Verkleinern" and
+  "Vergrößern" in the table plan editor's toolbar, and on the phone the
   details button at the end of every row of the shared order list. Its `location` prop (`top` by
   default, `bottom` for a control at the top of the screen) says where the tooltip opens; the
   waiter's bar (`AppHeader.vue`) uses it for the reload and the settings gear.

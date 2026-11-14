@@ -12,7 +12,14 @@ import { navigate } from '../../../shared/router/router'
 import { assertNever } from '../../../shared/core/assertNever'
 import { combineReleases } from '../../../shared/core/combineReleases'
 import type { AdminActionResult } from '../../core/adminActionResult'
-import { NEW_STATION_SIZE, NEW_TABLE_SIZE, geometryForANewShapeIn } from '../../core/tablePlanPlacement'
+import {
+  FIRST_ZOOM_STEP,
+  NEW_STATION_SIZE,
+  NEW_TABLE_SIZE,
+  canZoomIn,
+  canZoomOut,
+  geometryForANewShapeIn,
+} from '../../core/tablePlanPlacement'
 import {
   isDrawnIn,
   selectionOfTables,
@@ -43,6 +50,7 @@ const festivals = useAdminFestivalsStore()
 const stations = useAdminStationsStore()
 const tablePlan = useAdminTablePlanStore()
 const selection = ref<TablePlanSelection | null>(null)
+const zoomStep = ref(FIRST_ZOOM_STEP)
 const tableAwaitingHiding = shallowRef<AdminTableView | null>(null)
 const stationAwaitingRemoval = shallowRef<AdminStationShapeView | null>(null)
 const { refusal: planRefusal, refusalText: planRefusalText, showRefusalOf: showThePlanRefusalOf } =
@@ -103,6 +111,18 @@ watch([area, selection], ([shownArea, selected]) => {
     selection.value = null
   }
 })
+
+function zoomIn(): void {
+  if (canZoomIn(zoomStep.value)) {
+    zoomStep.value += 1
+  }
+}
+
+function zoomOut(): void {
+  if (canZoomOut(zoomStep.value)) {
+    zoomStep.value -= 1
+  }
+}
 
 async function saveTheTable(
   draft: TableDraft,
@@ -253,9 +273,12 @@ onUnmounted(() => {
           <TablePlanToolbar
             :area="area"
             :stations-on-no-plan="stationsOnNoPlan"
+            :zoom-step="zoomStep"
             @new-table="tableSession.openForCreate()"
             @place-station="placeTheStation"
             @show-table="showAgain"
+            @zoom-in="zoomIn"
+            @zoom-out="zoomOut"
           />
           <TablePlanDrawing
             v-model:selection="selection"
@@ -264,6 +287,7 @@ onUnmounted(() => {
             :area="area"
             :sole-selected-shape="soleSelectedShape"
             :removal-refusal="removalRefusal"
+            :zoom-step="zoomStep"
             @edit="editTheSelectedTable"
             @remove="askToRemoveTheSelection"
             @action-started="planRefusal = null"

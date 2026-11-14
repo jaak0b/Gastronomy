@@ -94,7 +94,7 @@ export function editorLaptop(scenario: EditorScenario = {}): StubbedLaptop {
     .answers('GET', PLAN_PATH, scenario.planReply ?? answer({ areas: scenario.areas ?? [HALL, TENT] }))
 }
 
-export const WINDOW_AT_ONE_AND_A_HALF = { width: 612, height: 1000 }
+export const WINDOW_AT_ONE_AND_A_HALF = { width: 1800, height: 1000 }
 
 export async function mountEditor(
   locale: 'de' | 'en' = 'de',
@@ -136,6 +136,16 @@ export async function pressInTheToolbar(testName: string): Promise<void> {
   await flushPromises()
 }
 
+export async function pressInTheToolbarRepeatedly(testName: string, times: number): Promise<void> {
+  for (let press = 0; press < times; press++) {
+    await pressInTheToolbar(testName)
+  }
+}
+
+export function isDisabledInTheToolbar(testName: string): boolean {
+  return onScreen(`[data-test="table-plan-toolbar"] [data-test="${testName}"]`).hasAttribute('disabled')
+}
+
 export async function openTheMenuOf(shapeId: string): Promise<void> {
   const stage = theDrawing()
   await rightClickAt(stage, centreOf(shapeWithId(stage, shapeId)))
@@ -159,4 +169,33 @@ export async function openTheToolbarMenu(testName: 'add-station' | 'hidden-table
 
 export function drawingScrollArea(): HTMLElement {
   return onScreen('[data-test="drawing-scroll"]')
+}
+
+function drawnLength(scroller: HTMLElement, side: 'width' | 'height'): number {
+  return Number.parseFloat(scroller.querySelector<HTMLElement>('.konvajs-content')?.style[side] ?? '') || 0
+}
+
+export function scrollLikeABrowser(): HTMLElement {
+  const scroller = drawingScrollArea()
+  const furthestLeft = () => Math.max(0, drawnLength(scroller, 'width') - scroller.clientWidth)
+  const furthestTop = () => Math.max(0, drawnLength(scroller, 'height') - scroller.clientHeight)
+  let left = 0
+  let top = 0
+  Object.defineProperties(scroller, {
+    scrollWidth: { get: () => Math.max(scroller.clientWidth, drawnLength(scroller, 'width')) },
+    scrollHeight: { get: () => Math.max(scroller.clientHeight, drawnLength(scroller, 'height')) },
+    scrollLeft: {
+      get: () => Math.min(left, furthestLeft()),
+      set: (wanted: number) => {
+        left = Math.max(0, Math.min(wanted, furthestLeft()))
+      },
+    },
+    scrollTop: {
+      get: () => Math.min(top, furthestTop()),
+      set: (wanted: number) => {
+        top = Math.max(0, Math.min(wanted, furthestTop()))
+      },
+    },
+  })
+  return scroller
 }

@@ -4,8 +4,9 @@ import { enableAutoUnmount } from '@vue/test-utils'
 import Konva from 'konva'
 import { createVuetify } from 'vuetify'
 import { appTheme } from '../../../../src/shared/theme'
-import { HEAVY_WAIT_TIMEOUT, textOnScreen, waitUntil } from '../../../support/dom'
+import { HEAVY_WAIT_TIMEOUT, isOnScreen, textOnScreen, waitUntil } from '../../../support/dom'
 import {
+  aFrameThatCanBeResized,
   centreOf,
   dragBy,
   hasShapeWithId,
@@ -26,8 +27,12 @@ import {
   TABLE_A1_SHAPE_ID,
   drawingScrollArea,
   editorLaptop,
+  isDisabledInTheToolbar,
   isHighlighted,
   mountEditor,
+  pressInTheToolbar,
+  pressInTheToolbarRepeatedly,
+  scrollLikeABrowser,
   selectTheShape,
   shapesWithTheHandles,
   theDrawing,
@@ -99,28 +104,28 @@ describe('the drawing of the area', () => {
     ])
   })
 
-  it('fits the width of a tall window and fills its height below the shapes', async () => {
+  it('draws the width of the plan across a third of the frame when the editor opens', async () => {
     editorLaptop()
 
-    await mountEditor('de', [], HALL.areaId, { width: 612, height: 1000 })
+    await mountEditor('de', [], HALL.areaId, { width: 1800, height: 1000 })
 
-    expect([theDrawing().width(), theDrawing().height(), theDrawing().scaleX()]).toEqual([612, 1000, 1.5])
+    expect([theDrawing().width(), theDrawing().scaleX()]).toEqual([612, 1.5])
   })
 
-  it('fits the height of a wide window, so the whole area shows without scrolling', async () => {
+  it('ends 200 units below the lowest shape instead of filling a taller frame', async () => {
     editorLaptop()
 
-    await mountEditor('de', [], HALL.areaId, { width: 1600, height: 556 })
+    await mountEditor('de', [], HALL.areaId, { width: 1800, height: 1000 })
 
-    expect([theDrawing().width(), theDrawing().height(), theDrawing().scaleX()]).toEqual([816, 556, 2])
+    expect(theDrawing().height()).toBe(417)
   })
 
-  it('stops shrinking at half its units in a very small window and scrolls instead', async () => {
+  it('keeps its length in a frame lower than the drawing, so the frame scrolls', async () => {
     editorLaptop()
 
-    await mountEditor('de', [], HALL.areaId, { width: 100, height: 100 })
+    await mountEditor('de', [], HALL.areaId, { width: 1800, height: 300 })
 
-    expect([theDrawing().width(), theDrawing().scaleX()]).toEqual([204, 0.5])
+    expect([theDrawing().height(), theDrawing().scaleX()]).toEqual([417, 1.5])
   })
 
   it('keeps the whole border of a table at the top left edge on screen', async () => {
@@ -212,7 +217,7 @@ describe('dragging a shape', () => {
 
   it('shows the line it snaps to while the table is dragged and removes it on the drop', async () => {
     editorLaptop()
-    await mountEditor('de', [], HALL.areaId, { width: 612, height: 417 })
+    await mountEditor('de', [], HALL.areaId, { width: 1800, height: 417 })
     const from = centreOf(shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID))
     await pressAt(theDrawing(), from)
     await movePointerTo({ x: from.x + 10, y: from.y })
@@ -284,19 +289,129 @@ describe('the view of a long drawing', () => {
 
   it('scrolls a table below the visible part into view when it is selected', async () => {
     editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, FAR_DOWN] }] })
-    await mountEditor('de', [], HALL.areaId, { width: 612, height: 150 })
+    await mountEditor('de', [], HALL.areaId, { width: 1800, height: 150 })
 
     await selectTheShape('table-table-b9')
 
-    expect(drawingScrollArea().scrollTop).toBe(128)
+    expect(drawingScrollArea().scrollTop).toBe(432)
   })
 
   it('stays where it is when the selected table is already in view', async () => {
     editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, FAR_DOWN] }] })
-    await mountEditor('de', [], HALL.areaId, { width: 612, height: 150 })
+    await mountEditor('de', [], HALL.areaId, { width: 1800, height: 150 })
 
     await selectTheShape(TABLE_A1_SHAPE_ID)
 
     expect(drawingScrollArea().scrollTop).toBe(0)
+  })
+})
+
+describe('zooming the drawing', () => {
+  it('draws the plan a quarter larger when the admin zooms in', async () => {
+    editorLaptop()
+    await mountEditor()
+
+    await pressInTheToolbar('zoom-in')
+
+    expect([theDrawing().width(), theDrawing().scaleX()]).toEqual([765, 1.875])
+  })
+
+  it('draws the plan smaller again when the admin zooms out', async () => {
+    editorLaptop()
+    await mountEditor()
+
+    await pressInTheToolbar('zoom-out')
+
+    expect(theDrawing().scaleX()).toBeCloseTo(1.2)
+  })
+
+  it('stops zooming out once the plan is about a sixth of the frame wide', async () => {
+    editorLaptop()
+    await mountEditor()
+
+    await pressInTheToolbarRepeatedly('zoom-out', 3)
+
+    expect([isDisabledInTheToolbar('zoom-out'), isDisabledInTheToolbar('zoom-in')]).toEqual([true, false])
+  })
+
+  it('stops zooming in once the plan is about two frames wide', async () => {
+    editorLaptop()
+    await mountEditor()
+
+    await pressInTheToolbarRepeatedly('zoom-in', 8)
+
+    expect([isDisabledInTheToolbar('zoom-in'), isDisabledInTheToolbar('zoom-out')]).toEqual([true, false])
+  })
+
+  it('saves a table dragged after zooming in at its place in plan units', async () => {
+    const laptop = editorLaptop()
+    await mountEditor()
+    await pressInTheToolbar('zoom-in')
+
+    await dragBy(theDrawing(), shapeWithId(theDrawing(), TABLE_A1_SHAPE_ID), { x: 75, y: 187.5 })
+
+    expect(laptop.writtenBodies()).toEqual([
+      { tables: [{ tableId: 'table-a1', geometry: { x: 60, y: 130, width: 80, height: 40, rotation: 0 } }] },
+    ])
+  })
+})
+
+describe('the view while the admin zooms or the window changes', () => {
+  const FAR_BELOW = anAdminTable({ tableId: 'table-b9', name: 'B9', geometry: aGeometry({ x: 20, y: 1000 }) })
+
+  it('keeps the point in the middle of the view in the middle when the admin zooms out far down the plan', async () => {
+    editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, FAR_BELOW] }] })
+    await mountEditor('de', [], HALL.areaId, { width: 1800, height: 300 })
+    const scroller = scrollLikeABrowser()
+    scroller.scrollTop = 1400
+
+    await pressInTheToolbar('zoom-out')
+
+    expect(scroller.scrollTop).toBeCloseTo(1090)
+  })
+
+  it('keeps the point in the middle of the view in the middle when the zoomed window gets wider', async () => {
+    const frame = aFrameThatCanBeResized()
+    editorLaptop({ areas: [{ ...HALL, tables: [TABLE_A1, FAR_BELOW] }] })
+    await mountEditor('de', [], HALL.areaId, { width: 1800, height: 300 })
+    const scroller = scrollLikeABrowser()
+    await pressInTheToolbar('zoom-in')
+    scroller.scrollTop = 600
+
+    await frame.resizeTo({ width: 2400, height: 300 })
+
+    expect(scroller.scrollTop).toBeCloseTo(850)
+  })
+
+  it('brings a selected table at the left edge back into view when the zoomed plan is scrolled right', async () => {
+    editorLaptop()
+    await mountEditor()
+    const scroller = scrollLikeABrowser()
+    await pressInTheToolbarRepeatedly('zoom-in', 8)
+    scroller.scrollLeft = 1800
+    scroller.scrollTop = 0
+
+    await selectTheShape(TABLE_A1_SHAPE_ID)
+
+    expect(scroller.scrollLeft).toBeCloseTo(190.58, 2)
+  })
+
+  it('draws nothing while the frame has no width yet', async () => {
+    aFrameThatCanBeResized()
+    editorLaptop()
+
+    await mountEditor('de', [], HALL.areaId, { width: 0, height: 1000 })
+
+    expect(isOnScreen('.konvajs-content')).toBe(false)
+  })
+
+  it('draws the plan at a third of the frame once the frame has its width', async () => {
+    const frame = aFrameThatCanBeResized()
+    editorLaptop()
+    await mountEditor('de', [], HALL.areaId, { width: 0, height: 1000 })
+
+    await frame.resizeTo({ width: 1800, height: 1000 })
+
+    expect(theDrawing().scaleX()).toBe(1.5)
   })
 })

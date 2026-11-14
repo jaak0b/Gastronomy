@@ -164,6 +164,31 @@ export function layOutTheScreen(size: { width: number; height: number }): void {
   vi.spyOn(Element.prototype, 'clientHeight', 'get').mockReturnValue(size.height)
 }
 
+export function aFrameThatCanBeResized() {
+  const measureAgain: ResizeObserverCallback[] = []
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      constructor(callback: ResizeObserverCallback) {
+        measureAgain.push(callback)
+      }
+
+      observe(): void {}
+
+      unobserve(): void {}
+
+      disconnect(): void {}
+    },
+  )
+  return {
+    async resizeTo(size: { width: number; height: number }): Promise<void> {
+      layOutTheScreen(size)
+      measureAgain.forEach((callback) => callback([], {} as ResizeObserver))
+      await flushPromises()
+    },
+  }
+}
+
 export interface Finger {
   id: number
   at: StagePoint

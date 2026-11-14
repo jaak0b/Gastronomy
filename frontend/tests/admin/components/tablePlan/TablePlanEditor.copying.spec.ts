@@ -301,7 +301,7 @@ describe('the plan after a paste', () => {
       ),
       writeReply: answer({ tableIds: ['table-copy-1', 'table-copy-2'] }, 201),
     })
-    await mountEditor('de', [], HALL_WITH_TWO_TABLES.areaId, { width: 612, height: 150 })
+    await mountEditor('de', [], HALL_WITH_TWO_TABLES.areaId, { width: 1800, height: 150 })
     await clickTheShape(TABLE_A1_SHAPE_ID)
     await clickTheShape(TABLE_A2_SHAPE_ID, { ctrlKey: true })
     await pressCtrl('c')

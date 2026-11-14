@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { enableAutoUnmount, flushPromises } from '@vue/test-utils'
+import { enableAutoUnmount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { navigate } from '../../../src/shared/router/router'
 import { isOnScreen } from '../../support/dom'
-import { dragBy, layOutTheScreen } from '../../support/konvaDrawing'
+import { aFrameThatCanBeResized, dragBy, layOutTheScreen } from '../../support/konvaDrawing'
 import { HALL, PLAN_TEST_TIMEOUT, mountThePlan, planLaptop, tableNode, theDrawing } from './tablePlanFixture'
 
 enableAutoUnmount(afterEach)
@@ -24,31 +24,6 @@ afterEach(() => {
 
 function theCamera() {
   return { scale: theDrawing().scaleX(), left: theDrawing().x(), top: theDrawing().y() }
-}
-
-function aFrameThatCanBeResized() {
-  const measureAgain: ResizeObserverCallback[] = []
-  vi.stubGlobal(
-    'ResizeObserver',
-    class {
-      constructor(callback: ResizeObserverCallback) {
-        measureAgain.push(callback)
-      }
-
-      observe(): void {}
-
-      unobserve(): void {}
-
-      disconnect(): void {}
-    },
-  )
-  return {
-    async resizeTo(size: { width: number; height: number }): Promise<void> {
-      layOutTheScreen(size)
-      measureAgain.forEach((callback) => callback([], {} as ResizeObserver))
-      await flushPromises()
-    },
-  }
 }
 
 describe('the plan on a phone, held upright or sideways', () => {

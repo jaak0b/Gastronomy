@@ -170,7 +170,7 @@ Frontend, under `frontend/src/`:
   centred in the window, at most `--admin-page-width` wide like the festival page: one refusal line, then
   one framed box (`data-test="plan-frame"`) holding the toolbar as its top strip and
   `TablePlanDrawing.vue` (the Konva drawing) below it, filling the rest of the width and the
-  height. There is no list beside the drawing.
+  height and scrolling the drawing inside it. There is no list beside the drawing.
 - The toolbar is `TablePlanToolbar.vue`, the top strip of the frame, which stays on screen while
   the drawing scrolls. From left to right: "Neuer Tisch", text only like every "Neu…" button (opens
   `TablePlanNameDialog.vue` empty; the table goes below the lowest table of the area, hidden ones
@@ -178,7 +178,10 @@ Frontend, under `frontend/src/`:
   station" (`admin.tablePlan.actions.addStation`) as a dropdown listing only the festival's
   stations on no plan (a pick places the station below the lowest shape and selects it; with
   nothing to offer, for any reason, the button is disabled and a tooltip through
-  `BaseActionWithRefusalReason` says `admin.common.messages.noStationsAvailable`), and at the right "Ausgeblendete Tische" / "Hidden tables"
+  `BaseActionWithRefusalReason` says `admin.common.messages.noStationsAvailable`), at the right the
+  magnifier icons "Verkleinern" / "Zoom out" and "Vergrößern" / "Zoom in"
+  (`admin.tablePlan.actions.zoomOut`, `zoomIn`, each a `BaseIconAction` whose tooltip opens below
+  it, disabled at its limit), and last "Ausgeblendete Tische" / "Hidden tables"
   (`admin.tablePlan.actions.hiddenTables`), a dropdown of the area's hidden tables that opens
   downward under its button, at most 20rem high and scrolling inside. It lists them by name with
   the shared `compareNames` (`hiddenTablesOf` in `admin/core/tablePlanPlacement.ts`), each with the
@@ -241,8 +244,7 @@ Frontend, under `frontend/src/`:
   resize or a whole group and reloads the plan once through the same helper.
 - `shared/core/tablePlanDrawing.ts` holds `TABLE_PLAN_DRAWING_WIDTH` (400 units, for the phone as
   well), `cornersOf`, `lowestEdgeOf`, `scaleFittingTheWholeDrawing` (the smaller of the width ratio
-  and the height ratio, the one scale that shows a whole drawing in a view; the editor puts its floor
-  `SMALLEST_EDITOR_SCALE` around it in `scaleFittingTheView`, and the phone uses it without one) and
+  and the height ratio, the one scale that shows a whole drawing in a view; only the phone uses it) and
   one type for each shape the phone and the admin share: `PlanPoint`, `PlanSize` (a width and a
   height: a shape's size, the editor's frame, the phone's screen) and `PlanRectangle` (a position
   and a size: the marquee, a box that snaps, the rectangle a frame follows).
@@ -410,15 +412,22 @@ Frontend, under `frontend/src/`:
   on), which vue-konva registers on the node: listeners written as `@dragmove` on a vue-konva
   `Group`, whose root is a fragment, make Vue warn on every shape.
 - **The drawing is 400 units wide and as long as its lowest shape.** The editor shows it with a
-  margin of 4 units around it (`MARGIN_AROUND_THE_DRAWING`, the layer's offset) at the scale that
-  fits the whole area into its frame: the smaller of the width scale and the height scale
-  (`scaleFittingTheView` in `admin/core/tablePlanPlacement.ts`), recomputed whenever the frame
-  changes size, so at common window sizes neither the page nor the drawing scrolls. It never goes
-  below half a pixel per unit (`SMALLEST_EDITOR_SCALE`, 204 pixels wide); below that the drawing
-  scrolls inside its frame, sideways and down. A border at the edge is drawn whole; the
-  transformer's bounds, the pointer and the snapping all divide by the current scale. The height
-  it fits is the lowest drawn shape plus 200 units; it then fills the rest of the frame's height,
-  and draws no hidden table. A new table and a new station both go below the lowest table
+  margin of 4 units around it (`MARGIN_AROUND_THE_DRAWING`, the layer's offset). Its scale comes
+  from the frame's width alone (`editorScale` in `admin/core/tablePlanPlacement.ts`): when the
+  editor opens, the 400 units span a third of the scroll area's width, and each zoom step
+  multiplies that by 1.25, from three steps out (about a sixth of the frame) to eight steps in
+  (about two frames; `canZoomOut`, `canZoomIn`). The editor holds the step, `FIRST_ZOOM_STEP` on
+  every opening and stored nowhere, and the scale follows the frame whenever it is resized. The
+  drawing is the lowest drawn shape plus 200 units long (`editorDrawingLength`), never stretched
+  to the frame, and draws no hidden table. A drawing taller or wider than the frame scrolls inside
+  `.drawing-scroll` and the page never grows; a drawing narrower than the frame stands in its
+  middle. A zoom and a resized frame both keep the point in the middle of the view where it was
+  (`scrollKeepingTheCentre`, from the scroll position and view size read before the scale
+  changes). A selected shape outside the view is scrolled into it sideways and down, as a new
+  table and a paste are. The stage is drawn only once the frame has been measured, because after a scale of zero Konva
+  finds no shape under the pointer. A border at the edge is drawn whole; the transformer's
+  bounds, the pointer and the snapping all divide by the current scale, so a shape is saved in
+  plan units at any zoom. A new table and a new station both go below the lowest table
   of the area, hidden ones included, and below the station shapes, so neither takes the place of a
   hidden table, and showing a table again moves nothing. Nothing about the length is stored.
 - **Names of areas and tables are typed in a dialog and never guessed.** One dialog,
@@ -555,7 +564,7 @@ Frontend, under `frontend/src/`:
 - `frontend/tests`: `admin/core/tablePlanSnapping.spec.ts`, `tablePlanPlacement.spec.ts` (including
   the paste placements: one grid step in the same area, unchanged coordinates in another, the menu
   anchor, the fit-left rule and never a left edge below zero), `tablePlanSelection.spec.ts` (the
-  multi-table selection, the station, the toggle, the marquee intersection and `soleSelectedShapeOf`; the placement spec also covers `hiddenTablesOf` and `scaleFittingTheView`), `oneAtATime.spec.ts`;
+  multi-table selection, the station, the toggle, the marquee intersection and `soleSelectedShapeOf`; the placement spec also covers `hiddenTablesOf`, `editorScale`, the zoom limits and `scrollKeepingTheCentre`), `oneAtATime.spec.ts`;
   `shared/core/tablePlanDrawing.spec.ts` (including `scaleFittingTheWholeDrawing`),
   `tablePlanColours.spec.ts` and `themeColours.spec.ts`; the store in
   `admin/stores/tablePlan.loading.spec.ts` (the gate, `ConfigurationChanged`, `OrdersChanged`,
@@ -573,8 +582,12 @@ Frontend, under `frontend/src/`:
   never drawn, the size kept when the window narrows, a border at the edge drawn whole, a name never
   broken inside a word, the measuring text let go when the editor closes, drag, snap, guide lines,
   selecting and highlighting, scrolling a selected shape into view, refusal, theme switch, the
-  fit to a tall window, to a wide one and the smallest scale), `.resizing` (the 20-unit and width
-  limits, a refused resize, a station shape), `.tables` (the toolbar's order inside the frame, the
+  width taking a third of the frame, the length kept below a taller frame and above a lower one,
+  zooming in and out, both limits, a drag saved in plan units after zooming, the centre kept on a
+  zoom and on a resize and a selected table scrolled back in sideways, on the browser-like scroll
+  area of `scrollLikeABrowser`, and nothing drawn until the frame has a width), `.resizing` (the
+  20-unit and width limits, a refused resize, a station shape), `.tables` (the toolbar's order
+  inside the frame, the
   dialog for a new table below the lowest table, a hidden one included, editing and hiding from the
   menu, hiding that asks first and takes the table out of the drawing, the one refusal line showing
   only the newest refusal and clearing on a new selection, the hidden tables dropdown, absent
@@ -584,7 +597,8 @@ Frontend, under `frontend/src/`:
   its menu with only Entfernen, its removal that asks first, and a station offered again once its
   shape is gone), `.menu` (each menu entry's icon and text, Bearbeiten and Ausblenden from the menu,
   Ausblenden disabled with its reason, both left out for several tables), `TablePlanToolbar.spec.ts`
-  (the English names, the picked station and the shown table handed to the editor),
+  (the English names, the English zoom tooltips, the picked station and the shown table handed to
+  the editor),
   `.selection.spec.ts` (Ctrl and Shift
   clicks, the plain click, the marquee with its dashed box and translucent fill, a plain and a Ctrl
   marquee, the short press that clears, the transformer only for one shape, a group drag sending one

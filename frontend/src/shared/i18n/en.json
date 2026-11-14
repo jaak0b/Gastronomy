@@ -382,7 +382,9 @@
         "editTable": "Edit the table",
         "openPlan": "Open table plan",
         "copy": "Copy",
-        "paste": "Paste"
+        "paste": "Paste",
+        "zoomIn": "Zoom in",
+        "zoomOut": "Zoom out"
       },
       "messages": {
         "noArea": "Waiters cannot see any table plan yet. Click \"New table plan\".",

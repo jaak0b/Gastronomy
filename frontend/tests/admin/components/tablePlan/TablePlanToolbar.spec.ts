@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import TablePlanToolbar from '../../../../src/admin/components/tablePlan/TablePlanToolbar.vue'
-import { clickOn, refusalReasonsOnScreen, textOnScreen, waitUntil } from '../../../support/dom'
+import { clickOn, iconActionLabelsOnScreen, refusalReasonsOnScreen, textOnScreen, waitUntil } from '../../../support/dom'
 import { testPlugins } from '../../../support/plugins'
 import { anAdminArea, anAdminStation, anAdminTable } from '../../../support/wireViews'
 import { EDITOR_TEST_TIMEOUT } from './tablePlanEditorFixture'
@@ -21,6 +21,7 @@ function mountToolbar(locale: 'de' | 'en' = 'de', stationsOnNoPlan = [KITCHEN]) 
     props: {
       area: anAdminArea({ tables: [A1, HIDDEN_A3] }),
       stationsOnNoPlan,
+      zoomStep: 0,
     },
     global: { plugins: testPlugins(locale) },
     attachTo: document.body,
@@ -38,6 +39,17 @@ describe('the toolbar in English', () => {
     expect(
       ['new-table', 'add-station', 'hidden-tables'].map((button) => textOnScreen(`[data-test="${button}"]`).trim()),
     ).toEqual(['New table', 'Add a station', 'Hidden tables'])
+  })
+})
+
+describe('the zoom buttons of the toolbar', () => {
+  it('name zooming out and in in English when the admin points at them', async () => {
+    const toolbar = mountToolbar('en')
+
+    await toolbar.get('[data-test="zoom-out"]').trigger('mouseenter')
+    await toolbar.get('[data-test="zoom-in"]').trigger('mouseenter')
+
+    await waitUntil(() => expect(iconActionLabelsOnScreen()).toEqual(['Zoom out', 'Zoom in']))
   })
 })
 

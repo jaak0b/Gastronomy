@@ -382,7 +382,9 @@
         "editTable": "Tisch bearbeiten",
         "openPlan": "Tischplan öffnen",
         "copy": "Kopieren",
-        "paste": "Einfügen"
+        "paste": "Einfügen",
+        "zoomIn": "Vergrößern",
+        "zoomOut": "Verkleinern"
       },
       "messages": {
         "noArea": "Die Kellner sehen noch keinen Tischplan. Klicken Sie auf „Neuer Tischplan“.",

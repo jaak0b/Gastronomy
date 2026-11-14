@@ -2,14 +2,17 @@ import { describe, expect, it } from 'vitest'
 import {
   NEW_STATION_SIZE,
   NEW_TABLE_SIZE,
+  canZoomIn,
+  canZoomOut,
   drawnTablesOf,
   editorDrawingLength,
+  editorScale,
   fitsTheDrawing,
   geometryForANewShapeIn,
   hiddenTablesOf,
-  scaleFittingTheView,
   pastedCopiesAt,
   pastedCopiesBeside,
+  scrollKeepingTheCentre,
 } from '../../../src/admin/core/tablePlanPlacement'
 import { aGeometry, anAdminArea, anAdminStationShape, anAdminTable } from '../../support/wireViews'
 
@@ -41,16 +44,70 @@ describe('what the hidden tables menu of an area offers', () => {
 })
 
 describe('the scale of the drawing in the editor', () => {
-  it('follows the width when the window is taller than the drawing needs', () => {
-    expect(scaleFittingTheView({ width: 816, height: 2000 }, { width: 408, height: 278 })).toBe(2)
+  it('draws the 400 units of the width across a third of the frame when the editor opens', () => {
+    expect(editorScale(1800, 0)).toBe(1.5)
   })
 
-  it('follows the height when the window is wider than the drawing needs', () => {
-    expect(scaleFittingTheView({ width: 1600, height: 556 }, { width: 408, height: 278 })).toBe(2)
+  it('grows by a quarter with each step zoomed in', () => {
+    expect(editorScale(1800, 2)).toBe(2.34375)
   })
 
-  it('never goes below half the drawing units', () => {
-    expect(scaleFittingTheView({ width: 100, height: 50 }, { width: 408, height: 278 })).toBe(0.5)
+  it('shrinks by the same factor with each step zoomed out', () => {
+    expect(editorScale(1500, -1)).toBeCloseTo(1)
+  })
+})
+
+describe('the zoom steps of the editor', () => {
+  it('let the drawing grow to about two frame widths and no further', () => {
+    expect([canZoomIn(7), canZoomIn(8)]).toEqual([true, false])
+  })
+
+  it('let the drawing shrink to about a sixth of the frame width and no further', () => {
+    expect([canZoomOut(-2), canZoomOut(-3)]).toEqual([true, false])
+  })
+})
+
+describe('where the view goes when the admin zooms or the frame changes size', () => {
+  it('keeps the point in the middle of the view in the middle', () => {
+    const view = { width: 400, height: 300 }
+
+    const scroll = scrollKeepingTheCentre(
+      { scroll: { x: 200, y: 100 }, view, drawing: { width: 1000, height: 800 } },
+      { view, drawing: { width: 2000, height: 1600 } },
+    )
+
+    expect(scroll).toEqual({ x: 600, y: 350 })
+  })
+
+  it('keeps that point in the middle of a frame that got wider', () => {
+    const scroll = scrollKeepingTheCentre(
+      { scroll: { x: 200, y: 100 }, view: { width: 400, height: 300 }, drawing: { width: 1000, height: 800 } },
+      { view: { width: 600, height: 300 }, drawing: { width: 1500, height: 1200 } },
+    )
+
+    expect(scroll).toEqual({ x: 300, y: 225 })
+  })
+
+  it('stays at the left edge while the drawing is narrower than the view and centred in it', () => {
+    const view = { width: 1000, height: 300 }
+
+    const scroll = scrollKeepingTheCentre(
+      { scroll: { x: 0, y: 0 }, view, drawing: { width: 400, height: 600 } },
+      { view, drawing: { width: 500, height: 750 } },
+    )
+
+    expect(scroll).toEqual({ x: 0, y: 37.5 })
+  })
+
+  it('never scrolls past the end of the drawing', () => {
+    const view = { width: 400, height: 300 }
+
+    const scroll = scrollKeepingTheCentre(
+      { scroll: { x: 600, y: 500 }, view, drawing: { width: 1000, height: 800 } },
+      { view, drawing: { width: 800, height: 640 } },
+    )
+
+    expect(scroll).toEqual({ x: 400, y: 340 })
   })
 })
 
@@ -122,12 +179,8 @@ describe('a size the admin drags a shape to', () => {
 })
 
 describe('the length of the drawing in the editor', () => {
-  it('leaves room below the lowest shape to drag into', () => {
-    expect(editorDrawingLength([aGeometry({ y: 30, height: 40 })], 0)).toBe(270)
-  })
-
-  it('fills the visible part of the screen when the shapes end higher up', () => {
-    expect(editorDrawingLength([aGeometry({ y: 30, height: 40 })], 500)).toBe(500)
+  it('leaves room below the lowest shape to drag into, however tall the frame is', () => {
+    expect(editorDrawingLength([aGeometry({ y: 30, height: 40 })])).toBe(270)
   })
 })
 

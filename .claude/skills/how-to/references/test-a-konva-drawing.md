@@ -48,6 +48,10 @@ Wrap the `KonvaStage` in an element of our own with a `data-test`, because vue-k
   `releaseOnTheDrawingAt(stage, point)` lets go on the drawing itself, for a spec that proves a drag
   does not end in a tap, as the waiter's pan does.
 - `layOutTheScreen({ width, height })` gives every element that size, as the next paragraph says.
+  `aFrameThatCanBeResized()`, called before mounting, returns `resizeTo(size)`, which lays the
+  screen out again and runs every `ResizeObserver` callback, so a drawing measures its frame anew.
+  The editor's fixture adds `scrollLikeABrowser()`, which gives the editor's scroll area a scroll
+  size from the drawn stage and a `scrollTop` and `scrollLeft` clamped to it, as a browser does.
 - Touch: a `Finger` is an `id` and a point. `putFingerDown(stage, finger, alreadyDown)`,
   `moveFingers(stage, fingers)` and `liftFinger(stage, finger, stillDown)` send `touchstart`,
   `touchmove` and `touchend` with the fingers that touch, which Konva turns into `tap`, a pan and,
@@ -69,8 +73,9 @@ would ignore the click. Vuetify closes on such a click in a `setTimeout`, so the
 
 Every helper that presses calls `stage.draw()` first, so the hit canvas shows what the last change
 drew, and every step ends with `flushPromises()`. Coordinates are stage pixels: when the stage is
-scaled they are drawing units times the scale. The admin's editor always draws at its fixed scale
-of 1.5, in jsdom too, with its drawing shifted 4 units (6 pixels) right and down for the margin, so
+scaled they are drawing units times the scale. The admin's editor opens at a third of its frame's
+width, so its fixture's default 1800-pixel screen draws at a scale of 1.5 until a spec zooms, with
+its drawing shifted 4 units (6 pixels) right and down for the margin, so
 a move of 33 units is a pointer move of 49.5 pixels and a shape at 300 units sits at 456 pixels. In jsdom every element measures 0 pixels; a spec that needs a visible height, or
 a window of a certain width, stubs the measurement with `layOutTheScreen({ width, height })`, which
 spies on `Element.prototype`'s `clientWidth` and `clientHeight`, and calls `vi.restoreAllMocks()` in
