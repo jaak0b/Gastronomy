@@ -33,8 +33,8 @@ public sealed class TableEditService
     if (!await AreaBelongsToFestivalAsync(festivalId, request.AreaId, cancellationToken))
       return Refusal.TablePlan.AreaOutsideTheFestival(festivalId, request.AreaId);
 
-    if (await NameIsTakenAsync(festivalId, request.Name!, null, cancellationToken))
-      return Refusal.TablePlan.TableNameTaken(festivalId, request.Name!);
+    if (await NameRefusalAsync(festivalId, request.Name!, null, cancellationToken) is { } nameRefusal)
+      return nameRefusal;
 
     Table created = new()
                     {
@@ -142,8 +142,8 @@ public sealed class TableEditService
     if (!await AreaBelongsToFestivalAsync(festivalId, request.AreaId, cancellationToken))
       return Refusal.TablePlan.AreaOutsideTheFestival(festivalId, request.AreaId);
 
-    if (await NameIsTakenAsync(festivalId, request.Name!, tableId, cancellationToken))
-      return Refusal.TablePlan.TableNameTaken(festivalId, request.Name!);
+    if (await NameRefusalAsync(festivalId, request.Name!, tableId, cancellationToken) is { } nameRefusal)
+      return nameRefusal;
 
     table.AreaId = request.AreaId;
     table.Name = request.Name!;
@@ -168,8 +168,18 @@ public sealed class TableEditService
     return await _database.Areas.AsNoTracking().AnyAsync(area => area.Id == areaId && area.FestivalId == festivalId, cancellationToken);
   }
 
-  private async Task<bool> NameIsTakenAsync(Guid festivalId, string name, Guid? ownTableId, CancellationToken cancellationToken)
+  private async Task<Error?> NameRefusalAsync(Guid festivalId, string name, Guid? ownTableId, CancellationToken cancellationToken)
   {
-    return await _database.Tables.AsNoTracking().Where(table => table.FestivalId == festivalId).Namesakes(name, ownTableId).AnyAsync(cancellationToken);
+    var namesake = await _database.Tables.AsNoTracking().Where(table => table.FestivalId == festivalId).Namesakes(name, ownTableId).Select(table => new TableNamesake(table.Area.Name, table.IsHidden)).SingleOrDefaultAsync(cancellationToken);
+
+    if (namesake is null)
+      return null;
+
+    if (namesake.IsHidden)
+      return Refusal.TablePlan.TableNameTakenByHiddenTable(festivalId, name, namesake.AreaName);
+
+    return Refusal.TablePlan.TableNameTaken(festivalId, name, namesake.AreaName);
   }
+
+  private sealed record TableNamesake(string AreaName, bool IsHidden);
 }

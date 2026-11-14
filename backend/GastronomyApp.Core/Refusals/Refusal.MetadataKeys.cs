@@ -4,6 +4,8 @@ public static partial class Refusal
 {
   public static class MetadataKeys
   {
+    public const string AreaName = "areaName";
+
     public const string CatalogItemId = "catalogItemId";
 
     public const string Count = "count";

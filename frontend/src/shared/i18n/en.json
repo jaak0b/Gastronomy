@@ -536,7 +536,8 @@
         "periodInvalid": "The end has to come after the start. Set the end to a later time.",
         "runningFestivalStaysShown": "An active festival cannot be hidden.",
         "stationHasOrdersAtTheFestival": "While a festival is active, no station with open orders can be removed.",
-        "tableNameTaken": "A table at this festival already has this name, even if it is hidden. Choose a different name.",
+        "tableNameTaken": "This name is already used by a table on the table plan \"{areaName}\" in this festival. Choose a different name.",
+        "tableNameTakenByHiddenTable": "This name is already used by a hidden table on the table plan \"{areaName}\" in this festival. Choose a different name.",
         "tableCopyNameTooLong": "The name of a copy would be longer than 40 characters. Shorten the table's name.",
         "tableWithItemsToHandOutOrSettleStaysShown": "While a festival is active, a table can only be hidden once all its items are prepared and paid."
       },

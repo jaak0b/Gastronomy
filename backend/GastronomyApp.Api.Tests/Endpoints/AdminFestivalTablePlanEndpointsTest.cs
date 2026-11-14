@@ -390,7 +390,7 @@ public sealed class AdminFestivalTablePlanEndpointsTest
   }
 
   [Test]
-  public async Task PostTable_ANameAHiddenTableInAnotherAreaCarriesInOtherCapitals_IsRefusedWithTheNameKey()
+  public async Task PostTable_ANameAHiddenTableInAnotherAreaCarriesInOtherCapitals_IsRefusedNamingTheHiddenTablesArea()
   {
     var gardenId = await CreateAreaAsync("Garten");
     var hallId = await CreateAreaAsync("Halle");
@@ -404,7 +404,45 @@ public sealed class AdminFestivalTablePlanEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.GetProperty("code").GetString(), Is.EqualTo("TableNameTaken"));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.tableNameTakenByHiddenTable"));
+                      Assert.That(body.GetProperty("parameters").Deserialize<Dictionary<string, string>>(), Is.EqualTo(new Dictionary<string, string> { ["areaName"] = "Garten" }));
+                    });
+  }
+
+  [Test]
+  public async Task PostTable_ANameAShownTableInAnotherAreaCarries_IsRefusedNamingThatTablesArea()
+  {
+    var gardenId = await CreateAreaAsync("Garten");
+    var hallId = await CreateAreaAsync("Halle");
+    await CreateTableAsync(gardenId, "Tisch 4");
+
+    using var response = await _context.Client.PostAsJsonAsync($"{FestivalPath}/tables", BuildTable(hallId, "Tisch 4"));
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.tableNameTaken"));
+                      Assert.That(body.GetProperty("parameters").Deserialize<Dictionary<string, string>>(), Is.EqualTo(new Dictionary<string, string> { ["areaName"] = "Garten" }));
+                    });
+  }
+
+  [Test]
+  public async Task PutTable_ANameAShownTableInAnotherAreaCarries_IsRefusedNamingThatTablesArea()
+  {
+    var gardenId = await CreateAreaAsync("Garten");
+    var hallId = await CreateAreaAsync("Halle");
+    await CreateTableAsync(gardenId, "Tisch 4");
+    var tableId = await CreateTableAsync(hallId, "Tisch 5");
+
+    using var response = await _context.Client.PutAsJsonAsync($"{FestivalPath}/tables/{tableId}", BuildTable(hallId, "Tisch 4"));
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+                      Assert.That(body.GetProperty("messageKey").GetString(), Is.EqualTo("errors.admin.festivals.tableNameTaken"));
+                      Assert.That(body.GetProperty("parameters").Deserialize<Dictionary<string, string>>(), Is.EqualTo(new Dictionary<string, string> { ["areaName"] = "Garten" }));
                     });
   }
 

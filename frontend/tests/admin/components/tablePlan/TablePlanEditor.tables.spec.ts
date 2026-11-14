@@ -43,8 +43,11 @@ vi.setConfig({ testTimeout: EDITOR_TEST_TIMEOUT })
 
 const TABLES_PATH = '/api/admin/festivals/fest-1/tables'
 
-const NAME_TAKEN =
-  'Der Name ist in diesem Fest bereits an einen Tisch vergeben, auch an einen ausgeblendeten. Wählen Sie einen anderen Namen.'
+const NAME_TAKEN_IN_THE_TENT =
+  'Der Name ist in diesem Fest bereits an einen Tisch im Tischplan „Zelt“ vergeben. Wählen Sie einen anderen Namen.'
+
+const NAME_TAKEN_BY_A_HIDDEN_TABLE_IN_THE_TENT =
+  'Der Name ist in diesem Fest bereits an einen ausgeblendeten Tisch im Tischplan „Zelt“ vergeben. Wählen Sie einen anderen Namen.'
 
 const STILL_OPEN =
   'Solange ein Fest aktiv ist, kann ein Tisch erst ausgeblendet werden, wenn alle seine Positionen zubereitet und kassiert sind.'
@@ -157,15 +160,33 @@ describe('a new table', () => {
     await waitUntil(() => expect(shapesWithTheHandles()).toEqual(['table-table-a2']), HEAVY_WAIT_TIMEOUT)
   })
 
-  it('keeps the dialog open with the reason when another table has the name', async () => {
-    editorLaptop({ writeReply: refusal('errors.admin.festivals.tableNameTaken') })
+  it('keeps the dialog open naming the table plan of the table that has the name', async () => {
+    editorLaptop({ writeReply: refusal('errors.admin.festivals.tableNameTaken', { parameters: { areaName: 'Zelt' } }) })
     await mountEditor()
     await pressInTheToolbar('new-table')
 
-    await saveTheTablePlanNameDialog('a1')
+    await saveTheTablePlanNameDialog('z1')
 
     await waitUntil(
-      () => expect(textOnScreen('[data-test="form-dialog"] [data-test="refusal"]').trim()).toBe(NAME_TAKEN),
+      () => expect(textOnScreen('[data-test="form-dialog"] [data-test="refusal"]').trim()).toBe(NAME_TAKEN_IN_THE_TENT),
+      HEAVY_WAIT_TIMEOUT,
+    )
+  })
+
+  it('keeps the dialog open naming the table plan when a hidden table has the name', async () => {
+    editorLaptop({
+      writeReply: refusal('errors.admin.festivals.tableNameTakenByHiddenTable', { parameters: { areaName: 'Zelt' } }),
+    })
+    await mountEditor()
+    await pressInTheToolbar('new-table')
+
+    await saveTheTablePlanNameDialog('z9')
+
+    await waitUntil(
+      () =>
+        expect(textOnScreen('[data-test="form-dialog"] [data-test="refusal"]').trim()).toBe(
+          NAME_TAKEN_BY_A_HIDDEN_TABLE_IN_THE_TENT,
+        ),
       HEAVY_WAIT_TIMEOUT,
     )
   })

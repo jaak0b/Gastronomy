@@ -536,7 +536,8 @@
         "periodInvalid": "Das Ende muss nach dem Beginn liegen. Tragen Sie beim Ende einen späteren Zeitpunkt ein.",
         "runningFestivalStaysShown": "Ein aktives Fest kann nicht ausgeblendet werden.",
         "stationHasOrdersAtTheFestival": "Solange ein Fest aktiv ist, kann keine Ausgabestelle mit offenen Bestellungen entfernt werden.",
-        "tableNameTaken": "Der Name ist in diesem Fest bereits an einen Tisch vergeben, auch an einen ausgeblendeten. Wählen Sie einen anderen Namen.",
+        "tableNameTaken": "Der Name ist in diesem Fest bereits an einen Tisch im Tischplan „{areaName}“ vergeben. Wählen Sie einen anderen Namen.",
+        "tableNameTakenByHiddenTable": "Der Name ist in diesem Fest bereits an einen ausgeblendeten Tisch im Tischplan „{areaName}“ vergeben. Wählen Sie einen anderen Namen.",
         "tableCopyNameTooLong": "Der Name einer Kopie wäre länger als 40 Zeichen. Kürzen Sie den Namen des Tisches.",
         "tableWithItemsToHandOutOrSettleStaysShown": "Solange ein Fest aktiv ist, kann ein Tisch erst ausgeblendet werden, wenn alle seine Positionen zubereitet und kassiert sind."
       },

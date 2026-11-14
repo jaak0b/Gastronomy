@@ -122,7 +122,7 @@ Backend, under `backend/`:
   `Geometry`); both states are a `ShareState` (`Contracts/Enums`: `None`, `Some`, `All`, on the
   wire `none`, `some`, `all`, the same word the phone's open items code uses). All of these are mapped
   in `GastronomyApp.Core/Mapping/TablePlanMapping.cs`.
-- Texts: `errors.admin.festivals.areaNameTaken`, `tableNameTaken`,
+- Texts: `errors.admin.festivals.areaNameTaken`, `tableNameTaken`, `tableNameTakenByHiddenTable`,
   `areaWithItemsToHandOutOrSettleStaysShown`, `tableWithItemsToHandOutOrSettleStaysShown` and
   `tableCopyNameTooLong` in
   `frontend/src/shared/i18n/de.json` and `en.json`.
@@ -332,7 +332,10 @@ Frontend, under `frontend/src/`:
   the table search, so renaming a table renames it on every order.
 - **Names are unique per festival without regard to case, hidden rows included**, for areas and for
   tables (collation `NOCASE`, unique index on `(FestivalId, Name)`). The service checks first and
-  refuses with `areaNameTaken` or `tableNameTaken`.
+  refuses with `areaNameTaken`, or for a table names the area of the table that holds the name
+  (parameter `areaName`): `tableNameTaken` when that table is shown, `tableNameTakenByHiddenTable`
+  when it is hidden by its own flag. Creating and renaming a table share this check
+  (`TableEditService.NameRefusalAsync`); a paste never meets it, because the laptop names every copy.
 - **Areas and tables are never deleted, only hidden and shown again**, like festivals. A hidden one
   keeps its name, so the name stays taken. A station's shape is the one thing that is deleted: taking
   the station off the plan (`DELETE /stations/{stationId}/shape`) or off the festival.

@@ -94,7 +94,7 @@ public sealed class TableEditServiceTest
   }
 
   [Test]
-  public async Task CreateAsync_ANameAHiddenTableInAnotherAreaCarriesInOtherCapitals_IsRefusedAsTaken()
+  public async Task CreateAsync_ANameAHiddenTableInAnotherAreaCarriesInOtherCapitals_IsRefusedAsTakenByAHiddenTableOfThatArea()
   {
     await _plan.AddTableAsync(_fixture.DbContext, _seeded.FestivalId, _hallId, "Tisch 1", true);
 
@@ -103,8 +103,23 @@ public sealed class TableEditServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(created.FirstError.NumericType, Is.EqualTo(RefusalType.Conflict));
-                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.tableNameTaken"));
+                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.tableNameTakenByHiddenTable"));
+                      Assert.That(created.FirstError.Metadata, Does.ContainKey(Refusal.MetadataKeys.AreaName).WithValue("Halle"));
                       Assert.That(created.RefusalMetadata(Refusal.MetadataKeys.ProblemCode), Is.EqualTo("TableNameTaken"));
+                    });
+  }
+
+  [Test]
+  public async Task CreateAsync_ANameAShownTableInAnotherAreaCarries_IsRefusedAsTakenByATableOfThatArea()
+  {
+    await _plan.AddTableAsync(_fixture.DbContext, _seeded.FestivalId, _hallId, "Tisch 1", false);
+
+    var created = await _service.CreateAsync(_seeded.FestivalId, BuildSave(_gardenId, "Tisch 1"), TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.tableNameTaken"));
+                      Assert.That(created.FirstError.Metadata, Does.ContainKey(Refusal.MetadataKeys.AreaName).WithValue("Halle"));
                     });
   }
 
@@ -146,10 +161,10 @@ public sealed class TableEditServiceTest
   }
 
   [Test]
-  public async Task UpdateAsync_ANameAnotherTableCarries_IsRefusedAsTakenAndKeepsTheOldName()
+  public async Task UpdateAsync_ANameATableOfAnotherAreaCarries_IsRefusedAsTakenNamingThatAreaAndKeepsTheOldName()
   {
     var tableId = await _plan.AddTableAsync(_fixture.DbContext, _seeded.FestivalId, _gardenId, "Tisch 1", false);
-    await _plan.AddTableAsync(_fixture.DbContext, _seeded.FestivalId, _gardenId, "Tisch 2", false);
+    await _plan.AddTableAsync(_fixture.DbContext, _seeded.FestivalId, _hallId, "Tisch 2", false);
 
     var updated = await _service.UpdateAsync(_seeded.FestivalId, tableId, BuildSave(_gardenId, "Tisch 2"), TestContext.CurrentContext.CancellationToken);
 
@@ -158,6 +173,7 @@ public sealed class TableEditServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(updated.RefusalMessageKey(), Is.EqualTo("errors.admin.festivals.tableNameTaken"));
+                      Assert.That(updated.FirstError.Metadata, Does.ContainKey(Refusal.MetadataKeys.AreaName).WithValue("Halle"));
                       Assert.That(stored.Name, Is.EqualTo("Tisch 1"));
                     });
   }

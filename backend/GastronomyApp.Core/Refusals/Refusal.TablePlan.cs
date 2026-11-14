@@ -44,9 +44,26 @@ public static partial class Refusal
       return Conflict("errors.admin.festivals.areaNameTaken", $"Another area of the festival {festivalId}, shown or hidden, already carries the name {name}, compared without regard to case.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "AreaNameTaken" });
     }
 
-    public static Error TableNameTaken(Guid festivalId, string name)
+    public static Error TableNameTaken(Guid festivalId, string name, string areaName)
     {
-      return Conflict("errors.admin.festivals.tableNameTaken", $"Another table of the festival {festivalId}, shown or hidden, already carries the name {name}, compared without regard to case.", new Dictionary<string, object> { [MetadataKeys.ProblemCode] = "TableNameTaken" });
+      return Conflict("errors.admin.festivals.tableNameTaken",
+                      $"A shown table in the area {areaName} of the festival {festivalId} already carries the name {name}, compared without regard to case.",
+                      new Dictionary<string, object>
+                      {
+                        [MetadataKeys.ProblemCode] = "TableNameTaken",
+                        [MetadataKeys.AreaName] = areaName
+                      });
+    }
+
+    public static Error TableNameTakenByHiddenTable(Guid festivalId, string name, string areaName)
+    {
+      return Conflict("errors.admin.festivals.tableNameTakenByHiddenTable",
+                      $"A hidden table in the area {areaName} of the festival {festivalId} already carries the name {name}, compared without regard to case.",
+                      new Dictionary<string, object>
+                      {
+                        [MetadataKeys.ProblemCode] = "TableNameTaken",
+                        [MetadataKeys.AreaName] = areaName
+                      });
     }
 
     public static Error TableWithItemsToHandOutOrSettleStaysShown(Guid festivalId, Guid tableId)
