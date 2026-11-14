@@ -24,11 +24,15 @@ function declarationsOf(selector: string): string[] {
 }
 
 describe('the stylesheet of the striped rows', () => {
-  it('holds two rules, one for each stripe, and no other', () => {
+  it('holds three rules, one for each stripe and one for the gap between rows, and no other', () => {
     const rules = rulesOfTheStylesheet()
 
-    expect(rules).toHaveLength(2)
-    expect(rules.map((rule) => rule.selector)).toEqual(['.striped-row', '.striped-row.striped-row-strong'])
+    expect(rules).toHaveLength(3)
+    expect(rules.map((rule) => rule.selector)).toEqual([
+      '.striped-row',
+      '.striped-row.striped-row-strong',
+      '.striped-row + .striped-row',
+    ])
   })
 
   it('paints a striped row with the light tint of the theme and nothing else', () => {
@@ -41,6 +45,10 @@ describe('the stylesheet of the striped rows', () => {
     expect(declarationsOf('.striped-row.striped-row-strong')).toEqual([
       'background-color: rgba(var(--v-theme-on-surface), var(--v-stripe-strong-opacity));',
     ])
+  })
+
+  it('puts four pixels between a striped row and the striped row before it', () => {
+    expect(declarationsOf('.striped-row + .striped-row')).toEqual(['margin-top: 4px;'])
   })
 
   it.each(Object.keys(stripeClassesOf(1)))('styles the class %s that a row carries, spelled exactly', (className) => {

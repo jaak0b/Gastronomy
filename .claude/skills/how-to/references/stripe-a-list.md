@@ -16,7 +16,11 @@ any new striped list; never write a tint into a component.
   contrast ratio of about 1.10 in both themes, and the stronger stripe by about 1.19 in the light
   theme and 1.25 in the dark one. A different strength is changed here and nowhere else.
 - `frontend/src/shared/styles/stripedRows.css`, imported once by `main.ts`, defines `.striped-row` and
-  `.striped-row.striped-row-strong`. They set the background colour and nothing else.
+  `.striped-row.striped-row-strong`, which set the background colour, and `.striped-row +
+  .striped-row`, which puts 4px between a row and the one before it (none above the first or below
+  the last). The same 4px holds on the phone and in the admin. Rows of one list must therefore be
+  siblings. The thin line `BaseListRow` and the phone's `ItemRow` draw at the top of a following row
+  stays as it is, below the gap.
 - `frontend/src/shared/core/stripedRows.ts`: `stripeClassesOf(position)` returns the two class flags
   for a row. Position counts from 0, so the first row has the light tint only and every row at an odd
   position has the stronger one as well.
@@ -28,7 +32,8 @@ any new striped list; never write a tint into a component.
    rows on through the groups with `numberRowsAcrossGroups` (`admin/core/alternatingRows.ts`) and
    hands the number to `BaseListRow`, which applies the classes.
 2. Give the row its own padding and radius in its own scoped style: `BaseListRow` adds the 6px
-   radius, the phone's rows have none. The shared stylesheet never sets them.
+   radius, the phone's rows have none. The shared stylesheet never sets them. The gap between rows
+   comes from the shared stylesheet; never add a margin between rows yourself.
 3. Never select a row by `:nth-child` and never write a `rgba(var(--v-theme-on-surface), ...)` of
    your own for a stripe.
 
@@ -42,7 +47,8 @@ any new striped list; never write a tint into a component.
   theme.
 - `frontend/tests/shared/stripedRowsStylesheet.spec.ts` reads `stripedRows.css` and pins which
   selector uses which variable: `.striped-row` the light one and `.striped-row.striped-row-strong`
-  the stronger one, with no other rule, and that each class `stripeClassesOf` returns is styled.
+  the stronger one, and the 4px gap rule, with no other rule, and that each class `stripeClassesOf`
+  returns is styled.
 - `frontend/tests/admin/components/BaseListRow.spec.ts` reads the classes of the mounted row at each
   position, and `frontend/tests/phone/components/catalog/ItemGrid.spec.ts` reads the classes of each
   article row found by its `data-test`.

@@ -5,3 +5,7 @@
 .striped-row.striped-row-strong {
   background-color: rgba(var(--v-theme-on-surface), var(--v-stripe-strong-opacity));
 }
+
+.striped-row + .striped-row {
+  margin-top: 4px;
+}
