@@ -35,8 +35,8 @@ public sealed class FestivalStockService
       return Refusal.Ingredients.FestivalNotFound(festivalId);
 
     var rows = await _database.FestivalIngredients.AsNoTracking()
-                              .Where(stock => stock.FestivalId == festivalId
-                                              && _database.CatalogItemIngredients.Any(recipeLine => recipeLine.IngredientId == stock.IngredientId && _database.FestivalCatalogItems.Any(menuRow => menuRow.FestivalId == festivalId && menuRow.CatalogItemId == recipeLine.CatalogItemId)))
+                              .WhereFestivalIs(festivalId)
+                              .Where(stock => _database.CatalogItemIngredients.Any(recipeLine => recipeLine.IngredientId == stock.IngredientId && _database.FestivalCatalogItems.WhereFestivalIs(festivalId).Any(menuRow => menuRow.CatalogItemId == recipeLine.CatalogItemId)))
                               .OrderBy(stock => stock.Ingredient.Name)
                               .ProjectToType<AdminFestivalIngredientView>(_mapping)
                               .ToListAsync(cancellationToken);
@@ -53,7 +53,7 @@ public sealed class FestivalStockService
     if (request.AvailableAmount is { } amount && (!double.IsFinite(amount) || amount < 0))
       return Refusal.Ingredients.StockInvalid(amount);
 
-    var row = await _database.FestivalIngredients.FirstOrDefaultAsync(stock => stock.FestivalId == festivalId && stock.IngredientId == ingredientId, cancellationToken);
+    var row = await _database.FestivalIngredients.WhereFestivalIs(festivalId).FirstOrDefaultAsync(stock => stock.IngredientId == ingredientId, cancellationToken);
 
     if (row is null)
       return Refusal.Ingredients.StockRowNotFound(festivalId, ingredientId);

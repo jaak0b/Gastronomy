@@ -45,7 +45,7 @@ public sealed class OrderPlacementService
     if (festival is null)
       return Refusal.Order.NoRunningFestival();
 
-    if (!await _database.Tables.AsNoTracking().AnyAsync(table => table.Id == request.TableId && table.FestivalId == festival.Id, cancellationToken))
+    if (!await _database.Tables.AsNoTracking().WhereFestivalIs(festival.Id).AnyAsync(table => table.Id == request.TableId, cancellationToken))
       return Refusal.Order.TableNotAtTheRunningFestival(festival.Id, request.TableId);
 
     ErrorOr<IReadOnlyList<OrderItem>> routing = await RouteItemsAsync(festival.Id, request.Items!, cancellationToken);
@@ -84,8 +84,8 @@ public sealed class OrderPlacementService
     List<Guid> catalogItemIds = itemRequests.Select(itemRequest => itemRequest.CatalogItemId).Distinct().ToList();
 
     Dictionary<Guid, CatalogItem> catalogItems = await _database.CatalogItems.AsNoTracking().Where(item => catalogItemIds.Contains(item.Id)).ToDictionaryAsync(item => item.Id, cancellationToken);
-    Dictionary<Guid, FestivalCatalogItem> menuRows = await _database.FestivalCatalogItems.AsNoTracking().Where(menuRow => menuRow.FestivalId == festivalId && catalogItemIds.Contains(menuRow.CatalogItemId)).ToDictionaryAsync(menuRow => menuRow.CatalogItemId, cancellationToken);
-    List<ItemStationAssignment> assignments = await _database.ItemStationAssignments.AsNoTracking().Where(assignment => assignment.FestivalId == festivalId && catalogItemIds.Contains(assignment.CatalogItemId)).ToListAsync(cancellationToken);
+    Dictionary<Guid, FestivalCatalogItem> menuRows = await _database.FestivalCatalogItems.AsNoTracking().WhereFestivalIs(festivalId).Where(menuRow => catalogItemIds.Contains(menuRow.CatalogItemId)).ToDictionaryAsync(menuRow => menuRow.CatalogItemId, cancellationToken);
+    List<ItemStationAssignment> assignments = await _database.ItemStationAssignments.AsNoTracking().WhereFestivalIs(festivalId).Where(assignment => catalogItemIds.Contains(assignment.CatalogItemId)).ToListAsync(cancellationToken);
     List<Station> stationsAtTheFestival = await _database.FestivalStations.AsNoTracking().ActiveAt(festivalId).OrderBy(link => link.Station.SortOrder).Select(link => link.Station).ToListAsync(cancellationToken);
 
     Dictionary<Guid, StationOrder> stationOrdersByStationId = [];

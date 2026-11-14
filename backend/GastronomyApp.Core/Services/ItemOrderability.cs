@@ -93,14 +93,14 @@ public sealed class ItemOrderability
 
   private async Task<IReadOnlyList<Guid>> FindActiveMenuItemIdsAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    return await _database.FestivalCatalogItems.AsNoTracking().Where(menuRow => menuRow.FestivalId == festivalId && menuRow.CatalogItem.IsActive).OrderBy(menuRow => menuRow.CatalogItem.SortOrder).Select(menuRow => menuRow.CatalogItemId).ToListAsync(cancellationToken);
+    return await _database.FestivalCatalogItems.AsNoTracking().WhereFestivalIs(festivalId).Where(menuRow => menuRow.CatalogItem.IsActive).OrderBy(menuRow => menuRow.CatalogItem.SortOrder).Select(menuRow => menuRow.CatalogItemId).ToListAsync(cancellationToken);
   }
 
   private async Task<IReadOnlyList<Guid>> FindItemIdsPreparedByAsync(Guid festivalId, IReadOnlyCollection<Guid> stationIds, CancellationToken cancellationToken)
   {
     List<Guid> preparing = stationIds.ToList();
 
-    return await _database.ItemStationAssignments.AsNoTracking().Where(assignment => assignment.FestivalId == festivalId && preparing.Contains(assignment.StationId)).Select(assignment => assignment.CatalogItemId).Distinct().ToListAsync(cancellationToken);
+    return await _database.ItemStationAssignments.AsNoTracking().WhereFestivalIs(festivalId).Where(assignment => preparing.Contains(assignment.StationId)).Select(assignment => assignment.CatalogItemId).Distinct().ToListAsync(cancellationToken);
   }
 
   private async Task<IReadOnlyList<Guid>> FindFestivalIdsNotEndedAsync(CancellationToken cancellationToken)

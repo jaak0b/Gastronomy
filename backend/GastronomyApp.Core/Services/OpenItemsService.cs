@@ -40,7 +40,8 @@ public sealed class OpenItemsService
       return Refusal.Settlement.NoRunningFestival();
 
     var table = await _database.Tables.AsNoTracking()
-                               .Where(candidate => candidate.Id == tableId && candidate.FestivalId == festival.Id)
+                               .WhereFestivalIs(festival.Id)
+                               .Where(candidate => candidate.Id == tableId)
                                .Include(candidate => candidate.Orders.Where(order => order.MatchesOrderStatus(orderStatus) && order.Items().Any(item => item.MatchesTableSearch(paymentStatus, includeCancelled)))
                                                               .OrderByDescending(order => order.CreatedAtUtc)
                                                               .ThenByDescending(order => order.GlobalOrderNumber))
@@ -117,10 +118,7 @@ public sealed class OpenItemsService
     if (duplicateIds.Count > 0)
       return duplicateIds.Select(Refusal.Cancellation.DuplicateOrderItemId).ToList();
 
-    Dictionary<Guid, OrderItem> knownItems = await _database.OrderItems.Include(item => item.StationOrder)
-                                                            .ThenInclude(stationOrder => stationOrder.Order)
-                                                            .Where(item => orderItemIds.Contains(item.Id) && item.StationOrder.FestivalId == festival.Id)
-                                                            .ToDictionaryAsync(item => item.Id, cancellationToken);
+    Dictionary<Guid, OrderItem> knownItems = await _database.OrderItems.Include(item => item.StationOrder).ThenInclude(stationOrder => stationOrder.Order).WhereStationOrderFestivalIs(festival.Id).Where(item => orderItemIds.Contains(item.Id)).ToDictionaryAsync(item => item.Id, cancellationToken);
 
     List<Guid> unknownIds = orderItemIds.Where(orderItemId => !knownItems.ContainsKey(orderItemId)).ToList();
     if (unknownIds.Count > 0)

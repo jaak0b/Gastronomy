@@ -35,7 +35,8 @@ public sealed class CatalogService
     var stations = await _database.FestivalStations.AsNoTracking().ActiveAt(festival.Id).OrderBy(link => link.Station.SortOrder).ProjectToType<CatalogStationView>(_mapping).ToListAsync(cancellationToken);
 
     var menu = await _database.FestivalCatalogItems.AsNoTracking()
-                              .Where(menuRow => menuRow.FestivalId == festival.Id && orderableItemIds.Contains(menuRow.CatalogItemId) && menuRow.CatalogItem.Category.IsActive)
+                              .WhereFestivalIs(festival.Id)
+                              .Where(menuRow => orderableItemIds.Contains(menuRow.CatalogItemId) && menuRow.CatalogItem.Category.IsActive)
                               .OrderBy(menuRow => menuRow.CatalogItem.SortOrder)
                               .ProjectToType<CatalogMenuEntry>(_mapping)
                               .ToListAsync(cancellationToken);

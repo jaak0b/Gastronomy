@@ -2,6 +2,7 @@ using ErrorOr;
 using GastronomyApp.Contracts.Admin.Stations;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Queries;
 using GastronomyApp.Core.Refusals;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
@@ -37,7 +38,7 @@ public sealed class StationService
 
     var stations = await ReadStationsAsync(cancellationToken);
     var stationIds = stations.Select(station => station.StationId).ToList();
-    var stationIdsAtTheFestival = await _database.FestivalStations.AsNoTracking().Where(link => link.FestivalId == askedFestivalId).Select(link => link.StationId).ToListAsync(cancellationToken);
+    var stationIdsAtTheFestival = await _database.FestivalStations.AsNoTracking().WhereFestivalIs(askedFestivalId).Select(link => link.StationId).ToListAsync(cancellationToken);
     var holdingItems = await _itemsToHandOut.FindStationIdsIfRunningAsync(festival, cancellationToken);
     var strandedByRemoving = await _orderability.FindItemsStrandedByRemovingEachStationAsync(askedFestivalId, stationIds, cancellationToken);
 

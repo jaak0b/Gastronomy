@@ -35,7 +35,7 @@ public sealed class CatalogItemService
     if (festivalId is not { } menuFestivalId)
       return new AdminItemListView(items);
 
-    var menu = await _database.FestivalCatalogItems.AsNoTracking().Where(menuRow => menuRow.FestivalId == menuFestivalId).ProjectToType<ItemMenuEntry>(_mapping).ToDictionaryAsync(entry => entry.CatalogItemId, entry => entry.AtTheFestival, cancellationToken);
+    var menu = await _database.FestivalCatalogItems.AsNoTracking().WhereFestivalIs(menuFestivalId).ProjectToType<ItemMenuEntry>(_mapping).ToDictionaryAsync(entry => entry.CatalogItemId, entry => entry.AtTheFestival, cancellationToken);
 
     return new AdminItemListView(items.Select(item => item with { AtTheFestival = menu.GetValueOrDefault(item.ItemId) }).ToList());
   }
@@ -116,7 +116,7 @@ public sealed class CatalogItemService
 
     var runningFestival = await _runningFestival.FindAsync(cancellationToken);
 
-    if (runningFestival is not null && await _database.FestivalCatalogItems.AsNoTracking().AnyAsync(menuRow => menuRow.FestivalId == runningFestival.Id && menuRow.CatalogItemId == itemId, cancellationToken))
+    if (runningFestival is not null && await _database.FestivalCatalogItems.AsNoTracking().WhereFestivalIs(runningFestival.Id).AnyAsync(menuRow => menuRow.CatalogItemId == itemId, cancellationToken))
       return Refusal.CatalogItem.ItemIsOnTheRunningFestivalsMenu(itemId);
 
     item.IsActive = false;

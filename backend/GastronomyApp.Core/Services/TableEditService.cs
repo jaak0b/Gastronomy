@@ -68,12 +68,12 @@ public sealed class TableEditService
     if (sourceTableIds.Distinct().Count() != sourceTableIds.Count)
       return Refusal.TablePlan.TableCopyRepeatsASourceTable(festivalId, sourceTableIds.First(id => sourceTableIds.Count(candidate => candidate == id) > 1));
 
-    IReadOnlyList<Table> sources = await _database.Tables.AsNoTracking().Where(table => table.FestivalId == festivalId && sourceTableIds.Contains(table.Id)).ToListAsync(cancellationToken);
+    IReadOnlyList<Table> sources = await _database.Tables.AsNoTracking().WhereFestivalIs(festivalId).Where(table => sourceTableIds.Contains(table.Id)).ToListAsync(cancellationToken);
 
     if (sources.Count != sourceTableIds.Count)
       return Refusal.TablePlan.TableNotFound(festivalId, sourceTableIds.First(id => sources.All(source => source.Id != id)));
 
-    IReadOnlyList<string> takenNames = await _database.Tables.AsNoTracking().Where(table => table.FestivalId == festivalId).Select(table => table.Name).ToListAsync(cancellationToken);
+    IReadOnlyList<string> takenNames = await _database.Tables.AsNoTracking().WhereFestivalIs(festivalId).Select(table => table.Name).ToListAsync(cancellationToken);
     var names = _tableCopyNaming.NamesFor(sources, takenNames);
     var tooLong = names.FirstOrDefault(copy => copy.Name.Length > TableCopyNaming.LongestTableName);
 
@@ -117,7 +117,7 @@ public sealed class TableEditService
     if (tableIds.Distinct().Count() != tableIds.Count)
       return Refusal.TablePlan.TableMoveRepeatsATable(festivalId, tableIds.First(id => tableIds.Count(candidate => candidate == id) > 1));
 
-    IReadOnlyList<Table> tables = await _database.Tables.Where(table => table.FestivalId == festivalId && tableIds.Contains(table.Id)).ToListAsync(cancellationToken);
+    IReadOnlyList<Table> tables = await _database.Tables.WhereFestivalIs(festivalId).Where(table => tableIds.Contains(table.Id)).ToListAsync(cancellationToken);
 
     if (tables.Count != tableIds.Count)
       return Refusal.TablePlan.TableNotFound(festivalId, tableIds.First(id => tables.All(table => table.Id != id)));
@@ -160,17 +160,17 @@ public sealed class TableEditService
 
   private async Task<Table?> FindTableAsync(Guid festivalId, Guid tableId, CancellationToken cancellationToken)
   {
-    return await _database.Tables.FirstOrDefaultAsync(table => table.Id == tableId && table.FestivalId == festivalId, cancellationToken);
+    return await _database.Tables.WhereFestivalIs(festivalId).FirstOrDefaultAsync(table => table.Id == tableId, cancellationToken);
   }
 
   private async Task<bool> AreaBelongsToFestivalAsync(Guid festivalId, Guid areaId, CancellationToken cancellationToken)
   {
-    return await _database.Areas.AsNoTracking().AnyAsync(area => area.Id == areaId && area.FestivalId == festivalId, cancellationToken);
+    return await _database.Areas.AsNoTracking().WhereFestivalIs(festivalId).AnyAsync(area => area.Id == areaId, cancellationToken);
   }
 
   private async Task<Error?> NameRefusalAsync(Guid festivalId, string name, Guid? ownTableId, CancellationToken cancellationToken)
   {
-    var namesake = await _database.Tables.AsNoTracking().Where(table => table.FestivalId == festivalId).Namesakes(name, ownTableId).Select(table => new TableNamesake(table.Area.Name, table.IsHidden)).SingleOrDefaultAsync(cancellationToken);
+    var namesake = await _database.Tables.AsNoTracking().WhereFestivalIs(festivalId).Namesakes(name, ownTableId).Select(table => new TableNamesake(table.Area.Name, table.IsHidden)).SingleOrDefaultAsync(cancellationToken);
 
     if (namesake is null)
       return null;

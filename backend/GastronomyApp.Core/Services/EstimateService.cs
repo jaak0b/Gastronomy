@@ -32,7 +32,8 @@ public sealed class EstimateService
       return [];
 
     var assignments = await _database.ItemStationAssignments.AsNoTracking()
-                                     .Where(assignment => assignment.FestivalId == festival.Id && assignment.CatalogItem.ProductionMinutes != null && assignment.Station.IsActive && assignment.Station.FestivalStations.Any(link => link.FestivalId == festival.Id))
+                                     .WhereFestivalIs(festival.Id)
+                                     .Where(assignment => assignment.CatalogItem.ProductionMinutes != null && assignment.Station.IsActive && assignment.Station.FestivalStations.Any(link => link.FestivalId == festival.Id))
                                      .OrderBy(assignment => assignment.CatalogItem.SortOrder)
                                      .ThenBy(assignment => assignment.Station.SortOrder)
                                      .ProjectToType<TimedAssignment>(_mapping)

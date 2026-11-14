@@ -3,6 +3,7 @@ using GastronomyApp.Contracts.Admin.Festivals;
 using GastronomyApp.Contracts.Admin.Stations;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Queries;
 using GastronomyApp.Core.Refusals;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
@@ -75,7 +76,7 @@ public sealed class FestivalStationService
     if (strandedItemIds.Count > 0)
       return Refusal.FestivalStation.ItemsWouldHaveNoStation(strandedItemIds.Count);
 
-    List<ItemStationAssignment> assignmentsHere = await _database.ItemStationAssignments.Where(assignment => assignment.FestivalId == festivalId && assignment.StationId == stationId).ToListAsync(cancellationToken);
+    List<ItemStationAssignment> assignmentsHere = await _database.ItemStationAssignments.WhereFestivalIs(festivalId).Where(assignment => assignment.StationId == stationId).ToListAsync(cancellationToken);
 
     if (await FindShapeAsync(link.Id, cancellationToken) is { } shape)
       _database.FestivalStationShapes.Remove(shape);
@@ -97,7 +98,7 @@ public sealed class FestivalStationService
     if (link is null)
       return Refusal.TablePlan.StationLinkNotFound(festivalId, stationId);
 
-    if (!await _database.Areas.AsNoTracking().AnyAsync(area => area.Id == request.AreaId && area.FestivalId == festivalId, cancellationToken))
+    if (!await _database.Areas.AsNoTracking().WhereFestivalIs(festivalId).AnyAsync(area => area.Id == request.AreaId, cancellationToken))
       return Refusal.TablePlan.AreaOutsideTheFestival(festivalId, request.AreaId);
 
     var shape = await FindShapeAsync(link.Id, cancellationToken);
@@ -142,7 +143,7 @@ public sealed class FestivalStationService
 
   private async Task<FestivalStation?> FindLinkAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    return await _database.FestivalStations.FirstOrDefaultAsync(link => link.FestivalId == festivalId && link.StationId == stationId, cancellationToken);
+    return await _database.FestivalStations.WhereFestivalIs(festivalId).FirstOrDefaultAsync(link => link.StationId == stationId, cancellationToken);
   }
 
   private async Task<FestivalStationShape?> FindShapeAsync(Guid festivalStationId, CancellationToken cancellationToken)

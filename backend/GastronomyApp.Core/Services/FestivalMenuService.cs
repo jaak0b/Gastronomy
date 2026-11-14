@@ -3,6 +3,7 @@ using GastronomyApp.Contracts.Admin.Catalog;
 using GastronomyApp.Contracts.Admin.Festivals;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Queries;
 using GastronomyApp.Core.Refusals;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
@@ -36,7 +37,7 @@ public sealed class FestivalMenuService
 
     List<Guid> stationIds = (request.StationIds ?? []).ToList();
 
-    var stationIdsAtTheFestival = await _database.FestivalStations.AsNoTracking().Where(link => link.FestivalId == festivalId).Select(link => link.StationId).ToListAsync(cancellationToken);
+    var stationIdsAtTheFestival = await _database.FestivalStations.AsNoTracking().WhereFestivalIs(festivalId).Select(link => link.StationId).ToListAsync(cancellationToken);
 
     List<Guid> strangers = stationIds.Where(stationId => !stationIdsAtTheFestival.Contains(stationId)).ToList();
 
@@ -123,11 +124,11 @@ public sealed class FestivalMenuService
 
   private async Task<FestivalCatalogItem?> FindMenuRowAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
   {
-    return await _database.FestivalCatalogItems.FirstOrDefaultAsync(menuRow => menuRow.FestivalId == festivalId && menuRow.CatalogItemId == catalogItemId, cancellationToken);
+    return await _database.FestivalCatalogItems.WhereFestivalIs(festivalId).FirstOrDefaultAsync(menuRow => menuRow.CatalogItemId == catalogItemId, cancellationToken);
   }
 
   private async Task<List<ItemStationAssignment>> FindAssignmentsAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
   {
-    return await _database.ItemStationAssignments.Where(assignment => assignment.FestivalId == festivalId && assignment.CatalogItemId == catalogItemId).ToListAsync(cancellationToken);
+    return await _database.ItemStationAssignments.WhereFestivalIs(festivalId).Where(assignment => assignment.CatalogItemId == catalogItemId).ToListAsync(cancellationToken);
   }
 }

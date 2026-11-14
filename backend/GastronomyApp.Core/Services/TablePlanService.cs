@@ -30,7 +30,7 @@ public sealed class TablePlanService
     if (festival is null)
       return Refusal.TablePlan.FestivalNotFound(festivalId);
 
-    var areas = await _database.Areas.AsNoTracking().Where(area => area.FestivalId == festivalId).OrderBy(area => area.SortOrder).ThenBy(area => area.Name).ProjectToType<AdminAreaView>(_mapping).ToListAsync(cancellationToken);
+    var areas = await _database.Areas.AsNoTracking().WhereFestivalIs(festivalId).OrderBy(area => area.SortOrder).ThenBy(area => area.Name).ProjectToType<AdminAreaView>(_mapping).ToListAsync(cancellationToken);
     IReadOnlyList<TableHoldingItems> tablesHoldingItems = [];
 
     if (_runningFestival.IsRunning(festival))
@@ -54,7 +54,7 @@ public sealed class TablePlanService
     if (festival is null)
       return new([]);
 
-    var areas = await _database.Areas.AsNoTracking().Where(area => area.FestivalId == festival.Id && !area.IsHidden).OrderBy(area => area.SortOrder).ThenBy(area => area.Name).ProjectToType<ShownArea>(_mapping).ToListAsync(cancellationToken);
+    var areas = await _database.Areas.AsNoTracking().WhereFestivalIs(festival.Id).Where(area => !area.IsHidden).OrderBy(area => area.SortOrder).ThenBy(area => area.Name).ProjectToType<ShownArea>(_mapping).ToListAsync(cancellationToken);
 
     return new(areas.Adapt<List<TablePlanAreaView>>(_mapping));
   }

@@ -34,7 +34,7 @@ public sealed class AreaEditService
     if (await NameIsTakenAsync(festivalId, request.Name!, null, cancellationToken))
       return Refusal.TablePlan.AreaNameTaken(festivalId, request.Name!);
 
-    var takenSortOrders = await _database.Areas.AsNoTracking().Where(area => area.FestivalId == festivalId).Select(area => area.SortOrder).ToListAsync(cancellationToken);
+    var takenSortOrders = await _database.Areas.AsNoTracking().WhereFestivalIs(festivalId).Select(area => area.SortOrder).ToListAsync(cancellationToken);
 
     Area created = new()
                    {
@@ -73,7 +73,7 @@ public sealed class AreaEditService
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    IReadOnlyList<Area> areas = await _database.Areas.Where(area => area.FestivalId == festivalId).OrderBy(area => area.SortOrder).ThenBy(area => area.Name).ToListAsync(cancellationToken);
+    IReadOnlyList<Area> areas = await _database.Areas.WhereFestivalIs(festivalId).OrderBy(area => area.SortOrder).ThenBy(area => area.Name).ToListAsync(cancellationToken);
     var moved = areas.FirstOrDefault(candidate => candidate.Id == areaId);
 
     if (moved is null)
@@ -97,11 +97,11 @@ public sealed class AreaEditService
 
   private async Task<Area?> FindAreaAsync(Guid festivalId, Guid areaId, CancellationToken cancellationToken)
   {
-    return await _database.Areas.FirstOrDefaultAsync(area => area.Id == areaId && area.FestivalId == festivalId, cancellationToken);
+    return await _database.Areas.WhereFestivalIs(festivalId).FirstOrDefaultAsync(area => area.Id == areaId, cancellationToken);
   }
 
   private async Task<bool> NameIsTakenAsync(Guid festivalId, string name, Guid? ownAreaId, CancellationToken cancellationToken)
   {
-    return await _database.Areas.AsNoTracking().Where(area => area.FestivalId == festivalId).Namesakes(name, ownAreaId).AnyAsync(cancellationToken);
+    return await _database.Areas.AsNoTracking().WhereFestivalIs(festivalId).Namesakes(name, ownAreaId).AnyAsync(cancellationToken);
   }
 }

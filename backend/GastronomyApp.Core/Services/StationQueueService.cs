@@ -73,7 +73,7 @@ public sealed class StationQueueService
     if (access.IsError)
       return access.Errors;
 
-    var stationOrder = await _database.StationOrders.FirstOrDefaultAsync(candidate => candidate.Id == stationOrderId && candidate.StationId == stationId && candidate.FestivalId == access.Value.FestivalId, cancellationToken);
+    var stationOrder = await _database.StationOrders.WhereFestivalIs(access.Value.FestivalId).FirstOrDefaultAsync(candidate => candidate.Id == stationOrderId && candidate.StationId == stationId, cancellationToken);
 
     if (stationOrder is null)
       return Refusal.StationQueue.OrderNotAtThisStation(stationOrderId);
@@ -100,7 +100,7 @@ public sealed class StationQueueService
     if (festival is null)
       return Refusal.StationQueue.NoRunningFestival();
 
-    if (!await _database.FestivalStations.AsNoTracking().AnyAsync(link => link.FestivalId == festival.Id && link.StationId == stationId, cancellationToken))
+    if (!await _database.FestivalStations.AsNoTracking().WhereFestivalIs(festival.Id).AnyAsync(link => link.StationId == stationId, cancellationToken))
       return Refusal.StationQueue.StationNotAtTheFestival();
 
     return new StationAtFestival(station, festival.Id);
@@ -174,7 +174,8 @@ public sealed class StationQueueService
   private IOrderedQueryable<StationOrder> StationOrdersWithTheirCards(StationAtFestival access)
   {
     return _database.StationOrders.AsNoTracking()
-                    .Where(stationOrder => stationOrder.StationId == access.Station.Id && stationOrder.FestivalId == access.FestivalId)
+                    .WhereFestivalIs(access.FestivalId)
+                    .Where(stationOrder => stationOrder.StationId == access.Station.Id)
                     .Include(stationOrder => stationOrder.Items)
                     .Include(stationOrder => stationOrder.Order)
                     .ThenInclude(order => order.StaffMember)

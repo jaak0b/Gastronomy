@@ -21,7 +21,7 @@ public sealed class StockSoldOutMarker
 
   public async Task<IReadOnlyList<FestivalCatalogItem>> MarkItemsWithoutEnoughStockSoldOutAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    List<FestivalIngredient> limitedStock = await _database.FestivalIngredients.AsNoTracking().Where(stock => stock.FestivalId == festivalId && stock.AvailableAmount != null).ToListAsync(cancellationToken);
+    List<FestivalIngredient> limitedStock = await _database.FestivalIngredients.AsNoTracking().WhereFestivalIs(festivalId).Where(stock => stock.AvailableAmount != null).ToListAsync(cancellationToken);
 
     if (limitedStock.Count == 0)
       return [];
@@ -39,7 +39,7 @@ public sealed class StockSoldOutMarker
                                                                      .ToDictionaryAsync(consumption => consumption.IngredientId, consumption => consumption.ConsumedAmount, cancellationToken);
     Dictionary<Guid, double> availableByIngredientId = limitedStock.ToDictionary(stock => stock.IngredientId, stock => stock.AvailableAmount!.Value);
 
-    List<FestivalCatalogItem> availableMenuRows = await _database.FestivalCatalogItems.Where(menuRow => menuRow.FestivalId == festivalId && menuRow.IsAvailable).Include(menuRow => menuRow.CatalogItem).ThenInclude(item => item.Ingredients).ToListAsync(cancellationToken);
+    List<FestivalCatalogItem> availableMenuRows = await _database.FestivalCatalogItems.WhereFestivalIs(festivalId).Where(menuRow => menuRow.IsAvailable).Include(menuRow => menuRow.CatalogItem).ThenInclude(item => item.Ingredients).ToListAsync(cancellationToken);
 
     List<FestivalCatalogItem> soldOut = availableMenuRows
                                        .Where(menuRow => menuRow.CatalogItem.Ingredients.Any(recipeLine => availableByIngredientId.TryGetValue(recipeLine.IngredientId, out var available)

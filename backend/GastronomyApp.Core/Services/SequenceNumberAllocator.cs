@@ -1,4 +1,5 @@
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Queries;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Core.Services;
@@ -25,7 +26,7 @@ public sealed class SequenceNumberAllocator
 
   public async Task<int> AllocateStationOrderNumberAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    var link = await _database.FestivalStations.FirstAsync(candidate => candidate.FestivalId == festivalId && candidate.StationId == stationId, cancellationToken);
+    var link = await _database.FestivalStations.WhereFestivalIs(festivalId).FirstAsync(candidate => candidate.StationId == stationId, cancellationToken);
 
     var allocatedValue = link.NextStationOrderNumber;
     link.NextStationOrderNumber = allocatedValue + 1;
@@ -36,11 +37,7 @@ public sealed class SequenceNumberAllocator
 
   public async Task<int> FindNextStationOrderNumberAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    var highestUsedNumber = await _database.StationOrders.AsNoTracking()
-                                           .Where(stationOrder => stationOrder.FestivalId == festivalId && stationOrder.StationId == stationId)
-                                           .Select(stationOrder => stationOrder.StationOrderNumber)
-                                           .OrderByDescending(number => number)
-                                           .FirstOrDefaultAsync(cancellationToken);
+    var highestUsedNumber = await _database.StationOrders.AsNoTracking().WhereFestivalIs(festivalId).Where(stationOrder => stationOrder.StationId == stationId).Select(stationOrder => stationOrder.StationOrderNumber).OrderByDescending(number => number).FirstOrDefaultAsync(cancellationToken);
 
     return highestUsedNumber + 1;
   }
