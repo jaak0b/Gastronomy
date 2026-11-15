@@ -1,7 +1,7 @@
 import type { ApiErrorBody } from '../api/apiError'
 import { DeliveryMode, OrderItemState, StationOrderQueueView, StationQueueItemView } from '../api/generatedSchemas'
 import { assertNever } from './assertNever'
-import { mergeLinesWithSameArticleAndNote } from './collapse'
+import { groupKeepingFirstSeenOrder, mergeLinesWithSameArticleAndNote } from './collapse'
 import { compareNames } from './compareNames'
 import { formatTimeOfDay } from './moments'
 import { isCancelled, isHandedOut, isOpen } from './orderItemStates'
@@ -20,10 +20,17 @@ export interface ItemLine {
   units: number
 }
 
+export interface ArticleTotal {
+  key: string
+  itemName: string
+  units: number
+  partsByNote: ItemLine[]
+}
+
 export interface StationStats {
   togetherOrders: number
   asItComesOrders: number
-  openLines: ItemLine[]
+  openArticles: ArticleTotal[]
 }
 
 export interface StationMessage {
@@ -118,12 +125,46 @@ export function linesByCount(lines: readonly ItemLine[]): ItemLine[] {
   )
 }
 
+function partsByNote(linesOfOneArticle: readonly ItemLine[]): ItemLine[] {
+  const notedLines = linesOfOneArticle.filter((line) => line.note !== null)
+  if (notedLines.length === 0) {
+    return []
+  }
+  return [...linesOfOneArticle.filter((line) => line.note === null), ...linesByCount(notedLines)]
+}
+
+function openArticleTotals(stationOrders: readonly StationOrderQueueView[]): ArticleTotal[] {
+  const openLines = itemLines(stationOrders.flatMap((stationOrder) => openItemsIn(stationOrder)))
+  return groupKeepingFirstSeenOrder<ItemLine, ItemLine[]>(
+    openLines,
+    (line) => line.itemName,
+    (line) => [line],
+    (linesOfOneArticle, line) => [...linesOfOneArticle, line],
+  )
+    .map((linesOfOneArticle) => ({
+      key: linesOfOneArticle[0].itemName,
+      itemName: linesOfOneArticle[0].itemName,
+      units: linesOfOneArticle.reduce((sum, line) => sum + line.units, 0),
+      partsByNote: partsByNote(linesOfOneArticle),
+    }))
+    .sort((left, right) => right.units - left.units || compareNames(left.itemName, right.itemName))
+}
+
 export function itemLineText(line: ItemLine, t: Translate): string {
   const counted = t('common.labels.countTimesItem', { count: line.units, item: line.itemName })
   if (line.note === null) {
     return counted
   }
   return counted + t('station.board.labels.unitSeparator') + t('common.labels.note', { note: line.note })
+}
+
+export function articleTotalText(article: ArticleTotal, t: Translate): string {
+  return t('common.labels.countTimesItem', { count: article.units, item: article.itemName })
+}
+
+export function articlePartText(part: ItemLine, t: Translate): string {
+  const noteText = part.note === null ? t('station.board.labels.withoutNote') : t('common.labels.note', { note: part.note })
+  return t('common.labels.countTimesItem', { count: part.units, item: noteText })
 }
 
 export function selectedUnits(
@@ -191,9 +232,7 @@ export function stationStats(stationOrders: readonly StationOrderQueueView[]): S
   return {
     togetherOrders,
     asItComesOrders,
-    openLines: linesByCount(
-      itemLines(stationOrders.flatMap((stationOrder) => openItemsIn(stationOrder))),
-    ),
+    openArticles: openArticleTotals(stationOrders),
   }
 }
 

@@ -241,7 +241,8 @@
         "ordersHeading": "Alle Bestellungen",
         "statsAsItComesChip": "Einzeln {count}",
         "statsTogetherChip": "Gemeinsam {count}",
-        "unitSeparator": " · "
+        "unitSeparator": " · ",
+        "withoutNote": "ohne Hinweis"
       },
       "actions": {
         "acknowledgeCancellation": "Stornierung bestätigen",

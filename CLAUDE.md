@@ -302,8 +302,11 @@ Every rule binds every agent, main or sub, with no exception it does not name.
     counted for anyone to read or act on, the note travels with the group: the line carries the article
     and its note together. Two units of one article are different work when their notes differ, and a
     count the kitchen plans production from is not exempt, because a note can change how the article
-    is made: `20 x Hotdog` next to `3 x Hotdog · Hinweis: Ohne Ketchup`, never one merged number.
-    Grouping by name alone silently merges two instructions and sends the wrong thing to a table.
+    is made. A count may add up one article across notes only when every part is listed beneath it
+    in the same box with its own count and its own note, the part without a note included:
+    `20 x Hotdog` over `17 x ohne Hinweis` and `3 x Hinweis: Ohne Ketchup`. A total standing alone,
+    or one that lists only the noted parts, is a merged number. Grouping by name alone silently
+    merges two instructions and sends the wrong thing to a table.
 
 20. **C# follows `csharp-design-guidelines`, TypeScript and Vue follow
     `typescript-vue-design-guidelines`; read the one for the file before touching it.**

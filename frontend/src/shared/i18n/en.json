@@ -241,7 +241,8 @@
         "ordersHeading": "All orders",
         "statsAsItComesChip": "Individual {count}",
         "statsTogetherChip": "Together {count}",
-        "unitSeparator": " · "
+        "unitSeparator": " · ",
+        "withoutNote": "without note"
       },
       "actions": {
         "acknowledgeCancellation": "Confirm cancellation",

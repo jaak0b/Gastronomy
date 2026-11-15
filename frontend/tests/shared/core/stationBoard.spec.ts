@@ -216,7 +216,7 @@ describe('the words on one grouped line', () => {
 })
 
 describe('the statistics above the queue', () => {
-  it('counts the orders by delivery mode and keeps the open lines apart by note', () => {
+  it('counts the orders by delivery mode, the hidden as-it-comes order included', () => {
     const orders = [
       stationOrder({
         stationOrderId: 'station-order-1',
@@ -246,12 +246,6 @@ describe('the statistics above the queue', () => {
 
     expect(stats.togetherOrders).toBe(1)
     expect(stats.asItComesOrders).toBe(2)
-    expect(articleAndUnits(stats.openLines)).toEqual([
-      { itemName: 'Bratwurst', note: null, units: 2 },
-      { itemName: 'Bratwurst', note: 'Ohne Senf', units: 1 },
-      { itemName: 'Pommes', note: null, units: 1 },
-      { itemName: 'Wasser', note: null, units: 1 },
-    ])
   })
 })
 
@@ -326,9 +320,9 @@ describe('a station order with an item a waiter cancelled while it was open', ()
     ])
   })
 
-  it('leaves the cancelled item out of the overview of open lines', () => {
-    expect(articleAndUnits(stationStats([order]).openLines)).toEqual([
-      { itemName: 'Pommes', note: null, units: 1 },
+  it('leaves the cancelled item out of the open articles of the overview', () => {
+    expect(stationStats([order]).openArticles.map(({ itemName, units }) => ({ itemName, units }))).toEqual([
+      { itemName: 'Pommes', units: 1 },
     ])
   })
 

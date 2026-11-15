@@ -1,26 +1,23 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseEmptyListText from '../../shared/components/BaseEmptyListText.vue'
 import {
+  articleTotalText,
   deliveryModeColourToken,
-  itemLineText,
-  linesByCount,
-  type ItemLine,
+  articlePartText,
+  type ArticleTotal,
 } from '../../shared/core/stationBoard'
 
-const props = defineProps<{
+defineProps<{
   togetherCount: number
   asItComesCount: number
-  lines: ItemLine[]
+  articles: ArticleTotal[]
   showsEmptyListText: boolean
   failureText: string | null
 }>()
 const emit = defineEmits<{ close: [] }>()
 
 const { t } = useI18n()
-
-const orderedLines = computed(() => linesByCount(props.lines))
 </script>
 
 <template>
@@ -53,22 +50,39 @@ const orderedLines = computed(() => linesByCount(props.lines))
       </v-chip>
     </div>
     <BaseEmptyListText v-if="showsEmptyListText" class="mt-5" />
-    <ul class="units">
-      <li v-for="line in orderedLines" :key="line.key" class="unit app-item-name" data-test="unit">
-        {{ itemLineText(line, t) }}
-      </li>
-    </ul>
+    <div class="open-articles d-flex flex-column ga-3 mt-5">
+      <v-card
+        v-for="article in articles"
+        :key="article.key"
+        class="open-article pa-3"
+        data-test="open-article"
+        :data-test-id="article.key"
+        variant="outlined"
+      >
+        <h3 class="article-total app-section-title mb-0" data-test="article-total">{{ articleTotalText(article, t) }}</h3>
+        <ul v-if="article.partsByNote.length > 0" class="article-parts ps-6 mt-2" data-test="article-parts">
+          <li
+            v-for="part in article.partsByNote"
+            :key="part.key"
+            class="article-part"
+            data-test="article-part"
+            :class="{ 'font-weight-bold': part.note !== null }"
+          >
+            {{ articlePartText(part, t) }}
+          </li>
+        </ul>
+      </v-card>
+    </div>
   </section>
 </template>
 
 <style scoped>
-.units {
-  margin: 1.25rem 0 0;
-  padding: 0;
+.article-parts {
+  margin: 0;
   list-style: none;
 }
 
-.unit + .unit {
-  margin-top: 0.75rem;
+.article-part + .article-part {
+  margin-top: 0.25rem;
 }
 </style>

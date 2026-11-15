@@ -188,10 +188,9 @@ describe('the overview board on the station screen', () => {
 
     expect(textsOf('[data-test="station-open-board"] [data-test="stat-together"]')).toEqual(['Gemeinsam 1'])
     expect(textsOf('[data-test="station-open-board"] [data-test="stat-as-it-comes"]')).toEqual(['Einzeln 1'])
-    expect(textsOf('[data-test="station-open-board"] [data-test="unit"]')).toEqual([
+    expect(textsOf('[data-test="station-open-board"] [data-test="article-total"]')).toEqual([
+      '2 x Bratwurst',
       '1 x Bier',
-      '1 x Bratwurst',
-      '1 x Bratwurst · Hinweis: ohne Senf',
       '1 x Pommes',
     ])
 
@@ -202,17 +201,31 @@ describe('the overview board on the station screen', () => {
     expect(page.findAll('[data-test="orders-column"] [data-test="station-order"]')).toHaveLength(2)
   })
 
-  it('shows two rows when two of the same article carry different notes', async () => {
+  it('lists every part of an article beneath its total, the part without a note first', async () => {
+    const page = await mountPage()
+
+    await page.get('[data-test="show-overview"]').trigger('click')
+    await flushPromises()
+
+    expect(
+      textsOf('[data-test="station-open-board"] [data-test="open-article"][data-test-id="Bratwurst"] [data-test="article-part"]'),
+    ).toEqual(['1 x ohne Hinweis', '1 x Hinweis: ohne Senf'])
+  })
+
+  it('adds up two of the same article with different notes in one box and lists both notes', async () => {
     stationLaptop({ orders: queue([NOTED_STATION_ORDER]) })
     const page = await mountPage()
 
     await page.get('[data-test="show-overview"]').trigger('click')
     await flushPromises()
 
-    expect(textsOf('[data-test="station-open-board"] [data-test="unit"]')).toEqual([
-      '1 x Frankfurter · Hinweis: Mit Ketchup',
-      '1 x Frankfurter · Hinweis: Ohne Ketchup',
-    ])
+    expect({
+      totals: textsOf('[data-test="station-open-board"] [data-test="article-total"]'),
+      parts: textsOf('[data-test="station-open-board"] [data-test="open-article"][data-test-id="Frankfurter"] [data-test="article-part"]'),
+    }).toEqual({
+      totals: ['2 x Frankfurter'],
+      parts: ['1 x Hinweis: Mit Ketchup', '1 x Hinweis: Ohne Ketchup'],
+    })
   })
 
   it('shows the load warning inside the board when the queue never loaded', async () => {

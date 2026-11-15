@@ -26,7 +26,7 @@ const isShowingOverview = ref(false)
 
 const ordersAreEmpty = computed(() => showsTheEmptyListText(station, station.orders.length))
 const asItComesOrdersAreEmpty = computed(() => showsTheEmptyListText(station, station.asItComes.length))
-const openLinesAreEmpty = computed(() => showsTheEmptyListText(station, stats.value.openLines.length))
+const openArticlesAreEmpty = computed(() => showsTheEmptyListText(station, stats.value.openArticles.length))
 
 const stationName = computed(() => station.identity?.name ?? session.station?.name ?? '')
 
@@ -96,8 +96,8 @@ function closeOverview(): void {
         v-if="isShowingOverview"
         :together-count="stats.togetherOrders"
         :as-it-comes-count="stats.asItComesOrders"
-        :lines="stats.openLines"
-        :shows-empty-list-text="openLinesAreEmpty"
+        :articles="stats.openArticles"
+        :shows-empty-list-text="openArticlesAreEmpty"
         :failure-text="failureText"
         @close="closeOverview"
       />

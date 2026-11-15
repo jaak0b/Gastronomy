@@ -88,7 +88,12 @@ Frontend, under `frontend/src/`:
   counts), `cancellationText` (the "Storniert um 18:42" or "Stornierung bestätigt um 18:45" line of
   a cancelled item, from its `stateSetAtUtc`), and `itemLines`,
   which groups by article and note and never merges a cancelled item into a line of open or
-  handed-out ones (`ItemLine.isCancelled`). `retainStillSelectableItemIds` keeps a selection across
+  handed-out ones (`ItemLine.isCancelled`). `stationStats` gives the overview board ("Offene
+  Artikel", `StationOpenBoard.vue`) its `openArticles`: one `ArticleTotal` per open article, built
+  from the `itemLines` of the open items, with the total over all its notes and `partsByNote`, the
+  lines beneath it (the part without a note first, then the noted parts by count and note; empty
+  when no unit carries a note), largest total first and ties by name; `articleTotalText` and
+  `articlePartText` word them. `retainStillSelectableItemIds` keeps a selection across
   a new queue only for items still selectable in the same state, so a selected open item that a
   waiter cancels drops out of the selection instead of turning into an acknowledgement.
   `stationFailureMessage` turns a refused action into the
@@ -156,6 +161,11 @@ Frontend, under `frontend/src/`:
   and for an independent article it shows that time alone.
 - **Nobody is notified when an item is done.** The card and the confirmation carry the table name,
   and whichever waiter passes the station takes the tray.
+- **The overview never shows a merged number.** Each open article is one outlined box headed by
+  its total ("7 x Schnitzel Semmel"). As soon as one unit carries a note, every part is listed
+  indented beneath it with its own count, the part without a note included ("6 x ohne Hinweis",
+  "1 x Hinweis: Mit Salat"), and a noted part is set in bold so it does not read as small print.
+  An article without any note shows only its total.
 
 ## Tests
 
@@ -187,5 +197,6 @@ Frontend, under `frontend/src/`:
   `.connection` on `stationPageFixture.ts`, the components, the composables and the store specs
   (`station.queue`, `station.done`, `station.staleAnswers`, `stationChangeListening`,
   `stationSnapshotOrdering`); `tests/support/station.ts` (`item`, `cancelledItem`);
-  `frontend/tests/shared/core/stationBoard.spec.ts` and `orderItemStates.spec.ts`;
+  `frontend/tests/shared/core/stationBoard.spec.ts`, `stationBoard.openArticles.spec.ts` (the
+  article totals and their parts by note) and `orderItemStates.spec.ts`;
   `frontend/tests/phone/core/estimates.spec.ts` and `phone/stores/estimates.spec.ts`.
